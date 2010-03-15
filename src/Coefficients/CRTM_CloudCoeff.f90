@@ -17,8 +17,8 @@
 !       CRTM initialisation.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 24-Jun-2004
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 24-Jun-2004
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_CloudCoeff
@@ -28,8 +28,10 @@ MODULE CRTM_CloudCoeff
   ! ------------------
   ! Module use
   USE Message_Handler,      ONLY: SUCCESS, FAILURE, Display_Message
-  USE CloudCoeff_Define,    ONLY: CloudCoeff_type, Destroy_CloudCoeff                  
-  USE CloudCoeff_Binary_IO, ONLY: Read_CloudCoeff_Binary
+  USE CloudCoeff_Define,    ONLY: CloudCoeff_type, &
+                                  CloudCoeff_Associated, &
+                                  CloudCoeff_Destroy                  
+  USE CloudCoeff_Binary_IO, ONLY: CloudCoeff_Binary_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -42,45 +44,49 @@ MODULE CRTM_CloudCoeff
   ! The shared data
   PUBLIC :: CloudC
   ! Procedures
-  PUBLIC :: CRTM_Load_CloudCoeff
-  PUBLIC :: CRTM_Destroy_CloudCoeff
+  PUBLIC :: CRTM_CloudCoeff_Load
+  PUBLIC :: CRTM_CloudCoeff_Destroy
+  PUBLIC :: CRTM_CloudCoeff_IsLoaded
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! ---------------------------------
   ! The shared cloud coefficient data
   ! ---------------------------------
-  TYPE(CloudCoeff_type), SAVE :: CloudC
+  TYPE(CloudCoeff_type), TARGET, SAVE :: CloudC
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       CRTM_Load_CloudCoeff
+!       CRTM_CloudCoeff_Load
 !
 ! PURPOSE:
 !       Function to load the CloudCoeff scattering coefficient data into
 !       the public data structure CloudC.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Load_CloudCoeff( CloudCoeff_File,                     &  ! Input
-!                                            Quiet            =Quiet,             &  ! Optional input
-!                                            Process_ID       =Process_ID,        &  ! Optional input
-!                                            Output_Process_ID=Output_Process_ID, &  ! Optional input
-!                                            Message_Log      =Message_Log        )  ! Error messaging
+!       Error_Status = CRTM_CloudCoeff_Load( &
+!                        Filename,                              &
+!                        File_Path         = File_Path        , &
+!                        Quiet             = Quiet            , &
+!                        Process_ID        = Process_ID       , &
+!                        Output_Process_ID = Output_Process_ID  )
 !
 ! INPUT ARGUMENTS:
-!       CloudCoeff_File:    Name of the CRTM Binary format CloudCoeff file
-!                           containing the scattering coefficient data.
+!       Filename:           Name of the Binary format CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -88,14 +94,21 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:              Set this argument to suppress INFORMATION messages
-!                           being printed to standard output (or the message
-!                           log file if the Message_Log optional argument is
-!                           used.) By default, INFORMATION messages are printed.
-!                           If QUIET = 0, INFORMATION messages are OUTPUT.
-!                              QUIET = 1, INFORMATION messages are SUPPRESSED.
+!       File_Path:          Character string specifying a file path for the
+!                           input data file. If not specified, the current
+!                           directory is the default.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Quiet:              Set this logical argument to suppress INFORMATION
+!                           messages being printed to stdout
+!                           If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                              == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -120,16 +133,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:        Character string specifying a filename in which
-!                           any messages will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output messages to standard
-!                           output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
@@ -143,68 +146,77 @@ CONTAINS
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data structure CloudC.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Load_CloudCoeff( CloudCoeff_File  , &  ! Input
-                                 Quiet            , &  ! Optional input
-                                 Process_ID       , &  ! Optional input
-                                 Output_Process_ID, &  ! Optional input
-                                 Message_Log      ) &  ! Error messaging
-                               RESULT( Error_Status )
+  FUNCTION CRTM_CloudCoeff_Load( &
+    Filename         , &  ! Input
+    File_Path        , &  ! Optional input
+    Quiet            , &  ! Optional input
+    Process_ID       , &  ! Optional input
+    Output_Process_ID) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN) :: CloudCoeff_File
-    INTEGER,      OPTIONAL, INTENT(IN) :: Quiet
-    INTEGER,      OPTIONAL, INTENT(IN) :: Process_ID
-    INTEGER,      OPTIONAL, INTENT(IN) :: Output_Process_ID
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    CHARACTER(*),           INTENT(IN) :: Filename
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
+    INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Load_CloudCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_CloudCoeff_Load'
     ! Local variables
-    CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(ML) :: msg, pid_msg
+    CHARACTER(ML) :: CloudCoeff_File
+    LOGICAL :: noisy
 
     ! Setup 
-    Error_Status = SUCCESS
-    ! Create a process ID message tag for
-    ! WARNING and FAILURE messages
-    IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
-    ELSE
-      Process_ID_Tag = ' '
+    err_stat = SUCCESS
+    ! ...Assign the filename to local variable
+    CloudCoeff_File = ADJUSTL(Filename)
+    ! ...Add the file path
+    IF ( PRESENT(File_Path) ) CloudCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(CloudCoeff_File)
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Check the MPI Process Ids
+    IF ( noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_Id /= Output_Process_Id ) noisy = .FALSE.
     END IF
-
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
+    ELSE
+      pid_msg = ''
+    END IF
+    
     ! Read the CloudCoeff data file
-    Error_Status = Read_CloudCoeff_Binary( TRIM(CloudCoeff_File)              , &  ! Input
-                                           CloudC                             , &  ! Output
-                                           Quiet            =Quiet            , &
-                                           Process_ID       =Process_ID       , &
-                                           Output_Process_ID=Output_Process_ID, &
-                                           Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading CloudCoeff data from '//&
-                            TRIM(CloudCoeff_File)//TRIM(Process_ID_Tag), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    err_stat = CloudCoeff_Binary_ReadFile( &
+                 CloudCoeff_File, &
+                 CloudC, &
+                 Quiet = .NOT. noisy )
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
 
-  END FUNCTION CRTM_Load_CloudCoeff
+  END FUNCTION CRTM_CloudCoeff_Load
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       CRTM_Destroy_CloudCoeff
+!       CRTM_CloudCoeff_Destroy
 !
 ! PURPOSE:
 !       Function to deallocate the public data structure CloudC containing
 !       the CRTM CloudCoeff scattering coefficient data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_CloudCoeff( Process_ID =Process_ID, &  ! Optional input
-!                                               Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_CloudCoeff_Destroy( Process_ID =Process_ID )
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
@@ -213,15 +225,6 @@ CONTAINS
 !                         being used, ignore this argument.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to the screen.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -241,41 +244,56 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy_CloudCoeff( Process_ID,   &  ! Optional input
-                                    Message_Log ) &  ! Error messaging
-                                  RESULT( Error_Status )
+  FUNCTION CRTM_CloudCoeff_Destroy( Process_ID ) RESULT( err_stat )
     ! Arguments
-    INTEGER,      OPTIONAL, INTENT(IN) :: Process_ID
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    INTEGER, OPTIONAL, INTENT(IN) :: Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_CloudCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_CloudCoeff_Destroy'
     ! Local variables
-    CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(ML) :: msg, pid_msg
 
     ! Setup
-    Error_Status = SUCCESS
-    ! Create a process ID message tag for
-    ! WARNING and FAILURE messages
-    IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
+    err_stat = SUCCESS
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
     ELSE
-      Process_ID_Tag = ' '
+      pid_msg = ''
     END IF
 
     ! Destroy the structure
-    Error_Status = Destroy_CloudCoeff( CloudC, &
-                                       Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred deallocating the public CloudCoeff structure'//&
-                            TRIM(Process_ID_Tag), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    CALL CloudCoeff_Destroy( CloudC )
+    IF ( CloudCoeff_Associated( CloudC ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error deallocating CloudCoeff shared data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
       RETURN
     END IF
 
-  END FUNCTION CRTM_Destroy_CloudCoeff
+  END FUNCTION CRTM_CloudCoeff_Destroy
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_CloudCoeff_IsLoaded
+!
+! PURPOSE:
+!       Function to test if the CloudCoeff scattering coefficient data has
+!       loaded into the public data structure CloudC.
+!
+! CALLING SEQUENCE:
+!       status = CRTM_CloudCoeff_IsLoaded()
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION CRTM_CloudCoeff_IsLoaded() RESULT( IsLoaded )
+    LOGICAL :: IsLoaded
+    IsLoaded = CloudCoeff_Associated( CloudC )
+  END FUNCTION CRTM_CloudCoeff_IsLoaded
 
 END MODULE CRTM_CloudCoeff

@@ -1041,8 +1041,7 @@ CONTAINS
         msg = 'Error creating SensorData object.'
         CALL Read_Record_Cleanup(); RETURN
       END IF
-      READ( fid,IOSTAT=io_stat ) sfc%SensorData%Select_WMO_Sensor_ID, &  
-                                 sfc%SensorData%Sensor_ID           , &  
+      READ( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &  
                                  sfc%SensorData%WMO_Satellite_ID    , &
                                  sfc%SensorData%WMO_Sensor_ID       , &
                                  sfc%SensorData%Sensor_Channel      , &
@@ -1132,7 +1131,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_WriteFile(Record)'
     ! Function variables
     CHARACTER(ML)  :: msg
-    CHARACTER(256) :: fname
     LOGICAL :: Noisy
     INTEGER :: io_stat
 
@@ -1225,8 +1223,7 @@ CONTAINS
     END IF
     ! ...The data
     IF ( sfc%SensorData%n_Channels > 0 ) THEN
-      WRITE( fid,IOSTAT=io_stat ) sfc%SensorData%Select_WMO_Sensor_ID, &
-                                  sfc%SensorData%Sensor_ID           , &
+      WRITE( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &
                                   sfc%SensorData%WMO_Satellite_ID    , &
                                   sfc%SensorData%WMO_Sensor_ID       , &
                                   sfc%SensorData%Sensor_Channel      , &

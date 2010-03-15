@@ -91,6 +91,9 @@ MODULE CRTM_Adjoint_Module
                                         CRTM_Compute_MoleculeScatter_AD
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
 
+  USE CRTM_CloudCoeff,            ONLY: CRTM_CloudCoeff_IsLoaded
+  USE CRTM_AerosolCoeff,          ONLY: CRTM_AerosolCoeff_IsLoaded
+
   ! -----------------------
   ! Disable implicit typing
   ! -----------------------
@@ -369,6 +372,21 @@ CONTAINS
     !#--------------------------------------------------------------------------#
     Profile_Loop: DO m = 1, n_Profiles
 
+      ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
+      IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
+         Error_Status = FAILURE                                                               
+         WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &   
+                &"for the cloudy case profile #",i0)' ) m                                     
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                    
+         RETURN                                                                               
+      END IF
+      IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
+         Error_Status = FAILURE                                                                 
+         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
+                &"for the aerosol case profile #",i0)' ) m                                      
+         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )                      
+         RETURN                                                                                 
+      END IF
 
       ! Copy over forward "non-variable" inputs to adjoint outputs
       ! ...Atmosphere

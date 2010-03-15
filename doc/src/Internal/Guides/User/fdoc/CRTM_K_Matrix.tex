@@ -11,19 +11,17 @@
         profile or profile set and user specified satellites/channels.
  
   CALLING SEQUENCE:
-        Error_Status = CRTM_K_Matrix( Atmosphere             , &
-                                      Surface                , &
-                                      RTSolution_K           , &
-                                      GeometryInfo           , &
-                                      ChannelInfo            , &
-                                      Atmosphere_K           , &
-                                      Surface_K              , &
-                                      RTSolution             , &
-                                      Options    =Options    , &
-                                      RCS_Id     =RCS_Id     , &
-                                      Message_Log=Message_Log  )
+        Error_Status = CRTM_K_Matrix( Atmosphere       , &
+                                      Surface          , &
+                                      RTSolution_K     , &
+                                      Geometry         , &
+                                      ChannelInfo      , &
+                                      Atmosphere_K     , &
+                                      Surface_K        , &
+                                      RTSolution       , &
+                                      Options = Options  )
  
-  INPUT ARGUMENTS:
+  INPUTS:
         Atmosphere:     Structure containing the Atmosphere data.
                         UNITS:      N/A
                         TYPE:       CRTM_Atmosphere_type
@@ -45,10 +43,10 @@
                         DIMENSION:  Rank-2 (n_Channels x n_Profiles)
                         ATTRIBUTES: INTENT(IN OUT)
  
-        GeometryInfo:   Structure containing the view geometry
+        Geometry:       Structure containing the view geometry
                         information.
                         UNITS:      N/A
-                        TYPE:       CRTM_GeometryInfo_type
+                        TYPE:       CRTM_Geometry_type
                         DIMENSION:  Same as input Atmosphere argument
                         ATTRIBUTES: INTENT(IN)
  
@@ -60,7 +58,7 @@
                         DIMENSION:  Rank-1 (n_Sensors)
                         ATTRIBUTES: INTENT(IN)
  
-  OPTIONAL INPUT ARGUMENTS:
+  OPTIONAL INPUTS:
         Options:        Options structure containing the optional forward model
                         arguments for the CRTM.
                         UNITS:      N/A
@@ -68,16 +66,7 @@
                         DIMENSION:  Same as input Atmosphere structure
                         ATTRIBUTES: INTENT(IN), OPTIONAL
  
-        Message_Log:    Character string specifying a filename in which any
-                        messages will be logged. If not specified, or if an
-                        error occurs opening the log file, the default action
-                        is to output messages to the screen.
-                        UNITS:      N/A
-                        TYPE:       CHARACTER(*)
-                        DIMENSION:  Scalar
-                        ATTRIBUTES: INTENT(IN), OPTIONAL
- 
-  OUTPUT ARGUMENTS:
+  OUTPUTS:
         Atmosphere_K:   Structure containing the K-matrix Atmosphere data.
                         **NOTE: On ENTRY to this function, the contents of
                                 this structure should be defined (e.g.
@@ -104,14 +93,6 @@
                         TYPE:       CRTM_RTSolution_type
                         DIMENSION:  Same as input RTSolution_K argument
                         ATTRIBUTES: INTENT(IN OUT)
- 
-  OPTIONAL OUTPUT ARGUMENTS:
-        RCS_Id:         Character string containing the Revision Control
-                        System Id field for the module.
-                        UNITS:      N/A
-                        TYPE:       CHARACTER(*)
-                        DIMENSION:  Scalar
-                        ATTRIBUTES: INTENT(OUT), OPTIONAL
  
   FUNCTION RESULT:
         Error_Status:   The return value is an integer defining the error status.

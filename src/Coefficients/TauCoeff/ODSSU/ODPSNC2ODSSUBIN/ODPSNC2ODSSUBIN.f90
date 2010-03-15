@@ -18,6 +18,7 @@ PROGRAM ODPSNC2ODSSUBIN
   USE Type_Kinds        , ONLY: Long, fp
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                 Program_Message, Display_Message
+  USE SignalFile_Utility, ONLY: Create_SignalFile
   ! the new ssu tau coeff. data type and reader
   USE ODSSU_Define      , ONLY: ODSSU_type, Allocate_ODSSU, Destroy_ODSSU 
   USE ODSSU_Binary_IO   , ONLY: Write_ODSSU_Binary
@@ -50,7 +51,6 @@ PROGRAM ODPSNC2ODSSUBIN
   CHARACTER(256) :: ODSSU_Filename
   CHARACTER(256) :: ODPS_Filename
   CHARACTER(20)  :: Sensor_Id
-  INTEGER        :: Sensor_Type
   TYPE(ODPS_type)  :: ODPS
   TYPE(ODSSU_type) :: ODSSU
   INTEGER :: k 
@@ -76,10 +76,7 @@ PROGRAM ODPSNC2ODSSUBIN
   ! Construct the filenames
   ! -----------------------
   CellPresssure_Filename = TRIM(Sensor_Id)//'.cellpressure.ASC'
-  
-  IF ( TRIM(Sensor_Id) == 'ssu_n05' ) Sensor_Id = 'ssu_tirosn'
-  
-  ODSSU_Filename    = TRIM(Sensor_Id)//'.TauCoeff.bin'
+  ODSSU_Filename = TRIM(Sensor_Id)//'.TauCoeff.bin'
     
   ! Read the cell pressure ASCII data
   ! ----------------------
@@ -111,7 +108,6 @@ PROGRAM ODPSNC2ODSSUBIN
   ! Read the dimensions
   ! -------------------------------------
   READ(FileID, *, IOSTAT=IO_Status) n_Channels, n_TC_CellPressures, n_Ref_CellPressures
-  write(*, * ) n_Channels, n_TC_CellPressures, n_Ref_CellPressures
   IF ( IO_Status /= 0 ) THEN                                                        
     Error_Status = FAILURE                                                          
     WRITE( msg,'("Error reading number of channels from ",a,". IOSTAT = ",i0)' ) &  
@@ -138,10 +134,6 @@ PROGRAM ODPSNC2ODSSUBIN
   READ(FileID, *) Ref_CellPressure
   READ(FileID, *) Ref_Time
   CLOSE( FileID)  
-  
-  write(*, *) 'TC_cellPressure',  TC_CellPressure
-  write(*, *) 'Ref_CellPressure', Ref_CellPressure
-  write(*, *) 'Ref_Time', Ref_Time
   
   ODSSU%subAlgorithm = ODPS_ALGORITHM
   
@@ -207,6 +199,15 @@ PROGRAM ODPSNC2ODSSUBIN
                           TRIM(ODSSU_Filename), &
                           Error_Status )
     STOP
+  END IF
+
+
+  ! Create a signal file indicating success
+  Error_Status = Create_SignalFile( ODSSU_Filename )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Error creating signal file for '//TRIM(ODSSU_Filename), &
+                          FAILURE )
   END IF
 
 

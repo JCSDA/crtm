@@ -1,4 +1,0 @@
-SRC_FILES = Type_Kinds.f90 \
-            File_Utility.f90 \
-            Message_Handler.f90 \
-            Test_Type_Kinds.f90

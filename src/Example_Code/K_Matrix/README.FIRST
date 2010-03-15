@@ -5,7 +5,8 @@ To build this little example program that calls the CRTM K-Matrix model:
 1) You need to build the CRTM library.
 
 
-2) You may need to modify the following macros in the Makefile in this directory:
+2) You may need to modify the following macros in the makefile.common file
+   in this directory:
 
    CRTM_DIR
      This tells the compiler where the CRTM library is. Currently it is set
@@ -34,33 +35,26 @@ To build this little example program that calls the CRTM K-Matrix model:
 
 
 3) Type
-     make
-   to build the example prgram and link in the CRTM library.
+     run_Example_K_Matrix.sh
+   to build and run the example programs.
 
+
+4) Output from the example programs are kept in their respective Results/ 
+   subdirectory. Compare that output to yours. The 
+     run_Example_K_Matrix.sh
+   script differences the result automatically. If all goes well, you should 
+   see the following at the end of the runs:
    
-4) Either type
-     Example_K_Matrix
-   to run the example program sensor-by-sensor, or
-     run_Example_K_Matrix.sh
-   to run a script that runs the executable for all the sensors. Coefficient data
-   for a number of sensors are provided. The sensor id for these are:
-     amsua_metop-a
-     mhs_n18
-     hirs4_n18
-     ssu_n14
-     ssmis_f16
-     v.seviri_m09
-     hirs3_n17
-     amsre_aqua
+     ======================
+     SUMMARY OF ALL RESULTS
+     ======================
 
-
-5) Output from the example program for the three test sensors is in the /Results
-   subdirectory. Compare that output to yours. Note that if you run the 
-     run_Example_K_Matrix.sh
-   script, the results will be differenced automatically and placed in a file.
+     Passed 14 of 14 tests.
+     Failed 0 of 14 tests.
+   
+   Note that the total numbers of tests may differ. The important thing is
+   that none of the comparison tests fail.
    
 
 If you have any problems, contact the JCSDA CRTM list at:
   ncep.list.emc.jcsda_crtm@noaa.gov
-
-

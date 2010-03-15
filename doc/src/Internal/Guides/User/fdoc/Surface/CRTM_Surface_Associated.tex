@@ -1,0 +1,32 @@
+\subsection{\texttt{CRTM\_Surface\_Associated} interface}
+  \label{sec:CRTM_Surface_Associated_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Surface_Associated
+ 
+  PURPOSE:
+        Elemental function to test the status of the allocatable components
+        of a CRTM Surface object.
+ 
+  CALLING SEQUENCE:
+        Status = CRTM_Surface_Associated( Sfc )
+ 
+  OBJECTS:
+        Sfc:       Surface structure which is to have its member's
+                   status tested.
+                   UNITS:      N/A
+                   TYPE:       CRTM_Surface_type
+                   DIMENSION:  Scalar or any rank
+                   ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Status:    The return value is a logical value indicating the
+                   status of the Surface members.
+                     .TRUE.  - if the array components are allocated.
+                     .FALSE. - if the array components are not allocated.
+                   UNITS:      N/A
+                   TYPE:       LOGICAL
+                   DIMENSION:  Same as input
+ 
+  \end{alltt}

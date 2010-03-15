@@ -265,24 +265,6 @@ CONTAINS
     ! set the sensor dimension for structure TC
     TC%n_Sensors = n_Sensors
 
-    ! Allocate memory for the SensorIDs array
-    IF ( PRESENT(Sensor_ID) ) THEN
-
-      ! Check string length
-      IF(SL < LEN(Sensor_ID(1)))THEN
-        Error_Status = FAILURE
-        WRITE(Message,'("The string length ", i4, &
-                        &"for the string array SensorIDs is smaller than ", &
-                        &i4, "of the input Sensor_ID.")') &
-                        SL, LEN(Sensor_ID(1))
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message)//TRIM(Process_ID_Tag), &
-                              Error_Status, &
-                              Message_Log=Message_Log)
-        RETURN
-      END IF
-
-    END IF
 
     ! Allocate memory for the local arrays    
     ALLOCATE( SensorIDs( n_Sensors ),   &                                                                 

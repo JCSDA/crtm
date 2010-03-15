@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for ODPS_NC2BIN program
+# Makefile for ODASNC2ODSSUBIN program
 #
 #==============================================================================
 
@@ -12,6 +12,7 @@ MAKE_FILE = Makefile
 
 # Executable files
 EXE_FILE = ODASNC2ODSSUBIN
+SCRIPT_FILE = run_$(EXE_FILE).sh
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -21,6 +22,7 @@ SRC_FILES = Type_Kinds.f90 \
             Binary_File_Utility.f90 \
             Endian_Utility.f90 \
             Sort_Utility.f90 \
+            SignalFile_Utility.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
@@ -52,6 +54,10 @@ create_links:
 
 remove_links:
 	@unlinkfiles $(SRC_FILES)
+
+# Script install target
+install_script:
+	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
 
 # Squeaky clean target
 realclean: clean remove_links

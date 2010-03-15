@@ -219,9 +219,10 @@ CONTAINS
       END DO
     ELSE
       ! Frequency is too high for model. Use default.
-      i = SfcOptics%n_Angles
-      SfcOptics%Emissivity(1:i,1:2)           = DEFAULT_EMISSIVITY
-      SfcOptics%Reflectivity(1:i,1:2,1:i,1:2) = ONE-DEFAULT_EMISSIVITY
+      DO i = 1, SfcOptics%n_Angles
+        SfcOptics%Emissivity(i,1:2)           = DEFAULT_EMISSIVITY
+        SfcOptics%Reflectivity(i,1:2,i,1:2) = ONE-DEFAULT_EMISSIVITY
+      END DO
     END IF
 
   END FUNCTION Compute_MW_Land_SfcOptics

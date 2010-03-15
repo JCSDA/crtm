@@ -4,19 +4,27 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_Options_type
-    INTEGER :: n_Allocates = 0
-    ! Dimensions
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Input checking on by default
+    LOGICAL :: Check_Input = .TRUE.
+    ! User defined emissivity/reflectivity
+    ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
-    ! Index into channel-specific components
+    ! ...Index into channel-specific components
     INTEGER :: Channel = 0
-    ! Emissivity optional arguments
-    INTEGER           :: Emissivity_Switch =  NOT_SET
-    REAL(fp), POINTER :: Emissivity(:)     => NULL() ! L
-    ! Direct reflectivity optional arguments
-    INTEGER           :: Direct_Reflectivity_Switch =  NOT_SET
-    REAL(fp), POINTER :: Direct_Reflectivity(:)     => NULL() ! L
+    ! ...Emissivity optional arguments
+    LOGICAL :: Use_Emissivity = .FALSE.
+    REAL(fp), ALLOCATABLE :: Emissivity(:)  ! L
+    ! ...Direct reflectivity optional arguments
+    LOGICAL :: Use_Direct_Reflectivity = .FALSE.
+    REAL(fp), ALLOCATABLE :: Direct_Reflectivity(:) ! L
     ! Antenna correction application
-    INTEGER :: Antenna_Correction = NOT_SET
+    LOGICAL :: Use_Antenna_Correction = .FALSE.
+    ! SSU instrument input
+    TYPE(SSU_Input_type) :: SSU
+    ! Zeeman-splitting input
+    TYPE(Zeeman_Input_type) :: Zeeman
   END TYPE CRTM_Options_type
     \end{alltt}
   \end{minipage}

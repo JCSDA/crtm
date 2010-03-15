@@ -9,45 +9,43 @@
         Function to initialise the CRTM.
  
   CALLING SEQUENCE:
-        Error_Status = CRTM_Init( ChannelInfo                        , &
-                                  Sensor_ID        =Sensor_ID        , &
-                                  CloudCoeff_File  =CloudCoeff_File  , &
-                                  AerosolCoeff_File=AerosolCoeff_File, &
-                                  EmisCoeff_File   =EmisCoeff_File   , &
-                                  File_Path        =File_Path        , &
-                                  Quiet            =Quiet            , &
-                                  Process_ID       =Process_ID       , &
-                                  Output_Process_ID=Output_Process_ID, &
-                                  RCS_Id           =RCS_Id           , &
-                                  Message_Log      =Message_Log        )
+        Error_Status = CRTM_Init( Sensor_ID                            , &
+                                  ChannelInfo                          , &
+                                  CloudCoeff_File   = CloudCoeff_File  , &
+                                  AerosolCoeff_File = AerosolCoeff_File, &
+                                  EmisCoeff_File    = EmisCoeff_File   , &
+                                  File_Path         = File_Path        , &
+                                  Load_CloudCoeff   = Load_CloudCoeff  , &
+                                  Load_AerosolCoeff = Load_AerosolCoeff, &
+                                  Quiet             = Quiet            , &
+                                  Process_ID        = Process_ID       , &
+                                  Output_Process_ID = Output_Process_ID  )
  
-  OUTPUT ARGUMENTS:
-        ChannelInfo:        ChannelInfo structure array populated based on
-                            the contents of the coefficient files and the
-                            user inputs.
-                            UNITS:      N/A
-                            TYPE:       CRTM_ChannelInfo_type
-                            DIMENSION:  Rank-1 (n_Sensors)
-                            ATTRIBUTES: INTENT(IN OUT)
- 
-  OPTIONAL INPUT ARGUMENTS:
+  INPUTS:
         Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
                             ssmis_f16, etc) with which the CRTM is to be
-                            initialised. These Sensor ID are used to construct
+                            initialised. These sensor ids are used to construct
                             the sensor specific SpcCoeff and TauCoeff filenames
                             containing the necessary coefficient data, i.e.
                               <Sensor_ID>.SpcCoeff.bin
                             and
                               <Sensor_ID>.TauCoeff.bin
-                            for each sensor Id in the list. IF this argument is
-                            not specified, the default SpcCoeff and TauCoeff
-                            filenames are "SpcCoeff.bin" and "TauCoeff.bin"
-                            respectively.
+                            for each sensor Id in the list.
                             UNITS:      N/A
                             TYPE:       CHARACTER(*)
-                            DIMENSION:  Same as output ChannelInfo argument
+                            DIMENSION:  Rank-1 (n_Sensors)
                             ATTRIBUTES: INTENT(IN), OPTIONAL
  
+  OUTPUTS:
+        ChannelInfo:        ChannelInfo structure array populated based on
+                            the contents of the coefficient files and the
+                            user inputs.
+                            UNITS:      N/A
+                            TYPE:       CRTM_ChannelInfo_type
+                            DIMENSION:  Same as input Sensor_Id argument
+                            ATTRIBUTES: INTENT(OUT)
+ 
+  OPTIONAL INPUTS:
         CloudCoeff_File:    Name of the CRTM Binary format CloudCoeff file
                             containing the scattering coefficient data. If not
                             specified the default filename is "CloudCoeff.bin".
@@ -81,20 +79,39 @@
                             DIMENSION:  Scalar
                             ATTRIBUTES: INTENT(IN), OPTIONAL
  
-        Quiet:              Set this argument to suppress INFORMATION messages
-                            being printed to standard output (or the message
-                            log file if the Message_Log optional argument is
-                            used.) By default, INFORMATION messages are printed.
-                            If QUIET = 0, INFORMATION messages are OUTPUT.
-                               QUIET = 1, INFORMATION messages are SUPPRESSED.
+        Load_CloudCoeff:    Set this logical argument for not loading the CloudCoeff data
+                            to save memory space under the clear conditions 
+                            If == .FALSE., the CloudCoeff data will not be loaded;
+                               == .TRUE.,  the CloudCoeff data will be loaded.
+                            If not specified, default is .TRUE. (will be loaded)
                             UNITS:      N/A
-                            TYPE:       INTEGER
+                            TYPE:       LOGICAL
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Load_AerosolCoeff:  Set this logical argument for not loading the AerosolCoeff data
+                            to save memory space under the clear conditions 
+                            If == .FALSE., the AerosolCoeff data will not be loaded;
+                               == .TRUE.,  the AerosolCoeff data will be loaded.
+                            If not specified, default is .TRUE. (will be loaded)
+                            UNITS:      N/A
+                            TYPE:       LOGICAL
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Quiet:              Set this logical argument to suppress INFORMATION
+                            messages being printed to stdout
+                            If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+                               == .TRUE.,  INFORMATION messages are SUPPRESSED.
+                            If not specified, default is .FALSE.
+                            UNITS:      N/A
+                            TYPE:       LOGICAL
                             DIMENSION:  Scalar
                             ATTRIBUTES: INTENT(IN), OPTIONAL
  
         Process_ID:         Set this argument to the MPI process ID that this
                             function call is running under. This value is used
-                            solely for controlling INFORMATIOn message output.
+                            solely for controlling INFORMATION message output.
                             If MPI is not being used, ignore this argument.
                             This argument is ignored if the Quiet argument is set.
                             UNITS:      N/A
@@ -113,23 +130,6 @@
                             DIMENSION:  Scalar
                             ATTRIBUTES: INTENT(IN), OPTIONAL
  
-        Message_Log:        Character string specifying a filename in which any
-                            messages will be logged. If not specified, or if an
-                            error occurs opening the log file, the default action
-                            is to output messages to the screen.
-                            UNITS:      N/A
-                            TYPE:       CHARACTER(*)
-                            DIMENSION:  Scalar
-                            ATTRIBUTES: INTENT(IN), OPTIONAL
- 
-  OPTIONAL OUTPUT ARGUMENTS:
-        RCS_Id:             Character string containing the Revision Control
-                            System Id field for the module.
-                            UNITS:      N/A
-                            TYPE:       CHARACTER(*)
-                            DIMENSION:  Scalar
-                            ATTRIBUTES: INTENT(OUT), OPTIONAL
- 
   FUNCTION RESULT:
         Error_Status:       The return value is an integer defining the error
                             status. The error codes are defined in the
@@ -147,10 +147,5 @@
   RESTRICTIONS:
         If specified, the length of the combined file path and filename strings
         cannot exceed 2000 characters.
- 
-  COMMENTS:
-        Note the INTENT on the output ChannelInfo argument is IN OUT rather than
-        just OUT. This is necessary because the argument may be defined upon
-        input. To prevent memory leaks, the IN OUT INTENT is a must.
  
   \end{alltt}

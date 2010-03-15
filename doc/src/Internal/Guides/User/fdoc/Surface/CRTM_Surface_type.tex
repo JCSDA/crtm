@@ -4,18 +4,15 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_Surface_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
     ! Dimension values
-    INTEGER :: Max_Sensors  = 0  ! N dimension
-    INTEGER :: n_Sensors    = 0  ! Nuse dimension
+    ! ...None yet
     ! Gross type of surface determined by coverage
     REAL(fp) :: Land_Coverage  = ZERO
     REAL(fp) :: Water_Coverage = ZERO
     REAL(fp) :: Snow_Coverage  = ZERO
     REAL(fp) :: Ice_Coverage   = ZERO
-    ! Surface type independent data
-    REAL(fp) :: Wind_Speed     = DEFAULT_WIND_SPEED
-    REAL(fp) :: Wind_Direction = DEFAULT_WIND_DIRECTION
     ! Land surface type data
     INTEGER  :: Land_Type             = DEFAULT_LAND_TYPE
     REAL(fp) :: Land_Temperature      = DEFAULT_LAND_TEMPERATURE
@@ -26,6 +23,8 @@
     ! Water type data
     INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
     REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE
+    REAL(fp) :: Wind_Speed        = DEFAULT_WIND_SPEED
+    REAL(fp) :: Wind_Direction    = DEFAULT_WIND_DIRECTION
     REAL(fp) :: Salinity          = DEFAULT_SALINITY
     ! Snow surface type data
     INTEGER  :: Snow_Type        = DEFAULT_SNOW_TYPE
@@ -40,7 +39,7 @@
     REAL(fp) :: Ice_Density     = DEFAULT_ICE_DENSITY
     REAL(fp) :: Ice_Roughness   = DEFAULT_ICE_ROUGHNESS
     ! SensorData containing channel brightness temperatures
-    TYPE(CRTM_SensorData_type) :: SensorData  ! N
+    TYPE(CRTM_SensorData_type) :: SensorData
   END TYPE CRTM_Surface_type
     \end{alltt}
   \end{minipage}

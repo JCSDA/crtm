@@ -4,7 +4,8 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_RTSolution_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimensions
     INTEGER :: n_Layers = 0  ! K
     ! Internal variables. Users do not need to worry about these.
@@ -19,9 +20,9 @@
     REAL(fp) :: Down_Radiance           = ZERO
     REAL(fp) :: Down_Solar_Radiance     = ZERO
     REAL(fp) :: Surface_Planck_Radiance = ZERO
-    REAL(fp), POINTER :: Upwelling_Radiance(:)  => NULL()  ! K
+    REAL(fp), ALLOCATABLE :: Upwelling_Radiance(:)   ! K
     ! The layer optical depths
-    REAL(fp), POINTER :: Layer_Optical_Depth(:) => NULL()  ! K
+    REAL(fp), ALLOCATABLE :: Layer_Optical_Depth(:)  ! K
     ! Radiative transfer results for a single channel/node
     REAL(fp) :: Radiance               = ZERO
     REAL(fp) :: Brightness_Temperature = ZERO

@@ -28,9 +28,10 @@ MODULE CRTM_AerosolCoeff
   ! ----------------
   ! Module use
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
-  USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, Destroy_AerosolCoeff
-  USE AerosolCoeff_Binary_IO, ONLY: Read_AerosolCoeff_Binary
-  USE CRTM_Parameters
+  USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, &
+                                    AerosolCoeff_Associated, &
+                                    AerosolCoeff_Destroy
+  USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -43,46 +44,50 @@ MODULE CRTM_AerosolCoeff
   ! The shared data
   PUBLIC :: AeroC
   ! Public routines in this module
-  PUBLIC :: CRTM_Load_AerosolCoeff
-  PUBLIC :: CRTM_Destroy_AerosolCoeff
+  PUBLIC :: CRTM_AerosolCoeff_Load
+  PUBLIC :: CRTM_AerosolCoeff_Destroy
+  PUBLIC :: CRTM_AerosolCoeff_IsLoaded
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
   ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! -----------------------------------
   ! The shared aerosol coefficient data
   ! -----------------------------------
-  TYPE(AerosolCoeff_type), SAVE :: AeroC
+  TYPE(AerosolCoeff_type), TARGET, SAVE :: AeroC
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       CRTM_Load_AerosolCoeff
+!       CRTM_AerosolCoeff_Load
 !
 ! PURPOSE:
-!       Function to load the AerosolCoeff aerosol coefficient data into
-!       the public data structure AeroC.
+!       Function to load the AerosolCoeff scattering coefficient data into
+!       the public data structure AerosolC.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Load_AerosolCoeff( AerosolCoeff_File,                   &  ! Input
-!                                              Quiet            =Quiet,             &  ! Optional input
-!                                              Process_ID       =Process_ID,        &  ! Optional input
-!                                              Output_Process_ID=Output_Process_ID, &  ! Optional input
-!                                              Message_Log      =Message_Log        )  ! Error messaging
+!       Error_Status = CRTM_AerosolCoeff_Load( &
+!                        Filename,                              &
+!                        File_Path         = File_Path        , &
+!                        Quiet             = Quiet            , &
+!                        Process_ID        = Process_ID       , &
+!                        Output_Process_ID = Output_Process_ID  )
 !
 ! INPUT ARGUMENTS:
-!       AerosolCoeff_File:  Name of the CRTM Binary format AerosolCoeff file
-!                           containing the aerosol coefficient data.
+!       Filename:           Name of the Binary format AerosolCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -90,14 +95,21 @@ CONTAINS
 !
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:              Set this argument to suppress INFORMATION messages
-!                           being printed to standard output (or the message
-!                           log file if the Message_Log optional argument is
-!                           used.) By default, INFORMATION messages are printed.
-!                           If QUIET = 0, INFORMATION messages are OUTPUT.
-!                              QUIET = 1, INFORMATION messages are SUPPRESSED.
-!                           UNITS:      None
-!                           TYPE:       INTEGER
+!       File_Path:          Character string specifying a file path for the
+!                           input data file. If not specified, the current
+!                           directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Quiet:              Set this logical argument to suppress INFORMATION
+!                           messages being printed to stdout
+!                           If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                              == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -106,7 +118,7 @@ CONTAINS
 !                           solely for controlling INFORMATIOn message output.
 !                           If MPI is not being used, ignore this argument.
 !                           This argument is ignored if the Quiet argument is set.
-!                           UNITS:      None
+!                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
@@ -117,18 +129,8 @@ CONTAINS
 !                           the INFORMATION messages are output. 
 !                           This argument is ignored if the Quiet argument
 !                           is set.
-!                           UNITS:      None
+!                           UNITS:      N/A
 !                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which
-!                           any messages will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output messages to standard
-!                           output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -143,70 +145,78 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !
 ! SIDE EFFECTS:
-!       This function modifies the contents of the public data structure AeroC.
+!       This function modifies the contents of the public data structure AerosolC.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Load_AerosolCoeff( AerosolCoeff_File, &  ! Input
-                                   Quiet            , &  ! Optional input
-                                   Process_ID       , &  ! Optional input
-                                   Output_Process_ID, &  ! Optional input
-                                   Message_Log      ) &  ! Error messaging
-                                 RESULT( Error_Status )
+  FUNCTION CRTM_AerosolCoeff_Load( &
+    Filename         , &  ! Input
+    File_Path        , &  ! Optional input
+    Quiet            , &  ! Optional input
+    Process_ID       , &  ! Optional input
+    Output_Process_ID) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: AerosolCoeff_File
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Output_Process_ID
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN) :: Filename
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
+    INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Load_AerosolCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AerosolCoeff_Load'
     ! Local variables
-    CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(ML) :: msg, pid_msg
+    CHARACTER(ML) :: AerosolCoeff_File
+    LOGICAL :: noisy
 
     ! Setup 
-    Error_Status = SUCCESS
-    ! Create a process ID message tag for
-    ! WARNING and FAILURE messages
-    IF ( PRESENT(Process_ID) ) THEN
-      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
-    ELSE
-      Process_ID_Tag = ' '
+    err_stat = SUCCESS
+    ! ...Assign the filename to local variable
+    AerosolCoeff_File = ADJUSTL(Filename)
+    ! ...Add the file path
+    IF ( PRESENT(File_Path) ) AerosolCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(AerosolCoeff_File)
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Check the MPI Process Ids
+    IF ( noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_Id /= Output_Process_Id ) noisy = .FALSE.
     END IF
-
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
+    ELSE
+      pid_msg = ''
+    END IF
+    
     ! Read the AerosolCoeff data file
-    Error_Status = Read_AerosolCoeff_Binary( TRIM(AerosolCoeff_File)            , &  ! Input
-                                             AeroC                              , &  ! Output
-                                             Quiet            =Quiet            , &
-                                             Process_ID       =Process_ID       , &
-                                             Output_Process_ID=Output_Process_ID, &
-                                             Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading AerosolCoeff data from '//&
-                            TRIM(AerosolCoeff_File)//TRIM(Process_ID_Tag), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    err_stat = AerosolCoeff_Binary_ReadFile( &
+                 AerosolCoeff_File, &
+                 AeroC, &
+                 Quiet = .NOT. noisy )
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
 
-  END FUNCTION CRTM_Load_AerosolCoeff
+  END FUNCTION CRTM_AerosolCoeff_Load
 
 
 !------------------------------------------------------------------------------
 !
 ! NAME:
-!       CRTM_Destroy_AerosolCoeff
+!       CRTM_AerosolCoeff_Destroy
 !
 ! PURPOSE:
 !       Function to deallocate the public data structure AeroC containing
 !       the CRTM AerosolCoeff aerosol coefficient data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_AerosolCoeff( Process_ID =Process_ID, &  ! Optional input
-!                                                 Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = CRTM_AerosolCoeff_Destroy( Process_ID = Process_ID )
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
@@ -215,15 +225,6 @@ CONTAINS
 !                         being used, ignore this argument.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to the screen.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -243,42 +244,56 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy_AerosolCoeff( Process_ID,   &  ! Optional input
-                                      Message_Log ) &  ! Error messaging
-                                    RESULT( Error_Status )
+  FUNCTION CRTM_AerosolCoeff_Destroy( Process_ID ) RESULT( err_stat )
     ! Arguments
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Process_ID
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    INTEGER, OPTIONAL, INTENT(IN)  :: Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_AerosolCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AerosolCoeff_Destroy'
     ! Local variables
-    CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(ML) :: msg, pid_msg
 
-    ! Set up
-    Error_Status = SUCCESS
-    ! Create a process ID message tag for
-    ! WARNING and FAILURE messages
-    IF ( PRESENT(Process_ID) ) THEN
-      WRITE( Process_ID_Tag, '(";  MPI Process ID: ",i0)' ) Process_ID
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
     ELSE
-      Process_ID_Tag = ' '
+      pid_msg = ''
     END IF
 
-    ! Destroy the shared data structure
-    Error_Status = Destroy_AerosolCoeff( AeroC, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred deallocating the public AerosolCoeff structure'//&
-                            TRIM(Process_ID_Tag), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    ! Destroy the structure
+    CALL AerosolCoeff_Destroy( AeroC )
+    IF ( AerosolCoeff_Associated( AeroC ) ) THEN
+      err_stat = FAILURE
+      msg = 'Error deallocating AerosolCoeff shared data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
       RETURN
     END IF
 
-  END FUNCTION CRTM_Destroy_AerosolCoeff
+  END FUNCTION CRTM_AerosolCoeff_Destroy
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_AerosolCoeff_IsLoaded
+!
+! PURPOSE:
+!       Function to test if the AerosolCoeff scattering coefficient data has
+!       loaded into the public data structure AerosolC.
+!
+! CALLING SEQUENCE:
+!       status = CRTM_AerosolCoeff_IsLoaded()
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION CRTM_AerosolCoeff_IsLoaded() RESULT( IsLoaded )
+    LOGICAL :: IsLoaded
+    IsLoaded = AerosolCoeff_Associated( AeroC )
+  END FUNCTION CRTM_AerosolCoeff_IsLoaded
 
 END MODULE CRTM_AerosolCoeff

@@ -11,8 +11,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 23-Jun-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 23-Jun-2005
+!                       paul.vandelst@noaa.gov
 !
 !       Modified by:    Banghua Yan, 03-Oct-2007
 !                       Banghua.Yan@noaa.gov
@@ -223,7 +223,7 @@ CONTAINS
     ! --------------------------------
     ! Compute the surface emissivities
     ! --------------------------------
-    Sensor_Type: SELECT CASE( Surface%SensorData%Select_WMO_Sensor_ID )
+    Sensor_Type: SELECT CASE( Surface%SensorData%WMO_Sensor_ID )
 
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )

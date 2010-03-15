@@ -22,7 +22,7 @@ Several targets are available for specific compilers. The compilers and makefile
     \sffamily\textbf{Platform} & \sffamily\textbf{Compiler} & \sffamily\textbf{Production Target} & \sffamily\textbf{Debug Target} \\
     \hline\hline
     \multirow{6}{*}{Linux} & GNU gfortran          & \texttt{gfortran} & \texttt{gfortran\_debug}\\
-                           & Lahey lf95            & \texttt{lahey}    & \texttt{lahey\_debug}   \\
+                           & Lahey lf95$^\dagger$  & \texttt{lahey}    & \texttt{lahey\_debug}   \\
                            & Intel ifort           & \texttt{intel}    & \texttt{intel\_debug}   \\
                            & PGI pgf95             & \texttt{pgi}      & \texttt{pgi\_debug}     \\
                            & g95                   & \texttt{g95}      & \texttt{g95\_debug}     \\
@@ -45,7 +45,7 @@ The default build is performed by simply typing,
 
 \begin{verbatim}     make\end{verbatim}
 
-and is operating system sensitive in that the compiler is selected based on the platform. For example, if you build on an IBM/AIX system, the xlf95 compiler is invoked. Doing the same on a linux or MacOSX system invokes the default linux compiler; currently this is the GNU gfortran f95 compiler.
+and is operating system sensitive in that the compiler is selected based on the platform. For example, if you build on an IBM/AIX system, the xlf95 compiler is invoked. Doing the same on a linux or MacOSX system invokes the default linux compiler; currently this is the GNU gfortran\footnote{Note that for gfortran a version of 4.4 or later is required to build the CRTM library. Earlier versions (4.1,4.2,4.3) did not implement all the Fortran95+ features used in the CRTM source code.} compiler.
 
 So, if you are using a linux or MacOSX system and want to modify the \emph{default} CRTM build (different compiler, different switches), you will need to edit the \texttt{make.macros} file. At the bottom of this file, you will see the following macro definitions,
 \begin{verbatim}
@@ -66,7 +66,7 @@ Note, however, than an Intel \texttt{ifort} build can also be obtained by using 
      
 \section{Installing the library}
 %===============================
-An very simple install target is specified in the supplied makefile to put all the necessary include files (the generated \texttt{*.mod} files containing all the procedure interface information) in an \texttt{/include} subdirectory and the library itself (the generated \texttt{libCRTM.a} file) in a \texttt{/lib} subdirectory. The make command is
+A very simple install target is specified in the supplied makefile to put all the necessary include files (the generated \texttt{*.mod} files containing all the procedure interface information) in an \texttt{/include} subdirectory and the library itself (the generated \texttt{libCRTM.a} file) in a \texttt{/lib} subdirectory. The make command is
 \begin{verbatim}     make install\end{verbatim}
 The \texttt{/include} and \texttt{/lib} subdirectories can then be moved to a more suitable location on your system, for example: \texttt{\$HOME/local/CRTM}
 

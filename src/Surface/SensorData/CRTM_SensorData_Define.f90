@@ -77,17 +77,17 @@ MODULE CRTM_SensorData_Define
   ! -------------------------------
   !:tdoc+:
   TYPE :: CRTM_SensorData_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: n_Channels = 0  ! L
-    ! The WMO sensor ID of the sensor for which the data is to be used
-    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
-    ! The data sensor IDs and channels
-    CHARACTER(STRLEN), ALLOCATABLE :: Sensor_Id(:)        ! L
-    INTEGER,           ALLOCATABLE :: WMO_Satellite_ID(:) ! L
-    INTEGER,           ALLOCATABLE :: WMO_Sensor_ID(:)    ! L
-    INTEGER,           ALLOCATABLE :: Sensor_Channel(:)   ! L
-    ! The sensor brightness temperatures
-    REAL(fp), ALLOCATABLE :: Tb(:) ! L
+    ! The data sensor IDs
+    CHARACTER(STRLEN) :: Sensor_Id        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    ! The sensor channels and brightness temperatures
+    INTEGER , ALLOCATABLE :: Sensor_Channel(:)   ! L
+    REAL(fp), ALLOCATABLE :: Tb(:)               ! L
   END TYPE CRTM_SensorData_type
   !:tdoc-:
 
@@ -127,10 +127,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:      The return value is a logical value indicating the
 !                    status of the SensorData members.
-!                    .TRUE.  - if ANY of the SensorData allocatable or
-!                              pointer members are in use.
-!                    .FALSE. - if ALL of the SensorData allocatable or
-!                              pointer members are not in use.
+!                      .TRUE.  - if the array components are allocated.
+!                      .FALSE. - if the array components are not allocated.
 !                    UNITS:      N/A
 !                    TYPE:       LOGICAL
 !                    DIMENSION:  Same as input SensorData argument
@@ -139,19 +137,9 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_SensorData_Associated( SensorData ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
-    ! Function result
     LOGICAL :: Status
-
-    ! Test the structure members
-    Status = &
-      ALLOCATED(SensorData%Sensor_Id       ) .OR. &
-      ALLOCATED(SensorData%WMO_Satellite_ID) .OR. &
-      ALLOCATED(SensorData%WMO_Sensor_ID   ) .OR. &
-      ALLOCATED(SensorData%Sensor_Channel  ) .OR. &
-      ALLOCATED(SensorData%Tb              )
-
+    Status = SensorData%Is_Allocated
   END FUNCTION CRTM_SensorData_Associated
 
 
@@ -179,6 +167,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_SensorData_Destroy( SensorData )
     TYPE(CRTM_SensorData_type), INTENT(OUT) :: SensorData
+    SensorData%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_SensorData_Destroy
   
 
@@ -223,10 +212,7 @@ CONTAINS
     IF ( n_Channels < 1 ) RETURN
 
     ! Perform the allocation
-    ALLOCATE( SensorData%Sensor_Id( n_Channels ), &
-              SensorData%WMO_Satellite_ID( n_Channels ), &
-              SensorData%WMO_Sensor_ID( n_Channels ), &
-              SensorData%Sensor_Channel( n_Channels ), &
+    ALLOCATE( SensorData%Sensor_Channel( n_Channels ), &
               SensorData%Tb( n_Channels ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -235,13 +221,12 @@ CONTAINS
     ! ...Dimensions
     SensorData%n_Channels = n_Channels
     ! ...Arrays
-    SensorData%Select_WMO_Sensor_Id  = INVALID_WMO_SENSOR_ID
-    SensorData%Sensor_Id        = ' '
-    SensorData%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    SensorData%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    SensorData%Sensor_Channel   = 0
-    SensorData%Tb               = ZERO
+    SensorData%Sensor_Channel = 0
+    SensorData%Tb             = ZERO
     
+    ! Set allocation indicator
+    SensorData%Is_Allocated = .TRUE.
+
   END SUBROUTINE CRTM_SensorData_Create
 
 
@@ -345,24 +330,18 @@ CONTAINS
     ! Check data
     ! ...Change default so all entries can be checked
     IsValid = .TRUE.
-    ! ...The WMO Sensor id
-    IF ( SensorData%Select_WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
-      msg = 'Invalid Select WMO Sensor Id'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
-      IsValid = .FALSE.
-    ENDIF
     ! ...Data sensor ids
-    IF ( ANY(LEN_TRIM(SensorData%Sensor_Id) == 0) ) THEN
+    IF ( LEN_TRIM(SensorData%Sensor_Id) == 0 ) THEN
       msg = 'Invalid Sensor Id found'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     ENDIF
-    IF ( ANY(SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID) ) THEN
+    IF ( SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID ) THEN
       msg = 'Invalid WMO Satellite Id found'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     ENDIF
-    IF ( ANY(SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID) ) THEN
+    IF ( SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
       msg = 'Invalid WMO Sensor Id'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -406,15 +385,19 @@ CONTAINS
 
   SUBROUTINE CRTM_SensorData_Inspect( SensorData )
     TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
-    INTEGER :: l
-    ! Display components
-    WRITE(*, '(5x,"SensorData n_Channels:",1x,i0)') SensorData%n_Channels
-    WRITE(*, '(5x,"SensorData Select_WMO_Sensor_Id:",1x,i0)') SensorData%Select_WMO_Sensor_Id
+    WRITE(*, '(1x,"SENSORDATA OBJECT")')
+    ! Dimensions
+    WRITE(*, '(3x,"n_Channels:",1x,i0)') SensorData%n_Channels
+    ! Scalar components
+    WRITE(*, '(3x,"Sensor Id       :",1x,a)') SensorData%Sensor_Id
+    WRITE(*, '(3x,"WMO Satellite Id:",1x,i0)') SensorData%WMO_Satellite_Id
+    WRITE(*, '(3x,"WMO Sensor Id   :",1x,i0)') SensorData%WMO_Sensor_Id
     IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) RETURN
-    DO l = 1, SensorData%n_Channels
-      WRITE(*, '(5x,a," channel ",i0," Tb:",es13.6)') &
-            TRIM(SensorData%Sensor_Id(l)), SensorData%Sensor_Channel(l), SensorData%Tb(l)
-    END DO
+    ! Array components
+    WRITE(*, '(3x,"Sensor channels:")')
+    WRITE(*, '(10(1x,i5))') SensorData%Sensor_Channel
+    WRITE(*, '(3x,"Brightness temperatures:")')
+    WRITE(*, '(10(1x,es13.6))') SensorData%Tb
   END SUBROUTINE CRTM_SensorData_Inspect
 
 
@@ -506,16 +489,15 @@ CONTAINS
          (.NOT. CRTM_SensorData_Associated(y)) ) RETURN
 
     ! Check scalars
-    IF ( (x%n_Channels           /= y%n_Channels) .OR. &
-         (x%Select_WMO_Sensor_Id /= y%Select_WMO_Sensor_Id) ) RETURN
+    IF ( (x%n_Channels       /= y%n_Channels      ) .OR. &
+         (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) ) RETURN
 
     ! Check arrays
     l = x%n_Channels
-    IF ( ANY(x%Sensor_Id(1:l)        /= y%Sensor_Id(1:l)       ) .OR. &
-         ANY(x%WMO_Satellite_ID(1:l) /= y%WMO_Satellite_ID(1:l)) .OR. &
-         ANY(x%WMO_Sensor_ID(1:l)    /= y%WMO_Sensor_ID(1:l)   ) .OR. &
-         ANY(x%Sensor_Channel(1:l)   /= y%Sensor_Channel(1:l)  ) ) RETURN
-    IF ( .NOT. ALL(Compares_Within_Tolerance(x%Tb(1:l),y%Tb(1:l),n)) ) RETURN
+    IF ( ANY(x%Sensor_Channel(1:l) /= y%Sensor_Channel(1:l)) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance(x%Tb(1:l),y%Tb(1:l),n))) ) RETURN
 
     ! If we get here, the structures are comparable
     is_comparable = .TRUE.
@@ -579,14 +561,13 @@ CONTAINS
 
     ! Check contents
     ! ...Scalars
-    IF ( (x%n_Channels /= y%n_Channels) .OR. &
-         (x%Select_WMO_Sensor_Id /= y%Select_WMO_Sensor_Id) ) RETURN
+    IF ( (x%n_Channels       /= y%n_Channels      ) .OR. &
+         (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) ) RETURN
     ! ...Arrays
     n = x%n_Channels
-    IF ( ALL(x%Sensor_Id(1:n)        == y%Sensor_Id(1:n)       ) .AND. &
-         ALL(x%WMO_Satellite_ID(1:n) == y%WMO_Satellite_ID(1:n)) .AND. &
-         ALL(x%WMO_Sensor_ID(1:n)    == y%WMO_Sensor_ID(1:n)   ) .AND. &
-         ALL(x%Sensor_Channel(1:n)   == y%Sensor_Channel(1:n)  ) .AND. &
+    IF ( ALL(x%Sensor_Channel(1:n) == y%Sensor_Channel(1:n)  ) .AND. &
          ALL(x%Tb(1:n) .EqualTo. y%Tb(1:n)) ) &
       is_equal = .TRUE.
 
@@ -636,12 +617,11 @@ CONTAINS
     IF ( .NOT. CRTM_SensorData_Associated( sData1 ) .OR. &
          .NOT. CRTM_SensorData_Associated( sData2 )      ) RETURN
     ! ...If input structure for different sensors, or sizes, do nothing
-    IF ( sData1%n_Channels           /= sData2%n_Channels            .OR. &
-         sData1%Select_WMO_Sensor_Id /= sData2%Select_WMO_Sensor_Id  .OR. &
-         ANY(sData1%Sensor_Id        /= sData2%Sensor_Id       )     .OR. &
-         ANY(sData1%WMO_Satellite_ID /= sData2%WMO_Satellite_ID)     .OR. &
-         ANY(sData1%WMO_Sensor_ID    /= sData2%WMO_Sensor_ID   )     .OR. &
-         ANY(sData1%Sensor_Channel   /= sData2%Sensor_Channel  )          ) RETURN
+    IF ( sData1%n_Channels         /= sData2%n_Channels        .OR. &
+         sData1%Sensor_Id          /= sData2%Sensor_Id         .OR. &
+         sData1%WMO_Satellite_ID   /= sData2%WMO_Satellite_ID  .OR. &
+         sData1%WMO_Sensor_ID      /= sData2%WMO_Sensor_ID     .OR. &
+         ANY(sData1%Sensor_Channel /= sData2%Sensor_Channel) ) RETURN
          
     ! Copy the first structure
     sDatasum = sData1

@@ -1,5 +1,5 @@
-JCSDA CRTM v1.2.1 Build Instructions
-====================================
+JCSDA CRTM beta v2.0 Build Instructions
+=======================================
 
 $Id$
 
@@ -7,14 +7,14 @@ $Id$
 0) Several targets are available for specific compilers. The target names are:
      ibm  
      gfortran
-     sgi    (untested)  
-     sun    (untested)
-     hp     (untested)
+     sgi      (untested)  
+     sun      (untested)
+     hp       (untested)
      intel
-     lahey
-     pgi
+     lahey    (untested)
+     pgi      (untested) - earlier version of compiler fail (ICE)
      g95
-     absoft (untested)
+     absoft   (untested)
    Each target has a corresponding debug target, <name>_debug, that uses the typical
    set of compiler switches for debugging code,
      ibm_debug  
@@ -23,14 +23,18 @@ $Id$
      sun_debug      (untested)
      hp_debug       (untested)
      intel_debug
-     lahey_debug
-     pgi_debug  
+     lahey_debug    (untested)
+     pgi_debug      (untested) - earlier version of compiler fail (ICE)
      g95_debug
      absoft_debug   (untested)
    
    The actual compiler and switch definitions are listed in the "make.macros" files.
    Also note that not all of the above compilers have been tested for the current 
    release.
+   
+   Note that the CRTM v2.0 release requires the Fortran compiler to be at least
+   compatible with the ISO TR-15581 Allocatable Enhancements update to Fortran95.
+   Most current Fortran95 compilers do support TR-15581.
    
    The build is OS-sensitive in that the compiler is selected based on the platform
    you are one. For example, if you build on an IBM/AIX system, the xlf95 compiler
@@ -57,7 +61,8 @@ $Id$
      make [target]
    
    where the optional target is one listed in (0) above. Note that for some modules 
-   you will get a number of "unused dummy argument" warnings. This is normal.
+   you will get a number of "unused dummy argument" warnings. This is normal (at least,
+   until we clean up the code and remove unused argument and variables).
 
 
 2) To install the CRTM library in ./lib and ./include directories, type
@@ -68,7 +73,5 @@ $Id$
 3) That's really it. Any questions, suggestions, additions, bug reports, etc,
    let us know know at
      ncep.list.emc.jcsda_crtm@noaa.gov
-   or
-     paul.vandelst@noaa.gov
 
     

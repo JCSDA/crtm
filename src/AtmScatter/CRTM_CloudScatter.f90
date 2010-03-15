@@ -165,12 +165,11 @@ CONTAINS
 !       single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere             , &  ! Input
-!                                                 SensorIndex            , &  ! Input
-!                                                 ChannelIndex           , &  ! Input
-!                                                 CloudScatter           , &  ! Output
-!                                                 CSVariables            , &  ! Internal variable output
-!                                                 Message_Log=Message_Log  )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere  , &  ! Input
+!                                                 SensorIndex , &  ! Input
+!                                                 ChannelIndex, &  ! Input
+!                                                 CloudScatter, &  ! Output
+!                                                 CSVariables   )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
@@ -198,16 +197,6 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !        CloudScatter:   CRTM_AtmScatter structure containing the cloud particle
@@ -248,8 +237,7 @@ CONTAINS
                                       SensorIndex , &  ! Input
                                       ChannelIndex, &  ! Input
                                       CScat       , &  ! Output
-                                      CSV         , &  ! Internal variable output
-                                      Message_Log ) &  ! Error messaging
+                                      CSV         ) &  ! Internal variable output
                                     RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
@@ -257,7 +245,6 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat
     TYPE(CRTM_CSVariables_type), INTENT(OUT)    :: CSV
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
@@ -301,10 +288,7 @@ CONTAINS
           Error_Status = FAILURE
           WRITE(Message,'("The n_Legendre_Terms in CloudScatter, ",i0,", do not fit model")') &
                         CScat%n_Legendre_Terms
-          CALL Display_Message(ROUTINE_NAME, &
-                               TRIM(Message), &
-                               Error_Status, &
-                               Message_Log=Message_Log)
+          CALL Display_Message( ROUTINE_NAME,Message,Error_Status )
           RETURN
         END IF
     END SELECT
@@ -332,27 +316,25 @@ CONTAINS
         ! Call sensor specific routines
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW(CScat                              , & ! Input
-                                  Frequency_MW                       , & ! Input
-                                  Atm%Cloud(n)%Type                  , & ! Input
-                                  Atm%Cloud(n)%Effective_Radius(kc)  , & ! Input
-                                  Atm%Cloud(n)%Effective_Variance(kc), & ! Input
-                                  Atm%Temperature(kc)                , & ! Input
-                                  CSV%ke(kc,n)                       , & ! Output
-                                  CSV%w(kc,n)                        , & ! Output
-                                  CSV%pcoeff(:,:,kc,n)               , & ! Output
-                                  CSV%csi(kc,n)                        ) ! Interpolation
+            CALL Get_Cloud_Opt_MW(CScat                            , & ! Input
+                                  Frequency_MW                     , & ! Input
+                                  Atm%Cloud(n)%Type                , & ! Input
+                                  Atm%Cloud(n)%Effective_Radius(kc), & ! Input
+                                  Atm%Temperature(kc)              , & ! Input
+                                  CSV%ke(kc,n)                     , & ! Output
+                                  CSV%w(kc,n)                      , & ! Output
+                                  CSV%pcoeff(:,:,kc,n)             , & ! Output
+                                  CSV%csi(kc,n)                      ) ! Interpolation
           ! IR and visible use the same cloud optical data file, but distingished with Frequency
           CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR(CScat                              , & ! Input
-                                  Frequency_IR                       , & ! Input
-                                  Atm%Cloud(n)%Type                  , & ! Input
-                                  Atm%Cloud(n)%Effective_Radius(kc)  , & ! Input
-                                  Atm%Cloud(n)%Effective_Variance(kc), & ! Input
-                                  CSV%ke(kc,n)                       , & ! Output
-                                  CSV%w(kc,n)                        , & ! Output
-                                  CSV%pcoeff(:,:,kc,n)               , & ! Output
-                                  CSV%csi(kc,n)                        ) ! Interpolation
+            CALL Get_Cloud_Opt_IR(CScat                            , & ! Input
+                                  Frequency_IR                     , & ! Input
+                                  Atm%Cloud(n)%Type                , & ! Input
+                                  Atm%Cloud(n)%Effective_Radius(kc), & ! Input
+                                  CSV%ke(kc,n)                     , & ! Output
+                                  CSV%w(kc,n)                      , & ! Output
+                                  CSV%pcoeff(:,:,kc,n)             , & ! Output
+                                  CSV%csi(kc,n)                      ) ! Interpolation
           CASE DEFAULT
             CSV%ke(kc,n)         = ZERO
             CSV%w(kc,n)          = ZERO
@@ -433,14 +415,13 @@ CONTAINS
 !       for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere             , &  ! Input
-!                                                    CloudScatter           , &  ! Input
-!                                                    Atmosphere_TL          , &  ! Input
-!                                                    SensorIndex            , &  ! Input
-!                                                    ChannelIndex           , &  ! Input
-!                                                    CloudScatter_TL        , &  ! Output        
-!                                                    CSVariables            , &  ! Internal variable input
-!                                                    Message_Log=Message_Log  )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere     , &  ! Input
+!                                                    CloudScatter   , &  ! Input
+!                                                    Atmosphere_TL  , &  ! Input
+!                                                    SensorIndex    , &  ! Input
+!                                                    ChannelIndex   , &  ! Input
+!                                                    CloudScatter_TL, &  ! Output        
+!                                                    CSVariables      )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
@@ -493,16 +474,6 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !        CloudScatter_TL: CRTM_AtmScatter structure containing the tangent-linear
 !                         cloud particle absorption and scattering properties
@@ -535,8 +506,7 @@ CONTAINS
                                          SensorIndex , &  ! Input
                                          ChannelIndex, &  ! Input
                                          CScat_TL    , &  ! TL  Output
-                                         CSV         , &  ! Internal variable input
-                                         Message_Log ) &  ! Error messaging
+                                         CSV         ) &  ! Internal variable input
                                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
@@ -546,13 +516,11 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat_TL
     TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter'
     ! Local variables
-    CHARACTER(ML) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
@@ -600,31 +568,22 @@ CONTAINS
         ! Call sensor specific routines
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW_TL(CScat_TL                              , & ! Input
-                                     Frequency_MW                          , & ! Input
-                                     Atm%Cloud(n)%Type                     , & ! Input
-                                     Atm%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
-                                     Atm%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
-                                     Atm%Temperature(kc)                   , & ! FWD Input
-                                     Atm_TL%Cloud(n)%Effective_Radius(kc)  , & ! TL  Input
-                                     Atm_TL%Cloud(n)%Effective_Variance(kc), & ! TL  Input
-                                     Atm_TL%Temperature(kc)                , & ! TL  Input
-                                     ke_TL                                 , & ! TL  Output
-                                     w_TL                                  , & ! TL  Output
-                                     pcoeff_TL                             , & ! TL  Output
-                                     CSV%csi(kc,n)                           ) ! Interpolation
+            CALL Get_Cloud_Opt_MW_TL(CScat_TL                            , & ! Input
+                                     Atm%Cloud(n)%Type                   , & ! Input
+                                     Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
+                                     Atm_TL%Temperature(kc)              , & ! TL  Input
+                                     ke_TL                               , & ! TL  Output
+                                     w_TL                                , & ! TL  Output
+                                     pcoeff_TL                           , & ! TL  Output
+                                     CSV%csi(kc,n)                         ) ! Interpolation
           CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR_TL(CScat_TL                              , & ! Input
-                                     Frequency_IR                          , & ! Input
-                                     Atm%Cloud(n)%Type                     , & ! Input
-                                     Atm%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
-                                     Atm%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
-                                     Atm_TL%Cloud(n)%Effective_Radius(kc)  , & ! TL  Input
-                                     Atm_TL%Cloud(n)%Effective_Variance(kc), & ! TL  Input
-                                     ke_TL                                 , & ! TL  Output
-                                     w_TL                                  , & ! TL  Output
-                                     pcoeff_TL                             , & ! TL  Output
-                                     CSV%csi(kc,n)                           ) ! Interpolation
+            CALL Get_Cloud_Opt_IR_TL(CScat_TL                            , & ! Input
+                                     Atm%Cloud(n)%Type                   , & ! Input
+                                     Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
+                                     ke_TL                               , & ! TL  Output
+                                     w_TL                                , & ! TL  Output
+                                     pcoeff_TL                           , & ! TL  Output
+                                     CSV%csi(kc,n)                         ) ! Interpolation
           CASE DEFAULT
             ke_TL     = ZERO
             w_TL      = ZERO
@@ -682,14 +641,13 @@ CONTAINS
 !       scattering properties for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere             , &  ! Input   
-!                                                     CloudScatter           , &  ! Input   
-!                                                     CloudScatter_AD        , &  ! Input   
-!                                                     SensorIndex            , &  ! Input
-!                                                     ChannelIndex           , &  ! Input
-!                                                     Atmosphere_AD          , &  ! Output  
-!                                                     CSVariables            , &  ! Internal variable input
-!                                                     Message_Log=Message_Log  )  ! Error messaging 
+!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere     , &  ! Input   
+!                                                     CloudScatter   , &  ! Input   
+!                                                     CloudScatter_AD, &  ! Input   
+!                                                     SensorIndex    , &  ! Input
+!                                                     ChannelIndex   , &  ! Input
+!                                                     Atmosphere_AD  , &  ! Output  
+!                                                     CSVariables      )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
@@ -746,16 +704,6 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !       Atmosphere_AD:    CRTM Atmosphere structure containing the adjoint
 !                         atmospheric state data.
@@ -789,8 +737,7 @@ CONTAINS
                                          SensorIndex , &  ! Input
                                          ChannelIndex, &  ! Input
                                          Atm_AD      , &  ! AD  Output
-                                         CSV         , &  ! Internal variable input
-                                         Message_Log ) &  ! Error messaging
+                                         CSV         ) &  ! Internal variable input
                                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
@@ -800,13 +747,11 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Atmosphere_type) , INTENT(IN OUT) :: Atm_AD
     TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Compute_CloudScatter_AD'
     ! Local variables
-    CHARACTER(ML) :: Message
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
     INTEGER  :: Sensor_Type
@@ -910,31 +855,22 @@ CONTAINS
 
         SELECT CASE (Sensor_Type)
           CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW_AD(CScat_AD                              , & ! Input
-                                     Frequency_MW                          , & ! Input
-                                     Atm%Cloud(n)%Type                     , & ! Input
-                                     Atm%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
-                                     Atm%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
-                                     Atm%Temperature(kc)                   , & ! FWD Input
-                                     ke_AD                                 , & ! AD  Input
-                                     w_AD                                  , & ! AD  Input
-                                     pcoeff_AD                             , & ! AD  Input
-                                     Atm_AD%Cloud(n)%Effective_Radius(kc)  , & ! AD  Output
-                                     Atm_AD%Cloud(n)%Effective_Variance(kc), & ! AD  Output
-                                     Atm_AD%Temperature(kc)                , & ! AD  Output
-                                     CSV%csi(kc,n)                           ) ! Interpolation
+            CALL Get_Cloud_Opt_MW_AD(CScat_AD                            , & ! Input
+                                     Atm%Cloud(n)%Type                   , & ! Input
+                                     ke_AD                               , & ! AD  Input
+                                     w_AD                                , & ! AD  Input
+                                     pcoeff_AD                           , & ! AD  Input
+                                     Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
+                                     Atm_AD%Temperature(kc)              , & ! AD  Output
+                                     CSV%csi(kc,n)                         ) ! Interpolation
           CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR_AD(CScat_AD                              , & ! Input
-                                     Frequency_IR                          , & ! Input
-                                     Atm%Cloud(n)%Type                     , & ! Input
-                                     Atm%Cloud(n)%Effective_Radius(kc)     , & ! FWD Input
-                                     Atm%Cloud(n)%Effective_Variance(kc)   , & ! FWD Input
-                                     ke_AD                                 , & ! AD  Input
-                                     w_AD                                  , & ! AD  Input
-                                     pcoeff_AD                             , & ! AD  Input
-                                     Atm_AD%Cloud(n)%Effective_Radius(kc)  , & ! AD  Output
-                                     Atm_AD%Cloud(n)%Effective_Variance(kc), & ! AD  Output
-                                     CSV%csi(kc,n)                           ) ! Interpolation     
+            CALL Get_Cloud_Opt_IR_AD(CScat_AD                            , & ! Input
+                                     Atm%Cloud(n)%Type                   , & ! Input
+                                     ke_AD                               , & ! AD  Input
+                                     w_AD                                , & ! AD  Input
+                                     pcoeff_AD                           , & ! AD  Input
+                                     Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
+                                     CSV%csi(kc,n)                         ) ! Interpolation     
           CASE DEFAULT
             ke_AD     = ZERO
             w_AD      = ZERO
@@ -969,7 +905,6 @@ CONTAINS
                                Frequency   , &  ! Input  Frequency (cm^-1) 
                                cloud_type  , &  ! Input  see CRTM_Cloud_Define.f90
                                Reff        , &  ! Input  effective radius (mm)
-                               Reff_Var    , &  ! Input  variance of effective radius
                                ke          , &  ! Output optical depth for 1 mm water content
                                w           , &  ! Output single scattering albedo
                                pcoeff      , &  ! Output spherical Legendre coefficients
@@ -979,7 +914,6 @@ CONTAINS
     REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Cloud_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
-    REAL(fp)                  , INTENT(IN)     :: Reff_Var
     REAL(fp)                  , INTENT(OUT)    :: ke
     REAL(fp)                  , INTENT(OUT)    :: w
     REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
@@ -1043,24 +977,16 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_TL( CloudScatter_TL, &  ! Input      CloudScatter TL structure
-                                  Frequency      , &  ! Input      Frequency (cm^-1) 
                                   cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
-                                  Reff           , &  ! FWD Input  effective radius (mm)
-                                  Reff_Var       , &  ! FWD Input  variance of effective radius
                                   Reff_TL        , &  ! TL  Input  effective radius (mm)
-                                  Reff_Var_TL    , &  ! TL  Input  variance of effective radius
                                   ke_TL          , &  ! TL  Output extinction coefficient (=~ optical depth for 1 mm water content)
                                   w_TL           , &  ! TL  Output single scattering albedo
                                   pcoeff_TL      , &  ! TL  Output spherical Legendre coefficients
                                   csi              )  ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff
-    REAL(fp),                   INTENT(IN)     :: Reff_Var
     REAL(fp),                   INTENT(IN)     :: Reff_TL
-    REAL(fp),                   INTENT(IN)     :: Reff_Var_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
@@ -1149,31 +1075,22 @@ CONTAINS
   ! ---------------------------------------------
   ! Subroutine to obtain the adjoint of the
   ! IR bulk optical properties of a cloud:
-  !   effective radius (Reff_AD),
-  !   effective variance (Reff_Var_AD)
+  !   effective radius (Reff_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_AD( CloudScatter_AD, &  ! Input      CloudScatter AD structure
-                                  Frequency      , &  ! Input      Frequency (cm^-1) 
                                   cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
-                                  Reff           , &  ! FWD Input  effective radius (mm)
-                                  Reff_Var       , &  ! FWD Input  variance of effective radius
                                   ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
                                   w_AD           , &  ! AD  Input  single scattering albedo
                                   pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
                                   Reff_AD        , &  ! AD  Output effective radius (mm)
-                                  Reff_Var_AD    , &  ! AD  Output variance of effective radius
                                   csi              )  ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff
-    REAL(fp),                   INTENT(IN)     :: Reff_Var
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: Reff_AD         ! AD  Output
-    REAL(fp),                   INTENT(IN OUT) :: Reff_Var_AD     ! AD  Output
     TYPE(CSinterp_type),        INTENT(IN)     :: csi
     ! Local variables
     INTEGER  :: k, l
@@ -1190,7 +1107,6 @@ CONTAINS
     ! are outside LUT bounds
     IF ( csi%f_outbound .AND. csi%r_outbound ) THEN
       Reff_AD     = ZERO
-      Reff_Var_AD = ZERO
       ke_AD     = ZERO
       w_AD      = ZERO
       pcoeff_AD = ZERO
@@ -1259,7 +1175,6 @@ CONTAINS
     
     ! The AD outputs
     ! --------------
-    Reff_Var_AD = ZERO
     Reff_AD = Reff_AD + r_int_AD
     
   END SUBROUTINE Get_Cloud_Opt_IR_AD
@@ -1277,7 +1192,6 @@ CONTAINS
                                Frequency   , &  ! Input  Frequency (GHz) 
                                cloud_type  , &  ! Input  see CRTM_Cloud_Define.f90
                                Reff        , &  ! Input  effective radius (mm)
-                               Reff_Var    , &  ! Input  variance of effective radius
                                Temperature , &  ! Input  cloudy temperature
                                ke          , &  ! Input optical depth for 1 mm water content
                                w           , &  ! Input single scattering albedo
@@ -1288,7 +1202,6 @@ CONTAINS
     REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Cloud_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
-    REAL(fp)                  , INTENT(IN)     :: Reff_Var
     REAL(fp)                  , INTENT(IN)     :: Temperature
     REAL(fp)                  , INTENT(OUT)    :: ke
     REAL(fp)                  , INTENT(OUT)    :: w
@@ -1396,13 +1309,8 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW_TL( CloudScatter_TL, &  ! Input  CloudScatter TL structure
-                                  Frequency      , &  ! Input  frequency in GHz 
                                   cloud_type     , &  ! Input  see CRTM_Cloud_Define.f90
-                                  Reff           , &  ! FWD Input  effective radius (mm)
-                                  Reff_Var       , &  ! FWD Input  variance of effective radius
-                                  Temperature    , &  ! FWD Input  cloudy temperature
                                   Reff_TL        , &  ! TL  Input  effective radius (mm)
-                                  Reff_Var_TL    , &  ! TL  Input  variance of effective radius
                                   Temperature_TL , &  ! TL  Input  cloudy temperature
                                   ke_TL          , &  ! TL  Output extinction coefficient (=~ optical depth for 1 mm water content)
                                   w_TL           , &  ! TL  Output single scattering albedo
@@ -1410,13 +1318,8 @@ CONTAINS
                                   csi              )  ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff
-    REAL(fp),                   INTENT(IN)     :: Reff_Var
-    REAL(fp),                   INTENT(IN)     :: Temperature
     REAL(fp),                   INTENT(IN)     :: Reff_TL
-    REAL(fp),                   INTENT(IN)     :: Reff_Var_TL
     REAL(fp),                   INTENT(IN)     :: Temperature_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
@@ -1572,34 +1475,23 @@ CONTAINS
   ! Subroutine to obtain the adjoint of the
   ! MW bulk optical properties of a cloud:
   !   effective radius (Reff_AD),
-  !   effective variance (Reff_Var_AD)
   !   temperature (temperature_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW_AD(CloudScatter_AD, &  ! Input      CloudScatter AD structure
-                                 Frequency      , &  ! Input      frequency in GHz          
                                  cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90 
-                                 Reff           , &  ! FWD Input  effective radius (mm)
-                                 Reff_Var       , &  ! FWD Input  variance of effective radius
-                                 Temperature    , &  ! FWD Input  cloudy temperature
                                  ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
                                  w_AD           , &  ! AD  Input  single scattering albedo
                                  pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
                                  Reff_AD        , &  ! AD  Output effective radius (mm)
-                                 Reff_Var_AD    , &  ! AD  Output variance of effective radius
                                  Temperature_AD , &  ! AD  Output temperature
                                  csi              ) ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff
-    REAL(fp),                   INTENT(IN)     :: Reff_Var
-    REAL(fp),                   INTENT(IN)     :: Temperature
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: Reff_AD         ! AD  Output
-    REAL(fp),                   INTENT(IN OUT) :: Reff_Var_AD     ! AD  Output
     REAL(fp),                   INTENT(IN OUT) :: Temperature_AD  ! AD  Output
     TYPE(CSinterp_type),        INTENT(IN)     :: csi
     ! Local variables
@@ -1614,8 +1506,6 @@ CONTAINS
 
     ! Setup
     ! -----
-    ! Effective variance isn't used yet
-    Reff_Var_AD = ZERO
     ! Initialise local adjoint variables
     f_int_AD = ZERO
     f_AD     = ZERO

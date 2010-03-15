@@ -14,12 +14,10 @@ The derived data type, or structure\footnote{The terms ``derived type'' and ``st
 
 where \textit{name} is an identifier that indicates for what a structure is to be used. All structure type names are suffixed with ``\f{\_type}'' and CRTM-specific structure types are prefixed with ``\f{CRTM\_}''. Some examples are,
 \begin{alltt}
-  SpcCoeff_type
   \hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}
   \hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}\end{alltt}
 An instance of a structure is then referred to via its \textit{name}, or some sort of derivate of its \textit{name}. Some structure declarations examples are,
 \begin{alltt}
-  TYPE(SpcCoeff_type)        :: SpcCoeff
   TYPE(\hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}) :: atm, atm_K
   TYPE(\hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}) :: rts, rts_K\end{alltt}
 where the K-matrix structure variables are identified with a ``\f{\_K}'' suffix. Similarly, tangent-linear and adjoint variables are suffixed with ``\f{\_TL}'' or ``\f{\_AD}'' respectively.
@@ -32,7 +30,6 @@ Modules containing structure type definitions are termed \textit{definition modu
 
 where, as with the structure type names, all definition module names are suffixed with ``\f{\_Define}'' and CRTM-specific definition modules are prefixed with ``\f{CRTM\_}''. Some examples are,
 \begin{alltt}
-  SpcCoeff_Define
   CRTM_Atmosphere_Define
   CRTM_RTSolution_Define\end{alltt}
 The actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
@@ -60,19 +57,17 @@ Modules containing routines that read and write data from and to files are, natu
 
 \hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Binary\_IO}
 
-or
+or just
 
-\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_netCDF\_IO}
+\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_IO}
 
 Some examples are,
 \begin{alltt}
-  SpcCoeff_Binary_IO
-  SpcCoeff_netCDF_IO
-  CRTM_Atmosphere_Binary_IO
-  CRTM_RTSolution_Binary_IO\end{alltt}
+  CRTM_Atmosphere_IO
+  CRTM_RTSolution_IO\end{alltt}
 As with the other module types, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
 
-In the context of the CRTM, the term ``Binary'' is a euphemisn for sequential, unformatted I/O in Fortran. Additionally, since some data structure constructions are not naturally amenable to fixed length data records (at least, not without significant wastage of space), not all data structures used in the CRTM have both netCDF and Binary I/O modules.
+In the context of the CRTM, the term ``Binary'' is a euphemisn for sequential, unformatted I/O in Fortran.
 
 
 \section{Components}
@@ -97,7 +92,7 @@ The CRTM utilises separate models for each gross surface type for each spectral 
 
 \subsection{Radiative Transfer Solution}
 %---------------------------------------
-(\RTSolution) This category takes the \AtmOptics{} and \SfcOptics{} data and solves the radiative transfer problem either clear or scattering atmospheres.
+(\RTSolution) This category takes the \AtmOptics{} and \SfcOptics{} data and solves the radiative transfer problem in either clear or scattering atmospheres.
 
 
 \section{Models}

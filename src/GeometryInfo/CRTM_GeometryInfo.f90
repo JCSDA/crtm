@@ -25,7 +25,8 @@ MODULE CRTM_GeometryInfo
                              TWOPI           , &
                              EARTH_RADIUS    , &
                              SATELLITE_HEIGHT, &
-                             DEGREES_TO_RADIANS
+                             DEGREES_TO_RADIANS, &
+                             MAX_TRANS_ZENITH_ANGLE
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_Geometry_type    , &
                                       CRTM_GeometryInfo_type, &
                                       CRTM_GeometryInfo_IsValid
@@ -109,6 +110,16 @@ CONTAINS
     gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Sensor_Zenith_Angle
     gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Sensor_Azimuth_Angle
     gInfo%Secant_Sensor_Zenith  = ONE / COS(gInfo%Sensor_Zenith_Radian)
+    ! ... Check user zenith angle. If it is larger than the transmittance algorithms' limit
+    !     then use the limiting value in the algorithms.  The optical depths will be scalled 
+    !     back to the those at the user zenith angle.
+    IF( gInfo%user%Sensor_Zenith_Angle > MAX_TRANS_ZENITH_ANGLE )THEN
+      gInfo%Trans_Zenith_Radian = DEGREES_TO_RADIANS * MAX_TRANS_ZENITH_ANGLE
+      gInfo%Secant_Trans_Zenith = ONE / COS(gInfo%Trans_Zenith_Radian)
+    ELSE
+      gInfo%Trans_Zenith_Radian = gInfo%Sensor_Zenith_Radian
+      gInfo%Secant_Trans_Zenith = gInfo%Secant_Sensor_Zenith
+    END IF
     ! ...Distance ratio, but only if zenith angle is large enough
     IF ( ABS(gInfo%user%Sensor_Zenith_Angle) > ONE ) THEN
       gInfo%Distance_Ratio = ABS(SIN(gInfo%Sensor_Scan_Radian)/SIN(gInfo%Sensor_Zenith_Radian))

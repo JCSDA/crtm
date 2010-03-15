@@ -17,7 +17,8 @@ MODULE CRTM_Atmosphere_Define
   ! -----------------
   ! Module use
   USE Type_Kinds           , ONLY: fp
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                                   Display_Message
   USE Compare_Float_Numbers, ONLY: DEFAULT_N_SIGFIG, &
                                    OPERATOR(.EqualTo.), &
                                    Compares_Within_Tolerance
@@ -315,6 +316,8 @@ MODULE CRTM_Atmosphere_Define
   ! -------------------------------
   !:tdoc+:
   TYPE :: CRTM_Atmosphere_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: Max_Layers   = 0  ! K dimension
     INTEGER :: n_Layers     = 0  ! Kuse dimension
@@ -378,10 +381,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:    The return value is a logical value indicating the
 !                  status of the Atmosphere members.
-!                  .TRUE.  - if ANY of the allocatable or
-!                            pointer members are in use.
-!                  .FALSE. - if ALL of the allocatable or
-!                            pointer members are not in use.
+!                    .TRUE.  - if the array components are allocated.
+!                    .FALSE. - if the array components are not allocated.
 !                  UNITS:      N/A
 !                  TYPE:       LOGICAL
 !                  DIMENSION:  Same as input
@@ -395,16 +396,7 @@ CONTAINS
     ! Function result
     LOGICAL :: Status
 
-    ! Test the structure members
-    Status = &
-      ALLOCATED(Atm%Absorber_ID   ) .OR. &
-      ALLOCATED(Atm%Absorber_Units) .OR. &
-      ALLOCATED(Atm%Level_Pressure) .OR. &
-      ALLOCATED(Atm%Pressure      ) .OR. &
-      ALLOCATED(Atm%Temperature   ) .OR. &
-      ALLOCATED(Atm%Absorber      )
-
-    ! Test the substructures
+    Status = Atm%Is_Allocated
     ! ...Clouds
     IF ( Atm%n_Clouds > 0 .AND. ALLOCATED(Atm%Cloud) ) &
       Status = Status .OR. ALL(CRTM_Cloud_Associated(Atm%Cloud))
@@ -439,6 +431,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Atmosphere_Destroy( Atm )
     TYPE(CRTM_Atmosphere_type), INTENT(OUT) :: Atm
+    Atm%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_Atmosphere_Destroy
   
 
@@ -567,6 +560,9 @@ CONTAINS
     Atm%Pressure       = ZERO
     Atm%Temperature    = ZERO
     Atm%Absorber       = ZERO
+
+    ! Set allocation indicator
+    Atm%Is_Allocated = .TRUE.
 
   END SUBROUTINE CRTM_Atmosphere_Create
 
@@ -760,19 +756,19 @@ CONTAINS
     ! ...Check if structure is used
     IF ( .NOT. CRTM_Atmosphere_Associated(Atm) ) THEN
       msg = 'Atmosphere structure not allocated'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     IF ( Atm%n_Layers < 1 .OR. Atm%n_Absorbers < 1 ) THEN
       msg = 'Atmosphere structure dimensions invalid'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     IF ( Atm%n_Layers > MAX_N_LAYERS ) THEN
       WRITE(msg,'("No. of atmosphere structure layers [",i0,"(added:",i0,&
             &")] is larger than maximum allowed [",i0,"]")') &
             Atm%n_Layers, Atm%n_Added_Layers, MAX_N_LAYERS
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     
@@ -782,49 +778,51 @@ CONTAINS
     ! ...The type of Atmosphere
     IF ( Atm%Climatology < 1 .OR. Atm%Climatology > N_VALID_CLIMATOLOGY_MODELS ) THEN
       msg = 'Invalid climatology'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
-    ! ...The absorber info
+    ! ...The absorber id range
     IF ( ANY(Atm%Absorber_ID < 1) .OR. ANY(Atm%Absorber_ID > N_VALID_ABSORBER_IDS) ) THEN
       msg = 'Invalid absorber ID'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
+    ! ...H2O *must* be specfied
     IF ( .NOT. Absorber_Id_IsPresent(H2O_ID) ) THEN
-      msg = ABSORBER_ID_NAME(O3_ID)//' absorber profile must be specified'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      msg = TRIM(ABSORBER_ID_NAME(H2O_ID))//' absorber profile must be specified'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
+    ! ...O3 *may* be specfied. A warning is issued if it is not.
     IF ( .NOT. Absorber_Id_IsPresent(O3_ID) ) THEN
-      msg = ABSORBER_ID_NAME(O3_ID)//' absorber profile must be specified'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
-      IsValid = .FALSE.
+      msg = TRIM(ABSORBER_ID_NAME(O3_ID))//' absorber profile must be specified for infrared sensors'
+      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
     ENDIF
+    ! ...The absorber units range
     IF ( ANY(Atm%Absorber_Units < 1) .OR. ANY(Atm%Absorber_Units > N_VALID_ABSORBER_UNITS) ) THEN
       msg = 'Invalid absorber ID'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     ! ...Data limits. Only checking negative values
     IF ( ANY(Atm%Level_Pressure < ZERO ) ) THEN
       msg = 'Negative level pressure found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( ANY(Atm%Pressure < ZERO ) ) THEN
       msg = 'Negative layer pressure found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( ANY(Atm%Temperature < ZERO ) ) THEN
       msg = 'Negative layer temperature found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( ANY(Atm%Absorber < ZERO ) ) THEN
       msg = 'Negative level absorber found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     ! ...Structure components
@@ -1418,8 +1416,7 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: atm1, atm2
     TYPE(CRTM_Atmosphere_type) :: atmsum
     ! Variables
-    INTEGER :: j, k
-    INTEGER :: nc, na
+    INTEGER :: i, j, k
 
     ! Check input
     ! ...If input structures not used, do nothing
@@ -1448,13 +1445,15 @@ CONTAINS
     atmsum%Absorber(1:k,1:j)   = atmsum%Absorber(1:k,1:j)   + atm2%Absorber(1:k,1:j)
     ! ...Cloud component
     IF ( atm1%n_Clouds > 0 ) THEN
-      nc = atm1%n_Clouds
-      atmsum%Cloud(1:nc) = atmsum%Cloud(1:nc) + atm2%Cloud(1:nc)
+      DO i = 1, atm1%n_Clouds
+        atmsum%Cloud(i) = atmsum%Cloud(i) + atm2%Cloud(i)
+      END DO
     END IF
     ! ...Aerosol component
     IF ( atm1%n_Aerosols > 0 ) THEN
-      na = atm1%n_Aerosols
-      atmsum%Aerosol(1:na) = atmsum%Aerosol(1:na) + atm2%Aerosol(1:na)
+      DO i = 1, atm1%n_Aerosols
+        atmsum%Aerosol(i) = atmsum%Aerosol(i) + atm2%Aerosol(i)
+      END DO
     END IF
 
   END FUNCTION CRTM_Atmosphere_Add

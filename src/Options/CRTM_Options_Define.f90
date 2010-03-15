@@ -73,10 +73,10 @@ MODULE CRTM_Options_Define
   ! ----------------------------
   !:tdoc+:
   TYPE :: CRTM_Options_type
-
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Input checking on by default
     LOGICAL :: Check_Input = .TRUE.
-    
     ! User defined emissivity/reflectivity
     ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
@@ -88,16 +88,12 @@ MODULE CRTM_Options_Define
     ! ...Direct reflectivity optional arguments
     LOGICAL :: Use_Direct_Reflectivity = .FALSE.
     REAL(fp), ALLOCATABLE :: Direct_Reflectivity(:) ! L
-    
     ! Antenna correction application
     LOGICAL :: Use_Antenna_Correction = .FALSE.
-
     ! SSU instrument input
     TYPE(SSU_Input_type) :: SSU
-
     ! Zeeman-splitting input
     TYPE(Zeeman_Input_type) :: Zeeman
-
   END TYPE CRTM_Options_type
   !:tdoc-:
 
@@ -137,10 +133,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:       The return value is a logical value indicating the
 !                     status of the Options members.
-!                     .TRUE.  - if ANY of the Options allocatable or
-!                               pointer members are in use.
-!                     .FALSE. - if ALL of the Options allocatable or
-!                               pointer members are not in use.
+!                       .TRUE.  - if the array components are allocated.
+!                       .FALSE. - if the array components are not allocated.
 !                     UNITS:      N/A
 !                     TYPE:       LOGICAL
 !                     DIMENSION:  Same as input Options argument
@@ -149,16 +143,9 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_Options_Associated( Options ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_Options_type), INTENT(IN) :: Options
-    ! Function result
     LOGICAL :: Status
-
-    ! Test the structure members
-    Status = &
-      ALLOCATED(Options%Emissivity ) .OR. &
-      ALLOCATED(Options%Direct_Reflectivity)
-
+    Status = Options%Is_Allocated
   END FUNCTION CRTM_Options_Associated
 
 
@@ -186,14 +173,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Options_Destroy( Options )
     TYPE(CRTM_Options_type), INTENT(OUT) :: Options
-    TYPE(CRTM_Options_type) :: dummy
-    Options%n_Channels              = dummy%n_Channels
-    Options%Channel                 = dummy%Channel
-    Options%Use_Emissivity          = dummy%Use_Emissivity
-    Options%Use_Direct_Reflectivity = dummy%Use_Direct_Reflectivity
-    Options%Use_Antenna_Correction  = dummy%Use_Antenna_Correction
-    Options%SSU                     = dummy%SSU
-    Options%Zeeman                  = dummy%Zeeman
+    Options%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_Options_Destroy
   
 
@@ -252,6 +232,9 @@ CONTAINS
     Options%Emissivity = ZERO
     Options%Direct_Reflectivity = ZERO
     
+    ! Set allocation indicator
+    Options%Is_Allocated = .TRUE.
+
   END SUBROUTINE CRTM_Options_Create
 
 
@@ -313,14 +296,14 @@ CONTAINS
         RETURN
       ENDIF
       IF ( opt%Use_Emissivity ) THEN
-        IF ( ANY(opt%Emissivity < ZERO) .OR. ANY(opt%Emissivity < ONE) ) THEN
+        IF ( ANY(opt%Emissivity < ZERO) .OR. ANY(opt%Emissivity > ONE) ) THEN
           msg = 'Invalid emissivity'
           CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
           IsValid = .FALSE.
         END IF
       END IF
       IF ( opt%Use_Direct_Reflectivity ) THEN
-        IF ( ANY(opt%Direct_Reflectivity < ZERO) .OR. ANY(opt%Direct_Reflectivity < ONE) ) THEN
+        IF ( ANY(opt%Direct_Reflectivity < ZERO) .OR. ANY(opt%Direct_Reflectivity > ONE) ) THEN
           msg = 'Invalid direct reflectivity'
           CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
           IsValid = .FALSE.

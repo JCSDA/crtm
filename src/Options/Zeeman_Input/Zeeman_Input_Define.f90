@@ -71,19 +71,9 @@ MODULE Zeeman_Input_Define
     ! Cosine of the angle between the Earth
     ! magnetic field and wave propagation direction                     
     REAL(fp) :: Cos_ThetaB = ZERO
-    ! cosine of the azimuth angle of the Be vector in the
-    ! (v, h, k) coordinates system, where v, h and k comprise                       
-    ! a right-hand orthogonal system, similar to the (x, y, z)                      
-    ! Catesian coordinates. The h vector is normal to the                           
-    ! plane containing the k and z vectors, where k points                          
-    ! to the wave propagation direction and z points                                
-    ! to the zenith. h = (z cross k)/|z cross k|. The                               
-    ! azimuth angle is the angle on the (v, h) plane                                
-    ! from the positive v axis to the projected line of the                         
-    ! Be vector on this plane, positive counterclockwise.                           
+    ! Cosine of the azimuth angle of the Be vector.
     REAL(fp) :: Cos_PhiB = ZERO
-    ! Doppler frequency shift caused by Earth-rotation in KHz
-    ! (positive towards sensor). A zero value means no frequency shift.
+    ! Doppler frequency shift caused by Earth-rotation.
     REAL(fp) :: Doppler_Shift = ZERO 
   END TYPE Zeeman_Input_type
   !:tdoc-:

@@ -88,6 +88,10 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Sensor_Zenith_Radian  = ZERO
     REAL(fp) :: Sensor_Azimuth_Radian = ZERO
     REAL(fp) :: Secant_Sensor_Zenith  = ZERO
+    ! .... Zenith angle used in the transmittance algorithms 
+    REAL(fp) :: Trans_Zenith_Radian  = ZERO
+    REAL(fp) :: Secant_Trans_Zenith  = ZERO
+    
     ! ...Source angle information
     REAL(fp) :: Source_Zenith_Radian  = ZERO
     REAL(fp) :: Source_Azimuth_Radian = ZERO
@@ -175,6 +179,8 @@ CONTAINS
 !                                        Secant_Source_Zenith  = Secant_Source_Zenith , &
 !                                        Flux_Zenith_Radian    = Flux_Zenith_Radian   , &
 !                                        Secant_Flux_Zenith    = Secant_Flux_Zenith   , &
+!                                        Trans_Zenith_Radian   = Trans_Zenith_Radian  , &
+!                                        Secant_Trans_Zenith   = Secant_Trans_Zenith  , &
 !                                        AU_ratio2             = AU_ratio2              )
 !
 ! OBJECTS:
@@ -226,6 +232,8 @@ CONTAINS
     Secant_Source_Zenith , &  ! Optional input
     Flux_Zenith_Radian   , &  ! Optional input
     Secant_Flux_Zenith   , &  ! Optional input
+    Trans_Zenith_Radian  , &  ! Optional input
+    Secant_Trans_Zenith  , &  ! Optional input
     AU_ratio2              )  ! Optional input
     ! Arguments
     TYPE(CRTM_GeometryInfo_type),       INTENT(IN OUT) :: gInfo
@@ -253,6 +261,8 @@ CONTAINS
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Secant_Source_Zenith 
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Flux_Zenith_Radian   
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Secant_Flux_Zenith   
+    REAL(fp),                 OPTIONAL, INTENT(IN)     :: Trans_Zenith_Radian   
+    REAL(fp),                 OPTIONAL, INTENT(IN)     :: Secant_Trans_Zenith   
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: AU_ratio2   
     
     ! Get values
@@ -282,6 +292,8 @@ CONTAINS
     IF ( PRESENT(Secant_Source_Zenith ) ) gInfo%Secant_Source_Zenith  = Secant_Source_Zenith 
     IF ( PRESENT(Flux_Zenith_Radian   ) ) gInfo%Flux_Zenith_Radian    = Flux_Zenith_Radian   
     IF ( PRESENT(Secant_Flux_Zenith   ) ) gInfo%Secant_Flux_Zenith    = Secant_Flux_Zenith   
+    IF ( PRESENT(Trans_Zenith_Radian  ) ) gInfo%Trans_Zenith_Radian   = Trans_Zenith_Radian   
+    IF ( PRESENT(Secant_Trans_Zenith  ) ) gInfo%Secant_Trans_Zenith   = Secant_Trans_Zenith   
     IF ( PRESENT(AU_ratio2            ) ) gInfo%AU_ratio2             = AU_ratio2   
   
   END SUBROUTINE CRTM_GeometryInfo_SetValue
@@ -323,8 +335,9 @@ CONTAINS
 !                                        Secant_Source_Zenith  = Secant_Source_Zenith , &
 !                                        Flux_Zenith_Radian    = Flux_Zenith_Radian   , &
 !                                        Secant_Flux_Zenith    = Secant_Flux_Zenith   , &
+!                                        Trans_Zenith_Radian   = Trans_Zenith_Radian  , &
+!                                        Secant_Trans_Zenith   = Secant_Trans_Zenith  , &
 !                                        AU_ratio2             = AU_ratio2              )
-!
 ! OBJECTS:
 !       gInfo:                Geometry object from which component values
 !                             are to be retrieved.
@@ -371,6 +384,8 @@ CONTAINS
     Secant_Source_Zenith , &  ! Optional output
     Flux_Zenith_Radian   , &  ! Optional output
     Secant_Flux_Zenith   , &  ! Optional output
+    Trans_Zenith_Radian  , &  ! Optional output
+    Secant_Trans_Zenith  , &  ! Optional output
     AU_ratio2              )  ! Optional output
     ! Arguments
     TYPE(CRTM_GeometryInfo_type),       INTENT(IN)  :: gInfo
@@ -398,6 +413,8 @@ CONTAINS
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Source_Zenith 
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Flux_Zenith_Radian   
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Flux_Zenith   
+    REAL(fp),                 OPTIONAL, INTENT(OUT) :: Trans_Zenith_Radian   
+    REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Trans_Zenith   
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: AU_ratio2   
     
     ! Get values
@@ -427,6 +444,8 @@ CONTAINS
     IF ( PRESENT(Secant_Source_Zenith ) ) Secant_Source_Zenith  = gInfo%Secant_Source_Zenith 
     IF ( PRESENT(Flux_Zenith_Radian   ) ) Flux_Zenith_Radian    = gInfo%Flux_Zenith_Radian   
     IF ( PRESENT(Secant_Flux_Zenith   ) ) Secant_Flux_Zenith    = gInfo%Secant_Flux_Zenith   
+    IF ( PRESENT(Trans_Zenith_Radian  ) ) Trans_Zenith_Radian   = gInfo%Trans_Zenith_Radian   
+    IF ( PRESENT(Secant_Trans_Zenith  ) ) Secant_Trans_Zenith   = gInfo%Secant_Trans_Zenith   
     IF ( PRESENT(AU_ratio2            ) ) AU_ratio2             = gInfo%AU_ratio2   
   
   END SUBROUTINE CRTM_GeometryInfo_GetValue

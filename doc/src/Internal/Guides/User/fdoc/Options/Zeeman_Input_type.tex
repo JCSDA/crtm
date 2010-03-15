@@ -1,0 +1,23 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: Zeeman_Input_type
+    PRIVATE
+    ! Earth magnetic field strength in Gauss
+    REAL(fp) :: Be = DEFAULT_MAGENTIC_FIELD
+    ! Cosine of the angle between the Earth
+    ! magnetic field and wave propagation direction                     
+    REAL(fp) :: Cos_ThetaB = ZERO
+    ! Cosine of the azimuth angle of the Be vector.
+    REAL(fp) :: Cos_PhiB = ZERO
+    ! Doppler frequency shift caused by Earth-rotation.
+    REAL(fp) :: Doppler_Shift = ZERO 
+  END TYPE Zeeman_Input_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{Zeeman\_Input\_type structure definition.}
+  \label{fig:Zeeman_Input_type_structure}
+\end{figure}

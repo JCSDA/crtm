@@ -17,18 +17,19 @@ MODULE CloudCoeff_netCDF_IO
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds       , ONLY: Long, Double
-  USE Message_Handler  , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
-                               Display_Message
-  USE CloudCoeff_Define, ONLY: CloudCoeff_type, &
-                               Associated_CloudCoeff, &
-                               Destroy_CloudCoeff, &
-                               Allocate_CloudCoeff, &
-                               Check_CloudCoeff_Release, &
-                               Info_CloudCoeff
+  USE Type_Kinds       , ONLY: Double
+  USE Message_Handler  , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE File_Utility     , ONLY: File_Exists
+  USE String_Utility   , ONLY: StrClean
+  USE CloudCoeff_Define, ONLY: CloudCoeff_type         , &
+                               CloudCoeff_Associated   , &
+                               CloudCoeff_Destroy      , &
+                               CloudCoeff_Create       , &
+                               CloudCoeff_Inspect      , &
+                               CloudCoeff_ValidRelease , &
+                               CloudCoeff_Info         , &
+                               CloudCoeff_DefineVersion
   USE netcdf
-  USE netCDF_Utility   ,  Open_CloudCoeff_netCDF =>  Open_netCDF, &
-                         Close_CloudCoeff_netCDF => Close_netCDF
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -36,25 +37,32 @@ MODULE CloudCoeff_netCDF_IO
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
-  PUBLIC :: Inquire_CloudCoeff_netCDF
-  PUBLIC :: Write_CloudCoeff_netCDF
-  PUBLIC :: Read_CloudCoeff_netCDF
+  ! Procedures
+  PUBLIC :: CloudCoeff_netCDF_InquireFile
+  PUBLIC :: CloudCoeff_netCDF_ReadFile
+  PUBLIC :: CloudCoeff_netCDF_WriteFile
+  PUBLIC :: CloudCoeff_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Module version
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
+  ! Default msg string length
+  INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
 
   ! Global attribute names. Case sensitive
-  CHARACTER(*), PARAMETER :: TITLE_GATTNAME   = 'title' 
-  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME = 'history' 
-  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME = 'comment' 
+  CHARACTER(*), PARAMETER :: RELEASE_GATTNAME = 'Release'
+  CHARACTER(*), PARAMETER :: VERSION_GATTNAME = 'Version'
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME   = 'Title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME = 'History' 
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME = 'Comment' 
 
   ! Dimension names
   CHARACTER(*), PARAMETER :: MW_FREQ_DIMNAME     = 'n_MW_Frequencies'
@@ -68,9 +76,6 @@ MODULE CloudCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: PHASE_DIMNAME       = 'n_Phase_Elements'
 
   ! Variable names
-  CHARACTER(*), PARAMETER :: RELEASE_VARNAME = 'Release'
-  CHARACTER(*), PARAMETER :: VERSION_VARNAME = 'Version'
-
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_VARNAME = 'Frequency_MW'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_VARNAME = 'Frequency_IR'
   CHARACTER(*), PARAMETER :: REFF_MW_VARNAME      = 'Reff_MW'
@@ -96,9 +101,6 @@ MODULE CloudCoeff_netCDF_IO
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
-  CHARACTER(*), PARAMETER :: RELEASE_LONGNAME = 'File Release'
-  CHARACTER(*), PARAMETER :: VERSION_LONGNAME = 'Data Version'
-
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_LONGNAME = 'Frequency'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_LONGNAME = 'Frequency'
   CHARACTER(*), PARAMETER :: REFF_MW_LONGNAME      = 'Effective radius'
@@ -123,9 +125,6 @@ MODULE CloudCoeff_netCDF_IO
   
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
-
-  CHARACTER(*), PARAMETER :: RELEASE_DESCRIPTION = 'Release indicates structure and file format changes'
-  CHARACTER(*), PARAMETER :: VERSION_DESCRIPTION = 'Version indicates data changes'
 
   CHARACTER(*), PARAMETER :: FREQUENCY_MW_DESCRIPTION = 'Microwave frequency LUT dimension vector'
   CHARACTER(*), PARAMETER :: FREQUENCY_IR_DESCRIPTION = 'Infrared frequency LUT dimension vector'
@@ -182,14 +181,30 @@ MODULE CloudCoeff_netCDF_IO
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
   
-  INTEGER(Long), PARAMETER :: IP_FILLVALUE = -1_Long
-  REAL(Double) , PARAMETER :: FP_FILLVALUE = ZERO
+  REAL(Double), PARAMETER :: FREQUENCY_MW_FILLVALUE = ZERO
+  REAL(Double), PARAMETER :: FREQUENCY_IR_FILLVALUE = ZERO
+  REAL(Double), PARAMETER :: REFF_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: REFF_IR_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: TEMPERATURE_FILLVALUE  = ZERO
+  REAL(Double), PARAMETER :: DENSITY_FILLVALUE      = ZERO
+
+  REAL(Double), PARAMETER :: KE_L_MW_FILLVALUE     = ZERO
+  REAL(Double), PARAMETER :: W_L_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: G_L_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: PCOEFF_L_MW_FILLVALUE = ZERO
+
+  REAL(Double), PARAMETER :: KE_S_MW_FILLVALUE     = ZERO
+  REAL(Double), PARAMETER :: W_S_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: G_S_MW_FILLVALUE      = ZERO
+  REAL(Double), PARAMETER :: PCOEFF_S_MW_FILLVALUE = ZERO
+
+  REAL(Double), PARAMETER :: KE_IR_FILLVALUE       = ZERO
+  REAL(Double), PARAMETER :: W_IR_FILLVALUE        = ZERO
+  REAL(Double), PARAMETER :: G_IR_FILLVALUE        = ZERO
+  REAL(Double), PARAMETER :: PCOEFF_IR_FILLVALUE   = ZERO
 
 
   ! Variable types
-  INTEGER, PARAMETER :: RELEASE_TYPE = NF90_INT
-  INTEGER, PARAMETER :: VERSION_TYPE = NF90_INT
-
   INTEGER, PARAMETER :: FREQUENCY_MW_TYPE = NF90_DOUBLE
   INTEGER, PARAMETER :: FREQUENCY_IR_TYPE = NF90_DOUBLE
   INTEGER, PARAMETER :: REFF_MW_TYPE      = NF90_DOUBLE
@@ -216,996 +231,6 @@ MODULE CloudCoeff_netCDF_IO
 CONTAINS
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Write_CloudCoeff_GAtts
-!
-! PURPOSE:
-!       Function to write the global attributes to a netCDF CloudCoeff
-!       data file.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Write_CloudCoeff_GAtts( NC_Filename            , &  ! Input
-!                                              NC_FileID              , &  ! Input
-!                                              Title      =Title      , &  ! Optional input
-!                                              History    =History    , &  ! Optional input
-!                                              Comment    =Comment    , &  ! Optional input
-!                                              Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF CloudCoeff format data file to create.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       NC_FileID:        NetCDF file ID number returned from the
-!                         Open_CloudCoeff_netCDF() function.
-!                         UNITS:      N/A
-!                         TYPE:       Integer
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which
-!                         any messages will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output messages to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the Message_Handler module.
-!                         If == SUCCESS the global attribute write was successful.
-!                            == FAILURE an error occurred writing the supplied
-!                               global attributes.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Write_CloudCoeff_GAtts( NC_Filename  , &  ! Input
-                                   NC_FileID    , &  ! Input
-                                   Title        , &  ! Optional input
-                                   History      , &  ! Optional input
-                                   Comment      , &  ! Optional input
-                                   Message_Log  ) &  ! Error messaging
-                                 RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*),           INTENT(IN) :: NC_Filename
-    INTEGER     ,           INTENT(IN) :: NC_FileID
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_CloudCoeff_GAtts'
-    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
-    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
-    INTEGER     , PARAMETER :: NPUTGATTS = 5
-    ! Local variables
-    INTEGER :: Put_Status(NPUTGATTS), n
-    CHARACTER(8)  :: cdate
-    CHARACTER(10) :: ctime
-    CHARACTER(5)  :: czone
-
-    ! Set up
-    Error_Status = SUCCESS
-    Put_Status   = SUCCESS
-    n = 0
-
-    ! Software ID
-    n = n + 1
-    Put_Status(n) = Put_GAttString(WRITE_MODULE_HISTORY_GATTNAME, &
-                                   MODULE_RCS_ID, &
-                                   Message_Log=Message_Log )
-
-    ! Creation date
-    CALL DATE_AND_TIME( cdate, ctime, czone )
-    n = n + 1
-    Put_Status(n) = Put_GAttString(CREATION_DATE_AND_TIME_GATTNAME, &
-                                   cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
-                                   ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
-                                   czone//'UTC', &
-                                   Message_Log=Message_Log )
-
-    ! The Title
-    n = n + 1
-    IF ( PRESENT( Title ) ) THEN
-      Put_Status(n) = Put_GAttString(TITLE_GATTNAME, Title, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The History
-    n = n + 1
-    IF ( PRESENT( History ) ) THEN
-      Put_Status(n) = Put_GAttString(HISTORY_GATTNAME, History, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The Comment
-    n = n + 1
-    IF ( PRESENT( Comment ) ) THEN
-      Put_Status(n) = Put_GAttString(COMMENT_GATTNAME, Comment, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! Check for any errors
-    IF ( ANY( Put_Status /= SUCCESS ) ) Error_Status = WARNING
-
-  CONTAINS
-
-    FUNCTION Put_GAttString(GAttName, GAttString, Message_Log) RESULT(Error_Status)
-      CHARACTER(*),           INTENT(IN) :: GAttName
-      CHARACTER(*),           INTENT(IN) :: GAttString
-      CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
-      INTEGER :: Error_Status
-      INTEGER :: NF90_Status
-      Error_Status = SUCCESS
-      NF90_Status = NF90_PUT_ATT( NC_FileID, &
-                                  NF90_GLOBAL, &
-                                  TRIM(GAttName), &
-                                  TRIM(GAttString) )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//TRIM(GAttName)//' attribute to '//&
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-    END FUNCTION Put_GAttString
-
-  END FUNCTION Write_CloudCoeff_GAtts
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Read_CloudCoeff_GAtts
-!
-! PURPOSE:
-!       Function to read the global attributes from a netCDF CloudCoeff
-!       data file.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Read_CloudCoeff_GAtts( NC_Filename            , &  ! Input
-!                                             NC_FileID              , &  ! Input
-!                                             Title      =Title      , &  ! Optional output
-!                                             History    =History    , &  ! Optional output
-!                                             Comment    =Comment    , &  ! Optional output
-!                                             Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF CloudCoeff format data file to read from.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       NC_FileID:        NetCDF file ID number.
-!                         function.
-!                         UNITS:      N/A
-!                         TYPE:       Integer
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which
-!                         any messages will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output messages to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF CloudCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the global attribute read was successful.
-!                        == WARNING an error occurred reading the requested
-!                           global attributes.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       If a FAILURE error occurs, the netCDF file is closed.
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Read_CloudCoeff_GAtts( NC_Filename  , &  ! Input
-                                  NC_FileID    , &  ! Input
-                                  Title        , &  ! Optional output
-                                  History      , &  ! Optional output
-                                  Comment      , &  ! Optional output
-                                  Message_Log  ) &  ! Error messaging
-                                RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER,                INTENT(IN)  :: NC_FileID
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_CloudCoeff_GAtts'
-    INTEGER     , PARAMETER :: NGETGATTS = 3
-    ! Local variables
-    INTEGER :: Get_Status(NGETGATTS), n
-
-    ! Set up
-    Error_Status = SUCCESS
-    Get_Status   = SUCCESS
-    n = 0
-
-    ! The Title
-    n = n + 1
-    IF ( PRESENT( Title ) ) THEN
-      Get_Status(n) = Get_GAttString(TITLE_GATTNAME, Title, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The History
-    n = n + 1
-    IF ( PRESENT( History ) ) THEN
-      Get_Status(n) = Get_GAttString(HISTORY_GATTNAME, History, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! The Comment
-    n = n + 1
-    IF ( PRESENT( Comment ) ) THEN
-      Get_Status(n) = Get_GAttString(COMMENT_GATTNAME, Comment, &
-                                     Message_Log=Message_Log )
-    END IF
-
-    ! Check for any errors
-    IF ( ANY( Get_Status /= SUCCESS ) ) Error_Status = WARNING
-
-  CONTAINS
-
-    FUNCTION Get_GAttString(GAttName, GAttString, Message_Log) RESULT(Error_Status)
-      CHARACTER(*),           INTENT(IN)  :: GAttName
-      CHARACTER(*),           INTENT(OUT) :: GAttString
-      CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-      INTEGER :: Error_Status
-      CHARACTER(5000) :: LongString
-      GAttString = ' '
-      LongString = ' '
-      Error_Status = Get_netCDF_Attribute( NC_FileID, &
-                                           TRIM(GAttName), &
-                                           LongString, &
-                                           Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Error_Status = WARNING
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error reading '//TRIM(GAttName)//&
-                              ' attribute from '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-      END IF
-      CALL Remove_NULL_Characters( LongString )
-      GAttString = LongString(1:MIN( LEN(GAttString), LEN_TRIM(LongString) ))
-    END FUNCTION Get_GAttString
-
-  END FUNCTION Read_CloudCoeff_GAtts
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Create_CloudCoeff_netCDF
-!
-! PURPOSE:
-!       Function to create a netCDF CloudCoeff data file for writing.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Create_CloudCoeff_netCDF( NC_Filename            , &  ! Input
-!                                                n_MW_Frequencies       , &  ! Input
-!                                                n_MW_Radii             , &  ! Input
-!                                                n_IR_Frequencies       , &  ! Input
-!                                                n_IR_Radii             , &  ! Input
-!                                                n_Temperatures         , &  ! Input
-!                                                n_Densities            , &  ! Input
-!                                                n_Legendre_Terms       , &  ! Input
-!                                                n_Phase_Elements       , &  ! Input
-!                                                NC_FileID              , &  ! Output
-!                                                Title      =Title      , &  ! Optional input
-!                                                History    =History    , &  ! Optional input
-!                                                Comment    =Comment    , &  ! Optional input
-!                                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:        Character string specifying the name of the
-!                           netCDF CloudCoeff format data file to create.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_MW_Frequencies:   The number of microwave frequencies in
-!                           the look-up table (LUT). Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_MW_Radii:         The number of discrete effective radii 
-!                           for MW scatterers in the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_IR_Frequencies:   The number of infrared frequencies in
-!                           the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_IR_Radii:         The number of discrete effective radii 
-!                           for IR scatterers in the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_Temperatures:     The number of discrete layer temperatures
-!                           in the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_Densities:        The number of fixed densities for snow, graupel,
-!                           and hail/ice in the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_Legendre_Terms:   The maximum number of Legendre polynomial
-!                           terms in the LUT. Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_Phase_Elements:   The maximum number of phase elements in the LUT.
-!                           Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Title:              Character string written into the TITLE global
-!                           attribute field of the netCDF CloudCoeff file.
-!                           Should contain a succinct description of what
-!                           is in the netCDF datafile.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       History:            Character string written into the HISTORY global
-!                           attribute field of the netCDF CloudCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Comment:            Character string written into the COMMENT global
-!                           attribute field of the netCDF CloudCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which
-!                           any messages will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output messages to standard
-!                           output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       NC_FileID:          NetCDF file ID number to be used for subsequent
-!                           writing to the output file.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.  
-!                          The error codes are defined in the Message_Handler module. 
-!                          If == SUCCESS the netCDF file creation was successful.     
-!                             == FAILURE an unrecoverable error occurred.             
-!                             == WARNING - an error occurred writing any of the       
-!                                          supplied global attributes.                
-!                                        - an error occurred closing the netCDF file. 
-!                          UNITS:      N/A                                            
-!                          TYPE:       INTEGER                                        
-!                          DIMENSION:  Scalar                                         
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Create_CloudCoeff_netCDF( NC_Filename     , &  ! Input
-                                     n_MW_Frequencies, &  ! Input
-                                     n_MW_Radii      , &  ! Input
-                                     n_IR_Frequencies, &  ! Input
-                                     n_IR_Radii      , &  ! Input
-                                     n_Temperatures  , &  ! Input
-                                     n_Densities     , &  ! Input
-                                     n_Legendre_Terms, &  ! Input
-                                     n_Phase_Elements, &  ! Input
-                                     NC_FileID       , &  ! Output
-                                     Title           , &  ! Optional input
-                                     History         , &  ! Optional input
-                                     Comment         , &  ! Optional input
-                                     RCS_Id          , &  ! Revision control
-                                     Message_Log     ) &  ! Error messaging
-                                   RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
-    INTEGER               , INTENT(IN)  :: n_MW_Frequencies
-    INTEGER               , INTENT(IN)  :: n_MW_Radii      
-    INTEGER               , INTENT(IN)  :: n_IR_Frequencies
-    INTEGER               , INTENT(IN)  :: n_IR_Radii      
-    INTEGER               , INTENT(IN)  :: n_Temperatures  
-    INTEGER               , INTENT(IN)  :: n_Densities     
-    INTEGER               , INTENT(IN)  :: n_Legendre_Terms
-    INTEGER               , INTENT(IN)  :: n_Phase_Elements
-    INTEGER               , INTENT(OUT) :: NC_FileID
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Create_CloudCoeff_netCDF'
-    ! Local variables
-    INTEGER :: NF90_Status
-    INTEGER :: Status1, Status2, Status3
-    INTEGER :: Close_Status
-    INTEGER :: StrLen_DimID
-    INTEGER :: MW_Freq_DimID
-    INTEGER :: MW_Reff_DimID
-    INTEGER :: IR_Freq_DimID
-    INTEGER :: IR_Reff_DimID
-    INTEGER :: Temperature_DimID
-    INTEGER :: Density_DimID, IR_Density_DimID
-    INTEGER :: Legendre_DimID
-    INTEGER :: Phase_DimID
-    INTEGER :: VarID
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check input
-    IF ( n_MW_Frequencies < 1 .OR. &
-         n_MW_Radii       < 1 .OR. &
-         n_IR_Frequencies < 1 .OR. &
-         n_IR_Radii       < 1 .OR. &
-         n_Temperatures   < 1 .OR. &
-         n_Densities      < 1 .OR. &
-         n_Legendre_Terms < 0 .OR. &
-         n_Phase_Elements < 1      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid dimension input detected.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Create the data file
-    ! --------------------
-    NF90_Status = NF90_CREATE( NC_Filename, &
-                               NF90_CLOBBER, &
-                               NC_FileID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error creating '//TRIM( NC_Filename )//' - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Define the dimensions
-    ! ---------------------
-    ! The number of microwave frequencies
-    Error_Status = Def_Dim(MW_FREQ_DIMNAME    , n_MW_Frequencies  , MW_Freq_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of microwave radii
-    Error_Status = Def_Dim(MW_REFF_DIMNAME    , n_MW_Radii        , MW_Reff_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of infrared frequencies
-    Error_Status = Def_Dim(IR_FREQ_DIMNAME    , n_IR_Frequencies  , IR_Freq_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of infrared radii
-    Error_Status = Def_Dim(IR_REFF_DIMNAME    , n_IR_Radii        , IR_Reff_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of temperatures
-    Error_Status = Def_Dim(TEMPERATURE_DIMNAME, n_Temperatures    , Temperature_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of densities
-    Error_Status = Def_Dim(DENSITY_DIMNAME    , n_Densities       , Density_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of IR densities. The data arrays are
-    ! indexed from 0 for the liquid phase, so add one.
-    Error_Status = Def_Dim(IR_DENSITY_DIMNAME , n_Densities+1     , IR_Density_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of Legendre terms. The data arrays are
-    ! indexed from 0, so add one.
-    Error_Status = Def_Dim(LEGENDRE_DIMNAME   , n_Legendre_Terms+1, Legendre_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! The number of phase matrix elements
-    Error_Status = Def_Dim(PHASE_DIMNAME      , n_Phase_Elements  , Phase_DimID)
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Write the global attributes
-    ! ---------------------------
-    Error_Status = Write_CloudCoeff_GAtts( NC_Filename            , &
-                                           NC_FileID              , &
-                                           Title      =Title      , &
-                                           History    =History    , &
-                                           Comment    =Comment    , &
-                                           Message_Log=Message_Log  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing global attributes to '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! Define the data file release and version
-    ! ----------------------------------------
-    ! Define the file release
-    Error_Status = Def_Var(RELEASE_VARNAME    , &
-                           RELEASE_TYPE       , &
-                           RELEASE_LONGNAME   , &
-                           RELEASE_DESCRIPTION, &
-                           RELEASE_UNITS     )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the file version
-    Error_Status = Def_Var(VERSION_VARNAME    , &
-                           VERSION_TYPE       , &
-                           VERSION_LONGNAME   , &
-                           VERSION_DESCRIPTION, &
-                           VERSION_UNITS     )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Define the LUT dimension vectors
-    ! --------------------------------
-    ! Define the microwave frequency vector
-    Error_Status = Def_Var(FREQUENCY_MW_VARNAME    , &
-                           FREQUENCY_MW_TYPE       , &
-                           FREQUENCY_MW_LONGNAME   , &
-                           FREQUENCY_MW_DESCRIPTION, &
-                           FREQUENCY_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the microwave radii vector
-    Error_Status = Def_Var(REFF_MW_VARNAME    , &
-                           REFF_MW_TYPE       , &
-                           REFF_MW_LONGNAME   , &
-                           REFF_MW_DESCRIPTION, &
-                           REFF_MW_UNITS      , &
-                           DimIDs=(/MW_Reff_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the infrared frequency vector
-    Error_Status = Def_Var(FREQUENCY_IR_VARNAME    , &
-                           FREQUENCY_IR_TYPE       , &
-                           FREQUENCY_IR_LONGNAME   , &
-                           FREQUENCY_IR_DESCRIPTION, &
-                           FREQUENCY_IR_UNITS      , &
-                           DimIDs=(/IR_Freq_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the infrared radii vector
-    Error_Status = Def_Var(REFF_IR_VARNAME    , &
-                           REFF_IR_TYPE       , &
-                           REFF_IR_LONGNAME   , &
-                           REFF_IR_DESCRIPTION, &
-                           REFF_IR_UNITS      , &
-                           DimIDs=(/IR_Reff_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the temperature vector
-    Error_Status = Def_Var(TEMPERATURE_VARNAME    , &
-                           TEMPERATURE_TYPE       , &
-                           TEMPERATURE_LONGNAME   , &
-                           TEMPERATURE_DESCRIPTION, &
-                           TEMPERATURE_UNITS      , &
-                           DimIDs=(/Temperature_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the density vector
-    Error_Status = Def_Var(DENSITY_VARNAME    , &
-                           DENSITY_TYPE       , &
-                           DENSITY_LONGNAME   , &
-                           DENSITY_DESCRIPTION, &
-                           DENSITY_UNITS      , &
-                           DimIDs=(/Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Define the microwave liquid phase variables
-    ! -------------------------------------------
-    ! Define the extinction coefficient
-    Error_Status = Def_Var(KE_L_MW_VARNAME    , &
-                           KE_L_MW_TYPE       , &
-                           KE_L_MW_LONGNAME   , &
-                           KE_L_MW_DESCRIPTION, &
-                           KE_L_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Temperature_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the single scatter albedo
-    Error_Status = Def_Var(W_L_MW_VARNAME    , &
-                           W_L_MW_TYPE       , &
-                           W_L_MW_LONGNAME   , &
-                           W_L_MW_DESCRIPTION, &
-                           W_L_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Temperature_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the asymmetry parameter
-    Error_Status = Def_Var(G_L_MW_VARNAME    , &
-                           G_L_MW_TYPE       , &
-                           G_L_MW_LONGNAME   , &
-                           G_L_MW_DESCRIPTION, &
-                           G_L_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Temperature_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the phase coefficients
-    Error_Status = Def_Var(PCOEFF_L_MW_VARNAME    , &
-                           PCOEFF_L_MW_TYPE       , &
-                           PCOEFF_L_MW_LONGNAME   , &
-                           PCOEFF_L_MW_DESCRIPTION, &
-                           PCOEFF_L_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Temperature_DimID, &
-                                    Legendre_DimID, Phase_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Define the microwave solid phase variables
-    ! ------------------------------------------
-    ! Define the extinction coefficient
-    Error_Status = Def_Var(KE_S_MW_VARNAME    , &
-                           KE_S_MW_TYPE       , &
-                           KE_S_MW_LONGNAME   , &
-                           KE_S_MW_DESCRIPTION, &
-                           KE_S_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the single scatter albedo
-    Error_Status = Def_Var(W_S_MW_VARNAME    , &
-                           W_S_MW_TYPE       , &
-                           W_S_MW_LONGNAME   , &
-                           W_S_MW_DESCRIPTION, &
-                           W_S_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the asymmetry parameter
-    Error_Status = Def_Var(G_S_MW_VARNAME    , &
-                           G_S_MW_TYPE       , &
-                           G_S_MW_LONGNAME   , &
-                           G_S_MW_DESCRIPTION, &
-                           G_S_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the phase coefficients
-    Error_Status = Def_Var(PCOEFF_S_MW_VARNAME    , &
-                           PCOEFF_S_MW_TYPE       , &
-                           PCOEFF_S_MW_LONGNAME   , &
-                           PCOEFF_S_MW_DESCRIPTION, &
-                           PCOEFF_S_MW_UNITS      , &
-                           DimIDs=(/MW_Freq_DimID, MW_Reff_DimID, Density_DimID, &
-                                    Legendre_DimID, Phase_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Define the infrared variables
-    ! -----------------------------
-    ! Define the extinction coefficient
-    Error_Status = Def_Var(KE_IR_VARNAME    , &
-                           KE_IR_TYPE       , &
-                           KE_IR_LONGNAME   , &
-                           KE_IR_DESCRIPTION, &
-                           KE_IR_UNITS      , &
-                           DimIDs=(/IR_Freq_DimID, IR_Reff_DimID, IR_Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the single scatter albedo
-    Error_Status = Def_Var(W_IR_VARNAME    , &
-                           W_IR_TYPE       , &
-                           W_IR_LONGNAME   , &
-                           W_IR_DESCRIPTION, &
-                           W_IR_UNITS      , &
-                           DimIDs=(/IR_Freq_DimID, IR_Reff_DimID, IR_Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the asymmetry parameter
-    Error_Status = Def_Var(G_IR_VARNAME    , &
-                           G_IR_TYPE       , &
-                           G_IR_LONGNAME   , &
-                           G_IR_DESCRIPTION, &
-                           G_IR_UNITS      , &
-                           DimIDs=(/IR_Freq_DimID, IR_Reff_DimID, IR_Density_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-    ! Define the phase coefficients
-    Error_Status = Def_Var(PCOEFF_IR_VARNAME    , &
-                           PCOEFF_IR_TYPE       , &
-                           PCOEFF_IR_LONGNAME   , &
-                           PCOEFF_IR_DESCRIPTION, &
-                           PCOEFF_IR_UNITS      , &
-                           DimIDs=(/IR_Freq_DimID, IR_Reff_DimID, IR_Density_DimID, &
-                                    Legendre_DimID/) )
-    IF ( Error_Status /= SUCCESS ) RETURN
-
-
-    ! Take netCDF file out of define mode
-    ! -----------------------------------
-    NF90_Status = NF90_ENDDEF( NC_FileID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error taking file '//TRIM( NC_Filename )// &
-                            ' out of define mode - '// &
-                            TRIM( NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      RETURN
-    END IF
-
-
-  !=======
-  CONTAINS
-  !=======
-
-    ! Internal function to define dimensions and handle errors
-    ! --------------------------------------------------------
-    FUNCTION Def_Dim(DimName, DimSize, DimID) RESULT(Error_Status)
-      CHARACTER(*), INTENT(IN)  :: DimName
-      INTEGER,      INTENT(IN)  :: DimSize
-      INTEGER,      INTENT(OUT) :: DimID
-      INTEGER :: Error_Status
-      INTEGER :: NF90_Status
-      Error_Status = SUCCESS
-      NF90_Status = NF90_DEF_DIM( NC_FileID, &
-                                  TRIM(DimName), &
-                                  DimSize, &
-                                  DimID )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error defining the '//TRIM(DimName)//' dimension in '// &
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-      END IF
-    END FUNCTION Def_Dim
-
-
-    ! Internal function to define variables and handle errors
-    ! -------------------------------------------------------
-    FUNCTION Def_Var( VarName    , &
-                      VarType    , &
-                      LongName   , &
-                      Description, &
-                      Units      , &
-                      DimIds     ) &
-                    RESULT(Error_Status)
-      ! Arguments
-      CHARACTER(*),           INTENT(IN) :: VarName
-      INTEGER     ,           INTENT(IN) :: VarType
-      CHARACTER(*),           INTENT(IN) :: LongName
-      CHARACTER(*),           INTENT(IN) :: Description
-      CHARACTER(*),           INTENT(IN) :: Units
-      INTEGER     , OPTIONAL, INTENT(IN) :: DimIDs(:)
-      ! Function result
-      INTEGER :: Error_Status
-      ! Local parameters
-      INTEGER, PARAMETER :: NATTS=4
-      ! Loocal variables
-      INTEGER :: NF90_Status
-      INTEGER :: Put_Status(NATTS)
-
-      ! Set up
-      Error_Status = SUCCESS 
-            
-      ! Define the variable. The netCDF function dimIDs dummy
-      ! argument is not truly optional (in the f90/95 sense),
-      ! so the IF is necessary here.
-      IF ( PRESENT(DimIDs) ) THEN
-        NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                    VarName  , &
-                                    VarType  , &
-                                    dimIDs=DimIDs, &
-                                    varID =VarID   )
-      ELSE
-        NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                    VarName  , &
-                                    VarType  , &
-                                    varID =VarID )
-      END IF      
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error defining '//VarName//' variable in '// &
-                              TRIM( NC_Filename )//' - '// &
-                              TRIM( NF90_STRERROR( NF90_Status ) ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-  
-      ! Write some attributes
-      Put_Status(1) = Put_netCDF_Attribute( NC_FileID, &
-                                            LONGNAME_ATTNAME, &
-                                            LongName, &
-                                            Variable_Name=VarName )
-      Put_Status(2) = Put_netCDF_Attribute( NC_FileID, &
-                                            DESCRIPTION_ATTNAME, &
-                                            Description, &
-                                            Variable_Name=VarName )
-      Put_Status(3) = Put_netCDF_Attribute( NC_FileID, &
-                                            UNITS_ATTNAME, &
-                                            Units, &
-                                            Variable_Name=VarName )
-      ! The following yukness is because
-      ! I don't want to overload.
-      SELECT CASE(VarName)
-        CASE (RELEASE_VARNAME, VERSION_VARNAME)
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                IP_FILLVALUE, &
-                                                Variable_Name=VarName )
-        CASE DEFAULT
-          Put_Status(4) = Put_netCDF_Attribute( NC_FileID, &
-                                                FILLVALUE_ATTNAME, &
-                                                FP_FILLVALUE, &
-                                                Variable_Name=VarName )
-      END SELECT
-      
-      ! Check attribute write errors
-      IF ( ANY(Put_Status /= SUCCESS) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error writing '//VarName//&
-                              ' variable attributes to '//TRIM( NC_Filename ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        NF90_Status = NF90_CLOSE( NC_FileID )
-        RETURN
-      END IF
-    END FUNCTION Def_Var
-
-  END FUNCTION Create_CloudCoeff_netCDF
-
-
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -1215,51 +240,40 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Inquire_CloudCoeff_netCDF
+!       CloudCoeff_netCDF_InquireFile
 !
 ! PURPOSE:
-!       Function to inquire a netCDF CloudCoeff format file to obtain the
-!       dimensions and global attributes.
+!       Function to inquire CloudCoeff object netCDF format files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_CloudCoeff_netCDF( NC_Filename                       , &  ! Input
-!                                                 n_MW_Frequencies=n_MW_Frequencies , &  ! Optional output
-!                                                 n_MW_Radii      =n_MW_Radii       , &  ! Optional output
-!                                                 n_IR_Frequencies=n_IR_Frequencies , &  ! Optional output
-!                                                 n_IR_Radii      =n_IR_Radii       , &  ! Optional output
-!                                                 n_Temperatures  =n_Temperatures   , &  ! Optional output
-!                                                 n_Densities     =n_Densities      , &  ! Optional output
-!                                                 n_Legendre_Terms=n_Legendre_Terms , &  ! Optional output
-!                                                 n_Phase_Elements=n_Phase_Elements , &  ! Optional output
-!                                                 Release         =Release          , &  ! Optional output
-!                                                 Version         =Version          , &  ! Optional output
-!                                                 Title           =Title            , &  ! Optional output
-!                                                 History         =History          , &  ! Optional output
-!                                                 Comment         =Comment          , &  ! Optional output
-!                                                 RCS_Id          =RCS_Id           , &  ! Revision control
-!                                                 Message_Log     =Message_Log        )  ! Error messaging
+!       Error_Status = CloudCoeff_netCDF_InquireFile( &
+!                        Filename, &
+!                        n_MW_Frequencies = n_MW_Frequencies , &
+!                        n_MW_Radii       = n_MW_Radii       , &
+!                        n_IR_Frequencies = n_IR_Frequencies , &
+!                        n_IR_Radii       = n_IR_Radii       , &
+!                        n_Temperatures   = n_Temperatures   , &
+!                        n_Densities      = n_Densities      , &
+!                        n_Legendre_Terms = n_Legendre_Terms , &
+!                        n_Phase_Elements = n_Phase_Elements , &
+!                        Release          = Release          , &
+!                        Version          = Version          , &
+!                        Title            = Title            , &
+!                        History          = History          , &
+!                        Comment          = Comment            )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:        Character string specifying the name of the
-!                           CloudCoeff netCDF format data file to inquire.
+! INPUTS:
+!       Filename:           Character string specifying the name of the
+!                           CloudCoeff data file to inquire.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
+! OPTIONAL OUTPUTS:
 !       n_MW_Frequencies:   The number of microwave frequencies in
 !                           the look-up table (LUT).
 !                           UNITS:      N/A
@@ -1315,825 +329,784 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Release:            The release number of the netCDF CloudCoeff file.
+!       Release:            The release number of the CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Version:            The version number of the netCDF CloudCoeff file.
+!       Version:            The version number of the CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Title:              Character string written into the TITLE global
-!                           attribute field of the netCDF CloudCoeff file.
+!                           attribute field of the CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:            Character string written into the HISTORY global
-!                           attribute field of the netCDF CloudCoeff file.
+!                           attribute field of the CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:            Character string written into the COMMENT global
-!                           attribute field of the netCDF CloudCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
+!                           attribute field of the CloudCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF file inquiry was successful.
-!                        == FAILURE an error occurred reading any of the requested
-!                                   dimension or variable data.
-!                        == WARNING - an error occurred reading any of the requested
-!                                     global file attributes, or
-!                                   - an error occurred closing the netCDF file.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the file inquiry was successful
+!                              == FAILURE an error occurred.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_CloudCoeff_netCDF( NC_Filename     , &  ! Input
-                                      n_MW_Frequencies, &  ! Optional output
-                                      n_MW_Radii      , &  ! Optional output
-                                      n_IR_Frequencies, &  ! Optional output
-                                      n_IR_Radii      , &  ! Optional output
-                                      n_Temperatures  , &  ! Optional output
-                                      n_Densities     , &  ! Optional output
-                                      n_Legendre_Terms, &  ! Optional output
-                                      n_Phase_Elements, &  ! Optional output
-                                      Release         , &  ! Optional output
-                                      Version         , &  ! Optional output
-                                      Title           , &  ! Optional output
-                                      History         , &  ! Optional output
-                                      Comment         , &  ! Optional output
-                                      RCS_Id          , &  ! Revision control
-                                      Message_Log     ) &  ! Error messaging
-                                    RESULT ( Error_Status )
+  FUNCTION CloudCoeff_netCDF_InquireFile( &
+    Filename        , &  ! Input
+    n_MW_Frequencies, &  ! Optional output
+    n_MW_Radii      , &  ! Optional output
+    n_IR_Frequencies, &  ! Optional output
+    n_IR_Radii      , &  ! Optional output
+    n_Temperatures  , &  ! Optional output
+    n_Densities     , &  ! Optional output
+    n_Legendre_Terms, &  ! Optional output
+    n_Phase_Elements, &  ! Optional output
+    Release         , &  ! Optional output
+    Version         , &  ! Optional output
+    Title           , &  ! Optional output
+    History         , &  ! Optional output
+    Comment         ) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_MW_Frequencies
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_MW_Radii
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_IR_Frequencies
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_IR_Radii
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Temperatures
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Densities
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Phase_Elements
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Frequencies    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_MW_Radii          
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Frequencies    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_IR_Radii          
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Temperatures      
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Densities         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Release         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_CloudCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_InquireFile(netCDF)'
     ! Function variables
-    CHARACTER(1000) :: Message
-    INTEGER :: NC_FileID
-    INTEGER :: Close_Status
-    INTEGER :: n_MW_Freq
-    INTEGER :: n_MW_Reff
-    INTEGER :: n_IR_Freq
-    INTEGER :: n_IR_Reff
-    INTEGER :: n_Temp
-    INTEGER :: n_Dens
-    INTEGER :: n_LTerm
-    INTEGER :: n_Phase
+    CHARACTER(ML) :: msg
+    LOGICAL :: Close_File
+    INTEGER :: NF90_Status
+    INTEGER :: FileId
+    INTEGER :: DimId
+    TYPE(CloudCoeff_type) :: CloudCoeff
     
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
+    Close_File = .FALSE.
 
 
     ! Open the file
-    ! -------------
-    Error_Status = Open_CloudCoeff_netCDF( TRIM( NC_Filename ), &
-                                           NC_FileID, &
-                                           Mode = 'READ' )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF CloudCoeff data file '//&
-                TRIM( NC_Filename )
-      GOTO 2000
+    NF90_Status = NF90_OPEN( Filename,NF90_NOWRITE,FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(Filename)//' for read access - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
+    ! ...Close the file if any error from here on
+    Close_File = .TRUE.
 
 
     ! Get the dimensions
-    ! ------------------
-    ! The number of microwave frequencies
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         MW_FREQ_DIMNAME, &
-                                         n_MW_Freq, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//MW_FREQ_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...n_MW_Frequencies dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,MW_FREQ_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//MW_FREQ_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of microwave radii
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         MW_REFF_DIMNAME, &
-                                         n_MW_Reff, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//MW_REFF_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_MW_Frequencies )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//MW_FREQ_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of infrared frequencies
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         IR_FREQ_DIMNAME, &
-                                         n_IR_Freq, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//IR_FREQ_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...n_MW_Radii dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,MW_REFF_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//MW_REFF_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of infrared radii
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         IR_REFF_DIMNAME, &
-                                         n_IR_Reff, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//IR_REFF_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_MW_Radii )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//MW_REFF_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of temperatures
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         TEMPERATURE_DIMNAME, &
-                                         n_Temp, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//TEMPERATURE_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...n_IR_Frequencies dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,IR_FREQ_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//IR_FREQ_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of densities
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         DENSITY_DIMNAME, &
-                                         n_Dens, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//DENSITY_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_IR_Frequencies )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//IR_FREQ_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of Legendre terms
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         LEGENDRE_DIMNAME, &
-                                         n_LTerm, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//LEGENDRE_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...n_IR_Radii dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,IR_REFF_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//IR_REFF_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-    ! The number of phase matrix elements
-    Error_Status = Get_netCDF_Dimension( NC_FileID, &
-                                         PHASE_DIMNAME, &
-                                         n_Phase, &
-                                         Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining '//PHASE_DIMNAME//&
-                ' dimension from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_IR_Radii )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//IR_REFF_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-
-    ! Set the dimension return values
-    ! -------------------------------
-    IF ( PRESENT( n_MW_Frequencies ) ) n_MW_Frequencies = n_MW_Freq
-    IF ( PRESENT( n_MW_Radii       ) ) n_MW_Radii       = n_MW_Reff
-    IF ( PRESENT( n_IR_Frequencies ) ) n_IR_Frequencies = n_IR_Freq
-    IF ( PRESENT( n_IR_Radii       ) ) n_IR_Radii       = n_IR_Reff
-    IF ( PRESENT( n_Temperatures   ) ) n_Temperatures   = n_Temp
-    IF ( PRESENT( n_Densities      ) ) n_Densities      = n_Dens
-    IF ( PRESENT( n_Legendre_Terms ) ) n_Legendre_Terms = n_LTerm-1  ! Indexed from 0, so subtract 1.
-    IF ( PRESENT( n_Phase_Elements ) ) n_Phase_Elements = n_Phase
-
-
-    ! Get the Release and Version
-    ! ---------------------------
-    ! The Release
-    IF ( PRESENT( Release ) ) THEN
-      Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                          RELEASE_VARNAME, &
-                                          Release )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading '//RELEASE_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
-        GOTO 1000
-      END IF
+    ! ...n_Temperatures dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,TEMPERATURE_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//TEMPERATURE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-    ! The Version
-    IF ( PRESENT( Version ) ) THEN
-      Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                          VERSION_VARNAME, &
-                                          Version )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error reading '//VERSION_VARNAME//&
-                  ' data from '//TRIM( NC_Filename )
-        GOTO 1000
-      END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_Temperatures )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//TEMPERATURE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
-
-
+    ! ...n_Densities dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,DENSITY_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//DENSITY_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_Densities )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//DENSITY_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    ! ...n_Legendre_Terms dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,LEGENDRE_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//LEGENDRE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_Legendre_Terms )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//LEGENDRE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    ! ...n_Phase_Elements dimension 
+    NF90_Status = NF90_INQ_DIMID( FileId,PHASE_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//PHASE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=CloudCoeff%n_Phase_Elements )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//PHASE_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+  
+  
     ! Get the global attributes
-    ! -------------------------
-    Error_Status = Read_CloudCoeff_GAtts( NC_Filename            , &
-                                          NC_FileID              , &
-                                          Title      =Title      , &
-                                          History    =History    , &
-                                          Comment    =Comment    , &
-                                          Message_Log=Message_Log  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading global attribute from '//TRIM( NC_Filename )
-      GOTO 1000
+    err_stat = ReadGAtts( Filename, &
+                          FileId  , &
+                          Release = CloudCoeff%Release, &
+                          Version = CloudCoeff%Version, &
+                          Title   = Title  , &
+                          History = History, &
+                          Comment = Comment  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading global attributes from '//TRIM(Filename)
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
-    ! --------------
-    Close_Status = Close_CloudCoeff_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      Error_Status = WARNING
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF CloudCoeff data file '// &
-                            TRIM( NC_Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+    NF90_Status = NF90_CLOSE( FileId )
+    Close_File = .FALSE.
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
     END IF
 
-    !=====
-    RETURN
-    !=====
 
-    ! Clean up after an error
-    1000 CONTINUE
-    Close_Status = Close_CloudCoeff_netCDF(NC_FileID)
-    IF ( Close_Status /= SUCCESS ) &
-      Message = TRIM(Message)//'; Error closing input file during error cleanup.'
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+    ! Set the return values
+    IF ( PRESENT(n_MW_Frequencies) ) n_MW_Frequencies = CloudCoeff%n_MW_Frequencies
+    IF ( PRESENT(n_MW_Radii      ) ) n_MW_Radii       = CloudCoeff%n_MW_Radii      
+    IF ( PRESENT(n_IR_Frequencies) ) n_IR_Frequencies = CloudCoeff%n_IR_Frequencies
+    IF ( PRESENT(n_IR_Radii      ) ) n_IR_Radii       = CloudCoeff%n_IR_Radii      
+    IF ( PRESENT(n_Temperatures  ) ) n_Temperatures   = CloudCoeff%n_Temperatures  
+    IF ( PRESENT(n_Densities     ) ) n_Densities      = CloudCoeff%n_Densities     
+    IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = CloudCoeff%n_Legendre_Terms-1  ! Indexed from 0, so subtract 1.
+    IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = CloudCoeff%n_Phase_Elements
+    IF ( PRESENT(Release         ) ) Release          = CloudCoeff%Release     
+    IF ( PRESENT(Version         ) ) Version          = CloudCoeff%Version     
 
-  END FUNCTION Inquire_CloudCoeff_netCDF
+  CONTAINS
+ 
+    SUBROUTINE Inquire_CleanUp()
+      IF ( Close_File ) THEN
+        NF90_Status = NF90_CLOSE( FileId )
+        IF ( NF90_Status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+      END IF
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+    END SUBROUTINE Inquire_CleanUp
+
+  END FUNCTION CloudCoeff_netCDF_InquireFile
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Write_CloudCoeff_netCDF
+!       CloudCoeff_netCDF_WriteFile
 !
 ! PURPOSE:
-!       Function to write CloudCoeff data to a netCDF format CloudCoeff
-!       file.
+!       Function to write CloudCoeff object files in netCDF format.
 !
 ! CALLING SEQUENCE:
-!     Error_Status = Write_CloudCoeff_netCDF( NC_Filename            , &  ! Input
-!                                             CloudCoeff             , &  ! Input
-!                                             Quiet      =Quiet      , &  ! Optional input
-!                                             Title      =Title      , &  ! Optional input
-!                                             History    =History    , &  ! Optional input
-!                                             Comment    =Comment    , &  ! Optional input
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CloudCoeff_netCDF_WriteFile( &
+!                        Filename  , &
+!                        CloudCoeff, &
+!                        Quiet   = Quiet  , &
+!                        Title   = Title  , &
+!                        History = History, &
+!                        Comment = Comment  )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:  Character string specifying the name of the netCDF
-!                     format CloudCoeff data file to write data into.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       Filename:       Character string specifying the name of the
+!                       CloudCoeff data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-!       CloudCoeff:   Structure containing the cloud optical property
-!                     data to write to file.
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(CloudCoeff_type)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+!       CloudCoeff:     Object containing the cloud coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CloudCoeff_type)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the message log file if
-!                     the MESSAGE_LOG optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       Integer
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Title:        Character string written into the TITLE global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       History:      Character string written into the HISTORY global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Comment:      Character string written into the COMMENT global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF data write was successful
-!                        == FAILURE an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the data write was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_CloudCoeff_netCDF( NC_Filename , &  ! Input
-                                    CloudCoeff  , &  ! Input
-                                    Quiet       , &  ! Optional input
-                                    Title       , &  ! Optional input
-                                    History     , &  ! Optional input
-                                    Comment     , &  ! Optional input
-                                    RCS_Id      , &  ! Revision control
-                                    Message_Log ) &  ! Error messaging
-                                  RESULT ( Error_Status )
+  FUNCTION CloudCoeff_netCDF_WriteFile( &
+    Filename  , &  ! Input
+    CloudCoeff, &  ! Input
+    Quiet     , &  ! Optional input
+    Title     , &  ! Optional input
+    History   , &  ! Optional input
+    Comment   ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    TYPE(CloudCoeff_type) , INTENT(IN)  :: CloudCoeff
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN) :: Filename
+    TYPE(CloudCoeff_type),  INTENT(IN) :: CloudCoeff
+    LOGICAL,      OPTIONAL, INTENT(IN) :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_CloudCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_WriteFile(netCDF)'
     ! Local variables
-    CHARACTER(1000) :: Message
+    CHARACTER(ML) :: msg
+    LOGICAL :: Close_File
     LOGICAL :: Noisy
-    INTEGER :: NC_FileID
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
+    INTEGER :: FileId
+    INTEGER :: VarId
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational messages....
+    err_stat = SUCCESS
+    Close_File = .FALSE.
+    ! ...Check structure pointer association status
+    IF ( .NOT. CloudCoeff_Associated( CloudCoeff ) ) THEN
+      msg = 'CloudCoeff structure is empty. Nothing to do!'
+      CALL Write_CleanUp(); RETURN
+    END IF
+    ! ...Check if release is valid
+    IF ( .NOT. CloudCoeff_ValidRelease( CloudCoeff ) ) THEN
+      msg = 'CloudCoeff Release check failed.'
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Check Quiet argument
     Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == 1 ) Noisy = .FALSE.
-    END IF
-
-    ! Check structure association
-    IF ( .NOT. Associated_CloudCoeff( CloudCoeff ) ) THEN
-      Message = 'Some or all INPUT CloudCoeff pointer members are NOT associated.'
-      GOTO 2000
-    END IF
+    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
 
 
-    ! Create the output data file
-    ! ---------------------------
-    Error_Status = Create_CloudCoeff_netCDF( NC_Filename                , &  ! Input
-                                             CloudCoeff%n_MW_Frequencies, &  ! Input
-                                             CloudCoeff%n_MW_Radii      , &  ! Input
-                                             CloudCoeff%n_IR_Frequencies, &  ! Input
-                                             CloudCoeff%n_IR_Radii      , &  ! Input
-                                             CloudCoeff%n_Temperatures  , &  ! Input
-                                             CloudCoeff%n_Densities     , &  ! Input
-                                             CloudCoeff%n_Legendre_Terms, &  ! Input
-                                             CloudCoeff%n_Phase_Elements, &  ! Input
-                                             NC_FileID                  , &  ! Output
-                                             Title      =Title          , &  ! Optional input
-                                             History    =History        , &  ! Optional input
-                                             Comment    =Comment        , &  ! Optional input
-                                             Message_Log=Message_Log      )  ! Error messaging
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error creating output file '//TRIM( NC_Filename )
-      GOTO 2000
+    ! Create the output file
+    err_stat = CreateFile( &
+                 Filename                    , &  ! Input
+                 CloudCoeff%n_MW_Frequencies , &  ! Input
+                 CloudCoeff%n_MW_Radii       , &  ! Input
+                 CloudCoeff%n_IR_Frequencies , &  ! Input
+                 CloudCoeff%n_IR_Radii       , &  ! Input
+                 CloudCoeff%n_Temperatures   , &  ! Input
+                 CloudCoeff%n_Densities      , &  ! Input
+                 CloudCoeff%n_Legendre_Terms , &  ! Input
+                 CloudCoeff%n_Phase_Elements , &  ! Input
+                 FileId                      , &  ! Output
+                 Version = CloudCoeff%Version, &  ! Optional input
+                 Title   = Title             , &  ! Optional input
+                 History = History           , &  ! Optional input
+                 Comment = Comment             )  ! Optional input
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error creating output file '//TRIM(Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
+    ! ...Close the file if any error from here on
+    Close_File = .TRUE.
 
 
-    ! Write the data file release and version
-    ! ---------------------------------------
-    ! The Release
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        RELEASE_VARNAME, &
-                                        CloudCoeff%Release )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Release to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! Write the data items
+    ! ...Frequency_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,FREQUENCY_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The Version
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        VERSION_VARNAME, &
-                                        CloudCoeff%Version )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Version to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Frequency_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//FREQUENCY_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    
-    
-    ! Write the LUT dimension vectors
-    ! -------------------------------
-    ! The microwave frequency vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        FREQUENCY_MW_VARNAME, &
-                                        CloudCoeff%Frequency_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Frequency_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Frequency_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,FREQUENCY_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The microwave radii vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        REFF_MW_VARNAME, &
-                                        CloudCoeff%Reff_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Reff_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Frequency_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//FREQUENCY_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The infrared frequency vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        FREQUENCY_IR_VARNAME, &
-                                        CloudCoeff%Frequency_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Frequency_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Reff_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The infrared radii vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        REFF_IR_VARNAME, &
-                                        CloudCoeff%Reff_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Reff_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Reff_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//REFF_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The temperature vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        TEMPERATURE_VARNAME, &
-                                        CloudCoeff%Temperature )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Temperature to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Reff_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,REFF_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The density vector
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        DENSITY_VARNAME, &
-                                        CloudCoeff%Density )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing Density to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Reff_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//REFF_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-
-
-    ! Write the microwave liquid phase variables
-    ! -------------------------------------------
-    ! The extinction coefficient
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        KE_L_MW_VARNAME, &
-                                        CloudCoeff%ke_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing ke_L_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Temperature variable 
+    NF90_Status = NF90_INQ_VARID( FileId,TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        W_L_MW_VARNAME, &
-                                        CloudCoeff%w_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing w_L_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//TEMPERATURE_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        G_L_MW_VARNAME, &
-                                        CloudCoeff%g_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing g_L_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Density variable 
+    NF90_Status = NF90_INQ_VARID( FileId,DENSITY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//DENSITY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_L_MW_VARNAME, &
-                                        CloudCoeff%pcoeff_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing pcoeff_L_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%Density )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//DENSITY_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-
-    ! Write the microwave solid phase variables
-    ! -----------------------------------------
-    ! The extinction coefficient
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        KE_S_MW_VARNAME, &
-                                        CloudCoeff%ke_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing ke_S_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...ke_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        W_S_MW_VARNAME, &
-                                        CloudCoeff%w_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing w_S_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%ke_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KE_L_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        G_S_MW_VARNAME, &
-                                        CloudCoeff%g_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing g_S_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...w_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_S_MW_VARNAME, &
-                                        CloudCoeff%pcoeff_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing pcoeff_S_MW to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%w_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//W_L_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-
-
-    ! Write the infrared variables
-    ! ----------------------------
-    ! The extinction coefficient
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        KE_IR_VARNAME, &
-                                        CloudCoeff%ke_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing ke_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...g_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        W_IR_VARNAME, &
-                                        CloudCoeff%w_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing w_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%g_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//G_L_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        G_IR_VARNAME, &
-                                        CloudCoeff%g_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing g_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...pcoeff_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Put_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_IR_VARNAME, &
-                                        CloudCoeff%pcoeff_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error writing pcoeff_IR to '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%pcoeff_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PCOEFF_L_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...ke_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%ke_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KE_S_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...w_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%w_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//W_S_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...g_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%g_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//G_S_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%pcoeff_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PCOEFF_S_MW_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...ke_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%ke_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//KE_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...w_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%w_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//W_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...g_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%g_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//G_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,CloudCoeff%pcoeff_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PCOEFF_IR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
-    ! --------------
-    Close_Status = Close_CloudCoeff_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF CloudCoeff data file '// &
-                            TRIM( NC_Filename ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+    NF90_Status = NF90_CLOSE( FileId )
+    Close_File = .FALSE.
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_CloudCoeff( CloudCoeff, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
-                            INFORMATION, &
-                            Message_Log = Message_Log )
+      CALL CloudCoeff_Info( CloudCoeff, msg )
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
     END IF
 
-    !=====
-    RETURN
-    !=====
-    
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Close_Status = Close_CloudCoeff_netCDF(NC_FileID)
-    IF ( Close_Status /= SUCCESS ) &
-      Message = TRIM(Message)//'; Error closing output file during error cleanup.'
-    2000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+  CONTAINS
 
-  END FUNCTION Write_CloudCoeff_netCDF
+    SUBROUTINE Write_CleanUp()
+      IF ( Close_File ) THEN
+        NF90_Status = NF90_CLOSE( FileId )
+        IF ( NF90_Status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing output file during error cleanup - '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      END IF
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+    END SUBROUTINE Write_CleanUp
 
-
-
+  END FUNCTION CloudCoeff_netCDF_WriteFile
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Read_CloudCoeff_netCDF
+!       CloudCoeff_netCDF_ReadFile
 !
 ! PURPOSE:
-!       Function to read CloudCoeff data from a netCDF format CloudCoeff
-!       file.
+!       Function to read CloudCoeff object files in netCDF format.
 !
 ! CALLING SEQUENCE:
-!     Error_Status = Read_CloudCoeff_netCDF( NC_Filename            , &  ! Input
-!                                            CloudCoeff             , &  ! Output
-!                                            Quiet      =Quiet      , &  ! Optional input
-!                                            Title      =Title      , &  ! Optional output
-!                                            History    =History    , &  ! Optional output
-!                                            Comment    =Comment    , &  ! Optional output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CloudCoeff_netCDF_ReadFile( &
+!                        Filename         , &
+!                        CloudCoeff       , &
+!                        Quiet   = Quiet  , &
+!                        Title   = Title  , &
+!                        History = History, &
+!                        Comment = Comment  )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:  Character string specifying the name of the
-!                     netCDF format CloudCoeff data file to read.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       Filename:       Character string specifying the name of the
+!                       CloudCoeff data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the message log file if
-!                     the MESSAGE_LOG optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+! OUTPUTS:
+!       CloudCoeff:     CloudCoeff object containing the cloud coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CloudCoeff_type)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
 !
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OUTPUT ARGUMENTS:
-!       CloudCoeff:   Structure to contain the cloud optical property data
-!                     read from file.
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(CloudCoeff_type)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT)
+! OPTIONAL OUTPUTS:
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Title:        Character string written into the TITLE global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       History:      Character string written into the HISTORY global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Comment:      Character string written into the COMMENT global
-!                     attribute field of the netCDF CloudCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the CloudCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF data read was successful.
-!                        == FAILURE an unrecoverable error occurred.
-!                        == WARNING an error occurred closing the netCDF
-!                                   input file after a successful read.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the data write was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
-! COMMENTS:
-!       If specified as the output data type, the INTENT on the output CloudCoeff
-!       structure argument is IN OUT rather than just OUT. This is necessary
-!       because the argument may be defined on input. To prevent memory leaks,
-!       the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_CloudCoeff_netCDF( NC_Filename, &  ! Input
-                                   CloudCoeff , &  ! Output
-                                   Quiet      , &  ! Optional input
-                                   Title      , &  ! Optional output
-                                   History    , &  ! Optional output
-                                   Comment    , &  ! Optional output
-                                   RCS_Id     , &  ! Revision control
-                                   Message_Log) &  ! Error messaging
-                                 RESULT ( Error_Status )
+  FUNCTION CloudCoeff_netCDF_ReadFile( &
+    Filename  , &  ! Input
+    CloudCoeff, &  ! Output
+    Quiet     , &  ! Optional input
+    Title     , &  ! Optional output
+    History   , &  ! Optional output
+    Comment   ) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)     :: NC_Filename
-    TYPE(CloudCoeff_type),  INTENT(IN OUT) :: CloudCoeff
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    TYPE(CloudCoeff_type),  INTENT(OUT) :: CloudCoeff
+    LOGICAL,      OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_CloudCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_ReadFile(netCDF)'
     ! Function variables
-    CHARACTER(1000) :: Message
+    CHARACTER(ML) :: msg
+    LOGICAL :: Close_File
     LOGICAL :: Noisy
-    INTEGER :: NC_FileID
-    INTEGER :: Destroy_Status
-    INTEGER :: Close_Status
+    INTEGER :: NF90_Status
+    INTEGER :: FileId
     INTEGER :: n_MW_Frequencies
     INTEGER :: n_MW_Radii      
     INTEGER :: n_IR_Frequencies
@@ -2142,303 +1115,1118 @@ CONTAINS
     INTEGER :: n_Densities     
     INTEGER :: n_Legendre_Terms
     INTEGER :: n_Phase_Elements
-    
+    INTEGER :: VarId
+
+
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational messages....
+    err_stat = SUCCESS
+    Close_File = .FALSE.
+    ! ...Check that the file exists
+    IF ( .NOT. File_Exists(Filename) ) THEN
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Check Quiet argument
     Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == 1 ) Noisy = .FALSE.
+    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+
+
+    ! Inquire the file to get the dimensions
+    err_stat = CloudCoeff_netCDF_InquireFile( &
+                 Filename, &
+                 n_MW_Frequencies = n_MW_Frequencies, &
+                 n_MW_Radii       = n_MW_Radii      , &
+                 n_IR_Frequencies = n_IR_Frequencies, &
+                 n_IR_Radii       = n_IR_Radii      , &
+                 n_Temperatures   = n_Temperatures  , &
+                 n_Densities      = n_Densities     , &
+                 n_Legendre_Terms = n_Legendre_Terms, &
+                 n_Phase_Elements = n_Phase_Elements  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error obtaining CloudCoeff dimensions from '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
+    END IF
+
+
+    ! Allocate the output structure
+    CALL CloudCoeff_Create( &
+           CloudCoeff, &
+           n_MW_Frequencies, &
+           n_MW_Radii      , &
+           n_IR_Frequencies, &
+           n_IR_Radii      , &
+           n_Temperatures  , &
+           n_Densities     , &
+           n_Legendre_Terms, &
+           n_Phase_Elements  )
+    IF ( .NOT. CloudCoeff_Associated(CloudCoeff) ) THEN
+      msg = 'Error allocating output CloudCoeff'
+      CALL Read_Cleanup(); RETURN
+    END IF
+
+
+    ! Open the file for reading
+    NF90_Status = NF90_OPEN( Filename,NF90_NOWRITE,FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(Filename)//' for read access - '//&
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Close the file if any error from here on
+    Close_File = .TRUE.
+
+
+    ! Read the global attributes
+    err_stat = ReadGAtts( Filename, &
+                          FileID  , &
+                          Release = CloudCoeff%Release, &
+                          Version = CloudCoeff%Version, &
+                          Title   = Title             , &
+                          History = History           , &
+                          Comment = Comment             )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading global attribute from '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Check if release is valid
+    IF ( .NOT. CloudCoeff_ValidRelease( CloudCoeff ) ) THEN
+      msg = 'CloudCoeff Release check failed.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
     
-    ! Allocate the structure for the netCDF read
-    ! ------------------------------------------
-    ! Read the dimension values and global attributes
-    Error_Status = Inquire_CloudCoeff_netCDF( NC_Filename                      , &
-                                              n_MW_Frequencies=n_MW_Frequencies, &
-                                              n_MW_Radii      =n_MW_Radii      , &
-                                              n_IR_Frequencies=n_IR_Frequencies, &
-                                              n_IR_Radii      =n_IR_Radii      , &
-                                              n_Temperatures  =n_Temperatures  , &
-                                              n_Densities     =n_Densities     , &
-                                              n_Legendre_Terms=n_Legendre_Terms, &
-                                              n_Phase_Elements=n_Phase_Elements, &
-                                              Title           =Title           , &
-                                              History         =History         , &
-                                              Comment         =Comment         , &
-                                              Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error obtaining CloudCoeff dimensions from '//TRIM( NC_Filename )
-      GOTO 3000
+    ! Read the CloudCoeff data
+    ! ...Frequency_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,FREQUENCY_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-    ! Allocate the structure
-    Error_Status = Allocate_CloudCoeff( n_MW_Frequencies, &
-                                        n_MW_Radii      , &
-                                        n_IR_Frequencies, &
-                                        n_IR_Radii      , &
-                                        n_Temperatures  , &
-                                        n_Densities     , &
-                                        n_Legendre_Terms, &
-                                        n_Phase_Elements, &
-                                        CloudCoeff      , &
-                                        Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error occurred allocating CloudCoeff structure.'
-      GOTO 3000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Frequency_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//FREQUENCY_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-    ! Open the netCDF file for reading
-    ! --------------------------------
-    Error_Status = Open_CloudCoeff_netCDF( TRIM( NC_Filename ), &
-                                           NC_FileID, &
-                                           Mode='READ' )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening netCDF CloudCoeff data file '//TRIM( NC_Filename )
-      GOTO 2000
+    ! ...Frequency_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,FREQUENCY_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-    ! Read the data file release and version
-    ! --------------------------------------
-    ! The Release
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        RELEASE_VARNAME, &
-                                        CloudCoeff%Release )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Release from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Frequency_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//FREQUENCY_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The Version
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        VERSION_VARNAME, &
-                                        CloudCoeff%Version )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Version from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Reff_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,REFF_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    
-    ! Check the release
-    Error_Status = Check_CloudCoeff_Release( CloudCoeff, &
-                                             Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'CloudCoeff Release check failed for '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Reff_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//REFF_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    
-
-    ! Read the LUT dimension vectors
-    ! -------------------------------
-    ! The microwave frequency vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        FREQUENCY_MW_VARNAME, &
-                                        CloudCoeff%Frequency_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Frequency_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Reff_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,REFF_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The microwave radii vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        REFF_MW_VARNAME, &
-                                        CloudCoeff%Reff_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Reff_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Reff_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//REFF_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The infrared frequency vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        FREQUENCY_IR_VARNAME, &
-                                        CloudCoeff%Frequency_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Frequency_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Temperature variable 
+    NF90_Status = NF90_INQ_VARID( FileId,TEMPERATURE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//TEMPERATURE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The infrared radii vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        REFF_IR_VARNAME, &
-                                        CloudCoeff%Reff_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Reff_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Temperature )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//TEMPERATURE_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The temperature vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        TEMPERATURE_VARNAME, &
-                                        CloudCoeff%Temperature )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Temperature from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...Density variable 
+    NF90_Status = NF90_INQ_VARID( FileId,DENSITY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//DENSITY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The density vector
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        DENSITY_VARNAME, &
-                                        CloudCoeff%Density )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading Density from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%Density )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//DENSITY_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-    ! Read the microwave liquid phase variables
-    ! -------------------------------------------
-    ! The extinction coefficient
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        KE_L_MW_VARNAME, &
-                                        CloudCoeff%ke_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading ke_L_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...ke_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        W_L_MW_VARNAME, &
-                                        CloudCoeff%w_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading w_L_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%ke_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//KE_L_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        G_L_MW_VARNAME, &
-                                        CloudCoeff%g_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading g_L_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...w_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_L_MW_VARNAME, &
-                                        CloudCoeff%pcoeff_L_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading pcoeff_L_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%w_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//W_L_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-    ! Read the microwave solid phase variables
-    ! -----------------------------------------
-    ! The extinction coefficient
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        KE_S_MW_VARNAME, &
-                                        CloudCoeff%ke_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading ke_S_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...g_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        W_S_MW_VARNAME, &
-                                        CloudCoeff%w_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading w_S_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%g_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//G_L_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        G_S_MW_VARNAME, &
-                                        CloudCoeff%g_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading g_S_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...pcoeff_L_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_L_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_L_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_S_MW_VARNAME, &
-                                        CloudCoeff%pcoeff_S_MW )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading pcoeff_S_MW from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%pcoeff_L_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PCOEFF_L_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-    ! Read the infrared variables
-    ! ----------------------------
-    ! The extinction coefficient
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        KE_IR_VARNAME, &
-                                        CloudCoeff%ke_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading ke_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...ke_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The single scatter albedo
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        W_IR_VARNAME, &
-                                        CloudCoeff%w_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading w_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%ke_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//KE_S_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The asymmetry parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        G_IR_VARNAME, &
-                                        CloudCoeff%g_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading g_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    ! ...w_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    ! The phase coefficients parameter
-    Error_Status = Get_netCDF_Variable( NC_FileID,   &
-                                        PCOEFF_IR_VARNAME, &
-                                        CloudCoeff%pcoeff_IR )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error reading pcoeff_IR from '//TRIM( NC_Filename )
-      GOTO 1000
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%w_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//W_S_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-
+    ! ...g_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%g_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//G_S_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_S_MW variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_S_MW_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_S_MW_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%pcoeff_S_MW )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PCOEFF_S_MW_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...ke_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,KE_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%ke_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//KE_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...w_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,W_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//W_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%w_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//W_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...g_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,G_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//G_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%g_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//G_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_IR variable 
+    NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_IR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_IR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,CloudCoeff%pcoeff_IR )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PCOEFF_IR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
 
 
     ! Close the file
-    ! --------------
-    Close_Status = Close_CloudCoeff_netCDF( NC_FileID )
-    IF ( Close_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error closing netCDF CloudCoeff data file '// &
-                            TRIM( NC_Filename ), &
-                            WARNING, &
-                            Message_Log = Message_Log )
+    NF90_Status = NF90_CLOSE( FileId ); Close_File = .FALSE.
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    ! ----------------------
     IF ( Noisy ) THEN
-      CALL Info_CloudCoeff( CloudCoeff, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM( NC_Filename )//'; '//TRIM( Message ), &
-                            INFORMATION, &
-                            Message_Log = Message_Log )
+      CALL CloudCoeff_Info( CloudCoeff, msg )
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
     END IF
 
-    !=====
-    RETURN
-    !=====
+  CONTAINS
+ 
+    SUBROUTINE Read_CleanUp()
+      IF ( Close_File ) THEN
+        NF90_Status = NF90_CLOSE( FileId )
+        IF ( NF90_Status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup- '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      END IF
+      CALL CloudCoeff_Destroy( CloudCoeff )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+    END SUBROUTINE Read_CleanUp
     
-    ! Clean up after an error
-    ! -----------------------
-    1000 CONTINUE
-    Close_Status = Close_CloudCoeff_netCDF(NC_FileID)
-    IF ( Close_Status /= SUCCESS ) &
-      Message = TRIM(Message)//'; Error closing input file during error cleanup.'
+  END FUNCTION CloudCoeff_netCDF_ReadFile
 
-    2000 CONTINUE
-    Destroy_Status = Destroy_CloudCoeff(CloudCoeff, Message_Log=Message_Log)
-    IF ( Destroy_Status /= SUCCESS ) &
-      Message = TRIM(Message)//'; Error destroying CloudCoeff during error cleanup.'
 
-    3000 CONTINUE
-    Error_Status = FAILURE
-    CALL Display_Message( ROUTINE_NAME, &
-                          TRIM( Message ), &
-                          Error_Status, &
-                          Message_Log=Message_Log )
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CloudCoeff_netCDF_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CloudCoeff_netCDF_IOVersion( Id )
+!
+! OUTPUT ARGUMENTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  END FUNCTION Read_CloudCoeff_netCDF
+  SUBROUTINE CloudCoeff_netCDF_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CloudCoeff_netCDF_IOVersion
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+  ! Function to write the global attributes to a CloudCoeff data file.
+
+  FUNCTION WriteGAtts( &
+    Filename, &  ! Input
+    FileId  , &  ! Input
+    Version , &  ! Optional input
+    Title   , &  ! Optional input
+    History , &  ! Optional input
+    Comment ) &  ! Optional input
+  RESULT( err_stat )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN) :: Filename
+    INTEGER     ,           INTENT(IN) :: FileId
+    INTEGER     , OPTIONAL, INTENT(IN) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_WriteGAtts(netCDF)'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history'
+    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: GAttName
+    CHARACTER(8)  :: cdate
+    CHARACTER(10) :: ctime
+    CHARACTER(5)  :: czone
+    INTEGER :: Ver
+    INTEGER :: NF90_Status
+    TYPE(CloudCoeff_type) :: CloudCoeff
+
+    ! Set up
+    err_stat = SUCCESS
+    msg = ' '
+
+    ! Mandatory global attributes
+    ! ...Software ID
+    GAttName = WRITE_MODULE_HISTORY_GATTNAME
+    NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),MODULE_VERSION_ID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+    ! ...Creation date
+    CALL DATE_AND_TIME( cdate, ctime, czone )
+    GAttName = CREATION_DATE_AND_TIME_GATTNAME
+    NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName), &
+                                cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
+                                ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
+                                czone//'UTC' )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+    ! ...The Release
+    GAttName = RELEASE_GATTNAME
+    NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),CloudCoeff%Release )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+
+
+    ! Optional global attributes
+    ! ...The Version
+    IF ( PRESENT(Version) ) THEN
+      Ver = Version
+    ELSE
+      Ver = CloudCoeff%Version
+    END IF
+    GAttName = VERSION_GATTNAME
+    NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),Ver )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      CALL WriteGAtts_Cleanup(); RETURN
+    END IF
+    ! ...The title
+    IF ( PRESENT(title) ) THEN
+      GAttName = TITLE_GATTNAME
+      NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),title )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...The history
+    IF ( PRESENT(history) ) THEN
+      GAttName = HISTORY_GATTNAME
+      NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),history )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...The comment
+    IF ( PRESENT(comment) ) THEN
+      GAttName = COMMENT_GATTNAME
+      NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),comment )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL WriteGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+    
+ CONTAINS
+  
+    SUBROUTINE WriteGAtts_CleanUp()
+      NF90_Status = NF90_CLOSE( FileId )
+      IF ( NF90_Status /= NF90_NOERR ) &
+        msg = '; Error closing input file during error cleanup - '//&
+              TRIM(NF90_STRERROR( NF90_Status ) )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error writing '//TRIM(GAttName)//' attribute to '//&
+                            TRIM(Filename)//' - '// &
+                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
+                            err_stat )
+    END SUBROUTINE WriteGAtts_CleanUp
+    
+  END FUNCTION WriteGAtts
+
+
+  ! Function to read the global attributes from a CloudCoeff data file.
+
+  FUNCTION ReadGAtts( &
+    Filename, &  ! Input
+    FileId  , &  ! Input
+    Release , &  ! Optional output
+    Version , &  ! Optional output
+    Title   , &  ! Optional output
+    History , &  ! Optional output
+    Comment ) &  ! Optional output
+  RESULT( err_stat )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER     ,           INTENT(IN)  :: FileId
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release        
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_ReadGAtts(netCDF)'
+    ! Local variables
+    CHARACTER(ML)   :: msg
+    CHARACTER(256)  :: GAttName
+    CHARACTER(5000) :: GAttString
+    INTEGER :: NF90_Status
+    
+    ! Set up
+    err_stat = SUCCESS
+
+    ! The global attributes
+    ! ...The Release
+    IF ( PRESENT(Release) ) THEN
+      GAttName = RELEASE_GATTNAME
+      NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),Release )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...The Version
+    IF ( PRESENT(Version) ) THEN
+      GAttName = VERSION_GATTNAME
+      NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),Version )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...The title
+    IF ( PRESENT(title) ) THEN
+      GAttName = TITLE_GATTNAME; GAttString = ''
+      NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF        
+      CALL StrClean( GAttString )
+      title = GAttString(1:MIN(LEN(title), LEN_TRIM(GAttString)))
+    END IF
+    ! ...The history
+    IF ( PRESENT(history) ) THEN
+      GAttName = HISTORY_GATTNAME; GAttString = ''
+      NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF        
+      CALL StrClean( GAttString )
+      history = GAttString(1:MIN(LEN(history), LEN_TRIM(GAttString)))
+    END IF
+    ! ...The comment
+    IF ( PRESENT(comment) ) THEN
+      GAttName = COMMENT_GATTNAME; GAttString = ''
+      NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF        
+      CALL StrClean( GAttString )
+      comment = GAttString(1:MIN(LEN(comment), LEN_TRIM(GAttString)))
+    END IF
+
+  CONTAINS
+
+    SUBROUTINE ReadGAtts_CleanUp()
+      err_stat = FAILURE
+      msg = 'Error reading '//TRIM(GAttName)//' attribute from '//TRIM(Filename)//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ) )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+    END SUBROUTINE ReadGAtts_CleanUp
+
+  END FUNCTION ReadGAtts
+
+
+  ! Function to create a CloudCoeff file for writing
+
+  FUNCTION CreateFile( &
+    Filename        , &  ! Input
+    n_MW_Frequencies, &  ! Input
+    n_MW_Radii      , &  ! Input
+    n_IR_Frequencies, &  ! Input
+    n_IR_Radii      , &  ! Input
+    n_Temperatures  , &  ! Input
+    n_Densities     , &  ! Input
+    n_Legendre_Terms, &  ! Input
+    n_Phase_Elements, &  ! Input
+    FileId          , &  ! Output
+    Version         , &  ! Optional input
+    Title           , &  ! Optional input
+    History         , &  ! Optional input
+    Comment         ) &  ! Optional input
+  RESULT( err_stat )
+    ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER     ,           INTENT(IN)  :: n_MW_Frequencies
+    INTEGER     ,           INTENT(IN)  :: n_MW_Radii      
+    INTEGER     ,           INTENT(IN)  :: n_IR_Frequencies
+    INTEGER     ,           INTENT(IN)  :: n_IR_Radii      
+    INTEGER     ,           INTENT(IN)  :: n_Temperatures  
+    INTEGER     ,           INTENT(IN)  :: n_Densities     
+    INTEGER     ,           INTENT(IN)  :: n_Legendre_Terms
+    INTEGER     ,           INTENT(IN)  :: n_Phase_Elements
+    INTEGER     ,           INTENT(OUT) :: FileId
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_CreateFile(netCDF)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    LOGICAL :: Close_File
+    INTEGER :: NF90_Status
+    INTEGER :: n_MW_Frequencies_DimID
+    INTEGER :: n_MW_Radii_DimID
+    INTEGER :: n_IR_Frequencies_DimID
+    INTEGER :: n_IR_Radii_DimID
+    INTEGER :: n_Temperatures_DimID
+    INTEGER :: n_Densities_DimID
+    INTEGER :: n_IR_Densities_DimID
+    INTEGER :: n_Legendre_Terms_DimID
+    INTEGER :: n_Phase_Elements_DimID
+    INTEGER :: varID
+    INTEGER :: Put_Status(4)
+    
+    ! Setup
+    err_stat = SUCCESS
+    Close_File = .FALSE.
+
+
+    ! Create the data file
+    NF90_Status = NF90_CREATE( Filename,NF90_CLOBBER,FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error creating '//TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Close the file if any error from here on
+    Close_File = .TRUE.
+
+
+    ! Define the dimensions
+    ! ...Number of microwave frequencies
+    NF90_Status = NF90_DEF_DIM( FileID,MW_FREQ_DIMNAME,n_MW_Frequencies,n_MW_Frequencies_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//MW_FREQ_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of radii for microwave data
+    NF90_Status = NF90_DEF_DIM( FileID,MW_REFF_DIMNAME,n_MW_Radii,n_MW_Radii_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//MW_REFF_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of infrared frequencies
+    NF90_Status = NF90_DEF_DIM( FileID,IR_FREQ_DIMNAME,n_IR_Frequencies,n_IR_Frequencies_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//IR_FREQ_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of radii for infrared data
+    NF90_Status = NF90_DEF_DIM( FileID,IR_REFF_DIMNAME,n_IR_Radii,n_IR_Radii_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//IR_REFF_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of temperatures
+    NF90_Status = NF90_DEF_DIM( FileID,TEMPERATURE_DIMNAME,n_Temperatures,n_Temperatures_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TEMPERATURE_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of densities for microwave data
+    NF90_Status = NF90_DEF_DIM( FileID,DENSITY_DIMNAME,n_Densities,n_Densities_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//DENSITY_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of densities for infrared data
+    ! ...Array indexing starts at 0, so +1
+    NF90_Status = NF90_DEF_DIM( FileID,IR_DENSITY_DIMNAME,n_Densities+1,n_IR_Densities_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//IR_DENSITY_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of Legendre terms
+    ! ...Array indexing starts at 0, so +1
+    NF90_Status = NF90_DEF_DIM( FileID,LEGENDRE_DIMNAME,n_Legendre_Terms+1,n_Legendre_Terms_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//LEGENDRE_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of phase elements
+    NF90_Status = NF90_DEF_DIM( FileID,PHASE_DIMNAME,n_Phase_Elements,n_Phase_Elements_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PHASE_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the global attributes
+    err_stat = WriteGAtts( Filename, &
+                           FileId  , &
+                           Version = Version, &
+                           Title   = Title  , &
+                           History = History, &
+                           Comment = Comment  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing global attribute to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+
+    ! Define the variables
+    ! ...Frequency_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      FREQUENCY_MW_VARNAME, &
+      FREQUENCY_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//FREQUENCY_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,FREQUENCY_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,FREQUENCY_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,FREQUENCY_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,FREQUENCY_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//FREQUENCY_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Frequency_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      FREQUENCY_IR_VARNAME, &
+      FREQUENCY_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//FREQUENCY_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,FREQUENCY_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,FREQUENCY_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,FREQUENCY_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,FREQUENCY_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//FREQUENCY_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Reff_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      REFF_MW_VARNAME, &
+      REFF_MW_TYPE, &
+      dimIDs=(/n_MW_Radii_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//REFF_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,REFF_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,REFF_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,REFF_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,REFF_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//REFF_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Reff_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      REFF_IR_VARNAME, &
+      REFF_IR_TYPE, &
+      dimIDs=(/n_IR_Radii_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//REFF_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,REFF_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,REFF_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,REFF_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,REFF_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//REFF_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Temperature variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      TEMPERATURE_VARNAME, &
+      TEMPERATURE_TYPE, &
+      dimIDs=(/n_Temperatures_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//TEMPERATURE_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,TEMPERATURE_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,TEMPERATURE_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,TEMPERATURE_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,TEMPERATURE_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//TEMPERATURE_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Density variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      DENSITY_VARNAME, &
+      DENSITY_TYPE, &
+      dimIDs=(/n_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//DENSITY_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,DENSITY_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,DENSITY_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,DENSITY_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,DENSITY_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//DENSITY_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...ke_L_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KE_L_MW_VARNAME, &
+      KE_L_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Temperatures_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KE_L_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KE_L_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KE_L_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KE_L_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KE_L_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KE_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...w_L_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      W_L_MW_VARNAME, &
+      W_L_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Temperatures_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//W_L_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,W_L_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,W_L_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,W_L_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,W_L_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//W_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...g_L_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      G_L_MW_VARNAME, &
+      G_L_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Temperatures_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//G_L_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,G_L_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,G_L_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,G_L_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,G_L_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//G_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_L_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      PCOEFF_L_MW_VARNAME, &
+      PCOEFF_L_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Temperatures_DimID, &
+               n_Legendre_Terms_DimID, n_Phase_Elements_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PCOEFF_L_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,PCOEFF_L_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,PCOEFF_L_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,PCOEFF_L_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,PCOEFF_L_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//PCOEFF_L_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...ke_S_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KE_S_MW_VARNAME, &
+      KE_S_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KE_S_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KE_S_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KE_S_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KE_S_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KE_S_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KE_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...w_S_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      W_S_MW_VARNAME, &
+      W_S_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//W_S_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,W_S_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,W_S_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,W_S_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,W_S_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//W_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...g_S_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      G_S_MW_VARNAME, &
+      G_S_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//G_S_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,G_S_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,G_S_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,G_S_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,G_S_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//G_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_S_MW variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      PCOEFF_S_MW_VARNAME, &
+      PCOEFF_S_MW_TYPE, &
+      dimIDs=(/n_MW_Frequencies_DimID, n_MW_Radii_DimID, n_Densities_DimID, &
+               n_Legendre_Terms_DimID, n_Phase_Elements_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PCOEFF_S_MW_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,PCOEFF_S_MW_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,PCOEFF_S_MW_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,PCOEFF_S_MW_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,PCOEFF_S_MW_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//PCOEFF_S_MW_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...ke_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      KE_IR_VARNAME, &
+      KE_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID, n_IR_Radii_DimID, n_IR_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//KE_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,KE_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,KE_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,KE_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,KE_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//KE_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...w_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      W_IR_VARNAME, &
+      W_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID, n_IR_Radii_DimID, n_IR_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//W_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,W_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,W_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,W_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,W_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//W_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...g_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      G_IR_VARNAME, &
+      G_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID, n_IR_Radii_DimID, n_IR_Densities_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//G_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,G_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,G_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,G_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,G_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//G_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...pcoeff_IR variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      PCOEFF_IR_VARNAME, &
+      PCOEFF_IR_TYPE, &
+      dimIDs=(/n_IR_Frequencies_DimID, n_IR_Radii_DimID, n_IR_Densities_DimID, &
+               n_Legendre_Terms_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//PCOEFF_IR_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,PCOEFF_IR_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,PCOEFF_IR_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,PCOEFF_IR_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,PCOEFF_IR_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//PCOEFF_IR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+
+    ! Take netCDF file out of define mode
+    NF90_Status = NF90_ENDDEF( FileId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error taking file '//TRIM(Filename)// &
+            ' out of define mode - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+
+  CONTAINS
+ 
+    SUBROUTINE Create_CleanUp()
+      IF ( Close_File ) THEN
+        NF90_Status = NF90_CLOSE( FileID )
+        IF ( NF90_Status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                TRIM(NF90_STRERROR( NF90_Status ))
+      END IF
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
+    END SUBROUTINE Create_CleanUp
+    
+  END FUNCTION CreateFile
 
 END MODULE CloudCoeff_netCDF_IO

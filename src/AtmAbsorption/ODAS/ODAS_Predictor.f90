@@ -1342,7 +1342,7 @@ CONTAINS
 
     ! Save the angle information
     CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
     Predictor%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute the nadir integrated absorber profiles
@@ -1527,7 +1527,7 @@ CONTAINS
 
     ! Save the angle information
     CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
     Predictor_TL%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute the tangent-linear nadir integrated absorber profiles
@@ -1695,7 +1695,7 @@ CONTAINS
 
     ! Save the angle information
     CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
     Predictor_AD%Secant_Sensor_Zenith = Secant_Sensor_Zenith
 
     ! Compute aveA AD

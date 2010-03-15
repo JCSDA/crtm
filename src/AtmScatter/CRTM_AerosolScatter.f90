@@ -11,8 +11,7 @@
 !                       paul.vandelst@ssec.wisc.edu
 !       Modified by     Quanhua Liu, 03-Oct-2006
 !                       Quanhua.Liu@noaa.gov
-                        
-
+!                       
 
 MODULE CRTM_AerosolScatter
 
@@ -160,12 +159,11 @@ CONTAINS
 !       and populate the output AerosolScatter structure for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AerosolScatter( Atmosphere             , &  ! Input
-!                                                   SensorIndex            , &  ! Input
-!                                                   ChannelIndex           , &  ! Input
-!                                                   AerosolScatter         , &  ! Output    
-!                                                   ASVariables            , &  ! Internal variable output
-!                                                   Message_Log=Message_Log  )  ! Error messaging 
+!       Error_Status = CRTM_Compute_AerosolScatter( Atmosphere    , &
+!                                                   SensorIndex   , &
+!                                                   ChannelIndex  , &
+!                                                   AerosolScatter, &
+!                                                   ASVariables     )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
@@ -189,16 +187,6 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:       
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OUTPUT ARGUMENTS:
 !        AerosolScatter: CRTM_AtmScatter structure containing the aerosol
@@ -234,20 +222,19 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AerosolScatter( Atm         , &  ! Input
-                                        SensorIndex , &  ! Input
-                                        ChannelIndex, &  ! Input
-                                        AScat       , &  ! Output
-                                        ASV         , &  ! Internal variable output
-                                        Message_Log ) &  ! Error messaging
-                                      RESULT ( Error_Status )
+  FUNCTION CRTM_Compute_AerosolScatter( &
+    Atm         , &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    AScat       , &  ! Output
+    ASV         ) &  ! Internal variable output
+  RESULT ( Error_Status )
     !Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     INTEGER,                     INTENT(IN)     :: SensorIndex
     TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AScat
     TYPE(CRTM_ASVariables_type), INTENT(OUT)    :: ASV
-    CHARACTER(*), OPTIONAL,      INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status    
     ! Local parameters
@@ -291,10 +278,7 @@ CONTAINS
           Error_Status = FAILURE
           WRITE(Message,'("The n_Legendre_Terms in AerosolScatter, ",i0,", do not fit model")') &
                         AScat%n_Legendre_Terms
-          CALL Display_Message(ROUTINE_NAME,           &
-                               TRIM(Message),          &
-                               Error_Status,           &
-                               Message_Log=Message_Log )
+          CALL Display_Message(ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
     END SELECT
@@ -401,14 +385,13 @@ CONTAINS
 !       structure for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AerosolScatter_TL( Atmosphere             , &  ! Input
-!                                                      AerosolScatter         , &  ! Input
-!                                                      Atmosphere_TL          , &  ! Input
-!                                                      SensorIndex            , &  ! Input
-!                                                      ChannelIndex           , &  ! Input
-!                                                      AerosolScatter_TL      , &  ! Output  
-!                                                      ASVariables            , &  ! Internal Variable input
-!                                                      Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = CRTM_Compute_AerosolScatter_TL( Atmosphere       , &
+!                                                      AerosolScatter   , &
+!                                                      Atmosphere_TL    , &
+!                                                      SensorIndex      , &
+!                                                      ChannelIndex     , &
+!                                                      AerosolScatter_TL, &
+!                                                      ASVariables        )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
@@ -458,16 +441,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !        AerosolScatter_TL: CRTM_AtmScatter structure containing the tangent-linear
 !                           aerosol absorption and scattering properties required
@@ -494,15 +467,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AerosolScatter_TL( Atm         , & ! FWD Input
-                                           AScat       , & ! FWD Input
-                                           Atm_TL      , & ! TL  Input
-                                           SensorIndex , & ! Input
-                                           ChannelIndex, & ! Input
-                                           AScat_TL    , & ! TL  Input
-                                           ASV         , & ! Internal variable input
-                                           Message_Log ) & ! Error messaging
-                                         RESULT( Error_Status )
+  FUNCTION CRTM_Compute_AerosolScatter_TL( &
+    Atm         , & ! FWD Input
+    AScat       , & ! FWD Input
+    Atm_TL      , & ! TL  Input
+    SensorIndex , & ! Input
+    ChannelIndex, & ! Input
+    AScat_TL    , & ! TL  Input
+    ASV         ) & ! Internal variable input
+  RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
     TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: AScat
@@ -511,7 +484,6 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: AScat_TL
     TYPE(CRTM_ASVariables_type), INTENT(IN)     :: ASV
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -524,7 +496,7 @@ CONTAINS
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
     INTEGER  :: nAerosol_Layers
-    REAL(fp) :: ke_TL, w_TL, g_TL
+    REAL(fp) :: ke_TL, w_TL
     REAL(fp) :: pcoeff_TL(0:AScat%n_Legendre_Terms, AScat%n_Phase_Elements)
     REAL(fp) :: bs, bs_TL
     
@@ -565,9 +537,7 @@ CONTAINS
 
         ! Obtain bulk aerosol optical properties
         CALL Get_Aerosol_Opt_TL(AScat_TL                              , & ! Input
-                                Frequency                             , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
-                                Atm%Aerosol(n)%Effective_Radius(ka)   , & ! FWD Input
                                 Atm_TL%Aerosol(n)%Effective_Radius(ka), & ! TL  Input
                                 ke_TL                                 , & ! TL  Output
                                 w_TL                                  , & ! TL  Output
@@ -624,14 +594,13 @@ CONTAINS
 !       properties for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_AerosolScatter_AD(  Atmosphere             , &  ! Input
-!                                                       AerosolScatter         , &  ! Input
-!                                                       AerosolScatter_AD      , &  ! Input
-!                                                       SensorIndex            , &  ! Input
-!                                                       ChannelIndex           , &  ! Input
-!                                                       Atmosphere_AD          , &  ! Output
-!                                                       ASVariables            , &  ! Internal Variable Output  
-!                                                       Message_Log=Message_Log  )  ! Error messaging 
+!       Error_Status = CRTM_Compute_AerosolScatter_AD( Atmosphere       , &
+!                                                      AerosolScatter   , &
+!                                                      AerosolScatter_AD, &
+!                                                      SensorIndex      , &
+!                                                      ChannelIndex     , &
+!                                                      Atmosphere_AD    , &
+!                                                      ASVariables        )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
@@ -683,16 +652,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! OUTPUT ARGUMENTS:
 !       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
 !                           atmospheric state data.
@@ -721,15 +680,15 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_AerosolScatter_AD( Atm         , &  ! FWD Input
-                                           AScat       , &  ! FWD Input
-                                           AScat_AD    , &  ! AD  Input
-                                           SensorIndex , &  ! Input
-                                           ChannelIndex, &  ! Input
-                                           Atm_AD      , &  ! AD  Output
-                                           ASV         , &  ! Internal Variable input
-                                           Message_Log ) &  ! Error messaging
-                                         RESULT ( Error_Status )               
+  FUNCTION CRTM_Compute_AerosolScatter_AD( &
+    Atm         , &  ! FWD Input
+    AScat       , &  ! FWD Input
+    AScat_AD    , &  ! AD  Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    Atm_AD      , &  ! AD  Output
+    ASV         ) &  ! Internal Variable input
+  RESULT( Error_Status )               
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
     TYPE(CRTM_AtmScatter_type),  INTENT(IN)     :: AScat
@@ -738,7 +697,6 @@ CONTAINS
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Atmosphere_type),  INTENT(IN OUT) :: Atm_AD
     TYPE(CRTM_ASVariables_type), INTENT(IN)     :: ASV
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -751,10 +709,9 @@ CONTAINS
     LOGICAL   :: Layer_Mask(Atm%n_Layers)
     INTEGER   :: Layer_Index(Atm%n_Layers)
     INTEGER   :: nAerosol_Layers
-    REAL(fp)  :: ke_AD, w_AD, g_AD
+    REAL(fp)  :: ke_AD, w_AD
     REAL(fp)  :: pcoeff_AD(0:AScat%n_Legendre_Terms, AScat%n_Phase_Elements)
     REAL(fp)  :: bs, bs_AD
-!    REAL(fp)  :: Total_bs_AD(Atm%n_Layers)
     
     ! ------
     ! Set up
@@ -764,8 +721,6 @@ CONTAINS
     Sensor_Type = SC(SensorIndex)%Sensor_Type
     IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
     IF (Atm%n_Aerosols == 0) RETURN
-    ! Initialize local adjoint variables
-!    Total_bs_AD = ZERO
     ! Frequency
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -864,9 +819,7 @@ CONTAINS
 
         ! Adjoint AScat interpolation routine
         CALL Get_Aerosol_Opt_AD(AScat_AD                              , & ! Input
-                                Frequency                             , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
-                                Atm%Aerosol(n)%Effective_Radius(ka)   , & ! FWD Input
                                 ke_AD                                 , & ! AD Input
                                 w_AD                                  , & ! AD Input
                                 pcoeff_AD                             , & ! AD Input
@@ -990,9 +943,7 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_TL)
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_TL(AerosolScatter_TL, &  ! Input  AerosolScatterTL structure
-                                Frequency        , &  ! Input  in cm^-1
                                 Aerosol_Type     , &  ! Input  see CRTM_Aerosol_Define.f90
-                                Reff             , &  ! Input  FWD effective radius
                                 Reff_TL          , &  ! Input  TL effective radius (mm)
                                 ke_TL            , &  ! Output TL extinction coefficient (=~ optical depth)
                                 w_TL             , &  ! Output TL single scattering albedo
@@ -1001,9 +952,7 @@ CONTAINS
 
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_TL
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN)     :: Reff
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
@@ -1092,9 +1041,7 @@ CONTAINS
   !   spherical Legendre coefficients (pcoeff_AD)
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_AD( AerosolScatter_AD, & ! Input AerosolScatter AD structure
-                                 Frequency        , & ! Input Frequency in cm^-1
                                  Aerosol_Type     , & ! Input see CRTM_Aerosol_Define.f90
-                                 Reff             , & ! FWD Input effective radius
                                  ke_AD            , & ! AD Input extinction cross section
                                  w_AD             , & ! AD Input single scatter albedo
                                  pcoeff_AD        , & ! AD Input spherical Legendre coefficients
@@ -1102,9 +1049,7 @@ CONTAINS
                                  asi                ) ! Input interpolation data
     ! Arguments
     TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_AD
-    REAL(fp),                   INTENT(IN)     :: Frequency
     INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN)     :: Reff  
     REAL(fp),                   INTENT(IN OUT) :: ke_AD            ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: w_AD             ! AD Input
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input

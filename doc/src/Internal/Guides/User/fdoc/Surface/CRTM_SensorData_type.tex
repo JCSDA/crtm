@@ -4,18 +4,17 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_SensorData_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: n_Channels = 0  ! L
-    ! The WMO sensor ID of the sensor for which the data is to be used
-    INTEGER :: Select_WMO_Sensor_Id = INVALID_WMO_SENSOR_ID
-    ! The data sensor IDs and channels
-    CHARACTER(STRLEN), POINTER :: Sensor_Id(:)        => NULL() ! L
-    INTEGER,           POINTER :: WMO_Satellite_ID(:) => NULL() ! L
-    INTEGER,           POINTER :: WMO_Sensor_ID(:)    => NULL() ! L
-    INTEGER,           POINTER :: Sensor_Channel(:)   => NULL() ! L
-    ! The sensor brightness temperatures
-    REAL(fp),          POINTER :: Tb(:) => NULL() ! L
+    ! The data sensor IDs
+    CHARACTER(STRLEN) :: Sensor_Id        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    ! The sensor channels and brightness temperatures
+    INTEGER , ALLOCATABLE :: Sensor_Channel(:)   ! L
+    REAL(fp), ALLOCATABLE :: Tb(:)               ! L
   END TYPE CRTM_SensorData_type
     \end{alltt}
   \end{minipage}

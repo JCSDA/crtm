@@ -115,6 +115,8 @@ MODULE CRTM_Cloud_Define
   ! --------------------------
   !:tdoc+:
   TYPE :: CRTM_Cloud_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: Max_Layers = 0  ! K dimension.
     INTEGER :: n_Layers   = 0  ! Kuse dimension.
@@ -165,10 +167,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:  The return value is a logical value indicating the
 !                status of the Cloud members.
-!                .TRUE.  - if ANY of the Cloud allocatable or
-!                          pointer members are in use.
-!                .FALSE. - if ALL of the Cloud allocatable or
-!                          pointer members are not in use.
+!                  .TRUE.  - if the array components are allocated.
+!                  .FALSE. - if the array components are not allocated.
 !                UNITS:      N/A
 !                TYPE:       LOGICAL
 !                DIMENSION:  Same as input Cloud argument
@@ -177,17 +177,9 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_Cloud_Associated( Cloud ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
-    ! Function result
     LOGICAL :: Status
-
-    ! Test the structure members
-    Status = &
-      ALLOCATED(Cloud%Effective_Radius  ) .OR. &
-      ALLOCATED(Cloud%Effective_Variance) .OR. &
-      ALLOCATED(Cloud%Water_Content     )
-
+    Status = Cloud%Is_Allocated
   END FUNCTION CRTM_Cloud_Associated
 
 
@@ -215,6 +207,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Cloud_Destroy( Cloud )
     TYPE(CRTM_Cloud_type), INTENT(OUT) :: Cloud
+    Cloud%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_Cloud_Destroy
   
 
@@ -274,6 +267,9 @@ CONTAINS
     Cloud%Effective_Variance = ZERO
     Cloud%Water_Content      = ZERO
     
+    ! Set allocation indicator
+    Cloud%Is_Allocated = .TRUE.
+
   END SUBROUTINE CRTM_Cloud_Create
 
 

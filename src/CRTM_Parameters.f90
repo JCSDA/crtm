@@ -203,6 +203,8 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_ZENITH_ANGLE  = 80.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_SENSOR_AZIMUTH_ANGLE = 360.0_fp
   REAL(fp), PUBLIC, PARAMETER :: MAX_OPTRAN_SECANT  = 2.36620_fp   ! = 1/cosd(65.0)
+  ! The maximum angle used to train ODAS transmittance 
+  REAL(fp), PUBLIC, PARAMETER :: MAX_TRANS_ZENITH_ANGLE = 63.6122_fp !corresponding to amass 2.25
 
   ! -------------------------------------------------
   ! Limits on source angles.

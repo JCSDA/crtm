@@ -1,13 +1,13 @@
 !
 ! AerosolCoeff_NC2BIN
 !
-! Program to read a netCDF format CRTM AerosolCoeff data file and
-! write a CRTM "Binary" format AerosolCoeff data file
+! Program to convert a CRTM AerosolCoeff data file
+! from netCDF to Binary format
 !
 !
 ! CREATION HISTORY:
-!       Written by: Paul van Delst, CIMSS/SSEC, 28-Apr-2007
-!                   paul.vandelst@ssec.wisc.edu
+!       Written by: Paul van Delst, 28-Apr-2007
+!                   paul.vandelst@noaa.gov
 !
 
 PROGRAM AerosolCoeff_NC2BIN
@@ -16,13 +16,10 @@ PROGRAM AerosolCoeff_NC2BIN
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Message_Handler     , ONLY: SUCCESS, FAILURE, &
-                                  Program_Message, Display_Message
-  USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, &
-                                  Equal_AerosolCoeff
-  USE AerosolCoeff_Binary_IO, ONLY: Write_AerosolCoeff_Binary, &
-                                  Read_AerosolCoeff_Binary
-  USE AerosolCoeff_netCDF_IO, ONLY: Read_AerosolCoeff_netCDF
+  USE Message_Handler    , ONLY: SUCCESS, FAILURE, Program_Message, Display_Message
+  USE SignalFile_Utility , ONLY: Create_SignalFile
+  USE AerosolCoeff_Define, ONLY: AerosolCoeff_type
+  USE AerosolCoeff_IO    , ONLY: AerosolCoeff_netCDF_to_Binary
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -30,68 +27,53 @@ PROGRAM AerosolCoeff_NC2BIN
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AerosolCoeff_NC2BIN'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   
   ! ---------
   ! Variables
   ! ---------
-  INTEGER :: Error_Status
+  INTEGER :: err_stat
   CHARACTER(256) :: NC_Filename, BIN_Filename
-  TYPE(AerosolCoeff_type) :: AerosolC, AerosolC_Check
   
   ! Program header
   CALL Program_Message( PROGRAM_NAME, &
-                        'Program to read a netCDF format CRTM AerosolCoeff '//&
-                        'data file and write a CRTM "Binary" format '//&
-                        'AerosolCoeff data file.', &
+                        'Program to convert a CRTM AerosolCoeff data file '//&
+                        'from netCDF to Binary format.', &
                         '$Revision$')
   
-  ! Get the netCDF filename
-  WRITE(*,FMT='(/5x,"Enter the netCDF AerosolCoeff filename: ")', ADVANCE='NO')
+  ! Get the filenames
+  WRITE(*,FMT='(/5x,"Enter the INPUT netCDF AerosolCoeff filename : ")', ADVANCE='NO')
   READ(*,'(a)') NC_Filename
   NC_Filename = ADJUSTL(NC_Filename)
-  BIN_Filename = TRIM(NC_Filename)//'.bin'
-  
-  ! Read the netCDF File
-  WRITE(*,'(/5x,"Reading the netCDF file...")')
-  Error_Status = Read_AerosolCoeff_netCDF( NC_Filename, AerosolC )
-  IF ( Error_Status /= SUCCESS ) THEN
+  WRITE(*,FMT='(/5x,"Enter the OUTPUT Binary AerosolCoeff filename: ")', ADVANCE='NO')
+  READ(*,'(a)') BIN_Filename
+  BIN_Filename = ADJUSTL(BIN_Filename)
+  ! ...Sanity check that they're not the same
+  IF ( BIN_Filename == NC_Filename ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error reading netCDF AerosolCoeff file '//&
-                          TRIM(NC_Filename), &
-                          Error_Status )
+                          'AerosolCoeff netCDF and Binary filenames are the same!', &
+                          FAILURE )
     STOP
   END IF
   
-  ! Write the Binary File
-  WRITE(*,'(/5x,"Writing the Binary file...")')
-  Error_Status = Write_AerosolCoeff_Binary( BIN_Filename, AerosolC )
-  IF ( Error_Status /= SUCCESS ) THEN
+  
+  ! Perform the conversion
+  err_stat = AerosolCoeff_netCDF_to_Binary( NC_Filename, BIN_Filename )
+  IF ( err_stat /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Error writing Binary AerosolCoeff file '//&
-                          TRIM(BIN_Filename), &
-                          Error_Status )
+                          'AerosolCoeff netCDF -> Binary conversion failed!', &
+                          FAILURE )
     STOP
   END IF
   
-  ! Check the created Binary file
-  WRITE(*,'(/5x,"Checking the Binary file...")')
-  Error_Status = Read_AerosolCoeff_Binary( BIN_Filename, AerosolC_Check )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error test reading generated Binary AerosolCoeff file '//&
-                          TRIM(BIN_Filename), &
-                          Error_Status )
-    STOP
-  END IF
   
-  Error_Status = Equal_AerosolCoeff( AerosolC, AerosolC_Check )
-  IF ( Error_Status /= SUCCESS ) THEN
+  ! Create a signal file indicating success
+  err_stat = Create_SignalFile( BIN_Filename )
+  IF ( err_stat /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Check structure is different!', &
-                          Error_Status )
-    STOP
+                          'Error creating signal file for '//TRIM(BIN_Filename), &
+                          FAILURE )
   END IF
 
 END PROGRAM AerosolCoeff_NC2BIN

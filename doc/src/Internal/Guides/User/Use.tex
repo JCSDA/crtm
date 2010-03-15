@@ -4,7 +4,7 @@
 %===========================
 This section will hopefully get you started using the CRTM library as quickly as possible. Refer to the following sections for more information about the structures and interfaces.
 
-The examples shown here assume you are processing one sensor at a time. The CRTM can handle multiple sensors at once, but specifying the input information in a simple way is difficult; e.g. the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure that is used to specify the sensor viewing geometry -- even sensors on the same platform typically have different numbers of fields-of-view (FOVs) per scan. For multiple sensor processing, we'll assume they will be separately processed in parallel.
+The examples shown here assume you are processing one sensor at a time. The CRTM can handle multiple sensors at once, but specifying the input information in a simple way is difficult; e.g. the \hyperref[sec:geometry_structure]{\Geometry} structure that is used to specify the sensor viewing geometry -- even sensors on the same platform typically have different numbers of fields-of-view (FOVs) per scan. For multiple sensor processing, we'll assume they will be separately processed in parallel.
 
 Because there are many variations in what information is known ahead of time (and by ``ahead of time'' we mean at compile-time of your code), let's approach this via examples for a fixed number of atmospheric profiles, and a known sensors. It is left as an exercise to the reader to tailor calls to the CRTM in their application code according to their particular needs.
 
@@ -37,7 +37,7 @@ To compute satellite radiances you need to declare structures for the following 
 \begin{enumerate}
   \item Atmospheric profile data such as pressure, temperature, absorber amounts, clouds, aerosols, etc. Handled using the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure.
   \item Surface data such as type of surface, temperature, surface type specific parameters etc. Handled using the \hyperref[sec:surface_structure]{\Surface} structure.
-  \item Geometry information such as sensor scan angle, zenith angle, etc. Handled using the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure.
+  \item Geometry information such as sensor scan angle, zenith angle, etc. Handled using the \hyperref[sec:geometry_structure]{\Geometry} structure.
   \item Instrument information, particularly which instrument(s), or sensor(s)\footnote{The terms ``instrument'' and ``sensor'' are used interchangeably in this document.}, you want to simulate. Handled using the \hyperref[sec:channelinfo_structure]{\ChannelInfo} structure.
   \item Results of the radiative transfer calculation. Handled using the \hyperref[sec:rtsolution_structure]{\RTSolution} structure.
   \item Optional inputs. Handled using the \hyperref[sec:options_structure]{\Options} structure.
@@ -49,9 +49,10 @@ Let's assume you want to process, say, 50 profiles for the NOAA-18 AMSU-A sensor
   INTEGER     , PARAMETER :: N_SENSORS  =  1
   INTEGER     , PARAMETER :: N_CHANNELS = 15
   INTEGER     , PARAMETER :: N_PROFILES = 50
-  CHARACTER(*), PARAMETER :: SID(N_SENSORS) = (/'amsua_n18'/)
+  CHARACTER(*), PARAMETER :: SENSOR_ID(N_SENSORS) = (/'amsua_n18'/)
   TYPE(\hyperref[fig:CRTM_ChannelInfo_type_structure]{CRTM_ChannelInfo_type})  :: chInfo(N_SENSORS)  
-  TYPE(\hyperref[fig:CRTM_GeometryInfo_type_structure]{CRTM_GeometryInfo_type}) :: gInfo(N_PROFILES)  
+  TYPE(\hyperref[fig:CRTM_Geometry_type_structure]{CRTM_Geometry_type})     :: geo(N_PROFILES)  
+  TYPE(\hyperref[fig:CRTM_Options_type_structure]{CRTM_Options_type})      :: opt(N_PROFILES)  
   ! Forward declarations
   TYPE(\hyperref[fig:CRTM_Atmosphere_type_structure]{CRTM_Atmosphere_type})   :: atm(N_PROFILES)
   TYPE(\hyperref[fig:CRTM_Surface_type_structure]{CRTM_Surface_type})      :: sfc(N_PROFILES)
@@ -72,66 +73,100 @@ The CRTM is initialised by calling the \hyperref[sec:CRTM_Init_interface]{\f{CRT
 \begin{alltt}
   INTEGER :: errStatus
   ....
-  errStatus = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( chInfo, Sensor_Id=SID, File_Path='./coeff_data' )
+  errStatus = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( SENSOR_ID, chInfo, File_Path='./coeff_data' )
   IF ( errStatus /= SUCCESS ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
 
 Here we see for the first time how the CRTM functions let you know if they were successful. As you can see the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function result is an error status that is checked against a parameterised integer error code, \f{SUCCESS}. The function result should \emph{not} be tested against the actual value of the error code, just its parameterised name. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION} -- although the latter is never used as a function result.
 
+For a list of all the accepted sensor identifiers, see appendix \ref{sec:sensor_id}.
+
 
 \subsection{Step 4: Allocate the CRTM structures}
 %------------------------------------------------
 \stepcounter{step}
-Now we need to allocate the \emph{internal} components of the various CRTM structures where necessary to hold the input or output data. In this case, functions are used to perform these ``internal'' allocations. The function naming convention is \f{CRTM\_Allocate\_}\textit{name} where, for typical usage, the CRTM structures that need to be allocated are the \hyperref[sec:atmosphere_structure]{\Atmosphere}, \hyperref[sec:rtsolution_structure]{\RTSolution} and, if used, \hyperref[sec:options_structure]{\Options} structures. Potentially, the \hyperref[sec:sensordata_structure]{\SensorData} component of the \hyperref[sec:surface_structure]{\Surface} structure may also need to be allocated to allow for input of sensor observations for some of the NESDIS microwave surface emissivity models.
+\label{sec:alloc_step}
+Now we need to create instances of the various CRTM structures where necessary to hold the input or output data. Functions are used to perform any necessary component allocations allocations. The function naming convention is \f{CRTM\_}\textit{object}\f{\_Create} where, for typical usage, the CRTM structures that need to be allocated are the \hyperref[sec:atmosphere_structure]{\Atmosphere}, \hyperref[sec:rtsolution_structure]{\RTSolution} and, if used, \hyperref[sec:options_structure]{\Options} structures. Potentially, the \hyperref[sec:sensordata_structure]{\SensorData} component of the \hyperref[sec:surface_structure]{\Surface} structure may also need to be allocated to allow for input of sensor observations for some of the NESDIS microwave surface emissivity models.
 
 \subsubsection{Allocation of the Atmosphere structures}
 %......................................................
 First, we'll allocate the atmosphere structures to the required dimensions. The forward variable is allocated like so:
 \begin{alltt}
   ! Allocate the forward atmosphere structure
-  errStatus = \hyperref[sec:CRTM_Allocate_Atmosphere_interface]{CRTM_Allocate_Atmosphere}( n_Layers   , &  ! Input
-                                        N_ABSORBERS, &  ! Input (always 2)
-                                        n_Clouds   , &  ! Input
-                                        n_Aerosols , &  ! Input
-                                        atm          )  ! Output
-  IF ( errStatus /= SUCCESS ) THEN 
+  CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( atm        , &  ! Object
+                               n_Layers   , &  ! Input
+                               n_Absorbers, &  ! Input
+                               n_Clouds   , &  ! Input
+                               n_Aerosols   )  ! Input
+  ! Check it was actually allocated
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( atm )) ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
-and the K-matrix variable is allocated by looping over all profiles,
+and the K-matrix variable is allocated by looping over all profiles\footnote{The \f{CRTM\_Atmosphere\_Create} function is defined as elemental so the profile loop is not strictly needed},
 \begin{alltt}
   ! Allocate the K-matrix atmosphere structure
   DO m = 1, N_PROFILES
-    errStatus = \hyperref[sec:CRTM_Allocate_Atmosphere_interface]{CRTM_Allocate_Atmosphere}( n_Layers   , &  ! Input
-                                          N_ABSORBERS, &  ! Input (always 2)
-                                          n_Clouds   , &  ! Input
-                                          n_Aerosols , &  ! Input
-                                          atm_k(:,m)   )  ! Output
-    IF ( errStatus /= SUCCESS ) THEN 
+    CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( atm_k(:,m) , &  ! Object
+                                 n_Layers   , &  ! Input
+                                 n_Absorbers, &  ! Input
+                                 n_Clouds   , &  ! Input
+                                 n_Aerosols   )  ! Input
+    ! Check they were actually allocated
+    IF ( ANY(.NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( atm_k(:,m) )) ) THEN 
       \textrm{\textit{handle error...}}
     END IF
   END DO\end{alltt}
-Note that the number of absorbers is in all capitals. In the CRTM, this style convention indicates a parameter. A parameter is used for the number of absorbers in the current CRTM release because the number of absorbers is fixed at two: water vapour and ozone. Future CRTM releases will allow more flexibility in selecting the number of absorbers, but currently the number must be set to two.
+Note that for the ODAS algorithm the allowed number of absorbers is at most two: that of H\subscript{2}O and O\subscript{3}. For the ODPS algoithm, CO\subscript{2} can also be specified. In future releases, trace gases such as CO, CH\subscript{4}, and N\subscript{2}O will also be accepted as input.
+
+\subsubsection{Allocation of the RTSolution structure}
+%.....................................................
+To return additional information used in the radiative transfer calculations, such as \hyperref[sec:rtsolution_structure]{upwelling radiance and layer optical depth profiles}, the RTSolution structure must be allocated to the number of atmospheric layers used:
+\begin{alltt}
+  ! Allocate the RTSolution structure
+  CALL \hyperref[sec:CRTM_RTSolution_Create_interface]{CRTM_RTSolution_Create}( rts     , &  ! Object
+                               n_Layers  )  ! Input
+  ! Check it was actually allocated
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_RTSolution_Associated_interface]{CRTM_RTSolution_Associated}( rts )) ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+Note that internal checks are performed in the CRTM to determine if the RTSolution structure has been allocated before its array components are accessed. Thus, if the additional information is not required, the RTSolution structure does not need to be allocated. Also, the extra information returned is only applicable to the forward model, not any of the tangent-linear, adjoint, or K-matrix models.
+
+\subsubsection{Allocation of the Options structure}
+%..................................................
+If user-supplied surface emissivity data is to be used, then the options structure must first be allocated to the necessary number of channels:
+\begin{alltt}
+  ! Allocate the options structure
+  CALL \hyperref[sec:CRTM_Options_Create_interface]{CRTM_Options_Create}( opt       , &  ! Object
+                            n_Channels  )  ! Input
+  ! Check it was actually allocated
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_Options_Associated_interface]{CRTM_Options_Associated}( opt )) ) THEN 
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+If no emissivities are to be input, the options structure does not need to be allocated.
 
 
 \subsection{Step 5: Fill the CRTM input structures with data}
 %------------------------------------------------------------
 \stepcounter{step}
-This step simply entails filling the input \texttt{atm}, \texttt{sfc} and \texttt{gInfo} structures with the required information. However, there are some issues that need to be mentioned:
+\label{sec:fill_step}
+This step simply entails filling the input \texttt{atm}, \texttt{sfc}, \texttt{geo}, and, if used, \texttt{opt} structures with the required information. However, there are some issues that need to be mentioned:
 \begin{itemize}
   \item In the CRTM, all profile layering is from top-of-atmosphere (TOA) to surface (SFC). So, for an atmospheric profile layered as $k = 1,2,...,K$, layer 1 is the TOA layer and layer $K$ is the SFC layer.
   \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the \texttt{Climatology} component is not yet used.
   \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, \emph{both} the level and layer pressure profiles must be specified.
-  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the absorber profile data units \emph{must} be mass mixing ratio for water vapour and ppmv for ozone. The \texttt{Absorber\_Units} component is not yet utilised to allow conversion of different user-supplied concentration units.
+  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the absorber profile data units \emph{must} be mass mixing ratio for water vapour and ppmv for other absorbers. The \texttt{Absorber\_Units} component is not yet utilised to allow conversion of different user-supplied concentration units.
+  \item In the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, the \f{Absorber\_Id} array must be set to the correct absorber identifiers (see table \ref{tab:absorber_id}) to allow the software to find a particular absorber. There is no necessary order in specifying the concentration profiles for different gaseous absorbers.
   \item In the \hyperref[sec:surface_structure]{\Surface} structure, the sum of the coverage types \emph{must} add up to 1.0.
-  \item In the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure, the sensor zenith and sensor scan angles should be consistent.
-  \item Graphical definitions of the \hyperref[sec:geometryinfo_structure]{\GeometryInfo} structure sensor scan, sensor zenith, sensor azimuth, source zenith, and source azimuth angles are shown in figures \ref{fig:gInfo_sensor_scan_angle}, \ref{fig:gInfo_sensor_zenith_angle}, \ref{fig:gInfo_sensor_azimuth_angle}, \ref{fig:gInfo_source_zenith_angle}, and  \ref{fig:gInfo_source_azimuth_angle} respectively.
+  \item In the \hyperref[sec:geometry_structure]{\Geometry} structure, the sensor zenith and sensor scan angles should be consistent.
+  \item Graphical definitions of the \hyperref[sec:geometry_structure]{\Geometry} structure sensor scan, sensor zenith, sensor azimuth, source zenith, and source azimuth angles are shown in figures \ref{fig:geo_sensor_scan_angle}, \ref{fig:geo_sensor_zenith_angle}, \ref{fig:geo_sensor_azimuth_angle}, \ref{fig:geo_source_zenith_angle}, and  \ref{fig:geo_source_azimuth_angle} respectively.
+  \item The \hyperref[sec:options_structure]{\Options} structure contains two ``substructures'', \hyperref[sec:ssu_input_structure]{\SSUInput} and \hyperref[sec:zeeman_input_structure]{\ZeemanInput} to hold the necessary inputs for the SSU and Zeeman transmittance models. These substructures are private and can only be access via ``\f{GetValue}'' and ``\f{SetValue}'' functions as discussed further below.
 \end{itemize}
 For the K-matrix structures, you should zero the K-matrix \emph{outputs}, \texttt{atm\_K}, \texttt{sfc\_K},
 \begin{alltt}
   ! Zero the K-matrix OUTPUT structures
-  CALL \hyperref[sec:CRTM_Zero_Atmosphere_interface]{CRTM_Zero_Atmosphere}( atm_K )
-  CALL \hyperref[sec:CRTM_Zero_Surface_interface]{CRTM_Zero_Surface}( sfc_K )\end{alltt}
+  CALL \hyperref[sec:CRTM_Atmosphere_Zero_interface]{CRTM_Atmosphere_Zero}( atm_K )
+  CALL \hyperref[sec:CRTM_Surface_Zero_interface]{CRTM_Surface_Zero}( sfc_K )\end{alltt}
 and initialise the K-matrix \emph{input}, \texttt{rts\_K}, to provide you with the derivatives you want. For example, if you want the \texttt{atm\_K}, \texttt{sfc\_K} outputs to contain brightness temperature derivatives, you should initialise \texttt{rts\_K} like so,
 \begin{alltt}
   ! Initialise the K-Matrix INPUT to provide dTb/dx derivatives
@@ -143,33 +178,51 @@ Alternatively, if you want radiance derivatives returned in \texttt{atm\_K} and 
   rts_K%Radiance = ONE
   rts_K%Brightness_Temperature = ZERO\end{alltt}
 
-For computational efficiency, there is minimal input data checking done so the GIGO\footnote{Garbage In, Garbage Out} principle applies.
+\subsubsection{Filling the Options substructures for SSU and Zeeman model input}
+%...............................................................................
+As mentioned above, the \hyperref[sec:ssu_input_structure]{\SSUInput} and \hyperref[sec:zeeman_input_structure]{\ZeemanInput} data structures are private. This means the contents of the structure cannot be accessed directly, but via helper subroutines. For example, to set the SSU instrument mission time, one would call the \hyperref[sec:SSU_Input_SetValue_interface]{\f{SSU\_Input\_SetValue}} subroutine,
+\begin{alltt}
+  ! Set the SSU input data in the options substructure
+  CALL \hyperref[sec:SSU_Input_SetValue_interface]{SSU_Input_SetValue}( opt%SSU_Input    , &  ! Object
+                           Time=mission_time  )  ! Optional input\end{alltt}
+where the local variable \f{mission\_time} contains the required time.
+
+Similarly for the necessary Zeeman model parameters,
+\begin{alltt}
+  ! Set the Zeeman input data in the options substructure
+  CALL \hyperref[sec:Zeeman_Input_SetValue_interface]{Zeeman_Input_SetValue}( opt%Zeeman_Input    , &  ! Object
+                              Field_Strength=Be   , &  ! Optional input
+                              Cos_ThetaB    =angle  )  ! Optional input\end{alltt}
+where, again, \f{Be} and \f{angle} are the local variables for the necessary data.
 
 
 \subsection{Step 6: Call the required CRTM function}
 %---------------------------------------------------
 \stepcounter{step}
+\label{sec:call_step}
 At this point, much of the prepatory heavy lifting has been done. The CRTM function calls themselves are quite simple. For the forward model we do,
 \begin{alltt}
-  Error_Status = \hyperref[sec:CRTM_Forward_interface]{CRTM_Forward}( atm   , & ! Input
-                               sfc   , & ! Input
-                               gInfo , & ! Input
-                               chInfo, & ! Input
-                               rts     ) ! Output
-  IF ( Error_Status /= SUCCESS ) THEN 
+  errStatus = \hyperref[sec:CRTM_Forward_interface]{CRTM_Forward}( atm        , & ! Input
+                            sfc        , & ! Input
+                            geo        , & ! Input
+                            chInfo     , & ! Input
+                            rts        , & ! Output
+                            Options=opt  ) ! Optional input
+  IF ( errStatus /= SUCCESS ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
 and for the K-matrix model, the calling syntax is,
 \begin{alltt}
-  Error_Status = \hyperref[sec:CRTM_K_Matrix_interface]{CRTM_K_Matrix}( atm   , & ! Forward  input  
-                                sfc   , & ! Forward  input    
-                                rts_K , & ! K-matrix input    
-                                gInfo , & ! Input  
-                                chInfo, & ! Input  
-                                atm_K , & ! K-matrix output
-                                sfc_K , & ! K-matrix output  
-                                rts     ) ! Forward  output
-  IF ( Error_Status /= SUCCESS ) THEN 
+  errStatus = \hyperref[sec:CRTM_K_Matrix_interface]{CRTM_K_Matrix}( atm        , & ! Forward  input  
+                             sfc        , & ! Forward  input 
+                             rts_K      , & ! K-matrix input 
+                             geo        , & ! Input  
+                             chInfo     , & ! Input  
+                             atm_K      , & ! K-matrix output
+                             sfc_K      , & ! K-matrix output
+                             rts        , & ! Forward  output
+                             Options=opt  ) ! Optional input
+  IF ( errStatus /= SUCCESS ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
 Note that the K-matrix model also returns the forward model radiances. The \hyperref[sec:CRTM_Tangent_Linear_interface]{tangent-linear} and \hyperref[sec:CRTM_Adjoint_interface]{adjoint} models have similar call structures and will not be shown here.
@@ -178,23 +231,19 @@ Note that the K-matrix model also returns the forward model radiances. The \hype
 \subsection{Step 7: Destroy the CRTM and cleanup}
 %------------------------------------------------
 \stepcounter{step}
+\label{sec:destroy_step}
 The last step is to cleanup. This involves calling the CRTM destruction function
 \begin{alltt}
-  Error_Status = \hyperref[sec:CRTM_Destroy_interface]{CRTM_Destroy}( chInfo )
-  IF ( Error_Status /= SUCCESS ) THEN 
+  errStatus = \hyperref[sec:CRTM_Destroy_interface]{CRTM_Destroy}( chInfo )
+  IF ( errStatus /= SUCCESS ) THEN 
     \textrm{\textit{handle error...}}
   END IF\end{alltt}
-to deallocate all the shared coefficient data, as well as calling the individual structure destroy functions to deallocate as required. For the example here, that entails deallocating the forward and K-matrix \hyperref[sec:atmosphere_structure]{\Atmosphere}  structures, \texttt{atm} and \texttt{atm\_K},
+to deallocate all the shared coefficient data, as well as calling the individual structure destroy functions to deallocate as required. For the example here, that entails deallocating the various structure arrays that were created in Step \ref{sec:alloc_step}. The cleanup mirrors that of the create step:
 \begin{alltt}
-  Error_Status = \hyperref[sec:CRTM_Destroy_Atmosphere_interface]{CRTM_Destroy_Atmosphere}(atm_K)
-  IF ( Error_Status /= SUCCESS ) THEN 
-    \textrm{\textit{handle error...}}
-  END IF
-  
-  Error_Status = \hyperref[sec:CRTM_Destroy_Atmosphere_interface]{CRTM_Destroy_Atmosphere}(atm)
-  IF ( Error_Status /= SUCCESS ) THEN 
-    \textrm{\textit{handle error...}}
-  END IF\end{alltt}
+  CALL \hyperref[sec:CRTM_Options_Destroy_interface]{CRTM_Options_Destroy}(opt)
+  CALL \hyperref[sec:CRTM_RTSolution_Destroy_interface]{CRTM_RTSolution_Destroy}(rts)
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}(atm_K)
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}(atm)\end{alltt}
 
 
 \section{Interface Descriptions}

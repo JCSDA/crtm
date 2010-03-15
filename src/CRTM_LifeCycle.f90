@@ -4,8 +4,8 @@
 ! Module containing CRTM life cycle functions to initialize and destroy
 ! the CRTM space.
 !
-! Written by:     Paul van Delst, CIMSS/SSEC 21-May-2004
-!                 paul.vandelst@ssec.wisc.edu
+! Written by:     Paul van Delst, 21-May-2004
+!                 paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_LifeCycle
@@ -18,10 +18,15 @@ MODULE CRTM_LifeCycle
   USE Message_Handler
   USE CRTM_SpcCoeff
   USE CRTM_TauCoeff
-  USE CRTM_AerosolCoeff
-  USE CRTM_CloudCoeff
+  USE CRTM_AerosolCoeff      , ONLY: CRTM_AerosolCoeff_Load, &
+                                     CRTM_AerosolCoeff_Destroy
+  USE CRTM_CloudCoeff        , ONLY: CRTM_CloudCoeff_Load, &
+                                     CRTM_CloudCoeff_Destroy
   USE CRTM_EmisCoeff
-  USE CRTM_ChannelInfo_Define
+  USE CRTM_ChannelInfo_Define, ONLY: CRTM_ChannelInfo_type, &
+                                     CRTM_ChannelInfo_Associated, &
+                                     CRTM_ChannelInfo_Destroy, &
+                                     CRTM_ChannelInfo_Create
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -34,15 +39,16 @@ MODULE CRTM_LifeCycle
   ! Public procedures
   PUBLIC :: CRTM_Init
   PUBLIC :: CRTM_Destroy
-
+  PUBLIC :: CRTM_LifeCycleVersion
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  ! Maximum string length for path+filenames
-  INTEGER, PARAMETER :: SL = 2000
+  ! String lengths
+  INTEGER, PARAMETER :: ML = 256   ! Error message length
+  INTEGER, PARAMETER :: SL = 2000  ! Maximum length for path+filenames
 
 
 CONTAINS
@@ -58,45 +64,43 @@ CONTAINS
 !       Function to initialise the CRTM.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Init( ChannelInfo                        , &
-!                                 Sensor_ID        =Sensor_ID        , &
-!                                 CloudCoeff_File  =CloudCoeff_File  , &
-!                                 AerosolCoeff_File=AerosolCoeff_File, &
-!                                 EmisCoeff_File   =EmisCoeff_File   , &
-!                                 File_Path        =File_Path        , &
-!                                 Quiet            =Quiet            , &
-!                                 Process_ID       =Process_ID       , &
-!                                 Output_Process_ID=Output_Process_ID, &
-!                                 RCS_Id           =RCS_Id           , &
-!                                 Message_Log      =Message_Log        )
+!       Error_Status = CRTM_Init( Sensor_ID                            , &
+!                                 ChannelInfo                          , &
+!                                 CloudCoeff_File   = CloudCoeff_File  , &
+!                                 AerosolCoeff_File = AerosolCoeff_File, &
+!                                 EmisCoeff_File    = EmisCoeff_File   , &
+!                                 File_Path         = File_Path        , &
+!                                 Load_CloudCoeff   = Load_CloudCoeff  , &
+!                                 Load_AerosolCoeff = Load_AerosolCoeff, &
+!                                 Quiet             = Quiet            , &
+!                                 Process_ID        = Process_ID       , &
+!                                 Output_Process_ID = Output_Process_ID  )
 !
-! OUTPUT ARGUMENTS:
-!       ChannelInfo:        ChannelInfo structure array populated based on
-!                           the contents of the coefficient files and the
-!                           user inputs.
-!                           UNITS:      N/A
-!                           TYPE:       CRTM_ChannelInfo_type
-!                           DIMENSION:  Rank-1 (n_Sensors)
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
+! INPUTS:
 !       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
 !                           ssmis_f16, etc) with which the CRTM is to be
-!                           initialised. These Sensor ID are used to construct
+!                           initialised. These sensor ids are used to construct
 !                           the sensor specific SpcCoeff and TauCoeff filenames
 !                           containing the necessary coefficient data, i.e.
 !                             <Sensor_ID>.SpcCoeff.bin
 !                           and
 !                             <Sensor_ID>.TauCoeff.bin
-!                           for each sensor Id in the list. IF this argument is
-!                           not specified, the default SpcCoeff and TauCoeff
-!                           filenames are "SpcCoeff.bin" and "TauCoeff.bin"
-!                           respectively.
+!                           for each sensor Id in the list.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Same as output ChannelInfo argument
+!                           DIMENSION:  Rank-1 (n_Sensors)
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+! OUTPUTS:
+!       ChannelInfo:        ChannelInfo structure array populated based on
+!                           the contents of the coefficient files and the
+!                           user inputs.
+!                           UNITS:      N/A
+!                           TYPE:       CRTM_ChannelInfo_type
+!                           DIMENSION:  Same as input Sensor_Id argument
+!                           ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUTS:
 !       CloudCoeff_File:    Name of the CRTM Binary format CloudCoeff file
 !                           containing the scattering coefficient data. If not
 !                           specified the default filename is "CloudCoeff.bin".
@@ -130,20 +134,39 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Quiet:              Set this argument to suppress INFORMATION messages
-!                           being printed to standard output (or the message
-!                           log file if the Message_Log optional argument is
-!                           used.) By default, INFORMATION messages are printed.
-!                           If QUIET = 0, INFORMATION messages are OUTPUT.
-!                              QUIET = 1, INFORMATION messages are SUPPRESSED.
+!       Load_CloudCoeff:    Set this logical argument for not loading the CloudCoeff data
+!                           to save memory space under the clear conditions 
+!                           If == .FALSE., the CloudCoeff data will not be loaded;
+!                              == .TRUE.,  the CloudCoeff data will be loaded.
+!                           If not specified, default is .TRUE. (will be loaded)
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Load_AerosolCoeff:  Set this logical argument for not loading the AerosolCoeff data
+!                           to save memory space under the clear conditions 
+!                           If == .FALSE., the AerosolCoeff data will not be loaded;
+!                              == .TRUE.,  the AerosolCoeff data will be loaded.
+!                           If not specified, default is .TRUE. (will be loaded)
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Quiet:              Set this logical argument to suppress INFORMATION
+!                           messages being printed to stdout
+!                           If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                              == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                           If not specified, default is .FALSE.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Process_ID:         Set this argument to the MPI process ID that this
 !                           function call is running under. This value is used
-!                           solely for controlling INFORMATIOn message output.
+!                           solely for controlling INFORMATION message output.
 !                           If MPI is not being used, ignore this argument.
 !                           This argument is ignored if the Quiet argument is set.
 !                           UNITS:      N/A
@@ -161,23 +184,6 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to the screen.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
@@ -197,112 +203,91 @@ CONTAINS
 !       If specified, the length of the combined file path and filename strings
 !       cannot exceed 2000 characters.
 !
-! COMMENTS:
-!       Note the INTENT on the output ChannelInfo argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Init( ChannelInfo      , &  ! Output
-                      Sensor_ID        , &  ! Optional input
-                      SensorID         , &  ! Optional input ***OBSCELESCENT***
-                      CloudCoeff_File  , &  ! Optional input
-                      AerosolCoeff_File, &  ! Optional input
-                      EmisCoeff_File   , &  ! Optional input
-                      File_Path        , &  ! Optional input
-                      Quiet            , &  ! Optional input
-                      Process_ID       , &  ! Optional input
-                      Output_Process_ID, &  ! Optional input
-                      RCS_Id           , &  ! Revision control
-                      Message_Log      ) &  ! Error messaging
-                    RESULT( Error_Status )
-
+  FUNCTION CRTM_Init( &
+    Sensor_ID        , &  ! Input
+    ChannelInfo      , &  ! Output
+    CloudCoeff_File  , &  ! Optional input
+    AerosolCoeff_File, &  ! Optional input
+    EmisCoeff_File   , &  ! Optional input
+    File_Path        , &  ! Optional input
+    Load_CloudCoeff  , &  ! Optional input
+    Load_AerosolCoeff, &  ! Optional input
+    Quiet            , &  ! Optional input
+    Process_ID       , &  ! Optional input
+    Output_Process_ID) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Sensor_ID(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: SensorID(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: CloudCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: AerosolCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: EmisCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: File_Path
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Output_Process_ID
-    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
+    CHARACTER(*)               , INTENT(IN)  :: Sensor_ID(:)
+    TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Process_ID
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Output_Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Init'
     ! Local variables
+    CHARACTER(ML) :: msg, pid_msg
     CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_AerosolCoeff_File
     CHARACTER(SL) :: Default_EmisCoeff_File
     INTEGER :: l, n, n_Sensors
-    CHARACTER(20) :: Local_Sensor_ID(SIZE(ChannelInfo))
-
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check dimensionality
-    n_Sensors = SIZE(ChannelInfo)
-    IF ( PRESENT(Sensor_ID) .OR. PRESENT(SensorID) ) THEN
-      ! Check size of Sensor_Id array
-      IF ( PRESENT(Sensor_ID) ) THEN
-        IF ( SIZE(Sensor_ID) /= n_Sensors ) THEN
-          Error_Status=FAILURE
-          CALL Display_Message( ROUTINE_NAME, &
-                                'Inconsistent ChannelInfo and Sensor_ID dimensions', &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          RETURN
-        END IF
-        Local_Sensor_ID = Sensor_Id
-      ! Check size of SensorId array
-      ELSE IF ( PRESENT(SensorID) ) THEN
-        IF ( SIZE(SensorID) /= n_Sensors ) THEN
-          Error_Status=FAILURE
-          CALL Display_Message( ROUTINE_NAME, &
-                                'Inconsistent ChannelInfo and Sensor_ID dimensions', &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          RETURN
-        END IF
-        Local_Sensor_ID = SensorId
-      END IF
-    ELSE
-      ! No Sensor_ID specfied. ChannelInfo must only have one element.
-      IF ( n_Sensors /= 1 ) THEN
-        Error_Status=FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'ChannelInfo dimension > 1 without SensorID input', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+    LOGICAL :: Local_Load_CloudCoeff
+    LOGICAL :: Local_Load_AerosolCoeff
+    
+    ! ******
+    ! TEMPORARY UNTIL LOAD ROUTINE INTERFACES HAVE BEEN MODIFIED
+    INTEGER :: iQuiet
+    IF ( PRESENT(Quiet) ) THEN
+      IF ( Quiet ) THEN
+        iQuiet = 1  ! Set
+      ELSE
+        iQuiet = 0  ! Not set
       END IF
     END IF
+    ! ******
 
-    ! Specify the default filenames
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
+    ELSE
+      pid_msg = ''
+    END IF
+    ! ...Check coefficient loading flags
+    Local_Load_CloudCoeff = .TRUE.
+    IF( PRESENT(Load_CloudCoeff) ) Local_Load_CloudCoeff = Load_CloudCoeff
+    Local_Load_AerosolCoeff = .TRUE.
+    IF( PRESENT(Load_AerosolCoeff) ) Local_Load_AerosolCoeff = Load_AerosolCoeff
+    ! ...Check dimensionality
+    n_Sensors = SIZE(Sensor_ID)
+    IF ( SIZE(ChannelInfo) /= n_Sensors ) THEN
+      err_stat = FAILURE
+      msg = 'Inconsistent Sensor_ID and ChannelInfo dimensions'
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+      RETURN
+    END IF
+
+    ! Specify sensor-independent coefficient filenames
+    ! ...Default filenames
     Default_CloudCoeff_File   = 'CloudCoeff.bin'
     Default_AerosolCoeff_File = 'AerosolCoeff.bin'
     Default_EmisCoeff_File    = 'EmisCoeff.bin'
-
-    ! Were other filenames specified?
-    IF ( PRESENT(CloudCoeff_File) ) &
-      Default_CloudCoeff_File = TRIM(ADJUSTL(CloudCoeff_File))
-
-    IF ( PRESENT(AerosolCoeff_File) ) &
-      Default_AerosolCoeff_File = TRIM(ADJUSTL(AerosolCoeff_File))
-
-    IF ( PRESENT(EmisCoeff_File) ) &
-      Default_EmisCoeff_File = TRIM(ADJUSTL(EmisCoeff_File))
-
-    ! Was a path specified?
+    ! ...Were other filenames specified?
+    IF ( PRESENT(CloudCoeff_File  ) ) Default_CloudCoeff_File   = TRIM(ADJUSTL(CloudCoeff_File))
+    IF ( PRESENT(AerosolCoeff_File) ) Default_AerosolCoeff_File = TRIM(ADJUSTL(AerosolCoeff_File))
+    IF ( PRESENT(EmisCoeff_File   ) ) Default_EmisCoeff_File    = TRIM(ADJUSTL(EmisCoeff_File))
+    ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
       Default_CloudCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
       Default_AerosolCoeff_File = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
@@ -311,114 +296,90 @@ CONTAINS
 
 
     ! Load the spectral coefficients
-    ! ------------------------------
-    Error_Status = CRTM_Load_SpcCoeff( Sensor_ID        =Local_Sensor_ID  , &
-                                       File_Path        =File_Path        , &
-                                       Quiet            =Quiet            , &
-                                       Process_ID       =Process_ID       , &
-                                       Output_Process_ID=Output_Process_ID, &
-                                       Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading SpcCoeff data', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    err_stat = CRTM_Load_SpcCoeff( &
+                 Sensor_ID         = Sensor_ID        , &
+                 File_Path         = File_Path        , &
+                 Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+                 Process_ID        = Process_ID       , &
+                 Output_Process_ID = Output_Process_ID  )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error loading SpcCoeff data'//TRIM(pid_msg),err_stat )
       RETURN
     END IF
 
 
-    ! Load the gas absorption coefficients
-    ! ------------------------------------
-    Error_Status = CRTM_Load_TauCoeff( Sensor_ID        =Local_Sensor_ID  , &
-                                       File_Path        =File_Path        , &
-                                       Quiet            =Quiet            , &
-                                       Process_ID       =Process_ID       , &
-                                       Output_Process_ID=Output_Process_ID, &
-                                       Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading TauCoeff data', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    ! Load the transmittance model coefficients
+    err_stat = CRTM_Load_TauCoeff( &
+                 Sensor_ID         = Sensor_ID        , &
+                 File_Path         = File_Path        , &
+                 Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+                 Process_ID        = Process_ID       , &
+                 Output_Process_ID = Output_Process_ID  )
+    IF ( err_stat /= SUCCESS ) THEN
+      CALL Display_Message( ROUTINE_NAME,'Error loading TauCoeff data'//TRIM(pid_msg),err_stat )
       RETURN
     END IF
-
 
     ! Load the cloud coefficients
-    ! ---------------------------
-    Error_Status = CRTM_Load_CloudCoeff( TRIM(Default_CloudCoeff_File)      , &
-                                         Quiet            =Quiet            , &
-                                         Process_ID       =Process_ID       , &
-                                         Output_Process_ID=Output_Process_ID, &
-                                         Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading CloudCoeff data from '//&
-                            TRIM( Default_CloudCoeff_File ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    IF ( Local_Load_CloudCoeff ) THEN
+      err_stat = CRTM_CloudCoeff_Load( &
+                   Default_CloudCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading CloudCoeff data from '//TRIM(Default_CloudCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
     END IF
 
 
     ! Load the aerosol coefficients
-    ! -----------------------------
-    Error_Status = CRTM_Load_AerosolCoeff( TRIM(Default_AerosolCoeff_File)    , &
-                                           Quiet            =Quiet            , &
-                                           Process_ID       =Process_ID       , &
-                                           Output_Process_ID=Output_Process_ID, &
-                                           Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading AerosolCoeff data from '//&
-                            TRIM( Default_AerosolCoeff_File ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    IF ( Local_Load_AerosolCoeff ) THEN
+      err_stat = CRTM_AerosolCoeff_Load( &
+                   Default_AerosolCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading AerosolCoeff data from '//TRIM(Default_AerosolCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
     END IF
 
 
-    ! Load the IRSSE coefficients
-    ! ---------------------------
-    Error_Status = CRTM_Load_EmisCoeff( TRIM( Default_EmisCoeff_File ), &
-                                        Quiet            =Quiet            , &
-                                        Process_ID       =Process_ID       , &
-                                        Output_Process_ID=Output_Process_ID, &
-                                        Message_Log      =Message_Log        )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error loading EmisCoeff data from '//&
-                            TRIM( Default_EmisCoeff_File ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    ! Load the emissivity model coefficients
+    ! ...IR Water
+    err_stat = CRTM_Load_EmisCoeff( &
+                 Default_EmisCoeff_File, &
+                 Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+                 Process_ID        = Process_ID       , &
+                 Output_Process_ID = Output_Process_ID  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error loading IR Water EmisCoeff data from '//TRIM(Default_EmisCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
     
     
     ! Load the ChannelInfo structure
-    ! ------------------------------
     ! **** THIS CODE ASSUMES USING ALL CHANNELS ****
     DO n = 1, n_Sensors
-
-      ! Allocate the ChannelInfo structure
-      Error_Status = CRTM_Allocate_ChannelInfo( SC(n)%n_Channels, &
-                                                ChannelInfo(n), &
-                                                Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Allocation of ChannelInfo structure failed.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+      ! ...Allocate the ChannelInfo structure
+      CALL CRTM_ChannelInfo_Create( ChannelInfo(n), SC(n)%n_Channels )
+      IF ( .NOT. CRTM_ChannelInfo_Associated(ChannelInfo(n)) ) THEN
+        msg = 'ChannelInfo allocation failed for '//TRIM(Sensor_Id(n))//' sensor'
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
         RETURN
       END IF
-
-      ! Set the Sensor_Index component
+      ! ...Set the Sensor_Index component
       ChannelInfo(n)%Sensor_Index = n
-      
-      ! Fill the Channel_Index component
+      ! ...Fill the Channel_Index component
       ! **** THIS IS WHERE CHANNEL SELECTION COULD OCCUR ****
       ChannelInfo(n)%Channel_Index = (/(l, l=1,SC(n)%n_Channels)/)
-      ! Fill the rest of the ChannelInfo structure
+      ! ...Fill the rest of the ChannelInfo structure
       ChannelInfo(n)%Sensor_ID        = SC(n)%Sensor_Id
       ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID
       ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
@@ -440,18 +401,16 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Destroy( ChannelInfo            , &
-!                                    Process_ID =Process_ID , &
-!                                    RCS_Id     =RCS_Id     , &
-!                                    Message_Log=Message_Log  )
+!                                    Process_ID = Process_ID  )
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       ChannelInfo:  Reinitialized ChannelInfo structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_ChannelInfo_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       Process_ID:   Set this argument to the MPI process ID that this
 !                     function call is running under. This value is used
 !                     solely for controlling message output. If MPI is not
@@ -460,23 +419,6 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to the screen.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error
@@ -499,97 +441,106 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy( ChannelInfo, &  ! Output
-                         Process_ID , &  ! Optional input
-                         RCS_Id     , &  ! Revision control
-                         Message_Log) &  ! Error messaging
-                       RESULT( Error_Status )
+  FUNCTION CRTM_Destroy( &
+    ChannelInfo, &  ! Output
+    Process_ID ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo(:)
-    INTEGER     ,      OPTIONAL, INTENT(IN)     :: Process_ID
-    CHARACTER(*),      OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),      OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER,           OPTIONAL, INTENT(IN)     :: Process_ID
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy'
     ! Local variables
+    CHARACTER(ML) :: msg, pid_msg
     INTEGER :: Destroy_Status
-    INTEGER :: n, n_Sensors
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! The number of sensors
-    n_Sensors = SIZE(ChannelInfo)
-
-
-    ! Destroy all the structures
-    ! --------------------------
-    DO n = 1, n_Sensors
-      Destroy_Status = CRTM_Destroy_ChannelInfo( ChannelInfo(n)         , &
-                                                 Message_Log=Message_Log  )
-      IF ( Destroy_Status /= SUCCESS ) THEN
-        Error_Status = Destroy_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error destroying ChannelInfo structure.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-      END IF
-    END DO
-
-    Destroy_Status = CRTM_Destroy_EmisCoeff( Process_ID =Process_ID , &
-                                             Message_Log=Message_Log  )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      Error_Status = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared EmisCoeff data structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    err_stat = SUCCESS
+    ! ...Create a process ID message tag for error messages
+    IF ( PRESENT(Process_Id) ) THEN
+      WRITE( pid_msg,'("; Process ID: ",i0)' ) Process_ID
+    ELSE
+      pid_msg = ''
     END IF
 
-    Destroy_Status = CRTM_Destroy_AerosolCoeff( Process_ID =Process_ID , &
-                                                Message_Log=Message_Log  )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      Error_Status = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared AerosolCoeff data structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+
+    ! Destroy all the ChannelInfo structures
+    CALL CRTM_ChannelInfo_Destroy( ChannelInfo )
+    IF ( ANY(CRTM_ChannelInfo_Associated(ChannelInfo)) ) THEN
+      err_stat = FAILURE
+      msg = 'Error deallocating ChannelInfo structure(s)'
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
-    Destroy_Status = CRTM_Destroy_CloudCoeff( Process_ID =Process_ID , &
-                                              Message_Log=Message_Log  )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      Error_Status = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared CloudCoeff data structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
 
-    Destroy_Status = CRTM_Destroy_TauCoeff( Process_ID =Process_ID , &
-                                            Message_Log=Message_Log  )
+    ! Destroy the shared data structure
+    Destroy_Status = CRTM_Destroy_EmisCoeff( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
-      Error_Status = Destroy_Status
+      err_stat = Destroy_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared TauCoeff data structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            'Error deallocating shared EmisCoeff data structure'//TRIM(pid_msg), &
+                            err_stat )
     END IF
-
-    Destroy_Status = CRTM_Destroy_SpcCoeff( Process_ID =Process_ID , &  
-                                            Message_Log=Message_Log  )
+    Destroy_Status = CRTM_AerosolCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
-      Error_Status = Destroy_Status
+      err_stat = Destroy_Status
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared SpcCoeff data structure', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            'Error deallocating shared AerosolCoeff data structure'//TRIM(pid_msg), &
+                            err_stat )
+    END IF
+    Destroy_Status = CRTM_CloudCoeff_Destroy( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error deallocating shared CloudCoeff data structure'//TRIM(pid_msg), &
+                            err_stat )
+    END IF
+    Destroy_Status = CRTM_Destroy_TauCoeff( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error deallocating shared TauCoeff data structure(s)'//TRIM(pid_msg), &
+                            err_stat )
+    END IF
+    Destroy_Status = CRTM_Destroy_SpcCoeff( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      CALL Display_Message( ROUTINE_NAME, &
+                            'Error deallocating shared SpcCoeff data structure(s)'//TRIM(pid_msg), &
+                            err_stat )
     END IF
 
   END FUNCTION CRTM_Destroy
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_LifeCycleVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_LifeCycleVersion( Id )
+!
+! OUTPUT ARGUMENTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_LifeCycleVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_LifeCycleVersion
 
 END MODULE CRTM_LifeCycle

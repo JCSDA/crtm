@@ -670,8 +670,7 @@ CONTAINS
 
 
     ! Read the SensorData data
-    READ( fid,IOSTAT=io_stat ) SensorData%Select_WMO_Sensor_Id, &
-                               SensorData%Sensor_Id       , &
+    READ( fid,IOSTAT=io_stat ) SensorData%Sensor_Id       , &
                                SensorData%WMO_Satellite_ID, &
                                SensorData%WMO_Sensor_ID   , &
                                SensorData%Sensor_Channel  , &
@@ -765,8 +764,7 @@ CONTAINS
 
 
     ! Write the data
-    WRITE( fid,IOSTAT=io_stat ) SensorData%Select_WMO_Sensor_Id, &
-                                SensorData%Sensor_Id       , &
+    WRITE( fid,IOSTAT=io_stat ) SensorData%Sensor_Id       , &
                                 SensorData%WMO_Satellite_ID, &
                                 SensorData%WMO_Sensor_ID   , &
                                 SensorData%Sensor_Channel  , &

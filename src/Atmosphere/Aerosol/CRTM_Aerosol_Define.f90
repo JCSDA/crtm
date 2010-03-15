@@ -117,6 +117,8 @@ MODULE CRTM_Aerosol_Define
   ! ----------------------------
   !:tdoc+:
   TYPE :: CRTM_Aerosol_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: Max_Layers = 0  ! K dimension.
     INTEGER :: n_Layers   = 0  ! Kuse dimension
@@ -166,10 +168,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:  The return value is a logical value indicating the
 !                status of the Aerosol members.
-!                .TRUE.  - if ANY of the Aerosol allocatable or
-!                          pointer members are in use.
-!                .FALSE. - if ALL of the Aerosol allocatable or
-!                          pointer members are not in use.
+!                  .TRUE.  - if the array components are allocated.
+!                  .FALSE. - if the array components are not allocated.
 !                UNITS:      N/A
 !                TYPE:       LOGICAL
 !                DIMENSION:  Same as input Aerosol argument
@@ -178,16 +178,9 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_Aerosol_Associated( Aerosol ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol
-    ! Function result
     LOGICAL :: Status
-
-    ! Test the structure members
-    Status = &
-      ALLOCATED(Aerosol%Effective_Radius) .OR. &
-      ALLOCATED(Aerosol%Concentration   )
-
+    Status = Aerosol%Is_Allocated
   END FUNCTION CRTM_Aerosol_Associated
 
 
@@ -215,6 +208,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Aerosol_Destroy( Aerosol )
     TYPE(CRTM_Aerosol_type), INTENT(OUT) :: Aerosol
+    Aerosol%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_Aerosol_Destroy
   
 
@@ -272,6 +266,9 @@ CONTAINS
     Aerosol%Effective_Radius = ZERO
     Aerosol%Concentration    = ZERO
     
+    ! Set allocation indicator
+    Aerosol%Is_Allocated = .TRUE.
+
   END SUBROUTINE CRTM_Aerosol_Create
 
 

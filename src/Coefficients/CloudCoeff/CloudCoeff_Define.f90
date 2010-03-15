@@ -18,8 +18,8 @@ MODULE CloudCoeff_Define
   ! ------------------
   ! Module use
   USE Type_Kinds,            ONLY: Long, Double
-  USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -31,29 +31,41 @@ MODULE CloudCoeff_Define
   PRIVATE
   ! Datatypes
   PUBLIC :: CloudCoeff_type
+  ! Operators
+  PUBLIC :: OPERATOR(==)
   ! Procedures
-  PUBLIC :: Associated_CloudCoeff
-  PUBLIC :: Destroy_CloudCoeff
-  PUBLIC :: Allocate_CloudCoeff
-  PUBLIC :: Assign_CloudCoeff
-  PUBLIC :: Equal_CloudCoeff
-  PUBLIC :: Check_CloudCoeff_Release
-  PUBLIC :: Info_CloudCoeff
+  PUBLIC :: CloudCoeff_Associated
+  PUBLIC :: CloudCoeff_Destroy
+  PUBLIC :: CloudCoeff_Create
+  PUBLIC :: CloudCoeff_Inspect
+  PUBLIC :: CloudCoeff_ValidRelease
+  PUBLIC :: CloudCoeff_Info
+  PUBLIC :: CloudCoeff_DefineVersion
+  
+
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE CloudCoeff_Equal
+  END INTERFACE OPERATOR(==)
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! CloudCoeff init values
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: CLOUDCOEFF_RELEASE = 2  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: CLOUDCOEFF_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: CLOUDCOEFF_VERSION = 1  ! This is just the data version for the release.
+  ! Meggage string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! --------------------------------
@@ -67,11 +79,13 @@ MODULE CloudCoeff_Define
   !   L:    Liquid phase
   !   S:    Solid phase
   ! --------------------------------
+  !:tdoc+:
   TYPE :: CloudCoeff_type
-    INTEGER :: n_Allocates
     ! Release and version information
     INTEGER(Long) :: Release = CLOUDCOEFF_RELEASE
     INTEGER(Long) :: Version = CLOUDCOEFF_VERSION
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Array dimensions
     INTEGER(Long) :: n_MW_Frequencies   = 0   ! I1 dimension 
     INTEGER(Long) :: n_MW_Radii         = 0   ! I2 dimension
@@ -84,75 +98,35 @@ MODULE CloudCoeff_Define
     INTEGER(Long) :: Max_Phase_Elements = 0   ! I8 dimension
     INTEGER(Long) :: n_Phase_Elements   = 0   
     ! LUT dimension vectors
-    REAL(Double), POINTER, DIMENSION(:) :: Frequency_MW => NULL()  ! I1
-    REAL(Double), POINTER, DIMENSION(:) :: Frequency_IR => NULL()  ! I3
-    REAL(Double), POINTER, DIMENSION(:) :: Reff_MW      => NULL()  ! I2 
-    REAL(Double), POINTER, DIMENSION(:) :: Reff_IR      => NULL()  ! I4
-    REAL(Double), POINTER, DIMENSION(:) :: Temperature  => NULL()  ! I5
-    REAL(Double), POINTER, DIMENSION(:) :: Density      => NULL()  ! I6
+    REAL(Double), ALLOCATABLE :: Frequency_MW(:)  ! I1
+    REAL(Double), ALLOCATABLE :: Frequency_IR(:)  ! I3
+    REAL(Double), ALLOCATABLE :: Reff_MW(:)       ! I2 
+    REAL(Double), ALLOCATABLE :: Reff_IR(:)       ! I4
+    REAL(Double), ALLOCATABLE :: Temperature(:)   ! I5
+    REAL(Double), ALLOCATABLE :: Density(:)       ! I6
     ! Microwave data for liquid phase clouds
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: ke_L_MW     => NULL()  ! I1 x I2 x I5
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: w_L_MW      => NULL()  ! I1 x I2 x I5
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: g_L_MW      => NULL()  ! I1 x I2 x I5
-    REAL(Double), POINTER, DIMENSION(:,:,:,:,:) :: pcoeff_L_MW => NULL()  ! I1 x I2 x I5 x I7 x I8
+    REAL(Double), ALLOCATABLE :: ke_L_MW(:,:,:)          ! I1 x I2 x I5
+    REAL(Double), ALLOCATABLE :: w_L_MW(:,:,:)           ! I1 x I2 x I5
+    REAL(Double), ALLOCATABLE :: g_L_MW(:,:,:)           ! I1 x I2 x I5
+    REAL(Double), ALLOCATABLE :: pcoeff_L_MW(:,:,:,:,:)  ! I1 x I2 x I5 x I7 x I8
     ! Microwave data for solid phase clouds
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: ke_S_MW     => NULL()  ! I1 x I2 x I6
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: w_S_MW      => NULL()  ! I1 x I2 x I6
-    REAL(Double), POINTER, DIMENSION(:,:,:)     :: g_S_MW      => NULL()  ! I1 x I2 x I6
-    REAL(Double), POINTER, DIMENSION(:,:,:,:,:) :: pcoeff_S_MW => NULL()  ! I1 x I2 x I6 x I7 x I8
+    REAL(Double), ALLOCATABLE :: ke_S_MW(:,:,:)          ! I1 x I2 x I6
+    REAL(Double), ALLOCATABLE :: w_S_MW(:,:,:)           ! I1 x I2 x I6
+    REAL(Double), ALLOCATABLE :: g_S_MW(:,:,:)           ! I1 x I2 x I6
+    REAL(Double), ALLOCATABLE :: pcoeff_S_MW(:,:,:,:,:)  ! I1 x I2 x I6 x I7 x I8
     ! Infrared data. Note that the 0'th element in the I6 dimension
     ! of these data correspond to the liquid phase component. The
     ! remaining elements in this dimension are for the solid phase
     ! component
-    REAL(Double), POINTER, DIMENSION(:,:,:)   :: ke_IR     => NULL()  ! I3 x I4 x 0:I6
-    REAL(Double), POINTER, DIMENSION(:,:,:)   :: w_IR      => NULL()  ! I3 x I4 x 0:I6
-    REAL(Double), POINTER, DIMENSION(:,:,:)   :: g_IR      => NULL()  ! I3 x I4 x 0:I6
-    REAL(Double), POINTER, DIMENSION(:,:,:,:) :: pcoeff_IR => NULL()  ! I3 x I4 x 0:I6 x I7
+    REAL(Double), ALLOCATABLE :: ke_IR(:,:,:)        ! I3 x I4 x 0:I6
+    REAL(Double), ALLOCATABLE :: w_IR(:,:,:)         ! I3 x I4 x 0:I6
+    REAL(Double), ALLOCATABLE :: g_IR(:,:,:)         ! I3 x I4 x 0:I6
+    REAL(Double), ALLOCATABLE :: pcoeff_IR(:,:,:,:)  ! I3 x I4 x 0:I6 x I7
   END TYPE CloudCoeff_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_CloudCoeff
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CloudCoeff structure.
-!
-! CALLING SEQUENCE:
-!       CALL Clear_CloudCoeff( CloudCoeff ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       CloudCoeff:    CloudCoeff structure for which the scalar members have
-!                      been cleared.
-!                      UNITS:      N/A
-!                      TYPE:       CloudCoeff_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output CloudCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE Clear_CloudCoeff(CloudCoeff)
-    TYPE(CloudCoeff_type), INTENT(IN OUT) :: CloudCoeff
-    CloudCoeff%Release = CLOUDCOEFF_RELEASE
-    CloudCoeff%Version = CLOUDCOEFF_VERSION
-  END SUBROUTINE Clear_CloudCoeff
 
 
 !################################################################################
@@ -164,208 +138,72 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Associated_CloudCoeff
+!       CloudCoeff_Associated
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       CloudCoeff structure.
+!       Elemental function to test the status of the allocatable components
+!       of a CloudCoeff object.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_CloudCoeff( CloudCoeff       , &  ! Input
-!                                                   ANY_Test=Any_Test  )  ! Optional input
+!       Status = CloudCoeff_Associated( CloudCoeff )
 !
-! INPUT ARGUMENTS:
-!       CloudCoeff: CloudCoeff structure which is to have its pointer
-!                   member's association status tested.
-!                   UNITS:      N/A
-!                   TYPE:       CloudCoeff_type
-!                   DIMENSION:  Scalar
-!                   ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:   Set this argument to test if ANY of the
-!                   CloudCoeff structure pointer members are associated.
-!                   The default is to test if ALL the pointer members
-!                   are associated.
-!                   If ANY_Test = 0, test if ALL the pointer members
-!                                    are associated.  (DEFAULT)
-!                      ANY_Test = 1, test if ANY of the pointer members
-!                                    are associated.
-!                   UNITS:      N/A
-!                   TYPE:       INTEGER
-!                   DIMENSION:  Scalar
-!                   ATTRIBUTES: INTENT(IN), OPTIONAL
+! OBJECTS:
+!       CloudCoeff:  CloudCoeff object which is to have its member's
+!                    status tested.
+!                    UNITS:      N/A
+!                    TYPE:       TYPE(CloudCoeff_type)
+!                    DIMENSION:  Scalar or any rank
+!                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            association status of the CloudCoeff pointer members.
-!                            .TRUE.  - if ALL the CloudCoeff pointer members are
-!                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the CloudCoeff pointer
-!                                      members are associated.
-!                            .FALSE. - some or all of the CloudCoeff pointer
-!                                      members are NOT associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!       Status:      The return value is a logical value indicating the
+!                    status of the CloudCoeff members.
+!                    .TRUE.  - if ANY of the CloudCoeff allocatable or
+!                              pointer members are in use.
+!                    .FALSE. - if ALL of the CloudCoeff allocatable or
+!                              pointer members are not in use.
+!                    UNITS:      N/A
+!                    TYPE:       LOGICAL
+!                    DIMENSION:  Same as input CloudCoeff argument
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_CloudCoeff( CloudCoeff, & ! Input
-                                  ANY_Test )  & ! Optional input
-                                RESULT( Association_Status )
-    ! Arguments
+  ELEMENTAL FUNCTION CloudCoeff_Associated( CloudCoeff ) RESULT( Status )
     TYPE(CloudCoeff_type), INTENT(IN) :: CloudCoeff
-    INTEGER,     OPTIONAL, INTENT(IN) :: ANY_Test
-    ! Function result
-    LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == 1 ) ALL_Test = .FALSE.
-    END IF
-
-    ! Test the structure associations
-    Association_Status = .FALSE.
-    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( CloudCoeff%Frequency_MW ) .AND. &
-           ASSOCIATED( CloudCoeff%Frequency_IR ) .AND. &
-           ASSOCIATED( CloudCoeff%Reff_MW      ) .AND. &
-           ASSOCIATED( CloudCoeff%Reff_IR      ) .AND. &
-           ASSOCIATED( CloudCoeff%Temperature  ) .AND. &
-           ASSOCIATED( CloudCoeff%Density      ) .AND. &
-           ASSOCIATED( CloudCoeff%ke_L_MW      ) .AND. &
-           ASSOCIATED( CloudCoeff%w_L_MW       ) .AND. &
-           ASSOCIATED( CloudCoeff%g_L_MW       ) .AND. &
-           ASSOCIATED( CloudCoeff%pcoeff_L_MW  ) .AND. &
-           ASSOCIATED( CloudCoeff%ke_S_MW      ) .AND. &
-           ASSOCIATED( CloudCoeff%w_S_MW       ) .AND. &
-           ASSOCIATED( CloudCoeff%g_S_MW       ) .AND. &
-           ASSOCIATED( CloudCoeff%pcoeff_S_MW  ) .AND. &
-           ASSOCIATED( CloudCoeff%ke_IR        ) .AND. &
-           ASSOCIATED( CloudCoeff%w_IR         ) .AND. &
-           ASSOCIATED( CloudCoeff%g_IR         ) .AND. &
-           ASSOCIATED( CloudCoeff%pcoeff_IR    )       ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED( CloudCoeff%Frequency_MW ) .OR. &
-           ASSOCIATED( CloudCoeff%Frequency_IR ) .OR. &
-           ASSOCIATED( CloudCoeff%Reff_MW      ) .OR. &
-           ASSOCIATED( CloudCoeff%Reff_IR      ) .OR. &
-           ASSOCIATED( CloudCoeff%Temperature  ) .OR. &
-           ASSOCIATED( CloudCoeff%Density      ) .OR. &
-           ASSOCIATED( CloudCoeff%ke_L_MW      ) .OR. &
-           ASSOCIATED( CloudCoeff%w_L_MW       ) .OR. &
-           ASSOCIATED( CloudCoeff%g_L_MW       ) .OR. &
-           ASSOCIATED( CloudCoeff%pcoeff_L_MW  ) .OR. &
-           ASSOCIATED( CloudCoeff%ke_S_MW      ) .OR. &
-           ASSOCIATED( CloudCoeff%w_S_MW       ) .OR. &
-           ASSOCIATED( CloudCoeff%g_S_MW       ) .OR. &
-           ASSOCIATED( CloudCoeff%pcoeff_S_MW  ) .OR. &
-           ASSOCIATED( CloudCoeff%ke_IR        ) .OR. &
-           ASSOCIATED( CloudCoeff%w_IR         ) .OR. &
-           ASSOCIATED( CloudCoeff%g_IR         ) .OR. &
-           ASSOCIATED( CloudCoeff%pcoeff_IR    )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-
-  END FUNCTION Associated_CloudCoeff
+    LOGICAL :: Status
+    Status = CloudCoeff%Is_Allocated
+  END FUNCTION CloudCoeff_Associated
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Destroy_CloudCoeff
+!       CloudCoeff_Destroy
 ! 
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of CloudCoeff
-!       data structures.
+!       Elemental subroutine to re-initialize CloudCoeff objects.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_CloudCoeff( CloudCoeff             , &  ! Output
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       CALL CloudCoeff_Destroy( CloudCoeff )
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
+! OBJECTS:
+!       CloudCoeff:   Re-initialized CloudCoeff object.
 !                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!                     TYPE:       TYPE(CloudCoeff_type)
+!                     DIMENSION:  Scalar OR any rank
+!                     ATTRIBUTES: INTENT(OUT)
 !
-! OUTPUT ARGUMENTS:
-!       CloudCoeff:   Re-initialized CloudCoeff structure.
-!                     UNITS:      N/A
-!                     TYPE:       CloudCoeff_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output CloudCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_CloudCoeff( CloudCoeff,   &  ! Output
-                               No_Clear,     &  ! Optional input
-                               RCS_Id,       &  ! Revision control
-                               Message_Log ) &  ! Error messaging
-                             RESULT( Error_Status )
-    ! Arguments
-    TYPE(CloudCoeff_type),  INTENT(IN OUT) :: CloudCoeff
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_CloudCoeff'
-    ! Local variables
-    CHARACTER(256) :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Reinitialise the dimensions
+  ELEMENTAL SUBROUTINE CloudCoeff_Destroy( CloudCoeff )
+    TYPE(CloudCoeff_type), INTENT(OUT) :: CloudCoeff
+    CloudCoeff%Is_Allocated = .FALSE.
     CloudCoeff%n_MW_Frequencies   = 0
     CloudCoeff%n_MW_Radii         = 0
     CloudCoeff%n_IR_Frequencies   = 0
@@ -376,90 +214,36 @@ CONTAINS
     CloudCoeff%n_Legendre_Terms   = 0
     CloudCoeff%Max_Phase_Elements = 0
     CloudCoeff%n_Phase_Elements   = 0
-
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == 1 ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL Clear_CloudCoeff( CloudCoeff )
-
-    ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_CloudCoeff( CloudCoeff ) ) RETURN
-
-
-    ! Deallocate the array components
-    ! -------------------------------
-    DEALLOCATE( CloudCoeff%Frequency_MW, &
-                CloudCoeff%Frequency_IR, &
-                CloudCoeff%Reff_MW     , &
-                CloudCoeff%Reff_IR     , &
-                CloudCoeff%Temperature , &
-                CloudCoeff%Density     , &
-                CloudCoeff%ke_L_MW     , &
-                CloudCoeff%w_L_MW      , &
-                CloudCoeff%g_L_MW      , &
-                CloudCoeff%pcoeff_L_MW , &
-                CloudCoeff%ke_S_MW     , &
-                CloudCoeff%w_S_MW      , &
-                CloudCoeff%g_S_MW      , &
-                CloudCoeff%pcoeff_S_MW , &
-                CloudCoeff%ke_IR       , &
-                CloudCoeff%w_IR        , &
-                CloudCoeff%g_IR        , &
-                CloudCoeff%pcoeff_IR   , &
-                STAT = Allocate_Status   )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error deallocating CloudCoeff. STAT = ", i0 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-    CloudCoeff%n_Allocates = CloudCoeff%n_Allocates - 1
-    IF ( CloudCoeff%n_Allocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i0 )' ) &
-                      CloudCoeff%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION Destroy_CloudCoeff
-
+  END SUBROUTINE CloudCoeff_Destroy
+  
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Allocate_CloudCoeff
+!       CloudCoeff_Create
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the CloudCoeff
-!       data structure.
+!       Elemental subroutine to create an instance of a CloudCoeff object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_CloudCoeff( n_MW_Frequencies       , &  ! Input
-!                                           n_MW_Radii             , &  ! Input
-!                                           n_IR_Frequencies       , &  ! Input
-!                                           n_IR_Radii             , &  ! Input
-!                                           n_Temperatures         , &  ! Input
-!                                           n_Densities            , &  ! Input
-!                                           n_Legendre_Terms       , &  ! Input
-!                                           n_Phase_Elements       , &  ! Input
-!                                           CloudCoeff             , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       CALL CloudCoeff_Create( CloudCoeff      , &
+!                               n_MW_Frequencies, &
+!                               n_MW_Radii      , &
+!                               n_IR_Frequencies, &
+!                               n_IR_Radii      , &
+!                               n_Temperatures  , &
+!                               n_Densities     , &
+!                               n_Legendre_Terms, &
+!                               n_Phase_Elements  )
 !
-! INPUT ARGUMENTS:
+! OBJECTS:
+!       CloudCoeff:        CloudCoeff object.
+!                          UNITS:      N/A
+!                          TYPE:       TYPE(CloudCoeff_type)
+!                          DIMENSION:  Scalar or any rank
+!                          ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
 !       n_MW_Frequencies:  The number of microwave frequencies in
 !                          the look-up table (LUT) 
 !                          The "I1" dimension. Must be > 0.
@@ -523,92 +307,35 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       CloudCoeff:        CloudCoeff structure with allocated pointer members
-!                          UNITS:      N/A
-!                          TYPE:       CloudCoeff_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structure pointer allocations were
-!                                        successful
-!                             == FAILURE - an error occurred, or
-!                                        - the structure internal allocation counter
-!                                          is not equal to one (1) upon exiting this
-!                                          function. This value is incremented and
-!                                          decremented for every structure allocation
-!                                          and deallocation respectively.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output CloudCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_CloudCoeff( n_MW_Frequencies, &  ! Input
-                                n_MW_Radii      , &  ! Input
-                                n_IR_Frequencies, &  ! Input
-                                n_IR_Radii      , &  ! Input
-                                n_Temperatures  , &  ! Input
-                                n_Densities     , &  ! Input
-                                n_Legendre_Terms, &  ! Input
-                                n_Phase_Elements, &  ! Input
-                                CloudCoeff      , &  ! Output
-                                RCS_Id          , &  ! Revision control
-                                Message_Log     ) &  ! Error messaging
-                              RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE CloudCoeff_Create( &
+    CloudCoeff      , &
+    n_MW_Frequencies, &
+    n_MW_Radii      , &
+    n_IR_Frequencies, &
+    n_IR_Radii      , &
+    n_Temperatures  , &
+    n_Densities     , &
+    n_Legendre_Terms, &
+    n_Phase_Elements  )
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_MW_Frequencies
-    INTEGER,                INTENT(IN)     :: n_MW_Radii
-    INTEGER,                INTENT(IN)     :: n_IR_Frequencies
-    INTEGER,                INTENT(IN)     :: n_IR_Radii
-    INTEGER,                INTENT(IN)     :: n_Temperatures
-    INTEGER,                INTENT(IN)     :: n_Densities
-    INTEGER,                INTENT(IN)     :: n_Legendre_Terms
-    INTEGER,                INTENT(IN)     :: n_Phase_Elements
-    TYPE(CloudCoeff_type) , INTENT(IN OUT) :: CloudCoeff
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(CloudCoeff_type) , INTENT(OUT) :: CloudCoeff
+    INTEGER,                INTENT(IN)  :: n_MW_Frequencies
+    INTEGER,                INTENT(IN)  :: n_MW_Radii
+    INTEGER,                INTENT(IN)  :: n_IR_Frequencies
+    INTEGER,                INTENT(IN)  :: n_IR_Radii
+    INTEGER,                INTENT(IN)  :: n_Temperatures
+    INTEGER,                INTENT(IN)  :: n_Densities
+    INTEGER,                INTENT(IN)  :: n_Legendre_Terms
+    INTEGER,                INTENT(IN)  :: n_Phase_Elements
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_CloudCoeff'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_Create'
     ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: i, Allocate_Status(4)
+    INTEGER :: alloc_stat(4)
 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check dimensions
+    ! Check input
     IF ( n_MW_Frequencies < 1 .OR. &
          n_MW_Radii       < 1 .OR. &
          n_IR_Frequencies < 1 .OR. &
@@ -616,46 +343,20 @@ CONTAINS
          n_Temperatures   < 1 .OR. &
          n_Densities      < 1 .OR. &
          n_Legendre_Terms < 0 .OR. &
-         n_Phase_Elements < 1      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input CloudCoeff dimensions must all be > 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-    ! Check if ANY pointers are already associated
-    ! If they are, deallocate them but leave scalars.
-    IF ( Associated_CloudCoeff( CloudCoeff, ANY_Test=SET ) ) THEN
-      Error_Status = Destroy_CloudCoeff( CloudCoeff, &
-                                         No_Clear=SET, &
-                                         Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CloudCoeff prior to allocation.', &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    END IF
+         n_Phase_Elements < 1      ) RETURN
 
 
-    ! Perform the pointer allocation. The allocations were
+    ! Perform the allocation. The allocations were
     ! split across several calls for clarity only.
-    ! ----------------------------------------------------
-    ! Allocate the dimension vectors
-    i = 1
+    ! ...Allocate the dimension vectors
     ALLOCATE( CloudCoeff%Frequency_MW(n_MW_Frequencies), &
               CloudCoeff%Frequency_IR(n_IR_Frequencies), &
               CloudCoeff%Reff_MW(n_MW_Radii), &
               CloudCoeff%Reff_IR(n_IR_Radii), &
               CloudCoeff%Temperature(n_Temperatures), &
               CloudCoeff%Density(n_Densities), &
-              STAT = Allocate_Status(i) )
-              
-    ! Allocate the microwave liquid phase arrays
-    i = i + 1
+              STAT = alloc_stat(1) )
+    ! ...Allocate the microwave liquid phase arrays
     ALLOCATE( CloudCoeff%ke_L_MW(n_MW_Frequencies, n_MW_Radii, n_Temperatures), &
               CloudCoeff%w_L_MW(n_MW_Frequencies , n_MW_Radii, n_Temperatures), &
               CloudCoeff%g_L_MW(n_MW_Frequencies , n_MW_Radii, n_Temperatures), &
@@ -664,10 +365,8 @@ CONTAINS
                                      n_Temperatures    , &
                                      0:n_Legendre_Terms, &
                                      n_Phase_Elements    ), &
-              STAT = Allocate_Status(i) )
-
-    ! Allocate the microwave solid phase arrays
-    i = i + 1
+              STAT = alloc_stat(2) )
+    ! ...Allocate the microwave solid phase arrays
     ALLOCATE( CloudCoeff%ke_S_MW(n_MW_Frequencies, n_MW_Radii, n_Densities), &
               CloudCoeff%w_S_MW(n_MW_Frequencies , n_MW_Radii, n_Densities), &
               CloudCoeff%g_S_MW(n_MW_Frequencies , n_MW_Radii, n_Densities), &
@@ -676,10 +375,8 @@ CONTAINS
                                      n_Densities       , &
                                      0:n_Legendre_Terms, &
                                      n_Phase_Elements    ), &
-              STAT = Allocate_Status(i) )
-
-    ! Allocate the infrared arrays
-    i = i + 1
+              STAT = alloc_stat(3) )
+    ! ...Allocate the infrared arrays
     ALLOCATE( CloudCoeff%ke_IR(n_IR_Frequencies, n_IR_Radii, 0:n_Densities), &
               CloudCoeff%w_IR(n_IR_Frequencies , n_IR_Radii, 0:n_Densities), &
               CloudCoeff%g_IR(n_IR_Frequencies , n_IR_Radii, 0:n_Densities), &
@@ -687,22 +384,12 @@ CONTAINS
                                    n_IR_Radii        , &
                                    0:n_Densities     , &
                                    0:n_Legendre_Terms  ), &
-              STAT = Allocate_Status(i) )
-              
-    IF ( ANY(Allocate_Status /= 0) ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CloudCoeff data arrays. STAT = ",4(1x,i0) )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+              STAT = alloc_stat(4) )
+    IF ( ANY(alloc_stat /= 0) ) RETURN
 
 
-    ! Assign the dimensions
-    ! ---------------------
+    ! Initialise
+    ! ...Dimensions
     CloudCoeff%n_MW_Frequencies   = n_MW_Frequencies
     CloudCoeff%n_MW_Radii         = n_MW_Radii
     CloudCoeff%n_IR_Frequencies   = n_IR_Frequencies
@@ -713,10 +400,7 @@ CONTAINS
     CloudCoeff%n_Legendre_Terms   = n_Legendre_Terms 
     CloudCoeff%Max_Phase_Elements = n_Phase_Elements
     CloudCoeff%n_Phase_Elements   = n_Phase_Elements 
-
-
-    ! Initialise the arrays
-    ! ---------------------
+    ! ...Arrays
     CloudCoeff%Frequency_MW = ZERO
     CloudCoeff%Frequency_IR = ZERO
     CloudCoeff%Reff_MW      = ZERO
@@ -740,852 +424,337 @@ CONTAINS
     CloudCoeff%pcoeff_IR    = ZERO
 
 
-    ! Increment and test the allocation counter
-    ! -----------------------------------------
-    CloudCoeff%n_Allocates = CloudCoeff%n_Allocates + 1
-    IF ( CloudCoeff%n_Allocates /= 1 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i0 )' ) &
-                      CloudCoeff%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
+    ! Set allocationindicator
+    CloudCoeff%Is_Allocated = .TRUE.
 
-  END FUNCTION Allocate_CloudCoeff
+  END SUBROUTINE CloudCoeff_Create
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Assign_CloudCoeff
+!       CloudCoeff_Inspect
 !
 ! PURPOSE:
-!       Function to copy valid CloudCoeff structures.
+!       Subroutine to print the contents of a CloudCoeff object to stdout.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_CloudCoeff( CloudCoeff_in          , &  ! Input
-!                                         CloudCoeff_out         , &  ! Output
-!                                         RCS_Id     =RCS_Id     , &  ! Revision control
-!                                         Message_Log=Message_Log  )  ! Error messaging
+!       CALL CloudCoeff_Inspect( CloudCoeff )
 !
-! INPUT ARGUMENTS:
-!       CloudCoeff_in:     CloudCoeff structure which is to be copied.
-!                          UNITS:      N/A
-!                          TYPE:       CloudCoeff_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       CloudCoeff:    CloudCoeff object to display.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(CloudCoeff_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       CloudCoeff_out:    Copy of the input structure, CloudCoeff_in.
-!                          UNITS:      N/A
-!                          TYPE:       CloudCoeff_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structure assignment was successful
-!                             == FAILURE an error occurred
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output CloudCoeff argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_CloudCoeff( CloudCoeff_in , &  ! Input
-                              CloudCoeff_out, &  ! Output
-                              RCS_Id        , &  ! Revision control
-                              Message_Log   ) &  ! Error messaging
-                            RESULT( Error_Status )
-    ! Arguments
-    TYPE(CloudCoeff_type),  INTENT(IN)     :: CloudCoeff_in
-    TYPE(CloudCoeff_type),  INTENT(IN OUT) :: CloudCoeff_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_CloudCoeff'
-
-    ! Set up
-    ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! ALL *input* pointers must be associated.
-    IF ( .NOT. Associated_CloudCoeff( CloudCoeff_In ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT CloudCoeff pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Allocate the structure
-    ! ----------------------
-    Error_Status = Allocate_CloudCoeff( CloudCoeff_in%n_MW_Frequencies  , &
-                                        CloudCoeff_in%n_MW_Radii        , &
-                                        CloudCoeff_in%n_IR_Frequencies  , &
-                                        CloudCoeff_in%n_IR_Radii        , &
-                                        CloudCoeff_in%n_Temperatures    , &
-                                        CloudCoeff_in%n_Densities       , &
-                                        CloudCoeff_in%Max_Legendre_Terms, &
-                                        CloudCoeff_in%Max_Phase_Elements, &
-                                        CloudCoeff_out, &
-                                        Message_Log = Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output CloudCoeff arrays.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Assign structure data
-    ! ---------------------
-    ! Non-dimension scalar members
-    CloudCoeff_out%Release = CloudCoeff_in%Release
-    CloudCoeff_out%Version = CloudCoeff_in%Version
-
-    ! Used-dimension members
-    CloudCoeff_out%n_Legendre_Terms = CloudCoeff_in%n_Legendre_Terms
-    CloudCoeff_out%n_Phase_Elements = CloudCoeff_in%n_Phase_Elements
-    
-    ! Copy array data
-    CloudCoeff_out%Frequency_MW = CloudCoeff_in%Frequency_MW
-    CloudCoeff_out%Frequency_IR = CloudCoeff_in%Frequency_IR
-    CloudCoeff_out%Reff_MW      = CloudCoeff_in%Reff_MW
-    CloudCoeff_out%Reff_IR      = CloudCoeff_in%Reff_IR
-    CloudCoeff_out%Temperature  = CloudCoeff_in%Temperature
-    CloudCoeff_out%Density      = CloudCoeff_in%Density
-
-    CloudCoeff_out%ke_L_MW     = CloudCoeff_in%ke_L_MW
-    CloudCoeff_out%w_L_MW      = CloudCoeff_in%w_L_MW
-    CloudCoeff_out%g_L_MW      = CloudCoeff_in%g_L_MW
-    CloudCoeff_out%pcoeff_L_MW = CloudCoeff_in%pcoeff_L_MW
-
-    CloudCoeff_out%ke_S_MW     = CloudCoeff_in%ke_S_MW
-    CloudCoeff_out%w_S_MW      = CloudCoeff_in%w_S_MW
-    CloudCoeff_out%g_S_MW      = CloudCoeff_in%g_S_MW
-    CloudCoeff_out%pcoeff_S_MW = CloudCoeff_in%pcoeff_S_MW
-
-    CloudCoeff_out%ke_IR     = CloudCoeff_in%ke_IR    
-    CloudCoeff_out%w_IR      = CloudCoeff_in%w_IR     
-    CloudCoeff_out%g_IR      = CloudCoeff_in%g_IR     
-    CloudCoeff_out%pcoeff_IR = CloudCoeff_in%pcoeff_IR
-
-  END FUNCTION Assign_CloudCoeff
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Equal_CloudCoeff
-!
-! PURPOSE:
-!       Function to test if two CloudCoeff structures are equal.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Equal_CloudCoeff( CloudCoeff_LHS         , &  ! Input
-!                                        CloudCoeff_RHS         , &  ! Input
-!                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                        Check_All  =Check_All  , &  ! Optional input
-!                                        RCS_Id     =RCS_Id     , &  ! Optional output
-!                                        Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       CloudCoeff_LHS:    CloudCoeff structure to be compared; equivalent to the
-!                          left-hand side of a lexical comparison, e.g.
-!                            IF ( CloudCoeff_LHS == CloudCoeff_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CloudCoeff_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       CloudCoeff_RHS:    CloudCoeff structure to be compared to; equivalent to
-!                          right-hand side of a lexical comparison, e.g.
-!                            IF ( CloudCoeff_LHS == CloudCoeff_RHS ).
-!                          UNITS:      N/A
-!                          TYPE:       CloudCoeff_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:         Unit of data precision used to scale the floating
-!                          point comparison. ULP stands for "Unit in the Last Place,"
-!                          the smallest possible increment or decrement that can be
-!                          made using a machine's floating point arithmetic.
-!                          Value must be positive - if a negative value is supplied,
-!                          the absolute value is used. If not specified, the default
-!                          value is 1.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Check_All:         Set this argument to check ALL the floating point
-!                          channel data of the CloudCoeff structures. The default
-!                          action is return with a FAILURE status as soon as
-!                          any difference is found. This optional argument can
-!                          be used to get a listing of ALL the differences
-!                          between data in CloudCoeff structures.
-!                          If == 0, Return with FAILURE status as soon as
-!                                   ANY difference is found  *DEFAULT*
-!                             == 1, Set FAILURE status if ANY difference is
-!                                   found, but continue to check ALL data.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:       Character string specifying a filename in which any
-!                          messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output messages to standard output.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structures were equal
-!                             == FAILURE - an error occurred, or
-!                                        - the structures were different.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION Equal_CloudCoeff( CloudCoeff_LHS, &  ! Input
-                             CloudCoeff_RHS, &  ! Input
-                             ULP_Scale     , &  ! Optional input
-                             Check_All     , &  ! Optional input
-                             RCS_Id        , &  ! Revision control
-                             Message_Log   ) &  ! Error messaging
-                           RESULT( Error_Status )
-    ! Arguments
-    TYPE(CloudCoeff_type),  INTENT(IN)  :: CloudCoeff_LHS
-    TYPE(CloudCoeff_type),  INTENT(IN)  :: CloudCoeff_RHS
-    INTEGER,      OPTIONAL, INTENT(IN)  :: ULP_Scale
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_CloudCoeff'
-    ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: ULP
-    LOGICAL :: Check_Once
-    INTEGER :: i, j, k, m, n
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default precision is a single unit in last place
-    ULP = 1
-    ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
-
-    ! Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == 1 ) Check_Once = .FALSE.
-    END IF
-
-    ! Check the structure association status
-    IF ( .NOT. Associated_CloudCoeff( CloudCoeff_LHS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT CloudCoeff_LHS pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-    IF ( .NOT. Associated_CloudCoeff( CloudCoeff_RHS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Some or all INPUT CloudCoeff_RHS pointer '//&
-                            'members are NOT associated.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Check structure Release/Version
-    ! -------------------------------
-    IF ( ( CloudCoeff_LHS%Release /= CloudCoeff_RHS%Release ) .OR. &
-         ( CloudCoeff_LHS%Version /= CloudCoeff_RHS%Version )      ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Release/Version numbers are different : ", &
-                        &i2, ".", i2.2, " vs. ", i2, ".", i2.2 )' ) &
-                      CloudCoeff_LHS%Release, CloudCoeff_LHS%Version, &
-                      CloudCoeff_RHS%Release, CloudCoeff_RHS%Version
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Check dimensions
-    ! ----------------
-    IF ( CloudCoeff_LHS%n_MW_Frequencies /= CloudCoeff_RHS%n_MW_Frequencies .OR. &
-         CloudCoeff_LHS%n_MW_Radii       /= CloudCoeff_RHS%n_MW_Radii       .OR. &
-         CloudCoeff_LHS%n_IR_Frequencies /= CloudCoeff_RHS%n_IR_Frequencies .OR. &
-         CloudCoeff_LHS%n_IR_Radii       /= CloudCoeff_RHS%n_IR_Radii       .OR. &
-         CloudCoeff_LHS%n_Temperatures   /= CloudCoeff_RHS%n_Temperatures   .OR. &
-         CloudCoeff_LHS%n_Densities      /= CloudCoeff_RHS%n_Densities      .OR. &
-         CloudCoeff_LHS%n_Legendre_Terms /= CloudCoeff_RHS%n_Legendre_Terms .OR. &
-         CloudCoeff_LHS%n_Phase_Elements /= CloudCoeff_RHS%n_Phase_Elements      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Structure dimensions are different', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Check the dimension data
-    ! ------------------------
-    ! Microwave frequencies
-    DO i = 1, CloudCoeff_LHS%n_MW_Frequencies
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Frequency_MW(i), &
-                                CloudCoeff_RHS%Frequency_MW(i), &
-                                ULP = ULP                       ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency_MW values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    
-    ! Infrared frequencies
-    DO i = 1, CloudCoeff_LHS%n_IR_Frequencies
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Frequency_IR(i), &
-                                CloudCoeff_RHS%Frequency_IR(i), &
-                                ULP = ULP                       ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency_IR values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-    ! Microwave effective radii
-    DO j = 1, CloudCoeff_LHS%n_MW_Radii
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Reff_MW(j), &
-                                CloudCoeff_RHS%Reff_MW(j), &
-                                ULP = ULP                  ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Reff_MW values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    
-    ! Infrared effective radii
-    DO j = 1, CloudCoeff_LHS%n_IR_Radii
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Reff_IR(j), &
-                                CloudCoeff_RHS%Reff_IR(j), &
-                                ULP = ULP                  ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Reff_IR values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-    ! Temperatures
-    DO k = 1, CloudCoeff_LHS%n_Temperatures
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Temperature(k), &
-                                CloudCoeff_RHS%Temperature(k), &
-                                ULP = ULP                      ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Temperature values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-    ! Densities
-    DO k = 1, CloudCoeff_LHS%n_Densities
-      IF ( .NOT. Compare_Float( CloudCoeff_LHS%Density(k), &
-                                CloudCoeff_RHS%Density(k), &
-                                ULP = ULP                  ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Density values are different', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-
-    ! Check the microwave liquid phase data
-    ! -------------------------------------
-    ! The extinction coefficient, single scatter
-    ! albedo, and asymmetry parameter.
-    DO k = 1, CloudCoeff_LHS%n_Temperatures
-      DO j = 1, CloudCoeff_LHS%n_MW_Radii
-        DO i = 1, CloudCoeff_LHS%n_MW_Frequencies
-        
-          ! Extinction coefficient
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%ke_L_MW(i,j,k), &
-                                   CloudCoeff_RHS%ke_L_MW(i,j,k), &
-                                   ULP = ULP                       ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'ke_L_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Single scatter albedo
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%w_L_MW(i,j,k), &
-                                   CloudCoeff_RHS%w_L_MW(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'w_L_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Asymmetry parameter
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%g_L_MW(i,j,k), &
-                                   CloudCoeff_RHS%g_L_MW(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'g_L_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-        END DO
-      END DO
-    END DO
-    
-    ! The phase coefficients
-    DO n = 1, CloudCoeff_LHS%n_Phase_Elements
-      DO m = 0, CloudCoeff_LHS%n_Legendre_Terms
-        DO k = 1, CloudCoeff_LHS%n_Temperatures
-          DO j = 1, CloudCoeff_LHS%n_MW_Radii
-            DO i = 1, CloudCoeff_LHS%n_MW_Frequencies
-            
-              IF ( .NOT. Compare_Float(CloudCoeff_LHS%pcoeff_L_MW(i,j,k,m,n), &
-                                       CloudCoeff_RHS%pcoeff_L_MW(i,j,k,m,n), &
-                                       ULP = ULP                              ) ) THEN
-                Error_Status = FAILURE
-                CALL Display_Message( ROUTINE_NAME, &
-                                      'pcoeff_L_MW values are different', &
-                                      Error_Status, &
-                                      Message_Log = Message_Log )
-                IF ( Check_Once ) RETURN
-              END IF
-              
-            END DO
-          END DO
-        END DO
-      END DO
-    END DO
-
-    
-    ! Check the microwave solid phase data
-    ! ------------------------------------
-    ! The extinction coefficient, single scatter
-    ! albedo, and asymmetry parameter.
-    DO k = 1, CloudCoeff_LHS%n_Densities
-      DO j = 1, CloudCoeff_LHS%n_MW_Radii
-        DO i = 1, CloudCoeff_LHS%n_MW_Frequencies
-        
-          ! Extinction coefficient
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%ke_S_MW(i,j,k), &
-                                   CloudCoeff_RHS%ke_S_MW(i,j,k), &
-                                   ULP = ULP                       ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'ke_S_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Single scatter albedo
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%w_S_MW(i,j,k), &
-                                   CloudCoeff_RHS%w_S_MW(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'w_S_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Asymmetry parameter
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%g_S_MW(i,j,k), &
-                                   CloudCoeff_RHS%g_S_MW(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'g_S_MW values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-        END DO
-      END DO
-    END DO
-    
-    ! The phase coefficients
-    DO n = 1, CloudCoeff_LHS%n_Phase_Elements
-      DO m = 0, CloudCoeff_LHS%n_Legendre_Terms
-        DO k = 1, CloudCoeff_LHS%n_Densities
-          DO j = 1, CloudCoeff_LHS%n_MW_Radii
-            DO i = 1, CloudCoeff_LHS%n_MW_Frequencies
-            
-              IF ( .NOT. Compare_Float(CloudCoeff_LHS%pcoeff_S_MW(i,j,k,m,n), &
-                                       CloudCoeff_RHS%pcoeff_S_MW(i,j,k,m,n), &
-                                       ULP = ULP                              ) ) THEN
-                Error_Status = FAILURE
-                CALL Display_Message( ROUTINE_NAME, &
-                                      'pcoeff_S_MW values are different', &
-                                      Error_Status, &
-                                      Message_Log = Message_Log )
-                IF ( Check_Once ) RETURN
-              END IF
-              
-            END DO
-          END DO
-        END DO
-      END DO
-    END DO
-    
-
-    ! Check the infrared data
-    ! -----------------------
-    ! The extinction coefficient, single scatter
-    ! albedo, and asymmetry parameter.
-    DO k = 0, CloudCoeff_LHS%n_Densities
-      DO j = 1, CloudCoeff_LHS%n_IR_Radii
-        DO i = 1, CloudCoeff_LHS%n_IR_Frequencies
-        
-          ! Extinction coefficient
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%ke_IR(i,j,k), &
-                                   CloudCoeff_RHS%ke_IR(i,j,k), &
-                                   ULP = ULP                    ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'ke_IR values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Single scatter albedo
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%w_IR(i,j,k), &
-                                   CloudCoeff_RHS%w_IR(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'w_IR values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-          
-          ! Asymmetry parameter
-          IF ( .NOT. Compare_Float(CloudCoeff_LHS%g_IR(i,j,k), &
-                                   CloudCoeff_RHS%g_IR(i,j,k), &
-                                   ULP = ULP                     ) ) THEN
-            Error_Status = FAILURE
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'g_IR values are different', &
-                                  Error_Status, &
-                                  Message_Log = Message_Log )
-            IF ( Check_Once ) RETURN
-          END IF
-        END DO
-      END DO
-    END DO
-    
-    ! The phase coefficients
-    DO m = 0, CloudCoeff_LHS%n_Legendre_Terms
-      DO k = 0, CloudCoeff_LHS%n_Densities
-        DO j = 1, CloudCoeff_LHS%n_IR_Radii
-          DO i = 1, CloudCoeff_LHS%n_IR_Frequencies
-            IF ( .NOT. Compare_Float(CloudCoeff_LHS%pcoeff_IR(i,j,k,m), &
-                                     CloudCoeff_RHS%pcoeff_IR(i,j,k,m), &
-                                     ULP = ULP                          ) ) THEN
-              Error_Status = FAILURE
-              CALL Display_Message( ROUTINE_NAME, &
-                                    'pcoeff_IR values are different', &
-                                    Error_Status, &
-                                    Message_Log = Message_Log )
-              IF ( Check_Once ) RETURN
-            END IF
-          END DO
-        END DO
-      END DO
-    END DO
-
-  END FUNCTION Equal_CloudCoeff
+  SUBROUTINE CloudCoeff_Inspect( CloudCoeff )
+    TYPE(CloudCoeff_type), INTENT(IN) :: CloudCoeff
+    WRITE(*,'(1x,"CloudCoeff OBJECT")')
+    WRITE(*,'(3x,"n_MW_Frequencies :",1x,i0)') CloudCoeff%n_MW_Frequencies
+    WRITE(*,'(3x,"n_MW_Radii       :",1x,i0)') CloudCoeff%n_MW_Radii
+    WRITE(*,'(3x,"n_IR_Frequencies :",1x,i0)') CloudCoeff%n_IR_Frequencies
+    WRITE(*,'(3x,"n_IR_Radii       :",1x,i0)') CloudCoeff%n_IR_Radii
+    WRITE(*,'(3x,"n_Temperatures   :",1x,i0)') CloudCoeff%n_Temperatures
+    WRITE(*,'(3x,"n_Densities      :",1x,i0)') CloudCoeff%n_Densities
+    WRITE(*,'(3x,"n_Legendre_Terms :",1x,i0)') CloudCoeff%n_Legendre_Terms
+    WRITE(*,'(3x,"n_Phase_Elements :",1x,i0)') CloudCoeff%n_Phase_Elements
+    IF ( .NOT. CloudCoeff_Associated(CloudCoeff) ) RETURN
+    WRITE(*,'(3x,"CloudCoeff Frequency_MW:")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Frequency_MW
+    WRITE(*,'(3x,"CloudCoeff Frequency_IR:")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Frequency_IR
+    WRITE(*,'(3x,"CloudCoeff Reff_MW     :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Reff_MW     
+    WRITE(*,'(3x,"CloudCoeff Reff_IR     :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Reff_IR     
+    WRITE(*,'(3x,"CloudCoeff Temperature :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Temperature 
+    WRITE(*,'(3x,"CloudCoeff Density     :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Density     
+    WRITE(*,'(3x,"CloudCoeff ke_L_MW     :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_L_MW     
+    WRITE(*,'(3x,"CloudCoeff w_L_MW      :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_L_MW      
+    WRITE(*,'(3x,"CloudCoeff g_L_MW      :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_L_MW      
+    WRITE(*,'(3x,"CloudCoeff pcoeff_L_MW :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_L_MW 
+    WRITE(*,'(3x,"CloudCoeff ke_S_MW     :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_S_MW     
+    WRITE(*,'(3x,"CloudCoeff w_S_MW      :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_S_MW      
+    WRITE(*,'(3x,"CloudCoeff g_S_MW      :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_S_MW      
+    WRITE(*,'(3x,"CloudCoeff pcoeff_S_MW :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_S_MW 
+    WRITE(*,'(3x,"CloudCoeff ke_IR       :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_IR       
+    WRITE(*,'(3x,"CloudCoeff w_IR        :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_IR        
+    WRITE(*,'(3x,"CloudCoeff g_IR        :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_IR        
+    WRITE(*,'(3x,"CloudCoeff pcoeff_IR   :")') 
+    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_IR   
+  END SUBROUTINE CloudCoeff_Inspect
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Check_CloudCoeff_Release
+!       CloudCoeff_ValidRelease
 !
 ! PURPOSE:
 !       Function to check the CloudCoeff Release value.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Check_CloudCoeff_Release( CloudCoeff             , &  ! Input
-!                                                RCS_Id     =RCS_Id     , &  ! Revision control
-!                                                Message_Log=Message_Log  )  ! Error messaging
+!       IsValid = CloudCoeff_ValidRelease( CloudCoeff )
 !
-! INPUT ARGUMENTS:
-!       CloudCoeff:    CloudCoeff structure for which the Release member
+! INPUTS:
+!       CloudCoeff:    CloudCoeff object for which the Release component
 !                      is to be checked.
 !                      UNITS:      N/A
-!                      TYPE:       CloudCoeff_type
+!                      TYPE:       TYPE(CloudCoeff_type)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure Release value is valid.
-!                         == FAILURE the structure Release value is NOT valid
-!                                    and either a data file file or software
-!                                    update is required.
+!       IsValid:       Logical value defining the release validity.
 !                      UNITS:      N/A
-!                      TYPE:       INTEGER
+!                      TYPE:       LOGICAL
 !                      DIMENSION:  Scalar
 !
 !----------------------------------------------------------------------------------
 
-  FUNCTION Check_CloudCoeff_Release( CloudCoeff,   &  ! Input
-                                     RCS_Id,       &  ! Revision control
-                                     Message_Log ) &  ! Error messaging
-                                   RESULT( Error_Status )
+  FUNCTION CloudCoeff_ValidRelease( CloudCoeff ) RESULT( IsValid )
     ! Arguments
-    TYPE(CloudCoeff_type),  INTENT(IN)  :: CloudCoeff
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    TYPE(CloudCoeff_type), INTENT(IN) :: CloudCoeff
     ! Function result
-    INTEGER :: Error_Status
+    LOGICAL :: IsValid
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Check_CloudCoeff_Release'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_ValidRelease'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: msg
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IsValid = .TRUE.
 
 
     ! Check release is not too old
-    ! ----------------------------
-    IF ( CloudCoeff%Release < CLOUDCOEFF_RELEASE ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "A CloudCoeff data update is needed. ", &
-                        &"CloudCoeff release is ", i2, &
-                        &". Valid release is ",i2,"." )' ) &
-                      CloudCoeff%Release, CLOUDCOEFF_RELEASE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+    IF ( CloudCoeff%Release < CloudCoeff_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("A CloudCoeff data update is needed. ", &
+                  &"CloudCoeff release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  CloudCoeff%Release, CLOUDCOEFF_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
 
 
     ! Check release is not too new
-    ! ----------------------------
-    IF ( CloudCoeff%Release > CLOUDCOEFF_RELEASE ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "A CloudCoeff software update is needed. ", &
-                        &"CloudCoeff release is ", i2, &
-                        &". Valid release is ",i2,"." )' ) &
-                      CloudCoeff%Release, CLOUDCOEFF_RELEASE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
+    IF ( CloudCoeff%Release > CloudCoeff_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("A CloudCoeff software update is needed. ", &
+                  &"CloudCoeff release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  CloudCoeff%Release, CLOUDCOEFF_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
 
-  END FUNCTION Check_CloudCoeff_Release
+  END FUNCTION CloudCoeff_ValidRelease
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Info_CloudCoeff
+!       CloudCoeff_Info
 !
 ! PURPOSE:
 !       Subroutine to return a string containing version and dimension
-!       information about the CloudCoeff data structure.
+!       information about a CloudCoeff object.
 !
 ! CALLING SEQUENCE:
-!       CALL Info_CloudCoeff( CloudCoeff   , &  ! Input
-!                             Info         , &  ! Output
-!                             RCS_Id=RCS_Id  )  ! Revision control
+!       CALL CloudCoeff_Info( CloudCoeff, Info )
 !
-! INPUT ARGUMENTS:
-!       CloudCoeff:    Filled CloudCoeff structure.
+! INPUTS:
+!       CloudCoeff:    CloudCoeff object about which info is required.
 !                      UNITS:      N/A
-!                      TYPE:       CloudCoeff_type
+!                      TYPE:       TYPE(CloudCoeff_type)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Info:          String containing version and dimension information
-!                      about the passed CloudCoeff data structure.
+!                      about the passed CloudCoeff object.
 !                      UNITS:      N/A
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Info_CloudCoeff( CloudCoeff, &  ! Input
-                              Info      , &  ! Output
-                              RCS_Id      )  ! Revision control
+  SUBROUTINE CloudCoeff_Info( CloudCoeff, Info )
     ! Arguments
-    TYPE(CloudCoeff_type),  INTENT(IN)  :: CloudCoeff
-    CHARACTER(*),           INTENT(OUT) :: Info
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    TYPE(CloudCoeff_type), INTENT(IN)  :: CloudCoeff
+    CHARACTER(*),       INTENT(OUT) :: Info
     ! Parameters
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
-    CHARACTER(1000) :: Long_String
+    CHARACTER(2000) :: Long_String
 
-    ! Set up
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Write the required info to the local string
-    WRITE( Long_String, '( a,1x,"CloudCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
-                           &"N_FREQUENCIES(MW)=",i4,2x,&
-                           &"N_FREQUENCIES(IR)=",i4,2x,&
-                           &"N_RADII(MW)=",i2,2x,&
-                           &"N_RADII(IR)=",i2,2x,&
-                           &"N_TEMPERATURES=",i2,2x,&
-                           &"N_DENSITIES=",i2,2x,&
-                           &"N_LEGENDRE_TERMS=",i2,2x,&
-                           &"N_PHASE_ELEMENTS=",i2 )' ) &
-                        ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                        CloudCoeff%Release, CloudCoeff%Version, &
-                        CloudCoeff%n_MW_Frequencies, &
-                        CloudCoeff%n_IR_Frequencies, &
-                        CloudCoeff%n_MW_Radii      , &
-                        CloudCoeff%n_IR_Radii      , &
-                        CloudCoeff%n_Temperatures  , &
-                        CloudCoeff%n_Densities     , &
-                        CloudCoeff%n_Legendre_Terms, &
-                        CloudCoeff%n_Phase_Elements
-
+    ! Write the required data to the local string
+    WRITE( Long_String, &
+           '( a,1x,"CloudCoeff RELEASE.VERSION: ", i2, ".", i2.2, 2x, &
+           &"N_FREQUENCIES(MW)=",i4,2x,&
+           &"N_FREQUENCIES(IR)=",i4,2x,&
+           &"N_RADII(MW)=",i2,2x,&
+           &"N_RADII(IR)=",i2,2x,&
+           &"N_TEMPERATURES=",i2,2x,&
+           &"N_DENSITIES=",i2,2x,&
+           &"N_LEGENDRE_TERMS=",i2,2x,&
+           &"N_PHASE_ELEMENTS=",i2 )' ) &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           CloudCoeff%Release, CloudCoeff%Version, &
+           CloudCoeff%n_MW_Frequencies, &
+           CloudCoeff%n_IR_Frequencies, &
+           CloudCoeff%n_MW_Radii      , &
+           CloudCoeff%n_IR_Radii      , &
+           CloudCoeff%n_Temperatures  , &
+           CloudCoeff%n_Densities     , &
+           CloudCoeff%n_Legendre_Terms, &
+           CloudCoeff%n_Phase_Elements
+                       
     ! Trim the output based on the
     ! dummy argument string length
-    Info = Long_String(1:MIN( LEN(Info), LEN_TRIM(Long_String) ))
+    Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
-  END SUBROUTINE Info_CloudCoeff
+  END SUBROUTINE CloudCoeff_Info
+  
+  
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CloudCoeff_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CloudCoeff_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
+  SUBROUTINE CloudCoeff_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CloudCoeff_DefineVersion
+
+
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       CloudCoeff_Equal
+!
+! PURPOSE:
+!       Elemental function to test the equality of two CloudCoeff objects.
+!       Used in OPERATOR(==) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = CloudCoeff_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two CloudCoeff objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(CloudCoeff_type)
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CloudCoeff_Equal( x, y ) RESULT( is_equal )
+    TYPE(CloudCoeff_type), INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+
+    ! Set up
+    is_equal = .FALSE.
+    
+    ! Check the object association status
+    IF ( (.NOT. CloudCoeff_Associated(x)) .OR. &
+         (.NOT. CloudCoeff_Associated(y))      ) RETURN
+
+    ! Check contents
+    ! ...Dimensions
+    IF ( (x%n_MW_Frequencies /= y%n_MW_Frequencies) .OR. &
+         (x%n_IR_Frequencies /= y%n_IR_Frequencies) .OR. &
+         (x%n_MW_Radii       /= y%n_MW_Radii      ) .OR. &
+         (x%n_IR_Radii       /= y%n_IR_Radii      ) .OR. &
+         (x%n_Temperatures   /= y%n_Temperatures  ) .OR. &
+         (x%n_Densities      /= y%n_Densities     ) .OR. &
+         (x%n_Legendre_Terms /= y%n_Legendre_Terms) .OR. &
+         (x%n_Phase_Elements /= y%n_Phase_Elements) ) RETURN
+    ! ...Data
+    IF ( ALL(x%Frequency_MW .EqualTo. y%Frequency_MW ) .AND. &
+         ALL(x%Frequency_IR .EqualTo. y%Frequency_IR ) .AND. &
+         ALL(x%Reff_MW      .EqualTo. y%Reff_MW      ) .AND. &
+         ALL(x%Reff_IR      .EqualTo. y%Reff_IR      ) .AND. &
+         ALL(x%Temperature  .EqualTo. y%Temperature  ) .AND. &
+         ALL(x%Density      .EqualTo. y%Density      ) .AND. &
+         ALL(x%ke_L_MW      .EqualTo. y%ke_L_MW      ) .AND. &
+         ALL(x%w_L_MW       .EqualTo. y%w_L_MW       ) .AND. &
+         ALL(x%g_L_MW       .EqualTo. y%g_L_MW       ) .AND. &
+         ALL(x%pcoeff_L_MW  .EqualTo. y%pcoeff_L_MW  ) .AND. &
+         ALL(x%ke_S_MW      .EqualTo. y%ke_S_MW      ) .AND. &
+         ALL(x%w_S_MW       .EqualTo. y%w_S_MW       ) .AND. &
+         ALL(x%g_S_MW       .EqualTo. y%g_S_MW       ) .AND. &
+         ALL(x%pcoeff_S_MW  .EqualTo. y%pcoeff_S_MW  ) .AND. &
+         ALL(x%ke_IR        .EqualTo. y%ke_IR        ) .AND. &
+         ALL(x%w_IR         .EqualTo. y%w_IR         ) .AND. &
+         ALL(x%g_IR         .EqualTo. y%g_IR         ) .AND. &
+         ALL(x%pcoeff_IR    .EqualTo. y%pcoeff_IR    )       ) &
+      is_equal = .TRUE.
+
+  END FUNCTION CloudCoeff_Equal
+  
 END MODULE CloudCoeff_Define

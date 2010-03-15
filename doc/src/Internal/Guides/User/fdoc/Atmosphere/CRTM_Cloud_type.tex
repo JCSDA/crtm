@@ -4,18 +4,19 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_Cloud_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: Max_Layers = 0  ! K dimension.
     INTEGER :: n_Layers   = 0  ! Kuse dimension.
     ! Number of added layers
     INTEGER :: n_Added_Layers = 0
     ! Cloud type
-    INTEGER :: Type = NO_CLOUD
+    INTEGER :: Type = INVALID_CLOUD
     ! Cloud state variables
-    REAL(fp), POINTER :: Effective_Radius(:)   => NULL() ! K. Units are microns
-    REAL(fp), POINTER :: Effective_Variance(:) => NULL() ! K. Units are microns^2
-    REAL(fp), POINTER :: Water_Content(:) => NULL()      ! K. Units are kg/m^2
+    REAL(fp), ALLOCATABLE :: Effective_Radius(:)   ! K. Units are microns
+    REAL(fp), ALLOCATABLE :: Effective_Variance(:) ! K. Units are microns^2
+    REAL(fp), ALLOCATABLE :: Water_Content(:)      ! K. Units are kg/m^2
   END TYPE CRTM_Cloud_type
     \end{alltt}
   \end{minipage}

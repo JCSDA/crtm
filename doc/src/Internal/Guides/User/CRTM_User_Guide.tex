@@ -2,16 +2,19 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Utility.appendix}
+\includeonly{New,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Utility.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
 \newcommand{\Cloud}{\texttt{Cloud}}
 \newcommand{\Aerosol}{\texttt{Aerosol}}
 \newcommand{\Surface}{\texttt{Surface}}
+\newcommand{\Geometry}{\texttt{Geometry}}
 \newcommand{\GeometryInfo}{\texttt{GeometryInfo}}
 \newcommand{\ChannelInfo}{\texttt{ChannelInfo}}
 \newcommand{\Options}{\texttt{Options}}
+\newcommand{\SSUInput}{\texttt{SSU\_Input}}
+\newcommand{\ZeemanInput}{\texttt{Zeeman\_Input}}
 \newcommand{\AtmOptics}{\texttt{AtmOptics}}
 \newcommand{\SfcOptics}{\texttt{SfcOptics}}
 \newcommand{\RTSolution}{\texttt{RTSolution}}
@@ -20,6 +23,7 @@
 \newcommand{\AtmScatter}{\texttt{AtmScatter}}
 \newcommand{\CloudScatter}{\texttt{CloudScatter}}
 \newcommand{\AerosolScatter}{\texttt{AerosolScatter}}
+\newcommand{\SpcCoeff}{\texttt{SpcCoeff}}
 % Generic fixed font command for Fortran95 syntax
 \newcommand{\f}[1]{\texttt{#1}}
 % Table heading format
@@ -36,9 +40,9 @@
 \newcommand{\radunit}{mW/(m\ensuremath{^2}.sr.\invcm)}
 
 % Title info
-\title{v1.2 User Guide}
+\title{v2.0 User Guide}
 %\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
-\date{January, 2009}
+\date{March, 2010}
 
 
 %-------------------------------------------------------------------------------
@@ -47,7 +51,7 @@
 \begin{document}
 \maketitle
 
-\draftwatermark
+%\draftwatermark
 
 % The front matter
 %=================
@@ -65,20 +69,21 @@
       \hline
       2009-02-03 & P.van Delst & Updated chapter 2 with descriptions of the example code and coefficient tarballs. Added explanation of layering convention in chapter 4.\\
       \hline
+      2010-03-12 & P.van Delst & Updated for v2.0.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
 \clearpage
-\pagenumbering{arabic}
-\setcounter{page}{1}
 
-% The tables of content
-%======================
+% The frontmatter
+%================
 \setcounter{page}{1}
 \pagenumbering{roman}
   \tableofcontents\newpage
   \listoffigures\newpage
   \listoftables\newpage
+  \include{New}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -92,12 +97,21 @@
 \include{Use}
 
 
+% The references section
+%=======================
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+
 % The appendices
 %===============
 \begin{appendix}
   \include{StructDef.appendix}
   \include{SensorId.appendix}
-  \include{Utility.appendix}
+%  \include{Utility.appendix}
 \end{appendix}
 
 \end{document}

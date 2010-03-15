@@ -1,0 +1,33 @@
+\subsection{\texttt{CRTM\_Surface\_CoverageType} interface}
+  \label{sec:CRTM_Surface_CoverageType_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Surface_CoverageType
+ 
+  PURPOSE:
+        Elemental function to return the gross surface type based on coverage.
+ 
+  CALLING SEQUENCE:
+        type = CRTM_Surface_CoverageType( sfc )
+ 
+  INPUTS:
+        Sfc:  CRTM Surface object for which the gross surface type is required.
+              UNITS:      N/A
+              TYPE:       CRTM_Surface_type
+              DIMENSION:  Scalar or any rank
+              ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION:
+        type: Surface type indicator for the passed CRTM Surface object.
+              UNITS:      N/A
+              TYPE:       INTEGER
+              DIMENSION:  Same as input
+ 
+  COMMENTS:
+        For a scalar Surface object, this function result can be used to
+        determine what gross surface types are included by using it to
+        index the SURFACE_TYPE_NAME parameter arrays, e.g.
+ 
+          WRITE(*,*) SURFACE_TYPE_NAME(CRTM_Surface_CoverageType(sfc))
+  \end{alltt}

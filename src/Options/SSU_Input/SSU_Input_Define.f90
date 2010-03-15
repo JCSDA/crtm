@@ -256,29 +256,40 @@ CONTAINS
 !       are set (i.e. > zero).
 !
 ! CALLING SEQUENCE:
-!       result = SSU_Input_CellPressureIsSet( SSU_Input )
+!       result = SSU_Input_CellPressureIsSet( ssu )
 !
 !         or
 !
-!       IF ( SSU_Input_CellPressureIsSet( SSU_Input ) ) THEN
+!       IF ( SSU_Input_CellPressureIsSet( ssu ) ) THEN
 !         ...
 !       END IF
 !
 ! OBJECTS:
-!       SSU_Input:            SSU_Input object for which the cell pressures 
-!                             are to be tested.
-!                             UNITS:      N/A
-!                             TYPE:       SSU_Input_type
-!                             DIMENSION:  Scalar or any rank
-!                             ATTRIBUTES: INTENT(IN)
+!       ssu:       SSU_Input object for which the cell pressures 
+!                  are to be tested.
+!                  UNITS:      N/A
+!                  TYPE:       SSU_Input_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:    Logical variable indicating whether or not all the
+!                  SSU cell pressures are set.
+!                  If == .FALSE., cell pressure values are <= 0.0hPa and
+!                                 thus are considered to be NOT set or valid.
+!                     == .TRUE.,  cell pressure values are > 0.0hPa and
+!                                 thus are considered to be set and valid.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION SSU_Input_CellPressureIsSet( SSU_Input ) RESULT( Is_Set )
-    TYPE(SSU_Input_type), INTENT(IN) :: SSU_Input
+  ELEMENTAL FUNCTION SSU_Input_CellPressureIsSet( ssu ) RESULT( Is_Set )
+    TYPE(SSU_Input_type), INTENT(IN) :: ssu
     LOGICAL :: Is_Set
-    Is_Set = ALL(SSU_Input%Cell_Pressure > ZERO)
+    Is_Set = ALL(ssu%Cell_Pressure > ZERO)
   END FUNCTION SSU_Input_CellPressureIsSet
 
 

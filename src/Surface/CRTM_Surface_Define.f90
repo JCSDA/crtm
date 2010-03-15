@@ -343,6 +343,8 @@ MODULE CRTM_Surface_Define
   ! ----------------------------
   !:tdoc+:
   TYPE :: CRTM_Surface_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
     ! Dimension values
     ! ...None yet
     ! Gross type of surface determined by coverage
@@ -416,10 +418,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:    The return value is a logical value indicating the
 !                  status of the Surface members.
-!                  .TRUE.  - if ANY of the allocatable or
-!                            pointer members are in use.
-!                  .FALSE. - if ALL of the allocatable or
-!                            pointer members are not in use.
+!                    .TRUE.  - if the array components are allocated.
+!                    .FALSE. - if the array components are not allocated.
 !                  UNITS:      N/A
 !                  TYPE:       LOGICAL
 !                  DIMENSION:  Same as input
@@ -428,17 +428,12 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_Surface_Associated( Sfc ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    ! Function result
     LOGICAL :: Status
 
-    ! Test the structure members
-    !.... ! No allocatable components yet
-
-    ! Test the substructures
+    Status = Sfc%Is_Allocated
     ! ...SensorData
-    Status = CRTM_SensorData_Associated(Sfc%SensorData)
+    Status = Status .AND. CRTM_SensorData_Associated(Sfc%SensorData)
     
   END FUNCTION CRTM_Surface_Associated
 
@@ -467,6 +462,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Surface_Destroy( Sfc )
     TYPE(CRTM_Surface_type), INTENT(OUT) :: Sfc
+    Sfc%Is_Allocated = .TRUE.  ! Placeholder for future expansion
   END SUBROUTINE CRTM_Surface_Destroy
   
 
@@ -515,6 +511,9 @@ CONTAINS
     ! Perform the substructure allocation
     ! ...SensorData
     IF ( n_Channels > 0 ) CALL CRTM_SensorData_Create( Sfc%SensorData, n_Channels )
+
+    ! Set allocation indicator
+    Sfc%Is_Allocated = .TRUE.
 
   END SUBROUTINE CRTM_Surface_Create
 
@@ -684,7 +683,7 @@ CONTAINS
 !       CRTM_Surface_IsCoverageValid
 !
 ! PURPOSE:
-!       Elemental function to determine if the coverage fractions are valid
+!       Function to determine if the coverage fractions are valid
 !       for a CRTM Surface object. 
 !
 ! CALLING SEQUENCE:
@@ -710,25 +709,55 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION CRTM_Surface_IsCoverageValid( Sfc ) RESULT( IsValid )
+  FUNCTION CRTM_Surface_IsCoverageValid( Sfc ) RESULT( IsValid )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
     LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_IsCoverageValid'
+    REAL(fp)    , PARAMETER :: TOLERANCE = 1.0e-10_fp
+    CHARACTER(ML) :: msg
     REAL(fp) :: Total_Coverage
 
-    ! Testing is ass-about here (i.e. using .NOT.) but it's easier
-    ! to test for less- or greater-than, rather than greater-than-or-equal
-    ! and less-than-or-equal.
-    
-    ! Check for invalid individual coverage fraction
-    IsValid = .NOT. ( (Sfc%Land_Coverage  < ZERO .OR. Sfc%Land_Coverage  > ONE) .OR. &
-                      (Sfc%Water_Coverage < ZERO .OR. Sfc%Water_Coverage > ONE) .OR. &
-                      (Sfc%Snow_Coverage  < ZERO .OR. Sfc%Snow_Coverage  > ONE) .OR. &
-                      (Sfc%Ice_Coverage   < ZERO .OR. Sfc%Ice_Coverage   > ONE)      )
-
-    ! Check for invalid total coverage
+    ! Compute the total coverage
     Total_Coverage = Sfc%Land_Coverage + Sfc%Water_Coverage + &
                      Sfc%Snow_Coverage + Sfc%Ice_Coverage
-    IsValid = IsValid .AND. (.NOT. ((Total_Coverage < 0.999_fp) .OR. (Total_Coverage > ONE)))
+
+    ! Check coverage fractions for < 0 and > 1
+    IsValid = IsCoverageValid(Sfc%Land_Coverage, 'Land') 
+    IsValid = IsValid .AND. IsCoverageValid(Sfc%Water_Coverage, 'Water') 
+    IsValid = IsValid .AND. IsCoverageValid(Sfc%Snow_Coverage, 'Snow') 
+    IsValid = IsValid .AND. IsCoverageValid(Sfc%Ice_Coverage, 'Ice')
+    
+    ! Check total coverage sums to 1
+    IF ( ABS(Total_Coverage-ONE) > TOLERANCE ) THEN
+      WRITE( msg,'("Total coverage fraction does not sum to 1 +/- ",es13.6)' ) TOLERANCE
+      CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
+      IsValid = .FALSE.
+    END IF
+
+  CONTAINS
+  
+    FUNCTION IsCoverageValid( Coverage, Name ) RESULT( IsValid )
+      REAL(fp)    , INTENT(IN) :: Coverage
+      CHARACTER(*), INTENT(IN) :: Name
+      LOGICAL :: IsValid
+      
+      IsValid = .TRUE.
+      
+      ! Check for coverage < -TOLERANCE
+      IF ( Coverage < -TOLERANCE ) THEN
+        WRITE( msg,'(a," coverage fraction is < ",es13.6)' ) TRIM(Name), -TOLERANCE
+        CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
+        IsValid = .FALSE.
+      END IF
+
+      ! Check for coverage > 1+TOLERANCE
+      IF ( Coverage > ONE+TOLERANCE ) THEN
+        WRITE( msg,'(a," coverage fraction is > 1 +",es13.6)' ) TRIM(Name), TOLERANCE
+        CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
+        IsValid = .FALSE.
+      END IF
+  
+    END FUNCTION IsCoverageValid
 
   END FUNCTION CRTM_Surface_IsCoverageValid
 
@@ -1033,6 +1062,7 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_Surface_Add
+
 
 
 !##################################################################################

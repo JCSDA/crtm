@@ -1,5 +1,6 @@
 \chapter{Structure and procedure interface definitions}
 %======================================================
+\label{sec:structure_and_interface_definition}
 
 \clearpage
 \section{\ChannelInfo{} Structure}
@@ -10,13 +11,11 @@
 
 % ChannelInfo structure methods
 %-----------------------------
-\input{fdoc/ChannelInfo/CRTM_Associated_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_Allocate_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_Destroy_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_Assign_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_Equal_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_nChannels_ChannelInfo}
-\input{fdoc/ChannelInfo/CRTM_RCS_ID_ChannelInfo}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_Associated}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_DefineVersion}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_Destroy}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_Inspect}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_n_Channels}
 
 
 
@@ -101,18 +100,19 @@
 % Atmosphere structure methods
 %-----------------------------
 \clearpage
-\input{fdoc/Atmosphere/CRTM_Associated_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Allocate_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Destroy_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Assign_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Equal_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_SetLayers_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Sum_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Zero_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_RCS_ID_Atmosphere}
-\input{fdoc/Atmosphere/CRTM_Inquire_Atmosphere_Binary}
-\input{fdoc/Atmosphere/CRTM_Read_Atmosphere_Binary}
-\input{fdoc/Atmosphere/CRTM_Write_Atmosphere_Binary}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_AddLayerCopy}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Associated}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Compare}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Create}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_DefineVersion}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Destroy}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Inspect}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_IsValid}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Zero}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_IOVersion}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_InquireFile}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_WriteFile}
 
 
 \newpage
@@ -144,18 +144,19 @@
 % Cloud structure methods
 %------------------------
 \clearpage
-\input{fdoc/Atmosphere/CRTM_Associated_Cloud}
-\input{fdoc/Atmosphere/CRTM_Allocate_Cloud}
-\input{fdoc/Atmosphere/CRTM_Destroy_Cloud}
-\input{fdoc/Atmosphere/CRTM_Assign_Cloud}
-\input{fdoc/Atmosphere/CRTM_Equal_Cloud}
-\input{fdoc/Atmosphere/CRTM_SetLayers_Cloud}
-\input{fdoc/Atmosphere/CRTM_Sum_Cloud}
-\input{fdoc/Atmosphere/CRTM_Zero_Cloud}
-\input{fdoc/Atmosphere/CRTM_RCS_ID_Cloud}
-\input{fdoc/Atmosphere/CRTM_Inquire_Cloud_Binary}
-\input{fdoc/Atmosphere/CRTM_Read_Cloud_Binary}
-\input{fdoc/Atmosphere/CRTM_Write_Cloud_Binary}
+\input{fdoc/Atmosphere/CRTM_Cloud_AddLayerCopy}
+\input{fdoc/Atmosphere/CRTM_Cloud_Associated}
+\input{fdoc/Atmosphere/CRTM_Cloud_Compare}
+\input{fdoc/Atmosphere/CRTM_Cloud_Create}
+\input{fdoc/Atmosphere/CRTM_Cloud_DefineVersion}
+\input{fdoc/Atmosphere/CRTM_Cloud_Destroy}
+\input{fdoc/Atmosphere/CRTM_Cloud_Inspect}
+\input{fdoc/Atmosphere/CRTM_Cloud_IsValid}
+\input{fdoc/Atmosphere/CRTM_Cloud_Zero}
+\input{fdoc/Atmosphere/CRTM_Cloud_IOVersion}
+\input{fdoc/Atmosphere/CRTM_Cloud_InquireFile}
+\input{fdoc/Atmosphere/CRTM_Cloud_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Cloud_WriteFile}
 
 
 \clearpage
@@ -168,39 +169,40 @@
 % Aerosol type table
 \begin{table}[htp]
   \centering
-  \begin{tabular}{c l}
+  \begin{tabular}{c l r@{ - }l}
     \hline
-    \sffamily\textbf{Aerosol Type} & \sffamily\textbf{Parameter} \\
+    \sffamily\textbf{Aerosol Type} & \sffamily\textbf{Parameter}  & \multicolumn{2}{c}{$r_{eff}$ \sffamily\textbf{Range} (\micron)} \\
     \hline\hline
-    Dust               &  \texttt{DUST\_AEROSOL}\\
-    Sea salt SSAM\footnote{SSAM $\equiv$ sea salt accumulation mode, $r_{eff}\sim$0.5-5.0\micron.} &  \texttt{SEASALT\_SSAM\_AEROSOL}\\
-    Sea salt SSCM\footnote{SSCM $\equiv$ sea salt coarse mode, $r_{eff}\sim$5.0-30\micron} &  \texttt{SEASALT\_SSCM\_AEROSOL}\\
-    Dry organic carbon &  \texttt{DRY\_ORGANIC\_CARBON\_AEROSOL}\\
-    Wet organic carbon &  \texttt{WET\_ORGANIC\_CARBON\_AEROSOL}\\
-    Dry black carbon   &  \texttt{DRY\_BLACK\_CARBON\_AEROSOL}\\
-    Wet black carbon   &  \texttt{WET\_BLACK\_CARBON\_AEROSOL}\\
-    Sulfate            &  \texttt{SULFATE\_AEROSOL}\\
+    Dust           & \texttt{DUST\_AEROSOL}            & 0.01  & 8 \\
+    Sea salt SSAM  & \texttt{SEASALT\_SSAM\_AEROSOL}   & 0.3   & 1.45 \\
+    Sea salt SSCM1 & \texttt{SEASALT\_SSCM1\_AEROSOL}  & 1.0   & 4.8  \\
+    Sea salt SSCM2 & \texttt{SEASALT\_SSCM2\_AEROSOL}  & 3.25  & 17.3 \\
+    Sea salt SSCM3 & \texttt{SEASALT\_SSCM3\_AEROSOL}  & 7.5   & 89\\
+    Organic carbon & \texttt{ORGANIC\_CARBON\_AEROSOL} & 0.09  & 0.21 \\
+    Black carbon   & \texttt{BLACK\_CARBON\_AEROSOL}   & 0.036 & 0.074 \\
+    Sulfate        & \texttt{SULFATE\_AEROSOL}         & 0.24  & 0.8 \\
     \hline
   \end{tabular}
-  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions.}
+  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions and effective radii. SSAM $\equiv$ Sea Salt Accumulation Mode, SSCM $\equiv$ Sea Salt Coarse Mode.}
   \label{tab:aerosol_type}
 \end{table}
 
 % Aerosol structure methods
 %--------------------------
 \clearpage
-\input{fdoc/Atmosphere/CRTM_Associated_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Allocate_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Destroy_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Assign_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Equal_Aerosol}
-\input{fdoc/Atmosphere/CRTM_SetLayers_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Sum_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Zero_Aerosol}
-\input{fdoc/Atmosphere/CRTM_RCS_ID_Aerosol}
-\input{fdoc/Atmosphere/CRTM_Inquire_Aerosol_Binary}
-\input{fdoc/Atmosphere/CRTM_Read_Aerosol_Binary}
-\input{fdoc/Atmosphere/CRTM_Write_Aerosol_Binary}
+\input{fdoc/Atmosphere/CRTM_Aerosol_AddLayerCopy}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Associated}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Compare}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Create}
+\input{fdoc/Atmosphere/CRTM_Aerosol_DefineVersion}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Destroy}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Inspect}
+\input{fdoc/Atmosphere/CRTM_Aerosol_IsValid}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Zero}
+\input{fdoc/Atmosphere/CRTM_Aerosol_IOVersion}
+\input{fdoc/Atmosphere/CRTM_Aerosol_InquireFile}
+\input{fdoc/Atmosphere/CRTM_Aerosol_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Aerosol_WriteFile}
 
 
 
@@ -399,22 +401,26 @@
 % Surface structure methods
 %--------------------------
 \clearpage
-\input{fdoc/Surface/CRTM_Allocate_Surface}
-\input{fdoc/Surface/CRTM_Destroy_Surface}
-\input{fdoc/Surface/CRTM_Assign_Surface}
-\input{fdoc/Surface/CRTM_Equal_Surface}
-\input{fdoc/Surface/CRTM_Sum_Surface}
-\input{fdoc/Surface/CRTM_Zero_Surface}
-\input{fdoc/Surface/CRTM_RCS_ID_Surface}
-\input{fdoc/Surface/CRTM_Inquire_Surface_Binary}
-\input{fdoc/Surface/CRTM_Read_Surface_Binary}
-\input{fdoc/Surface/CRTM_Write_Surface_Binary}
+\input{fdoc/Surface/CRTM_Surface_Associated}
+\input{fdoc/Surface/CRTM_Surface_Compare}
+\input{fdoc/Surface/CRTM_Surface_CoverageType}
+\input{fdoc/Surface/CRTM_Surface_Create}
+\input{fdoc/Surface/CRTM_Surface_DefineVersion}
+\input{fdoc/Surface/CRTM_Surface_Destroy}
+\input{fdoc/Surface/CRTM_Surface_Inspect}
+\input{fdoc/Surface/CRTM_Surface_IsCoverageValid}
+\input{fdoc/Surface/CRTM_Surface_IsValid}
+\input{fdoc/Surface/CRTM_Surface_Zero}
+\input{fdoc/Surface/CRTM_Surface_IOVersion}
+\input{fdoc/Surface/CRTM_Surface_InquireFile}
+\input{fdoc/Surface/CRTM_Surface_ReadFile}
+\input{fdoc/Surface/CRTM_Surface_WriteFile}
 
 
 
 \clearpage
-\subsection{\SensorData{} Structure}
-%-----------------------------------
+\section{\SensorData{} Structure}
+%=============================
 \label{sec:sensordata_structure}
 
 \input{fdoc/Surface/CRTM_SensorData_type}
@@ -426,13 +432,12 @@
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
-    \texttt{n\_Channels} & Number of channels to use in SfcOptics emissivty algorithms (\texttt{L}) & N/A & Scalar \\
-    \texttt{Select\_WMO\_Sensor\_Id} & The WMO Sensor Id value of the sensor for which the data is to be used. & N/A & Scalar \\
-    \texttt{Sensor\_Id} & The sensor id character string for each channel of data & N/A & \texttt{L} \\
-    \texttt{WMO\_Satellite\_Id} & The WMO satellite Id for each channel of data & N/A & \texttt{L} \\
-    \texttt{WMO\_Sensor\_Id} & The WMO sensor Id for each channel of data & N/A & \texttt{L} \\
-    \texttt{Sensor\_Channel} & The channel number for each channel of data & N/A & \texttt{L} \\
-    \texttt{Tb} & The brightness temperature measurements for each channel & Kelvin & \texttt{L} \\
+    \texttt{n\_Channels}        & Number of channels to use in SfcOptics emissivty algorithms (\texttt{L}) & N/A    & Scalar \\
+    \texttt{Sensor\_Id}         & The sensor id                                                            & N/A    & Scalar \\
+    \texttt{WMO\_Satellite\_Id} & The WMO satellite Id                                                     & N/A    & Scalar \\
+    \texttt{WMO\_Sensor\_Id}    & The WMO sensor Id                                                        & N/A    & Scalar \\
+    \texttt{Sensor\_Channel}    & The channel numbers                                                      & N/A    & \texttt{L} \\
+    \texttt{Tb}                 & The brightness temperature measurements for each channel                 & Kelvin & \texttt{L} \\
     \hline
   \end{tabular}
   \caption{CRTM \SensorData{} structure component description.}
@@ -442,112 +447,101 @@
 % Surface structure methods
 %--------------------------
 \clearpage
-\input{fdoc/Surface/CRTM_Associated_SensorData}
-\input{fdoc/Surface/CRTM_Allocate_SensorData}
-\input{fdoc/Surface/CRTM_Destroy_SensorData}
-\input{fdoc/Surface/CRTM_Assign_SensorData}
-\input{fdoc/Surface/CRTM_Equal_SensorData}
-\input{fdoc/Surface/CRTM_RCS_ID_SensorData}
+\input{fdoc/Surface/CRTM_SensorData_Associated}
+\input{fdoc/Surface/CRTM_SensorData_Compare}
+\input{fdoc/Surface/CRTM_SensorData_Create}
+\input{fdoc/Surface/CRTM_SensorData_DefineVersion}
+\input{fdoc/Surface/CRTM_SensorData_Destroy}
+\input{fdoc/Surface/CRTM_SensorData_Inspect}
+\input{fdoc/Surface/CRTM_SensorData_IsValid}
+\input{fdoc/Surface/CRTM_SensorData_Zero}
+\input{fdoc/Surface/CRTM_SensorData_IOVersion}
+\input{fdoc/Surface/CRTM_SensorData_InquireFile}
+\input{fdoc/Surface/CRTM_SensorData_ReadFile}
+\input{fdoc/Surface/CRTM_SensorData_WriteFile}
 
 
 \clearpage
-\section{\GeometryInfo{} Structure}
-%==================================
-\label{sec:geometryinfo_structure}
+\section{\Geometry{} Structure}
+%==============================
+\label{sec:geometry_structure}
 
-\input{fdoc/GeometryInfo/CRTM_GeometryInfo_type}
+\input{fdoc/Geometry/CRTM_Geometry_type}
 
-% GeometryInfo component description table
+% Geometry component description table
 \begin{table}[htp]
   \centering
   \begin{tabular}{l p{7cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
+    \texttt{iFOV}                    & The scan line FOV index & N/A & Scalar \\
     \texttt{Longitude}               & Earth longitude & deg. E (0$\rightarrow$360) & Scalar \\
     \texttt{Latitude}                & Earth latitude  & deg. N (-90$\rightarrow$+90) & Scalar \\
     \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & Scalar \\
-    \texttt{iFOV}                    & The scan line FOV index & N/A & Scalar \\
-    \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:gInfo_sensor_scan_angle} & degrees & Scalar \\
-    \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:gInfo_sensor_zenith_angle} & degrees & Scalar \\
-    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_sensor_azimuth_angle} & deg. from N & Scalar \\
-    \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:gInfo_source_zenith_angle} & degrees & Scalar \\
-    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:gInfo_source_azimuth_angle} & deg. from N & Scalar \\
+    \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:geo_sensor_scan_angle} & degrees & Scalar \\
+    \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:geo_sensor_zenith_angle} & degrees & Scalar \\
+    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_sensor_azimuth_angle} & deg. from N & Scalar \\
+    \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:geo_source_zenith_angle} & degrees & Scalar \\
+    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_source_azimuth_angle} & deg. from N & Scalar \\
     \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degrees & Scalar \\
+    \texttt{Year}                    & The year in 4-digit format       & N/A & Scalar \\
+    \texttt{Month}                   & The month of year (1-12)         & N/A & Scalar \\
+    \texttt{Day}                     & The day of month (1-28/29/30/31) & N/A & Scalar \\
     \hline
   \end{tabular}
-  \caption{Description of CRTM \GeometryInfo{} structure components defined by the user.}
-  \label{tab:user_defined_geometryinfo_structure}
-\end{table}
-
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{Distance\_Ratio}         & The ratio of the radius of the earth at the FOV location to the sum of the radius of the earth at nadir, and the satellite altitude;
-    
-     \mbox{\hspace{1cm}$r = \displaystyle\frac{R_e(FOV)}{R_e(nadir) + h}$}.
-     
-     Note that this quantity is actually computed using the user input sensor scan and zenith angles; 
-     
-     \mbox{\hspace{1cm}$r = \displaystyle\frac{\sin(\theta_{scan})}{\sin(\theta_{zenith})}$} & N/A & Scalar \\
-    \texttt{Sensor\_Scan\_Radian}    & The sensor scan angle in radians & radians & Scalar \\
-    \texttt{Sensor\_Zenith\_Radian}  & The sensor scan angle in radians & radians & Scalar \\
-    \texttt{Sensor\_Azimuth\_Radian} & The sensor azimuth angle in radians & radians & Scalar \\
-    \texttt{Secant\_Sensor\_Zenith}  & The secant of the sensor zenith angle & N/A & Scalar \\
-    \texttt{Source\_Zenith\_Radian}  & The source zenith angle in radians & radians & Scalar \\
-    \texttt{Source\_Azimuth\_Radian} & The source azimuth angle in radians & radians & Scalar \\
-    \texttt{Secant\_Source\_Zenith}  & The secant of the source zenith angle & N/A & Scalar \\
-    \texttt{Flux\_Zenith\_Radian}    & The flux zenith angle in radians & radians & Scalar \\
-    \texttt{Secant\_Flux\_Zenith}    & The secant of the flux zenith angle & N/A & Scalar \\
-    \hline
-  \end{tabular}
-  \caption{Description of CRTM \GeometryInfo{} structure components derived from user inputs.}
-  \label{tab:derived_geometryinfo_structure}
+  \caption{CRTM \Geometry{} structure component description.}
+  \label{tab:geometry_structure}
 \end{table}
 
 \begin{figure}[htp]
   \centering
-  \input{graphics/gInfo/sensor_scan_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor scan angle component.}
-  \label{fig:gInfo_sensor_scan_angle}
+  \input{graphics/geo/sensor_scan_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor scan angle component.}
+  \label{fig:geo_sensor_scan_angle}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
-  \input{graphics/gInfo/sensor_zenith_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor zenith angle component.}
-  \label{fig:gInfo_sensor_zenith_angle}
+  \input{graphics/geo/sensor_zenith_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor zenith angle component.}
+  \label{fig:geo_sensor_zenith_angle}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
-  \input{graphics/gInfo/sensor_azimuth_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} sensor azimuth angle component.}
-  \label{fig:gInfo_sensor_azimuth_angle}
+  \input{graphics/geo/sensor_azimuth_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor azimuth angle component.}
+  \label{fig:geo_sensor_azimuth_angle}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
-  \input{graphics/gInfo/source_zenith_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} source zenith angle component.}
-  \label{fig:gInfo_source_zenith_angle}
+  \input{graphics/geo/source_zenith_angle.pstex_t}
+  \caption{Definition of \Geometry{} source zenith angle component.}
+  \label{fig:geo_source_zenith_angle}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
-  \input{graphics/gInfo/source_azimuth_angle.pstex_t}
-  \caption{Definition of \GeometryInfo{} source azimuth angle component.}
-  \label{fig:gInfo_source_azimuth_angle}
+  \input{graphics/geo/source_azimuth_angle.pstex_t}
+  \caption{Definition of \Geometry{} source azimuth angle component.}
+  \label{fig:geo_source_azimuth_angle}
 \end{figure}
 
-% GeometryInfo structure methods
+% Geometry structure methods
 %--------------------------
 \clearpage
-\input{fdoc/GeometryInfo/CRTM_Compute_GeometryInfo}
-\input{fdoc/GeometryInfo/CRTM_RCS_ID_GeometryInfo}
+\input{fdoc/Geometry/CRTM_Geometry_DefineVersion}
+\input{fdoc/Geometry/CRTM_Geometry_Destroy}
+\input{fdoc/Geometry/CRTM_Geometry_GetValue}
+\input{fdoc/Geometry/CRTM_Geometry_Inspect}
+\input{fdoc/Geometry/CRTM_Geometry_IsValid}
+\input{fdoc/Geometry/CRTM_Geometry_SetValue}
+\input{fdoc/Geometry/CRTM_Geometry_IOVersion}
+\input{fdoc/Geometry/CRTM_Geometry_InquireFile}
+\input{fdoc/Geometry/CRTM_Geometry_ReadFile}
+\input{fdoc/Geometry/CRTM_Geometry_WriteFile}
 
 
 \clearpage
@@ -582,15 +576,16 @@
 % RTSolution structure methods
 %--------------------------
 \clearpage
-\input{fdoc/RTSolution/CRTM_Associated_RTSolution}
-\input{fdoc/RTSolution/CRTM_Allocate_RTSolution}
-\input{fdoc/RTSolution/CRTM_Destroy_RTSolution}
-\input{fdoc/RTSolution/CRTM_Assign_RTSolution}
-\input{fdoc/RTSolution/CRTM_Equal_RTSolution}
-\input{fdoc/RTSolution/CRTM_RCS_ID_RTSolution}
-\input{fdoc/RTSolution/CRTM_Inquire_RTSolution_Binary}
-\input{fdoc/RTSolution/CRTM_Read_RTSolution_Binary}
-\input{fdoc/RTSolution/CRTM_Write_RTSolution_Binary}
+\input{fdoc/RTSolution/CRTM_RTSolution_Associated}
+\input{fdoc/RTSolution/CRTM_RTSolution_Compare}
+\input{fdoc/RTSolution/CRTM_RTSolution_Create}
+\input{fdoc/RTSolution/CRTM_RTSolution_DefineVersion}
+\input{fdoc/RTSolution/CRTM_RTSolution_Destroy}
+\input{fdoc/RTSolution/CRTM_RTSolution_Inspect}
+\input{fdoc/RTSolution/CRTM_RTSolution_IOVersion}
+\input{fdoc/RTSolution/CRTM_RTSolution_InquireFile}
+\input{fdoc/RTSolution/CRTM_RTSolution_ReadFile}
+\input{fdoc/RTSolution/CRTM_RTSolution_WriteFile}
 
 
 \clearpage
@@ -602,27 +597,40 @@
 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{l p{7cm} c c}
+  \begin{tabular}{l p{8.5cm} c c}
     \hline
     \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
     \hline\hline
+    \texttt{Check\_Input}                 & Logical switch to enable or disable input data checking. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: No input data check.
+    
+                 \hspace{0.5cm}\texttt{.TRUE. }: Input data \emph{is} checked {\footnotesize [DEFAULT]}.}
+     & N/A & Scalar \\
     \texttt{n\_Channels}                  & Number of sensor channels (\texttt{L}). & N/A & Scalar \\
     \texttt{Channel}                      & Index into channel-specific components. & N/A & Scalar \\
-    \texttt{Emissivity\_Switch}           & Switch to apply user-defined surface emissivity. Valid values:
+    \texttt{Use\_Emissivity}              & Logical switch to apply user-defined surface emissivity. If:
 
-    \parbox{7cm}{\hspace{0.5cm}\texttt{NOT\_SET}: Calculate emissivity (default).
+    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: Calculate emissivity {\footnotesize [DEFAULT]}.
     
-                 \hspace{0.5cm}\texttt{SET}: Use user-defined emissivity}
+                 \hspace{0.5cm}\texttt{.TRUE. }: Use user-defined emissivity}
      & N/A & Scalar \\
     \texttt{Emissivity}                   & User-defined surface emissivity for each sensor channel. & N/A & \texttt{L} \\
-    \texttt{Direct\_Reflectivity\_Switch} & Switch to apply user-defined reflectivity for downwelling source (e.g. solar). This switch is ignored unless the \texttt{Emissivity\_Switch} is also set. Valid values:
+    \texttt{Use\_Direct\_Reflectivity}   & Logical switch to apply user-defined reflectivity for downwelling source (e.g. solar). This switch is ignored unless the \texttt{Use\_Emissivity} switch is also set. If:
 
-    \parbox{7cm}{\hspace{0.5cm}\texttt{NOT\_SET}: Calculate reflectivity (default).
+    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: Calculate reflectivity {\footnotesize [DEFAULT]}.
     
-                 \hspace{0.5cm}\texttt{SET}: Use user-defined reflectivity}
+                 \hspace{0.5cm}\texttt{.TRUE. }: Use user-defined reflectivity}
      & N/A & Scalar \\
     \texttt{Direct\_Reflectivity}         & User-defined direct reflectivity for downwelling source for each sensor channel. & N/A & \texttt{L} \\
-    \texttt{Antenna\_Correction}          & Switch to apply antenna correction for select microwave instruments. & N/A & Scalar \\
+    \texttt{Use\_Antenna\_Correction}     & Logical switch to apply antenna correction for the AMSU-A, AMSU-B, and MHS sensors. Note that for this switch to be effective in the CRTM call, the FOV field of the input \Geometry{} structure must be set and the antenna correction coefficients must be present in the sensor \SpcCoeff{} datafile. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: No correction {\footnotesize [DEFAULT]}.
+    
+                 \hspace{0.5cm}\texttt{.TRUE. }: Apply antenna correction.}
+     & N/A & Scalar \\
+    \texttt{SSU}                          & Structure component containing optional SSU sensor-specific input. See section \ref{sec:ssu_input_structure}. & N/A & Scalar \\
+    \texttt{Zeeman}                       & Structure component containing optional input for those sensors where Zeeman-splitting is an issue for high-peaking channels. See section \ref{sec:zeeman_input_structure}. & N/A & Scalar \\
     \hline
   \end{tabular}
   \caption{CRTM \Options{} structure component description}
@@ -632,9 +640,69 @@
 % Options structure methods
 %--------------------------
 \clearpage
-\input{fdoc/Options/CRTM_Associated_Options}
-\input{fdoc/Options/CRTM_Allocate_Options}
-\input{fdoc/Options/CRTM_Destroy_Options}
-\input{fdoc/Options/CRTM_Assign_Options}
-\input{fdoc/Options/CRTM_Equal_Options}
-\input{fdoc/Options/CRTM_RCS_ID_Options}
+\input{fdoc/Options/CRTM_Options_Associated}
+\input{fdoc/Options/CRTM_Options_Create}
+\input{fdoc/Options/CRTM_Options_DefineVersion}
+\input{fdoc/Options/CRTM_Options_Destroy}
+\input{fdoc/Options/CRTM_Options_Inspect}
+\input{fdoc/Options/CRTM_Options_IsValid}
+
+
+\clearpage
+\section{\SSUInput{} Structure}
+%=============================
+\label{sec:ssu_input_structure}
+The \SSUInput{} structure is a component of the \Options{} input structure. Note in figure \ref{fig:SSU_Input_type_structure} that the structure is declared as \texttt{PRIVATE}. As such, the only way to set values in, or get values from, the structure is via the \hyperref[sec:SSU_Input_SetValue_interface]{\texttt{SSU\_Input\_SetValue}} or \hyperref[sec:SSU_Input_GetValue_interface]{\texttt{SSU\_Input\_GetValue}} subroutines respectively.
+
+\input{fdoc/Options/SSU_Input_type}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{Time}           & Time in decimal year corresponding to SSU observation. & N/A & Scalar \\
+    \texttt{Cell\_Pressure} & The SSU CO\subscript{2} cell pressures. & hPa & \texttt{MAX\_N\_CHANNELS} (3) \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \SSUInput{} structure component description}
+  \label{tab:ssu_input_structure}
+\end{table}
+
+\input{fdoc/Options/SSU_Input_CellPressureIsSet}
+\input{fdoc/Options/SSU_Input_DefineVersion}
+\input{fdoc/Options/SSU_Input_GetValue}
+\input{fdoc/Options/SSU_Input_Inspect}
+\input{fdoc/Options/SSU_Input_IsValid}
+\input{fdoc/Options/SSU_Input_SetValue}
+
+\clearpage
+\section{\ZeemanInput{} Structure}
+%=============================
+\label{sec:zeeman_input_structure}
+The \ZeemanInput{} structure is a component of the \Options{} input structure. Note in figure \ref{fig:Zeeman_Input_type_structure} that the structure is declared as \texttt{PRIVATE}. As such, the only way to set values in, or get values from, the structure is via the \hyperref[sec:Zeeman_Input_SetValue_interface]{\texttt{Zeeman\_Input\_SetValue}} or \hyperref[sec:Zeeman_Input_GetValue_interface]{\texttt{Zeeman\_Input\_GetValue}} subroutines respectively.
+
+\input{fdoc/Options/Zeeman_Input_type}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{l p{7cm} c c}
+    \hline
+    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
+    \hline\hline
+    \texttt{Be}           & Earth magnetic field strength. & Gauss & Scalar \\
+    \texttt{Cos\_ThetaB}  & Cosine of the angle between the Earth magnetic field and wave propagation direction. & N/A & Scalar \\
+    \texttt{Cos\_PhiB}    & Cosine of the azimuth angle of the $\mathbf{B}_e$ vector in the $(\mathbf{v}, \mathbf{h}, \mathbf{k})$ coordinates system, where $\mathbf{v}$, $\mathbf{h}$ and $\mathbf{k}$ comprise a right-hand orthogonal system, similar to the $(\mathbf{x}, \mathbf{y}, \mathbf{z})$ Cartesian coordinates. The $\mathbf{h}$ vector is normal to the plane containing the $\mathbf{k}$ and $\mathbf{z}$ vectors, where $\mathbf{k}$ points to the wave propagation direction and $\mathbf{z}$ points to the zenith. $\mathbf{h} = (\mathbf{z} \times \mathbf{k})/|\mathbf{z} \times \mathbf{k}|$. The azimuth angle is the angle on the $(\mathbf{v}, \mathbf{h})$ plane from the positive $\mathbf{v}$ axis to the projected line of the $\mathbf{B}_e$ vector on this plane, positive counterclockwise. & N/A & Scalar \\
+    \texttt{Doppler\_Shift}  & Doppler frequency shift caused by Earth-rotation (positive towards sensor). A zero value means no frequency shift. & KHz & Scalar \\
+    \hline
+  \end{tabular}
+  \caption{CRTM \ZeemanInput{} structure component description}
+  \label{tab:zeeman_input_structure}
+\end{table}
+
+\input{fdoc/Options/Zeeman_Input_DefineVersion}
+\input{fdoc/Options/Zeeman_Input_GetValue}
+\input{fdoc/Options/Zeeman_Input_Inspect}
+\input{fdoc/Options/Zeeman_Input_IsValid}
+\input{fdoc/Options/Zeeman_Input_SetValue}

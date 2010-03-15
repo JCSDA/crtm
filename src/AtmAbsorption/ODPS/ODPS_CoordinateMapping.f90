@@ -220,7 +220,7 @@ CONTAINS
     ! Extract the needed GeometryInfo information
     CALL CRTM_GeometryInfo_GetValue( GeoInfo, &
                                      Surface_Altitude = Surface_Altitude, &
-                                     Sensor_Zenith_Radian = Sensor_Zenith_Radian )
+                                     Trans_Zenith_Radian = Sensor_Zenith_Radian )
 
 
     !-----------------------------------------------------------

@@ -76,6 +76,8 @@ MODULE CRTM_Geometry_Define
   ! ---------------------------------
   !:tdoc+:
   TYPE :: CRTM_Geometry_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
     ! Field of view index (1-nFOV)
     INTEGER  :: iFOV = 0
     ! Earth location
@@ -110,6 +112,7 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -134,6 +137,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Geometry_Destroy( geo )
     TYPE(CRTM_Geometry_type), INTENT(OUT) :: geo
+    geo%Is_Allocated = .TRUE.  ! Placeholder for future expansion
   END SUBROUTINE CRTM_Geometry_Destroy
   
 

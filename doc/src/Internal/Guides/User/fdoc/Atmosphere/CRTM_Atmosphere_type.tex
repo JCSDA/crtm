@@ -4,7 +4,8 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_Atmosphere_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: Max_Layers   = 0  ! K dimension
     INTEGER :: n_Layers     = 0  ! Kuse dimension
@@ -16,19 +17,19 @@
     ! Number of added layers
     INTEGER :: n_Added_Layers = 0
     ! Climatology model associated with the profile
-    INTEGER :: Climatology = INVALID_MODEL
+    INTEGER :: Climatology = US_STANDARD_ATMOSPHERE
     ! Absorber ID and units
-    INTEGER, POINTER :: Absorber_ID(:)    => NULL() ! J
-    INTEGER, POINTER :: Absorber_Units(:) => NULL() ! J
+    INTEGER, ALLOCATABLE :: Absorber_ID(:)    ! J
+    INTEGER, ALLOCATABLE :: Absorber_Units(:) ! J
     ! Profile LEVEL and LAYER quantities
-    REAL(fp), POINTER :: Level_Pressure(:) => NULL()  ! 0:K
-    REAL(fp), POINTER :: Pressure(:)       => NULL()  ! K
-    REAL(fp), POINTER :: Temperature(:)    => NULL()  ! K
-    REAL(fp), POINTER :: Absorber(:,:)     => NULL()  ! K x J
+    REAL(fp), ALLOCATABLE :: Level_Pressure(:)  ! 0:K
+    REAL(fp), ALLOCATABLE :: Pressure(:)        ! K
+    REAL(fp), ALLOCATABLE :: Temperature(:)     ! K
+    REAL(fp), ALLOCATABLE :: Absorber(:,:)      ! K x J
     ! Clouds associated with each profile
-    TYPE(CRTM_Cloud_type),   POINTER :: Cloud(:)   => NULL()  ! Nc
+    TYPE(CRTM_Cloud_type),   ALLOCATABLE :: Cloud(:)    ! Nc
     ! Aerosols associated with each profile
-    TYPE(CRTM_Aerosol_type), POINTER :: Aerosol(:) => NULL()  ! Na
+    TYPE(CRTM_Aerosol_type), ALLOCATABLE :: Aerosol(:)  ! Na
   END TYPE CRTM_Atmosphere_type
     \end{alltt}
   \end{minipage}

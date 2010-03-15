@@ -2,14 +2,14 @@
 
 create_fdoc()
 {
-linkfiles ${CRTM_SOURCE_ROOT} $*
+linkfiles.sh ${CRTM_SOURCE_ROOT} $*
 create_fdoc.rb ${FILES}
 rm *.html
 unlinkfiles $*
 }
 
 # Root
-FILES="CRTM_LifeCycle.f90 CRTM_Adjoint_Module.f90 CRTM_Forward_Module.f90 CRTM_K_Matrix_Module.f90 CRTM_Tangent_Linear_Module.f90"
+FILES="CRTM_Module.f90 CRTM_LifeCycle.f90 CRTM_Adjoint_Module.f90 CRTM_Forward_Module.f90 CRTM_K_Matrix_Module.f90 CRTM_Tangent_Linear_Module.f90"
 create_fdoc ${FILES}
 
 # ChannelInfo
@@ -20,31 +20,31 @@ cd ..
 
 # Atmosphere
 cd Atmosphere
-FILES="CRTM_Atmosphere_Define.f90 CRTM_Atmosphere_Binary_IO.f90 CRTM_Cloud_Define.f90 CRTM_Cloud_Binary_IO.f90 CRTM_Aerosol_Define.f90 CRTM_Aerosol_Binary_IO.f90"
+FILES="CRTM_Atmosphere_Define.f90 CRTM_Atmosphere_IO.f90 CRTM_Cloud_Define.f90 CRTM_Cloud_IO.f90 CRTM_Aerosol_Define.f90 CRTM_Aerosol_IO.f90"
 create_fdoc ${FILES}
 cd ..
 
 # Surface
 cd Surface
-FILES="CRTM_Surface_Define.f90 CRTM_Surface_Binary_IO.f90 CRTM_SensorData_Define.f90 "
+FILES="CRTM_Surface_Define.f90 CRTM_Surface_IO.f90 CRTM_SensorData_Define.f90 CRTM_SensorData_IO.f90"
 create_fdoc ${FILES}
 cd ..
 
-# GeometryInfo
-cd GeometryInfo
-FILES="CRTM_GeometryInfo_Define.f90"
+# Geometry
+cd Geometry
+FILES="CRTM_Geometry_Define.f90 CRTM_Geometry_IO.f90"
 create_fdoc ${FILES}
 cd ..
 
 # RTSolution
 cd RTSolution
-FILES="CRTM_RTSolution_Define.f90 CRTM_RTSolution_Binary_IO.f90"
+FILES="CRTM_RTSolution_Define.f90 CRTM_RTSolution_IO.f90"
 create_fdoc ${FILES}
 cd ..
 
 # Options
 cd Options
-FILES="CRTM_Options_Define.f90"
+FILES="CRTM_Options_Define.f90 SSU_Input_Define.f90 Zeeman_Input_Define.f90"
 create_fdoc ${FILES}
 cd ..
 

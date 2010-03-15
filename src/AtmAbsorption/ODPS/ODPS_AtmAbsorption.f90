@@ -1099,7 +1099,7 @@ CONTAINS
                    Predictor%PAFV)                     ! structure holding FW parameters
                    
     ! store the surface secant zenith angle
-    CALL CRTM_GeometryInfo_GetValue( GeoInfo, Secant_Sensor_Zenith = Secant_Sensor_Zenith )
+    CALL CRTM_GeometryInfo_GetValue( GeoInfo, Secant_Trans_Zenith = Secant_Sensor_Zenith )
     Predictor%Secant_Zenith_Surface = Secant_Sensor_Zenith
                                   
     !-------------------------------------------

@@ -67,14 +67,14 @@ MODULE CRTM_RTSolution_Define
   ! -------------------------------
   !:tdoc+:
   TYPE :: CRTM_RTSolution_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimensions
     INTEGER :: n_Layers = 0  ! K
-
     ! Internal variables. Users do not need to worry about these.
     LOGICAL :: Scattering_Flag = .TRUE.
     INTEGER :: n_Full_Streams  = 0
     INTEGER :: n_Stokes        = 0
-
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
@@ -128,10 +128,8 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Status:       The return value is a logical value indicating the
 !                     status of the RTSolution members.
-!                     .TRUE.  - if ANY of the RTSolution allocatable or
-!                               pointer members are in use.
-!                     .FALSE. - if ALL of the RTSolution allocatable or
-!                               pointer members are not in use.
+!                       .TRUE.  - if the array components are allocated.
+!                       .FALSE. - if the array components are not allocated.
 !                     UNITS:      N/A
 !                     TYPE:       LOGICAL
 !                     DIMENSION:  Same as input RTSolution argument
@@ -140,16 +138,9 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION CRTM_RTSolution_Associated( RTSolution ) RESULT( Status )
-    ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
-    ! Function result
     LOGICAL :: Status
-
-    ! Test the structure members
-    Status = &
-      ALLOCATED(RTSolution%Upwelling_Radiance ) .OR. &
-      ALLOCATED(RTSolution%Layer_Optical_Depth)
-
+    Status = RTSolution%Is_Allocated
   END FUNCTION CRTM_RTSolution_Associated
 
 
@@ -177,6 +168,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_RTSolution_Destroy( RTSolution )
     TYPE(CRTM_RTSolution_type), INTENT(OUT) :: RTSolution
+    RTSolution%Is_Allocated = .FALSE.
     RTSolution%n_Layers = 0
   END SUBROUTINE CRTM_RTSolution_Destroy
   
@@ -234,6 +226,9 @@ CONTAINS
     RTSolution%Upwelling_Radiance  = ZERO
     RTSolution%Layer_Optical_Depth = ZERO
     
+    ! Set allocation indicator
+    RTSolution%Is_Allocated = .TRUE.
+
   END SUBROUTINE CRTM_RTSolution_Create
 
 

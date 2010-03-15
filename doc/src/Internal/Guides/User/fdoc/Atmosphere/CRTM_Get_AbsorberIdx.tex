@@ -10,10 +10,10 @@
         CRTM Atmosphere structure absorber component.
  
   CALLING SEQUENCE:
-        Idx = CRTM_Get_AbsorberIdx(Atmosphere, AbsorberId)
+        Idx = CRTM_Get_AbsorberIdx(Atm, AbsorberId)
  
-  INPUT ARGUMENTS:
-        Atmosphere:   CRTM Atmosphere structure.
+  INPUTS:
+        Atm:          CRTM Atmosphere structure.
                       UNITS:      N/A
                       TYPE:       CRTM_Atmosphere_type
                       DIMENSION:  Scalar
@@ -29,7 +29,7 @@
  
   FUNCTION RESULT:
         Idx:          Index of the requested absorber in the 
-                      Atmosphere%Absorber array component.
+                      Atm%Absorber array component.
                       If the requested absorber cannot be found, 
                       a value of -1 is returned.
                       UNITS:      N/A

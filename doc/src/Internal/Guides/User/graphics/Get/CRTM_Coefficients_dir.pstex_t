@@ -1,0 +1,81 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/Get/CRTM_Coefficients_dir.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3158sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(2850,4875)(1951,-4861)
+\put(2551,-661){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2551,-886){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(2851,-1636){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2851,-1861){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(2851,-2386){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2851,-2611){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(2551,-3136){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2551,-3361){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(2551,-3886){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2551,-4111){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(2551,-4636){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Big\_Endian/}%
+}}}}
+\put(2551,-4861){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Little\_Endian/}%
+}}}}
+\put(4501,-661){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{Spectral coefficients}}%
+}}}}
+\put(4201,-736){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(4501,-3136){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{Aerosol optical properties}}%
+}}}}
+\put(4201,-3211){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(4501,-3886){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{Cloud optical properties}}%
+}}}}
+\put(4201,-3961){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(4501,-4636){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{Surface emissivity model coefficients}}%
+}}}}
+\put(4201,-4711){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(4801,-1531){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{ODAS fast transmittance}}%
+}}}}
+\put(4801,-1741){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{model coefficients}}%
+}}}}
+\put(4501,-1716){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(2551,-1411){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}ODAS/}%
+}}}}
+\put(2551,-2161){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}ODPS/}%
+}}}}
+\put(2251,-436){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}SpcCoeff/}%
+}}}}
+\put(2251,-1186){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}TauCoeff/}%
+}}}}
+\put(2251,-2911){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}AerosolCoeff/}%
+}}}}
+\put(2251,-3661){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}CloudCoeff/}%
+}}}}
+\put(2251,-4411){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}EmisCoeff/}%
+}}}}
+\put(1951,-136){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}CRTM\_Coefficients/}%
+}}}}
+\put(4501,-2466){\makebox(0,0)[lb]{\smash{{\SetFigFont{25}{30.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\}}%
+}}}}
+\put(4801,-2491){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{model coefficients}}%
+}}}}
+\put(4801,-2281){\makebox(0,0)[lb]{\smash{{\SetFigFont{10}{12.0}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\textrm{ODPS fast transmittance}}%
+}}}}
+\end{picture}%
