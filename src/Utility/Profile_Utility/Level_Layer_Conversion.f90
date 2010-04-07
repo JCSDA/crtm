@@ -385,19 +385,9 @@ CONTAINS
     ! Calculate near surface level values
     ! -----------------------------------
     ! Molecular weight of air
-    MWair = MW_Air( Pressure( 1 ), &
-                    Water_Vapor_Pressure( 1 ), &
-                    Message_Log=Message_Log )
-    IF ( MWair < ZERO ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error calculating MWair at Level 1. Value = ", es13.6 )' ) &
-                      MWair
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL MW_Air( Pressure( 1 ),             &
+                 Water_Vapor_Pressure( 1 ), &
+                 MWair                      )
 
     ! Calculate the gas "constant" in J.g^-1.K^-1
     ! Note that the units are *NOT* SI. The scaling of these
@@ -407,44 +397,21 @@ CONTAINS
     Rair_km1 = R0 / MWair
 
     ! Air density
-    RHOair_km1 = Density( Pressure( 1 ), &
-                          Temperature( 1 ), &
-                          MWair, &
-                          Message_Log=Message_Log )
-
-    IF ( RHOair_km1 < ZERO ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error calculating RHOair at Level 1. Value = ", es13.6 )' ) &
-                      RHOair_km1
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
+    CALL Density( Pressure( 1 ),    &
+                  Temperature( 1 ), &
+                  MWair,            &
+                  RHOair_km1        )
 
     ! Loop over layers
     ! ----------------
     Layer_Loop: DO k = 1, n_Layers
 
-
       ! Calculate current top of layer values
       ! -------------------------------------
       ! MWair at current Level
-      MWair = MW_Air( Pressure( k+1 ), &
-                      Water_Vapor_Pressure( k+1 ), &
-                      Message_Log=Message_Log )
-      IF ( MWair < ZERO ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error calculating MWair at Level ", i4, ". Value = ", es13.6 )' ) &
-                        k+1, MWair
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      ENDIF
+      CALL MW_Air( Pressure( k+1 ),             &
+                   Water_Vapor_Pressure( k+1 ), &
+                   MWair                        )
 
       ! Calculate the gas "constant" in J.g^-1.K^-1
       ! Note that the units are *NOT* SI. The scaling of these
@@ -454,21 +421,10 @@ CONTAINS
       Rair = R0 / MWair
 
       ! Air density at current Level
-      RHOair = Density( Pressure( k+1 ), &
-                        Temperature( k+1 ), &
-                        MWair, &
-                        Message_Log=Message_Log )
-      IF ( RHOair < ZERO ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error calculating RHOair at Level ", i4, ". Value = ", es13.6 )' ) &
-                        k+1, RHOair
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      ENDIF
-
+      CALL Density( Pressure( k+1 ),    &
+                    Temperature( k+1 ), &
+                    MWair,              &
+                    RHOair              )
 
       ! Calculate the layer scale heights
       ! ---------------------------------
@@ -1178,23 +1134,13 @@ CONTAINS
 
     ! Calculate initial level total number density
     ! --------------------------------------------
-    Sublevel_RHOair_nm1 = PP_to_ND( Sublevel_Pressure( 1 ), &
-                                    Sublevel_Temperature( 1 ), &
-                                    Message_Log=Message_Log )
-    IF ( Sublevel_RHOair_nm1 < ZERO ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error calculating RHOair at Sublevel 1', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
+    CALL PP_to_ND( Sublevel_Pressure( 1 ),    &
+                   Sublevel_Temperature( 1 ), &
+                   Sublevel_RHOair_nm1        )
 
     ! Begin layer loop
     ! ----------------
     Layer_Loop: DO k = 1, n_Layers
-
 
       ! Initialise sum variables
       Layer_T_RHOair_sum      = ZERO
@@ -1213,19 +1159,9 @@ CONTAINS
 
         ! Calculate current top of sublayer total number density
         ! ------------------------------------------------------
-        Sublevel_RHOair = PP_to_ND( Sublevel_Pressure( n+1 ), &
-                                    Sublevel_Temperature( n+1 ), &
-                                    Message_Log=Message_Log )
-        IF ( Sublevel_RHOair < ZERO ) THEN
-          Error_Status = FAILURE
-          WRITE( Message, '( "Error calculating RHOair at Sublevel ", i4 )' ) n+1
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          RETURN
-        ENDIF
-
+        CALL PP_to_ND( Sublevel_Pressure( n+1 )   , &
+                       Sublevel_Temperature( n+1 ), &
+                       Sublevel_RHOair              )
 
         ! Perform the summation for the density weighted layer temperature
         ! by summing the T.rho subLAYER product and the subLAYER density
@@ -1325,19 +1261,19 @@ CONTAINS
 
           ! Convert to kmol.cm^-2
           IF ( j == H2O_J_Index ) THEN                                                  
-            Sublayer_Absorber_k = PPMV_to_KMOL( Sublayer_Pressure, &
-                                                Sublayer_Temperature, &
-                                                Sublayer_dZ, &
-                                                Sublayer_Absorber, &
-                                                Message_Log=Message_Log )
+            CALL PPMV_to_CD( Sublayer_Pressure   , &
+                             Sublayer_Temperature, &
+                             Sublayer_Absorber   , &
+                             Sublayer_dZ         , &
+                             Sublayer_Absorber_k   )
             Water_Vapor = Sublayer_Absorber_k                                 
           ELSE                                                                
-            Sublayer_Absorber_k = PPMV_to_KMOL( Sublayer_Pressure, &          
-                                                Sublayer_Temperature, &       
-                                                Sublayer_dZ, &                
-                                                Sublayer_Absorber, &          
-                                                Water_Vapor=Water_Vapor, &  
-                                                Message_Log=Message_Log )   
+            CALL PPMV_to_CD( Sublayer_Pressure      , &          
+                             Sublayer_Temperature   , &       
+                             Sublayer_Absorber      , &                 
+                             Sublayer_dZ            , &
+                             SubLayer_Absorber_K    , &          
+                             Water_Vapor=Water_Vapor  )  
           END IF                                                              
 
           ! Sum the column density

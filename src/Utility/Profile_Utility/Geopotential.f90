@@ -434,39 +434,18 @@ CONTAINS
     ! Calculate near surface level values
     ! -----------------------------------
     ! Molecular weight of air
-    MWair = MW_Air( Pressure( k1 ), &
-                    Water_Vapor_Pressure( k1 ), &
-                    Message_Log=Message_Log )
-    IF ( MWair < ZERO ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error calculating MWair at level ", i0, ". Value = ", es13.6 )' ) &
-                      k1, MWair
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL MW_Air( Pressure( k1 ),             &
+                 Water_Vapor_Pressure( k1 ), &
+                 MWair                       )
 
     ! Calculate the gas "constant" in J/K/kg
     Rair_km1 = R0 / ( MWair * G_TO_KG )
 
     ! Air density
-    RHOair_km1 = Density( Pressure( k1 ), &
-                          Temperature( k1 ), &
-                          MWair, &
-                          Message_Log=Message_Log )
-    IF ( RHOair_km1 < ZERO ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error calculating RHOair at level ", i0, ". Value = ", es13.6 )' ) &
-                      k1, RHOair_km1
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
-
+    CALL Density( Pressure( k1 ),    &
+                  Temperature( k1 ), &
+                  MWair,             &
+                  RHOair_km1         )
 
     ! Loop over levels in ground-up order
     ! -----------------------------------
@@ -479,39 +458,18 @@ CONTAINS
       ! Calculate current level values
       ! ------------------------------
       ! MWair at current level
-      MWair = MW_Air( Pressure( k ), &
-                      Water_Vapor_Pressure( k ), &
-                      Message_Log=Message_Log )
-      IF ( MWair < ZERO ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error calculating MWair at level ", i0, ". Value = ", es13.6 )' ) &
-                        k, MWair
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      ENDIF
+      CALL MW_Air( Pressure( k ),             &
+                   Water_Vapor_Pressure( k ), &
+                   MWair                      )
 
       ! Gas "constant" at current level in J/K/kg
       Rair = R0 / ( MWair * G_TO_KG )
 
       ! Air density at current level
-      RHOair = Density( Pressure( k ), &
-                        Temperature( k ), &
-                        MWair, &
-                        Message_Log=Message_Log )
-      IF ( RHOair < ZERO ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error calculating RHOair at level ", i0, ". Value = ", es13.6 )' ) &
-                        k, RHOair
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      ENDIF
-
+      CALL Density( Pressure( k ),    &
+                    Temperature( k ), &
+                    MWair,            &
+                    RHOair            )
 
       ! Calculate density weighted layer averages
       ! -----------------------------------------
