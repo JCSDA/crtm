@@ -220,7 +220,7 @@ CONTAINS
 !       g/kg) are always with respect to DRY AIR.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Sep-2002
+!       Written by:     Paul van Delst, 20-Sep-2002
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -815,7 +815,7 @@ CONTAINS
 !       g/kg) are always with respect to DRY AIR.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Sep-2002
+!       Written by:     Paul van Delst, 20-Sep-2002
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------

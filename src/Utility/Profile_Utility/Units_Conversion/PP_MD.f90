@@ -160,7 +160,7 @@ CONTAINS
 !                m^3
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
+!       Written by:     Paul van Delst, 08-Nov-2004
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -556,7 +556,7 @@ CONTAINS
 !                  m^2         A
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
+!       Written by:     Paul van Delst, 08-Nov-2004
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------

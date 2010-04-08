@@ -125,7 +125,7 @@ CONTAINS
 !                                        100
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 02-Mar-1999
+!       Written by:     Paul van Delst, 02-Mar-1999
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ CONTAINS
 !                              ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 17-Aug-2009
+!       Written by:     Paul van Delst, 17-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -415,7 +415,7 @@ CONTAINS
 !                              ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 17-Aug-2009
+!       Written by:     Paul van Delst, 17-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -556,7 +556,7 @@ CONTAINS
 !                                    Saturation_Mixing_Ratio
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 02-Mar-1999
+!       Written by:     Paul van Delst, 02-Mar-1999
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------

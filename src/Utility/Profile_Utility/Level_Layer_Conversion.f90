@@ -17,8 +17,8 @@
 !                                    values.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-May-2000
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Level_Layer_Conversion
@@ -285,8 +285,8 @@ CONTAINS
 !       temperature would be 100, not 0.1.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC, 03-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst,, 03-May-2000
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -597,8 +597,8 @@ CONTAINS
 !       are created for each layer.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 19-Jan-2001
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 19-Jan-2001
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -984,8 +984,8 @@ CONTAINS
 !       is assumed for each layer.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 19-Jan-2001
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 19-Jan-2001
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 

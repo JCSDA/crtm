@@ -149,8 +149,8 @@ CONTAINS
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 05-Dec-2003
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 05-Dec-2003
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -466,8 +466,8 @@ CONTAINS
 !                ( 1 + 0.001*MRw )
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 05-Dec-2003
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 05-Dec-2003
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 

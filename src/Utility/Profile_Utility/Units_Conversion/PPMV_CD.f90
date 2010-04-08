@@ -146,7 +146,7 @@ CONTAINS
 !       if cd(H2O) is supplied via the optional Water_Vapor argument.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 04-Jan-2001
+!       Written by:     Paul van Delst, 04-Jan-2001
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -669,7 +669,7 @@ CONTAINS
 !       if cd(H2O) is supplied via the optional Water_Vapor argument.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 04-Jan-2001
+!       Written by:     Paul van Delst, 04-Jan-2001
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------

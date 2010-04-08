@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 05-May-2006
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 05-May-2006
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Profile_Utility

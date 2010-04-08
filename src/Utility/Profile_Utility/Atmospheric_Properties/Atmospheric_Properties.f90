@@ -6,7 +6,7 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
+!       Written by:     Paul van Delst, 01-May-2000
 !                       paul.vandelst@noaa.gov
 !
 
@@ -140,7 +140,7 @@ CONTAINS
 !         MW(Air) = MW(DRY_AIR) + d(MW_Air)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
+!       Written by:     Paul van Delst, 01-May-2000
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ CONTAINS
 !       of kg.m^-3.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
+!       Written by:     Paul van Delst, 01-May-2000
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -705,8 +705,8 @@ CONTAINS
 !       Horner's method is used to evaluate the above polynomial.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 24-Apr-1998
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 24-Apr-1998
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -941,7 +941,7 @@ CONTAINS
 !       Horner's method is used to evaluate the above polynomial.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 24-Apr-1998
+!       Written by:     Paul van Delst, 24-Apr-1998
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -1245,7 +1245,7 @@ CONTAINS
 !       A factor of 1000 is used to return values in units of g/kg.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-1998
+!       Written by:     Paul van Delst, 18-Mar-1998
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -1690,7 +1690,7 @@ CONTAINS
 !       and use eqn.(1).
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
+!       Written by:     Paul van Delst, 01-May-2000
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -1771,7 +1771,7 @@ CONTAINS
 !                                  ATTRIBUTES: INTENT(OUT)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 19-Aug-2009
+!       Written by:     Paul van Delst, 19-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -1865,7 +1865,7 @@ CONTAINS
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 19-Aug-2009
+!       Written by:     Paul van Delst, 19-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -2131,7 +2131,7 @@ CONTAINS
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Aug-2009
+!       Written by:     Paul van Delst, 20-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -2241,7 +2241,7 @@ CONTAINS
 !             MWair = molecular weight of dry air
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 11-Sep-2002
+!       Written by:     Paul van Delst, 11-Sep-2002
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -2411,7 +2411,7 @@ CONTAINS
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Aug-2009
+!       Written by:     Paul van Delst, 20-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -2688,7 +2688,7 @@ CONTAINS
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Aug-2009
+!       Written by:     Paul van Delst, 20-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------

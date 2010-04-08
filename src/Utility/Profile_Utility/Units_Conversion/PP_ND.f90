@@ -137,7 +137,7 @@ CONTAINS
 !                     p0       T 
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
+!       Written by:     Paul van Delst, 15-Nov-2001
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -436,7 +436,7 @@ CONTAINS
 !                          L0     T0 
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Nov-2001
+!       Written by:     Paul van Delst, 15-Nov-2001
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------

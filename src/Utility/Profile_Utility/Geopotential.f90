@@ -9,8 +9,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-May-2000
+!                       paul.vandelst@noaa.gov
 !
 
 
@@ -267,8 +267,8 @@ CONTAINS
 !         2) Eventually, the effect due to ozone will also be included.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 21-Feb-1999
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 21-Feb-1999
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -737,16 +737,16 @@ CONTAINS
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 17-Jan-2001
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 17-Jan-2001
+!                       paul.vandelst@noaa.gov
 !
 !--------------------------------------------------------------------------------
 
-   FUNCTION Gravity( Height,                   &  ! Input
-                     Latitude,                 &  ! Optional input
-                     Zonal_Wind_Velocity,      &  ! Optional input
-                     Meridional_Wind_Velocity, &  ! Optional input
-                     Message_Log               )  ! Error messaging
+  FUNCTION Gravity( Height,                   &  ! Input
+                    Latitude,                 &  ! Optional input
+                    Zonal_Wind_Velocity,      &  ! Optional input
+                    Meridional_Wind_Velocity, &  ! Optional input
+                    Message_Log               )  ! Error messaging
     ! Arguments
     REAL(fp),               INTENT(IN) :: Height
     REAL(fp),     OPTIONAL, INTENT(IN) :: Latitude
@@ -759,30 +759,30 @@ CONTAINS
     CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'Gravity'
     REAL(fp), PARAMETER :: TWO_PI = TWO * PI
     REAL(fp), PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
-      ! Earth rotational speed in rad.s^-1. The number of seconds
-      ! per day is for a sidereal day, the amount of time for the
-      ! Earth to rotate 360 degrees: 23h, 56m, 4s. A solar day is
-      ! 24h long. It makes next to no difference in the calculated
-      ! gravity, but what the hell.
-      REAL(fp), PARAMETER :: N_SECONDS_IN_DAY = 86164.0_fp
-      REAL(fp), PARAMETER :: OMEGA = TWO_PI / N_SECONDS_IN_DAY
-      ! Earth radii in m.
-      REAL(fp), PARAMETER :: Re_Equatorial = 6.378388e+06_fp ! == a
-      REAL(fp), PARAMETER :: Re_Polar      = 6.356911e+06_fp ! == b
-      ! Earth's flattening correction factor, (1 - b^2/a^2)
-      REAL(fp), PARAMETER :: a2      = Re_Equatorial**2
-      REAL(fp), PARAMETER :: b2      = Re_Polar**2
-      REAL(fp), PARAMETER :: factor  = ONE - ( b2 / a2 )
-      ! Data for normal gravity equation
-      REAL(fp), PARAMETER :: G_NORMAL_EQUATOR      = 9.7803267715_fp
-      INTEGER,  PARAMETER :: N_NORMAL_COEFFICIENTS = 4
-      REAL(fp), PARAMETER :: G_COEFFS(N_NORMAL_COEFFICIENTS) = (/ 5.2790414e-03_fp, &
-                                                                  2.32718e-05_fp,   &
-                                                                  1.262e-07_fp,     &
-                                                                  7.0e-10_fp        /)
-      ! This is the number of the above coefficients to use
-      ! in the calculation. Don't really need all four.
-      INTEGER, PARAMETER :: N_COEFFICIENTS = 2
+    ! Earth rotational speed in rad.s^-1. The number of seconds
+    ! per day is for a sidereal day, the amount of time for the
+    ! Earth to rotate 360 degrees: 23h, 56m, 4s. A solar day is
+    ! 24h long. It makes next to no difference in the calculated
+    ! gravity, but what the hell.
+    REAL(fp), PARAMETER :: N_SECONDS_IN_DAY = 86164.0_fp
+    REAL(fp), PARAMETER :: OMEGA = TWO_PI / N_SECONDS_IN_DAY
+    ! Earth radii in m.
+    REAL(fp), PARAMETER :: Re_Equatorial = 6.378388e+06_fp ! == a
+    REAL(fp), PARAMETER :: Re_Polar      = 6.356911e+06_fp ! == b
+    ! Earth's flattening correction factor, (1 - b^2/a^2)
+    REAL(fp), PARAMETER :: a2      = Re_Equatorial**2
+    REAL(fp), PARAMETER :: b2      = Re_Polar**2
+    REAL(fp), PARAMETER :: factor  = ONE - ( b2 / a2 )
+    ! Data for normal gravity equation
+    REAL(fp), PARAMETER :: G_NORMAL_EQUATOR      = 9.7803267715_fp
+    INTEGER,  PARAMETER :: N_NORMAL_COEFFICIENTS = 4
+    REAL(fp), PARAMETER :: G_COEFFS(N_NORMAL_COEFFICIENTS) = (/ 5.2790414e-03_fp, &
+                                                                2.32718e-05_fp,   &
+                                                                1.262e-07_fp,     &
+                                                                7.0e-10_fp        /)
+    ! This is the number of the above coefficients to use
+    ! in the calculation. Don't really need all four.
+    INTEGER, PARAMETER :: N_COEFFICIENTS = 2
     ! Local variables
     INTEGER :: i
     REAL(fp) :: Lat

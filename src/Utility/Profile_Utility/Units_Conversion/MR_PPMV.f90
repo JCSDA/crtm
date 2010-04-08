@@ -111,8 +111,8 @@ CONTAINS
 !       scale factor (1.0e+06)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 03-May-2000
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -199,7 +199,7 @@ CONTAINS
 !                         ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 05-Aug-2009
+!       Written by:     Paul van Delst, 05-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -285,7 +285,7 @@ CONTAINS
 !                         ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 05-Aug-2009
+!       Written by:     Paul van Delst, 05-Aug-2009
 !                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -384,8 +384,8 @@ CONTAINS
 !       scale factor (1.0e-06)
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 03-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 03-May-2000
+!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
