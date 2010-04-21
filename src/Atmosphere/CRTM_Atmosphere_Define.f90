@@ -800,7 +800,7 @@ CONTAINS
     ENDIF
     ! ...The absorber units range
     IF ( ANY(Atm%Absorber_Units < 1) .OR. ANY(Atm%Absorber_Units > N_VALID_ABSORBER_UNITS) ) THEN
-      msg = 'Invalid absorber units ID'
+      msg = 'Invalid absorber ID'
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
