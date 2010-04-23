@@ -617,7 +617,7 @@ CONTAINS
     ! Function result
     TYPE(CRTM_Atmosphere_type) :: atm_out
     ! Local variables
-    INTEGER :: na, no, nt
+    INTEGER :: i, na, no, nt
   
     ! Set the number of extra layers
     na = MAX(n_Added_Layers,0)
@@ -644,11 +644,17 @@ CONTAINS
     atm_out%Temperature(na+1:nt)  = atm%Temperature(1:no)
     atm_out%Absorber(na+1:nt,:)   = atm%Absorber(1:no,:)
     ! ...Cloud components
-    IF ( atm%n_Clouds > 0 ) &
-      atm_out%Cloud = CRTM_Cloud_AddLayerCopy( atm%Cloud, atm_out%n_Added_Layers )
+    IF ( atm%n_Clouds > 0 ) THEN
+      DO i = 1, atm%n_Clouds
+        atm_out%Cloud(i) = CRTM_Cloud_AddLayerCopy( atm%Cloud(i), atm_out%n_Added_Layers )
+      END DO
+    END IF
     ! ...Aerosol components
-    IF ( atm%n_Aerosols > 0 ) &
-      atm_out%Aerosol = CRTM_Aerosol_AddLayerCopy( atm%Aerosol, atm_out%n_Added_Layers )
+    IF ( atm%n_Aerosols > 0 ) THEN
+      DO i = 1, atm%n_Aerosols
+        atm_out%Aerosol(i) = CRTM_Aerosol_AddLayerCopy( atm%Aerosol(i), atm_out%n_Added_Layers )
+      END DO
+    END IF
   
   END FUNCTION CRTM_Atmosphere_AddLayerCopy 
                                
@@ -800,7 +806,7 @@ CONTAINS
     ENDIF
     ! ...The absorber units range
     IF ( ANY(Atm%Absorber_Units < 1) .OR. ANY(Atm%Absorber_Units > N_VALID_ABSORBER_UNITS) ) THEN
-      msg = 'Invalid absorber ID'
+      msg = 'Invalid absorber units ID'
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF

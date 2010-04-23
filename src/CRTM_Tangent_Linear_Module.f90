@@ -23,7 +23,7 @@ MODULE CRTM_Tangent_Linear_Module
                                         MAX_N_LEGENDRE_TERMS, &
                                         MAX_N_STOKES        , &
                                         MAX_N_ANGLES        , &
-                                        MAX_N_AZI           , &
+                                        MAX_N_Azimuth_Fourier, &
                                         MAX_SOURCE_ZENITH_ANGLE
   USE CRTM_SpcCoeff,              ONLY: SC, VISIBLE_SENSOR
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
@@ -641,7 +641,7 @@ CONTAINS
           
           IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .true.
-            RTV%n_Azi = MAX_N_AZI            
+            RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_Azimuth_Fourier )
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
               AtmOptics%n_Legendre_Terms = 4

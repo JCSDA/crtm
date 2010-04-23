@@ -74,9 +74,8 @@ MODULE Type_Kinds
   INTEGER, PARAMETER :: Byte    = SELECTED_INT_KIND(1)   ! Byte  integer
   INTEGER, PARAMETER :: Short   = SELECTED_INT_KIND(4)   ! Short integer
   INTEGER, PARAMETER :: Long    = SELECTED_INT_KIND(8)   ! Long  integer
-  INTEGER, PARAMETER :: LLong_t = SELECTED_INT_KIND(16)  ! LLong integer
-  INTEGER, PARAMETER :: LLong   = ((( 1 + SIGN(1,LLong_t)) / 2) * LLong_t) + &
-                                  ((( 1 - SIGN(1,LLong_t)) / 2) * Long   )
+  INTEGER, PARAMETER :: LLong   = SELECTED_INT_KIND(16)  ! LLong integer
+
   ! Expected 8-bit byte sizes of the integer kinds
   INTEGER, PARAMETER :: n_Bytes_Byte  = 1
   INTEGER, PARAMETER :: n_Bytes_Short = 2
@@ -105,9 +104,8 @@ MODULE Type_Kinds
   ! Floating point types
   INTEGER, PARAMETER :: Single = SELECTED_REAL_KIND(6)  ! Single precision
   INTEGER, PARAMETER :: Double = SELECTED_REAL_KIND(15) ! Double precision
-  INTEGER, PARAMETER :: Quad_t = SELECTED_REAL_KIND(20) ! Quad precision
-  INTEGER, PARAMETER :: Quad   = ((( 1 + SIGN(1,Quad_t)) / 2) * Quad_t) + &
-                                 ((( 1 - SIGN(1,Quad_t)) / 2) * Double)
+  INTEGER, PARAMETER :: Quad   = SELECTED_REAL_KIND(20) ! Quad precision
+
   ! Expected 8-bit byte sizes of the floating point kinds
   INTEGER, PARAMETER :: n_Bytes_Single = 4
   INTEGER, PARAMETER :: n_Bytes_Double = 8

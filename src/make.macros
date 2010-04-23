@@ -115,9 +115,9 @@ AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
                              -qfloat=nomaf:rndsngl:nans \
                              -qflttrap=ov:zero:inv:en \
                              -qinitauto \
-                             -qfree=f90 \
+                             -qfree \
                              -qhalt=W \
-                             -qlanglvl=95pure \
+                             -qlanglvl=2003pure \
                              -qmaxmem=-1 \
                              -qsuffix=f=f90:cpp=F90 \
                               ${INCLUDES} \
@@ -134,9 +134,9 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "FC_FLAGS= -c \
                             -qdbg \
                             -qarch=auto \
-                            -qfree=f90 \
+                            -qfree \
                             -qhalt=W \
-                            -qlanglvl=95pure \
+                            -qlanglvl=2003pure \
                             -qsuffix=f=f90:cpp=F90 \
                             -qstrict \
                             -NS32768 \
@@ -331,7 +331,6 @@ LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                                    -Mdclchk \
                                    -Minform,inform \
                                    -Mnosave \
-                                   -Mstandard \
                                    -Mref_externals \
                                    ${INCLUDES} \
                                    ${LINUX_COMMON_FLAGS_PGI_DEBUG}" \
@@ -339,10 +338,6 @@ LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                                    ${LIBRARIES} \
                                    -o" \
                         "ENDIAN=Little_Endian"
-
-# The following switch breaks the compile in debug mode
-# for pgf95 6.0-5 32-bit target on x86 Linux
-#                                   -Mstandard \
 
 # Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_PGI_PROD =
@@ -352,7 +347,6 @@ LINUX_FLAGS_PGI_PROD = "FC=${NAME_PGI}" \
                                   -g \
                                   -fast \
                                   -byteswapio \
-                                  -Mstandard \
                                   ${INCLUDES} \
                                   ${LINUX_COMMON_FLAGS_PGI_PROD}" \
                        "FL_FLAGS= ${LINUX_COMMON_FLAGS_PGI_PROD} \
@@ -380,9 +374,8 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                                      -g \
                                      -check bounds \
                                      -convert big_endian \
-                                     -e95 \
+                                     -e03 \
                                      -traceback \
-                                     -warn errors \
                                      -free \
                                      -assume byterecl \
                                      -fp-stack-check \
@@ -401,7 +394,6 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 	                 "FC_FLAGS= -c \
                                     -O2 \
                                     -convert big_endian \
-                                    -warn errors \
                                     -free \
       	                            -assume byterecl \
                                     ${INCLUDES} \

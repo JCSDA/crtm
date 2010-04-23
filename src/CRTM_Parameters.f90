@@ -263,7 +263,7 @@ MODULE CRTM_Parameters
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STREAMS = 20 
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ANGLES = 5 
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STOKES = 4
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_AZI = 16
+  INTEGER, PUBLIC, PARAMETER :: MAX_N_Azimuth_Fourier = 16   ! maximum number of Fourier components for azimuth angles
     
   LOGICAL, PUBLIC, PARAMETER :: HGPHASE = .FALSE.
                                                                                                         

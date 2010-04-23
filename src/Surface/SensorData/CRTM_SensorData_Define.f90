@@ -318,12 +318,12 @@ CONTAINS
     ! ...Check if structure is used
     IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) THEN
       msg = 'SensorData structure not allocated'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     IF ( SensorData%n_channels < 1 ) THEN
       msg = 'SensorData structure dimension invalid'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     
@@ -333,28 +333,29 @@ CONTAINS
     ! ...Data sensor ids
     IF ( LEN_TRIM(SensorData%Sensor_Id) == 0 ) THEN
       msg = 'Invalid Sensor Id found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID ) THEN
       msg = 'Invalid WMO Satellite Id found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
       msg = 'Invalid WMO Sensor Id'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
+    ! ...Listed sensor channels
     IF ( ANY(SensorData%Sensor_Channel < 1) ) THEN
       msg = 'Invalid Sensor Channel found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     ! ...Data
-    IF ( ANY(SensorData%Tb < ZERO ) ) THEN
-      msg = 'Negative SensorData brightness temperatures found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+    IF ( ALL(SensorData%Tb < ZERO ) ) THEN
+      msg = 'All input SensorData brightness temperatures are negative'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
 
