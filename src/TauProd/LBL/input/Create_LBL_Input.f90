@@ -37,7 +37,7 @@ PROGRAM Create_LBL_Input
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_LBL_Input'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
+  '$Id$'
 
   ! Liternal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
@@ -71,7 +71,7 @@ PROGRAM Create_LBL_Input
   ! Output header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to create the input data for MONORTM and LBLRTM', &
-                        '$Revision: $' )
+                        '$Revision$' )
 
   ! Read the AtmProfile filename
   ! ...Get it
