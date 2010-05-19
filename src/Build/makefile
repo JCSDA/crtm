@@ -13,153 +13,61 @@
 #
 #================================================================================
 
-# -------------
 # Define macros
-# -------------
-
 include make.macros
 
-# The library name
-LIBRARY_TAG = CRTM
-LIBRARY_NAME = lib$(LIBRARY_TAG).a
 
-# The library directories
-SOURCE_DIR = src
-LIBRARY_DIR = lib
-INCLUDE_DIR = include
+# Main targets
+all $(LIBRARY):  libsrc/all
+
+test: $(LIBRARY) install test/all
 
 
-# -------------------
-# Compilation targets
-# -------------------
-# Default compiler build
-# ----------------------
-all:
-	cd $(SOURCE_DIR); make; cd ..
+# Cleanup targets
+clean: libsrc/clean test/clean
+
+distclean: clean
+	$(REMOVE) -r $(LIB_DIR)
+	$(REMOVE) -r $(INC_DIR)
 
 
-# IBM AIX Compiler
-# ----------------
-ibm_debug:
-	cd $(SOURCE_DIR); make ibm_debug; cd ..
+# Installation targets
+install: install_lib install_inc
 
-ibm:
-	cd $(SOURCE_DIR); make ibm; cd ..
-
-
-# HP-UX Compiler
-# --------------
-hp_debug:
-	cd $(SOURCE_DIR); make hp_debug; cd ..
-
-hp:
-	cd $(SOURCE_DIR); make hp; cd ..
-
-
-# SGI IRIX64 Compiler
-# -------------------
-sgi_debug:
-	cd $(SOURCE_DIR); make sgi_debug; cd ..
-
-sgi:
-	cd $(SOURCE_DIR); make sgi; cd ..
+install_lib: $(LIB_DIR) $(LIBRARY)
+	@echo; echo "Installing $(LIBRARY) in `pwd`/$(LIB_DIR)"; \
+	$(COPY) $(LIBSRC_DIR)/$(LIBRARY) $(LIB_DIR); \
+	echo
+        
+install_inc: $(INC_DIR) $(LIBRARY)
+	@echo; echo "Installing *.$(EXT_MOD) in `pwd`/$(INC_DIR)"; \
+	$(COPY) $(LIBSRC_DIR)/*.$(EXT_MOD) $(INC_DIR); \
+	echo
+        
+# ...Create directories if necessary
+$(LIB_DIR) \
+$(INC_DIR) :
+	- test -d $@ || mkdir $@
 
 
-# SunOS Compiler
-# --------------
-sun_debug:
-	cd $(SOURCE_DIR); make sun_debug; cd ..
 
-sun:
-	cd $(SOURCE_DIR); make sun; cd ..
-
-
-# Linux compilers
-# ---------------
-gfortran_debug:
-	cd $(SOURCE_DIR); make gfortran_debug; cd ..
-
-gfortran:
-	cd $(SOURCE_DIR); make gfortran; cd ..
+# Subtargets
+libsrc/all       \
+libsrc/clean     \
+test/all         \
+test/clean       \
+:
+	@subdir=`echo $@ | sed 's,/.*,,'`; \
+	target=`echo $@ | sed 's,.*/,,'`; \
+	$(MAKE) -s SUBDIR=$$subdir TARGET=$$target subdir_target
 
 
-intel_debug:
-	cd $(SOURCE_DIR); make intel_debug; cd ..
-
-intel:
-	cd $(SOURCE_DIR); make intel; cd ..
-
-
-lahey_debug:
-	cd $(SOURCE_DIR); make lahey_debug; cd ..
-
-lahey:
-	cd $(SOURCE_DIR); make lahey; cd ..
-
-
-pgi_debug:
-	cd $(SOURCE_DIR); make pgi_debug; cd ..
-
-pgi:
-	cd $(SOURCE_DIR); make pgi; cd ..
-
-
-g95_debug:
-	cd $(SOURCE_DIR); make g95_debug; cd ..
-
-g95:
-	cd $(SOURCE_DIR); make g95; cd ..
-
-
-absoft_debug:
-	cd $(SOURCE_DIR); make absoft_debug; cd ..
-
-absoft:
-	cd $(SOURCE_DIR); make absoft; cd ..
-
-
-# ---------------------------------------------------------------------
-# Install the library and include files in their respective directories
-# ---------------------------------------------------------------------
-install: install_lib install_include
-
-install_lib:
-	@if [ ! -d $(LIBRARY_DIR) ]; then \
-	  mkdir $(LIBRARY_DIR); \
-	fi; \
-	cd $(SOURCE_DIR); \
-	if [ -f $(LIBRARY_NAME) ]; then \
-	  $(MOVE) $(LIBRARY_NAME) ../$(LIBRARY_DIR); \
-	fi ; \
-	cd ..
-
-install_include:
-	@if [ ! -d $(INCLUDE_DIR) ]; then \
-	  mkdir $(INCLUDE_DIR); \
-	fi; \
-	cd $(SOURCE_DIR); \
-	for FILE in `ls -1 | egrep "\.(mod|MOD|m|M)$$"`; do \
-	  if [ -f $$FILE ]; then \
-	    $(COPY) -f $$FILE ../$(INCLUDE_DIR); \
-	  fi ; \
-	done ; \
-	cd ..
-
-
-# --------
-# Clean up
-# --------
-# Just the source directory
-clean:
-	@cd $(SOURCE_DIR); make clean; cd ..
-
-
-# Everything
-distclean: clean clean_lib clean_include
-
-clean_lib:
-	$(REMOVE)r $(LIBRARY_DIR)
-
-clean_include:
-	$(REMOVE)r $(INCLUDE_DIR)
-
+subdir_target:
+	@echo ""
+	@cd $(SUBDIR) && \
+	    echo "Making \`$(TARGET)' in directory `pwd`" && \
+	    echo "" && \
+	    $(MAKE) -s $(TARGET) || exit 1
+	@echo ""
+	@echo "Returning to directory `pwd`"
+	@echo ""

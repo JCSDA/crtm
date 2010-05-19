@@ -63,9 +63,9 @@ MODULE CRTM_IRSSEM
   ! -------------------------------
   ! The interpolation routine structure
   TYPE :: Einterp_type
-    PRIVATE
     ! The dimensions
     INTEGER :: n_Angles = 0
+    INTEGER :: n_Pts    = 0
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! The interpolating polynomials
@@ -86,8 +86,8 @@ MODULE CRTM_IRSSEM
     REAL(fp)              :: v_int           ! Wind Speed
     ! The data to be interpolated
     REAL(fp), ALLOCATABLE :: a(:,:)          ! Angle
-    REAL(fp)              :: f(NPTS)         ! Frequency
-    REAL(fp)              :: v(NPTS)         ! Wind Speed
+    REAL(fp), ALLOCATABLE :: f(:)            ! Frequency
+    REAL(fp), ALLOCATABLE :: v(:)            ! Wind Speed
   END TYPE Einterp_type
 
   ! The main internal variable structure
@@ -543,6 +543,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE Einterp_Destroy( ei )
     TYPE(Einterp_type), INTENT(OUT) :: ei
     ei%n_Angles = 0
+    ei%n_Pts    = 0
     ei%Is_Allocated = .FALSE.
   END SUBROUTINE Einterp_Destroy
     
@@ -558,9 +559,12 @@ CONTAINS
               ei%a_outbound(n_Angles), &
               ei%a_int(n_Angles)     , &
               ei%a(n_Pts,n_Angles)   , &
+              ei%f(n_Pts)            , &
+              ei%v(n_Pts)            , &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
     ei%n_Angles = n_Angles
+    ei%n_Pts    = n_Pts
     ei%Is_Allocated = .TRUE.
   END SUBROUTINE Einterp_Create
 

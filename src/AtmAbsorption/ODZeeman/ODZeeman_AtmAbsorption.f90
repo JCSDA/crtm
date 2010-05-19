@@ -136,7 +136,6 @@ CONTAINS
     TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
     ! Local variables
     INTEGER  :: n_User_Layers
-    REAL(fp) :: OD(Predictor%n_Layers)
     REAL(fp) :: OD_Path(0:Predictor%n_Layers)
     REAL(fp) :: User_OD_Path(0:Predictor%n_User_Layers)
     INTEGER  :: ODPS2User_Idx(2, 0:Predictor%n_User_Layers)
@@ -161,7 +160,6 @@ CONTAINS
 
     IF(Predictor%PAFV%Active)THEN  
       ! save forwad variables
-      Predictor%PAFV%OD = OD
       Predictor%PAFV%OD_Path = OD_Path
       ! If interpolation indexes are known
       User_OD_Path(0) = ZERO

@@ -33,6 +33,7 @@ The algorithm is selectable by the user via the transmittance coefficient (\f{Ta
 \section*{Interface Changes}
 %---------------------------
 \addcontentsline{toc}{section}{Interface Changes}
+\label{sec:new_interface_changes}
 
 \begin{description}
 \item[CRTM Initialisation function] The changes to the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} interface were relatively minor but do require calling codes to be modified:
@@ -48,6 +49,8 @@ The algorithm is selectable by the user via the transmittance coefficient (\f{Ta
   \end{itemize}
   All of the current derived type definitions and their associated procedures and interfaces are shown in appendix \ref{sec:structure_and_interface_definition}.
 
+\item[\GeometryInfo{} to \Geometry{} structure name change] Previously, the \GeometryInfo{} structure held both the user input to the CRTM as well as the internally computed geometry data. To separate these two sets of quantities, the name of the geometry information structure that is passed into the CRTM functions was changed from \f{CRTM\_GeometryInfo\_type} to \f{CRTM\_Geometry\_type}. This means that \emph{all} of the user input structures are now strictly \f{INTENT(IN)} arguments.
+
 \item[\Options{} structure specific changes] The additional changes made to the \hyperref[sec:options_structure]{\f{CRTM\_Options\_type}} definition:
   \begin{itemize}
   \item all usage on/off switches have been changed from integers (0/1) to logicals (true/false),
@@ -55,3 +58,5 @@ The algorithm is selectable by the user via the transmittance coefficient (\f{Ta
   \item structure components for \hyperref[sec:ssu_input_structure]{SSU-specific} and \hyperref[sec:zeeman_input_structure]{Zeeman model} input have been added.
   \end{itemize}
 \end{description}
+
+To migrate from the CRTM v1.2.x calling structures to those implemented in v2.0.x, see Appendix \ref{sec:migration_path}, ``\hyperref[sec:migration_path]{Migration Path from REL-1.2 to REL-2.0}.''

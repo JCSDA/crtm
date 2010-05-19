@@ -247,11 +247,10 @@ CONTAINS
     ! ******
     ! TEMPORARY UNTIL LOAD ROUTINE INTERFACES HAVE BEEN MODIFIED
     INTEGER :: iQuiet
+    iQuiet = 0
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet ) THEN
         iQuiet = 1  ! Set
-      ELSE
-        iQuiet = 0  ! Not set
       END IF
     END IF
     ! ******

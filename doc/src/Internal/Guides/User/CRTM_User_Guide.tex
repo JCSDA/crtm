@@ -2,7 +2,7 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{New,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Utility.appendix}
+\includeonly{New,New2.0.1,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
@@ -38,11 +38,13 @@
 \newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
 %Define macro for radiance units
 \newcommand{\radunit}{mW/(m\ensuremath{^2}.sr.\invcm)}
+%Define command to hperlink to CRTM Trac Tickets
+\newcommand{\ticket}[1]{\href{https://svnemc.ncep.noaa.gov/trac/crtm/ticket/#1}{{#1}}}
 
 % Title info
-\title{v2.0 User Guide}
+\title{v2.0.1 User Guide}
 %\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
-\date{March, 2010}
+\date{May, 2010}
 
 
 %-------------------------------------------------------------------------------
@@ -71,6 +73,8 @@
       \hline
       2010-03-12 & P.van Delst & Updated for v2.0.\\
       \hline
+      2010-05-18 & P.van Delst & Updated for v2.0.1.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
@@ -84,6 +88,7 @@
   \listoffigures\newpage
   \listoftables\newpage
   \include{New}
+  \include{New2.0.1}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -111,6 +116,7 @@
 \begin{appendix}
   \include{StructDef.appendix}
   \include{SensorId.appendix}
+  \include{Migration.appendix}
 %  \include{Utility.appendix}
 \end{appendix}
 

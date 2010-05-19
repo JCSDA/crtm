@@ -799,10 +799,11 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
-    ! ...O3 *may* be specfied. A warning is issued if it is not.
+    ! ...O3 *must* be specfied
     IF ( .NOT. Absorber_Id_IsPresent(O3_ID) ) THEN
-      msg = TRIM(ABSORBER_ID_NAME(O3_ID))//' absorber profile must be specified for infrared sensors'
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      msg = TRIM(ABSORBER_ID_NAME(O3_ID))//' absorber profile must be specified'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
     ENDIF
     ! ...The absorber units range
     IF ( ANY(Atm%Absorber_Units < 1) .OR. ANY(Atm%Absorber_Units > N_VALID_ABSORBER_UNITS) ) THEN

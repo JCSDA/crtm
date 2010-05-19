@@ -4,7 +4,8 @@
 #       make.macros
 #
 # PURPOSE:
-#       Unix make utility include file for definition of various make flags
+#       Unix make utility include file for definition of common make
+#       macros used in building CRTM software
 #
 # LANGUAGE:
 #       Unix make
@@ -42,48 +43,48 @@
 #                                                                               #
 #################################################################################
 
-# --------------------
 # Define default shell
-# --------------------
-
 SHELL = /bin/sh
 
 
-# -------------------------------------
 # Define link, copy and delete commands
-# -------------------------------------
-
 LINK = ln -sf
 COPY = cp 
 MOVE = mv -f
 REMOVE = rm -f
 
 
-# -------------------------
 # Define tarballer commands
-# -------------------------
-
 TARBALLER = tar
 TARBALL_CREATE = $(TARBALLER) cvhf
 TARBALL_APPEND = $(TARBALLER) rvhf
 TARBALL_EXTRACT = $(TARBALLER) xvhf
 
 
-# -------------------------
 # Define archiver and flags
-# -------------------------
-
 ARCHIVER = ar
 ARCHIVER_FLAGS = crvs
 
 
-# --------------------------------
 # Define scripts used in makefiles
-# --------------------------------
-
-# Scripts to link and unlink files
+# ...Scripts to link and unlink files
 LINK_SCRIPT = linkfiles.sh
 UNLINK_SCRIPT = unlinkfiles
+
+
+# CRTM library build definitions
+# ...Library name
+PACKAGE = CRTM
+LIBRARY = lib$(PACKAGE).a
+# ...Module file extension
+EXT_MOD = mod
+# ...Directory definitions
+BUILD_DIR = Build
+LIBSRC_DIR = libsrc
+LIB_DIR = lib
+INC_DIR = include
+TEST_DIR = test
+COEFF_DIR = coefficients
 
 
 

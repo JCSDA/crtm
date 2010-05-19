@@ -410,13 +410,14 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+    ! Output informational messages.....
     Noisy = .TRUE.
+    ! ....unless....
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
-    ELSE
-      IF ( PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
-        IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-      END IF
+    END IF
+    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
     END IF
 
     IF ( PRESENT( Process_ID ) ) THEN

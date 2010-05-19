@@ -1,0 +1,201 @@
+\chapter{Migration Path from REL-1.2 to REL-2.0}
+%===============================================
+\label{sec:migration_path}
+
+This section details the user code changes that need to be made to migrate from using CRTM v1.2.x to v2.0.x.
+
+\section{CRTM Initialization}
+%============================
+\label{sec:mp_crtm_init}
+
+The \f{Sensor\_Id} argument to the CRTM initialisation function identifies the sensors for which the CRTM will be initialised. In v1.2.x this argument was optional because generic \f{SpcCoeff} and \f{TauCoeff} files could be used. In v2.0.x, generic \f{SpcCoeff} and \f{TauCoeff} coefficient files are no longer accepted and, thus, a sensor identifier \emph{must} be specified.
+
+In v1.2.x the \f{CRTM\_Init} interface looked like:
+\begin{alltt}
+  errStatus = CRTM_Init( ChannelInfo, Sensor_ID=Sensor_ID )\end{alltt}
+where \f{Sensor\_Id} is optional. The v2.0.x interface is now,
+\begin{alltt}
+  errStatus = CRTM_Init( Sensor_ID, ChannelInfo )\end{alltt}
+where both the \f{Sensor\_Id} and \f{ChannelInfo} arguments are mandatory. See the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init}} section for complete details about the v2.0.x interface.
+
+
+\section{CRTM Structure Life Cycle Changes}
+%==========================================
+\label{sec:mp_crtm_life_cycle}
+
+As mentioned in the ``\hyperref[sec:new_interface_changes]{What's New in v2.0}'' section, the user-accessible structures (i.e. those used to define the inputs to, and return the outputs from, the CRTM) and their associated life cycle procedures (i.e. allocation and deallocation) have been changed. To mitigate the possibility of memory leaks, the definitions of array members of structures have had their \f{POINTER} attribute replaced with \f{ALLOCATABLE}. This was a first step in preparation for use of Fortran2003 Object Oriented features in the CRTM (once Fortran2003 compiler become widely available), where the derived type structure definitions will be reclassified as objects and their procedures will be type-bound. The changes in the affected user-accessible structure procedures are shown below.
+
+In addition to the general interface changes, all of the structure life cycle procedures are now elemental. That is, there is no longer a restriction on the dimensionality of the arguments as long as they are conformable.
+
+\subsection{Atmosphere}
+%----------------------
+\subsubsection{Creation}
+%.......................
+In v1.2.x the Atmosphere structure allocation was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Allocate_Atmosphere( n_Layers   , &
+                                        n_Absorbers, &
+                                        n_Clouds   , &
+                                        n_Aerosols , &
+                                        Atmosphere   )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( Atmosphere , &
+                               n_Layers   , &
+                               n_Absorbers, &
+                               n_Clouds   , &
+                               n_Aerosols   )
+  IF ( .NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( Atmosphere ) ) THEN
+    ...
+  END IF\end{alltt}
+where the error checking is achieved via the \f{CRTM\_Atmosphere\_Associated} function call.
+
+
+\subsubsection{Destruction}
+%..........................
+In v1.2.x the Atmosphere structure destruction was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Destroy_Atmosphere( Atmosphere )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}( Atmosphere )
+  IF ( \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( Atmosphere ) ) THEN
+    ...
+  END IF\end{alltt}
+where, again, the error checking is achieved via the \f{CRTM\_Atmosphere\_Associated} function call.
+
+
+\subsection{Surface}
+%----------------------
+The Surface structure procedure changes only apply if you utilise the \f{SensorData} component.
+
+\subsubsection{Creation}
+%.......................
+In v1.2.x the Surface structure allocation was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Surface_Allocate( n_Channels, &
+                                     Surface     )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Surface_Create_interface]{CRTM_Surface_Create}( Surface,   &
+                            n_Channels )
+  IF ( .NOT. \hyperref[sec:CRTM_Surface_Associated_interface]{CRTM_Surface_Associated}( Surface ) ) THEN
+    ...
+  END IF\end{alltt}
+where the error checking is achieved via the \f{CRTM\_Surface\_Associated} function call.
+
+
+\subsubsection{Destruction}
+%..........................
+In v1.2.x the Surface structure destruction was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Destroy_Surface( Surface )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Surface_Destroy_interface]{CRTM_Surface_Destroy}( Surface )
+  IF ( \hyperref[sec:CRTM_Surface_Associated_interface]{CRTM_Surface_Associated}( Surface ) ) THEN
+    ...
+  END IF\end{alltt}
+where, again, the error checking is achieved via the \f{CRTM\_Surface\_Associated} function call.
+
+
+\subsection{Options}
+%-------------------
+\subsubsection{Creation}
+%.......................
+In v1.2.x the Options structure allocation was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Options_Allocate( n_Channels, &
+                                     Options     )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Options_Create_interface]{CRTM_Options_Create}( Options   , &
+                            n_Channels  )
+  IF ( .NOT. \hyperref[sec:CRTM_Options_Associated_interface]{CRTM_Options_Associated}( Options ) ) THEN
+    ...
+  END IF\end{alltt}
+where the error checking is achieved via the \f{CRTM\_Options\_Associated} function call.
+
+\subsubsection{Destruction}
+%..........................
+In v1.2.x the Options structure destruction was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Destroy_Options( Options )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Options_Destroy_interface]{CRTM_Options_Destroy}( Options )
+  IF ( \hyperref[sec:CRTM_Options_Associated_interface]{CRTM_Options_Associated}( Options ) ) THEN
+    ...
+  END IF\end{alltt}
+where, again, the error checking is achieved via the \f{CRTM\_Options\_Associated} function call.
+
+
+\subsection{RTSolution}
+%-------------------
+\subsubsection{Creation}
+%.......................
+In v1.2.x the RTSolution structure allocation was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_RTSolution_Allocate( n_Layers  , &
+                                        RTSolution  )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_RTSolution_Create_interface]{CRTM_RTSolution_Create}( RTSolution, &
+                               n_Layers    )
+  IF ( .NOT. \hyperref[sec:CRTM_RTSolution_Associated_interface]{CRTM_RTSolution_Associated}( RTSolution ) ) THEN
+    ...
+  END IF\end{alltt}
+where the error checking is achieved via the \f{CRTM\_RTSolution\_Associated} function call.
+
+
+\subsubsection{Destruction}
+%..........................
+In v1.2.x the RTSolution structure destruction was a function returning an error status,
+\begin{alltt}
+  errStatus = CRTM_Destroy_RTSolution( RTSolution )
+  IF ( errStatus /= SUCCESS ) THEN
+    ...
+  END IF\end{alltt}
+The v2.0.x interface was changed to an elemental subroutine,
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_RTSolution_Destroy_interface]{CRTM_RTSolution_Destroy}( RTSolution )
+  IF ( \hyperref[sec:CRTM_RTSolution_Associated_interface]{CRTM_RTSolution_Associated}( RTSolution ) ) THEN
+    ...
+  END IF\end{alltt}
+where, again, the error checking is achieved via the \f{CRTM\_RTSolution\_Associated} function call.
+
+
+\section{CRTM Structure Replacement}
+%==================================
+\label{sec:mp_crtm_struct_replace}
+
+An additional change was the replacement of the \f{CRTM\_GeometryInfo\_type} input structure definition with that of \f{CRTM\_Geometry\_type}. This was done to strictly separate the user defined inputs from the derived values determined inside the main CRTM functions.
+
+In v1.2.x the input structure definition would look something like:
+\begin{alltt}
+  TYPE(CRTM_GeometryInfo_type) :: geo(N_PROFILES)\end{alltt}
+for a predefined number of atmospheric profiles (via \f{N\_PROFILES}). The v2.0.x definition would be,
+\begin{alltt}
+  TYPE(\hyperref[sec:geometry_structure]{CRTM_Geometry_type}) :: geo(N_PROFILES)\end{alltt}
+Users should check that they are assigning values to all the necessary structure components. 

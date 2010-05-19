@@ -432,13 +432,10 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless....
     IF ( PRESENT( Quiet ) ) THEN
-      ! ....the QUIET keyword is set.
-      IF ( Quiet == 1 ) Noisy = .FALSE.
-    ELSE
-      ! ....the Process_ID is not selected for output
-      IF ( PRESENT( Process_ID ) .AND. PRESENT( Output_Process_ID ) ) THEN
-        IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-      END IF
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
     END IF
 
     ! Create a process ID message tag for

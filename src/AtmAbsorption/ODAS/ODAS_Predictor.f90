@@ -191,7 +191,7 @@ CONTAINS
 
     ! Initialise 0'th level amounts
     Pred%A(0,WET_ABSORBER_INDEX) = ZERO
-    Pred%A(0,DRY_ABSORBER_INDEX) = TOA_PRESSURE
+    Pred%A(0,DRY_ABSORBER_INDEX) = MIN(TOA_PRESSURE,Atm%Level_Pressure(0))
     Pred%A(0,OZO_ABSORBER_INDEX) = ZERO
 
     ! Get the atmosphere gaseous absorber indices
