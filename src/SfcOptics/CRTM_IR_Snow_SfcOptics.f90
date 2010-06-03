@@ -225,7 +225,7 @@ CONTAINS
     ! --------------------------------------------------
     SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = Emissivity
     DO j = 1, SfcOptics%n_Angles 
-      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE-Emissivity)*SfcOptics%Weight(j)
+      SfcOptics%Reflectivity(j,1,j,1) = ONE-SfcOptics%Emissivity(j,1)
     END DO
 
   END FUNCTION Compute_IR_Snow_SfcOptics

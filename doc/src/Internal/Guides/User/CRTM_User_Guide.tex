@@ -2,7 +2,7 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{New,New2.0.1,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
+\includeonly{New,New2.0.1,New2.0.2,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
@@ -41,10 +41,13 @@
 %Define command to hperlink to CRTM Trac Tickets
 \newcommand{\ticket}[1]{\href{https://svnemc.ncep.noaa.gov/trac/crtm/ticket/#1}{{#1}}}
 
+\SVN $Date$
+\SVN $Revision$
+
 % Title info
-\title{v2.0.1 User Guide}
+\title{v2.0 User Guide}
 %\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
-\date{May, 2010}
+\date{\SVNDate ; rev\SVNRevision}
 
 
 %-------------------------------------------------------------------------------
@@ -75,6 +78,8 @@
       \hline
       2010-05-18 & P.van Delst & Updated for v2.0.1.\\
       \hline
+      2010-06-01 & P.van Delst & Updated for v2.0.2.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
@@ -89,6 +94,7 @@
   \listoftables\newpage
   \include{New}
   \include{New2.0.1}
+  \include{New2.0.2}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 

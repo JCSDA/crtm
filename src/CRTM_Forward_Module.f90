@@ -551,13 +551,13 @@ CONTAINS
           
           IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .TRUE.
-            RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_AZIMUTH_FOURIER )
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
               AtmOptics%n_Legendre_Terms = 4
               RTSolution(ln,m)%Scattering_FLAG = .TRUE.
               RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
             END IF
+            RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_AZIMUTH_FOURIER )
             ! Get molecular scattering and extinction
             Wavenumber = SC(SensorIndex)%Wavenumber(ChannelIndex)
             Error_Status = CRTM_Compute_MoleculeScatter( &

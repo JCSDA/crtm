@@ -1,4 +1,4 @@
-JCSDA CRTM beta v2.0.1 Build Instructions
+JCSDA CRTM beta v2.0.2 Build Instructions
 =========================================
 
 $Revision$
@@ -34,7 +34,10 @@ $Revision$
         |  |-Example3_Zeeman
         |  |  |-coefficients
         |  |  `-results
-        |  `-Example4_ODPS
+        |  |-Example4_ODPS
+        |  |  |-coefficients
+        |  |  `-results
+        |  `-Example5_ClearSky
         |     |-coefficients
         |     `-results
         `-k_matrix  ............. k-matrix model tests/examples

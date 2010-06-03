@@ -1,0 +1,30 @@
+\chapter*{What's New in v2.0.2}
+%==============================
+\addcontentsline{toc}{chapter}{What's New in v2.0.2}
+
+The v2.0.2 update to the CRTM was done to
+\begin{itemize}
+  \item Fix two critical defects: one introduced in v2.0; another in the v2.0.1 update.
+  \item Add additional tests.
+\end{itemize}
+
+\section*{Bug Fixes}
+%-------------------
+\addcontentsline{toc}{section}{Bug Fixes}
+
+\begin{description}
+
+\item[Fix for specular reflection of IR sensors over water] In v2.0, the reflectance behaviour for IR sensors over water was changed from Lambertian to specular. The problem with the update is due to the design of how sub-FOV surface differences are handled in the CRTM. Currently there is no way to handle a mixed land/water FOV where land reflectivity is assumed Lambertian and water reflectivity specular. The reflectivity behaviour ended up being that associated with the surface type having the largest FOV fraction. The temporary fix applied is that \emph{all} IR sensor reflectivities are now treated as specular. See ticket \ticket{164}.
+
+\item[Fix for invalid maximum number of azimuth angles for visible sensors] To speed up visible sensor calculations in v2.0.1, the maximum number of azimuth angles used was switched from a fixed maximum to a dynamic one based on the number of Legendre terms required to properly simulate molecular scattering. However, the maximum number of azimuth angle assignment was being performed prior to the minimum acceptable value being set. This lead to an invalid value being specified for the number of azimuth angles in some cases. See ticket \ticket{165}.
+
+\end{description}
+
+
+
+\section*{Addition of Test/Example Programs}
+%-------------------------------------------
+\addcontentsline{toc}{section}{Addition of Test/Example Programs}
+
+An additional forward model test, \f{Example5\_ClearSky}, was introduced to test the bug fixes mentioned above. All test comparison output files have been updated accordingly.
+

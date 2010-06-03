@@ -224,9 +224,9 @@ CONTAINS
                         
     END IF
 
-    ! Lambertian surface reflectance
+    ! Surface reflectance (currently assumed to be specular ALWAYS)
     DO j = 1, nZ
-      SfcOptics%Reflectivity(1:nZ,1,j,1) = (ONE-SfcOptics%Emissivity(iZ,1))*SfcOptics%Weight(j)
+      SfcOptics%Reflectivity(j,1,j,1) = ONE-SfcOptics%Emissivity(j,1)
     END DO
 
   END FUNCTION Compute_IR_Water_SfcOptics
@@ -402,9 +402,9 @@ CONTAINS
       
     END IF
     
-    ! Lambertian surface reflectance
+    ! Surface reflectance (currently assumed to be specular ALWAYS)
     DO j = 1, nZ
-      SfcOptics_TL%Reflectivity(1:nZ,1,j,1) = (-SfcOptics_TL%Emissivity(iZ,1))*SfcOptics%Weight(j)
+      SfcOptics_TL%Reflectivity(j,1,j,1) = -SfcOptics_TL%Emissivity(j,1)
     END DO
 
   END FUNCTION Compute_IR_Water_SfcOptics_TL
@@ -551,20 +551,17 @@ CONTAINS
     nZ = SfcOptics%n_Angles
     iZ = SfcOptics%Index_Sat_Ang
 
-    ! Lambertian surface reflectance
+    ! Surface reflectance (currently assumed to be specular ALWAYS)
     DO j = nZ, 1, -1
-      SfcOptics_AD%Emissivity(iZ,1) = SfcOptics_AD%Emissivity(iZ,1) - &
-        (SUM(SfcOptics_AD%Reflectivity(1:nZ,1,j,1))*SfcOptics%Weight(j))
-      SfcOptics_AD%Reflectivity(1:nZ,1,j,1) = ZERO
+      SfcOptics_AD%Emissivity(j,1) = SfcOptics_AD%Emissivity(j,1) - &
+                                     SfcOptics_AD%Reflectivity(j,1,j,1)
+      SfcOptics_AD%Reflectivity(j,1,j,1) = ZERO
     END DO
 
     ! Solar direct BRDF
     IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) )THEN
     
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
-!      SfcOptics_AD%Emissivity(iZ,1) = SfcOptics_AD%Emissivity(iZ,1) - &
-!        SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
-!      SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO
 
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian -   &
                                   GeometryInfo%Source_Azimuth_Radian   
