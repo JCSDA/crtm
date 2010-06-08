@@ -87,9 +87,12 @@ PRO OSRF::Plot, $
     fdelta = MAX(f)-MIN(f)
     df = 0.1*fdelta
     xrange = [MIN(f)-df,MAX(f)+df]
+    ; Generate the title
+    title = 'Ch.'+STRTRIM(Channel,2)
+    IF ( n_Bands GT 1 ) THEN title = title +', band #'+STRTRIM(i+1,2)
     ; Plot the band response
     PLOT, f, r, $
-          TITLE='Ch.'+STRTRIM(Channel,2)+', band #'+STRTRIM(i+1,2), $
+          TITLE=title, $
           XTITLE='Frequency', $
           YTITLE=ytitle, $
           XMARGIN=[2,2], $
