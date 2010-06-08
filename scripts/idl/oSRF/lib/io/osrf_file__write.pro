@@ -66,12 +66,10 @@ PRO OSRF_File::Write, $
     IF ( n EQ 0 ) THEN BEGIN
       osrf[n]->OSRF::Get_Property, $
         Debug   = Debug  , $
-        Version          = Version         , $
         Sensor_Id        = Sensor_Id       , $
         WMO_Satellite_Id = WMO_Satellite_Id, $
         WMO_Sensor_Id    = WMO_Sensor_Id   , $
         Sensor_Type      = Sensor_Type     
-      self.Version          = Version         
       self.Sensor_Id        = Sensor_Id       
       self.WMO_Satellite_Id = WMO_Satellite_Id
       self.WMO_Sensor_Id    = WMO_Sensor_Id   
