@@ -88,10 +88,12 @@ PRO OSRF::Assign, $
   new.Sensor_Type          = self.Sensor_Type   
   new.Channel              = self.Channel
   new.Integral             = self.Integral
-  new.Planck_Coeffs        = self.Planck_Coeffs
-  new.Polychromatic_Coeffs = self.POlychromatic_Coeffs
   new.Flags                = self.Flags
   new.f0                   = self.f0
+  new.Planck_Coeffs        = self.Planck_Coeffs
+  new.Polychromatic_Coeffs = self.Polychromatic_Coeffs
+  new.Convolved_R          = self.Convolved_R
+  new.Convolved_T          = self.Convolved_T
   *new.f1                  = *self.f1      
   *new.f2                  = *self.f2      
   *new.n_Points            = *self.n_Points
@@ -100,9 +102,6 @@ PRO OSRF::Assign, $
     *(*new.Response)[i]  = *(*self.Response)[i] 
     *(*new.Radiance)[i]  = *(*self.Radiance)[i] 
   ENDFOR
-  new.R = self.R
-  new.T = self.T
-  *new.delta_f = *self.delta_f
   *new.xsysvar = *self.xsysvar
   *new.ysysvar = *self.ysysvar
   *new.psysvar = *self.psysvar

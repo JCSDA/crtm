@@ -94,8 +94,6 @@ PRO OSRF::Allocate, $
     (*self.Response)[i]  = PTR_NEW(DBLARR(n_Points[i]))
     (*self.Radiance)[i]  = PTR_NEW(DBLARR(n_Points[i]))
   ENDFOR
-  ; ...The frequency shift array
-  self.delta_f = PTR_NEW(DBLARR(n_Bands))
   ; ...The plotting structures
   self.xsysvar = PTR_NEW(REPLICATE(!X,n_Bands))
   self.ysysvar = PTR_NEW(REPLICATE(!Y,n_Bands))

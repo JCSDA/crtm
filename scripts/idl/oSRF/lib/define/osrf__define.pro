@@ -32,8 +32,6 @@ PRO OSRF__Define
            ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
            Radiance            : PTR_NEW(),                      $  ; Array of radiances (nP x nB)
-           ; ...Variables relating to frequency shifting
-           delta_f             : PTR_NEW(),                      $  ; Frequency shift for each band (if applied)
            ; ...Variables for plotting
            xsysvar             : PTR_NEW(),                      $  ; X-axis system variable
            ysysvar             : PTR_NEW(),                      $  ; Y-axis system variable

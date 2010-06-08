@@ -102,7 +102,6 @@ FUNCTION OSRF::Associated, $
          PTR_VALID( self.Frequency ) AND $
          PTR_VALID( self.Response  ) AND $
          PTR_VALID( self.Radiance  ) AND $
-         PTR_VALID( self.delta_f   ) AND $
          PTR_VALID( self.xsysvar   ) AND $
          PTR_VALID( self.ysysvar   ) AND $
          PTR_VALID( self.psysvar   )     ) THEN Association_Status = TRUE
@@ -113,7 +112,6 @@ FUNCTION OSRF::Associated, $
          PTR_VALID( self.Frequency ) OR $
          PTR_VALID( self.Response  ) OR $
          PTR_VALID( self.Radiance  ) OR $
-         PTR_VALID( self.delta_f   ) OR $
          PTR_VALID( self.xsysvar   ) OR $
          PTR_VALID( self.ysysvar   ) OR $
          PTR_VALID( self.psysvar   )    ) THEN Association_Status = TRUE

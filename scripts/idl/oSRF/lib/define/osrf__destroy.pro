@@ -109,7 +109,6 @@ PRO OSRF::Destroy, $
     self.Frequency, $
     self.Response , $
     self.Radiance , $
-    self.delta_f  , $
     self.psysvar  , $
     self.xsysvar  , $
     self.ysysvar     
@@ -119,7 +118,6 @@ PRO OSRF::Destroy, $
   self.Frequency = PTR_NEW()
   self.Response  = PTR_NEW()
   self.Radiance  = PTR_NEW()
-  self.delta_f   = PTR_NEW()
   self.psysvar   = PTR_NEW()
   self.xsysvar   = PTR_NEW()
   self.ysysvar   = PTR_NEW()
