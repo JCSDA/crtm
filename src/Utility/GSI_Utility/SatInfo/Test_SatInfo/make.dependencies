@@ -1,6 +1,0 @@
-File_Utility.o : File_Utility.f90 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-SatInfo_Define.o : SatInfo_Define.f90 Type_Kinds.o 
-SatInfo_IO.o : SatInfo_IO.f90 SatInfo_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
-Test_SatInfo.o : Test_SatInfo.f90 SatInfo_IO.o Message_Handler.o File_Utility.o 
-Type_Kinds.o : Type_Kinds.f90 
