@@ -47,10 +47,10 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
 create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
 remove_links:
-	@unlinkfiles $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 realclean: remove_links clean
 

@@ -27,7 +27,7 @@ PROGRAM Create_SpcCoeff_from_SRF
   USE Planck_Functions         , ONLY: Planck_Radiance, Planck_Temperature
   USE Interpolate_Utility      , ONLY: Spline_Initialize, &
                                        Spline_Interpolate
-  USE Integrate_Utility        , ONLY: Simpsons_Integral
+  USE Integrate_Utility        , ONLY: Integral
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz, &
                                        GHz_to_inverse_cm
   USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
@@ -547,10 +547,9 @@ PROGRAM Create_SpcCoeff_from_SRF
         ELSE
         
           ! Convolve the radiance spectrum with the SRF by integration
-          Error_Status = Simpsons_Integral( SRF%Frequency,         &
-                                            Radiance*SRF%Response, &
-                                            Convolved_Radiance,    &
-                                            Order=CUBIC_ORDER      )
+          Error_Status = Integral( SRF%Frequency,         &
+                                   Radiance*SRF%Response, &
+                                   Convolved_Radiance     )
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error convolving radiance at T = ",f5.1," K.")' ) &
                            x_Temperature(i)
@@ -658,10 +657,9 @@ PROGRAM Create_SpcCoeff_from_SRF
         END IF
              
         ! via integration
-        Error_Status = Simpsons_Integral( SRF%Frequency, &
-                                          SRF%Response * Irradiance, &
-                                          SpcCoeff%Solar_Irradiance(l), &
-                                          Order=CUBIC_ORDER )
+        Error_Status = Integral( SRF%Frequency              , &
+                                 SRF%Response * Irradiance  , &
+                                 SpcCoeff%Solar_Irradiance(l) )
         IF ( Error_Status /= SUCCESS ) THEN
           CALL Display_Message( PROGRAM_NAME, &
                                 'Error occurred convoling solar irradiance with SRF.', &

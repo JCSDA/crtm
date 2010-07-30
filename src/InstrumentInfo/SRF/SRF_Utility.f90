@@ -21,7 +21,7 @@ MODULE SRF_Utility
   USE Type_Kinds,            ONLY: fp
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Interpolate_Utility,   ONLY: Polynomial_Interpolate
-  USE Integrate_Utility,     ONLY: Simpsons_Integral
+  USE Integrate_Utility,     ONLY: Integral
   USE SRF_Define,            ONLY: SRF_type, &
                                    Associated_SRF, &
                                    Destroy_SRF, &
@@ -518,10 +518,9 @@ CONTAINS
         cspc = SUM(uSRF%Response(i1:i2)*Spectrum(j1:j2))*dF
       ELSE
         ! Integrate it
-        Error_Status = Simpsons_Integral( Frequency(j1:j2), &
-                                          uSRF%Response(i1:i2)*Spectrum(j1:j2), &
-                                          cspc, &
-                                          Order=Order )
+        Error_Status = Integral( Frequency(j1:j2), &
+                                 uSRF%Response(i1:i2)*Spectrum(j1:j2), &
+                                 cspc )
         IF ( Error_Status /= SUCCESS ) THEN
           WRITE( msg,'("Error integrating SRF*SPC for band ",i0)' ) m
           CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
@@ -699,10 +698,9 @@ CONTAINS
       i2 = SRF%npts_Band(m) + n
       
       ! Calculate Weight for the band      
-      Error_Status = Simpsons_Integral( SRF%Frequency(i1:i2),                      &         
-                                        SRF%Response(i1:i2)*SRF%Frequency(i1:i2),  &         
-                                        Band_Weight,                               &
-                                        Order = CUBIC_ORDER                        )         
+      Error_Status = Integral( SRF%Frequency(i1:i2),                      &         
+                               SRF%Response(i1:i2)*SRF%Frequency(i1:i2),  &         
+                               Band_Weight                                )         
       IF ( Error_Status /= SUCCESS ) THEN                                                    
         WRITE( msg,'("Error occurred integrating channel ",i0," SRF")' ) SRF%Channel         
         CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )  
