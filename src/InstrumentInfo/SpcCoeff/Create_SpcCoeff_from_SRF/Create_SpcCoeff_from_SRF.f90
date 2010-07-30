@@ -136,7 +136,7 @@ PROGRAM Create_SpcCoeff_from_SRF
   INTEGER :: n_FOVs
   INTEGER :: SpcCoeff_File_Version
   CHARACTER( 256) :: Title
-  CHARACTER(2000) :: SRF_History, Solar_History
+  CHARACTER(2000) :: SRF_History, Solar_History, Solar_Comment
   CHARACTER(2000) :: AntCorr_Comment, AntCorr_History
   CHARACTER(2000) :: Comment
   REAL(fp) :: dFrequency
@@ -171,6 +171,11 @@ PROGRAM Create_SpcCoeff_from_SRF
 
   ! Get user inputs
   ! ---------------
+  ! The solar filename
+  WRITE( *,FMT='(/5x,"Enter a Solar filename: ")',ADVANCE='NO' )
+  READ( *,FMT='(a)' ) Solar_Filename
+  Solar_Filename = ADJUSTL(Solar_Filename)
+  
   ! The SensorInfo filename and data
   WRITE( *,FMT='(/5x,"Enter a SensorInfo filename: ")',ADVANCE='NO' )
   READ( *,FMT='(a)' ) SensorInfo_Filename
@@ -209,7 +214,6 @@ PROGRAM Create_SpcCoeff_from_SRF
 
   ! Read the netCDF Solar file
   ! --------------------------
-  Solar_Filename = 'solar.nc'
   WRITE( *,'(/5x,"Reading the solar irradiance data file ",a,"...")' ) &
             TRIM(Solar_Filename)
 
@@ -222,8 +226,15 @@ PROGRAM Create_SpcCoeff_from_SRF
     STOP
   END IF
 
+  
+  Solar_Comment = ' '
+  Solar_History = ' '
+
   ! Read the file
-  Error_Status = Read_Solar_netCDF( Solar_Filename, Solar )
+  Error_Status = Read_Solar_netCDF( Solar_Filename         , &
+                                    Solar                  , &
+                                    Comment = Solar_Comment, &
+                                    History = Solar_History  )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error reading netCDF Solar file '//TRIM(Solar_Filename), &
@@ -727,7 +738,9 @@ PROGRAM Create_SpcCoeff_from_SRF
                                           History = PROGRAM_RCS_ID//&
                                                     '; '//TRIM(SRF_History)//&
                                                     '; '//TRIM(Solar_History), &
-                                          Comment = TRIM(Comment) )
+                                          Comment = TRIM(Comment)//&
+                                                    ' Solar Information'//&
+                                                    ': '//TRIM(Solar_Comment) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error writing netCDF SpcCoeff data file '//&
