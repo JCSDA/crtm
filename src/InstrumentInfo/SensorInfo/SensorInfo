@@ -1898,29 +1898,16 @@
    16    1      1.000000E+02
    17    1      1.000000E+02
    18    1      1.000000E+02  
-  SOUNDER      GOES-15      v.sndr_g15           3         626   259     2    -1
+  SOUNDER      GOES-15      v.sndr_g15           3         626   259     1    -1
    19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD1_g15         3         626   259     2    -1
+  SOUNDER      GOES-15      v.sndrD1_g15         3         626   259     1    -1
    19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD2_g15         3         626   259     2    -1
+  SOUNDER      GOES-15      v.sndrD2_g15         3         626   259     1    -1
    19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD3_g15         3         626   259     2    -1
+  SOUNDER      GOES-15      v.sndrD3_g15         3         626   259     1    -1
    19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD4_g15         3         626   259     2    -1
+  SOUNDER      GOES-15      v.sndrD4_g15         3         626   259     1    -1
    19    1      1.000000E+02
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD5_g15         3         626   259     1    -1
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD6_g15         3         626   259     1    -1
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD7_g15         3         626   259     1    -1
-   20    1      1.000000E+02
-  SOUNDER      GOES-15      v.sndrD8_g15         3         626   259     1    -1
-   20    1      1.000000E+02
   IMAGER       GOES-15      imgr_g15             2         615   259     4    -1
     2    1      1.000000E+02
     3    1      1.000000E+02
