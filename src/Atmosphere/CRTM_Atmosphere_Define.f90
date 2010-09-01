@@ -399,10 +399,10 @@ CONTAINS
     Status = Atm%Is_Allocated
     ! ...Clouds
     IF ( Atm%n_Clouds > 0 .AND. ALLOCATED(Atm%Cloud) ) &
-      Status = Status .OR. ALL(CRTM_Cloud_Associated(Atm%Cloud))
+      Status = Status .AND. ALL(CRTM_Cloud_Associated(Atm%Cloud))
     ! ...Aerosols
     IF ( Atm%n_Aerosols > 0 .AND. ALLOCATED(Atm%Aerosol) ) &
-      Status = Status .OR. ALL(CRTM_Aerosol_Associated(Atm%Aerosol))
+      Status = Status .AND. ALL(CRTM_Aerosol_Associated(Atm%Aerosol))
     
   END FUNCTION CRTM_Atmosphere_Associated
 
