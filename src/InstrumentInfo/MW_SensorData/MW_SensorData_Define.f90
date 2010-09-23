@@ -1243,7 +1243,7 @@ MODULE MW_SensorData_Define
   ! TMI central frequencies in GHz.
   REAL(fp), PARAMETER :: TMI_F0( N_TMI_CHANNELS ) = &
     (/  10.65_fp, 10.65_fp, 19.35_fp, 19.35_fp, 21.3_fp, &
-        37.0_fp , 37.0_fp , 85.0_fp , 85.0_fp /)
+        37.0_fp , 37.0_fp , 85.5_fp , 85.5_fp /)
 
   ! TMI I/F band limits in GHz.
   REAL(fp), PARAMETER :: TMI_IF_BAND( 2, MAX_N_SIDEBANDS, N_TMI_CHANNELS ) = &
@@ -1263,7 +1263,7 @@ MODULE MW_SensorData_Define
   ! -------
   ! GMI central frequencies in GHz.
   REAL(fp), PARAMETER :: GMI_F0( N_GMI_CHANNELS ) = &
-    (/  10.65_fp, 10.65_fp, 18.7_fp, 19.7_fp, 23.8_fp, &
+    (/  10.65_fp, 10.65_fp, 18.7_fp, 18.7_fp, 23.8_fp, &
         36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp, &
        165.5_fp ,165.5_fp , &
        183.31_fp,183.31_fp/)
