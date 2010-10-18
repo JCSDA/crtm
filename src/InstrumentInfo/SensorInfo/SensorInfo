@@ -6472,6 +6472,12 @@
    14    1      4.500000E-01                                                                         
    15    1      4.500000E-01                                                                         
    16    1      4.500000E-01                                                                         
+  VIIRS        NPOESS-NPP   viirs-m_npp          2        2047  1023     5    10
+   12    1      1.000000E+02
+   13    1      1.000000E+02
+   14    1      1.000000E+02
+   15    1      1.000000E+02
+   16    1      1.000000E+02
   VIIRS        NPOESS-NPP   viirs-mD1_npp        2        2047  1023     5    10
    12    1      1.000000E+02
    13    1      1.000000E+02
@@ -6568,6 +6574,18 @@
    14    1      1.000000E+02
    15    1      1.000000E+02
    16    1      1.000000E+02
+  VIIRS        NPOESS-NPP   v.viirs-m_npp        3        2047  1023    11    10
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
+    4    1      1.000000E+02
+    5    1      1.000000E+02
+    6    1      1.000000E+02
+    7    1      1.000000E+02
+    8    1      1.000000E+02
+    9    1      1.000000E+02
+   10    1      1.000000E+02
+   11    1      1.000000E+02
   VIIRS        NPOESS-NPP   v.viirs-mD1_npp      3        2047  1023    11    10
     1    1      1.000000E+02
     2    1      1.000000E+02
@@ -6760,6 +6778,9 @@
     9    1      1.000000E+02
    10    1      1.000000E+02
    11    1      1.000000E+02
+  VIIRS        NPOESS-NPP   viirs-i_npp          2        2047  1023     2    10
+    4    1      1.000000E+02
+    5    1      1.000000E+02
   VIIRS        NPOESS-NPP   viirs-iD1_npp        2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
@@ -6787,75 +6808,79 @@
   VIIRS        NPOESS-NPP   viirs-iD9_npp        2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD10_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD10_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD11_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD11_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD12_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD12_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD13_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD13_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD14_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD14_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD15_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD15_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD16_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD16_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD17_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD17_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD18_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD18_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD19_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD19_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD20_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD20_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD21_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD21_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD22_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD22_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD23_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD23_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD24_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD24_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD25_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD25_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD26_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD26_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD27_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD27_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD28_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD28_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD29_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD29_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD30_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD30_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD31_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD31_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
-  VIIRS        NPOESS-NPP   viirs-iD32_npp       3        2047  1023     2    10
+  VIIRS        NPOESS-NPP   viirs-iD32_npp       2        2047  1023     2    10
     4    1      1.000000E+02
     5    1      1.000000E+02
+  VIIRS        NPOESS-NPP   v.viirs-i_npp        3        2047  1023     3    10
+    1    1      1.000000E+02
+    2    1      1.000000E+02
+    3    1      1.000000E+02
   VIIRS        NPOESS-NPP   v.viirs-iD1_npp      3        2047  1023     3    10
     1    1      1.000000E+02
     2    1      1.000000E+02
