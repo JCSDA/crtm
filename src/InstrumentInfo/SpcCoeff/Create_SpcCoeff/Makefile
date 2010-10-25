@@ -11,7 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Create_SpcCoeff_from_SRF
+EXE_FILE = Create_SpcCoeff
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -45,9 +45,9 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
-            SRF_Define.f90 \
-            SRF_netCDF_IO.f90 \
-            SRF_Utility.f90 \
+            PtrArr_Define.f90 \
+            oSRF_Define.f90 \
+            oSRF_File_Define.f90 \
             Solar_Define.f90 \
             Solar_netCDF_IO.f90  
             

@@ -1,8 +1,7 @@
 !
-! Create_SpcCoeff_from_SRF
+! Create_SpcCoeff
 !
-! Program to create spectral coefficient (SpcCoeff) data files
-! from the sensor SRF data files.
+! Program to create spectral coefficient (SpcCoeff) files
 !
 !
 ! CREATION HISTORY:
@@ -11,8 +10,11 @@
 !
 !       Revised by:     David Groff 8-June-2009
 !                       david.groff@noaa.gov
+!
+!       Revised by:     David Groff 25-October-2010
+!                       david.groff@noaa.gov
 
-PROGRAM Create_SpcCoeff_from_SRF
+PROGRAM Create_SpcCoeff
 
   ! ------------------
   ! Environment set up
@@ -24,10 +26,9 @@ PROGRAM Create_SpcCoeff_from_SRF
                                        Display_Message, Program_Message
   USE CRTM_Parameters          , ONLY: ZERO
   USE Fundamental_Constants    , ONLY: C_1, C_2
-  USE Planck_Functions         , ONLY: Planck_Radiance, Planck_Temperature
+  USE Planck_Functions         , ONLY: Planck_Radiance
   USE Interpolate_Utility      , ONLY: Spline_Initialize, &
                                        Spline_Interpolate
-  USE Integrate_Utility        , ONLY: Integral
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz, &
                                        GHz_to_inverse_cm
   USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
@@ -48,11 +49,6 @@ PROGRAM Create_SpcCoeff_from_SRF
                                        GetFrom_SensorInfo_List, &
                                        Destroy_SensorInfo_List
   USE SensorInfo_IO            , ONLY: Read_SensorInfo
-  USE SRF_Define               , ONLY: SRF_type, &
-                                       Destroy_SRF, &
-                                       Integrate_SRF
-  USE SRF_netCDF_IO            , ONLY: Inquire_SRF_netCDF, &
-                                       Read_SRF_netCDF
   USE Solar_Define             , ONLY: Solar_type, &
                                        Destroy_Solar
   USE Solar_netCDF_IO          , ONLY: Inquire_Solar_netCDF, &
@@ -69,7 +65,17 @@ PROGRAM Create_SpcCoeff_from_SRF
                                        Allocate_SpcCoeff, &
                                        Destroy_SpcCoeff
   USE SpcCoeff_netCDF_IO       , ONLY: Write_SpcCoeff_netCDF
-  USE SRF_Utility              , ONLY: Calc_SRF_First_Mom
+  USE oSRF_File_Define         , ONLY: oSRF_File_type, &
+                                       oSRF_File_GetValue, &
+                                       oSRF_File_Inspect, &
+                                       oSRF_File_Read, &
+                                       oSRF_File_Destroy
+  USE oSRF_Define              , ONLY: oSRF_type, &
+                                       oSRF_Destroy, &
+                                       oSRF_Integrate, &
+                                       oSRF_Central_Frequency, &
+                                       oSRF_Polychromatic_Coefficients
+  USE Integrate_Utility        , ONLY: Integral
 
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -77,7 +83,7 @@ PROGRAM Create_SpcCoeff_from_SRF
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SpcCoeff_from_SRF'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SpcCoeff'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
 
@@ -111,16 +117,12 @@ PROGRAM Create_SpcCoeff_from_SRF
   ! Cosmic background temperature
   REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
 
-  ! Interpolation order
-  INTEGER, PARAMETER :: LINEAR_ORDER = 1
-  INTEGER, PARAMETER ::  CUBIC_ORDER = 3
-
   ! ---------
   ! Variables
   ! ---------
   CHARACTER(256) :: Message
   CHARACTER(256) :: SensorInfo_Filename
-  CHARACTER(256) :: SRF_Filename
+  CHARACTER(256) :: oSRF_Filename
   CHARACTER(256) :: Solar_Filename
   CHARACTER(256) :: SpcCoeff_Filename
   CHARACTER(256) :: ASCII_Filename
@@ -132,31 +134,25 @@ PROGRAM Create_SpcCoeff_from_SRF
   INTEGER :: IO_Status
   INTEGER :: l
   INTEGER :: ls1, ls2
-  INTEGER :: i, n
+  INTEGER :: i, n, b
   INTEGER :: n_FOVs
   INTEGER :: SpcCoeff_File_Version
   CHARACTER( 256) :: Title
-  CHARACTER(2000) :: SRF_History, Solar_History, Solar_Comment
+  CHARACTER(2000) :: oSRF_History, Solar_History, Solar_Comment
   CHARACTER(2000) :: AntCorr_Comment, AntCorr_History
   CHARACTER(2000) :: Comment
   REAL(fp) :: dFrequency
-  REAL(fp) :: Integrated_MW_Response
-  REAL(fp) :: SRF_Integral
-  REAL(fp) :: SRF_First_Moment
   REAL(fp) :: x_Temperature(N_TEMPERATURES)
   REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES)
   REAL(fp) :: yFit_Effective_Temperature(N_TEMPERATURES)
   REAL(fp) :: var_Effective_Temperature
   REAL(fp), ALLOCATABLE :: Solar_Derivative(:)
   REAL(fp), ALLOCATABLE, TARGET :: Spectrum(:)
-  REAL(fp), POINTER             :: Radiance(:)   => NULL()
   REAL(fp), POINTER             :: Irradiance(:) => NULL()
-  REAL(fp) :: Convolved_Radiance
-  REAL(fp) :: v1, v2
   INTEGER :: n_Sensors
   TYPE(SensorInfo_type)      :: SensorInfo
   TYPE(SensorInfo_List_type) :: SensorInfo_List
-  TYPE(SRF_type)             :: SRF
+  TYPE(oSRF_File_type)       :: oSRF_File
   TYPE(Solar_type)           :: Solar
   TYPE(SpcCoeff_type)        :: SpcCoeff
   TYPE(MW_SensorData_type)   :: MW_SensorData
@@ -166,7 +162,7 @@ PROGRAM Create_SpcCoeff_from_SRF
   ! --------------
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to create the SpcCoeff '//&
-                       'files from the sensor SRF data files.', &
+                       'files from the sensor oSRF data files.', &
                        '$Revision$' )
 
   ! Get user inputs
@@ -291,8 +287,8 @@ PROGRAM Create_SpcCoeff_from_SRF
     
     ! Only operate on sensors with SRF file present
     ! ---------------------------------------------
-    SRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.srf.nc'
-    IF ( .NOT. File_Exists( SRF_Filename ) ) CYCLE Sensor_Loop
+    oSRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.osrf.nc'
+    IF ( .NOT. File_Exists( oSRF_Filename ) ) CYCLE Sensor_Loop
     
     ! Output an info message
     ! ----------------------
@@ -395,19 +391,31 @@ PROGRAM Create_SpcCoeff_from_SRF
       END IF
     END IF
       
-    ! Inquire the SRF file for its GAtts
-    ! ----------------------------------
-    Error_Status = Inquire_SRF_netCDF( SRF_Filename         , & ! Input
-                                       Title   = Title      , & ! Optional output
-                                       History = SRF_History, & ! Optional output
-                                       Comment = Comment      ) ! Optional output
+    ! Read the current oSRF data
+    ! --------------------------
+    Error_Status = oSRF_File_Read( oSRF_File   , &  ! Output
+                                   oSRF_Filename )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error inquiring the netCDF SRF file '//TRIM(SRF_Filename), &
+                            'Error occured when reading the oSRF_File', &
+                            FAILURE )
+      STOP
+    END IF
+    
+    ! Get the title histor and comment from oSRF file
+    ! -----------------------------------------------
+    Error_Status = oSRF_File_GetValue( oSRF_File             , & ! Input
+                                       Title   = Title       , & ! Optional output
+                                       History = oSRF_History, & ! Optional output
+                                       Comment = Comment       ) ! Optional output
+    IF ( Error_Status /= SUCCESS ) THEN
+      CALL Display_Message( PROGRAM_NAME, &
+                            'Error getting title, history and/or '//&
+                            'comment from '//TRIM(oSRF_Filename), &
                             Error_Status )
       STOP
     END IF
-          
+              
     ! Assign fields that are independent of sensor-type 
     ! -------------------------------------------------
     SpcCoeff%Version          = SpcCoeff_File_Version
@@ -455,7 +463,7 @@ PROGRAM Create_SpcCoeff_from_SRF
                             FAILURE )
       STOP
     END IF
-    WRITE( ASCII_FileID,'(5x,"SRF data from file: ",a)' ) TRIM(SRF_Filename)
+    WRITE( ASCII_FileID,'(5x,"SRF data from file: ",a)' ) TRIM(oSRF_Filename)
 
     ! Begin loop over channels
     ! ------------------------
@@ -465,44 +473,20 @@ PROGRAM Create_SpcCoeff_from_SRF
 
     Channel_Loop: DO l = 1, SpcCoeff%n_Channels
         
-      WRITE( *,FMT='(2x,i4)',ADVANCE='NO') SpcCoeff%Sensor_Channel(l)
-
-      ! Read the current SRF data
-      ! -------------------------
-      Error_Status = Read_SRF_netCDF( SRF_Filename              , &  ! Input
-                                      SpcCoeff%Sensor_Channel(l), &  ! Input
-                                      SRF                       , &  ! Output
-                                      Quiet=SET                   )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error reading channel #",i0," SRF from ",a)' ) &
-                       SpcCoeff%Sensor_Channel(l), TRIM(SRF_Filename)
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE )
-        STOP
-      END IF      
-            
-      ! Define the integrated SRF and calculate the first moment                                                                     
-      SRF_Integral = SRF%Integrated_SRF
-      Error_Status = Calc_SRF_First_Mom( SRF,             & 
-                                         SRF_First_Moment )     
-      IF ( Error_Status /= SUCCESS ) THEN                                                      
-        CALL Display_Message( PROGRAM_NAME, &                                                  
-                               'Error occurred calculating SRF first moment by integration.', & 
-                               FAILURE )                                                        
-        STOP                                                                                   
-      END IF 
+      WRITE( *,FMT='(2x,i4)',ADVANCE='NO') SpcCoeff%Sensor_Channel(l) 
          
       ! Set the SRF centroid and determine the Planck coefficients
       ! ----------------------------------------------------------
       SELECT CASE (SpcCoeff%Sensor_Type)
         CASE (MICROWAVE_SENSOR)
-          SpcCoeff%Frequency(l)  = SRF_First_Moment 
+          SpcCoeff%Frequency(l)  = oSRF_File%oSRF(l)%f0 
           SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
-          SRF%Frequency = GHz_to_inverse_cm( SRF%Frequency )
-          dFrequency = SRF%Frequency(2) - SRF%Frequency(1)          
+          DO b = 1, oSRF_File%oSRF(l)%n_Bands
+            oSRF_File%oSRF(l)%Frequency(n)%Arr = GHz_to_inverse_cm( oSRF_File%oSRF(l)%Frequency(n)%Arr )
+          END DO    
+          dFrequency = oSRF_File%oSRF(l)%Frequency(1)%Arr(2) - oSRF_File%oSRF(l)%Frequency(1)%Arr(1)     
         CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
-          SpcCoeff%Wavenumber(l) = SRF_First_Moment 
+          SpcCoeff%Wavenumber(l) = oSRF_File%oSRF(l)%f0
           SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
       END SELECT
       
@@ -514,114 +498,12 @@ PROGRAM Create_SpcCoeff_from_SRF
                                                    SpcCoeff%Planck_C1(l), &
                                                    SpcCoeff%Planck_C2(l)
 
-      ! Allocate the radiance/irradiance spectrum workarray
-      ! ---------------------------------------------------
-      ALLOCATE( Spectrum( SRF%n_Points ),STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        WRITE( Message,'("Error allocating spectrum array. STAT = ",i0)' ) &
-                       Allocate_Status
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE )
-        STOP
-      END IF
-
-      ! Compute the polychromatic correction coefficients
-      ! -------------------------------------------------
-      Radiance => Spectrum
-      
-      ! Generate the "polychromatic" temperatures
-      Temperature_Loop: DO i = 1, N_TEMPERATURES
-      
-        ! Calculate monochromatic radiances
-        Error_Status = Planck_Radiance( SRF%Frequency,    &
-                                        x_Temperature(i), &
-                                        Radiance          )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message,'("Error calculating radiance at T = ",f5.1," K.")' ) &
-                          x_Temperature(i)
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF
-        
-        ! Convolved radiance calculations
-        ! -------------------------------         
-        IF (SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
-          
-          ! Convolve the radiance spectrum with the MW response by summation          
-          Integrated_MW_Response = SUM(SRF%Response*dFrequency)
-          Convolved_Radiance     = SUM(Radiance)*dFrequency/ &
-          Integrated_MW_Response
-                   
-        ELSE
-        
-          ! Convolve the radiance spectrum with the SRF by integration
-          Error_Status = Integral( SRF%Frequency,         &
-                                   Radiance*SRF%Response, &
-                                   Convolved_Radiance     )
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'("Error convolving radiance at T = ",f5.1," K.")' ) &
-                           x_Temperature(i)
-            CALL Display_Message( PROGRAM_NAME, &
-                                  TRIM(Message), &
-                                  FAILURE )
-            STOP
-          END IF 
-                
-          ! Normalise the convolved radiance
-          Convolved_Radiance = Convolved_Radiance/SRF_Integral
-          
-        END IF
-        
-        ! Convert the convolved radiance back into a temperature
-        Error_Status = Planck_Temperature( SpcCoeff%Wavenumber(l),    &
-                                           Convolved_Radiance,        &
-                                           y_Effective_Temperature(i) )
-        IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error calculating polychromatic temperature at T = ",f5.1," K.")' ) &
-                        x_Temperature(i)
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE)
-          STOP
-        END IF
-      END DO Temperature_Loop
-      NULLIFY( Radiance )
-      
-      ! Fit the mono- and polychromatic temperatures
-      Error_Status = Least_Squares_Linear_Fit( x_Temperature, &
-                                               y_Effective_Temperature, &
-                                               SpcCoeff%Band_C1(l), &
-                                               SpcCoeff%Band_C2(l), &
-                                               yFit=yFit_Effective_Temperature, &
-                                               MSE =var_Effective_Temperature )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME, &
-                              'Error calculating band correction coefficients', &
-                              FAILURE )
-        STOP
-      END IF
+      SpcCoeff%Band_C1(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(1)
+      SpcCoeff%Band_C2(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(2)
       
       ! Output fit coefficients to screen
       WRITE( *,FMT='(2(2x,es13.6))',ADVANCE='NO' ) SpcCoeff%Band_C1(l), &
                                                    SpcCoeff%Band_C2(l)
-
-      ! Output fit statistics to file
-      WRITE( ASCII_FileID,FMT='(/5x,"CHANNEL ",i4)' ) SpcCoeff%Sensor_Channel(l)
-      WRITE( ASCII_FileID,FMT='(2x,"Fit equation : Teff = ",es13.6," + ",es13.6," T")' ) &
-                              SpcCoeff%Band_C1(l), SpcCoeff%Band_C2(l)
-      WRITE( ASCII_FileID,FMT='(2x,"MSE : ",es13.6,";  Sigma : ",es13.6)' ) &
-                              var_Effective_Temperature, SQRT(var_Effective_Temperature)
-      WRITE( ASCII_FileID,'(7x,"T      Teff(true)   Teff(fit)  dTeff(true-fit)")' )
-      WRITE( ASCII_FileID,'(2x,49("-"))' )
-      DO i = 1, N_TEMPERATURES
-        WRITE( ASCII_FileID,'(3(2x,f10.6),2x,es13.6)' ) &
-                             x_Temperature(i), &
-                             y_Effective_Temperature(i),  yFit_Effective_Temperature(i), &
-                             y_Effective_Temperature(i) - yFit_Effective_Temperature(i)
-      END DO
         
       IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
       
@@ -650,17 +532,29 @@ PROGRAM Create_SpcCoeff_from_SRF
         
         ! Set the solar channel flag
         CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
+        
+        ! Allocate the radiance/irradiance spectrum workarray
+        ! ---------------------------------------------------
+        ALLOCATE( Spectrum( oSRF_File%oSRF(l)%n_Points(1) ),STAT=Allocate_Status )
+        IF ( Allocate_Status /= 0 ) THEN
+          WRITE( Message,'("Error allocating spectrum array. STAT = ",i0)' ) &
+                         Allocate_Status
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                FAILURE )
+          STOP
+        END IF
             
         ! Interpolate the solar spectrum to the SRF spacing
         Irradiance => Spectrum
-        Error_Status = Spline_Interpolate( Solar%Frequency    , &  ! X
-                                           Solar%Irradiance   , &  ! Y
-                                           SRF%Frequency      , &  ! Xint
-                                           Irradiance         , &  ! Yint
-                                           y2=Solar_Derivative  )
+        Error_Status = Spline_Interpolate( Solar%Frequency                    , &  ! X
+                                           Solar%Irradiance                   , &  ! Y
+                                           oSRF_File%oSRF(l)%Frequency(1)%Arr , &  ! Xint
+                                           Irradiance                         , &  ! Yint
+                                           y2=Solar_Derivative                  )
         IF ( Error_Status /= SUCCESS ) THEN
           WRITE( Message,'("Error interpolating solar spectrum for SRF channel ",i0)' ) &
-                         SRF%Channel
+                         oSRF_File%oSRF(l)%Channel
           CALL Display_Message( PROGRAM_NAME, &
                                 TRIM(Message), &
                                 FAILURE )
@@ -668,9 +562,9 @@ PROGRAM Create_SpcCoeff_from_SRF
         END IF
              
         ! via integration
-        Error_Status = Integral( SRF%Frequency              , &
-                                 SRF%Response * Irradiance  , &
-                                 SpcCoeff%Solar_Irradiance(l) )
+        Error_Status = Integral( oSRF_File%oSRF(l)%Frequency(1)%Arr             , &
+                                 oSRF_File%oSRF(l)%Response(1)%Arr * Irradiance , &
+                                 SpcCoeff%Solar_Irradiance(l)                     )
         IF ( Error_Status /= SUCCESS ) THEN
           CALL Display_Message( PROGRAM_NAME, &
                                 'Error occurred convoling solar irradiance with SRF.', &
@@ -678,7 +572,7 @@ PROGRAM Create_SpcCoeff_from_SRF
           STOP
         END IF
         
-        SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/SRF_Integral
+        SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/oSRF_File%oSRF(l)%Integral
         NULLIFY( Irradiance )
         
       ENDIF
@@ -696,18 +590,6 @@ PROGRAM Create_SpcCoeff_from_SRF
         CALL Display_Message( PROGRAM_NAME, &
                               TRIM(Message), &
                               FAILURE )
-        STOP
-      END IF
-
-      ! Destroy the current channel SRF structure
-      ! -----------------------------------------
-      Error_Status = Destroy_SRF( SRF )
-      IF ( Error_Status/= SUCCESS ) THEN
-        WRITE( Message,'("Error destroying SRF structure for channel ",i0)' ) &
-                        SpcCoeff%Sensor_Channel(l)
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE  )
         STOP
       END IF
       
@@ -732,11 +614,11 @@ PROGRAM Create_SpcCoeff_from_SRF
                                           Title = 'Spectral coefficients for '//&
                                                   TRIM(SensorInfo%Sensor_Id)//&
                                                   ' derived from SRF data file '//&
-                                                  TRIM(SRF_Filename)//&
+                                                  TRIM(oSRF_Filename)//&
                                                   ' and solar data file '//&
                                                   TRIM(Solar_Filename), &
                                           History = PROGRAM_RCS_ID//&
-                                                    '; '//TRIM(SRF_History)//&
+                                                    '; '//TRIM(oSRF_History)//&
                                                     '; '//TRIM(Solar_History), &
                                           Comment = TRIM(Comment)//&
                                                     ' Solar Information'//&
@@ -749,14 +631,13 @@ PROGRAM Create_SpcCoeff_from_SRF
       STOP
     END IF
 
-
     ! Destroy the current sensor data structures
     ! ------------------------------------------
     Error_Status = Destroy_SpcCoeff( SpcCoeff )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error destroying SpcCoeff data structure for '//&
-                            TRIM(SRF_Filename)//' processing.', &
+                            TRIM(oSRF_Filename)//' processing.', &
                             FAILURE )
       STOP
     END IF
@@ -769,8 +650,11 @@ PROGRAM Create_SpcCoeff_from_SRF
       STOP
     END IF
     
+    ! Destroy current oSRF_File
+    ! -------------------------
+    CALL oSRF_File_Destroy(oSRF_File)
+    
   END DO Sensor_loop
-
 
   ! Destroy the sensor independent data arrays/structures
   ! -----------------------------------------------------
@@ -798,277 +682,4 @@ PROGRAM Create_SpcCoeff_from_SRF
                           WARNING )
   END IF
 
-
-CONTAINS
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Least_Squares_Linear_Fit
-!
-! PURPOSE:
-!       Function to perform a least squares linear fit on the input 
-!       polychromatic and monochromatic temperature data.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Least_Squares_Linear_Fit( x, y,        &  ! Input
-!                                                a, b,        &  ! Output
-!                                                yFit = yFit, &  ! Optional output
-!                                                SSE  = SSE,  &  ! Optional output
-!                                                MSE  = MSE,  &  ! Optional output
-!                                                Message_Log = Message_Log ) !  Error messaging
-!
-! INPUT ARGUMENTS:
-!       x:               Input ordinate data on which to perform the fit
-!                          y = a + bx
-!                        Corresponds to the true temperature.
-!                        UNITS:      Kelvin (K)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1
-!                        ATTRIBUTES: INTENT( IN )
-!
-!       y:               Input coordinate data on which to perform the fit
-!                          y = a + bx
-!                        Corresponds to the effective temperature due to
-!                        polychromaticity.
-!                        UNITS:      Kelvin (K)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1 (Same size as x)
-!                        ATTRIBUTES: INTENT( IN )
-!
-! OUTPUT ARGUMENTS:
-!       a:               Offset coefficient that satisfies the fit criteria
-!                        for the relationship
-!                          y = a + bx
-!                        UNITS:      Kelvin (K)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT )
-!
-!       b:               Slope coefficient that satisfies the fit criteria
-!                        for the relationship
-!                          y = a + bx
-!                        UNITS:      Kelvin/Kelvin (K/K)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       yFit:            Predicted coordinate (effective temperature) data,
-!                          yFit = a + bx
-!                        UNITS:      Kelvin (K)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1 (Same size as y)
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-!       SSE:             The residual sum of the squares of the fit to the
-!                        input data,
-!                                 __  N
-!                                \                    2
-!                          SSE =  > ( Y(i) - YFit(i) )
-!                                /__
-!                                    i=1
-!
-!                        UNITS:      Kelvin^2 (K^2)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-!       MSE:             The residual mean square of the fit to the
-!                        input data,
-!                                
-!                                 SSE
-!                          MSE = -----
-!                                 N-2
-!
-!                        where N == number of input data points
-!
-!                        UNITS:      Kelvin^2 (K^2)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT( OUT )
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the
-!                        error status. The error codes are defined in
-!                        the ERROR_HANDLER module.
-!                        If == SUCCESS the regression fit was successful.
-!                           == FAILURE  an error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION Least_Squares_Linear_Fit( x, y,         &  ! Input
-                                     a, b,         &  ! Output
-                                     yFit,         &  ! Optional output
-                                     SSE,          &  ! Optional output
-                                     MSE,          &  ! Optional output
-                                     Message_Log ) &  ! Error messaging
-                                   RESULT( Error_Status )
-    ! Arguments
-    REAL(fp),                INTENT(IN)  :: x(:)
-    REAL(fp),                INTENT(IN)  :: y(:)
-    REAL(fp),                INTENT(OUT) :: a
-    REAL(fp),                INTENT(OUT) :: b
-    REAL(fp),     OPTIONAL,  INTENT(OUT) :: yFit(:)
-    REAL(fp),     OPTIONAL,  INTENT(OUT) :: SSE
-    REAL(fp),     OPTIONAL,  INTENT(OUT) :: MSE
-    CHARACTER(*), OPTIONAL,  INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Least_Squares_Linear_Fit'
-    REAL(fp),     PARAMETER :: TOLERANCE = EPSILON(1.0_fp)
-    ! Local variables
-    INTEGER :: n
-    REAL(fp) :: xAverage
-    REAL(fp) :: yAverage
-    REAL(fp) :: sum_dx2
-    REAL(fp) :: yCalculated(SIZE(y))
-    REAL(fp) :: Residual_Sum_of_Squares
-    REAL(fp) :: Residual_Mean_Square   
-
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Check input
-    n = SIZE(x)
-    IF ( n < 3 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input data must be at least 3 points.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-    IF ( SIZE(y) /= n ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Sizes of input X,Y arguments are inconsistent', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-    IF ( PRESENT(yFit) ) THEN
-      IF ( SIZE(yFit) /= n ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Sizes of output YFIT argument is inconsistent', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-    END IF
-
-
-    ! Calculate averages
-    ! ------------------
-    xAverage = SUM(x) / REAL(n,fp)
-    yAverage = SUM(y) / REAL(n,fp)
-
-
-    ! Calculate the sums of the square of the mean difference for X
-    ! -------------------------------------------------------------
-    sum_dx2 = SUM(( x-xAverage )**2)
-    IF ( sum_dx2 < TOLERANCE ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Sum of the squares of mean difference for X is zero.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-    ! Calculate coefficients
-    ! ----------------------
-    b = SUM(( x-xAverage )*( y-yAverage )) / sum_dx2
-    a = yAverage - ( b*xAverage )
-
-
-    ! Calculate the regression Y values
-    ! ---------------------------------
-    yCalculated = a + ( b*x )
-    Residual_Sum_of_Squares = SUM(( y-yCalculated )**2)
-    Residual_Mean_Square    = Residual_Sum_of_Squares / REAL(n-2,fp)
-
-
-    ! Assign optional arguments
-    ! -------------------------
-    IF ( PRESENT(yFit) ) yFit = yCalculated
-    IF ( PRESENT(SSE)  ) SSE  = Residual_Sum_of_Squares
-    IF ( PRESENT(MSE)  ) MSE  = Residual_Mean_Square
-
-  END FUNCTION Least_Squares_Linear_Fit
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Frequency_Index
-!
-! PURPOSE:
-!       Function to determine the frequency array element index for
-!       an input frequency value.
-!
-! CALLING SEQUENCE:
-!       Frequency_Index = Compute_Frequency_Index( Begin_Frequency,    &  ! Input
-!                                                  Frequency_Interval, &  ! Input
-!                                                  Frequency           )  ! Input
-!
-! INPUT ARGUMENTS:
-!       Begin_Frequency:     Begin frequency corresponding to the first
-!                            value in the array.
-!                            UNITS:      Inverse centimetres (cm^-1)
-!                            TYPE:       REAL(fp)
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN)
-!
-!       Frequency_Interval:  Frequency interval between adjacent frequency
-!                            array values.
-!                            UNITS:      Inverse centimetres (cm^-1)
-!                            TYPE:       REAL(fp)
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN)
-!
-!       Frequency:           Frequency value for which the index is required.
-!                            UNITS:      Inverse centimetres (cm^-1)
-!                            TYPE:       REAL(fp)
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN)
-!
-! FUNCTION RESULT:
-!       Frequency_Index:     The return value is an integer corresponding to
-!                            the location of the input frequency value in an
-!                            array defined by the begin frequency and
-!                            frequency interval.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!
-!--------------------------------------------------------------------------------
-
-  FUNCTION Compute_Frequency_Index( Begin_Frequency, &
-                                    Frequency_Interval, &
-                                    Frequency ) &
-                                  RESULT( Frequency_Index )
-    ! Arguments
-    REAL(fp), INTENT(IN) :: Begin_Frequency
-    REAL(fp), INTENT(IN) :: Frequency_Interval
-    REAL(fp), INTENT(IN) :: Frequency
-    ! Function result
-    INTEGER :: Frequency_Index
-    ! Local parameters
-    REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp 
-
-    ! Compute the frequency index
-    Frequency_Index = INT(((Frequency-Begin_Frequency)/Frequency_Interval) + ONEpointFIVE)
-
-  END FUNCTION Compute_Frequency_Index
-
-END PROGRAM Create_SpcCoeff_from_SRF
+END PROGRAM Create_SpcCoeff
