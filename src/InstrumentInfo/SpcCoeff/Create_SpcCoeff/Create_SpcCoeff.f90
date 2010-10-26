@@ -104,12 +104,6 @@ PROGRAM Create_SpcCoeff
   ! Second Planck function constant (C_2) scale factor. Units of C_2 are K.m,
   ! So to convert to K.cm, a scaling of 100 is applied.
   REAL(fp), PARAMETER :: C_2_SCALE_FACTOR = 100.0_fp
-  
-  ! The number and range of temperatures used in determining the 
-  ! polychromatic correction coefficients
-  INTEGER,  PARAMETER :: N_TEMPERATURES = 17
-  REAL(fp), PARAMETER :: MIN_TEMPERATURE = 180.0_fp
-  REAL(fp), PARAMETER :: MAX_TEMPERATURE = 340.0_fp
 
   ! Solar channel cut-off frequency
   REAL(fp), PARAMETER :: SOLAR_CUTOFF_WAVENUMBER = 500.0_fp
@@ -141,11 +135,6 @@ PROGRAM Create_SpcCoeff
   CHARACTER(2000) :: oSRF_History, Solar_History, Solar_Comment
   CHARACTER(2000) :: AntCorr_Comment, AntCorr_History
   CHARACTER(2000) :: Comment
-  REAL(fp) :: dFrequency
-  REAL(fp) :: x_Temperature(N_TEMPERATURES)
-  REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES)
-  REAL(fp) :: yFit_Effective_Temperature(N_TEMPERATURES)
-  REAL(fp) :: var_Effective_Temperature
   REAL(fp), ALLOCATABLE :: Solar_Derivative(:)
   REAL(fp), ALLOCATABLE, TARGET :: Spectrum(:)
   REAL(fp), POINTER             :: Irradiance(:) => NULL()
@@ -262,11 +251,6 @@ PROGRAM Create_SpcCoeff
                           Error_Status )
     STOP
   END IF
-  
-  ! Generate the monochromatic temperatures
-  ! ---------------------------------------
-  x_Temperature = (/(REAL(i-1,fp),i=1,N_TEMPERATURES)/) / REAL(N_TEMPERATURES-1,fp)
-  x_Temperature = (x_Temperature * ( MAX_TEMPERATURE-MIN_TEMPERATURE )) + MIN_TEMPERATURE
   
   ! Begin the main sensor loop
   ! ---------------------------
@@ -483,8 +467,7 @@ PROGRAM Create_SpcCoeff
           SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
           DO b = 1, oSRF_File%oSRF(l)%n_Bands
             oSRF_File%oSRF(l)%Frequency(n)%Arr = GHz_to_inverse_cm( oSRF_File%oSRF(l)%Frequency(n)%Arr )
-          END DO    
-          dFrequency = oSRF_File%oSRF(l)%Frequency(1)%Arr(2) - oSRF_File%oSRF(l)%Frequency(1)%Arr(1)     
+          END DO         
         CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
           SpcCoeff%Wavenumber(l) = oSRF_File%oSRF(l)%f0
           SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
