@@ -56,7 +56,7 @@ PRO OSRF::Plot, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Get the number of SRF bands
-  self->Get_Property, n_Bands=n_Bands, Channel=Channel
+  self->Get_Property, n_Bands=n_Bands, Channel=Channel, Sensor_Id=Sensor_Id
 
   ; Save current plotting sysvars
   psave = !P
@@ -88,7 +88,7 @@ PRO OSRF::Plot, $
     df = 0.1*fdelta
     xrange = [MIN(f)-df,MAX(f)+df]
     ; Generate the title
-    title = 'Ch.'+STRTRIM(Channel,2)
+    title = STRTRIM(Sensor_Id,2)+'   Ch.'+STRTRIM(Channel,2)
     IF ( n_Bands GT 1 ) THEN title = title +', band #'+STRTRIM(i+1,2)
     ; Plot the band response
     PLOT, f, r, $
