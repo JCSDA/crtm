@@ -27,8 +27,8 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   ; Copy original OSRF and deallocate
   self->Assign, new, Debug=Debug
   new->Destroy, /No_Clear, Debug=Debug
-  
-  
+
+
   ; Process keywords based on sensor type
   CASE 1 OF
     ; Microwave instruments
@@ -77,9 +77,5 @@ PRO OSRF::Compute_Interpolation_Frequency, $
     f = f*(f2[i]-f1[i]) + f1[i]
     new->Set_Property, i+1, Frequency=f, Debug=Debug
   ENDFOR
-  
-
-  ; Done
-  CATCH, /CANCEL
 
 END ; PRO OSRF::Compute_Interpolation_Frequency

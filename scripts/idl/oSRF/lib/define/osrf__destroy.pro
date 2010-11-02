@@ -92,7 +92,7 @@ PRO OSRF::Destroy, $
 
 
   ; If ALL pointer members are NOT associated, do nothing
-  IF ( NOT self->Associated(Debug=Debug) ) THEN GOTO, Done
+  IF ( NOT self->Associated(Debug=Debug) ) THEN RETURN
 
 
   ; Deallocate the pointer members and nullify
@@ -132,9 +132,5 @@ PRO OSRF::Destroy, $
   IF ( self.n_Allocates NE 0 ) THEN $
     MESSAGE, 'Allocation counter /= 0, Value = ' + STRTRIM(self.n_Allocates, 2), $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-
-  ; Done
-  Done:
-  CATCH, /CANCEL
 
 END ; PRO OSRF::Destroy

@@ -265,9 +265,4 @@ PRO OSRF::Get_Property, $
     IF ( ARG_PRESENT(n_Points) ) THEN n_Points = (*self.n_Points)[_Band]
   ENDELSE
 
-
-  
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Get_Property

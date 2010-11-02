@@ -29,8 +29,4 @@ PRO OSRF::Interpolate, $
   int_OSRF->Compute_Planck_Coefficients, Debug=Debug
   int_OSRF->Compute_Polychromatic_Coefficients, Debug=Debug
   
-
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Interpolate

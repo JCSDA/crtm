@@ -73,8 +73,4 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ; Cleanup
   new->Destroy, Debug=Debug
   
-    
-  ; Done
-  CATCH, /CANCEL
-
 END ; PRO OSRF::Compute_Polychromatic_Coefficients

@@ -66,13 +66,28 @@ PRO OSRF::Assign, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-  ; ...Destroy output object if defined.
-  IF ( N_ELEMENTS(new) GT 0 ) THEN $
-    IF ( SIZE(new, /TNAME) EQ 'OBJREF' ) THEN OBJ_DESTROY, new, Debug=Debug
-  
-  ; ...Create a new object reference
-  new = OBJ_NEW('OSRF',Debug=Debug)
-
+  ; ...Return argument must be present
+  IF ( NOT ARG_PRESENT(new) ) THEN $
+    MESSAGE, 'No output object argument specified.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+             
+  ; ...Check the return object
+  type_name = SIZE(new,/TNAME)
+  IF ( type_name EQ 'OBJREF' ) THEN BEGIN
+    IF ( OBJ_VALID(new) ) THEN BEGIN
+      IF ( OBJ_ISA(new,'oSRF') ) THEN BEGIN
+        new->Destroy, Debug=Debug
+      ENDIF ELSE BEGIN
+        OBJ_DESTROY, new
+        new = OBJ_NEW('oSRF', Debug=Debug)
+      ENDELSE
+    ENDIF ELSE BEGIN
+      new = OBJ_NEW('oSRF', Debug=Debug)
+    ENDELSE
+  ENDIF ELSE BEGIN
+    new = OBJ_NEW('oSRF', Debug=Debug)
+  ENDELSE
+    
 
   ; Allocate the output object
   new->Allocate, *self.n_Points, Debug=Debug
@@ -105,9 +120,5 @@ PRO OSRF::Assign, $
   *new.xsysvar = *self.xsysvar
   *new.ysysvar = *self.ysysvar
   *new.psysvar = *self.psysvar
-
-
-  ; Done
-  CATCH, /CANCEL
 
 END ; PRO OSRF::Assign
