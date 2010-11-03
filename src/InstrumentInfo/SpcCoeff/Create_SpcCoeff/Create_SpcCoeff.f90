@@ -34,13 +34,9 @@ PROGRAM Create_SpcCoeff
   USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
                                        Load_MW_SensorData, &
                                        Destroy_MW_SensorData
-  USE SensorInfo_Define        , ONLY: N_SENSOR_TYPES          , &
-                                       INVALID_SENSOR          , &
-                                       MICROWAVE_SENSOR        , &
+  USE SensorInfo_Define        , ONLY: MICROWAVE_SENSOR        , &
                                        INFRARED_SENSOR         , &
                                        VISIBLE_SENSOR          , &
-                                       ULTRAVIOLET_SENSOR      , &
-                                       SENSOR_TYPE_NAME        , &
                                        UNPOLARIZED             , &
                                        SensorInfo_type         , &
                                        Destroy_SensorInfo
@@ -67,14 +63,8 @@ PROGRAM Create_SpcCoeff
   USE SpcCoeff_netCDF_IO       , ONLY: Write_SpcCoeff_netCDF
   USE oSRF_File_Define         , ONLY: oSRF_File_type, &
                                        oSRF_File_GetValue, &
-                                       oSRF_File_Inspect, &
                                        oSRF_File_Read, &
                                        oSRF_File_Destroy
-  USE oSRF_Define              , ONLY: oSRF_type, &
-                                       oSRF_Destroy, &
-                                       oSRF_Integrate, &
-                                       oSRF_Central_Frequency, &
-                                       oSRF_Polychromatic_Coefficients
   USE Integrate_Utility        , ONLY: Integral
 
   ! Disable all implicit typing
@@ -104,9 +94,6 @@ PROGRAM Create_SpcCoeff
   ! Second Planck function constant (C_2) scale factor. Units of C_2 are K.m,
   ! So to convert to K.cm, a scaling of 100 is applied.
   REAL(fp), PARAMETER :: C_2_SCALE_FACTOR = 100.0_fp
-
-  ! Solar channel cut-off frequency
-  REAL(fp), PARAMETER :: SOLAR_CUTOFF_WAVENUMBER = 500.0_fp
   
   ! Cosmic background temperature
   REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
@@ -127,8 +114,7 @@ PROGRAM Create_SpcCoeff
   INTEGER :: Allocate_Status
   INTEGER :: IO_Status
   INTEGER :: l
-  INTEGER :: ls1, ls2
-  INTEGER :: i, n, b
+  INTEGER :: n, b
   INTEGER :: n_FOVs
   INTEGER :: SpcCoeff_File_Version
   CHARACTER( 256) :: Title
@@ -210,7 +196,6 @@ PROGRAM Create_SpcCoeff
                           Error_Status )
     STOP
   END IF
-
   
   Solar_Comment = ' '
   Solar_History = ' '
@@ -386,8 +371,8 @@ PROGRAM Create_SpcCoeff
       STOP
     END IF
     
-    ! Get the title histor and comment from oSRF file
-    ! -----------------------------------------------
+    ! Get the title history and comment from oSRF file
+    ! ------------------------------------------------
     Error_Status = oSRF_File_GetValue( oSRF_File             , & ! Input
                                        Title   = Title       , & ! Optional output
                                        History = oSRF_History, & ! Optional output
@@ -466,7 +451,7 @@ PROGRAM Create_SpcCoeff
           SpcCoeff%Frequency(l)  = oSRF_File%oSRF(l)%f0 
           SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
           DO b = 1, oSRF_File%oSRF(l)%n_Bands
-            oSRF_File%oSRF(l)%Frequency(n)%Arr = GHz_to_inverse_cm( oSRF_File%oSRF(l)%Frequency(n)%Arr )
+            oSRF_File%oSRF(l)%Frequency(b)%Arr = GHz_to_inverse_cm( oSRF_File%oSRF(l)%Frequency(b)%Arr )
           END DO         
         CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
           SpcCoeff%Wavenumber(l) = oSRF_File%oSRF(l)%f0
@@ -509,13 +494,13 @@ PROGRAM Create_SpcCoeff
                                 TRIM(Message), &
                                 FAILURE )
           STOP
-        END IF        
+        END IF      
         
       ELSE
         
         ! Set the solar channel flag
         CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
-        
+
         ! Allocate the radiance/irradiance spectrum workarray
         ! ---------------------------------------------------
         ALLOCATE( Spectrum( oSRF_File%oSRF(l)%n_Points(1) ),STAT=Allocate_Status )
@@ -558,23 +543,23 @@ PROGRAM Create_SpcCoeff
         SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/oSRF_File%oSRF(l)%Integral
         NULLIFY( Irradiance )
         
+        ! Deallocate the radiance/irradiance spectrum workarray
+        ! -----------------------------------------------------
+        DEALLOCATE( Spectrum, STAT=Allocate_Status )
+        IF ( Allocate_Status /= 0 ) THEN
+          WRITE( Message,'("Error deallocating spectrum array. STAT = ",i0)' ) &
+                          Allocate_Status
+          CALL Display_Message( PROGRAM_NAME, &
+                                TRIM(Message), &
+                                FAILURE )
+          STOP
+        END IF
+          
       ENDIF
       
       WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Cosmic_Background_Radiance(l)
       WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
       WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
-
-      ! Deallocate the radiance/irradiance spectrum workarray
-      ! -----------------------------------------------------
-      DEALLOCATE( Spectrum, STAT=Allocate_Status )
-      IF ( Allocate_Status /= 0 ) THEN
-        WRITE( Message,'("Error deallocating spectrum array. STAT = ",i0)' ) &
-                       Allocate_Status
-        CALL Display_Message( PROGRAM_NAME, &
-                              TRIM(Message), &
-                              FAILURE )
-        STOP
-      END IF
       
     END DO Channel_Loop
 
@@ -632,6 +617,16 @@ PROGRAM Create_SpcCoeff
                             FAILURE )
       STOP
     END IF
+    
+    ! For microwave sensors destroy MW_SensorData structure
+    IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
+      Error_Status = Destroy_MW_SensorData( MW_SensorData )
+      IF ( Error_Status /= SUCCESS ) THEN
+        CALL Display_Message( PROGRAM_NAME, &
+                              'Error destroying MW_SensorData data structure.', &
+                              WARNING )
+      END IF 
+    END IF 
     
     ! Destroy current oSRF_File
     ! -------------------------
