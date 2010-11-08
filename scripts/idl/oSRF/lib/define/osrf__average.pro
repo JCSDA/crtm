@@ -8,13 +8,11 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Average, $
-;         oSRF                     , $ ; Input data
-;         Debug       = Debug      , $ ; Input keyword
-;         Interpolate = Interpolate, $ ; Input keyword
-;         _EXTRA      = Extra          ; Passed to OSRF::Compute_Interpolation_Frequency
+;         iSRF                     , $ ; Input data
+;         Debug       = Debug      
 ;
 ; INPUTS:
-;       oSRF:        Array of oSRF objects containing the reponse data to
+;       iSRF:        Array of oSRF objects containing the interpolated reponse data to
 ;                    be averaged.
 ;                    UNITS:      N/A
 ;                    TYPE:       OBJ(oSRF)
@@ -31,19 +29,6 @@
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Interpolate: Set this keyword to interpolate the input oSRF data 
-;                    to a common frequency grid. If not set, it is assumed
-;                    the input data is already on a common frequency grid.
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-;       _EXTRA:      All additional keywords are passed onto the
-;                    oSRF::Compute_Interpolation_Frequency() method.
-;                    These are ignored if the Interpolate keyword is
-;                    not set.
-;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -51,11 +36,11 @@
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
-;       Given an array of oSRF objects, osrf, their average can be computed
+;       Given an array of oSRF objects, isrf, their average can be computed
 ;       like so
 ;
 ;         IDL> avgsrf = OBJ_NEW('oSRF')
-;         IDL> avgsrf->Average, osrf, /Interpolate, /LoRes, Debug=Debug
+;         IDL> avgsrf->Average, isrf, Debug=Debug
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 01-Nov-2010
@@ -64,10 +49,8 @@
 ;-
 
 PRO OSRF::Average, $
-  oSRF                     , $ ; Input data
-  Debug       = Debug      , $ ; Input keyword
-  Interpolate = Interpolate, $ ; Input keyword
-  _EXTRA      = Extra          ; Passed to Compute_Interpolation_Frequency
+  iSRF           , $ ; Input data
+  Debug       = Debug  
   
   ; Set up
   ; ...oSRF parameters
@@ -75,32 +58,8 @@ PRO OSRF::Average, $
   ; ...Set up error handler
   @osrf_pro_err_handler
  
-
   ; The number of SRFs to average
-  n_sets = N_ELEMENTS(oSRF)
-
-
-  ; Determine if interpolation is necessary
-  IF ( KEYWORD_SET(Interpolate) ) THEN BEGIN
-    ; Interpolate oSRFs
-    isrf = OBJARR(n_sets)
-    FOR n = 0, n_sets-1 DO BEGIN
-      isrf[n] = OBJ_NEW('oSRF', Debug=Debug)
-      osrf[n]->Compute_Interpolation_Frequency, $
-        isrf[n], $
-        Debug=Debug, $
-        _EXTRA=Extra
-      osrf[n]->Interpolate, $
-        isrf[n], $
-        Debug=Debug
-    ENDFOR
-  ENDIF ELSE BEGIN
-    ; Copy the oSRFs
-    isrf = OBJARR(n_sets)
-    FOR n = 0, n_sets-1 DO $
-      osrf[n]->Assign, isrf[n], Debug=Debug
-  ENDELSE
-
+  n_sets = N_ELEMENTS(iSRF)
 
   ; Determine frequency min/max for all bands
   ; ...Get the number of bands
@@ -119,7 +78,6 @@ PRO OSRF::Average, $
       fmax[i] = fmax[i] < f2
     ENDFOR
   ENDFOR
-
 
   ; Average the band data, looping in opposite order
   band_data = LIST(LENGTH=n_bands)
@@ -148,13 +106,12 @@ PRO OSRF::Average, $
                    NODATA=MsgSwitch, NOPRINT=MsgSwitch
         response = response + r[idx]
       ENDELSE
-    ENDFOR ; oSRF set loop
+    ENDFOR ; iSRF set loop
     
     ; Save averaged data for this band
     band_data[i] = LIST(frequency, response/DOUBLE(n_sets))
     
   ENDFOR ; Band loop
-
 
   ; Store the averaged data back into the object
   ; ...Reallocate the object
@@ -172,7 +129,7 @@ PRO OSRF::Average, $
   self->Compute_Planck_Coefficients, Debug=Debug
   self->Compute_Polychromatic_Coefficients, Debug=Debug
   ; ...Assign the other properties
-  osrf[0]->Get_Property, $
+  isrf[0]->Get_Property, $
       Channel     = channel    , $
       Sensor_Id   = sensor_id  , $
       Sensor_Type = sensor_type, $
