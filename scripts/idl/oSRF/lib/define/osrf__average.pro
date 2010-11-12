@@ -57,7 +57,13 @@ PRO OSRF::Average, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
- 
+  
+  ; Tolerance below frequency minimum for the average grid
+  Tolerance_Below_Min = DOUBLE(-1E-5)
+  
+  ; Tolerance above frequency maximum for the average grid
+  Tolerance_Above_Max = DOUBLE(1E-5)
+  
   ; The number of SRFs to average
   n_sets = N_ELEMENTS(iSRF)
 
@@ -90,7 +96,8 @@ PRO OSRF::Average, $
       isrf[n]->Get_Property, band, Frequency=f, Response=r
 
       ; Determine extraction indices
-      idx = WHERE(f GE fmin[i] AND f LE fmax[i], count)
+      idx = WHERE( (f - fmin[i]) GE Tolerance_Below_Min  AND $
+                   (f - fmax[i]) LE Tolerance_Above_Max, count)
       IF ( count EQ 0 ) THEN $
         MESSAGE, 'No data within frequency limits for set#'+STRTRIM(n+1,2)+' band#'+STRTRIM(band,2), $
                  NODATA=MsgSwitch, NOPRINT=MsgSwitch

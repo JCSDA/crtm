@@ -7,9 +7,20 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ; ...Set up error handler
   @osrf_pro_err_handler
 
-  ; Create temperature arrays
-  min_T = 150.0d0
-  max_T = 340.0d0
+  ; Get the sensor type
+  self->Get_Property, $
+    Sensor_Type=Sensor_Type
+
+  ; Set min and max temps based on Sensor_Type
+  IF ( Sensor_Type EQ VISIBLE_SENSOR ) THEN BEGIN
+    min_T = 3000.0d0
+    max_T = 5700.0d0
+  ENDIF ELSE BEGIN 
+    min_T = 150.0d0
+    max_T = 340.0d0
+  ENDELSE
+  
+  ; Compute the set of temperatures
   d_T   = 10.0d0
   n_T   = LONG((max_T-min_T)/d_T) + 1L
   T = DINDGEN(n_T)/DOUBLE(n_T-1L)
