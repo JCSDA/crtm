@@ -64,6 +64,18 @@ PRO OSRF::Average, $
   ; Tolerance above frequency maximum for the average grid
   Tolerance_Above_Max = DOUBLE(1E-5)
   
+  ; ...Assign Metadata
+  isrf[0]->Get_Property, $
+      Channel     = channel    , $
+      Sensor_Id   = sensor_id  , $
+      Sensor_Type = sensor_type, $
+      Debug=Debug      
+  self->Set_Property, $
+      Channel     = channel    , $
+      Sensor_Id   = sensor_id  , $
+      Sensor_Type = sensor_type, $
+      Debug=Debug
+  
   ; The number of SRFs to average
   n_sets = N_ELEMENTS(iSRF)
 
@@ -135,17 +147,6 @@ PRO OSRF::Average, $
   self->Compute_Central_Frequency, Debug=Debug
   self->Compute_Planck_Coefficients, Debug=Debug
   self->Compute_Polychromatic_Coefficients, Debug=Debug
-  ; ...Assign the other properties
-  isrf[0]->Get_Property, $
-      Channel     = channel    , $
-      Sensor_Id   = sensor_id  , $
-      Sensor_Type = sensor_type, $
-      Debug=Debug      
-  self->Set_Property, $
-      Channel     = channel    , $
-      Sensor_Id   = sensor_id  , $
-      Sensor_Type = sensor_type, $
-      Debug=Debug
 
 END
 
