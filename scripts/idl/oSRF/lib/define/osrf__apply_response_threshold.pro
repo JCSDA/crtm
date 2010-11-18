@@ -1,9 +1,8 @@
 PRO OSRF::Apply_Response_Threshold, $
-  new               , $ ; Output
-  Response_Threshold, $ ; Input
-  Detector = Detector   ; Keyword argument
-  
-  Debug = Debug
+  new               ,  $ ; Output
+  Response_Threshold,  $ ; Input
+  Detector = Detector, $ ; Input keyword
+  Debug = Debug          ; Input keyword
   
   ; Set up
   ; ...OSRF parameters
@@ -36,6 +35,11 @@ PRO OSRF::Apply_Response_Threshold, $
       Band, $
       Frequency = f, $
       Response = r
+      
+    min_inside_freq_idx[i]  = 0L
+    min_outside_freq_idx[i] = 0L
+    max_inside_freq_idx[i]  = N_ELEMENTS(f) - 1L
+    max_outside_freq_idx[i] = N_ELEMENTS(f) - 1L
 
     n_Orig_Points = N_ELEMENTS(f)     
 
@@ -54,24 +58,27 @@ PRO OSRF::Apply_Response_Threshold, $
       ENDIF
     ENDFOR
 
-    FOR n = 0, n_Orig_Points - 1 DO BEGIN
+    FOR n = 0, maxidx DO BEGIN
       IF ( r[n] GE Response_Threshold ) THEN BEGIN
-        min_outside_freq_idx[i] = n - 1
+        CASE n OF
+          0: min_outside_freq_idx[i] = 0
+          ELSE: min_outside_freq_idx[i] = n - 1
+        ENDCASE
         BREAK
       ENDIF
     ENDFOR
 
-    FOR n = n_Orig_Points - 1, 0, -1 DO BEGIN 
+    FOR n = n_Orig_Points - 1, maxidx, -1 DO BEGIN 
       IF ( r[n] GE Response_Threshold ) THEN BEGIN
-        max_outside_freq_idx[i] = n + 1
+        CASE n OF
+          n_Orig_Points - 1: max_outside_freq_idx[i] = n_Orig_Points - 1
+          ELSE: max_outside_freq_idx[i] = n + 1
+        ENDCASE
         BREAK
       ENDIF
     ENDFOR
-    
-    f=f[min_outside_freq_idx[i]:max_outside_freq_idx[i]]
-    r=r[min_outside_freq_idx[i]:max_outside_freq_idx[i]] 
-    
-    n_Points[i]=N_ELEMENTS(f)
+   
+    n_Points[i] = (max_outside_freq_idx[i] - min_outside_freq_idx[i]) + 1L  
     
   ENDFOR
         
@@ -85,30 +92,24 @@ PRO OSRF::Apply_Response_Threshold, $
       Band, $
       Frequency = f, $
       Response = r
-      
+
     f=f[min_outside_freq_idx[i]:max_outside_freq_idx[i]]
     r=r[min_outside_freq_idx[i]:max_outside_freq_idx[i]]
-  
-    IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN BEGIN
-      IF ( min_inside_freq_idx[i] GT min_outside_freq_idx[i] ) THEN $
-        PRINT , 'For '+Sensor_Id+' the response cutoff '+strtrim(Response_Threshold,2)+ $
-                ' may result in an incorrect minimum frequency for band # '+ $
-                 strtrim(Band,2)+' Channel # '+strtrim(Channel,2)
 
-      IF ( max_inside_freq_idx[i] LT max_outside_freq_idx[i] ) THEN $
-        PRINT , 'For '+Sensor_Id+' the response cutoff '+strtrim(Response_Threshold,2)+ $
-                ' may result in an incorrect maximum frequency for band # '+ $
-                strtrim(Band,2)+' Channel # '+strtrim(Channel,2)
-    ENDIF ELSE BEGIN
-      IF ( min_inside_freq_idx[i] GT min_outside_freq_idx[i] ) THEN $
-        PRINT , 'For '+Sensor_Id+' the response cutoff '+strtrim(Response_Threshold,2)+ $
-                ' may result in an incorrect minimum frequency for channel #' + $
-                strtrim(Channel,2)+' Detector # '+strtrim(Detector,2)
-      
-      IF ( max_inside_freq_idx[i] LT max_outside_freq_idx[i] ) THEN $
-        PRINT , 'For '+Sensor_Id+' the response cutoff '+strtrim(Response_Threshold,2)+ $
-                ' may result in an incorrect maximum frequency for channel #' + $
-                strtrim(Channel,2)+' Detector # '+strtrim(Detector,2)
+    IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN BEGIN
+      IF ( min_inside_freq_idx[i] GT min_outside_freq_idx[i] OR $
+           max_inside_freq_idx[i] LT max_outside_freq_idx[i] ) THEN $
+        MESSAGE , 'For '+Sensor_Id+' Channel # '+strtrim(Channel,2)+ $
+                  ' Band # '+strtrim(Band,2)+' and response' $
+                  +' cutoff of '+strtrim(Response_Threshold,2)+' the' $
+                  +' outside and/or inside frequencies are different', /INFORMATIONAL              
+    ENDIF ELSE BEGIN    
+      IF ( min_inside_freq_idx[i] GT min_outside_freq_idx[i] OR $
+           max_inside_freq_idx[i] LT max_outside_freq_idx[i] ) THEN $          
+        MESSAGE , 'For '+Sensor_Id+' Channel # '+strtrim(Channel,2)+ $
+                  ' Detector # '+strtrim(Detector,2)+' and response' $
+                  +' cutoff of '+strtrim(Response_Threshold,2)+' the' $ 
+                  +' outside and/or inside frequencies are different', /INFORMATIONAL     
     ENDELSE
 
     ; Set the frequency and response
@@ -123,5 +124,3 @@ PRO OSRF::Apply_Response_Threshold, $
   CATCH, /CANCEL
   
 END ; PRO OSRF::Apply_Response_Threshold
-      
-       
