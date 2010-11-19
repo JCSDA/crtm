@@ -159,9 +159,9 @@ PRO OSRF::Apply_Response_Threshold, $
     Teff_Difference = Teff_outside - Teff_inside
     
     MESSAGE, General_Information+': Effective Temperature of Outside SRF '+$
-             strtrim(Teff_Outside,2)+': Effective Temperature of Inside SRF '+$
-             strtrim(Teff_Inside,2)+': Teff_Outside - Teff_Inside = '+$
-             strtrim(Teff_Difference,2), /INFORMATIONAL
+             strtrim(Teff_Outside,2)+'K: Effective Temperature of Inside SRF '+$
+             strtrim(Teff_Inside,2)+'K: Teff_Outside - Teff_Inside = '+$
+             strtrim(Teff_Difference,2)+'K', /INFORMATIONAL
   ENDIF 
   
   ptr_free, f_outside, r_outside, f_inside, r_inside
