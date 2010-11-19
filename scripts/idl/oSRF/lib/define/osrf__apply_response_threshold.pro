@@ -3,7 +3,7 @@ PRO OSRF::Apply_Response_Threshold, $
   Response_Threshold,  $ ; Input
   Detector = Detector, $ ; Input keyword
   Debug = Debug          ; Input keyword
-  
+
   ; Set up
   ; ...OSRF parameters
   @osrf_parameters
@@ -17,7 +17,6 @@ PRO OSRF::Apply_Response_Threshold, $
 
   self->Assign, new, Debug=Debug
   self->Assign, new_inside, Debug=Debug
-  self->Assign, new_outside, Debug=Debug
   new->Destroy, /No_Clear, Debug=Debug
   new_inside->Destroy, /No_Clear, Debug=Debug
   
@@ -27,12 +26,12 @@ PRO OSRF::Apply_Response_Threshold, $
     Channel = Channel, $
     Sensor_Id = Sensor_Id
     
-  min_inside_freq_idx  = INTARR(n_Bands)
-  min_outside_freq_idx = INTARR(n_Bands)
-  max_inside_freq_idx  = INTARR(n_Bands)
-  max_outside_freq_idx = INTARR(n_Bands)
-  n_Points_Inside  = INTARR(n_Bands)
-  n_Points_Outside = INTARR(n_Bands)
+  min_inside_freq_idx  = LONARR(n_Bands)
+  min_outside_freq_idx = LONARR(n_Bands)
+  max_inside_freq_idx  = LONARR(n_Bands)
+  max_outside_freq_idx = LONARR(n_Bands)
+  n_Points_Inside  = LONARR(n_Bands)
+  n_Points_Outside = LONARR(n_Bands)
   f_Inside  = PTRARR(n_Bands)
   r_Inside  = PTRARR(n_Bands)
   f_Outside = PTRARR(n_Bands)
@@ -40,7 +39,7 @@ PRO OSRF::Apply_Response_Threshold, $
   Bounds_Different = 0L
   
   General_Information = ''
-    
+
   FOR i = 0, n_Bands - 1 DO BEGIN
   
     IF ( Sensor_Type EQ VISIBLE_SENSOR ) THEN $
@@ -125,11 +124,12 @@ PRO OSRF::Apply_Response_Threshold, $
         +' outside and/or inside frequencies are different'     
     ENDELSE 
 
+    
   ENDFOR
-        
+
   new_inside->Allocate, n_Points_Inside, Debug=Debug
   new->Allocate, n_Points_Outside, Debug=Debug
-  
+
   FOR i = 0, n_Bands - 1 DO BEGIN
     ; Set the frequency and responses
     ; for the inside and outside grids
@@ -144,7 +144,7 @@ PRO OSRF::Apply_Response_Threshold, $
         Frequency=*(f_inside)[i], $
         Response=*(r_inside)[i]                      
   ENDFOR  
-  
+    
   IF ( Bounds_Different ) THEN BEGIN       
     new->Compute_Central_Frequency, Debug=Debug      
     new->Compute_Planck_Radiance, T, Debug=Debug
