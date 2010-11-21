@@ -3,12 +3,14 @@ PRO OSRF::Apply_Response_Threshold, $
   Response_Threshold,  $ ; Input
   Detector = Detector, $ ; Input keyword
   Debug = Debug          ; Input keyword
-
+ 
   ; Set up
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
+  ; ...Color Definitions
+  @color_db
   
   Detector = KEYWORD_SET(Detector) ? Detector : 1L
   
@@ -131,12 +133,18 @@ PRO OSRF::Apply_Response_Threshold, $
   new->Allocate, n_Points_Outside, Debug=Debug
 
   FOR i = 0, n_Bands - 1 DO BEGIN
+  
     ; Set the frequency and responses
     ; for the inside and outside grids
     new->Set_Property, $
       Band, $
       Frequency=*(f_outside)[i], $
       Response=*(r_outside)[i]
+      
+    new->Integrate, Debug=Debug
+    new->Compute_Central_Frequency, Debug=Debug
+    new->Compute_Planck_Coefficients, Debug=Debug
+    new->Compute_Polychromatic_Coefficients, Debug=Debug
     
     IF ( Bounds_Different ) THEN $ 
       new_inside->Set_Property, $
@@ -145,7 +153,11 @@ PRO OSRF::Apply_Response_Threshold, $
         Response=*(r_inside)[i]                      
   ENDFOR  
     
-  IF ( Bounds_Different ) THEN BEGIN       
+  IF ( Bounds_Different ) THEN BEGIN
+    self->Compute_Planck_Radiance, T, Debug=Debug
+    self.Convolved_R = self->Convolve(*self.Radiance, Debug=Debug)
+    result = Planck_Temperature(self.f0, self.Convolved_R, Teff_Original)
+
     new->Compute_Central_Frequency, Debug=Debug      
     new->Compute_Planck_Radiance, T, Debug=Debug
     new.Convolved_R = new->Convolve(*new.Radiance, Debug=Debug)
@@ -163,6 +175,25 @@ PRO OSRF::Apply_Response_Threshold, $
              strtrim(Teff_Inside,2)+'K: Teff_Outside - Teff_Inside = '+$
              strtrim(Teff_Difference,2)+'K', /INFORMATIONAL
   ENDIF 
+  
+  IF ( NOT (Sensor_Type EQ MICROWAVE_SENSOR) ) THEN BEGIN
+    wplot, f, r, $
+          TITLE=Sensor_Id+' ch.'+STRTRIM(Channel,2), $
+          XTITLE='Frequency (cm!U-1!N)', $
+          YTITLE='Relative Response', $
+          /nodata
+    woplot, f[0:min_outside_freq_idx[0]], r[0:min_outside_freq_idx[0]], color=cyan
+
+    woplot, f[min_outside_freq_idx[0]:min_inside_freq_idx[0]], r[min_outside_freq_idx[0]:min_inside_freq_idx[0]], $
+          color=red
+    woplot, f[min_inside_freq_idx[0]:max_outside_freq_idx[0]], r[min_inside_freq_idx[0]:max_outside_freq_idx[0]], $
+          color=green
+    woplot, f[max_inside_freq_idx[0]:max_outside_freq_idx[0]], r[max_inside_freq_idx[0]:max_outside_freq_idx[0]], $
+          color=red
+    woplot, f[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], r[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], $
+          color=cyan
+    q=get_kbrd(1)
+  ENDIF
   
   ptr_free, f_outside, r_outside, f_inside, r_inside
  
