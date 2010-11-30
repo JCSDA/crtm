@@ -149,6 +149,9 @@ PRO OSRF::Apply_Response_Threshold, $
   ENDFOR  
     
   IF ( Bounds_Different ) THEN BEGIN
+  
+    Radiometric_Impact_Filename = Sensor_Id+'_teff_output.txt'
+    
     self->Compute_Central_Frequency, Debug=Debug
     self->Compute_Planck_Radiance, T, Debug=Debug
     self.Convolved_R = self->Convolve(*self.Radiance, Debug=Debug)
@@ -166,10 +169,30 @@ PRO OSRF::Apply_Response_Threshold, $
     
     Teff_Difference = Teff_outside - Teff_inside
     
+    Percent_Radiance_Difference = ABS((new.Convolved_R - new_inside.Convolved_R)/ $
+                                     ((new.Convolved_R + new_inside.Convolved_R)/2.0d0)) * 100.0d0
+    
     MESSAGE, General_Information+': Effective Temperature of Outside SRF '+$
              strtrim(Teff_Outside,2)+'K: Effective Temperature of Inside SRF '+$
              strtrim(Teff_Inside,2)+'K: Teff_Outside - Teff_Inside = '+$
              strtrim(Teff_Difference,2)+'K', /INFORMATIONAL
+             
+    OPENW, lun, Radiometric_Impact_Filename, /get_lun, /append
+      IF ( Detector EQ 1 ) THEN BEGIN
+        printf, lun, Sensor_Id+': Channel #'+strtrim(Channel,2)+$
+                ': Response_Threshold = '+strtrim(Response_Threshold,2)
+      ENDIF
+      IF ( NOT (Sensor_Type EQ VISIBLE_SENSOR) ) THEN BEGIN
+        printf, lun, strtrim(Channel,2)+'    '+strtrim(Detector,2)+$
+                '    '+strtrim(Teff_Outside,2)+'    '+strtrim(Teff_Inside,2)+$
+                '    ' +strtrim(Teff_Difference,2)+'    '+strtrim(Teff_Original,2)
+      ENDIF ELSE BEGIN
+        printf, lun, strtrim(Channel,2)+'     '+strtrim(Detector,2)+$
+                '     '+strtrim(new.Convolved_R,2)+'    '+strtrim(new_inside.Convolved_R,2)+$
+                '     '+strtrim(Percent_Radiance_Difference,2)+'    '+strtrim(self.Convolved_R,2)
+      ENDELSE     
+    FREE_LUN, lun
+    
   ENDIF 
   
   IF ( NOT (Sensor_Type EQ MICROWAVE_SENSOR) ) THEN BEGIN
