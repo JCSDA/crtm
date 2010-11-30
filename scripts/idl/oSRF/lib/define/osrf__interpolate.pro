@@ -1,5 +1,6 @@
 PRO OSRF::Interpolate, $
   int_OSRF, $
+  Sigma = Sigma, $
   Debug = Debug
 
   ; Set up
@@ -9,7 +10,7 @@ PRO OSRF::Interpolate, $
   @osrf_pro_err_handler
  
   ; Perform the interpolation
-  Sigma = 5.0d0
+  IF ( NOT KEYWORD_SET(Sigma) ) THEN Sigma = 5.0d0
   FOR i = 0L, self.n_Bands-1L DO BEGIN
     f     = *(*self.Frequency)[i]
     r     = *(*self.Response)[i]
