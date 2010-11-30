@@ -140,11 +140,6 @@ PRO OSRF::Apply_Response_Threshold, $
       Band, $
       Frequency=*(f_outside)[i], $
       Response=*(r_outside)[i]
-      
-    new->Integrate, Debug=Debug
-    new->Compute_Central_Frequency, Debug=Debug
-    new->Compute_Planck_Coefficients, Debug=Debug
-    new->Compute_Polychromatic_Coefficients, Debug=Debug
     
     IF ( Bounds_Different ) THEN $ 
       new_inside->Set_Property, $
@@ -154,6 +149,7 @@ PRO OSRF::Apply_Response_Threshold, $
   ENDFOR  
     
   IF ( Bounds_Different ) THEN BEGIN
+    self->Compute_Central_Frequency, Debug=Debug
     self->Compute_Planck_Radiance, T, Debug=Debug
     self.Convolved_R = self->Convolve(*self.Radiance, Debug=Debug)
     result = Planck_Temperature(self.f0, self.Convolved_R, Teff_Original)
@@ -186,14 +182,18 @@ PRO OSRF::Apply_Response_Threshold, $
 
     woplot, f[min_outside_freq_idx[0]:min_inside_freq_idx[0]], r[min_outside_freq_idx[0]:min_inside_freq_idx[0]], $
           color=red
-    woplot, f[min_inside_freq_idx[0]:max_outside_freq_idx[0]], r[min_inside_freq_idx[0]:max_outside_freq_idx[0]], $
+    woplot, f[min_inside_freq_idx[0]:max_inside_freq_idx[0]], r[min_inside_freq_idx[0]:max_inside_freq_idx[0]], $
           color=green
     woplot, f[max_inside_freq_idx[0]:max_outside_freq_idx[0]], r[max_inside_freq_idx[0]:max_outside_freq_idx[0]], $
           color=red
     woplot, f[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], r[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], $
           color=cyan
-    q=get_kbrd(1)
   ENDIF
+  
+  new->Integrate, Debug=Debug
+  new->Compute_Central_Frequency, Debug=Debug
+  new->Compute_Planck_Coefficients, Debug=Debug
+  new->Compute_Polychromatic_Coefficients, Debug=Debug
   
   ptr_free, f_outside, r_outside, f_inside, r_inside
  
