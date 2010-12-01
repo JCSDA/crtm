@@ -1,8 +1,9 @@
 PRO OSRF::Apply_Response_Threshold, $
   new               ,  $ ; Output
   Response_Threshold,  $ ; Input
-  Detector = Detector, $ ; Input keyword
-  Debug = Debug          ; Input keyword
+  Plot_Cutoffs=Plot_Cutoffs, $ ; Input keyword
+  Detector=Detector, $ ; Input keyword
+  Debug=Debug          ; Input keyword
  
   ; Set up
   ; ...OSRF parameters
@@ -195,7 +196,7 @@ PRO OSRF::Apply_Response_Threshold, $
     
   ENDIF 
   
-  IF ( NOT (Sensor_Type EQ MICROWAVE_SENSOR) ) THEN BEGIN
+  IF ( NOT (Sensor_Type EQ MICROWAVE_SENSOR) AND Plot_Cutoffs ) THEN BEGIN
     wplot, f, r, $
           TITLE=Sensor_Id+' ch.'+STRTRIM(Channel,2), $
           XTITLE='Frequency (cm!U-1!N)', $
