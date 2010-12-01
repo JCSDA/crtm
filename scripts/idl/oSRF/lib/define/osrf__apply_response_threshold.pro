@@ -19,9 +19,9 @@ PRO OSRF::Apply_Response_Threshold, $
   TERRESTRIAL_TEMPERATURE = 285L
 
   self->Assign, new, Debug=Debug
-  self->Assign, new_inside, Debug=Debug
+  self->Assign, new_outside, Debug=Debug
   new->Destroy, /No_Clear, Debug=Debug
-  new_inside->Destroy, /No_Clear, Debug=Debug
+  new_outside->Destroy, /No_Clear, Debug=Debug
   
   self->Get_Property, $
     n_Bands = n_Bands, $
@@ -130,8 +130,8 @@ PRO OSRF::Apply_Response_Threshold, $
     
   ENDFOR
 
-  new_inside->Allocate, n_Points_Inside, Debug=Debug
-  new->Allocate, n_Points_Outside, Debug=Debug
+  new_outside->Allocate, n_Points_Outside, Debug=Debug
+  new->Allocate, n_Points_Inside, Debug=Debug
 
   FOR i = 0, n_Bands - 1 DO BEGIN
   
@@ -139,14 +139,14 @@ PRO OSRF::Apply_Response_Threshold, $
     ; for the inside and outside grids
     new->Set_Property, $
       Band, $
-      Frequency=*(f_outside)[i], $
-      Response=*(r_outside)[i]
+      Frequency=*(f_inside)[i], $
+      Response=*(r_inside)[i]
     
     IF ( Bounds_Different ) THEN $ 
-      new_inside->Set_Property, $
+      new_outside->Set_Property, $
         Band, $
-        Frequency=*(f_inside)[i], $
-        Response=*(r_inside)[i]                      
+        Frequency=*(f_outside)[i], $
+        Response=*(r_outside)[i]                      
   ENDFOR  
     
   IF ( Bounds_Different ) THEN BEGIN
@@ -161,17 +161,17 @@ PRO OSRF::Apply_Response_Threshold, $
     new->Compute_Central_Frequency, Debug=Debug      
     new->Compute_Planck_Radiance, T, Debug=Debug
     new.Convolved_R = new->Convolve(*new.Radiance, Debug=Debug)
-    result = Planck_Temperature(new.f0, new.Convolved_R, Teff_outside)
+    result = Planck_Temperature(new.f0, new.Convolved_R, Teff_inside)
     
-    new_inside->Compute_Central_Frequency, Debug=Debug
-    new_inside->Compute_Planck_Radiance, T, Debug=Debug
-    new_inside.Convolved_R = new_inside->Convolve(*new_inside.Radiance, Debug=Debug)
-    result = Planck_Temperature(new_inside.f0, new_inside.Convolved_R, Teff_inside)
+    new_outside->Compute_Central_Frequency, Debug=Debug
+    new_outside->Compute_Planck_Radiance, T, Debug=Debug
+    new_outside.Convolved_R = new_outside->Convolve(*new_outside.Radiance, Debug=Debug)
+    result = Planck_Temperature(new_outside.f0, new_outside.Convolved_R, Teff_outside)
     
     Teff_Difference = Teff_outside - Teff_inside
     
-    Percent_Radiance_Difference = ABS((new.Convolved_R - new_inside.Convolved_R)/ $
-                                     ((new.Convolved_R + new_inside.Convolved_R)/2.0d0)) * 100.0d0
+    Percent_Radiance_Difference = ABS((new_outside.Convolved_R - new.Convolved_R)/ $
+                                     ((new_outside.Convolved_R + new.Convolved_R)/2.0d0)) * 100.0d0
     
     MESSAGE, General_Information+': Effective Temperature of Outside SRF '+$
              strtrim(Teff_Outside,2)+'K: Effective Temperature of Inside SRF '+$
@@ -189,7 +189,7 @@ PRO OSRF::Apply_Response_Threshold, $
                 '    ' +strtrim(Teff_Difference,2)+'    '+strtrim(Teff_Original,2)
       ENDIF ELSE BEGIN
         printf, lun, strtrim(Channel,2)+'     '+strtrim(Detector,2)+$
-                '     '+strtrim(new.Convolved_R,2)+'    '+strtrim(new_inside.Convolved_R,2)+$
+                '     '+strtrim(new_outside.Convolved_R,2)+'    '+strtrim(new.Convolved_R,2)+$
                 '     '+strtrim(Percent_Radiance_Difference,2)+'    '+strtrim(self.Convolved_R,2)
       ENDELSE     
     FREE_LUN, lun
@@ -212,6 +212,7 @@ PRO OSRF::Apply_Response_Threshold, $
           color=red
     woplot, f[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], r[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], $
           color=cyan
+    q=get_kbrd()
   ENDIF
   
   new->Integrate, Debug=Debug
