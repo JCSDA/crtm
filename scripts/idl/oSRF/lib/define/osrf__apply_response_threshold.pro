@@ -1,228 +1,147 @@
-PRO OSRF::Apply_Response_Threshold, $
-  new               ,  $ ; Output
-  Response_Threshold,  $ ; Input
-  Plot_Cutoffs=Plot_Cutoffs, $ ; Input keyword
-  Detector=Detector, $ ; Input keyword
-  Debug=Debug          ; Input keyword
+;+
+; oSRF method to apply a response threshold to an SRF.
+;
+; Plots of results are only generated if the threshold cutoffs
+; occur at the same indices when applied from outer edges in,
+; and from the SRF centre out.
+
+PRO oSRF::Apply_Response_Threshold, $
+  Response_Threshold , $  ; Input
+  No_Plot  = No_Plot , $  ; Input keyword
+  Debug    = Debug        ; Input keyword
+;-
  
   ; Set up
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
-  ; ...Color Definitions
-  @color_db
-  
-  Detector = KEYWORD_SET(Detector) ? Detector : 1L
-  
-  SOLAR_TEMPERATURE       = 5700L
-  TERRESTRIAL_TEMPERATURE = 285L
+  ; ...Check keywords
+  Plot_Data  = NOT KEYWORD_SET(No_Plot)
+  Plot_Pause = NOT KEYWORD_SET(No_Pause)
 
-  self->Assign, new, Debug=Debug
-  self->Assign, new_outside, Debug=Debug
-  new->Destroy, /No_Clear, Debug=Debug
-  new_outside->Destroy, /No_Clear, Debug=Debug
+
+  ; Extract dimension and info from oSRF
+  self->Get_Property, Debug=Debug, $
+    n_Bands = n_bands, $
+    Channel = channel, $
+    Sensor_Id = sensor_id
+  sensor_id = STRTRIM(sensor_id,2)
   
-  self->Get_Property, $
-    n_Bands = n_Bands, $
-    Sensor_Type = Sensor_Type, $
-    Channel = Channel, $
-    Sensor_Id = Sensor_Id
+  
+  ; Create structures for data
+  n_points = LONARR(n_bands)
+  frequency = LIST()
+  response  = LIST()
+
+
+  ; Begin band loop 
+  FOR n = 0, n_Bands-1 DO BEGIN
+    band = n+1
     
-  min_inside_freq_idx  = LONARR(n_Bands)
-  min_outside_freq_idx = LONARR(n_Bands)
-  max_inside_freq_idx  = LONARR(n_Bands)
-  max_outside_freq_idx = LONARR(n_Bands)
-  n_Points_Inside  = LONARR(n_Bands)
-  n_Points_Outside = LONARR(n_Bands)
-  f_Inside  = PTRARR(n_Bands)
-  r_Inside  = PTRARR(n_Bands)
-  f_Outside = PTRARR(n_Bands)
-  r_Outside = PTRARR(n_Bands)
-  Bounds_Different = 0L
-  
-  General_Information = ''
-
-  FOR i = 0, n_Bands - 1 DO BEGIN
-  
-    IF ( Sensor_Type EQ VISIBLE_SENSOR ) THEN $
-      T=SOLAR_TEMPERATURE $
-    ELSE $
-      T=TERRESTRIAL_TEMPERATURE
-  
-    Band = i + 1
-  
-    self->Get_Property, $
-      Band, $
+    ; Get the current band data
+    self->Get_Property, Debug=Debug, $
+      band, $
+      n_Points  = np, $
       Frequency = f, $
-      Response = r
+      Response  = r
+    
+    ; Determine max value index for current band
+    max_r = MAX(r, max_idx)
+
+
+    ; Find inner cutoff points
+    ; ...low-frequency side
+    FOR i = max_idx, 0L, -1L DO $
+      IF (r[i] LT Response_Threshold ) THEN BREAK
+    inner_low_idx = i + 1L
+    ; ...high-frequency side
+    FOR i = max_idx, np-1L DO $
+      IF (r[i] LT Response_Threshold ) THEN BREAK
+    inner_high_idx = i - 1L
+
+
+    ; Find outer cutoff points
+    ; ...low-frequency side
+    FOR i = 0, max_idx DO $
+      IF (r[i] GT Response_Threshold ) THEN BREAK
+    outer_low_idx = i
+    ; ...high-frequency side
+    FOR i = np-1L, max_idx, -1L DO $
+      IF (r[i] GT Response_Threshold ) THEN BREAK
+    outer_high_idx = i
+
+
+    ; Issue warning if inner and outer indices differ
+    IF ( inner_low_idx  NE outer_low_idx OR $
+         inner_high_idx NE outer_high_idx ) THEN BEGIN
+      channel_string = ' channel ' + STRTRIM(channel,2)
+      band_string    = (n_bands GT 1) ? ', band ' + STRTRIM(band,2) : ''
+      MESSAGE, 'Inner and outer cutoff points are different for ' + $
+               sensor_id + channel_string + band_string, $
+               /INFORMATIONAL
+               
+      ; Plot SRF data for inspection
+      IF ( Plot_Data ) THEN BEGIN
+        p = PLOT( f, r, $
+                  TITLE=sensor_id + channel_string + ' threshold cutoff discrepancy', $
+                  XTITLE='Frequency (cm!U-1!N)', $
+                  YTITLE='Relative Response', $
+                  SYMBOL='diamond' )
+        p.Refresh, /DISABLE
+        ; ...Plot response threshold
+        !NULL = PLOT(p.Xrange, [Response_Threshold, Response_Threshold], $
+                     OVERPLOT=p, LINESTYLE='dash')
+        ; ...Plot maximum SRF value point
+        max_f = [f[max_idx],f[max_idx]]
+        !NULL = PLOT(max_f, p.Yrange, OVERPLOT=p, LINESTYLE='dash')
+        ; ...Plot inner cutoff points
+        inner_low_f = [f[inner_low_idx],f[inner_low_idx]]
+        !NULL = PLOT(inner_low_f, p.Yrange, OVERPLOT=p, COLOR='red')
+        inner_high_f = [f[inner_high_idx],f[inner_high_idx]]
+        !NULL = PLOT(inner_high_f, p.Yrange, OVERPLOT=p, COLOR='red')
+        ; ...Plot outer cutoff points
+        outer_low_f = [f[outer_low_idx],f[outer_low_idx]]
+        !NULL = PLOT(outer_low_f, p.Yrange, OVERPLOT=p, COLOR='green')
+        outer_high_f = [f[outer_high_idx],f[outer_high_idx]]
+        !NULL = PLOT(outer_high_f, p.Yrange, OVERPLOT=p, COLOR='green')
+        p.Refresh
+
+        ; Pause for reflection
+        PRINT, FORMAT='(/5x,"Press <ENTER> to continue, Q to quit, S to stop.")'
+        q = GET_KBRD(1)
+        IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
+        IF ( STRUPCASE(q) EQ 'S' ) THEN STOP
+      ENDIF
       
-    min_inside_freq_idx[i]  = 0L
-    min_outside_freq_idx[i] = 0L
-    max_inside_freq_idx[i]  = N_ELEMENTS(f) - 1L
-    max_outside_freq_idx[i] = N_ELEMENTS(f) - 1L
+    ENDIF
 
-    n_Orig_Points = N_ELEMENTS(f)     
-
-    maxval = MAX(r, maxidx)
-    FOR n = maxidx, 0, -1 DO BEGIN  
-      IF ( r[n] LT Response_Threshold ) THEN BEGIN
-        min_inside_freq_idx[i] = n 
-        BREAK
-      ENDIF
-    ENDFOR
-
-    FOR n = maxidx, n_Orig_Points - 1 DO BEGIN
-      IF ( r[n] LT Response_Threshold ) THEN BEGIN
-        max_inside_freq_idx[i] = n 
-        BREAK
-      ENDIF
-    ENDFOR
-
-    FOR n = 0, maxidx DO BEGIN
-      IF ( r[n] GE Response_Threshold ) THEN BEGIN
-        CASE n OF
-          0: min_outside_freq_idx[i] = 0
-          ELSE: min_outside_freq_idx[i] = n - 1
-        ENDCASE
-        BREAK
-      ENDIF
-    ENDFOR
-
-    FOR n = n_Orig_Points - 1, maxidx, -1 DO BEGIN 
-      IF ( r[n] GE Response_Threshold ) THEN BEGIN
-        CASE n OF
-          n_Orig_Points - 1: max_outside_freq_idx[i] = n_Orig_Points - 1
-          ELSE: max_outside_freq_idx[i] = n + 1
-        ENDCASE
-        BREAK
-      ENDIF
-    ENDFOR
-   
-    n_Points_Inside[i]  = (max_inside_freq_idx[i] - min_inside_freq_idx[i]) + 1L  
-    n_Points_Outside[i] = (max_outside_freq_idx[i] - min_outside_freq_idx[i]) + 1L
+    ; Add truncated SRFs to the end of the list
+    frequency.Add, f[inner_low_idx:inner_high_idx]
+    response.Add,  r[inner_low_idx:inner_high_idx]
+    n_points[n] = inner_high_idx - inner_low_idx + 1L
     
-    f_inside[i] = ptr_new(f[min_inside_freq_idx[i]:max_inside_freq_idx[i]])
-    r_inside[i] = ptr_new(r[min_inside_freq_idx[i]:max_inside_freq_idx[i]])
-    
-    f_outside[i] = ptr_new(f[min_outside_freq_idx[i]:max_outside_freq_idx[i]])
-    r_outside[i] = ptr_new(r[min_outside_freq_idx[i]:max_outside_freq_idx[i]])
-    
-    IF ( min_inside_freq_idx[i] GT min_outside_freq_idx[i] OR $
-         max_inside_freq_idx[i] LT max_outside_freq_idx[i] ) THEN $
-      Bounds_Different = 1L
-      
-    IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN BEGIN      
-      IF ( Bounds_Different ) THEN $
-        General_Information = General_Information+'For '+Sensor_Id+$
-        ' Channel # '+strtrim(Channel,2)+ $
-        ' Band # '+strtrim(Band,2)+' and response' $
-        +' cutoff of '+strtrim(Response_Threshold,2)+' the' $
-        +' outside and/or inside frequencies are different'             
-    ENDIF ELSE BEGIN    
-      IF ( Bounds_Different ) THEN $          
-        General_Information = 'For '+Sensor_Id+' Channel # '+strtrim(Channel,2)+ $
-        ' Detector # '+strtrim(Detector,2)+' and response' $
-        +' cutoff of '+strtrim(Response_Threshold,2)+' the' $ 
-        +' outside and/or inside frequencies are different'     
-    ENDELSE 
 
-    
   ENDFOR
 
-  new_outside->Allocate, n_Points_Outside, Debug=Debug
-  new->Allocate, n_Points_Inside, Debug=Debug
 
-  FOR i = 0, n_Bands - 1 DO BEGIN
-  
-    ; Set the frequency and responses
-    ; for the inside and outside grids
-    new->Set_Property, $
-      Band, $
-      Frequency=*(f_inside)[i], $
-      Response=*(r_inside)[i]
-    
-    IF ( Bounds_Different ) THEN $ 
-      new_outside->Set_Property, $
-        Band, $
-        Frequency=*(f_outside)[i], $
-        Response=*(r_outside)[i]                      
-  ENDFOR  
-    
-  IF ( Bounds_Different ) THEN BEGIN
-  
-    Radiometric_Impact_Filename = Sensor_Id+'_teff_output.txt'
-    
-    self->Compute_Central_Frequency, Debug=Debug
-    self->Compute_Planck_Radiance, T, Debug=Debug
-    self.Convolved_R = self->Convolve(*self.Radiance, Debug=Debug)
-    result = Planck_Temperature(self.f0, self.Convolved_R, Teff_Original)
-
-    new->Compute_Central_Frequency, Debug=Debug      
-    new->Compute_Planck_Radiance, T, Debug=Debug
-    new.Convolved_R = new->Convolve(*new.Radiance, Debug=Debug)
-    result = Planck_Temperature(new.f0, new.Convolved_R, Teff_inside)
-    
-    new_outside->Compute_Central_Frequency, Debug=Debug
-    new_outside->Compute_Planck_Radiance, T, Debug=Debug
-    new_outside.Convolved_R = new_outside->Convolve(*new_outside.Radiance, Debug=Debug)
-    result = Planck_Temperature(new_outside.f0, new_outside.Convolved_R, Teff_outside)
-    
-    Teff_Difference = Teff_outside - Teff_inside
-    
-    Percent_Radiance_Difference = ABS((new_outside.Convolved_R - new.Convolved_R)/ $
-                                     ((new_outside.Convolved_R + new.Convolved_R)/2.0d0)) * 100.0d0
-    
-    MESSAGE, General_Information+': Effective Temperature of Outside SRF '+$
-             strtrim(Teff_Outside,2)+'K: Effective Temperature of Inside SRF '+$
-             strtrim(Teff_Inside,2)+'K: Teff_Outside - Teff_Inside = '+$
-             strtrim(Teff_Difference,2)+'K', /INFORMATIONAL
-             
-    OPENW, lun, Radiometric_Impact_Filename, /get_lun, /append
-      IF ( Detector EQ 1 ) THEN BEGIN
-        printf, lun, Sensor_Id+': Channel #'+strtrim(Channel,2)+$
-                ': Response_Threshold = '+strtrim(Response_Threshold,2)
-      ENDIF
-      IF ( NOT (Sensor_Type EQ VISIBLE_SENSOR) ) THEN BEGIN
-        printf, lun, strtrim(Channel,2)+'    '+strtrim(Detector,2)+$
-                '    '+strtrim(Teff_Outside,2)+'    '+strtrim(Teff_Inside,2)+$
-                '    ' +strtrim(Teff_Difference,2)+'    '+strtrim(Teff_Original,2)
-      ENDIF ELSE BEGIN
-        printf, lun, strtrim(Channel,2)+'     '+strtrim(Detector,2)+$
-                '     '+strtrim(new_outside.Convolved_R,2)+'    '+strtrim(new.Convolved_R,2)+$
-                '     '+strtrim(Percent_Radiance_Difference,2)+'    '+strtrim(self.Convolved_R,2)
-      ENDELSE     
-    FREE_LUN, lun
-    
-  ENDIF 
-  
-  IF ( NOT (Sensor_Type EQ MICROWAVE_SENSOR) AND Plot_Cutoffs ) THEN BEGIN
-    wplot, f, r, $
-          TITLE=Sensor_Id+' ch.'+STRTRIM(Channel,2), $
-          XTITLE='Frequency (cm!U-1!N)', $
-          YTITLE='Relative Response', $
-          /nodata
-    woplot, f[0:min_outside_freq_idx[0]], r[0:min_outside_freq_idx[0]], color=cyan
-
-    woplot, f[min_outside_freq_idx[0]:min_inside_freq_idx[0]], r[min_outside_freq_idx[0]:min_inside_freq_idx[0]], $
-          color=red
-    woplot, f[min_inside_freq_idx[0]:max_inside_freq_idx[0]], r[min_inside_freq_idx[0]:max_inside_freq_idx[0]], $
-          color=green
-    woplot, f[max_inside_freq_idx[0]:max_outside_freq_idx[0]], r[max_inside_freq_idx[0]:max_outside_freq_idx[0]], $
-          color=red
-    woplot, f[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], r[max_outside_freq_idx[0]:N_ELEMENTS(f)-1], $
-          color=cyan
-    q=get_kbrd()
-  ENDIF
-  
-  new->Integrate, Debug=Debug
-  new->Compute_Central_Frequency, Debug=Debug
-  new->Compute_Planck_Coefficients, Debug=Debug
-  new->Compute_Polychromatic_Coefficients, Debug=Debug
-  
-  ptr_free, f_outside, r_outside, f_inside, r_inside
- 
-  ; Done
-  CATCH, /CANCEL
+  ; Load the truncated SRF data into the oSRF object
+  ; ...Reallocate the object to the new data size(s)
+  self->Allocate, n_points, Debug=Debug
+  ; ...Clear flags
+  self->Clear_Flag, $
+    Debug=Debug, $
+    /All
+  ; ...Set the data values
+  FOR n = 0, n_bands - 1 DO BEGIN
+    band = n+1
+    f  = frequency.Remove(n)
+    r  = response.Remove(n)
+    self->Set_Property, $
+      band, $
+      Debug=Debug, $
+      Frequency = f, $
+      Response  = r
+  ENDFOR
   
 END ; PRO OSRF::Apply_Response_Threshold

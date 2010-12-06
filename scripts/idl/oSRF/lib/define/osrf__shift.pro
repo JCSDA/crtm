@@ -67,8 +67,4 @@ PRO OSRF::Shift, $
   ; Set the shift flag
   self->Set_Flag, /Frequency_Shift
     
-    
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Shift

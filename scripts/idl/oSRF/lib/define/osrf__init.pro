@@ -97,7 +97,6 @@ FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
 
 
   ; Done
-  CATCH, /CANCEL
   RETURN, TRUE
  
 END ; FUNCTION OSRF::Init

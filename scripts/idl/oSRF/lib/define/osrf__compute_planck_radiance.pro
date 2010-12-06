@@ -22,8 +22,4 @@ PRO OSRF::Compute_Planck_Radiance, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDFOR
 
-
-  ; Done
-  CATCH, /CANCEL
-
 END ; PRO OSRF::Compute_Planck_Radiance

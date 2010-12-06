@@ -35,8 +35,4 @@ PRO OSRF::Integrate, $
     Debug    = Debug
   self->Set_Flag, /Integrated
 
-
-  ; Done
-  CATCH, /CANCEL
-
 END ; PRO OSRF::Integrate

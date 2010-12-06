@@ -15,8 +15,4 @@ PRO OSRF::Compute_Central_Frequency, $
     Debug=Debug
   self->Set_Flag, /f0_Computed
 
-
-  ; Done
-  CATCH, /CANCEL
-
 END ; PRO OSRF::Compute_Central_Frequency

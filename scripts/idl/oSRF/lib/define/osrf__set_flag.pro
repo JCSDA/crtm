@@ -150,8 +150,4 @@ PRO OSRF::Set_Flag, $
   IF ( KEYWORD_SET(Frequency_Shift     ) ) THEN self.Flags = self.Flags OR FREQUENCY_SHIFT_FLAG
   IF ( KEYWORD_SET(Band_Reflect        ) ) THEN self.Flags = self.Flags OR BAND_REFLECT_FLAG
 
-  
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Set_Flag

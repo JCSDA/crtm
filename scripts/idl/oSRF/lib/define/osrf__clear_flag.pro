@@ -166,7 +166,4 @@ PRO OSRF::Clear_Flag, $
   IF ( KEYWORD_SET(Band_Reflect        ) ) THEN self.Flags = self.Flags AND ( NOT BAND_REFLECT_FLAG         )
   IF ( KEYWORD_SET(All                 ) ) THEN self.Flags = 0L
   
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Clear_Flag

@@ -266,8 +266,4 @@ PRO OSRF::Set_Property, $
     *(*self.Response)[_Band] = Response
   ENDIF
   
-  
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Set_Property

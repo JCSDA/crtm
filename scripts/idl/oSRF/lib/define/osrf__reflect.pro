@@ -89,8 +89,4 @@ PRO OSRF::Reflect, $
   ; Set the reflected flag
   self->Set_Flag, /Band_Reflect
 
-    
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Reflect

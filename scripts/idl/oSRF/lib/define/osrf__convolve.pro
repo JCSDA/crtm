@@ -39,7 +39,6 @@ FUNCTION OSRF::Convolve, $
 
 
   ; Done
-  CATCH, /CANCEL
   RETURN, y
  
 END ; FUNCTION OSRF::Convolve

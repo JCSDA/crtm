@@ -65,8 +65,4 @@ PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
   ; Deallocate pointers, and clear scalars
   self->Destroy, Debug=Debug
 
-  ; Done
-  Done:
-  CATCH, /CANCEL
-
 END ; PRO OSRF::Cleanup

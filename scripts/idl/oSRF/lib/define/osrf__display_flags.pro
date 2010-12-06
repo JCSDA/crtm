@@ -67,8 +67,4 @@ PRO OSRF::Display_Flags, $
   PRINT, 'Sideband reflect     : ', $
     OSRF_BAND_REFLECT_FLAG_STATUS[self->Flag_Is_Set(BAND_REFLECT_FLAG)]
 
-  
-  ; Done
-  CATCH, /CANCEL
- 
 END ; PRO OSRF::Display_Flags

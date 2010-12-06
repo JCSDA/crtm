@@ -42,9 +42,5 @@ PRO OSRF::Compute_Planck_Coefficients, $
   self->Set_Property, $
     Planck_Coeffs=Planck_Coeffs, $
     Debug=Debug
-  
-    
-  ; Done
-  CATCH, /CANCEL
 
 END ; PRO OSRF::Compute_Planck_Coefficients
