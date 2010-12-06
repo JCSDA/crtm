@@ -155,13 +155,13 @@ END
 ;+
 ;
 ; NAME:
-;       oSRF__Load_<sensor>
+;       oSRF::Load_<sensor>
 ;
 ; PURPOSE:
 ;       This procedure loads oSRF objects with <sensor> SRF data.
 ;
 ; CALLING SEQUENCE:
-;       oSRF::Load_<sensor>, $
+;       obj->[oSRF::]Load_<sensor>, $
 ;         Sensor_Id        , $ ; Input
 ;         Channel          , $ ; Input
 ;         Path    = Path   , $ ; Input keyword.
@@ -223,7 +223,7 @@ END
 ;
 ;-
 
-PRO oSRF__Load_<sensor>, $
+PRO oSRF::Load_<sensor>, $
   Sensor_Id        , $ ; Input
   Channel          , $ ; Input
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
@@ -242,7 +242,7 @@ PRO oSRF__Load_<sensor>, $
 
 
   ; Parameters
-  HISTORY = "$Id: osrf__load_SENSOR.pro 11295 2010-12-02 16:52:29Z paul.vandelst@noaa.gov $"
+  HISTORY = "$Id: $"
 
 
   ; Construct file name
