@@ -8,8 +8,8 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Average, $
-;         iSRF                     , $ ; Input data
-;         Debug       = Debug      
+;         iSRF         , $ ; Input
+;         Debug = Debug    ; Input keyword
 ;
 ; INPUTS:
 ;       iSRF:        Array of oSRF objects containing the interpolated reponse data to
@@ -64,15 +64,13 @@ PRO OSRF::Average, $
   ; Tolerance above frequency maximum for the average grid
   Tolerance_Above_Max = DOUBLE(1E-5)
   
-  ; ...Assign Metadata
+  ; ...Assign non-averaging dependent metadata
   isrf[0]->Get_Property, $
       Channel     = channel    , $
-      Sensor_Id   = sensor_id  , $
       Sensor_Type = sensor_type, $
       Debug=Debug      
   self->Set_Property, $
       Channel     = channel    , $
-      Sensor_Id   = sensor_id  , $
       Sensor_Type = sensor_type, $
       Debug=Debug
   
@@ -91,7 +89,7 @@ PRO OSRF::Average, $
   FOR n = 0, n_sets-1 DO BEGIN
     FOR i = 0, n_bands-1 DO BEGIN
       band = i+1
-      isrf[n]->Get_Property, band, f1=f1, f2=f2
+      isrf[n]->Get_Property, band, f1=f1, f2=f2, Debug=Debug
       fmin[i] = fmin[i] > f1
       fmax[i] = fmax[i] < f2
     ENDFOR
@@ -105,7 +103,7 @@ PRO OSRF::Average, $
     FOR n = 0, n_sets-1 DO BEGIN
 
       ; Get the data
-      isrf[n]->Get_Property, band, Frequency=f, Response=r
+      isrf[n]->Get_Property, band, Frequency=f, Response=r, Debug=Debug
 
       ; Determine extraction indices
       idx = WHERE( (f - fmin[i]) GE Tolerance_Below_Min  AND $
@@ -142,6 +140,7 @@ PRO OSRF::Average, $
     r = (band_data[i])[1]
     self->Set_Property, band, Frequency=f, Response=r, Debug=Debug
   ENDFOR
+
   ; Recompute the various SRF parameters
   self->Integrate, Debug=Debug
   self->Compute_Central_Frequency, Debug=Debug

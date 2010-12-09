@@ -2,13 +2,15 @@
 ; oSRF method to apply a response threshold to an SRF.
 ;
 ; Plots of results are only generated if the threshold cutoffs
-; occur at the same indices when applied from outer edges in,
-; and from the SRF centre out.
+; DO NOT occur at the same indices when applied from outer
+; edges in, and from the SRF centre out.
 
 PRO oSRF::Apply_Response_Threshold, $
   Response_Threshold , $  ; Input
   No_Plot  = No_Plot , $  ; Input keyword
-  Debug    = Debug        ; Input keyword
+  No_Pause = No_Pause, $  ; Input keyword
+  Debug    = Debug   , $  ; Input keyword
+  gRef     = gRef         ; Output keyword
 ;-
  
   ; Set up
@@ -19,6 +21,9 @@ PRO oSRF::Apply_Response_Threshold, $
   ; ...Check keywords
   Plot_Data  = NOT KEYWORD_SET(No_Plot)
   Plot_Pause = NOT KEYWORD_SET(No_Pause)
+  ; ...Create list for output graphics reference keyword
+  Buffer = KEYWORD_SET(No_Pause)
+  gRef = HASH()
 
 
   ; Extract dimension and info from oSRF
@@ -87,7 +92,11 @@ PRO oSRF::Apply_Response_Threshold, $
                   TITLE=sensor_id + channel_string + ' threshold cutoff discrepancy', $
                   XTITLE='Frequency (cm!U-1!N)', $
                   YTITLE='Relative Response', $
-                  SYMBOL='diamond' )
+                  XTICKFONT_SIZE=10, $
+                  YTICKFONT_SIZE=10, $
+                  SYMBOL='diamond', $
+                  SYM_SIZE=0.6, $
+                  BUFFER=Buffer )
         p.Refresh, /DISABLE
         ; ...Plot response threshold
         !NULL = PLOT(p.Xrange, [Response_Threshold, Response_Threshold], $
@@ -106,12 +115,16 @@ PRO oSRF::Apply_Response_Threshold, $
         outer_high_f = [f[outer_high_idx],f[outer_high_idx]]
         !NULL = PLOT(outer_high_f, p.Yrange, OVERPLOT=p, COLOR='green')
         p.Refresh
+        ; ...Save the object reference for this band
+        gRef[band] = p
 
-        ; Pause for reflection
-        PRINT, FORMAT='(/5x,"Press <ENTER> to continue, Q to quit, S to stop.")'
-        q = GET_KBRD(1)
-        IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
-        IF ( STRUPCASE(q) EQ 'S' ) THEN STOP
+        ; Only pause if not at last band
+        IF ( Plot_Pause AND (band LT n_bands) ) THEN BEGIN
+          PRINT, FORMAT='(/5x,"Press <ENTER> to continue, Q to quit, S to stop.")'
+          q = GET_KBRD(1)
+          IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
+          IF ( STRUPCASE(q) EQ 'S' ) THEN STOP
+        ENDIF
       ENDIF
       
     ENDIF
@@ -122,7 +135,7 @@ PRO oSRF::Apply_Response_Threshold, $
     n_points[n] = inner_high_idx - inner_low_idx + 1L
     
 
-  ENDFOR
+  ENDFOR  ; Band loop
 
 
   ; Load the truncated SRF data into the oSRF object
