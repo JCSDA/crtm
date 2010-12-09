@@ -24,7 +24,7 @@
 \begin{document}
 \maketitle
 
-\draftwatermark
+%\draftwatermark
 
 % The front matter
 %=================
@@ -58,7 +58,7 @@
 %=====================
 This document describes the pre-processing applied to the NPP VIIRS spectral response functions (SRFs), obtained from \cite{VIIRS_SRF_Data}, to prepare for use in the CRTM processing chain. The SRFs are used to generate channel central frequencies, as well as in the convolution of monochromatic quantities such as Planck radiances or line-by-line (LBL) model generated transmittances to produce such things as polychromatic correction coefficients and instrument resolution transmittances. The latter, for a diverse set of atmospheric profiles, are then regressed against a set of predictors to produce the fast transmittance model coefficients used by the CRTM.
 
-For the VIIRS we are treating the imager (high spatial resolution; channels I1 - I5) and the moderate spatial resolution sensor (channels M1 - M16) as different instruments. Additionally, because the transmittance model for visible channels is slightly different from that for infrared and microwave channels, the visible channels are also treated as a different sensor. As such, channels I1-I3 and M1-11 are considered visible in the CRTM. These designations effectviely give us four different sensor for the purposes of the generating coefficient files for the CRTM. The sensor identifiers and their channels are shown in table \ref{tab:sensor_id_designation}.
+For the VIIRS we are treating the imager (high spatial resolution; channels I1 - I5) and the moderate spatial resolution sensor (channels M1 - M16) as different instruments. Additionally, because the transmittance model for visible channels is slightly different from that for infrared and microwave channels, the visible channels are also treated as a different sensor. As such, channels I1-I3 and M1-11 are considered visible in the CRTM. These designations effectively give us four different sensors for which we will generate CRTM coefficient files. The sensor identifiers and their channels are shown in table \ref{tab:sensor_id_designation}.
 \begin{table}[htp]
   \centering
   \begin{tabular}{c c c}
@@ -124,7 +124,7 @@ For a relatively low response threshold value (e.g. 0.2\%), the effect of a nois
     \includegraphics[bb= 0 15 400 300,clip,scale=0.6]{graphics/threshold_noise.eps} &
     \includegraphics[bb=15 15 400 300,clip,scale=0.6]{graphics/threshold_noise-zoom.eps} 
   \end{tabular} \\
-  \caption{The effect of a noisy baseline on thresholding for a manufactured SRF. \textbf{(a)} THe selected inner and outer cutoff points rarely coincide. \textbf{(b)} A noisy point has a value above the response threshold and causes a potentially premature outer cutoff.}
+  \caption{The effect of a noisy baseline on thresholding for a manufactured SRF. \textbf{(a)} The selected inner and outer cutoff points rarely coincide. \textbf{(b)} A noisy point has a value above the response threshold and causes a potentially premature outer cutoff.}
   \label{fig:threshold_noise}
 \end{figure}
 
@@ -198,7 +198,7 @@ What follows is a documentation of the results of the SRF interpolation. While t
 
 \subsection{Expected interpolation artifacts}
 %--------------------------------------------
-Previous experience with SRF interpolation has indicated that the regions where potential artifacts appear are at the edges of the SRF, as well as near the maximua. In the former case, the artifacts usually originate due to noise at low-levels. Depending on the thresholding that is applied, the interpolates cna decrease below zero. This is shown for VIIRS I5 with a response threshold applied in figure \ref{fig:low_level_interp}(a) where interpolates dip slightly below zero - for these cases the negative values are simply set to zero. Interpolation of the same channel without a response threshold is shown in figure \ref{fig:low_level_interp}(b) where the noise in the original data can cause the interpolation vary significantly about zero. Where noise is an issue at the edges of the main SRF lobe, careful inspection of the interpolation data is required to ensure the result is reasonable. 
+Previous experience with SRF interpolation has indicated that the regions where potential artifacts appear are at the edges of the SRF, as well as near the maximua. In the former case, the artifacts usually originate due to noise at low-levels. Depending on the thresholding that is applied, the interpolates can decrease below zero. This is shown for VIIRS I5 with a response threshold applied in figure \ref{fig:low_level_interp}(a) where interpolates dip slightly below zero - for these cases the negative values are simply set to zero. Interpolation of the same channel without a response threshold is shown in figure \ref{fig:low_level_interp}(b) where the noise in the original data can cause the interpolation vary significantly about zero. Where noise is an issue at the edges of the main SRF lobe, careful inspection of the interpolation data is required to ensure the result is reasonable. 
 
 \begin{figure}[H]
   \centering
