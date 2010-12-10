@@ -8,9 +8,9 @@
   GRAUPEL_CLOUD = 5
   HAIL_CLOUD    = 6
   CLOUD_TYPE_NAME = [ 'Invalid', $
-                      'Water  ', $
-                      'Ice    ', $
-                      'Rain   ', $
-                      'Snow   ', $
+                      'Water'  , $
+                      'Ice'    , $
+                      'Rain'   , $
+                      'Snow'   , $
                       'Graupel', $
-                      'Hail   '  ]
+                      'Hail'     ]
