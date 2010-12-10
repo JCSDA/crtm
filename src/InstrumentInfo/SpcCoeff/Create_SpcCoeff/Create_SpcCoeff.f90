@@ -592,7 +592,7 @@ PROGRAM Create_SpcCoeff
                                                     '; '//TRIM(oSRF_History)//&
                                                     '; '//TRIM(Solar_History), &
                                           Comment = TRIM(Comment)//&
-                                                    ' Solar Information'//&
+                                                    '; Solar Information'//&
                                                     ': '//TRIM(Solar_Comment) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
