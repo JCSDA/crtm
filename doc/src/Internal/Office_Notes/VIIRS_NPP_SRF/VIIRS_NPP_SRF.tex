@@ -40,6 +40,8 @@
       \hline\hline
       2010-12-09 & Paul van Delst & Initial release.\\
       \hline
+      2010-12-10 & Paul van Delst & Minor typo corrections.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
@@ -81,15 +83,15 @@ Additional conditions that were set forth before processing the VIIRS SRF data w
 \newpage
 \section{Applying a threshold to the SRF data}
 %=============================================
-Many of the VIIRS SRFs appear like that shown in figure \ref{fig:lots_of_unused_data} where there is a wide spectral region containing data that does not contribute significantly to the channel response. Doing the line-by-line calculations over such a large spectral width would be prohibitive. As such, the SRFs are spectrally ``trimmed'' by applying a reponse threshold; that is, when the SRF magnitudes drop below a certain value, the data is discarded.
+Many of the VIIRS SRFs appear like that shown in figure \ref{fig:lots_of_unused_data} where there is a wide spectral region containing data that does not contribute significantly to the channel response. Doing the line-by-line calculations over such a large spectral width would be prohibitive. As such, the SRFs are spectrally ``trimmed'' by applying a response threshold; that is, when the SRF magnitudes drop below a certain value, the data is discarded.
 \begin{figure}[H]
   \centering
   \includegraphics[bb= 0 15 400 330,clip,scale=0.75]{graphics/lots_of_unused_data.eps}
-  \caption{Why we need to toss out some SRF data. LBL calcs for a large out-of-band spectral region are prohibitive.}
+  \caption{Why we need to toss out some SRF data. LBL calculations for a large out-of-band spectral region are prohibitive.}
   \label{fig:lots_of_unused_data}
 \end{figure}
 
-The thresholding methodolgy used in the VIIRS processing applies a response threshold whilst scanning through the SRF in four directions:
+The thresholding methodology used in the VIIRS processing applies a response threshold whilst scanning through the SRF in four directions:
 \begin{itemize}
   \item Increasing from the lowest frequency to that for the maximum SRF value. The first point at which the SRF magnitude is \emph{above} the threshold is labeled as the \textbf{outer low-frequency cutoff} value.
   \item Decreasing from the highest frequency to that for the maximum SRF value. The first point at which the SRF magnitude is \emph{above} the threshold is labeled as the \textbf{outer high-frequency cutoff} value.
@@ -198,7 +200,7 @@ What follows is a documentation of the results of the SRF interpolation. While t
 
 \subsection{Expected interpolation artifacts}
 %--------------------------------------------
-Previous experience with SRF interpolation has indicated that the regions where potential artifacts appear are at the edges of the SRF, as well as near the maximua. In the former case, the artifacts usually originate due to noise at low-levels. Depending on the thresholding that is applied, the interpolates can decrease below zero. This is shown for VIIRS I5 with a response threshold applied in figure \ref{fig:low_level_interp}(a) where interpolates dip slightly below zero - for these cases the negative values are simply set to zero. Interpolation of the same channel without a response threshold is shown in figure \ref{fig:low_level_interp}(b) where the noise in the original data can cause the interpolation vary significantly about zero. Where noise is an issue at the edges of the main SRF lobe, careful inspection of the interpolation data is required to ensure the result is reasonable. 
+Previous experience with SRF interpolation has indicated that the regions where potential artifacts appear are at the edges of the SRF, as well as near the maxima. In the former case, the artifacts usually originate due to noise at low-levels. Depending on the thresholding that is applied, the interpolates can decrease below zero. This is shown for VIIRS I5 with a response threshold applied in figure \ref{fig:low_level_interp}(a) where interpolates dip slightly below zero - for these cases the negative values are simply set to zero. Interpolation of the same channel without a response threshold is shown in figure \ref{fig:low_level_interp}(b) where the noise in the original data can cause the interpolation vary significantly about zero. Where noise is an issue at the edges of the main SRF lobe, careful inspection of the interpolation data is required to ensure the result is reasonable. 
 
 \begin{figure}[H]
   \centering
@@ -212,7 +214,7 @@ Previous experience with SRF interpolation has indicated that the regions where 
   \label{fig:low_level_interp}
 \end{figure}
 
-The effect of spline interpolation near the SRF maxima is shonw in figure \ref{fig:high_level_interp}. This is not considered an artifact since the processing normalises the SRFs using their integrated areas.
+The effect of spline interpolation near the SRF maxima is shown in figure \ref{fig:high_level_interp}. This is not considered an artifact since the processing normalises the SRFs using their integrated areas.
 
 \begin{figure}[H]
   \centering
