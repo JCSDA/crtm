@@ -458,14 +458,17 @@ PROGRAM Create_SpcCoeff
           SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
       END SELECT
       
-      ! Compute the coefficients
-      SpcCoeff%Planck_C1(l) = C_1_SCALE_FACTOR * C_1 * ( SpcCoeff%Wavenumber(l)**3 )
-      SpcCoeff%Planck_C2(l) = C_2_SCALE_FACTOR * C_2 *   SpcCoeff%Wavenumber(l)
+      ! Assign the coefficients
+      ! -----------------------
+      
+      ! Planck Coefficients
+      SpcCoeff%Planck_C1(l) = oSRF_File%oSRF(l)%Planck_Coeffs(1)
+      SpcCoeff%Planck_C2(l) = oSRF_File%oSRF(l)%Planck_Coeffs(2)
       
       WRITE( *,FMT='(3(2x,es13.6))',ADVANCE='NO' ) SpcCoeff%Wavenumber(l), &
                                                    SpcCoeff%Planck_C1(l), &
                                                    SpcCoeff%Planck_C2(l)
-
+      ! Polychromatic correction coefficients
       SpcCoeff%Band_C1(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(1)
       SpcCoeff%Band_C2(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(2)
       
