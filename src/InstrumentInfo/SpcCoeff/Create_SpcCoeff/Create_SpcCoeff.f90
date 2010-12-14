@@ -25,7 +25,6 @@ PROGRAM Create_SpcCoeff
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                        Display_Message, Program_Message
   USE CRTM_Parameters          , ONLY: ZERO
-  USE Fundamental_Constants    , ONLY: C_1, C_2
   USE Planck_Functions         , ONLY: Planck_Radiance
   USE Interpolate_Utility      , ONLY: Spline_Initialize, &
                                        Spline_Interpolate
@@ -79,21 +78,6 @@ PROGRAM Create_SpcCoeff
 
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
-  
-  ! The following scaling factors are applied to produce radiances in units
-  ! of mW/(m^2.sr.cm^-1) when they are used.
-  !
-  ! First Planck function constant (C_1) scale factors. Units of C_1 are W.m^2.
-  ! Length scaling: To convert to W/(m^2.cm^-4) requires a scaling of m->cm,
-  !                 which is 100, to the fourth power, which is 1.0e+08.
-  ! Power scaling:  To convert to mW.m^2 requires a scaling of 1000.
-  REAL(fp), PARAMETER :: C_1_LENGTH_SCALE_FACTOR = 1.0e+08_fp
-  REAL(fp), PARAMETER :: C_1_POWER_SCALE_FACTOR  = 1.0e+03_fp
-  REAL(fp), PARAMETER :: C_1_SCALE_FACTOR = C_1_LENGTH_SCALE_FACTOR * C_1_POWER_SCALE_FACTOR
-  
-  ! Second Planck function constant (C_2) scale factor. Units of C_2 are K.m,
-  ! So to convert to K.cm, a scaling of 100 is applied.
-  REAL(fp), PARAMETER :: C_2_SCALE_FACTOR = 100.0_fp
   
   ! Cosmic background temperature
   REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
