@@ -15,20 +15,23 @@ MODULE CRTM_Geometry_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds            , ONLY: fp
-  USE Message_Handler       , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
-  USE Date_Utility          , ONLY: Days_in_Month
-  USE Compare_Float_Numbers , ONLY: OPERATOR(.EqualTo.)
-  USE CRTM_Parameters       , ONLY: ZERO, &
-                                    MIN_SURFACE_ALTITUDE    , &
-                                    MAX_SURFACE_ALTITUDE    , &
-                                    MAX_SENSOR_SCAN_ANGLE   , &
-                                    MAX_SENSOR_ZENITH_ANGLE , &
-                                    MAX_SENSOR_AZIMUTH_ANGLE, &
-                                    MAX_SOURCE_ZENITH_ANGLE , &
-                                    MAX_SOURCE_AZIMUTH_ANGLE, &
-                                    MAX_FLUX_ZENITH_ANGLE   , &
-                                    DIFFUSIVITY_ANGLE       
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
+                                   Display_Message
+  USE Date_Utility         , ONLY: Days_in_Month
+  USE Compare_Float_Numbers, ONLY: DEFAULT_N_SIGFIG, &
+                                   OPERATOR(.EqualTo.), &
+                                   Compares_Within_Tolerance
+  USE CRTM_Parameters      , ONLY: ZERO, &
+                                   MIN_SURFACE_ALTITUDE    , &
+                                   MAX_SURFACE_ALTITUDE    , &
+                                   MAX_SENSOR_SCAN_ANGLE   , &
+                                   MAX_SENSOR_ZENITH_ANGLE , &
+                                   MAX_SENSOR_AZIMUTH_ANGLE, &
+                                   MAX_SOURCE_ZENITH_ANGLE , &
+                                   MAX_SOURCE_AZIMUTH_ANGLE, &
+                                   MAX_FLUX_ZENITH_ANGLE   , &
+                                   DIFFUSIVITY_ANGLE       
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -44,12 +47,15 @@ MODULE CRTM_Geometry_Define
   ! ...Structures
   PUBLIC :: CRTM_Geometry_type
   ! ...Procedures
+  PUBLIC :: CRTM_Geometry_Associated
   PUBLIC :: CRTM_Geometry_Destroy
+  PUBLIC :: CRTM_Geometry_Create
   PUBLIC :: CRTM_Geometry_SetValue
   PUBLIC :: CRTM_Geometry_GetValue
   PUBLIC :: CRTM_Geometry_IsValid
   PUBLIC :: CRTM_Geometry_Inspect
   PUBLIC :: CRTM_Geometry_DefineVersion
+  PUBLIC :: CRTM_Geometry_Compare
 
 
   ! ---------------------
@@ -77,7 +83,7 @@ MODULE CRTM_Geometry_Define
   !:tdoc+:
   TYPE :: CRTM_Geometry_type
     ! Allocation indicator
-    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Field of view index (1-nFOV)
     INTEGER  :: iFOV = 0
     ! Earth location
@@ -117,6 +123,46 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
+!       CRTM_Geometry_Associated
+!
+! PURPOSE:
+!       Elemental function to test the status of the allocatable components
+!       of a CRTM Geometry object.
+!
+! CALLING SEQUENCE:
+!       Status = CRTM_Geometry_Associated( geo )
+!
+! OBJECTS:
+!       geo:          Geometry structure which is to have its member's
+!                     status tested.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Geometry_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:       The return value is a logical value indicating the
+!                     status of the Geometry members.
+!                       .TRUE.  - if the array components are allocated.
+!                       .FALSE. - if the array components are not allocated.
+!                     UNITS:      N/A
+!                     TYPE:       LOGICAL
+!                     DIMENSION:  Same as input Geometry argument
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Geometry_Associated( Geometry ) RESULT( Status )
+    TYPE(CRTM_Geometry_type), INTENT(IN) :: Geometry
+    LOGICAL :: Status
+    Status = Geometry%Is_Allocated
+  END FUNCTION CRTM_Geometry_Associated
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
 !       CRTM_Geometry_Destroy
 ! 
 ! PURPOSE:
@@ -137,9 +183,43 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_Geometry_Destroy( geo )
     TYPE(CRTM_Geometry_type), INTENT(OUT) :: geo
-    geo%Is_Allocated = .TRUE.  ! Placeholder for future expansion
+    geo%Is_Allocated = .FALSE.  ! Placeholder for future expansion
   END SUBROUTINE CRTM_Geometry_Destroy
   
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Geometry_Create
+!
+! PURPOSE:
+!       Elemental subroutine to create an instance of the CRTM Geometry object.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Geometry_Create( geo )
+!
+! OBJECTS:
+!       geo:          Geometry structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_Geometry_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_Geometry_Create( geo )
+    ! Arguments
+    TYPE(CRTM_Geometry_type), INTENT(OUT) :: geo
+
+    ! NOTE: This is a stub routine for future expansion
+
+    ! Set allocation indicator
+    geo%Is_Allocated = .TRUE.
+
+  END SUBROUTINE CRTM_Geometry_Create
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -707,6 +787,87 @@ CONTAINS
     CHARACTER(*), INTENT(OUT) :: Id
     Id = MODULE_VERSION_ID
   END SUBROUTINE CRTM_Geometry_DefineVersion
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       CRTM_Geometry_Compare
+!
+! PURPOSE:
+!       Elemental function to compare two CRTM_Geometry objects to within
+!       a user specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!       is_comparable = CRTM_Geometry_Compare( x, y, n_SigFig=n_SigFig )
+!
+! OBJECTS:
+!       x, y:          Two CRTM Geometry objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_Geometry_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       n_SigFig:      Number of significant figure to compare floating point
+!                      components.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Geometry_Compare( &
+    x, &
+    y, &
+    n_SigFig ) &
+  RESULT( is_comparable )
+    ! Arguments
+    TYPE(CRTM_Geometry_type), INTENT(IN) :: x, y
+    INTEGER,        OPTIONAL, INTENT(IN) :: n_SigFig
+    ! Function result
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+   
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_Geometry_Associated(x)) .OR. &
+         (.NOT. CRTM_Geometry_Associated(y)) ) RETURN
+
+    ! Check scalars
+    IF ( (x%iFOV /= y%iFOV) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Longitude           , y%Longitude           , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Latitude            , y%Latitude            , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Surface_Altitude    , y%Surface_Altitude    , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Sensor_Scan_Angle   , y%Sensor_Scan_Angle   , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Sensor_Zenith_Angle , y%Sensor_Zenith_Angle , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Sensor_Azimuth_Angle, y%Sensor_Azimuth_Angle, n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Source_Zenith_Angle , y%Source_Zenith_Angle , n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Source_Azimuth_Angle, y%Source_Azimuth_Angle, n)) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Flux_Zenith_Angle   , y%Flux_Zenith_Angle   , n)) .OR. &
+         (x%Year  /= y%Year ) .OR. &
+         (x%Month /= y%Month) .OR. &
+         (x%Day   /= y%Day  ) ) RETURN
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+   
+  END FUNCTION CRTM_Geometry_Compare
 
 
 
