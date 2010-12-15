@@ -88,10 +88,9 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Sensor_Zenith_Radian  = ZERO
     REAL(fp) :: Sensor_Azimuth_Radian = ZERO
     REAL(fp) :: Secant_Sensor_Zenith  = ZERO
-    ! .... Zenith angle used in the transmittance algorithms 
+    ! ...Zenith angle used in the transmittance algorithms 
     REAL(fp) :: Trans_Zenith_Radian  = ZERO
     REAL(fp) :: Secant_Trans_Zenith  = ZERO
-    
     ! ...Source angle information
     REAL(fp) :: Source_Zenith_Radian  = ZERO
     REAL(fp) :: Source_Azimuth_Radian = ZERO
@@ -534,6 +533,9 @@ CONTAINS
     WRITE(*, '(3x,"Sensor zenith radian  :",1x,'//RFMT//')') gInfo%Sensor_Zenith_Radian 
     WRITE(*, '(3x,"Sensor azimuth radian :",1x,'//RFMT//')') gInfo%Sensor_Azimuth_Radian
     WRITE(*, '(3x,"Secant sensor zenith  :",1x,'//RFMT//')') gInfo%Secant_Sensor_Zenith 
+    ! ...Transmittance algorithm sensor angle information
+    WRITE(*, '(3x,"Trans zenith radian   :",1x,'//RFMT//')') gInfo%Trans_Zenith_Radian 
+    WRITE(*, '(3x,"Secant trans zenith   :",1x,'//RFMT//')') gInfo%Secant_Trans_Zenith 
     ! ...Source angle information
     WRITE(*, '(3x,"Source zenith radian  :",1x,'//RFMT//')') gInfo%Source_Zenith_Radian 
     WRITE(*, '(3x,"Source azimuth radian :",1x,'//RFMT//')') gInfo%Source_Azimuth_Radian
@@ -630,6 +632,8 @@ CONTAINS
                  (x%Sensor_Zenith_Radian  .EqualTo. y%Sensor_Zenith_Radian ) .AND. &
                  (x%Sensor_Azimuth_Radian .EqualTo. y%Sensor_Azimuth_Radian) .AND. &
                  (x%Secant_Sensor_Zenith  .EqualTo. y%Secant_Sensor_Zenith ) .AND. &
+                 (x%Trans_Zenith_Radian   .EqualTo. y%Trans_Zenith_Radian  ) .AND. &
+                 (x%Secant_Trans_Zenith   .EqualTo. y%Secant_Trans_Zenith  ) .AND. &
                  (x%Source_Zenith_Radian  .EqualTo. y%Source_Zenith_Radian ) .AND. &
                  (x%Source_Azimuth_Radian .EqualTo. y%Source_Azimuth_Radian) .AND. &
                  (x%Secant_Source_Zenith  .EqualTo. y%Secant_Source_Zenith ) .AND. &
