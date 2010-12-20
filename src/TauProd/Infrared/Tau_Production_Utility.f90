@@ -123,6 +123,10 @@ MODULE Tau_Production_Utility
   PUBLIC :: Compute_Frequency_Index
   PUBLIC :: Find_Indices
 
+  INTERFACE Compute_LBL_Band 
+    MODULE PROCEDURE Compute_LBL_Band_Real  
+    MODULE PROCEDURE Compute_LBL_Band_Int 
+  END INTERFACE Compute_LBL_Band 
 
 CONTAINS
 
@@ -395,7 +399,7 @@ CONTAINS
 !S-
 !--------------------------------------------------------------------------------
 
-  FUNCTION Compute_LBL_Band( Frequency, dF ) &  ! Input
+  FUNCTION Compute_LBL_Band_Real( Frequency, dF ) &  ! Input
                            RESULT ( LBL_Band )
 
 
@@ -455,7 +459,67 @@ CONTAINS
 
     LBL_Band = INT( Numerator / Denominator ) + 1
 
-  END FUNCTION Compute_LBL_Band
+  END FUNCTION Compute_LBL_Band_Real
+
+  FUNCTION Compute_LBL_Band_Int( Frequency, dF_Index ) &  ! Input
+                           RESULT ( LBL_Band )
+
+
+    !#--------------------------------------------------------------------------#
+    !#                         -- TYPE DECLARATIONS --                          #
+    !#--------------------------------------------------------------------------#
+
+    ! ---------
+    ! Arguments
+    ! ---------
+
+    REAL( fp_kind ), INTENT( IN ) :: Frequency
+    INTEGER,         INTENT( IN ) :: dF_Index
+
+    ! ---------------
+    ! Function result
+    ! ---------------
+
+    INTEGER :: LBL_Band
+
+
+    ! ---------------
+    ! Local variables
+    ! ---------------
+
+    INTEGER :: n
+    REAL( fp_kind ) :: Numerator
+    REAL( fp_kind ) :: Denominator
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#                    -- DEFINE AN INVALID LBL BAND --                      #
+    !#--------------------------------------------------------------------------#
+
+    LBL_Band = -1
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#               -- DETERMINE THE FREQUENCY INTERVAL INDEX --               #
+    !#--------------------------------------------------------------------------#
+
+    ! -- Check the result
+    IF ( dF_Index < 0 ) RETURN
+
+
+
+    !#--------------------------------------------------------------------------#
+    !#                       -- COMPUTE THE LBL BAND --                         #
+    !#--------------------------------------------------------------------------#
+
+    Numerator   = Frequency - FREQUENCY_BEGIN
+    Denominator = FREQUENCY_BANDWIDTH(dF_Index) + FREQUENCY_INTERVAL(dF_Index)
+
+    LBL_Band = INT( Numerator / Denominator ) + 1
+ 
+  END FUNCTION Compute_LBL_Band_Int
 
 
 
@@ -564,7 +628,7 @@ CONTAINS
 
     ! -- Compare the numbers. Adjust ULP as required.
     Index_Search: DO n = 1, N_FREQUENCY_INTERVALS
-      IF ( Compare_Float( dF, FREQUENCY_INTERVAL(n), ULP = 1000 ) ) THEN
+      IF ( Compare_Float( dF, FREQUENCY_INTERVAL(n), ULP = 10000 ) ) THEN
         dF_Index = n
         EXIT Index_Search
       END IF
