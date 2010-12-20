@@ -24,16 +24,20 @@ SRC_FILES = Type_Kinds.f90 \
             Spline_Interpolation.f90 \
             Interpolate_Utility.f90 \
             Integrate_Utility.f90 \
+            Fundamental_Constants.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
             netCDF_Variable_Utility.f90 \
+            oSRF_Define.f90 \
+            oSRF_File_Define.f90 \
+            PtrArr_Define.f90 \
+            Planck_Functions.f90 \
+            Spectral_Units_Conversion.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_Parameters.f90 \
             SensorInfo_LinkedList.f90 \
             SensorInfo_IO.f90 \
-            SRF_Define.f90 \
-            SRF_netCDF_IO.f90 \
             String_Utility.f90 \
             LBLRTM_Parameters.f90 \
             Tau_Production_Parameters.f90 \

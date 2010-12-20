@@ -144,14 +144,14 @@ PROGRAM Create_ProcessControl_File
   USE SensorInfo_LinkedList
   USE SensorInfo_IO
 
-  USE SRF_Define
-  USE SRF_netCDF_IO
-
+  USE oSRF_File_Define 
+ 
   USE ProcessControl_Define
   USE ProcessControl_IO
 
   USE Tau_Production_Parameters
   USE Tau_Production_Utility
+  USE Compare_Float_Numbers
 
 
   ! -----------------------
@@ -172,7 +172,7 @@ PROGRAM Create_ProcessControl_File
   '**********************************************************'
 
   ! -- Maximum number of sensors to allow
-  INTEGER, PARAMETER :: MAX_N_SENSORS = 100
+  INTEGER, PARAMETER :: MAX_N_SENSORS = 150
 
   ! -- Integer keyword set
   INTEGER, PARAMETER :: SET = 1
@@ -199,7 +199,7 @@ PROGRAM Create_ProcessControl_File
   INTEGER,          DIMENSION( MAX_N_SENSORS ) :: Available_Sensor
   CHARACTER( 512 ), DIMENSION( MAX_N_SENSORS ) :: Available_SRF_Filename
 
-  INTEGER :: i, l, ch
+  INTEGER :: i, l, ch, ll
 
   INTEGER :: n_Available_Sensors
   INTEGER :: n_Channels
@@ -208,8 +208,9 @@ PROGRAM Create_ProcessControl_File
   INTEGER,         DIMENSION( : ), ALLOCATABLE :: n_SRF_Frequencies
   REAL( fp_kind ), DIMENSION( : ), ALLOCATABLE :: Begin_SRF_Frequency
   REAL( fp_kind ), DIMENSION( : ), ALLOCATABLE :: End_SRF_Frequency
+  TYPE(oSRF_File_type),  ALLOCATABLE :: oSRF_File(:)
 
-  REAL( fp_kind ) :: dF
+  REAL( fp_kind ) :: dF, dF1
   INTEGER         :: Idx, dF_Index
 
   INTEGER :: n_Sensors, n
@@ -286,7 +287,13 @@ PROGRAM Create_ProcessControl_File
     STOP
   END IF
 
+  !#----------------------------------------------------------------------------#
+  !#                       -- GET DF index --                                   #
+  !#----------------------------------------------------------------------------#
 
+  WRITE( *, FMT     = '( /5x, "Enter the Frequency intervals index: " )', &
+            ADVANCE = 'NO' )
+  READ( *, FMT = '( I1 )' )  dF_Index
 
   !#----------------------------------------------------------------------------#
   !#                       -- GET SRF DATA FILE PATH --                         #
@@ -343,7 +350,7 @@ PROGRAM Create_ProcessControl_File
     ! Construct the SRF filename
     ! --------------------------
 
-    SRF_Filename = TRIM( SRF_FilePath )//TRIM( SensorInfo%Sensor_Id )//'.srf.nc'
+    SRF_Filename = TRIM( SRF_FilePath )//TRIM( SensorInfo%Sensor_Id )//'.osrf.nc'
 
 
 
@@ -436,6 +443,17 @@ PROGRAM Create_ProcessControl_File
     STOP
   END IF
 
+  ALLOCATE( oSRF_File( ProcessControl%n_Files ),  & 
+            STAT = Allocate_Status )
+
+  IF ( Allocate_Status /= 0 ) THEN
+    WRITE( Message, '( "Error allocating oSRF_File array. STAT = ", i5 )' ) &
+                    Allocate_Status
+    CALL Display_Message( PROGRAM_NAME, &
+                          TRIM( Message ), &
+                          FAILURE )
+    STOP
+  END IF
 
 
   !#----------------------------------------------------------------------------#
@@ -498,19 +516,39 @@ PROGRAM Create_ProcessControl_File
     ! Read the frequency data
     ! -----------------------
 
-    Error_Status = Inquire_SRF_netCDF( TRIM( Available_SRF_Filename(n) ), &
-                                       n_Points        = n_SRF_Frequencies, &
-                                       Begin_Frequency = Begin_SRF_Frequency, &
-                                       End_Frequency   = End_SRF_Frequency    )
+!    Error_Status = Inquire_SRF_netCDF( TRIM( Available_SRF_Filename(n) ), &
+!                                       n_Points        = n_SRF_Frequencies, &
+!                                       Begin_Frequency = Begin_SRF_Frequency, &
+!                                       End_Frequency   = End_SRF_Frequency    )
+ 
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      CALL Display_Message( PROGRAM_NAME, &
+!                            'Error inquiring the netCDF SRF file '//&
+!                            TRIM( Available_SRF_Filename(n) )//&
+!                            ' for frequency information.', &
+!                            Error_Status )
+!      STOP
+!    END IF
 
+    Error_Status = oSRF_File_Read( &                    
+                     oSRF_File(n)    , &                
+                     Available_SRF_Filename(n)  )  
+                     
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error inquiring the netCDF SRF file '//&
-                            TRIM( Available_SRF_Filename(n) )//&
-                            ' for frequency information.', &
+                            'Error reading SRF file '//&
+                            TRIM( Available_SRF_Filename(n) ), &
                             Error_Status )
       STOP
     END IF
+    
+    ! For Infrared sensor, only have one band for each channel
+    DO ll = 1, SensorInfo%n_Channels
+      n_SRF_Frequencies(ll) = oSRF_File(n)%oSRF(ll)%n_Points(1)
+      Begin_SRF_Frequency(ll) =oSRF_File(n)%oSRF(ll)%f1(1)
+      End_SRF_Frequency(ll) = oSRF_File(n)%oSRF(ll)%f2(oSRF_File(n)%oSRF(ll)%n_Bands)
+    ENDDO
+    
 
 
     ! -----------------------------
@@ -532,10 +570,10 @@ PROGRAM Create_ProcessControl_File
                REAL( n_SRF_Frequencies(ch) - 1, fp_kind )
 
       ! -- Compute the frequency interval index
-      Idx = Compute_dF_Index( dF )
+!      Idx = Compute_dF_Index( dF )
 
       ! -- Is it valid?
-      IF ( Idx < 0 ) THEN
+      IF ( .NOT. Compare_Float( dF, FREQUENCY_INTERVAL(dF_Index), ULP = 10000 ) ) THEN
         WRITE( Message, '( "Invalid frequency interval, ", es13.6, &
                           &"cm^-1, detected for channel ", i5, &
                           &" SRF from ", a, "." )' ) &
@@ -548,16 +586,16 @@ PROGRAM Create_ProcessControl_File
         STOP
       END IF
 
-      ! -- Save and compare the index
+      ! -- Save and compare the dF
       IF ( ch == 1 ) THEN
-        dF_Index = Idx
+        dF1 = dF
       ELSE
-        IF ( Idx /= dF_Index ) THEN
+        IF ( .NOT. Compare_Float( dF, FREQUENCY_INTERVAL(dF_Index), ULP = 10000 ) ) THEN
           WRITE( Message, '( "Frequency interval, ", es13.6, &
                             &"cm^-1, for channel ", i5, &
                             &" is different from that for the other channels, ", es13.6, &
                             &"cm^-1, for ", a, "." )' ) &
-                          FREQUENCY_INTERVAL( Idx ), &
+                          dF1, &
                           SensorInfo%Sensor_Channel(ch), &
                           FREQUENCY_INTERVAL( dF_Index ), &
                           TRIM( Available_SRF_Filename(n) )
@@ -605,10 +643,10 @@ PROGRAM Create_ProcessControl_File
         ! -- Assign the channel list data
         ProcessControl%List(l)%Channel       = SensorInfo%Sensor_Channel(ch)
         ProcessControl%List(l)%Begin_LBLband = Compute_LBL_band( Begin_SRF_Frequency(ch), &
-                                                                 FREQUENCY_INTERVAL( ProcessControl%dF_Index(n) ) )
+                                                                 ProcessControl%dF_Index(n)  )
         ProcessControl%List(l)%End_LBLband   = Compute_LBL_band( End_SRF_Frequency(ch), &
-                                                                 FREQUENCY_INTERVAL( ProcessControl%dF_Index(n) ) )
-
+                                                                 ProcessControl%dF_Index(n)  )
+ 
         ! -- Initialise processing flag
         ProcessControl%List(l)%Processed = 0
 
@@ -731,32 +769,42 @@ PROGRAM Create_ProcessControl_File
   ! Output some data
   ! ----------------
 
-  WRITE( *, '( /5x, "SRF data file Process Control data:" )' )
+!  WRITE( *, '( /5x, "SRF data file Process Control data:" )' )
 
-  DO i = 1, ProcessControl%n_Files
+!  DO i = 1, ProcessControl%n_Files
 
-    WRITE( *, '( 5x, a )' ) ProcessControl%File_Prefix( i )
-    n = ProcessControl%Channel_Index(2,i) - ProcessControl%Channel_Index(1,i) + 1
-    WRITE( *, '( 10x, "Number of channels: ", i4 )' ) n
-    WRITE( *, '( 10x, "Channel indices:    ", i4, 2x, i4 )' ) &
-              ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i) 
+!    WRITE( *, '( 5x, a )' ) ProcessControl%File_Prefix( i )
+!    n = ProcessControl%Channel_Index(2,i) - ProcessControl%Channel_Index(1,i) + 1
+!    WRITE( *, '( 10x, "Number of channels: ", i4 )' ) n
+!    WRITE( *, '( 10x, "Channel indices:    ", i4, 2x, i4 )' ) &
+!              ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i) 
 
-    WRITE( *, '( 10x, "Frequency interval index: ", i1 )' ) &
-              ProcessControl%dF_Index(i)
-    WRITE( *, '( 10x, "Frequency interval:       ", f6.4 )' ) &
-              FREQUENCY_INTERVAL( ProcessControl%dF_Index(i) )
+!    WRITE( *, '( 10x, "Frequency interval index: ", i1 )' ) &
+!              ProcessControl%dF_Index(i)
+!    WRITE( *, '( 10x, "Frequency interval:       ", f6.4 )' ) &
+!              FREQUENCY_INTERVAL( ProcessControl%dF_Index(i) )
 
-    DO l = ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i)
+!    DO l = ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i)
 
-      WRITE( *, '( 15x, "CH: ", i4, ",    B1,B2: ",i3,1x,i3,",    FI:", i3 )' ) &
-                ProcessControl%List(l)%Channel, &
-                ProcessControl%List(l)%Begin_LBLband, ProcessControl%List(l)%End_LBLband, &
-                ProcessControl%List(l)%File_Index
+!      WRITE( *, '( 15x, "CH: ", i4, ",    B1,B2: ",i3,1x,i3,",    FI:", i3 )' ) &
+!                ProcessControl%List(l)%Channel, &
+!                ProcessControl%List(l)%Begin_LBLband, ProcessControl%List(l)%End_LBLband, &
+!                ProcessControl%List(l)%File_Index
 
-    END DO
+!    END DO
 
-  END DO
+!  END DO
 
+  CALL oSRF_File_Destroy( oSRF_File )
+  DEALLOCATE(oSRF_File, STAT = Allocate_Status )
+
+  IF ( Allocate_Status /= 0 ) THEN
+    WRITE( Message, '( "Error deallocating oSRF_File array. STAT = ", i5 )' ) &
+                    Allocate_Status
+    CALL Display_Message( PROGRAM_NAME, &
+                          TRIM( Message ), &
+                          WARNING )
+  END IF
 
   ! ------------------------------------
   ! Destroy the ProcessControl structure
@@ -781,66 +829,4 @@ PROGRAM Create_ProcessControl_File
 
 END PROGRAM Create_ProcessControl_File
 
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Create_ProcessControl_File.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $
-!
-! $Date: 2006/06/30 16:47:16 $
-!
-! $Revision: 2.3 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Create_ProcessControl_File.f90,v $
-! Revision 2.3  2006/06/30 16:47:16  dgroff
-! Changed "Error_Handler" references to "Message_Handler"
-!
-! Revision 2.2  2005/09/15 20:40:05  paulv
-! - Renamed SRF frequency arrays to prevent namespace clash with USEd parameters.
-! - Corrected calls to Compute_LBL_band.
-!
-! Revision 2.1  2005/05/15 23:31:35  paulv
-! - Upgraded to Fortran-95.
-! - All structure initialisation functions removed.
-! - Modified to use new ProcessControl d0efinition and I/O modules.
-! - Frequency interval index determined.
-!
-! Revision 2.0  2003/09/05 16:27:05  paulv
-! - New version that uses a SensorInfo input file rather than a list of
-!   SRF data files to read.
-!
-! Revision 1.6  2003/07/16 18:28:42  paulv
-! - Ensured all the passed character strings were TRIMmed.
-!
-! Revision 1.5  2002/06/19 19:18:37  paulv
-! - Extracting the sensor/platform ID from the SRF filename. Result is stored
-!   in the PC%sensor_platform_ID pointer array.
-!
-! Revision 1.4  2002/06/07 20:57:30  paulv
-! - Altered the method in which the channels were added to the Process Control
-!   list. Previosuly all the channels were just added in. Now a check is
-!   performed to ensure the channels are within the LBL band frequency limits.
-!
-! Revision 1.3  2002/06/07 17:10:20  paulv
-! - Added documentation
-! - Added signal file output.
-!
-! Revision 1.2  2002/05/30 20:38:16  paulv
-! - Using new process control modules
-!     Process_Control_Define and
-!     Process_Control_IO
-!   and their definitions/functions.
-! - Altered the way the data was read in/manipulated to sync with the
-!   new module methodology.
-!
-! Revision 1.1  2002/05/29 20:15:25  paulv
-! Initial checkin.
-!
-!
-!
-!
+ 
