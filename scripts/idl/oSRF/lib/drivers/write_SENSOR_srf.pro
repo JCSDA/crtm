@@ -137,7 +137,10 @@ PRO Write_<sensor>_SRF, $
   Path               = Path               , $ ; Input keyword
   SensorInfo_File    = SensorInfo_File    , $ ; Input keyword
   Response_Threshold = Response_Threshold , $ ; Input keyword
+  Default_Threshold  = Default_Threshold  , $ ; Input keyword
   Version            = Version            , $ ; Input keyword
+  PS                 = PS                 , $ ; Input keyword
+  No_Zero_Negative   = No_Zero_Negative   , $ ; Input keyword
   No_Plot            = No_Plot            , $ ; Input keyword
   No_Pause           = No_Pause           , $ ; Input keyword
   No_Threshold_Plot  = No_Threshold_Plot  , $ ; Input keyword
@@ -161,6 +164,7 @@ PRO Write_<sensor>_SRF, $
   Zero_Negative = NOT KEYWORD_SET(No_Zero_Negative)
   Plot_Data     = NOT KEYWORD_SET(No_Plot)
   Plot_Pause    = NOT KEYWORD_SET(No_Pause)
+  IF ( NOT KEYWORD_SET(Default_Threshold) ) THEN Default_Threshold = 0L
   
   ; ...Create list for output graphics reference keyword
   gRef = HASH()
@@ -199,6 +203,13 @@ PRO Write_<sensor>_SRF, $
   sensor_id_array = STRSPLIT(Sensor_Id,'_',/EXTRACT)
   sensor   = sensor_id_array[0]
   platform = sensor_id_array[1]
+  
+  ; Create an oSRF_File object array for all
+  ; the detectors, AND the detector average.
+  n_detectors = VIIRS_INFO[sensor].n_detectors
+  detector           = LINDGEN(n_detectors) + 1L
+  osrf_file          = OBJARR(n_detectors+1L)
+  detector_sensor_id = STRARR(n_detectors)  
   FOR i = 0, n_detectors DO BEGIN
     IF ( i LT n_detectors ) THEN BEGIN
       ; The detector file objects
@@ -375,7 +386,7 @@ PRO Write_<sensor>_SRF, $
     
   ENDFOR  ; Channel loop
   
-    ; Write the interpolated SRFs
+  ; Write the interpolated SRFs
   FOR i = 0, n_detectors DO BEGIN
     osrf_file[i]->Set_Property, Debug=Debug, $
       History = HISTORY + '; ' + Load_History
