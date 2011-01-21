@@ -1,6 +1,7 @@
 PRO get_comment, $
   Comment_File, $ ; Input
-  comment         ; Output
+  comment, $      ; Output
+  Response_Threshold=Response_Threshold ; Input keyword
   
   ; Read the source comment global attribute file
   finfo = FILE_INFO(Comment_File)
