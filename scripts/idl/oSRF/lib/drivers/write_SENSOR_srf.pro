@@ -11,6 +11,10 @@
 ;    For example, for the VIIRS sensor:
 ;      $ svn copy write_SENSOR_srf.pro $CRTM_FIXFILE_ROOT/TauProd/SRF_Data/Raw/viirs/write_viirs_srf.pro
 ;
+; 2) Make sure that directory names and filenames for the raw SRF data are
+;    consistent with general naming conventions used by template. VIIRS can
+;    serve as a reference for this. 
+;
 ; 2) Set the svn:keywords property in the copied file.  For example, for the
 ;    VIIRS sensor:
 ;      $ svn propset svn:keywords "Id Revision" write_viirs_srf.pro
@@ -207,9 +211,10 @@ PRO Write_<sensor>_SRF, $
   ; Create an oSRF_File object array for all
   ; the detectors, AND the detector average.
   n_detectors = VIIRS_INFO[sensor].n_detectors
-  detector           = LINDGEN(n_detectors) + 1L
-  osrf_file          = OBJARR(n_detectors+1L)
-  detector_sensor_id = STRARR(n_detectors)  
+  n_channel_detectors = INTARR(n_channels)
+  detector            = LINDGEN(n_detectors) + 1L
+  osrf_file           = OBJARR(n_detectors+1L)
+  detector_sensor_id  = STRARR(n_detectors)  
   FOR i = 0, n_detectors DO BEGIN
     IF ( i LT n_detectors ) THEN BEGIN
       ; The detector file objects
@@ -241,15 +246,28 @@ PRO Write_<sensor>_SRF, $
     ENDELSE
   ENDFOR
   
+  ; Account for potential variabiliy in
+  ; the number of detectors for a channel
+  FOR i = 0, n_detectors - 1 DO BEGIN
+    FOR l = 0, n_channels - 1 DO BEGIN
+      get_sensor_information, SensorInfo_File , $ ; Input
+                              detector_sensor_id[i] , $ ; Input
+                              detector_sensor_channel
+      x = WHERE(Sensor_Channel[l] EQ detector_sensor_channel)
+      IF (x[0] NE -1L) THEN $
+        n_channel_detectors[l] = n_channel_detectors[l] + 1L
+    ENDFOR
+  ENDFOR
+  
   ; Begin channel loop
   FOR l = 0, n_channels - 1 DO BEGIN
     PRINT, FORMAT='(4x,"Processing channel: ",i4)', sensor_channel[l]
 
     rtHash = HASH()
-    isrf = OBJARR(n_detectors)
+    isrf = OBJARR(n_channel_detectors[l])
     
     ; Begin detector loop
-    FOR i = 0, n_detectors-1 DO BEGIN
+    FOR i = 0, n_channel_detectors[l] - 1 DO BEGIN
       PRINT, FORMAT='(6x,"Processing detector ",i4)', detector[i]
 
 
@@ -356,7 +374,7 @@ PRO Write_<sensor>_SRF, $
     ; ...Perform the averaging
     avgsrf->Average, isrf, Debug=Debug
     ; ...Add the averaged oSRF to its file container
-    osrf_file[n_detectors]->Add, avgsrf, Debug=Debug
+    osrf_file[n_channel_detectors[l]]->Add, avgsrf, Debug=Debug
     ; ...Plot the average with the detectors
     IF ( Plot_Data ) THEN BEGIN
       avgsrf->Get_Property, Frequency=fa, Response=ra
