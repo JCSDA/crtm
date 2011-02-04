@@ -83,7 +83,7 @@ PRO Read_imgr_Raw_SRF, $
   OPENR, fid, Filename, /GET_LUN
   READF, fid, data
   FREE_LUN, fid
-  
+
   ; Extract the data from the string array
   wavelength = DBLARR(n_lines)
   r          = DBLARR(n_lines)
@@ -92,9 +92,8 @@ PRO Read_imgr_Raw_SRF, $
     wavelength[i] = DOUBLE(elements[IDX_SPECTRAL])
     r[i]          = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
-  
-  ch = strsplit(Filename,'-', /EXTRACT)
-  IF ( strmid(ch[1],0,1) EQ '1' ) THEN BEGIN 
+
+  IF ( strmid(Filename,0,2) EQ 'v.' ) THEN BEGIN 
     ; Convert wavelength to frequency in cm^-1
     f = 10000.0d0/wavelength
   ENDIF ELSE BEGIN
