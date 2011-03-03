@@ -39,7 +39,13 @@ MODULE CRTM_RTSolution
 ! **** WITH THE FOLLOWING 
 !  USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type 
 ! ****
-  USE CRTM_SfcOptics
+
+  USE CRTM_SfcOptics_Define   , ONLY: CRTM_SfcOptics_type
+  USE CRTM_SfcOptics          , ONLY: CRTM_Compute_SfcOptics   , &
+                                      CRTM_Compute_SfcOptics_TL, &
+                                      CRTM_Compute_SfcOptics_AD
+                                      
+  
   USE CRTM_RTSolution_Define, ONLY: CRTM_RTSolution_type      , &
                                     OPERATOR(==)              , &
                                     CRTM_RTSolution_Associated, &
@@ -389,7 +395,7 @@ CONTAINS
     ! --------------------------------
     ! Populate the SfcOptics structure
     ! --------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
+    IF ( SfcOptics%Compute ) THEN
       Error_Status = CRTM_Compute_SfcOptics( &
                        Surface     , & ! Input
                        GeometryInfo, & ! Input
@@ -805,7 +811,7 @@ CONTAINS
     ! Populate the SfcOptics_TL structure based
     ! on FORWARD model SfcOptics Compute_Switch
     ! -----------------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
+    IF ( SfcOptics%Compute ) THEN
       Error_Status = CRTM_Compute_SfcOptics_TL( &
                        Surface     , & ! Input
                        SfcOptics   , & ! Input
@@ -1345,7 +1351,7 @@ CONTAINS
     ! Populate the SfcOptics_AD structure based
     ! on FORWARD model SfcOptics Compute_Switch
     ! -----------------------------------------
-    IF ( SfcOptics%Compute_Switch == SET ) THEN
+    IF ( SfcOptics%Compute ) THEN
       Error_Status = CRTM_Compute_SfcOptics_AD( &
                        Surface     , & ! Input
                        SfcOptics   , & ! Input

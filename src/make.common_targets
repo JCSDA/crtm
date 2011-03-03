@@ -25,7 +25,7 @@
 # ------------------------------
 # Default build based on OS type
 # ------------------------------
-all:
+all::
 	@echo "OS type detected: "`uname -s`
 	@case `uname -s` in \
 	  "SunOS")          make -f $(MAKE_FILE) build $(SUNOS_FLAGS) ;; \
@@ -130,12 +130,12 @@ build: create_links $(OBJ_FILES)
 # --------
 # Clean up
 # --------
-clean:
+clean::
 	$(REMOVE) $(OBJ_FILES) *.mod *.MOD gmon.out
 
-realclean: clean remove_links
+realclean:: clean remove_links
 
-real_clean: clean remove_links
+real_clean:: clean remove_links
 
 
 # ----------------------

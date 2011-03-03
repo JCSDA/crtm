@@ -24,7 +24,7 @@ MODULE RTV_Define
                              SECANT_DIFFUSIVITY, &
                              SCATTERING_ALBEDO_THRESHOLD, &
                              OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SfcOptics,  ONLY: CRTM_SOVariables_type
+  USE CRTM_SfcOptics,  ONLY: SOVar_type => iVar_type
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -190,7 +190,7 @@ MODULE RTV_Define
     REAL(fp), ALLOCATABLE :: i_Gm_A5(:,:,:)
 
     ! The surface optics forward variables
-    TYPE(CRTM_SOVariables_type) :: SOV
+    TYPE(SOVar_type) :: SOV
 
   END TYPE RTV_type
 

@@ -19,7 +19,7 @@ MODULE CRTM_Options_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
-  USE CRTM_Parameters      , ONLY: ZERO, ONE, STRLEN
+  USE CRTM_Parameters      , ONLY: ZERO, ONE, STRLEN, NOT_SET
   USE SSU_Input_Define     , ONLY: SSU_Input_type, &
                                    OPERATOR(==), &
                                    SSU_Input_IsValid, &
@@ -49,7 +49,7 @@ MODULE CRTM_Options_Define
   PUBLIC :: CRTM_Options_Inspect
   PUBLIC :: CRTM_Options_DefineVersion
 
-
+  
   ! -------------------
   ! Procedure overloads
   ! -------------------
@@ -67,7 +67,6 @@ MODULE CRTM_Options_Define
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
-
   ! ----------------------------
   ! Options data type definition
   ! ----------------------------
@@ -75,8 +74,16 @@ MODULE CRTM_Options_Define
   TYPE :: CRTM_Options_type
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
+
     ! Input checking on by default
     LOGICAL :: Check_Input = .TRUE.
+
+    ! User defined MW water emissivity algorithm
+    LOGICAL :: Use_Old_MWSSEM = .FALSE.
+    
+    ! Antenna correction application
+    LOGICAL :: Use_Antenna_Correction = .FALSE.
+
     ! User defined emissivity/reflectivity
     ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
@@ -88,10 +95,10 @@ MODULE CRTM_Options_Define
     ! ...Direct reflectivity optional arguments
     LOGICAL :: Use_Direct_Reflectivity = .FALSE.
     REAL(fp), ALLOCATABLE :: Direct_Reflectivity(:) ! L
-    ! Antenna correction application
-    LOGICAL :: Use_Antenna_Correction = .FALSE.
+
     ! SSU instrument input
     TYPE(SSU_Input_type) :: SSU
+
     ! Zeeman-splitting input
     TYPE(Zeeman_Input_type) :: Zeeman
   END TYPE CRTM_Options_type
@@ -229,7 +236,7 @@ CONTAINS
     ! ...Dimensions
     Options%n_Channels = n_Channels
     ! ...Arrays
-    Options%Emissivity = ZERO
+    Options%Emissivity          = ZERO
     Options%Direct_Reflectivity = ZERO
     
     ! Set allocation indicator
@@ -346,34 +353,22 @@ CONTAINS
     TYPE(CRTM_Options_type), INTENT(IN) :: Options
     WRITE(*,'(1x,"Options OBJECT")')
     ! Display components
+    WRITE(*,'(3x,"Check input flag            :",1x,l1)') Options%Check_Input
+    WRITE(*,'(3x,"Use old MWSSEM flag         :",1x,l1)') Options%Use_Old_MWSSEM
+    WRITE(*,'(5x,"Use antenna correction flag :",1x,l1)') Options%Use_Antenna_Correction
     ! ...Emissivity component
     WRITE(*,'(3x,"Emissivity component")')
-    WRITE(*,'(5x,"n_Channels    :",1x,i0)') Options%n_Channels
-    WRITE(*,'(5x,"Channel index :",1x,i0)') Options%Channel
-    IF ( Options%Use_Emissivity ) THEN
-      WRITE(*,'(5x,"Use emissivity : YES")')
-      IF ( CRTM_Options_Associated(Options) ) THEN
-        WRITE(*,'(5x,"Emissivity :")') 
-        WRITE(*,'(5(1x,es13.6,:))') Options%Emissivity
-      END IF
-    ELSE
-      WRITE(*,'(5x,"Use emissivity : NO")')
+    WRITE(*,'(5x,"n_Channels                   :",1x,i0)') Options%n_Channels
+    WRITE(*,'(5x,"Channel index                :",1x,i0)') Options%Channel
+    WRITE(*,'(5x,"Use emissivity flag          :",1x,l1)') Options%Use_Emissivity
+    WRITE(*,'(5x,"Use direct reflectivity flag :",1x,l1)') Options%Use_Direct_Reflectivity
+    IF ( Options%Use_Emissivity .AND. CRTM_Options_Associated(Options) ) THEN
+      WRITE(*,'(5x,"Emissivity :")') 
+      WRITE(*,'(5(1x,es13.6,:))') Options%Emissivity
     END IF
-    IF ( Options%Use_Direct_Reflectivity ) THEN
-      WRITE(*,'(5x,"Use direct reflectivity : YES")')
-      IF ( CRTM_Options_Associated(Options) ) THEN
-        WRITE(*,'(5x,"Direct reflectivity :")') 
-        WRITE(*,'(5(1x,es13.6,:))') Options%Direct_Reflectivity
-      END IF
-    ELSE
-      WRITE(*,'(5x,"Use direct reflectivity : NO")')
-    END IF
-    ! ...Antenna correction component
-    WRITE(*,'(3x,"Antenna correction component")')
-    IF ( Options%Use_Antenna_Correction ) THEN
-      WRITE(*,'(5x,"Use antenna correction : YES")')
-    ELSE
-      WRITE(*,'(5x,"Use antenna correction : NO")')
+    IF ( Options%Use_Direct_Reflectivity .AND. CRTM_Options_Associated(Options) ) THEN
+      WRITE(*,'(5x,"Direct reflectivity :")') 
+      WRITE(*,'(5(1x,es13.6,:))') Options%Direct_Reflectivity
     END IF
     ! ...SSU input
     CALL SSU_Input_Inspect( Options%SSU )
@@ -460,20 +455,22 @@ CONTAINS
     TYPE(CRTM_Options_type) , INTENT(IN) :: x, y
     LOGICAL :: is_equal
 
-    ! Emissivity component
-    is_equal = ( (x%n_Channels == y%n_Channels) .AND. &
-                 (x%Channel    == y%Channel   ) .AND. &
-                 (x%Use_Emissivity          .EQV. y%Use_Emissivity) .AND. &
-                 (x%Use_Direct_Reflectivity .EQV. y%Use_Direct_Reflectivity) )
-    IF ( CRTM_Options_Associated(x) .AND. CRTM_Options_Associated(y) ) &
-      is_equal = is_equal .AND. &
-                 ALL(x%Emissivity .EqualTo. y%Emissivity) .AND. &
-                 ALL(x%Direct_Reflectivity .EqualTo. y%Direct_Reflectivity)
-    
-    ! Antenna correction component
-    is_equal = is_equal .AND. &
+    is_equal = (x%Check_Input            .EQV. y%Check_Input           ) .AND. &
+               (x%Use_Old_MWSSEM         .EQV. y%Use_Old_MWSSEM        ) .AND. &
                (x%Use_Antenna_Correction .EQV. y%Use_Antenna_Correction)
 
+    ! Emissivity component
+    is_equal = is_equal .AND. &
+               ( (x%n_Channels == y%n_Channels) .AND. &
+                 (x%Channel    == y%Channel   ) .AND. &
+                 (x%Use_Emissivity           .EQV. y%Use_Emissivity          ) .AND. &
+                 (x%Use_Direct_Reflectivity  .EQV. y%Use_Direct_Reflectivity ) .AND. &
+                 (CRTM_Options_Associated(x) .EQV. CRTM_Options_Associated(y)) )
+    IF ( CRTM_Options_Associated(x) .AND. CRTM_Options_Associated(y) ) &
+      is_equal = is_equal .AND. &
+                 ALL(x%Emissivity          .EqualTo. y%Emissivity         ) .AND. &
+                 ALL(x%Direct_Reflectivity .EqualTo. y%Direct_Reflectivity)
+    
     ! SSU input
     is_equal = is_equal .AND. &
                (x%SSU == y%SSU)
@@ -481,7 +478,7 @@ CONTAINS
     ! Zeeman input
     is_equal = is_equal .AND. &
                (x%Zeeman == y%Zeeman)
-                 
+
   END FUNCTION CRTM_Options_Equal
 
 END MODULE CRTM_Options_Define

@@ -8,20 +8,14 @@ SRC_FILES = Type_Kinds.f90 \
             Sort_Utility.f90 \
             Search_Utility.f90 \
             Fundamental_Constants.f90 \
+            Hyperbolic_Step.f90 \
             Spectral_Units_Conversion.f90 \
             SensorInfo_Parameters.f90 \
-            AntCorr_Define.f90 \
-            AntCorr_Binary_IO.f90 \
-            SpcCoeff_Define.f90 \
-            SpcCoeff_Binary_IO.f90 \
-            CloudCoeff_Define.f90 \
-            CloudCoeff_Binary_IO.f90 \
-            AerosolCoeff_Define.f90 \
-            AerosolCoeff_Binary_IO.f90 \
-            EmisCoeff_Define.f90 \
-            EmisCoeff_Binary_IO.f90 \
-            BeCoeff_Define.f90 \
-            BeCoeff_Binary_IO.f90 \
+            AntCorr_Define.f90 AntCorr_Binary_IO.f90 \
+            SpcCoeff_Define.f90 SpcCoeff_Binary_IO.f90 \
+            CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
+            AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
+            EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
             NESDIS_AMSRE_SICEEM_Module.f90 \
             NESDIS_AMSRE_SNOWEM_Module.f90 \
             NESDIS_AMSU_SICEEM_Module.f90 \
@@ -44,7 +38,6 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_AerosolCoeff.f90 \
             CRTM_CloudCoeff.f90 \
             CRTM_EmisCoeff.f90 \
-            CRTM_BeCoeff.f90 \
             CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 \
             CRTM_Atmosphere_IO.f90 CRTM_Cloud_IO.f90 CRTM_Aerosol_IO.f90 \
             CRTM_Surface_Define.f90 CRTM_SensorData_Define.f90 \
@@ -71,9 +64,12 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_MW_Snow_SfcOptics.f90 \
             CRTM_MW_Water_SfcOptics.f90 \
             CRTM_VIS_Water_SfcOptics.f90 \
-            CRTM_LowFrequency_MWSSEM.f90 Ocean_Permittivity.f90 Fresnel.f90 \
+            CRTM_LowFrequency_MWSSEM.f90 \
             CRTM_Fastem1.f90 \
             CRTM_Fastem3.f90 \
+            CRTM_Fastem4.f90 Reflection_Correction.f90 Azimuth_Emissivity.f90 Slope_Variance.f90 \
+            Guillou.f90 Ellison.f90 Liu.f90 \
+            Fresnel.f90 \
             CRTM_IRSSEM.f90 \
             CRTM_surface_ir_emissivity.f90 \
             CRTM_AtmOptics.f90 \
@@ -83,7 +79,9 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
             CRTM_AntCorr.f90 \
-            CRTM_AncillaryInput_Define.f90 SSU_Input_Define.f90 Zeeman_Input_Define.f90 \
+            CRTM_AncillaryInput_Define.f90 \
+              SSU_Input_Define.f90 \
+              Zeeman_Input_Define.f90 \
             CRTM_Options_Define.f90 \
             CRTM_Parameters.f90 \
             CRTM_LifeCycle.f90 \

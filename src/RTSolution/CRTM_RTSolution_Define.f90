@@ -359,9 +359,14 @@ CONTAINS
       n = DEFAULT_N_SIGFIG
     END IF
     
-    ! Check the radiance and brightness temperature
-    IF ( .NOT. Compares_Within_Tolerance(x%Radiance,y%Radiance,n) .OR. &
-         .NOT. Compares_Within_Tolerance(x%Brightness_Temperature,y%Brightness_Temperature,n) ) RETURN
+    ! Check the components
+    IF ( .NOT. Compares_Within_Tolerance(x%Surface_Emissivity     , y%Surface_Emissivity     , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Up_Radiance            , y%Up_Radiance            , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Down_Radiance          , y%Down_Radiance          , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Down_Solar_Radiance    , y%Down_Solar_Radiance    , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Surface_Planck_Radiance, y%Surface_Planck_Radiance, n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Radiance               , y%Radiance               , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Brightness_Temperature , y%Brightness_Temperature , n) ) RETURN
 
     ! If we get here, the structures are comparable
     is_comparable = .TRUE.
@@ -385,9 +390,6 @@ CONTAINS
 ! PURPOSE:
 !       Elemental function to test the equality of two CRTM_RTSolution objects.
 !       Used in OPERATOR(==) interface block.
-!
-!       Note: Only the dimensionality and radiance/brightness temperatures
-!             are checked for equality.
 !
 ! CALLING SEQUENCE:
 !       is_equal = CRTM_RTSolution_Equal( x, y )
@@ -418,8 +420,13 @@ CONTAINS
     LOGICAL :: is_equal
 
     is_equal = ( (x%n_Layers == y%n_Layers) .AND. &
-                 (x%Radiance .EqualTo. y%Radiance) .AND. &
-                 (x%Brightness_Temperature .EqualTo. y%Brightness_Temperature) )
+                 (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
+                 (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
+                 (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
+                 (x%Down_Solar_Radiance     .EqualTo. y%Down_Solar_Radiance    ) .AND. &
+                 (x%Surface_Planck_Radiance .EqualTo. y%Surface_Planck_Radiance) .AND. &
+                 (x%Radiance                .EqualTo. y%Radiance               ) .AND. &
+                 (x%Brightness_Temperature  .EqualTo. y%Brightness_Temperature ) )
                  
   END FUNCTION CRTM_RTSolution_Equal
 

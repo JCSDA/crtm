@@ -36,7 +36,8 @@ MODULE Hyperbolic_Step
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   REAL(fp), PARAMETER :: ONE    = 1.0_fp
-
+  ! X-input maximum value
+  REAL(fp), PARAMETER :: XCUTOFF = 70.0_fp
 
 CONTAINS
 
@@ -51,6 +52,9 @@ CONTAINS
 !       Subroutine to compute a hyperbolic, differentiable, step function:
 !
 !         g(x) = 0.5(1 + TANH(x))
+!
+!       NOTE: No input checking of the validity of the x-argument for use
+!             with TANH() is done.
 !
 ! CALLING SEQUENCE:
 !       CALL Step( x, g )
@@ -92,6 +96,9 @@ CONTAINS
 !
 !         g(x) = 0.5(1 + TANH(x))
 !
+!       NOTE: Computations are only performed for input |x| < 70 to avoid
+!             infinite result for COSH().
+!
 ! CALLING SEQUENCE:
 !       CALL Step_TL( x, x_TL, g_TL )
 !                             
@@ -122,7 +129,11 @@ CONTAINS
   SUBROUTINE Step_TL( x, x_TL, g_TL )
     REAL(fp), INTENT(IN)  :: x, x_TL
     REAL(fp), INTENT(OUT) :: g_TL
-    g_TL = POINT5 * x_TL / COSH(x)**2
+    IF ( ABS(x) < XCUTOFF ) THEN
+      g_TL = POINT5 * x_TL / COSH(x)**2
+    ELSE
+      g_TL = ZERO
+    END IF
   END SUBROUTINE Step_TL
 
 
@@ -137,6 +148,9 @@ CONTAINS
 !       step function:
 !
 !         g(x) = 0.5(1 + TANH(x))
+!
+!       NOTE: Computations are only performed for input |x| < 70 to avoid
+!             infinite result for COSH().
 !
 ! CALLING SEQUENCE:
 !       CALL Step_AD( x, g_AD, x_AD )
@@ -171,7 +185,9 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: x
     REAL(fp), INTENT(IN OUT) :: g_AD  ! AD Input
     REAL(fp), INTENT(IN OUT) :: x_AD  ! AD Output
-    x_AD = x_AD + POINT5 * g_AD / COSH(x)**2
+    IF ( ABS(x) < XCUTOFF ) THEN
+      x_AD = x_AD + POINT5 * g_AD / COSH(x)**2
+    END IF
     g_AD = ZERO
   END SUBROUTINE Step_AD
 

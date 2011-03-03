@@ -65,10 +65,13 @@ MODULE CRTM_Forward_Module
                                         CRTM_Compute_CloudScatter
   USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type , &
                                         CRTM_Combine_AtmOptics
-  USE CRTM_SfcOptics,             ONLY: CRTM_SfcOptics_type    , &
-                                        CRTM_Allocate_SfcOptics, &
-                                        CRTM_Destroy_SfcOptics , &
-                                        CRTM_Compute_SurfaceT 
+
+  USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
+                                        CRTM_SfcOptics_Associated, &
+                                        CRTM_SfcOptics_Create    , &
+                                        CRTM_SfcOptics_Destroy
+  USE CRTM_SfcOptics,             ONLY: CRTM_Compute_SurfaceT 
+
   USE CRTM_RTSolution,            ONLY: CRTM_RTSolution_type    , &
                                         CRTM_Compute_nStreams   , &
                                         CRTM_Compute_RTSolution
@@ -249,22 +252,18 @@ CONTAINS
 
  
     ! ------
-    ! Set up
+    ! SET UP
     ! ------
     Error_Status = SUCCESS
 
 
-    ! ----------------------------------------
     ! If no sensors or channels, simply return
-    ! ----------------------------------------
     n_Sensors  = SIZE(ChannelInfo)
     n_Channels = SUM(ChannelInfo%n_Channels)
     IF ( n_Sensors == 0 .OR. n_Channels == 0 ) RETURN
 
 
-    ! ---------------------------------
-    ! Output RTSolution array too small
-    ! ---------------------------------
+    ! Check output array
     IF ( SIZE(RTSolution,DIM=1) < n_Channels ) THEN
       Error_Status = FAILURE
       WRITE( Message,'("Output RTSolution structure array too small (",i0,&
@@ -275,14 +274,10 @@ CONTAINS
     END IF
 
 
-    ! ----------------------------
     ! Check the number of profiles
-    ! ----------------------------
-    ! Number of atmospheric profiles.
+    ! ...Number of atmospheric profiles.
     n_Profiles = SIZE(Atmosphere)
-
-    ! Check the profile dimensionality
-    ! of the other mandatory arguments
+    ! ...Check the profile dimensionality of the other mandatory arguments
     IF ( SIZE(Surface)          /= n_Profiles .OR. &
          SIZE(Geometry)         /= n_Profiles .OR. &
          SIZE(RTSolution,DIM=2) /= n_Profiles      ) THEN
@@ -291,9 +286,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
       RETURN
     END IF
-
-    ! Check the profile dimensionality
-    ! of the other optional arguments
+    ! ...Check the profile dimensionality of the other optional arguments
     Options_Present = .FALSE.
     IF ( PRESENT(Options) ) THEN
       Options_Present = .TRUE.
@@ -304,12 +297,23 @@ CONTAINS
         RETURN
       END IF
     END IF
+    
+    
+    ! Allocate the profile independent surface opticss local structure
+    CALL CRTM_SfcOptics_Create( SfcOptics, MAX_N_ANGLES, MAX_N_STOKES )
+    IF ( .NOT. CRTM_SfcOptics_Associated(SfcOptics) ) THEN
+      Error_Status = FAILURE
+      Message = 'Error allocating SfcOptics data structures'
+      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      RETURN
+    END IF
 
 
-    !#--------------------------------------------------------------------------#
-    !#                           -- PROFILE LOOP --                             #
-    !#--------------------------------------------------------------------------#
+    ! ------------
+    ! PROFILE LOOP
+    ! ------------
     Profile_Loop: DO m = 1, n_Profiles
+
 
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
       IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
@@ -326,6 +330,7 @@ CONTAINS
          CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )                      
          RETURN                                                                                 
       END IF
+
       
       ! Check the optional Options structure argument
       ! ...Specify default actions
@@ -356,6 +361,8 @@ CONTAINS
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
+        ! Copy over surface optics input
+        SfcOptics%Use_New_MWSSEM = .NOT. Options(m)%Use_Old_MWSSEM
       END IF
 
 
@@ -395,10 +402,12 @@ CONTAINS
              Source_Zenith_Angle = Source_ZA )
 
 
-      ! ----------------------------------------------
+      ! Average surface skin temperature for multi-surface types  
+      CALL CRTM_Compute_SurfaceT( Surface(m), SfcOptics )         
+
+
       ! Add extra layers to current atmosphere profile
       ! if necessary to handle upper atmosphere
-      ! ----------------------------------------------
       Error_Status = CRTM_Atmosphere_AddLayers( Atmosphere(m), Atm )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -406,7 +415,6 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
         RETURN
       END IF
-      ! ...Check the total number of Atm layers
       IF ( Atm%n_Layers > MAX_N_LAYERS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Added layers [",i0,"] cause total [",i0,"] to exceed the ",&
@@ -415,44 +423,31 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
         RETURN
       END IF
-
-
-      ! ------------------------------------------------
-      ! Allocate all local sensor-independent structures
-      ! ------------------------------------------------
-      ! The AtmOptics structure
+      ! ...Allocate the atmospheric optics structures based on Atm extension
       AllocStatus(1)=CRTM_Allocate_AtmOptics( Atm%n_Layers        , &  ! Input
                                               MAX_N_LEGENDRE_TERMS, &  ! Input
                                               MAX_N_PHASE_ELEMENTS, &  ! Input
                                               AtmOptics             )  ! Output
-      ! The SfcOptics structure
-      AllocStatus(2)=CRTM_Allocate_SfcOptics( MAX_N_ANGLES, &  ! Input
-                                              MAX_N_STOKES, &  ! Input
-                                              SfcOptics     )  ! Output
-      IF ( ANY(AllocStatus /= SUCCESS) ) THEN
+      IF ( AllocStatus(1) /= SUCCESS ) THEN
         Error_Status=FAILURE
-        WRITE( Message,'("Error allocating local data structures for profile #",i0)' ) m
+        WRITE( Message,'("Error allocating AtmOptics data structure for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
         RETURN
       END IF
 
-
-      ! --------------------------                                
-      ! Preprocess some input data                                
-      ! --------------------------                                
-      ! Average surface skin temperature for multi-surface types  
-      CALL CRTM_Compute_SurfaceT( Surface(m), SfcOptics )         
-
+      
       ! -----------
-      ! Sensor loop
+      ! SENSOR LOOP
       ! -----------
       ! Initialise channel counter for channel(l)/sensor(n) count
       ln = 0
       
       Sensor_Loop: DO n = 1, n_Sensors
 
+
         ! Shorter name
         SensorIndex = ChannelInfo(n)%Sensor_Index
+
 
         ! Check if antenna correction to be applied for current sensor
         IF ( User_AntCorr .AND. SC(SensorIndex)%AC_Present .AND. iFOV /= 0 ) THEN
@@ -460,6 +455,7 @@ CONTAINS
         ELSE
           Compute_AntCorr = .FALSE.
         END IF
+
 
         ! Compute predictors for AtmAbsorption calcs
         ! ...Allocate the predictor structure
@@ -498,40 +494,36 @@ CONTAINS
 
         
         ! ------------
-        ! Channel loop
+        ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
+ 
  
           ! Shorter name
           ChannelIndex = ChannelInfo(n)%Channel_Index(l)
           
+          
           ! Increment channel counter
           ln = ln + 1
+          
           
           ! Initialisations
           AtmOptics%Phase_Coefficient     = ZERO
           AtmOptics%Delta_Truncation      = ZERO
           AtmOptics%Single_Scatter_Albedo = ZERO               
-!            AtmOptics%Optical_Depth = ZERO   
+!          AtmOptics%Optical_Depth         = ZERO   
 
-          ! ---------------------------------------------------------------
-          ! Determine the number of streams (n_Full_Streams) in up+downward
-          ! directions. Currently, n_Full_Streams is determined from the
-          ! cloud parameters only. It will also use the aerosol parameters 
-          ! when aerosol scattering is included.
-          ! ---------------------------------------------------------------
+
+          ! Determine the number of streams (n_Full_Streams) in up+downward directions
           n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
                                                   SensorIndex     , &  ! Input
                                                   ChannelIndex    , &  ! Input
                                                   RTSolution(ln,m)  )  ! Output
-          ! Transfer the number of streams
-          ! to all the scattering structures
+          ! ...Transfer stream count to scattering structure
           AtmOptics%n_Legendre_Terms = n_Full_Streams
 
 
-          ! --------------------------
           ! Compute the gas absorption
-          ! --------------------------
           CALL CRTM_Compute_AtmAbsorption( SensorIndex   , &  ! Input
                                            ChannelIndex  , &  ! Input
                                            AncillaryInput, &  ! Input
@@ -540,16 +532,14 @@ CONTAINS
                                            AAV             )  ! Internal variable output
 
 
-          ! -------------------------------------------
           ! Compute the molecular scattering properties
-          ! -------------------------------------------
-          ! Solar radiation
+          ! ...Solar radiation
           IF( SC(SensorIndex)%Solar_Irradiance(ChannelIndex) > ZERO .AND. &
               Source_ZA < MAX_SOURCE_ZENITH_ANGLE ) THEN
              RTV%Solar_Flag_true = .TRUE.
           END IF
-          
-          IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
+          ! ...Visible channel with solar radiation
+          IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .AND. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .TRUE.
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
@@ -579,9 +569,7 @@ CONTAINS
           END IF        
                    
 
-          ! -----------------------------------------------------------
           ! Compute the cloud particle absorption/scattering properties
-          ! -----------------------------------------------------------
           IF( Atm%n_Clouds > 0 ) THEN
             Error_Status = CRTM_Compute_CloudScatter( Atm         , &  ! Input
                                                       SensorIndex , &  ! Input
@@ -598,9 +586,7 @@ CONTAINS
           END IF
 
 
-          ! ----------------------------------------------------
           ! Compute the aerosol absorption/scattering properties
-          ! ----------------------------------------------------
           IF ( Atm%n_Aerosols > 0 ) THEN
             Error_Status = CRTM_Compute_AerosolScatter( Atm         , &  ! Input
                                                         SensorIndex , &  ! Input
@@ -617,23 +603,16 @@ CONTAINS
           END IF
 
 
-          ! ---------------------------------------------------
           ! Compute the combined atmospheric optical properties
-          ! ---------------------------------------------------
-          CALL CRTM_Combine_AtmOptics( AtmOptics     , & ! In/Output
-                                       AOV             ) ! Internal variable output
+          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
 
 
-          ! ------------------------------------
-          ! Fill the SfcOptics structure for the
-          ! optional emissivity input case.
-          ! ------------------------------------
-          ! Indicate SfcOptics ARE to be computed
-          SfcOptics%Compute_Switch = SET
-          ! Change SfcOptics emissivity/reflectivity
-          ! contents/computation status
+          ! Fill the SfcOptics structure for the optional emissivity input case.
+          ! ...Indicate SfcOptics ARE to be computed
+          SfcOptics%Compute = .TRUE.
+          ! ...Change SfcOptics emissivity/reflectivity contents/computation status
           IF ( User_Emissivity ) THEN
-            SfcOptics%Compute_Switch  = NOT_SET
+            SfcOptics%Compute = .FALSE.
             SfcOptics%Emissivity(1,1)       = Options(m)%Emissivity(ln)
             SfcOptics%Reflectivity(1,1,1,1) = ONE - Options(m)%Emissivity(ln)
             IF ( User_Direct_Reflectivity ) THEN
@@ -644,43 +623,38 @@ CONTAINS
           END IF
 
 
-        ! ------------
-        ! Fourier component loop for azimuth angles,
-        ! mth_Azi = 0 is for an azimuth-averaged value,
-        ! for example IR and MW thermal radiation
-        ! ------------
-        
-        RTSolution(ln,m)%Radiance = ZERO
-        
-        Azi_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
-          RTV%mth_Azi = mth_Azi
-          SfcOptics%mth_Azi = mth_Azi
+          ! Fourier component loop for azimuth angles (VIS).
+          ! mth_Azi = 0 is for an azimuth-averaged value (IR, MW)
+          ! ...Initialise radiance       
+          RTSolution(ln,m)%Radiance = ZERO
+          ! ...Fourier expansion over azimuth angle
+          Azimuth_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
           
-          ! ------------------------------------
-          ! Solve the radiative transfer problem
-          ! ------------------------------------
-          Error_Status = CRTM_Compute_RTSolution( Atm             , &  ! Input
-                                                  Surface(m)      , &  ! Input
-                                                  AtmOptics       , &  ! Input
-                                                  SfcOptics       , &  ! Input
-                                                  GeometryInfo    , &  ! Input
-                                                  SensorIndex     , &  ! Input
-                                                  ChannelIndex    , &  ! Input
-                                                  RTSolution(ln,m), &  ! Output
-                                                  RTV               )  ! Internal variable output
-         
-          IF ( Error_Status /= SUCCESS ) THEN
-            WRITE( Message,'( "Error computing RTSolution for ", a, &
-                   &", channel ", i0,", profile #",i0)' ) &
-                   TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-            CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-            RETURN
-          END IF
-        END DO Azi_Fourier_Loop
+            ! Set dependent component counters 
+            RTV%mth_Azi = mth_Azi
+            SfcOptics%mth_Azi = mth_Azi
+            
+            ! Solve the radiative transfer problem
+            Error_Status = CRTM_Compute_RTSolution( Atm             , &  ! Input
+                                                    Surface(m)      , &  ! Input
+                                                    AtmOptics       , &  ! Input
+                                                    SfcOptics       , &  ! Input
+                                                    GeometryInfo    , &  ! Input
+                                                    SensorIndex     , &  ! Input
+                                                    ChannelIndex    , &  ! Input
+                                                    RTSolution(ln,m), &  ! Output
+                                                    RTV               )  ! Internal variable output
+            IF ( Error_Status /= SUCCESS ) THEN
+              WRITE( Message,'( "Error computing RTSolution for ", a, &
+                     &", channel ", i0,", profile #",i0)' ) &
+                     TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
+              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              RETURN
+            END IF
+          END DO Azimuth_Fourier_Loop
+
         
-          ! --------------------------------------
           ! Compute Antenna correction if required
-          ! --------------------------------------
           IF ( Compute_AntCorr ) THEN
             CALL CRTM_Compute_AntCorr( GeometryInfo    , &  ! Input
                                        SensorIndex     , &  ! Input
@@ -705,14 +679,12 @@ CONTAINS
       END DO Sensor_Loop
       
 
-      ! ---------------------------------------------------
       ! Deallocate local sensor independent data structures
-      ! ---------------------------------------------------
-      AllocStatus(1) = CRTM_Destroy_SfcOptics( SfcOptics )
-      AllocStatus(2) = CRTM_Destroy_AtmOptics( AtmOptics )
-      IF ( ANY(AllocStatus /= SUCCESS ) ) THEN
+      ! ...Atmospheric optics
+      AllocStatus(1) = CRTM_Destroy_AtmOptics( AtmOptics )
+      IF ( AllocStatus(1) /= SUCCESS ) THEN
         Error_Status = FAILURE
-        WRITE( Message,'("Error deallocating local sensor independent data structures for profile #",i0)' ) m
+        WRITE( Message,'("Error deallocating AtmOptics data structures for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
         RETURN
       END IF
@@ -720,9 +692,8 @@ CONTAINS
     END DO Profile_Loop
 
 
-    ! ---------------------------------
-    ! Destroy "extra layers" structures
-    ! ---------------------------------
+    ! Destroy any remaining structures
+    CALL CRTM_SfcOptics_Destroy( SfcOptics )
     CALL CRTM_Atmosphere_Destroy( Atm )
 
   END FUNCTION CRTM_Forward

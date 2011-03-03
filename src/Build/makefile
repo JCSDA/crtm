@@ -50,12 +50,16 @@ $(INC_DIR) :
 	- test -d $@ || mkdir $@
 
 
+# Test results update target
+update: test/update
+
 
 # Subtargets
 libsrc/all       \
 libsrc/clean     \
 test/all         \
 test/clean       \
+test/update      \
 :
 	@subdir=`echo $@ | sed 's,/.*,,'`; \
 	target=`echo $@ | sed 's,.*/,,'`; \

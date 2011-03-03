@@ -1,23 +1,19 @@
 FUNCTION RTS_Profile::Get, $
-  Objects, $
-  Position = Position
-
+  Debug      = Debug  , $  ; Input keyword
+  Count      = Count  , $  ; Output keyword
+  _REF_EXTRA = Extra       ; Keywords passed onto IDL_Container::Get
+ 
   ; Set up
   ; ...Set up error handler
   @rts_func_err_handler
 
+
+  ; Get the requested object reference
+  objref = self->IDL_Container::Get(COUNT = Count, _EXTRA = Extra)
   
-  ; Extract the required objects
-  Objects = self->IDL_Container::Get( $
-    ISA = "RTS_Channel", $
-    POSITION = Position, $
-    COUNT = Count )
-  IF ( Count EQ 0 ) THEN $
-    MESSAGE, 'Error getting RTS_Channel objects', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  
+
   ; Done
   CATCH, /CANCEL
-  RETURN, SUCCESS
-  
+  RETURN, objref
+
 END ; FUNCTION RTS_Profile::Get

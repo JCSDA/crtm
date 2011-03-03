@@ -39,6 +39,7 @@ MODULE CRTM_LifeCycle
   ! Public procedures
   PUBLIC :: CRTM_Init
   PUBLIC :: CRTM_Destroy
+  PUBLIC :: CRTM_IsInitialized
   PUBLIC :: CRTM_LifeCycleVersion
 
   ! -----------------
@@ -369,6 +370,7 @@ CONTAINS
       ! ...Allocate the ChannelInfo structure
       CALL CRTM_ChannelInfo_Create( ChannelInfo(n), SC(n)%n_Channels )
       IF ( .NOT. CRTM_ChannelInfo_Associated(ChannelInfo(n)) ) THEN
+        err_stat = FAILURE
         msg = 'ChannelInfo allocation failed for '//TRIM(Sensor_Id(n))//' sensor'
         CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
         RETURN
@@ -406,7 +408,7 @@ CONTAINS
 !       ChannelInfo:  Reinitialized ChannelInfo structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_ChannelInfo_type
-!                     DIMENSION:  Scalar
+!                     DIMENSION:  Rank-1
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
@@ -465,6 +467,10 @@ CONTAINS
     END IF
 
 
+    ! Do nothing if CRTM not initialised
+    IF ( .NOT. CRTM_IsInitialized(ChannelInfo) ) RETURN
+    
+
     ! Destroy all the ChannelInfo structures
     CALL CRTM_ChannelInfo_Destroy( ChannelInfo )
     IF ( ANY(CRTM_ChannelInfo_Associated(ChannelInfo)) ) THEN
@@ -513,6 +519,44 @@ CONTAINS
 
   END FUNCTION CRTM_Destroy
 
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_IsInitialized
+!
+! PURPOSE:
+!       Logical function to test if the CRTM has been correctly initialized.
+!
+! CALLING SEQUENCE:
+!       status = CRTM_IsInitialized( ChannelInfo )
+!
+! INPUTS:
+!       ChannelInfo:  ChannelInfo structure array.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_ChannelInfo_type
+!                     DIMENSION:  Rank-1
+!                     ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:       The return value is a logical result indicating if the
+!                     CRTM has been correctly initialised.
+!                     If == .TRUE., all the ChannelInfo entries are valid.
+!                        == .FALSE., any of the ChannelInfo entries are invalid.
+!                     UNITS:      N/A
+!                     TYPE:       LOGICAL
+!                     DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_IsInitialized( ChannelInfo ) RESULT( Status )
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:)
+    LOGICAL :: Status
+    Status = ALL(CRTM_ChannelInfo_Associated(ChannelInfo))
+  END FUNCTION CRTM_IsInitialized
+  
 
 !--------------------------------------------------------------------------------
 !:sdoc+:

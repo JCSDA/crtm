@@ -320,7 +320,7 @@ LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
 NAME_PGI = pgf95
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee -pg
+LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee -Mprof=lines
 LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                         "FL=${NAME_PGI}" \
                         "FC_FLAGS= -c \

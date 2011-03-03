@@ -93,7 +93,7 @@ MODULE CRTM_Geometry_Define
     ! Sensor angle information
     REAL(fp) :: Sensor_Scan_Angle    = ZERO
     REAL(fp) :: Sensor_Zenith_Angle  = ZERO
-    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
+    REAL(fp) :: Sensor_Azimuth_Angle = 999.9_fp  ! Invalid marker
     ! Source angle information
     REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
     REAL(fp) :: Source_Azimuth_Angle = ZERO
@@ -659,13 +659,13 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     END IF
-    IF ( geo%Sensor_Azimuth_Angle < ZERO .OR. &
-         geo%Sensor_Azimuth_Angle > MAX_SENSOR_AZIMUTH_ANGLE ) THEN
-      WRITE(msg,'("Invalid sensor azimuth angle. Must be 0<=phi(i)<=",f5.1)') &
-            MAX_SENSOR_AZIMUTH_ANGLE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
-      IsValid = .FALSE.
-    END IF
+!    IF ( geo%Sensor_Azimuth_Angle < ZERO .OR. &
+!         geo%Sensor_Azimuth_Angle > MAX_SENSOR_AZIMUTH_ANGLE ) THEN
+!      WRITE(msg,'("Invalid sensor azimuth angle. Must be 0<=phi(i)<=",f5.1)') &
+!            MAX_SENSOR_AZIMUTH_ANGLE
+!      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+!      IsValid = .FALSE.
+!    END IF
     
     ! Source angle information
     IF ( ABS(geo%Source_Zenith_Angle) > 180.0_fp ) THEN

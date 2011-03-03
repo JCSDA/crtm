@@ -5,23 +5,25 @@ MODULE Timing_Utility
 
   ! Module usage
   USE Type_Kinds     , ONLY: fp
-  USE Message_Handler, ONLY: INFORMATION, Display_Message
+  USE Message_Handler, ONLY: INFORMATION, FAILURE, Display_Message
 
   ! Disable all implicit typing
   IMPLICIT NONE
 
   ! Visibilities
   PRIVATE
+  PUBLIC :: Timing_type
   PUBLIC :: Begin_Timing
   PUBLIC :: End_Timing
   PUBLIC :: Display_Timing
 
   ! Derived type definitions
-  TYPE, PUBLIC :: Timing_type
+  TYPE :: Timing_type
     PRIVATE
-    INTEGER :: Hertz
-    INTEGER :: Begin_Clock
-    INTEGER :: End_Clock
+    LOGICAL :: Is_Valid = .FALSE.
+    INTEGER :: Hertz       = 0
+    INTEGER :: Begin_Clock = 0
+    INTEGER :: End_Clock   = 0
   END TYPE Timing_type
 
   ! Module parameters
@@ -32,20 +34,19 @@ MODULE Timing_Utility
 
 CONTAINS
 
-
   ! Subroutine to set the begin time count
   ! in the timing structure variable
-  !
   SUBROUTINE Begin_Timing( Timing )  ! In/Output
-    TYPE(Timing_type), INTENT(IN OUT) :: Timing
+    TYPE(Timing_type), INTENT(OUT) :: Timing
     CALL SYSTEM_CLOCK( COUNT_RATE=Timing%Hertz, &
                        COUNT     =Timing%Begin_Clock )
+    IF ( Timing%Hertz == 0 ) RETURN
+    Timing%Is_Valid = .TRUE.
   END SUBROUTINE Begin_Timing
 
 
   ! Subroutine to set the end time count
   ! in the timing structure variable
-  !
   SUBROUTINE End_Timing( Timing )  ! In/Output
     TYPE(Timing_type), INTENT(IN OUT) :: Timing
     CALL SYSTEM_CLOCK( COUNT=Timing%End_Clock )
@@ -55,14 +56,11 @@ CONTAINS
   ! Subroutine to display the elapsed time between
   ! the begin and end time counts in the timing
   ! structure variable
-  !
-  SUBROUTINE Display_Timing( Timing     , &  ! Input
-                             Caller     , &  ! Optional input
-                             Message_Log  )  ! Optional input
+  SUBROUTINE Display_Timing( Timing, &  ! Input
+                             Caller  )  ! Optional input
     ! Arguments
-    TYPE(Timing_type),      INTENT(IN) :: Timing
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Caller
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    TYPE(Timing_type),      INTENT(IN OUT) :: Timing
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
     ! Local parameters
     REAL(fp), PARAMETER :: N_SECONDS_IN_HOUR        = 3600.0_fp
     REAL(fp), PARAMETER :: N_SECONDS_IN_MINUTE      =   60.0_fp
@@ -79,25 +77,40 @@ CONTAINS
     ! Set up
     Routine_Name = 'Display_Timing'
     IF ( PRESENT(Caller) ) Routine_Name = TRIM(ADJUSTL(Caller))
+    ! ...Check if timing structure valid for display
+    IF ( .NOT. Timing%Is_Valid ) THEN
+      CALL Display_Message( TRIM(Routine_Name), &
+                            '***** Invalid timing structure! *****', &
+                            FAILURE )
+      RETURN
+    END IF
 
     ! Compute the total time in seconds
-    Total_Time = REAL( Timing%End_Clock - Timing%Begin_Clock, fp ) / &
-    !            ------------------------------------------------------
-                            REAL( Timing%Hertz, fp )
+    Total_Time = REAL(Timing%End_Clock - Timing%Begin_Clock, fp) / REAL(Timing%Hertz, fp)
 
     ! Split the total time into hours, minutes, seconds, and millseconds
-    n_Hours        = INT( Total_Time/N_SECONDS_IN_HOUR )
-    n_Minutes      = INT( MOD( Total_Time,N_SECONDS_IN_HOUR )/N_SECONDS_IN_MINUTE )
-    n_Seconds      = INT( MOD( MOD( Total_Time,N_SECONDS_IN_HOUR ), N_SECONDS_IN_MINUTE ) )
-    n_milliSeconds = INT( ( Total_Time - INT( Total_Time ) ) * N_MILLISECONDS_IN_SECOND )
+    n_Hours        = INT(Total_Time / N_SECONDS_IN_HOUR)
+    n_Minutes      = INT(MOD(Total_Time,N_SECONDS_IN_HOUR) / N_SECONDS_IN_MINUTE)
+    n_Seconds      = INT(MOD(MOD(Total_Time,N_SECONDS_IN_HOUR), N_SECONDS_IN_MINUTE))
+    n_milliSeconds = INT((Total_Time - INT(Total_Time)) * N_MILLISECONDS_IN_SECOND)
 
     ! Construct the character string
     WRITE( Elapsed_Time, '("Elapsed time-- ",i2.2,":",i2.2,":",i2.2,".",i3.3 )' ) &
                          n_Hours, n_Minutes, n_Seconds, n_milliSeconds
     CALL Display_Message( TRIM(Routine_Name), &
                           TRIM(Elapsed_Time), &
-                          INFORMATION, &
-                          Message_Log=Message_Log )
+                          INFORMATION )
+    
+    ! Destroy the timing information
+    CALL Destroy_Timing(Timing)
+    
   END SUBROUTINE Display_Timing
+
+
+  ! Subroutine to reinitialise a timing structure
+  SUBROUTINE Destroy_Timing(Timing)
+    TYPE(Timing_type), INTENT(OUT) :: Timing
+    Timing%Is_Valid = .FALSE.
+  END SUBROUTINE Destroy_Timing
 
 END MODULE Timing_Utility

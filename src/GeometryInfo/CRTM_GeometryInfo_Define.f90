@@ -26,9 +26,10 @@ MODULE CRTM_GeometryInfo_Define
                                    SECANT_DIFFUSIVITY
   USE CRTM_Geometry_Define,  ONLY: CRTM_Geometry_type, &
                                    OPERATOR(==), &
+                                   CRTM_Geometry_Destroy , &
                                    CRTM_Geometry_SetValue, &
                                    CRTM_Geometry_GetValue, &
-                                   CRTM_Geometry_IsValid, &
+                                   CRTM_Geometry_IsValid , &
                                    CRTM_Geometry_Inspect
   ! Disable implicit typing
   IMPLICIT NONE
@@ -139,6 +140,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_GeometryInfo_Destroy( gInfo )
     TYPE(CRTM_GeometryInfo_type), INTENT(OUT) :: gInfo
+    CALL CRTM_Geometry_Destroy(gInfo%user)
   END SUBROUTINE CRTM_GeometryInfo_Destroy
   
 
