@@ -1,5 +1,12 @@
 #!/bin/sh
 
+# Shell script to set the values of the CRTM environment variables
+# for the current subversion trunk, branch, or tag.
+#
+# This script should be *sourced* in the root directory of the
+# aforementioned trunk, branch, or tag working copy.
+
+
 # Set current directory as new CRTM root.
 export CRTM_ROOT=${PWD}
 
