@@ -210,7 +210,7 @@ PRO Write_<sensor>_SRF, $
   
   ; Create an oSRF_File object array for all
   ; the detectors, AND the detector average.
-  n_detectors = VIIRS_INFO[sensor].n_detectors
+  n_detectors = <sensor>_INFO[sensor].n_detectors
   n_channel_detectors = INTARR(n_channels)
   detector            = LINDGEN(n_detectors) + 1L
   osrf_file           = OBJARR(n_detectors+1L)
