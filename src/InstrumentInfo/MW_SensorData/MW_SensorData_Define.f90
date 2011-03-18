@@ -113,7 +113,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 52
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 55
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -127,7 +127,8 @@ MODULE MW_SensorData_Define
     'amsua_n19           ','mhs_n19             ','amsua_metop-a       ','mhs_metop-a         ',&
     'amsua_metop-b       ','mhs_metop-b         ','amsua_metop-c       ','mhs_metop-c         ',&
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
-    'mwhs_fy3a           ','mwts_fy3a           ','tmi_trmm            ','gmi_gpm             ',&
+    'mwri_fy3b           ','mwhs_fy3a           ','mwhs_fy3b           ','mwts_fy3a           ',&
+    'mwts_fy3b           ','tmi_trmm            ','gmi_gpm             '                       ,&
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
@@ -143,8 +144,11 @@ MODULE MW_SensorData_Define
      4, 4, 3, 3, 5, 5, &                                    ! MetOp-A - C AMSU-A; MHS
      241, 243, 244, &                                       ! DMSP-08,-10,-11 SSM/I
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWRI
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWRI
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWHS
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWHS
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWTS
+     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWTS
      282, INVALID_WMO_SATELLITE_ID, &                       ! TRMM TMI; GPM GMI
      285, 286, &                                            ! DMSP-17,18
      INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID /)  ! DMSP-19,20
@@ -161,8 +165,8 @@ MODULE MW_SensorData_Define
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
      570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
      905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
-     938, 936, &                                     ! Fengyun-3A MWRI; MWHS
-     INVALID_WMO_SENSOR_ID, &                        ! Fengyun-3A MWTS
+     938, 938, 936, 936, &                           ! Fengyun 3A to 3B MWRI; MWHS
+     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID,&  ! Fengyun 3A to 3B MWTS
      365, INVALID_WMO_SENSOR_ID, &                   ! TRMM TMI; GPM GMI
      908, 908, &                                     ! DMSP-17,18 SSMIS
      908, 908 /)                                     ! DMSP-19,20 SSMIS
@@ -211,7 +215,9 @@ MODULE MW_SensorData_Define
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
        N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
        N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
-       N_MWRI_CHANNELS, N_MWHS_CHANNELS, N_MWTS_CHANNELS, &              ! Fengyun-3A MWRI; MWHS; MWTS
+       N_MWRI_CHANNELS,  N_MWRI_CHANNELS, &                              ! Fengyun 3A to 3B MWRI   
+       N_MWHS_CHANNELS,  N_MWHS_CHANNELS, &                              ! Fengyun 3A to 3B MWHS 
+       N_MWTS_CHANNELS,  N_MWTS_CHANNELS, &                              ! Fengyun 3A to 3B MWTS
        N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS /)                             ! DMSP-19,20 SSMIS
@@ -1297,29 +1303,32 @@ MODULE MW_SensorData_Define
        36.5_fp , 36.5_fp , 89.0_fp, 89.0_fp /)
 
   ! I/F band limits in GHz.
+  ! according to Hu Yang, the I/F for channle 9 and 10 is 0.5Ghz, 2.35Ghz
   REAL(fp), PARAMETER :: MWRI_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS ) = &
-    RESHAPE( (/ ZERO, 0.09_fp, ZERO, ZERO, &    ! ch1
-                ZERO, 0.09_fp, ZERO, ZERO, &    ! ch2
-                ZERO, 0.10_fp, ZERO, ZERO, &    ! ch3
-                ZERO, 0.10_fp, ZERO, ZERO, &    ! ch4
-                ZERO, 0.20_fp, ZERO, ZERO, &    ! ch5
-                ZERO, 0.20_fp, ZERO, ZERO, &    ! ch6
-                ZERO, 0.45_fp, ZERO, ZERO, &    ! ch7
-                ZERO, 0.45_fp, ZERO, ZERO, &    ! ch8
-                ZERO, 2.30_fp, ZERO, ZERO, &    ! ch9  :Only bandwidth info available. No I/F
-                ZERO, 2.30_fp, ZERO, ZERO /), & ! ch10 :Only bandwidth info available. No I/F
+    RESHAPE( (/ ZERO,    0.09_fp, ZERO, ZERO, &    ! ch1
+                ZERO,    0.09_fp, ZERO, ZERO, &    ! ch2
+                ZERO,    0.10_fp, ZERO, ZERO, &    ! ch3
+                ZERO,    0.10_fp, ZERO, ZERO, &    ! ch4
+                ZERO,    0.20_fp, ZERO, ZERO, &    ! ch5
+                ZERO,    0.20_fp, ZERO, ZERO, &    ! ch6
+                ZERO,    0.45_fp, ZERO, ZERO, &    ! ch7
+                ZERO,    0.45_fp, ZERO, ZERO, &    ! ch8
+!                ZERO, 2.30_fp, ZERO, ZERO, &    ! ch9  :Only bandwidth info available. No I/F
+!                ZERO, 2.30_fp, ZERO, ZERO /), & ! ch10 :Only bandwidth info available. No I/F
+                0.50_fp, 2.8_fp, ZERO, ZERO, &     
+                0.50_fp, 2.8_fp, ZERO, ZERO /), & 
              (/ 2, MAX_N_SIDEBANDS, N_MWRI_CHANNELS /) )
 
 
-  ! FengYun-3 MWHS
+  ! FengYun-3A MWHS
   ! --------------
   ! Central frequencies in GHz.
-  REAL(fp), PARAMETER :: MWHS_F0( N_MWHS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: MWHS_FY3A_F0( N_MWHS_CHANNELS ) = &
     (/ 150.006812_fp, 150.006812_fp, &
        183.315120_fp, 183.315120_fp, 183.315120_fp/)
 
   ! I/F band limits in GHz.
-  REAL(fp), PARAMETER :: MWHS_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: MWHS_FY3A_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS ) = &
     RESHAPE( (/ 0.3837500000_fp, 1.3852083_fp, ZERO, ZERO, &    ! ch1
                 0.4077080000_fp, 1.3947917_fp, ZERO, ZERO, &    ! ch2
                 0.7820512821_fp, 1.2628205_fp, ZERO, ZERO, &    ! ch3
@@ -1327,8 +1336,23 @@ MODULE MW_SensorData_Define
                 5.9134615380_fp, 8.0961538_fp, ZERO, ZERO /), & ! ch5
              (/ 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS /) )
 
+  ! FengYun-3B MWHS
+  ! --------------
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MWHS_FY3B_F0( N_MWHS_CHANNELS ) = &
+    (/ 149.9976_fp,  149.9976_fp, &
+       183.3067_fp,  183.3067_fp, 183.3067_fp/)
 
-  ! FengYun-3 MWTS
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MWHS_FY3B_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS ) = &
+    RESHAPE( (/ 0.40598_fp, 1.45681_fp, ZERO, ZERO, &    ! ch1
+                0.41196_fp, 1.42990_fp, ZERO, ZERO, &    ! ch2
+                0.74253_fp, 1.24253_fp, ZERO, ZERO, &    ! ch3
+                2.43200_fp, 3.49600_fp, ZERO, ZERO, &    ! ch4
+                5.89200_fp, 8.05400_fp, ZERO, ZERO /), & ! ch5
+             (/ 2, MAX_N_SIDEBANDS, N_MWHS_CHANNELS /) )
+
+  ! FengYun-3A MWTS
   !
   ! Data from presentation by Hu Yang given at the
   ! 7th GPM International Planning Workshop Tokyo, Japan Dec.5-7 2007
@@ -1337,15 +1361,29 @@ MODULE MW_SensorData_Define
   !      http://www.eorc.jaxa.jp/GPM/ws7/pdf/5thDEC2007/PM/5_pm13.pdf
   ! -----------------------------------------------------------------
   ! Central frequencies in GHz.
-  REAL(fp), PARAMETER :: MWTS_F0( N_MWTS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: MWTS_FY3A_F0( N_MWTS_CHANNELS ) = &
     (/ 50.30_fp, 53.596_fp, 54.94_fp, 57.290_fp/)
 
   ! I/F band limits in GHz.
-  REAL(fp), PARAMETER :: MWTS_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS ) = &
+  REAL(fp), PARAMETER :: MWTS_FY3A_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS ) = &
     RESHAPE( (/ ZERO   , 0.09_fp , ZERO, ZERO, &    ! ch1
                 0.03_fp, 0.2_fp  , ZERO, ZERO, &    ! ch2
                 ZERO   , 0.2_fp  , ZERO, ZERO, &    ! ch3
                 ZERO   , 0.165_fp, ZERO, ZERO /), & ! ch4
+             (/ 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS /) )
+
+  ! FengYun-3B MWTS
+  ! -----------------------------------------------------------------
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MWTS_FY3B_F0( N_MWTS_CHANNELS ) = &
+    (/ 50.36818_fp, 53.58984_fp, 54.93979_fp, 57.30168_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MWTS_FY3B_IF_BAND( 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS ) = &
+    RESHAPE( (/ 0.0125_fp, 0.0935_fp, ZERO, ZERO, &    ! ch1
+                0.0295_fp, 0.2071_fp, ZERO, ZERO, &    ! ch2
+                0.0196_fp, 0.2072_fp, ZERO, ZERO, &    ! ch3
+                0.0150_fp, 0.1737_fp, ZERO, ZERO /), & ! ch4
              (/ 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS /) )
 
 
@@ -2670,17 +2708,38 @@ CONTAINS
 
       CASE ('mwhs_fy3a')
         MW_SensorData%Sensor_Channel    = MWHS_SENSOR_CHANNEL
-        MW_SensorData%Central_Frequency = MWHS_F0
+        MW_SensorData%Central_Frequency = MWHS_FY3A_F0
         MW_SensorData%Polarization      = MWHS_POLARIZATION
         MW_SensorData%n_Sidebands       = MWHS_N_SIDEBANDS
-        MW_SensorData%IF_Band           = MWHS_IF_BAND
+        MW_SensorData%IF_Band           = MWHS_FY3A_IF_BAND
 
       CASE ('mwts_fy3a')
         MW_SensorData%Sensor_Channel    = MWTS_SENSOR_CHANNEL
-        MW_SensorData%Central_Frequency = MWTS_F0
+        MW_SensorData%Central_Frequency = MWTS_FY3A_F0
         MW_SensorData%Polarization      = MWTS_POLARIZATION
         MW_SensorData%n_Sidebands       = MWTS_N_SIDEBANDS
-        MW_SensorData%IF_Band           = MWTS_IF_BAND
+        MW_SensorData%IF_Band           = MWTS_FY3A_IF_BAND
+
+      CASE ('mwri_fy3b')
+        MW_SensorData%Sensor_Channel    = MWRI_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWRI_F0
+        MW_SensorData%Polarization      = MWRI_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWRI_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWRI_IF_BAND
+
+      CASE ('mwhs_fy3b')
+        MW_SensorData%Sensor_Channel    = MWHS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWHS_FY3B_F0
+        MW_SensorData%Polarization      = MWHS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWHS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWHS_FY3B_IF_BAND
+
+      CASE ('mwts_fy3b')
+        MW_SensorData%Sensor_Channel    = MWTS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MWTS_FY3B_F0
+        MW_SensorData%Polarization      = MWTS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MWTS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MWTS_FY3B_IF_BAND
 
       ! No match! Should never get here!
       ! --------------------------------
