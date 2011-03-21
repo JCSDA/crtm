@@ -155,8 +155,13 @@ PRO Read_coms_Raw_SRF, $
     r[i]          = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
   
-  ; Units are cm^-1 so no conversion necessary
-  f = wavelength
+  ; Change units based on sensor type
+  IF ( strmid(Filename,0,2) EQ 'v.' ) THEN BEGIN 
+    ; Convert wavelength to frequency in cm^-1
+    f = 10000.0d0/wavelength
+  ENDIF ELSE BEGIN
+    f = wavelength
+  ENDELSE
   
   ; Only keep the unique values
   idx = UNIQ(f, SORT(f))
