@@ -1,13 +1,13 @@
 ;
 ; NAME:
-;       Read_coms_Raw_SRF
+;       Read_mi_Raw_SRF
 ;
 ; PURPOSE:
 ;       This (private) helper procedure reads individual channel data
-;       files and loads the coms SRF data into arrays and lists.
+;       files and loads the mi SRF data into arrays and lists.
 ;
 ; CALLING SEQUENCE:
-;       Read_coms_Raw_SRF, $
+;       Read_mi_Raw_SRF, $
 ;         Filename     , $  ; Input
 ;         n_points     , $  ; Output
 ;         frequency    , $  ; Output
@@ -59,7 +59,7 @@
 ;
 ;
 
-PRO Read_coms_Raw_SRF, $
+PRO Read_mi_Raw_SRF, $
   Filename     , $  ; Input
   n_points     , $  ; Output
   frequency    , $  ; Output
@@ -121,13 +121,13 @@ END
 ;+
 ;
 ; NAME:
-;       oSRF::Load_coms
+;       oSRF::Load_mi
 ;
 ; PURPOSE:
-;       This procedure loads oSRF objects with coms SRF data.
+;       This procedure loads oSRF objects with mi SRF data.
 ;
 ; CALLING SEQUENCE:
-;       obj->[oSRF::]Load_coms, $
+;       obj->[oSRF::]Load_mi, $
 ;         Sensor_Id        , $ ; Input
 ;         Channel          , $ ; Input
 ;         Path    = Path   , $ ; Input keyword.
@@ -189,7 +189,7 @@ END
 ;
 ;-
 
-PRO oSRF::Load_coms, $
+PRO oSRF::Load_mi, $
   Sensor_Id        , $ ; Input
   Channel          , $ ; Input
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
@@ -222,7 +222,7 @@ PRO oSRF::Load_coms, $
 
 
   ; Read the file
-  Read_coms_Raw_SRF, filename, n_points, frequency, response
+  Read_mi_Raw_SRF, filename, n_points, frequency, response
 
 
   ; Load the SRF data into the oSRF object
