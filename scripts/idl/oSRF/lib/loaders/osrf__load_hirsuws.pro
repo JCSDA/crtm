@@ -135,7 +135,7 @@ PRO Read_HIRSUWS_Raw_SRF, $
 
   ; Open the file
   GET_LUN, fid
-  OPENR, file, Filename
+  OPENR, fid, Filename
   
   
   ; Read the file
