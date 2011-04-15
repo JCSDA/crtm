@@ -1,7 +1,6 @@
 PRO CRTM_RTSolution__Define
   void = { CRTM_RTSolution, $
            n_Layers                : 0L, $
-           SOD                     : 0.0d0, $
            Surface_Emissivity      : 0.0d0, $
            Up_Radiance             : 0.0d0, $
            Down_Radiance           : 0.0d0, $
@@ -115,20 +114,19 @@ FUNCTION Read_RTSolution_Record, FileID, $
   
   ; Read the forward radiative transfer intermediate results
   ; ...Scalars
-  SOD                     = Rts.SOD
+;  SOD                     = Rts.SOD
   Surface_Emissivity      = Rts.Surface_Emissivity     
   Up_Radiance             = Rts.Up_Radiance            
   Down_Radiance           = Rts.Down_Radiance          
   Down_Solar_Radiance     = Rts.Down_Solar_Radiance    
   Surface_Planck_Radiance = Rts.Surface_Planck_Radiance
   READU, FileID, $
-         SOD                    , $
          Surface_Emissivity     , $
          Up_Radiance            , $
          Down_Radiance          , $
          Down_Solar_Radiance    , $
          Surface_Planck_Radiance
-  Rts.SOD                     = SOD
+;  Rts.SOD                     = SOD
   Rts.Surface_Emissivity      = Surface_Emissivity     
   Rts.Up_Radiance             = Up_Radiance            
   Rts.Down_Radiance           = Down_Radiance          
