@@ -1,0 +1,288 @@
+\section{[% mg_escape_latex(basename) %]}
+
+[% IF is_batch %]\marginnote{batch file}[% END %]
+[% IF has_main_level %]\marginnote{includes main-level program}[% END %]
+[% IF is_private %]\marginnote{private}[% END %]
+			
+      
+[% IF has_comments %]
+\noindent [% comments %]
+[% END %]
+
+
+[% IF has_examples %]
+\begin{description}
+  \item[Examples]\hspace*{1em} \newline [% examples %]
+\end{description}
+[% END %]
+
+
+[% IF has_class %][% FOREACH class IN classes %][% SCOPE class %]
+\subsection*{Class description for [% mg_escape_latex(classname) %]}
+      
+[% IF n_ancestors gt 0 %]
+\begin{description}
+
+\item[Inheritance]\hspace*{1em} \newline
+
+\begin{itemize}
+[% FOREACH p IN parents %]
+\item [% mg_escape_latex(p->getClassname()) %]
+[% END %]
+\end{itemize}
+
+[% IF n_ancestors gt n_parents %]      
+\item[All ancestor classes]\hspace*{1em} \newline
+
+\begin{itemize}
+[% FOREACH a IN ancestors %]
+\item [% mg_escape_latex(a->getClassname()) %]
+[% END %]
+\end{itemize}
+[% END %]
+
+\end{description}
+[% END %]
+      
+[% IF n_children gt 0 %]
+\begin{description}
+\item[Subclasses]\hspace*{1em} \newline
+
+\begin{itemize}
+[% FOREACH c IN children %]
+\item [% mg_escape_latex(c->getClassname()) %]
+[% END %]
+\end{itemize}
+
+\end{description}     
+[% END %]
+      
+[% IF n_properties gt 0 %]
+\begin{description}
+\item[Properties]\hspace*{1em} \newline
+
+\begin{description}
+[% FOREACH p IN properties %][% SCOPE p %]
+\item[[% mg_escape_latex(name) %]] \hspace*{1em} {\small\smallcaps{[% IF is_get %]get [% END %][% IF is_set %]set [% END %][% IF is_init %]init [% END %][% IF has_type %]type=}[% type %][% ELSE %]}[% END %]} \newline [% comments %]
+[% END %][% END %]
+\end{description} 
+   
+\end{description}
+[% END %]
+      
+[% IF n_fields gt 0 && ~user %]
+\begin{description}
+\item[Fields]\hspace*{1em} \newline
+
+\begin{description}
+[% FOREACH f IN fields %][% SCOPE f %]
+\item[[% mg_escape_latex(name) %]] \hspace*{1em} {\small\smallcaps{[% mg_escape_latex(type) %]}} \newline [% comments %]
+[% END %][% END %]
+\end{description}
+
+\end{description}
+[% END %]
+      
+[% IF n_ancestors gt 0 && ~user %]
+\begin{description}
+[% FOREACH a IN ancestors %][% SCOPE a %]
+[% IF n_fields gt 0 %]
+\item[Fields in [% mg_escape_latex(classname) %]] \hspace*{1em} \newline
+[% FOREACH f IN fields %][% SCOPE f %]
+[% mg_escape_latex(name) %] {\small\smallcaps{[% mg_escape_latex(type) %]}} \newline
+[% END %][% END %]
+[% END %]
+[% END %][% END %]
+\end{description}
+[% END %]
+   
+[% END %][% END %][% END %]
+
+
+[% IF has_author_info %]
+\begin{description}
+[% IF has_author %]
+  \item[Author]\hspace*{1em} \newline [% author %]      
+[% END %]
+
+[% IF has_copyright %]
+  \item[Copyright]\hspace*{1em} \newline [% copyright %]      
+[% END %]
+    
+[% IF has_history %]
+  \item[History]\hspace*{1em} \newline [% history %]       
+[% END %]
+
+[% IF has_version %]
+  \item[Version]\hspace*{1em} \newline [% version %] 
+[% END %]          
+\end{description}
+[% END %]
+
+[% IF has_others %]
+\begin{description}
+[% IF has_bugs %]
+\item[Bugs]\hspace*{1em} \newline [% bugs %]
+[% END %]
+        
+[% IF has_customer_id %]
+\item[Customer ID]\hspace*{1em} \newline [% customer_id %]
+[% END %]
+
+[% IF has_requires %]
+item[Requires]\hspace*{1em} \newline [% requires %]  
+[% END %]
+        
+[% IF has_restrictions %]
+\item[Restrictions]\hspace*{1em} \newline [% restrictions %]
+[% END %]
+
+[% IF has_todo %]
+\item[Todo]\hspace*{1em} \newline [% todo %]
+[% END %]
+        
+[% IF has_uses %]
+\item[Uses]\hspace*{1em} \newline [% uses %]
+[% END %]
+\end{description}
+[% END %]
+      
+      
+      
+[% IF n_visible_routines gt 0 %]
+
+[% FOREACH r IN visible_routines %][% SCOPE r %]
+
+\subsection*{\allcaps{[% mg_escape_latex(name) %]}}
+
+\marginnote{[% IF is_private %]private [% END %][% IF is_obsolete %]obsolete [% END %][% IF is_abstract %]abstract [% END %]}
+
+[% IF has_comments %]
+\noindent [% comments %]
+\vspace{1.1em}
+[% END %]
+
+\begin{syntaxheader}
+\lstinline+[% IF is_function %]result = [% END %][% name %][% IF is_function %]([% END %][% IF n_visible_parameters gt 0 %][% FOREACH p IN visible_parameters %][% SCOPE p %][% IF is_optional %] [[% END %][% prefix %][% name %][% suffix %][% IF is_optional %]][% END %][% END %][% END %][% END %][% IF n_visible_keywords gt 0 %][% FOREACH k IN visible_keywords %][% SCOPE k %][% IF is_optional %] [[% END %][% prefix %][% IF is_boolean %]/[% END %][% name %][% IF ~is_boolean %]=[% IF type ne '' %][% type %][% ELSE %][% name %][% END %][% END %][% suffix %][% IF is_optional %]][% END %][% END %][% END %][% END %][% IF is_function %])[% END %]+
+\end{syntaxheader}
+
+[% IF is_function and has_returns %]
+\begin{description}
+\item[Returns]\hspace*{1em} \newline [% returns %]
+\end{description}
+[% END %]
+
+[% IF n_parameters gt 0 %]
+\begin{description}
+\item[Parameters]\hspace*{1em} \newline 
+\begin{description}
+[% FOREACH p IN parameters %][% SCOPE p %]
+\item[[% mg_escape_latex(name) %]]\hspace*{1em} {\small [% IF is_input %]\smallcaps{in} [% END %][% IF is_output %]\smallcaps{out} [% END %][% IF is_optional %]\smallcaps{optional} [% END %][% IF is_required %]\smallcaps{required} [% END %][% IF is_private %]\smallcaps{private} [% END %][% IF is_hidden %]\smallcaps{hidden} [% END %][% IF is_obsolete %]\smallcaps{obsolete} [% END %][% IF type ne '' %]\smallcaps{type=}[% mg_escape_latex(type) %] [% END %][% IF default_value ne '' %]\smallcaps{default=}[% mg_escape_latex(default_value) %][% END %]} \newline [% comments %]
+[% END %][% END %]
+\end{description}
+\end{description}
+[% END %]
+
+[% IF n_keywords gt 0 %]
+\begin{description}
+\item[Keywords]\hspace*{1em} \newline
+\begin{description}
+[% FOREACH k IN keywords %][% SCOPE k %]
+\item[[% mg_escape_latex(name) %]]\hspace*{1em} {\small [% IF is_input %]\smallcaps{in} [% END %][% IF is_output %]\smallcaps{out} [% END %][% IF is_optional %]\smallcaps{optional} [% END %][% IF is_required %]\smallcaps{required} [% END %][% IF is_private %]\smallcaps{private} [% END %][% IF is_hidden %]\smallcaps{hidden} [% END %][% IF is_obsolete %]\smallcaps{obsolete} [% END %][% IF type ne '' %]\smallcaps{type=}[% mg_escape_latex(type) %] [% END %][% IF default_value ne '' %]\smallcaps{default=}[% mg_escape_latex(default_value) %][% END %]} \newline [% comments %]
+[% END %][% END %]
+\end{description}
+\end{description}
+[% END %]
+                    
+[% IF has_examples %]
+\begin{description}
+\item[Examples]\hspace*{1em} \newline [% examples %]
+\end{description}
+[% END %]
+
+[% IF has_author_info %]
+\begin{description}
+[% IF has_author %]
+\item[Author]\hspace*{1em} \newline[% author %]      
+[% END %]
+
+[% IF has_copyright %]
+\item[Copyright]\hspace*{1em} \newline[% copyright %]      
+[% END %]
+
+[% IF has_history %]
+\item[History]\hspace*{1em} \newline[% history %]   
+[% END %]
+
+[% IF has_version %]
+\item[Version]\hspace*{1em} \newline[% version %] 
+[% END %]              
+\end{description}          
+[% END %]
+          
+[% IF has_others %]
+\begin{description}
+[% IF has_todo %]
+\item[Todo]\hspace*{1em} \newline [% todo %]
+[% END %]
+
+[% IF has_restrictions %]
+\item[Restrictions]\hspace*{1em} \newline [% restrictions %]
+[% END %]
+
+[% IF has_requires %]
+\item[Requires]\hspace*{1em} \newline [% requires %]
+[% END %]
+
+[% IF has_uses %]
+\item[Uses]\hspace*{1em} \newline [% uses %]
+[% END %]
+                                      
+[% IF has_bugs %]
+\item[Bugs]\hspace*{1em} \newline [% bugs %]     
+[% END %]
+
+[% IF has_pre %]
+\item[Pre-condition]\hspace*{1em} \newline [% pre %]
+[% END %]
+
+[% IF has_post %]
+\item[Post-condition]\hspace*{1em} \newline [% post %]    
+[% END %]     
+
+[% IF has_customer_id %]
+\item[Customer ID]\hspace*{1em} \newline [% customer_id %]        
+[% END %]                                     
+\end{description}
+[% END %]
+          
+[% IF statistics %]
+\begin{description}
+\item[Lines]\hspace*{1em} \newline [% n_lines %]
+\item[McCabe complexity]\hspace*{1em} \newline 
+\end{description}
+[% END %]
+                              
+\vspace{0.5em}
+
+[% END %][% END %]
+
+[% IF statistics %]
+\begin{description}
+\item[File attributes]\hspace*{1em} \newline
+  	
+\begin{description}
+\item[Modification date]\hspace*{1em} \newline [% modification_time %]
+\item[Lines]\hspace*{1em} \newline [% n_lines %]
+[% IF format ne '' || markup ne '' %]             
+\item[Docformat]\hspace*{1em} \newline [% format %][% IF format ne '' %] [% END %][% markup %]
+[% END %]
+\end{description}
+
+\end{description}
+[% END %]
+
+[% END %]
+
+
+

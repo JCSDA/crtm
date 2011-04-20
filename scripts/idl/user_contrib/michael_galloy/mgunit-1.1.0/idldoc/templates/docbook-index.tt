@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN" 
+	        "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [ 
+<!ENTITY mgalloy "Michael Galloy"> 
+]>
+
+<book>
+  <bookinfo>
+    <title>[% title %]</title>
+  </bookinfo>
+    
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="overview.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="all-dirs.xml"/>  
+  
+  <part><title>Other information</title>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="idldoc-warnings.xml"/>
+  </part>
+</book>    
+
+
+

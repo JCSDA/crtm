@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+                 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+
+<preface>
+  [% IF has_overview_comments %]
+  <title>Overview</title>
+  [% overview_comments %]
+  [% END %]
+  
+  <sect1><title>Directories</title>
+  
+    <informaltable frame="bottom">
+      <?dbfo table-width="100%" ?>
+      <tgroup cols="2">
+        <colspec colnum="1" colsep="0" colwidth="*"/>
+        <colspec colnum="2" colsep="0" colwidth="4*"/>
+        <thead>
+          <row rowsep="1">
+            <entry>Directory</entry>
+            <entry>Description</entry>
+          </row>
+        </thead>
+        <tbody>
+        [% FOREACH d IN visible_dirs %][% SCOPE d %]
+          <row rowsep="0">
+            <entry><filename>[% location %]</filename></entry>
+            <entry>[% overview_comments %]</entry>
+          </row>
+        [% END %][% END %]        
+        </tbody>
+      </tgroup>
+    </informaltable>
+      
+  </sect1>  
+  
+  
+  <sect1><title>Project statistics</title>
+
+    <informaltable frame="bottom">
+      <?dbfo table-width="50%" ?>
+      <tgroup cols="2">
+        <colspec colnum="1" colsep="0" colwidth="*"/>
+        <colspec colnum="2" colsep="0" colwidth="*"/> 
+        <thead>
+          <row rowsep="1">
+            <entry>Attribute</entry>
+            <entry>Value</entry>     
+          </row>
+        </thead>
+        <tbody>
+          <row rowsep="0">
+            <entry>Directories:</entry>
+            <entry>[% n_dirs %]</entry>
+          </row>
+
+          <row rowsep="0">
+            <entry>.pro files:</entry>
+            <entry>[% n_visible_pro_files %]</entry>
+          </row>
+      
+          <row rowsep="0">
+            <entry>.sav files:</entry>
+            <entry>[% n_sav_files %]</entry>
+          </row>
+      
+          <row rowsep="0">
+            <entry>Routines:</entry>
+            <entry>[% n_routines %]</entry>
+          </row>    
+      
+          <row rowsep="0">
+            <entry>Lines:</entry>
+            <entry>[% n_lines %]</entry>
+          </row>
+        
+          [% IF requires_version ne '' %]
+          <row rowsep="0">
+            <entry>Required IDL version:</entry>
+            <entry>[% requires_version %]</entry>
+          </row>                          
+          [% END %]   
+        </tbody>
+      </tgroup>         
+    </informaltable>   
+  </sect1>
+        
+</preface>

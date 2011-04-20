@@ -1,0 +1,932 @@
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+
+% Modified from the tufte-common.sty
+\ProvidesPackage{idldoc}[2009/01/01 v1.0.0 Common code for the idldoc style]
+
+%%
+% We use the `xifthen' package to handle our package option switches
+\RequirePackage{xifthen}
+
+
+%%
+% `debug' option -- provides more information in the .log file for use in
+% troubleshooting problems
+\newboolean{@idldoc@debug}
+\DeclareOption{debug}{\setboolean{@idldoc@debug}{true}}
+
+%%
+% `nofonts' option -- doesn't load any fonts
+% `fonts' option -- tries to load fonts
+\newboolean{@idldoc@loadfonts}\setboolean{@idldoc@loadfonts}{true}
+\DeclareOption{fonts}{\setboolean{@idldoc@loadfonts}{true}}
+\DeclareOption{nofonts}{\setboolean{@idldoc@loadfonts}{false}}
+
+%%
+% `nols' option -- doesn't configure letterspacing
+% `ls' option -- configures letterspacing
+\newboolean{@idldoc@letterspace}\setboolean{@idldoc@letterspace}{true}
+\DeclareOption{ls}{\setboolean{@idldoc@letterspace}{true}}
+\DeclareOption{nols}{\setboolean{@idldoc@letterspace}{false}}
+
+%%
+% `book' and `handout' options
+\newcommand{\@idldoc@class}{article}% the base LaTeX class (defaults to the article/handout style)
+\newcommand{\@idldoc@pkgname}{idldoc}% the name of the package (defaults to idldoc)
+\DeclareOption{book}{%
+  \renewcommand{\@idldoc@class}{book}
+  \renewcommand{\@idldoc@pkgname}{idldoc}
+  \setboolean{@idldoc@titlepage}{true}
+}
+\DeclareOption{handout}{%
+  \renewcommand{\@idldoc@class}{article}
+  \renewcommand{\@idldoc@pkgname}{idldoc}
+  \setboolean{@idldoc@titlepage}{false}
+}
+\DeclareOption{article}{% `article' is just an alias for `handout'
+  \renewcommand{\@idldoc@class}{article}
+  \renewcommand{\@idldoc@pkgname}{idldoc}
+  \setboolean{@idldoc@titlepage}{false}
+}
+
+%%
+% `titlepage' option -- creates a full title page with \maketitle
+
+\newboolean{@idldoc@titlepage}
+\DeclareOption{titlepage}{\setboolean{@idldoc@titlepage}{true}}
+\DeclareOption{notitlepage}{\setboolean{@idldoc@titlepage}{false}}
+
+%%
+% `a4paper' option
+
+\newboolean{@idldoc@afourpaper}
+\DeclareOption{a4paper}{\setboolean{@idldoc@afourpaper}{true}}
+
+%%
+% `sfsidenotes' option -- typesets sidenotes in sans serif typeface
+
+\newboolean{@idldoc@sfsidenotes}
+\DeclareOption{sfsidenotes}{\setboolean{@idldoc@sfsidenotes}{true}}
+
+%%
+% `symmetric' option -- puts marginpar space to the outside edge of the page
+%   Note: this option forces the twoside option (see the .cls files)
+
+\newboolean{@idldoc@symmetric}
+\DeclareOption{symmetric}{
+  \setboolean{@idldoc@symmetric}{true}
+  \PackageInfo{\@idldoc@pkgname}{The `symmetric' option implies `twoside'}
+  %\ExecuteOptions{twoside}
+}
+
+%%
+% `twoside' option -- alternates running heads
+
+\newboolean{@idldoc@twoside}
+\DeclareOption{twoside}{
+  \setboolean{@idldoc@twoside}{true}
+}
+
+%%
+% `notoc' option -- suppresses the Tufte-style table of contents
+
+\newboolean{@idldoc@toc}
+\setboolean{@idldoc@toc}{true}
+\DeclareOption{notoc}{\setboolean{@idldoc@toc}{false}}
+\DeclareOption{toc}{\setboolean{@idldoc@toc}{true}}
+
+%%
+% `justified' option -- uses fully justified text (flush left and flush
+% right) instead of ragged right.
+
+\newboolean{@idldoc@justified}
+\DeclareOption{justified}{\setboolean{@idldoc@justified}{true}}
+
+
+% FIXME: should probably specify options not supported like Mittelbach's aipproc.cls
+
+\DeclareOption*{\PassOptionsToClass{\CurrentOption}{\@idldoc@class}}
+\ProcessOptions
+
+%%
+% Detect whether we're in two-side mode or not.  (Used to set up running
+% heads later.)
+
+\ifthenelse{\boolean{@twoside}}
+  {\setboolean{@idldoc@twoside}{true}}
+  {}
+
+
+
+%%
+% Detect if we're using pdfLaTeX
+
+\newboolean{@idldoc@pdf}
+\IfFileExists{ifpdf.sty}{%
+  \RequirePackage{ifpdf}
+  \ifthenelse{\boolean{pdf}}
+    {\setboolean{@idldoc@pdf}{true}}
+    {\setboolean{@idldoc@pdf}{false}}
+}{% assume we're not using pdfTex?
+  \setboolean{@idldoc@pdf}{false}
+}
+
+%%
+% Detect if we're using XeLaTeX
+
+\newboolean{@idldoc@xetex}
+\IfFileExists{ifxetex.sty}{%
+  \RequirePackage{ifxetex}
+  \ifthenelse{\boolean{xetex}}
+    {\setboolean{@idldoc@xetex}{true}}
+    {\setboolean{@idldoc@xetex}{false}}
+}{% not using xelatex
+  \setboolean{@idldoc@xetex}{false}
+}
+
+%%
+% Load the `hyperref' package.  We will set more options later.
+% TODO Set nice defaults for hyperref options
+\ifthenelse{\boolean{@idldoc@xetex}}
+  {\RequirePackage[xetex]{hyperref}}
+  {\RequirePackage{hyperref}}
+
+\hypersetup{%
+  pdfborder = {0 0 0},
+  hyperfootnotes = false
+}
+
+%%
+% Set page layout geometry
+
+\RequirePackage[letterpaper,includemp,width=6.5in,marginparsep=0.375in,marginparwidth=2in]{geometry}
+
+\ifthenelse{\boolean{@idldoc@afourpaper}}
+  {\geometry{a4paper,includemp,width=170mm,marginparsep=10mm,marginparwidth=50mm}}
+  {}
+
+\ifthenelse{\boolean{@idldoc@symmetric}}
+  {}
+  {\geometry{asymmetric}}% forces internal LaTeX `twoside'
+
+
+%%
+% Separation marginpars by a line's worth of space.
+
+\setlength\marginparpush{\baselineskip}
+
+%%
+% Font for margin items
+
+\ifthenelse{\boolean{@idldoc@sfsidenotes}}
+  {\newcommand{\@idldoc@marginfont}{\normalfont\scriptsize\sffamily}}
+  {\newcommand{\@idldoc@marginfont}{\normalfont\scriptsize}}
+
+%%
+% \RaggedRight allows hyphenation
+
+\RequirePackage{ragged2e}
+\setlength{\RaggedRightRightskip}{\z@ plus 0.08\hsize}
+
+%%
+% Set the justification baesed on the `justified' class option
+
+\newcommand{\@idldoc@justification}{%
+  \ifthenelse{\boolean{@idldoc@justified}}
+    {\justifying}
+    {\RaggedRight}
+}
+
+%%
+% Turn off section numbering
+
+\setcounter{secnumdepth}{-1}
+
+%%
+% Tighten up space between displays (e.g., a figure or table) and make symmetric
+
+\setlength\abovedisplayskip{6pt plus 2pt minus 4pt}
+\setlength\belowdisplayskip{6pt plus 2pt minus 4pt}
+
+%%
+% To implement full-width display environments
+
+\RequirePackage[strict]{chngpage}
+% TODO this package may be obsolete -- see the changepage package for a replacement
+
+
+
+% Compute length used for full-width displays
+
+\newlength{\@idldoc@overhang}
+\setlength{\@idldoc@overhang}{\marginparwidth}
+\addtolength{\@idldoc@overhang}{\marginparsep}
+
+%%
+% Modified \title, \author, and \date commands.  These store the
+% (footnote-less) values in \thetitle, \theauthor, and \thedate, respectively.
+
+\newcommand{\thetitle}{}%     plain-text-only title
+\newcommand{\theauthor}{}%    plain-text-only author
+\newcommand{\thepublisher}{}% plain-text-only publisher
+
+\newcommand{\thanklesstitle}{}%     full title text minus \thanks{}
+\newcommand{\thanklessauthor}{}%    full author text minus \thanks{}
+\newcommand{\thanklesspublisher}{}% full publisher minus \thanks{}
+
+\newcommand{\@publisher}{}% full publisher with \thanks{}
+\newcommand{\thedate}{\today}
+
+% TODO Fix it so that \thanks is not spaced out (with `soul') and can be
+% used in \maketitle when the `sfsidenotes' option is provided.
+\renewcommand{\thanks}[1]{\NoCaseChange{\footnote{#1}}}
+
+\renewcommand{\title}[2][]{%
+  \gdef\@title{#2}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \protected@xdef\thanklesstitle{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}%
+    {\renewcommand{\thetitle}{\thanklesstitle}}% use thankless title
+    {\renewcommand{\thetitle}{#1}}% use provided plain-text title
+  \hypersetup{pdftitle={\thetitle}}% set the PDF metadata title
+}
+
+\def\@author{}% default author is empty (suppresses LaTeX's ``no author'' warning)
+\renewcommand*{\author}[2][]{%
+  \gdef\@author{#2}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \protected@xdef\thanklessauthor{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}
+    {\renewcommand{\theauthor}{\thanklessauthor}}% use thankless author
+    {\renewcommand{\theauthor}{#1}}% use provided plain-text author
+  \hypersetup{pdfauthor={\theauthor}}% set the PDF metadata author
+}
+
+\renewcommand*{\date}[1]{%
+  \gdef\@date{#1}%
+  \begingroup%
+    % TODO store contents of \thanks command
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \protected@xdef\thedate{#1}%
+  \endgroup%
+}
+
+%%
+% Provides a \publisher command to set the publisher
+
+\newcommand{\publisher}[2][]{%
+  \gdef\@publisher{#2}%
+  \begingroup%
+    \renewcommand{\thanks}[1]{}% swallow \thanks contents
+    \protected@xdef\thanklesspublisher{#2}%
+  \endgroup%
+  \ifthenelse{\isempty{#1}}
+    {\renewcommand{\thepublisher}{\thanklesspublisher}}% use thankless publisher
+    {\renewcommand{\thepublisher}{#1}}% use provided plain-text publisher
+}
+
+% TODO: Test \hypersetup{pdfauthor,pdftitle} with DVI and XeTeX
+
+%%
+% Require paralist package for tighter lists
+
+\RequirePackage{paralist}
+
+% Add rightmargin to compactenum
+
+\def\@compactenum@{%
+  \expandafter\list\csname label\@enumctr\endcsname{%
+    \usecounter{\@enumctr}%
+    \rightmargin=2em% added this
+    \parsep\plparsep
+    \itemsep\plitemsep
+    \topsep\pltopsep
+    \partopsep\plpartopsep
+    \def\makelabel##1{\hss\llap{##1}}}}
+
+%%
+% Improved letterspacing of small caps and all-caps text.
+%
+% First, try to use the `microtype' package, if it's available. 
+% Failing that, try to use the `soul' package, if it's available.
+% Failing that, well, I give up.
+
+\RequirePackage{textcase} % provides \MakeTextUppercase and \MakeTextLowercase
+\def\allcapsspacing{\relax}
+\def\smallcapsspacing{\relax}
+\newcommand{\allcaps}[1]{\MakeTextUppercase{\allcapsspacing{#1}}}
+\newcommand{\smallcaps}[1]{\MakeTextLowercase{\textsc{#1}}}
+
+\newcommand{\@idldoc@loadsoul}{%
+  \IfFileExists{soul.sty}{%
+    \RequirePackage{soul}
+    \sodef\allcapsspacing{\upshape}{0.15em}{0.65em}{0.6em}
+    \sodef\smallcapsspacing{\scshape}{0.075em}{0.5em}{0.6em}
+  }{
+    \PackageWarningNoLine{\@idldoc@pkgname}{Couldn't locate `soul' package.}
+  }% soul not installed... giving up.
+}
+
+% If we're using pdfLaTeX v1.40+, use the letterspace package. 
+% If we're using pdfLaTex < v1.40, use the soul package.
+% If we're using XeLaTeX, use XeLaTeX letterspacing options.
+% Otherwise fall back on the soul package.
+
+\ifthenelse{\boolean{@idldoc@pdf}}
+  {\PackageInfo{\@idldoc@pkgname}{ifpdf = true}}
+  {\PackageInfo{\@idldoc@pkgname}{ifpdf = false}}
+
+\ifthenelse{\boolean{@idldoc@xetex}}
+  {\PackageInfo{\@idldoc@pkgname}{ifxetex = true}}
+  {\PackageInfo{\@idldoc@pkgname}{ifxetex = false}}
+
+% Check pdfLaTeX version
+\def\@idldoc@pdftexversion{0}
+\ifx\normalpdftexversion\@undefined \else
+  \let\pdftexversion \normalpdftexversion
+  \let\pdftexrevision\normalpdftexrevision
+  \let\pdfoutput     \normalpdfoutput
+\fi
+\ifx\pdftexversion\@undefined \else
+  \ifx\pdftexversion\relax \else
+    \def\@idldoc@pdftexversion{6}
+    \ifnum\pdftexversion < 140
+      \def\@idldoc@pdftexversion{5}
+    \fi
+  \fi
+\fi
+
+\ifthenelse{\boolean{@idldoc@letterspace}}
+  {%
+  \ifnum\@idldoc@pdftexversion<6
+    % pdfLaTeX version is too old or not using pdfLaTeX
+    \ifthenelse{\boolean{@idldoc@xetex}}
+      {% TODO use xetex letterspacing
+      \PackageInfo{\@idldoc@pkgname}{XeTeX detected. Reverting to `soul' package for letterspacing.}
+      \@idldoc@loadsoul}
+      {% use `soul' package for letterspacing
+      \PackageInfo{\idldoc@pkgname}{Old version of pdfTeX detected.  Reverting to `soul' package for letterspacing.}
+      \@idldoc@loadsoul}
+  \else
+    \IfFileExists{letterspace.sty}{% 
+      \PackageInfo{\@idldoc@pkgname}{Modern version of pdfTeX detected.  Using `letterspace' package.}
+      \RequirePackage{letterspace}
+      % Set up letterspacing (using microtype package) -- requires pdfTeX v1.40+
+      \renewcommand{\allcapsspacing}[1]{\textls[200]{##1}}
+      \renewcommand{\smallcapsspacing}[1]{\textls[50]{##1}}
+      \renewcommand{\allcaps}[1]{\textls[200]{\MakeTextUppercase{##1}}}
+      \renewcommand{\smallcaps}[1]{\textsc{\MakeTextLowercase{##1}}}
+    }{% microtype failed, check for soul
+      \PackageInfo{\@idldoc@pkgname}{Modern version of pdfTeX detected, but `letterspace' package not installed.  Reverting to  `soul' package for letterspacing.}
+      \@idldoc@loadsoul
+    }
+  \fi}
+  {}
+
+
+\DeclareTextFontCommand{\textsmallcaps}{\scshape}
+\renewcommand{\textsc}[1]{\textsmallcaps{\smallcapsspacing{#1}}}
+
+
+%%
+% An environment for paragraph-style section
+
+\providecommand\newthought[1]{%
+   \addvspace{1.0\baselineskip plus 0.5ex minus 0.2ex}%
+   \noindent\textsc{#1}%
+}
+
+%%
+% Used for doublespacing, and other linespacing
+% Note that setspace must be loaded before footmisc or it'll break sidenotes
+\usepackage{setspace}
+
+
+%%
+% Citations should go in the margin as sidenotes
+
+\RequirePackage{natbib}
+\RequirePackage{bibentry}	% allows bibitems to be typeset outside thebibliography environment
+\nobibliography*		% pre-loads the bibliography keys
+\providecommand{\doi}[1]{\textsc{doi:} #1} % pre-defining this so it may be used before the \bibliography command it issued
+
+\let\sidenote\footnote% This will be redefined shortly
+
+%%
+% Normal \cite behavior
+\newcommand{\@idldoc@normal@cite}[1]{%
+  \@for\@temp@bibkey:=#1\do{%
+    \sidenote{\bibentry{\@temp@bibkey}.}%
+  }%
+}
+
+%%
+% Macros for holding the list of cite keys until after the \sidenote
+
+\gdef\@idldoc@citations{}% list of cite keys
+\newcommand\@idldoc@add@citation[1]{\relax% adds a new bibkey to the list of cite keys
+  \ifx\@idldoc@citations\@empty\else
+    \g@addto@macro\@idldoc@citations{,}% separate by commas
+  \fi
+  \g@addto@macro\@idldoc@citations{#1}
+}
+
+\newcommand{\@idldoc@print@citations}{% puts each citation in its own margin note
+  \@for\@temp@bibkey:=\@idldoc@citations\do{%
+    \marginpar{\@idldoc@marginfont\@idldoc@justification\bibentry{\@temp@bibkey}.}%
+  }
+}
+
+%%
+% \cite behavior when executed within a sidenote
+
+\newcommand{\@idldoc@sidenote@citations}{}% contains list of \cites in sidenote
+\newcommand{\@idldoc@infootnote@cite}[1]{%
+  \@idldoc@add@citation{#1}
+}
+
+%%
+% Set the default \cite style.  This is set and reset by the \sidenote command.
+
+\let\cite\@idldoc@normal@cite
+
+%%
+% Transform existing \footnotes into \sidenotes
+% Sidenote: ``Where God meant footnotes to go.'' ---Tufte
+
+\RequirePackage[side,multiple,stable]{footmisc}
+\providecommand*{\footnotelayout}{\@idldoc@marginfont\@idldoc@justification}
+\renewcommand{\footnotelayout}{\@idldoc@marginfont\@idldoc@justification}
+
+% Override footmisc's definition to set the sidenote marks (numbers) inside the
+% sidenote's text block.
+\long\def\@makefntext#1{\@textsuperscript{\@idldoc@marginfont\tiny\@thefnmark}\,\footnotelayout#1}
+
+% Set the in-text footnote mark in the same typeface as the body text itself.
+\def\@makefnmark{\hbox{\@textsuperscript{\normalfont\scriptsize\@thefnmark}}}
+
+%
+% Define \sidenote command.  Can handle \cite.
+
+\renewcommand{\sidenote}[1]{%
+  \let\cite\@idldoc@infootnote@cite%   use the in-sidenote \cite command
+  \gdef\@idldoc@citations{}%           clear out any old citations
+  \footnote{#1}%                      print the actual sidenote
+  \@idldoc@print@citations%            print any citations
+  \let\cite\@idldoc@normal@cite%       go back to using normal in-text \cite command
+  \unskip\ignorespaces%               remove extra white space
+  \kern-\multiplefootnotemarker%      remove \kern left behind by sidenote
+  \kern\multiplefootnotemarker\relax% add new \kern here to replace the one we yanked (used by footmisc's `multiple' option)
+}
+
+%%
+% Sidenote without the footnote mark
+
+\providecommand\marginnote[1]{%
+  \let\cite\@idldoc@infootnote@cite%   use the in-sidenote \cite command
+  \gdef\@idldoc@citations{}%           clear out any old citations
+  \marginpar{\@idldoc@marginfont\@idldoc@justification #1}%
+  \@idldoc@print@citations%            print any citations
+  \let\cite\@idldoc@normal@cite%       go back to using normal in-text \cite command
+}
+
+
+% TODO: Combine sequences of citations so that 2,3,4,6 becomes 2--4,6
+%       but be careful of hyperref interaction
+
+%%
+% The placeins package provides the \FloatBarrier command.  This forces
+% LaTeX to place all of the floats before proceeding.  We'll use this to
+% keep the float (figure and table) numbers in sequence.
+\RequirePackage{placeins}
+
+%%
+% Margin figure environment
+
+\newsavebox{\@idldoc@marginfigbox}
+\newenvironment{marginfigure}[1]
+    [-1.2ex]
+    {\FloatBarrier% process all floats before this point so the figure numbers stay in order.
+    \begin{lrbox}{\@idldoc@marginfigbox}
+    \begin{minipage}{\marginparwidth}
+        \@idldoc@marginfont
+        \def\@captype{figure}
+        \vspace*{#1}
+        \@idldoc@justification
+    }    
+    {\end{minipage}%
+     \end{lrbox}%
+     \marginpar{\usebox{\@idldoc@marginfigbox}}}
+
+
+%%
+% Margin table environment
+\newsavebox{\@idldoc@margintablebox}
+\newenvironment{margintable}[1]
+   [-1.2ex]
+   {\FloatBarrier% process all floats before this point so the figure numbers stay in order.
+   \begin{lrbox}{\@idldoc@margintablebox}
+   \begin{minipage}{\marginparwidth}
+       \@idldoc@marginfont
+       \def\@captype{table}
+       \vspace*{#1}
+       \@idldoc@justification
+   }
+   {\end{minipage}%
+    \end{lrbox}%
+    \marginpar{\usebox{\@idldoc@margintablebox}}}
+
+
+%%
+% Full-width figure
+
+\renewenvironment{figure*}[1]%
+  [htbp]%
+  {\@float{figure}[#1]%
+   \ifthenelse{\boolean{@idldoc@symmetric}}
+     {\begin{adjustwidth}[]{}{-\@idldoc@overhang}}
+     {\begin{adjustwidth}{}{-\@idldoc@overhang}}
+   \begin{minipage}{\linewidth}}%
+  {\end{minipage}%
+   \end{adjustwidth}%
+   \end@float}
+
+%%
+% Full-width table
+
+\renewenvironment{table*}[1]
+  [htbp]%
+  {\@float{table}[#1]%
+   \ifthenelse{\boolean{@idldoc@symmetric}}
+     {\begin{adjustwidth}[]{}{-\@idldoc@overhang}}
+     {\begin{adjustwidth}{}{-\@idldoc@overhang}}
+   \begin{minipage}{\linewidth}}%
+  {\end{minipage}%
+   \end{adjustwidth}%
+   \end@float}
+
+%%
+% Full-page-width area
+
+\newenvironment{fullwidth}
+  {\ifthenelse{\boolean{@idldoc@symmetric}}
+     {\begin{adjustwidth}[]{}{-\@idldoc@overhang}}
+     {\begin{adjustwidth}{}{-\@idldoc@overhang}}
+  }
+  {\end{adjustwidth}}
+
+\newenvironment{syntaxheader}
+  {\ifthenelse{\boolean{@idldoc@symmetric}}
+     {\begin{adjustwidth}[]{0.35in}{-\@idldoc@overhang}
+      \hspace{-0.3in}}
+     {\begin{adjustwidth}{0.35in}{-\@idldoc@overhang}
+      \hspace{-0.3in}}
+  }
+  {\end{adjustwidth}}
+  
+%%
+% Format the captions in a style similar to the sidenotes
+
+\RequirePackage[format=default,font={rm,scriptsize},justification=raggedright,singlelinecheck=false]{caption}
+
+% if the `sfsidenotes' option is specified, set the captions in sf, too.
+\ifthenelse{\boolean{@idldoc@sfsidenotes}}
+  {\captionsetup{font={sf,scriptsize}}}
+  {\captionsetup{font={rm,scriptsize}}}
+
+% if the `justified' option is specified, set the captions in flush left
+% and flush right
+\ifthenelse{\boolean{@idldoc@justified}}
+  {\captionsetup{justification=justified}}
+  {\captionsetup{justification=raggedright}}
+
+%%
+% If the Palatino typeface (and its math symbol set) are installed, load
+% them unless the `nofonts' class option was provided, or if we're
+% compiling with XeLaTeX.
+
+\ifthenelse{\boolean{@idldoc@loadfonts}\AND\NOT\boolean{@idldoc@xetex}}{%
+  \IfFileExists{palatino.sty}{%
+    \RequirePackage{palatino}
+    \IfFileExists{mathpazo.sty}{\RequirePackage[osf,sc]{mathpazo}}{}
+  }{} % if the Palatino typefaces aren't found, do nothing.
+}{}
+
+
+%%
+% If the Bera Mono typeface is available, use it unless the `nofonts' class
+% option was provided, or if we're compiling with XeLaTeX.
+
+\ifthenelse{\boolean{@idldoc@loadfonts}\AND\NOT\boolean{@idldoc@xetex}}{%
+  \IfFileExists{beramono.sty}{%
+    \RequirePackage[T1]{fontenc}
+    \RequirePackage[scaled=0.85]{beramono}
+  }{}
+}{}
+
+
+%%
+% Turns newlines into spaces.  Based on code from the `titlesec' package.
+
+\DeclareRobustCommand{\@idldoc@newlinetospace}{%
+  \@ifstar{\@idldoc@newlinetospace@i}{\@idldoc@newlinetospace@i}%
+}
+
+\def\@idldoc@newlinetospace@i{%
+  \ifdim\lastskip>\z@\else\space\fi
+  \ignorespaces%
+}
+
+\DeclareRobustCommand{\newlinetospace}[1]{%
+  \let\@idldoc@orig@cr\\% save the original meaning of \\
+  \def\\{\@idldoc@newlinetospace}% turn \\ and \\* into \space
+  \let\newline\\% turn \newline into \space
+  #1
+  \let\\\@idldoc@orig@cr% revert to original meaning of \\
+}
+
+
+%%
+% Sets up the running heads and folios.
+
+\RequirePackage{fancyhdr}
+
+% Set the default page style to 'fancy'
+\pagestyle{fancy}
+
+% Set the header/footer width to be the body text block plus the margin
+% note area.
+\ifthenelse{\boolean{@idldoc@symmetric}}
+  {\fancyhfoffset[LE,RO]{\@idldoc@overhang}}
+  {\fancyhfoffset[RE,RO]{\@idldoc@overhang}}
+
+% The running heads/feet don't have rules
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% The 'fancy' page style is the default style for all pages.
+\fancyhf{} % clear header and footer fields
+\ifthenelse{\boolean{@idldoc@twoside}}
+  {\fancyhead[LE]{\thepage\quad\smallcaps{\newlinetospace{\theauthor}}}%
+    \fancyhead[RO]{\smallcaps{\newlinetospace{\thetitle}}\quad\thepage}}
+  {\fancyhead[RE,RO]{\smallcaps{\newlinetospace{\thetitle}}\quad\thepage}}
+
+
+% The `plain' page style is used on chapter opening pages.
+% In Tufte's /Beautiful Evidence/ he never puts page numbers at the
+% bottom of pages -- the folios are unexpressed.
+\fancypagestyle{plain}{
+  \fancyhf{} % clear header and footer fields
+  % Uncomment the following five lines of code if you want the opening page
+  % of the chapter to express the folio in the lower outside corner.
+  %\ifthenelse{\boolean{@idldoc@twoside}}
+  %  {\fancyfoot[LE,RO]{\thepage}}
+  %  {\fancyfoot[RE,RO]{\thepage}}
+}
+
+% The `empty' page style suppresses all headers and footers.
+% It's used on title pages and `intentionally blank' pages.
+\fancypagestyle{empty}{
+  \fancyhf{} % clear header and footer fields
+}
+
+
+
+
+%%
+% Set raggedright and paragraph indentation for document
+
+\AtBeginDocument{\@idldoc@justification\setlength\parindent{1em}}
+
+
+%%
+% Prints the list of class options and their states.
+
+\newcommand{\typeoutbool}[2]{%
+  \ifthenelse{\boolean{#2}}
+    {\typeout{\space\space#1: true}}
+    {\typeout{\space\space#1: false}}
+}
+
+\newcommand{\typeoutstr}[2]{%
+  \typeout{\space\space#1: #2}
+}
+
+\newcommand{\PrintIDLdocSettings}{%
+  \typeout{-------------------- IDLdoc settings ----------}
+  \typeout{Class: \@idldoc@pkgname}
+  \typeout{}
+  \typeout{Class options:}
+  \typeoutbool{a4paper}{@idldoc@afourpaper}
+  \typeoutbool{load fonts}{@idldoc@loadfonts}
+  \typeoutbool{fully-justified}{@idldoc@justified}
+  \typeoutbool{letterspacing}{@idldoc@letterspace}
+  \typeoutbool{sans-serif sidenotes}{@idldoc@sfsidenotes}
+  \typeoutbool{symmetric margins}{@idldoc@symmetric}
+  \typeoutbool{titlepage}{@idldoc@titlepage}
+  \typeoutbool{twoside}{@idldoc@twoside}
+  \typeoutbool{debug}{@idldoc@debug}
+  \typeout{}
+  \typeout{Internal variables:}
+  \typeoutbool{[twoside]}{@twoside}
+  \typeoutbool{pdflatex}{@idldoc@pdf}
+  \typeoutbool{xelatex}{@idldoc@xetex}
+  \typeout{----------------------------------------------------}
+}
+
+
+
+%%
+% Color
+\RequirePackage{xcolor}
+
+%%
+% Produces a full title page
+
+\newcommand{\maketitlepage}[0]{%
+  \cleardoublepage
+  {
+  \sffamily
+  \begin{fullwidth}
+  \par\noindent\fontsize{14}{14}\selectfont\textcolor{darkgray}{\thanklessauthor}
+  \end{fullwidth}
+
+  \vspace{11.5pc}
+  \begin{fullwidth}
+  \par\noindent\fontsize{28}{28}\selectfont\textcolor{darkgray}{\thanklesstitle}
+  \end{fullwidth}
+
+  \vfill
+  \begin{fullwidth}
+  \par\noindent\fontsize{14}{14}\selectfont{\thanklesspublisher}
+  \end{fullwidth}
+  }
+  \thispagestyle{empty}
+  \clearpage
+}
+
+%%
+% Title block
+
+\renewcommand{\maketitle}{%
+  \newpage
+  \global\@topnum\z@% prevent floats from being placed at the top of the page
+  \setlength{\parindent}{0pt}
+  \setlength{\parskip}{4pt}
+  \ifthenelse{\boolean{@idldoc@sfsidenotes}}
+    {\begingroup
+      % FIXME fails with \thanks
+      \sffamily
+      \par{\Large\allcaps{\@title}}
+      \ifthenelse{\equal{\@author}{}}{}{\par{\large\allcaps{\@author}}}
+      \ifthenelse{\equal{\@date}{}}{}{\par{\large\allcaps{\@date}}}
+    \endgroup}
+    {\begingroup
+      \par{\Large\textit{\@title}}
+      \ifthenelse{\equal{\@author}{}}{}{\par{\large\textit{\@author}}}
+      \ifthenelse{\equal{\@date}{}}{}{\par{\large\textit{\@date}}}
+    \endgroup}
+  \par
+  \thispagestyle{plain}% suppress the running head
+}
+
+
+%%
+% Title page (if the `titlepage' option was passed to the idldoc
+% class.)
+
+\ifthenelse{\boolean{@idldoc@titlepage}}
+  {\renewcommand{\maketitle}{\maketitlepage}}
+  {}
+
+%%
+% When \cleardoublepage is called, produce a blank (empty) page -- i.e.,
+% without headers and footers
+\def\cleardoublepage{\clearpage\if@twoside\ifodd\c@page\else
+  \hbox{}
+  %\vspace*{\fill}
+  %\begin{center}
+  %  This page intentionally contains only this sentence.
+  %\end{center}
+  %\vspace{\fill}
+  \thispagestyle{empty}
+  \newpage
+  \if@twocolumn\hbox{}\newpage\fi\fi\fi}
+
+%%
+% Make Tuftian-style section headings and TOC formatting
+
+\RequirePackage{titlesec,titletoc}
+
+% TODO: I'd prefer to use the 'titlesec' package for this formatting, but
+%       I'll do it old-style for now.  --Kevin
+
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                   {2.3ex \@plus.2ex}%
+                                   {\normalfont\Large\it}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\normalfont\normalsize\it}}
+
+% Subsubsection and following section headings shouldn't be used.
+% See Bringhurst's _The Elements of Typography_, section 4.2.2.
+\renewcommand\subsubsection{%
+  \PackageError{\@idldoc@pkgname}{\noexpand\subsubsection is undefined by this class.%
+    \MessageBreak See Robert Bringhurst's _The Elements of 
+    \MessageBreak Typographic Style_, section 4.2.2.
+    \MessageBreak \noexpand\subsubsection was used}
+    {From Bringhurst's _The Elements of Typographic Style_, section 4.2.2: Use as 
+    \MessageBreak many levels of headings as you need, no more and no fewer.  Also see the many 
+    \MessageBreak related threads on Ask E.T. at http://www.edwardtufte.com/.}
+}
+
+\renewcommand\paragraph{%
+  \PackageError{\@idldoc@pkgname}{\noexpand\paragraph is undefined by this class.%
+    \MessageBreak See Robert Bringhurst's _The Elements of 
+    \MessageBreak Typographic Style_, section 4.2.2.
+    \MessageBreak \noexpand\paragraph was used}
+    {From Bringhurst's _The Elements of Typographic Style_, section 4.2.2: Use as 
+    \MessageBreak many levels of headings as you need, no more and no fewer.  Also see the many 
+    \MessageBreak related threads on Ask E.T. at http://www.edwardtufte.com/.}
+}
+
+\renewcommand\subparagraph{%
+  \PackageError{\@idldoc@pkgname}{\noexpand\subparagraph is undefined by this class.%
+    \MessageBreak See Robert Bringhurst's _The Elements of 
+    \MessageBreak Typographic Style_, section 4.2.2.
+    \MessageBreak \noexpand\subparagraph was used}
+    {From Bringhurst's _The Elements of Typographic Style_, section 4.2.2: Use as 
+    \MessageBreak many levels of headings as you need, no more and no fewer.  Also see the many 
+    \MessageBreak related threads on Ask E.T. at http://www.edwardtufte.com/.}
+}
+
+
+% Formatting for main TOC (printed in front matter)
+% {section} [left] {above} {before w/label} {before w/o label} {filler + page} [after]
+\ifthenelse{\boolean{@idldoc@toc}}
+  {\titlecontents{chapter}%
+    [0em] % distance from left margin
+    {\vspace{1.0\baselineskip}\begin{fullwidth}\fontsize{13pt}{18pt}\selectfont} % above (global formatting of entry)
+    {\contentslabel{2em}\rm\itshape} % before w/label (label = ``Chapter 1'')
+    {\rm\itshape} % before w/o label
+    {\rm\qquad\thecontentspage} % filler + page (leaders and page num)
+    [\vspace{0.25\baselineskip}\end{fullwidth}] % after
+  }
+  {}
+
+%\titlecontents{chapter}%
+%	[0em]% distance from left margin
+%	{\fontsize{12pt}{18pt}\selectfont}% above (global formatting of entry)
+%	{\textit}% before w/ label (label = ``Chapter 1'')
+%	{\textit}% before w/o label
+%	{\qquad\thecontentspage}% filler and page (leaders and page num)
+%	[\vspace{1.5\baselineskip}]% after
+
+\titleformat{\chapter}%
+	[display]% shape
+        {\relax\ifthenelse{\NOT\boolean{@idldoc@symmetric}}{\begin{fullwidth}}{}}% format applied to label+text
+        {\itshape\fontsize{22}{24}\selectfont\thechapter}% label
+        {0pt}% horizontal separation between label and title body
+        {\fontsize{22}{24}\rm\itshape}% before the title body
+        [\ifthenelse{\NOT\boolean{@idldoc@symmetric}}{\end{fullwidth}}{}]% after the title body
+
+
+
+
+%%
+% A handy command to disable hyphenation for short bits of text.
+% Borrowed from Peter Wilson's `hyphenat' package.
+
+\newlanguage\langwohyphens% define a language without hyphenation rules
+\newcommand{\nohyphens}[1]{{\language\langwohyphens #1}}% used for short bits of text
+\newcommand{\nohyphenation}{\language\langwohyphens}% can be used inside environments for longer text
+
+
+%%
+% If debugging is enabled, print the IDLdoc options and the list of
+% files.
+
+\ifthenelse{\boolean{@idldoc@debug}}
+  {\PrintIDLdocSettings\listfiles}
+  {}
+
+
+%%
+% If there is a `idldoc-common-local.tex' file, load it up.
+
+\IfFileExists{idldoc-common-local.tex}
+  {\input{idldoc-common-local}}
+  {}
+
+
+%%
+% End of file
+\endinput
+

@@ -1,0 +1,2 @@
+#!/bin/sh
+idl -quiet -e mgunit_wrapper -args $@

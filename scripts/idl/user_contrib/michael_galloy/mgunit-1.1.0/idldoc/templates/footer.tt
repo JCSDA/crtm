@@ -1,0 +1,10 @@
+<div class="footer">
+
+  <table class="smaller" summary="footer">
+    <tr>
+      <td class="left">Produced by IDLdoc [% idldoc_version %] on [% date %]</td>
+      <td class="right"><a target="_top" href="http://idldoc.idldev.com">IDLdoc project information</a></td>
+    </tr>
+  </table>
+
+</div>

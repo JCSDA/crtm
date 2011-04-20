@@ -1,0 +1,87 @@
+\documentclass[nols]{idldoc}
+
+\title{[% title %]}
+\author{[% subtitle %]}
+\date{[% date %]}
+
+\usepackage{helvet}
+\usepackage{listings}
+\lstset{breaklines=true,basicstyle=\ttfamily}
+
+\usepackage[pdftex]{graphicx}
+\setkeys{Gin}{keepaspectratio}
+
+\raggedbottom
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+
+\include{overview}
+
+
+\part{API}
+                   
+[% FOREACH d IN visible_dirs %][% SCOPE d %]
+\chapter{Directory: [% mg_escape_latex(fullname) %]}
+
+\section{Overview}
+
+[% IF has_overview_comments %]
+\noindent [% overview_comments %]
+[% END %]
+
+[% IF has_author_info %]
+\begin{description}
+[% IF has_author %]
+  \item[Author]\hspace*{1em} \newline [% author %]      
+[% END %]
+
+[% IF has_copyright %]
+  \item[Copyright]\hspace*{1em} \newline [% copyright %]      
+[% END %]
+    
+[% IF has_history %]
+  \item[History]\hspace*{1em} \newline [% history %]       
+[% END %]
+\end{description}
+[% END %]
+
+\vspace{2em}
+
+[% IF n_idldoc_files gt 0 %]
+[% FOREACH f IN idldoc_files %][% SCOPE f %]
+\input{[% output_path %]}
+\vspace{2em}
+[% END %][% END %]
+[% END %]
+
+[% IF n_visible_pro_files gt 0 %]
+[% FOREACH f IN visible_pro_files %][% SCOPE f %]
+\input{[% output_path %]}
+\vspace{2em}
+[% END %][% END %]
+[% END %]
+
+[% IF n_dlm_files gt 0 %]
+[% FOREACH f IN dlm_files %][% SCOPE f %]
+\input{[% output_path %]}
+\vspace{2em}
+[% END %][% END %]
+[% END %]
+
+[% IF n_sav_files gt 0 %]
+[% FOREACH f IN sav_files %][% SCOPE f %]
+\input{[% output_path %]}
+\vspace{2em}
+[% END %][% END %]
+[% END %]
+
+[% END %][% END %]
+
+\end{document}
+

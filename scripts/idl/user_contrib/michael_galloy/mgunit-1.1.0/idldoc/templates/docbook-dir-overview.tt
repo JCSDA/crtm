@@ -1,0 +1,56 @@
+<chapter><title><filename>[% location %]</filename></title>
+
+	<sect1><title>Overview</title>
+
+	  [% IF n_visible_pro_files gt 0 %]	
+	  
+	  <para>The <filename>.pro</filename> files in this directory are listed below.</para>
+	  
+	  <variablelist>
+    [% FOREACH f IN visible_pro_files %][% SCOPE f %]
+      <varlistentry>
+        <term><filename>[% basename %]</filename></term>
+        <listitem>[% comments_first_line %]</listitem>
+      </varlistentry>
+    [% END %][% END %]
+    </variablelist>
+  
+	  [% END %]
+	  
+    [% IF n_sav_files gt 0 %]
+
+	  <para>The <filename>.sav</filename> files in this directory are listed below.</para>
+
+	  <variablelist>
+    [% FOREACH f IN sav_files %][% SCOPE f %]
+      <varlistentry>
+        <term><filename>[% basename %]</filename></term>
+        <listitem>[% description %]</listitem>
+      </varlistentry>
+    [% END %][% END %]
+    </variablelist>
+        
+    [% END %]
+
+    [% IF n_idldoc_files gt 0 %]
+
+	  <para>The <filename>.idldoc</filename> files in this directory are listed below.</para>
+
+	  <variablelist>
+    [% FOREACH f IN idldoc_files %][% SCOPE f %]
+      <varlistentry>
+        <term><filename>[% file_title %]</filename></term>
+        <listitem></listitem>
+      </varlistentry>
+    [% END %][% END %]
+    </variablelist>
+    
+    [% END %]  	  
+	    
+  </sect1>
+
+  [% FOREACH f in visible_pro_files %][% SCOPE f %]
+    &[% fullname %].[% basename %];
+  [% END %][% END %]
+  
+</chapter>

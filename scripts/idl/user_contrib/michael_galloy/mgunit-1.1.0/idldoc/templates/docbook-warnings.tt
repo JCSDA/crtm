@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+                 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd">
+                 
+<chapter><title>Warnings</title>
+
+  [% IF n_todos eq 0 && n_bugs eq 0 && n_undocumented eq 0 && n_obsolete eq 0 && ~statistics && required_version eq '' %]
+  <para>No warnings to report.</para>
+  [% END %]
+      
+      
+  [% IF n_todos gt 0 %]
+  <sect1><title>Todos</title>
+    
+    <variablelist>
+      [% FOREACH r IN todos %][% SCOPE r %]
+      <varlistentry>
+        <term>[% index_name %]</term>
+        <listitem>[% index_type %]</listitem>    		
+      </varlistentry>
+    	[% END %][% END %]
+    </variablelist>
+  </sect1>
+  [% END %]
+    	
+    	
+  [% IF n_bugs gt 0 %]
+  <sect1><title>Routines and files with noted bugs</title>
+  
+    <variablelist>
+      [% FOREACH r IN bugs %][% SCOPE r %]
+      <varlistentry>
+        <term>[% index_name %]</term>
+        <listitem>[% index_type %]</listitem>
+      </varlistentry>
+      [% END %][% END %]      
+    </variablelist>
+  </sect1>
+  [% END %]
+    	
+    	
+  [% IF n_undocumented gt 0 %]
+  <sect1><title>Routines without full documentation</title>
+  
+    <variablelist>
+      [% FOREACH r IN undocumented %][% SCOPE r %]
+      <varlistentry>
+          <term><filename>[% location %][% basename %]</filename>: [% IF is_method %]<methodname>[% name %]</methodname>[% ELSE %]<function>[% name %]</function>[% END %]</term>
+          
+          <listitem>[% IF documentation_level eq 0 %]no documentation[% ELSE %] partial documentation[% END %]</listitem>  
+      </varlistentry>      
+      [% END %][% END %]
+    </variablelist>
+  </sect1>
+  [% END %]
+    	
+    	
+  [% IF n_obsolete gt 0 %]
+  <sect1><title>Obsolete routines and files</title>
+    
+    <variablelist>
+      [% FOREACH r IN obsolete %][% SCOPE r %]
+      <varlistentry>
+        <term>[% index_name %]</term>
+        <listitem>[% index_type %]</listitem>
+      </varlistentry>
+      [% END %][% END %]
+    </variablelist>
+  </sect1>
+  [% END %]
+    	
+    	
+  [% IF statistics %]
+  <sect1><title>Statistics</title>
+  
+    <para>This section is not yet included in the output.</para>
+  
+  </sect1>
+  [% END %]
+
+  
+  [% IF requires_version ne '' %]
+  <sect1><title>Requires</title>
+  
+    <para>Routines and files that require IDL [% requires_version %]:
+      
+      <variablelist>
+        [% FOREACH r in requires_items %][% SCOPE r %]
+        <varlistentry>
+          <term>[% index_name %]</term>
+    	    <listitem>[% index_type %]</listitem>
+  	    </varlistentry>
+        [% END %][% END %]
+      </variablelist>
+    </para>
+    
+  </sect1>
+  [% END %]
+    	
+</chapter>                

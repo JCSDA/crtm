@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE part PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+               "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+[% FOREACH d IN dirs %][% SCOPE d %]
+<!ENTITY [% fullname %] SYSTEM "[% location %]dir-overview.xml">
+  [% FOREACH f in visible_pro_files %][% SCOPE f %]
+    <!ENTITY [% fullname %].[% basename %] SYSTEM "[% location %][% local_url %]">
+  [% END %][% END %]
+[% END %][% END %]
+]>
+
+<part><title>API</title>
+                   
+[% FOREACH d IN visible_dirs %][% SCOPE d %]
+&[% fullname %];
+[% END %][% END %]
+
+</part>

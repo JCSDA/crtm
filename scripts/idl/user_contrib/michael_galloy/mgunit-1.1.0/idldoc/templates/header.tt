@@ -1,0 +1,76 @@
+<div class="header">
+  <h1>[% title %]</h1>
+  <h2>[% subtitle %]</h2>
+</div>
+
+[% IF ~nonavbar %]
+<table class="navbar smaller" summary="Navigation header" cellspacing="0">
+  <tr>
+    <td [% IF current_template eq 'overview' %]class="selected"[% END %]>
+      <a href="[% relative_root %]overview.html">Overview</a>
+    </td>
+
+    <td [% IF current_template eq 'dir-overview' %]class="selected"[% END %]>
+      Directory
+    </td>
+    
+    <td [% IF current_template eq 'profile' || current_template eq 'dlmfile' || current_template eq 'savefile' %]class="selected"[% END %]>File</td>
+    
+    [% IF ~nosource %]
+    <td [% IF current_template eq 'source' %]class="selected"[% END %]>
+      [% IF current_template eq 'profile' %]<a href="[% source_url %]" title="Chromocoded source">Source</a> <a href="[% direct_source_url %]" title=".pro file"><img src="[% relative_root %]idldoc-resources/attach.png" alt="[attach.png]" align="top"/></a>[% ELSE %]Source <img src="[% relative_root %]idldoc-resources/attach.png" alt="[attach.png]" align="top"/>[% END %]        
+    </td>
+    [% END %]
+    
+    <td [% IF current_template eq 'idldocfile' %]class="selected"[% END %]>Etc</td>
+    
+    <td [% IF current_template eq 'categories' %]class="selected"[% END %]>
+    	<a href="[% relative_root %]categories.html">Categories</a>
+    </td>  
+         
+    <td [% IF current_template eq 'search' %]class="selected"[% END %]>
+    	<a href="[% relative_root %]search.html">Search</a>
+    </td>
+    
+    [% IF index_level gt 0L %]
+    <td [% IF current_template eq 'index-entries' %]class="selected"[% END %]>
+      <a href="[% relative_root %]idldoc-index.html">Index</a>
+    </td>
+    [% END %]
+    
+    [% IF ~user %]
+    <td [% IF current_template eq 'warnings' %]class="selected"[% END %]>
+      <a href="[% relative_root %]idldoc-warnings.html">Warnings</a>
+    </td>
+    [% END %]
+    
+    <td [% IF current_template eq 'help' %]class="selected"[% END %]>
+      <a href="[% relative_root %]idldoc-help.html">Help</a>
+    </td>
+        
+    <td class="flexible">
+      [% IF user %]User[% ELSE %]Developer[% END %] documentation
+    </td>
+  </tr>
+</table>
+[% END %]
+
+[% IF current_template eq 'profile' %]
+<p class="localnavbar smallest">[% IF ~nonavbar %]<a href="" target="_top">single page</a> | <a href="[% relative_root %]index.html" target="_top">use frames</a> &nbsp;&nbsp;&nbsp;[% END %] summary &nbsp;&nbsp;&nbsp; class &nbsp;&nbsp;&nbsp; fields &nbsp;&nbsp;&nbsp; <a href="#routine-details">routine details</a> &nbsp;&nbsp;&nbsp; <a href="#attributes">file attributes</a></p>
+[% END %]
+
+[% IF current_template eq 'warnings' %]
+<p class="localnavbar smallest">[% IF ~nonavbar %]<a href="" target="_top">single page</a> | <a href="[% relative_root %]index.html" target="_top">use frames</a>[% END %][% IF n_todos gt 0 %] &nbsp;&nbsp;&nbsp; <a href="#todo">todo</a>[% END %] [% IF n_bugs gt 0 %]&nbsp;&nbsp;&nbsp; <a href="#bugs">bugs</a>[% END %] [% IF n_undocumented gt 0 %] &nbsp;&nbsp;&nbsp; <a href="#undocumented">undocumented</a>[% END %] [% IF n_obsolete gt 0 %] &nbsp;&nbsp;&nbsp; <a href="#obsolete">obsolete</a>[% END %] [% IF statistics %] &nbsp;&nbsp;&nbsp; <a href="#statistics">statistics</a>[% END %] [% IF requires_version ne '' %]&nbsp;&nbsp;&nbsp; <a href="#requires">requires</a>[% END %]</p>
+[% END %]
+
+[% IF current_template eq 'help' %]
+<p class="localnavbar smallest">[% IF ~nonavbar %]<a href="" target="_top">single page</a> | <a href="[% relative_root %]index.html" target="_top">use frames</a> &nbsp;&nbsp;&nbsp;[% END %] <a href="#calling">calling</a> &nbsp;&nbsp;&nbsp; <a href="#commenting">commenting</a> &nbsp;&nbsp;&nbsp; <a href="#tags">tags</a> &nbsp;&nbsp;&nbsp; <a href="#customizing">customizing</a></p>
+[% END %]
+
+[% IF current_template eq 'overview' %]
+<p class="localnavbar smallest">[% IF ~nonavbar %]<a href="" target="_top">single page</a> | <a href="[% relative_root %]index.html" target="_top">use frames</a> &nbsp;&nbsp;&nbsp;[% END %]<a href="#directories">directories</a> &nbsp;&nbsp;&nbsp; <a href="#statistics">project statistics</a> </p>
+[% END %]
+
+[% IF current_template eq 'search' %]
+<p class="localnavbar smallest">[% IF ~nonavbar %]<a href="" target="_top">single page</a> | <a href="[% relative_root %]index.html" target="_top">use frames</a> &nbsp;&nbsp;&nbsp;[% END %]</p>
+[% END %]

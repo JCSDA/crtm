@@ -1,0 +1,21 @@
+/* Index used for searching */
+/* 
+   Fields used:
+     url, name, type, filename, authors, routine name, comments, parameters,
+     categories, and attributes 
+*/
+title = "[% title %]";
+subtitle = "[% subtitle %]";
+libdata = new Array();
+libdataItem = 0;
+
+[% IF n_visible_pro_files %]
+[% FOREACH f IN visible_pro_files %][% SCOPE f %]
+libdata[libdataItem++] = new Array("[% index_url %]", "[% index_name %]", "[% index_type %]", "[% file_basename(basename) %]", "[% plain_author %]", "", "[% plain_comments %]", "", "[% strjoin(categories, ' ') %]", "[% plain_attributes %]");
+  [% IF n_visible_routines gt 0 %]
+  [% FOREACH r IN visible_routines %][% SCOPE r %]
+  libdata[libdataItem++] = new Array("[% index_url %]", "[% index_name %]", "[% index_type %]", "[% file_basename(basename) %]", "[% plain_author %]", "[% name %]", "[% plain_comments %]", "[% plain_parameters %]", "[% strjoin(categories, ' ') %]", "[% plain_attributes %]");
+  [% END %][% END %]
+  [% END %]
+[% END %][% END %]
+[% END %]

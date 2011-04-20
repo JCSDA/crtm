@@ -1,0 +1,102 @@
+\section{[% mg_escape_latex(basename) %]}
+
+\begin{description}
+  \item[SAV file attributes]\hspace*{1em} \newline
+	  \begin{tabular}{lr}
+	    Description & [% mg_escape_latex(description) %] \\
+	    SAV file type & [% filetype %] \\
+	    Creator & [% mg_escape_latex(user) %]@[% mg_escape_latex(host) %] on [% os %]/[% mg_escape_latex(arch) %] \\
+	    Creation date & [% creation_date %] \\
+	    IDL version & [% release %]	\\
+	  \end{tabular}
+
+  \item[Contents]\hspace*{1em} \newline
+    \begin{tabular}{lr}
+      Procedures & [% n_procedure %] \\
+      Functions & [% n_function %] \\
+      Variables & [% n_var %] \\
+      System variables & [% n_sysvar %] \\
+      Common blocks & [% n_common %] \\
+      Structure definitions & [% n_structdef %] \\
+      Pointers & [% n_pointer_heapvar %] \\
+      Objects & [% n_object_heapvar %] \\
+    \end{tabular}
+
+  [% IF n_procedure gt 0 %]
+  \item[Procedures]\hspace*{1em} \newline
+    \begin{itemize}
+			[% FOREACH p IN procedures %]
+      \item [% mg_escape_latex(p) %]
+			[% END %]
+    \end{itemize} 
+  [% END %]
+
+  [% IF n_function gt 0 %]
+  \item[Functions]\hspace*{1em} \newline
+    \begin{itemize}
+			[% FOREACH f IN functions %]
+      \item [% mg_escape_latex(f) %]
+			[% END %]
+    \end{itemize} 
+  [% END %]
+
+  [% IF n_var gt 0 %]
+  \item[Variables]\hspace*{1em} \newline    
+    \begin{tabular}{lll}
+      [% FOREACH v IN variables %][% SCOPE v %]
+      [% IF has_thumbnail %]\includegraphics[scale=0.6]{[% output_root %][% location %][% thumbnail_url %]}[% END %] & [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\             
+      [% END %][% END %]
+    \end{tabular}
+  [% END %]
+
+  [% IF n_sysvar gt 0 %]
+  \item[System variables]\hspace*{1em} \newline     
+    \begin{tabular}{lll}
+    	[% FOREACH sv IN system_variables %][% SCOPE sv %]
+      [% IF has_thumbnail %]\includegraphics[scale=0.6]{[% output_root %][% location %][% thumbnail_url %]}[% END %] & [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\             
+    	[% END %][% END %]
+    \end{tabular}
+  [% END %]
+
+  [% IF n_common gt 0 %]
+  \item[Common blocks]\hspace*{1em} \newline     
+    \begin{tabular}{lr}
+    	[% FOREACH cb IN common_blocks %][% SCOPE cb %]
+      [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\
+    	[% END %][% END %]
+    \end{tabular}
+  [% END %]
+  
+  [% IF n_structdef gt 0 %]
+  \item[Structure definitions]\hspace*{1em} \newline     
+    \begin{tabular}{lr}
+    	[% FOREACH s IN structure_definitions %][% SCOPE s %]
+      [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\
+    	[% END %][% END %]
+    \end{tabular}
+  [% END %]
+
+  [% IF n_pointer_heapvar gt 0 %]
+  \item[Pointers]\hspace*{1em} \newline
+    \begin{tabular}{lll}
+    	[% FOREACH p IN pointers %][% SCOPE p %]
+      [% IF has_thumbnail %]\includegraphics[scale=0.6]{[% output_root %][% location %][% thumbnail_url %]}[% END %] & [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\ 
+    	[% END %][% END %]
+    \end{tabular}
+  [% END %]
+
+  [% IF n_object_heapvar gt 0 %]
+  \item[Objects]\hspace*{1em} \newline   
+    \begin{tabular}{lr}     
+		  [% FOREACH o IN objects %][% SCOPE o %]
+		  [% mg_escape_latex(name) %] & \lstinline+[% mg_escape_latex(declaration) %]+ \\       
+		  [% END %][% END %]
+	  \end{tabular}
+  [% END %]
+
+	\item[File attributes]\hspace*{1em} \newline
+	  \begin{tabular}{lr}
+		  Modification date & [% modification_time %] \\
+      Size & [% size %] \\
+	  \end{tabular}
+\end{description}

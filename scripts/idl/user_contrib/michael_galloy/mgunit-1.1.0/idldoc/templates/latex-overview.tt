@@ -1,0 +1,28 @@
+\part{Overview}
+
+[% IF has_overview_comments %]
+\section*{Overview}
+[% overview_comments %]
+[% END %]
+
+[% IF ~just_files %]      
+\section*{Directories}
+
+\begin{tabular}[t]{lp{4in}}
+[% FOREACH d IN visible_dirs %][% SCOPE d %]
+\tt [% mg_escape_latex(location) %] & [% overview_comments %] \\
+[% END %][% END %]
+\end{tabular}
+             
+[% END %]
+      
+\section*{Project statistics}
+
+\begin{tabular}[t]{ll}
+Directories: & [% n_visible_dirs %] \\
+.pro files: & [% n_visible_pro_files %] \\
+.sav files: & [% n_sav_files %] \\
+Routines: & [% n_routines %] \\
+Lines: & [% n_lines %] \\
+[% IF requires_version ne '' %]Required IDL version: & [% requires_version %] \\ [% END %]
+\end{tabular}

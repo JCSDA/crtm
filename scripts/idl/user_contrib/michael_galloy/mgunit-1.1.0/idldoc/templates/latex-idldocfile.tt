@@ -1,0 +1,5 @@
+\section{[% mg_escape_latex(basename) %]}
+
+[% IF has_comments %]
+\noindent [% comments %]
+[% END %]

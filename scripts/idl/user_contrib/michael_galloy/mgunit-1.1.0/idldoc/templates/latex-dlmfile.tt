@@ -1,0 +1,54 @@
+\section{[% mg_escape_latex(basename) %]}
+
+[% IF has_dlm_info %]
+\begin{description}
+
+\item[DLM information]\hspace*{1em} \newline
+
+\begin{description}
+[% IF has_module_name %]
+\item[Module name]\hspace*{1em} \newline
+[% mg_escape_latex(module_name) %]
+[% END %]
+
+[% IF has_comments %]
+\item[Description]\hspace*{1em} \newline
+[% mg_escape_latex(comments) %]        
+[% END %]
+
+[% IF has_author %]
+\item[Author]\hspace*{1em} \newline
+[% mg_escape_latex(author) %]
+[% END %]
+
+[% IF has_version %]
+\item[Version]\hspace*{1em} \newline
+[% mg_escape_latex(version) %]
+[% END %]          
+
+[% IF has_build_date %]
+\item[Build date]\hspace*{1em} \newline
+[% mg_escape_latex(build_date) %]
+[% END %]          
+\end{description}  
+
+\end{description}       
+[% END %]
+
+
+[% IF n_visible_routines gt 0 %]
+
+[% FOREACH r IN visible_routines %][% SCOPE r %]
+
+\subsection*{\allcaps{[% mg_escape_latex(name) %]}}
+
+\marginnote{[% IF is_obsolete %]obsolete [% END %]}
+
+
+\begin{syntaxheader}
+\lstinline+[% IF is_function %]result = [% END %][% name %][% IF is_function %]([% END %][% IF n_visible_parameters gt 0 %][% FOREACH p IN visible_parameters %][% SCOPE p %][% IF is_optional %] [[% END %][% prefix %][% name %][% suffix %][% IF is_optional %]][% END %][% END %][% END %][% END %][% IF n_visible_keywords gt 0 %][% FOREACH k IN visible_keywords %][% SCOPE k %][% IF is_optional %] [[% END %][% prefix %][% IF is_boolean %]/[% END %][% name %][% IF ~is_boolean %]=[% IF type ne '' %][% type %][% ELSE %][% name %][% END %][% END %][% suffix %][% IF is_optional %]][% END %][% END %][% END %][% END %][% IF is_function %])[% END %]+
+\end{syntaxheader}
+
+[% END %][% END %]
+
+[% END %]
