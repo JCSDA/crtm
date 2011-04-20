@@ -89,13 +89,13 @@
 ;     good idea to make sure you have the latest version of the Coyote Library code,
 ;     as updates are irregular and frequent.
 ;
-;              http://www.dfanning.com/netcdf_data__define.pro
-;              http://www.dfanning.com/error_message.pro
-;              http://www.dfanning.com/centertlb.pro
-;              http://www.dfanning.com/undefine.pro
-;              http://www.dfanning.com/textbox.pro
-;              http://www.dfanning.com/fsc_base_filename.pro
-;              http://www.dfanning.com/textlineformat.pro
+;              http://www.dfanning.com/programs/netcdf_data__define.pro
+;              http://www.dfanning.com/programs/error_message.pro
+;              http://www.dfanning.com/programs/centertlb.pro
+;              http://www.dfanning.com/programs/undefine.pro
+;              http://www.dfanning.com/programs/textbox.pro
+;              http://www.dfanning.com/programs/fsc_base_filename.pro
+;              http://www.dfanning.com/programs/textlineformat.pro
 ;
 ; METHODS:
 ;
@@ -143,9 +143,36 @@
 ;       When reading a netCDF variable by itself (without it's attributes), the program now looks for
 ;          a SCALE_FACTOR and ADD_OFFSET attribute, and if found will apply this to the variable before
 ;          it is returned to the user. 24 August 2009. DWF.
+;       Added the methods GetAttrNames, GetVarNames, GetVarAttrNames, and ReadVarAttr to retrieve specfic
+;          information from the data files. 16 November 2009. DWF.
+;       Modified the ReadVariableWithAttr method to include the number of dimensions (in the NDIMS field,
+;          and the dimensions (in the DIMS field) in the return structure. For HDF files, the DIMS field
+;          is a vector of the dimensions of the variable. For netCDF files, the DIMS field is a vector
+;          of dimension IDs for the dimensions of the variable. 27 Nov 2009. DWF.
+;       Andy Meigs alerted me to a problem creating a structure when the ncdf variable name
+;          is ill-formed according to IDL structure tag name rules. Fixed in the ReadFile method.
+;          30 November 2009. DWF.
+;       Added NO_NEW_FILE keyword to the BROWSE method. This keyword will suppress the OPEN FILE
+;          button on the browse interface. 3 Feb 2010. DWF.
+;       Made the default browser size a bit larger to accomodate longer variable names. 3 Feb 2010. DWF.
+;       Add a check for HDF/netCDF file type in the INIT method to better accommodate reading data
+;          from the file without first parsing the file. 16 March 2010. DWF.
+;       Changed the ReadVariable for netCDF files to now check for missing data, using either the
+;           depreciated missing_value attribute or the compliant _FillValue attribute. Missing data
+;           is now identified via new output keywords MISSINGINDICES and FILLVALUE, and missing data
+;           is not scaled or offset, if these operations are applied to the data prior to return. 
+;           21 March 2010. DWF. Problem with these changes, fixed 23 March 2010. DWF.
+;       Fixed a problem with memory leakage when the input file cannot be read. 1 May 2010. DWF.
+;       Fixed a problem with memory leakage from created structures. 1 May 2010. DWF.
+;       Have done some work on parsing HDF-EOS swath files, but currently unused in code. 15 May 2010. DWF.
+;       Modified the ReadVariable method to check for 0 length dimensions when reading variables
+;           from HDF files. 21 July 2010. DWF.
+;       Modified the global attribute structure so that the "filename" field, which holds the
+;           name of the netCDF of HDF file is now named "ncdf_filename" or "hdf_filename". This
+;           will avoid conflicts with global attributes with "filename". 20 January 2011. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
+;  Copyright (c) 2008-2010, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -172,7 +199,12 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 
-PRO NCDF_DATA::Browse, XOFFSET=xoffset, YOFFSET=yoffset
+PRO NCDF_DATA::Browse, $
+    NO_NEW_FILE=no_new_file, $
+    SUCCESS=success, $
+    TITLE=title, $
+    XOFFSET=xoffset, $
+    YOFFSET=yoffset
 ;+
 ; NAME:
 ;       NCDF_DATA::Browse
@@ -191,6 +223,13 @@ PRO NCDF_DATA::Browse, XOFFSET=xoffset, YOFFSET=yoffset
 ;       None.
 ;
 ; KEYWORD PARAMETERS:
+; 
+;       NONEWFILE: If this keyword is set, the browser does not allow selecting
+;                  a new netCDF file from the interface.
+;                  
+;       TITLE:     The text on the title bar. By default, 'File Browser'.
+;       
+;       SUCCESS:   An output keyword set to 1 if this method exits successfully.
 ;       
 ;       XOFFSET:   Normally, the Browser Window is centered, however is this
 ;                  keyword and the YOFFSET keywords are used, the Browser Window
@@ -206,22 +245,32 @@ PRO NCDF_DATA::Browse, XOFFSET=xoffset, YOFFSET=yoffset
       CATCH, /CANCEL
       void = Error_Message()
       Widget_Control, self.tlb, /DESTROY
+      success = 0
       RETURN
    ENDIF
+   
+   ; Assume the best.
+   success = 1
    
    ; Check input parameters.
    IF N_Elements(xoffset) EQ 0 THEN xoffset = -1
    IF N_Elements(yoffset) EQ 0 THEN yoffset = -1
+   newFileOK = ~Keyword_Set(no_new_file)
+   IF N_Elements(title) EQ 0 THEN title = 'File Browser'
 
    ; Only one browser with this TLB on the display at a time.
    IF Widget_Info(self.tlb, /VALID_ID) THEN BEGIN
       Widget_Control, self.tlb, /SHOW
+      success = 0
       RETURN
    ENDIF
 
    ; Make sure the file has been parsed.
    IF self.hasBeenParsed EQ 0 THEN self -> ParseFile
-   IF self.hasBeenParsed EQ 0 THEN RETURN
+   IF self.hasBeenParsed EQ 0 THEN BEGIN
+        success = 0
+        RETURN
+   ENDIF
    
    ; Get some bitmaps for the widget_tree.
    bmfile = Filepath(SubDir=['resource','bitmaps'], 'volume.bmp')
@@ -257,11 +306,11 @@ PRO NCDF_DATA::Browse, XOFFSET=xoffset, YOFFSET=yoffset
    ENDIF
    
    ; Set up the initial tree widget.
-   self.tlb = Widget_Base(TITLE='netCDF and HDF File Browser', COLUMN=1, UVALUE=self, /BASE_ALIGN_CENTER, $
+   self.tlb = Widget_Base(TITLE=title, COLUMN=1, UVALUE=self, /BASE_ALIGN_CENTER, $
       TLB_SIZE_EVENT=1)
    rowbase = Widget_Base(self.tlb, ROW=1, XPAD=0, YPAD=0)
-   theTree = Widget_Tree(rowbase, SCR_XSIZE=200, SCR_YSIZE=300, UNAME='theTree')
-   self.textDisplay = Widget_Text(rowbase, SCR_XSIZE=500, SCR_YSIZE=300, /SCROLL)
+   theTree = Widget_Tree(rowbase, SCR_XSIZE=350, SCR_YSIZE=400, UNAME='theTree')
+   self.textDisplay = Widget_Text(rowbase, SCR_XSIZE=450, SCR_YSIZE=400, /SCROLL)
 
    ; Set up fundamental branch.
    aBranch = Widget_Tree(theTree, Value='File Overview', /FOLDER, /EXPANDED, UNAME='FOLDER')
@@ -323,7 +372,7 @@ PRO NCDF_DATA::Browse, XOFFSET=xoffset, YOFFSET=yoffset
    button = Widget_Button(buttonBase, Value='Read Variable with Attributes', UVALUE='READ_VARPLUS_FROM_GUI')
    button = Widget_Button(buttonBase, Value='Read Global Attribute', UVALUE='READ_ATTRIBUTE_FROM_GUI')
    button = Widget_Button(buttonBase, Value='Read Entire File', UVALUE='READ_FILE_FROM_GUI')
-   button = Widget_Button(buttonBase, Value='Open New File', UVALUE='OPEN_NEW_FILE')
+   IF newFileOK THEN button = Widget_Button(buttonBase, Value='Open New File', UVALUE='OPEN_NEW_FILE')
    button = Widget_Button(buttonBase, Value='Exit', UVALUE='QUIT_BROWSER')
    
    ; Get the geometries of the tree widget and the button base. These
@@ -370,11 +419,60 @@ PRO NCDF_DATA::CleanParsedStructures
       FOR j=0,num-1 DO BEGIN
          Ptr_Free, (*self.theVariables)[j].value
          Ptr_Free, (*self.theVariables)[j].datasize
+         Ptr_Free, (*self.theVariables)[j].calibration
          IF Ptr_Valid((*self.theVariables)[j].var_attributes) THEN BEGIN
             attrs = *(*self.theVariables)[j].var_attributes
             attnum = N_Elements( attrs )
             FOR k=0,attnum-1 DO Ptr_Free, attrs[k].value
             Ptr_Free, (*self.theVariables)[j].var_attributes
+         ENDIF
+      ENDFOR
+   ENDIF
+
+   ; Clean up all pointers in the swath structures.
+   IF Ptr_Valid(self.theSwaths) THEN BEGIN
+      num = N_Elements(*self.theSwaths)
+      FOR j=0,num-1 DO BEGIN
+         Ptr_Free, (*self.theSwaths)[j].maps
+         Ptr_Free, (*self.theSwaths)[j].idxmaps
+         Ptr_Free, (*self.theSwaths)[j].dimensions
+         IF Ptr_Valid((*self.theSwaths)[j].attributes) THEN BEGIN
+            attrs = *(*self.theSwaths)[j].attributes
+            attnum = N_Elements( attrs )
+            FOR k=0,attnum-1 DO Ptr_Free, attrs[k].value
+            Ptr_Free, (*self.theSwaths)[j].attributes
+         ENDIF
+         IF Ptr_Valid((*self.theSwaths)[j].geofields) THEN BEGIN
+              num = N_Elements(*(*self.theSwaths)[j].geofields)
+              FOR j=0,num-1 DO BEGIN
+                 thisGeoField = (*(*(*self.theSwaths)[j].geofields))[j]
+                 Ptr_Free, thisGeoField.value
+                 Ptr_Free, thisGeoField.datasize
+                 Ptr_Free, thisGeoField.calibration
+                 IF Ptr_Valid(*thisGeoField.var_attributes) THEN BEGIN
+                    attrs = *(*thisGeoField.var_attributes)
+                    attnum = N_Elements( attrs )
+                    FOR k=0,attnum-1 DO Ptr_Free, attrs[k].value
+                    Ptr_Free, (*thisGeoField)[j].var_attributes
+                 ENDIF
+                 Ptr_Free,(*self.theSwaths)[j].geofields
+              ENDFOR
+         ENDIF
+         IF Ptr_Valid((*self.theSwaths)[j].datafields) THEN BEGIN
+              num = N_Elements(*(*self.theSwaths)[j].datafields)
+              FOR j=0,num-1 DO BEGIN
+                 thisGeoField = (*(*(*self.theSwaths)[j].datafields))[j]
+                 Ptr_Free, thisGeoField.value
+                 Ptr_Free, thisGeoField.datasize
+                 Ptr_Free, thisGeoField.calibration
+                 IF Ptr_Valid(*thisGeoField.var_attributes) THEN BEGIN
+                    attrs = *(*thisGeoField.var_attributes)
+                    attnum = N_Elements( attrs )
+                    FOR k=0,attnum-1 DO Ptr_Free, attrs[k].value
+                    Ptr_Free, (*thisGeoField)[j].var_attributes
+                 ENDIF
+                 Ptr_Free,(*self.theSwaths)[j].datafields
+              ENDFOR
          ENDIF
       ENDFOR
    ENDIF
@@ -483,6 +581,34 @@ FUNCTION NCDF_DATA::Destroy_From_Browser
 END ;---------------------------------------------------------------------------------------------
 
 
+FUNCTION NCDF_DATA::GetAttrNames
+
+   ; Returns a list of the global attribute names.
+    
+   ; Error handling
+   CATCH, theError
+   IF theError NE 0 THEN BEGIN
+      CATCH, /CANCEL
+      void = Error_Message()
+      RETURN, ""
+   ENDIF
+    
+   ; The file has to be parsed to carry this out.
+   IF self.hasBeenParsed EQ 0 THEN self -> ParseFile
+   
+   numAttrs = N_Elements(*self.theAttributes)
+   attributeList = StrArr(numAttrs)
+   
+   FOR j=0,numAttrs-1 DO BEGIN
+        thisAttribute = (*self.theAttributes)[j]
+        attributeList[j] = thisAttribute.name
+   ENDFOR
+   
+   RETURN, attributeList
+   
+END ;---------------------------------------------------------------------------------------------
+
+
 PRO NCDF_DATA::ListAttrNames
 
    ; Prints out the global attribute names found in the file.
@@ -507,6 +633,34 @@ PRO NCDF_DATA::ListAttrNames
         Print, '   ', StrTrim(j+1,2), ') ', thisAttribute.name
    ENDFOR
    Print, ""
+   
+END ;---------------------------------------------------------------------------------------------
+
+
+FUNCTION NCDF_DATA::GetVarNames
+
+   ; This function returns a list of variable names found in the file.
+    
+   ; Error handling
+   CATCH, theError
+   IF theError NE 0 THEN BEGIN
+      CATCH, /CANCEL
+      void = Error_Message()
+      RETURN, ""
+   ENDIF
+    
+   ; The file has to be parsed to carry this out.
+   IF self.hasBeenParsed EQ 0 THEN self -> ParseFile
+   
+   numVars = N_Elements(*self.theVariables)
+   varList = StrArr(numVars)
+   
+   FOR j=0,numVars-1 DO BEGIN
+        thisVariable = (*self.theVariables)[j]
+        varList[j] = thisVariable.name
+   ENDFOR
+   
+   RETURN, varList
    
 END ;---------------------------------------------------------------------------------------------
 
@@ -539,6 +693,42 @@ PRO NCDF_DATA::ListVarNames
 END ;---------------------------------------------------------------------------------------------
 
 
+FUNCTION NCDF_DATA::GetVarAttrNames, theVariable
+
+   ; This function returns a list of attribute names which it finds for a particular variable.
+    
+   ; Error handling
+   CATCH, theError
+   IF theError NE 0 THEN BEGIN
+      CATCH, /CANCEL
+      void = Error_Message()
+      RETURN, ""
+   ENDIF
+    
+   ; The file has to be parsed to carry this out.
+   IF self.hasBeenParsed EQ 0 THEN self -> ParseFile
+   
+   ; Get the variable list.
+   theVarStructures = *self.theVariables
+   
+   ; Find this variable in the variable structures.
+   index = Where(theVarStructures.name EQ theVariable, count)
+   IF count EQ 0 THEN Message, 'Cannot find the variable ' + theVariable + ' in the file.'
+   thisVariableStruct = theVarStructures[index]
+   
+   ; Get the pointer to the variable attribute structures.
+   varAttrStructures = *thisVariableStruct.var_attributes
+   
+   ; Extract the attribute names.
+   numAttrs = N_Elements(varAttrStructures)
+   varAttrList = StrArr(numAttrs)
+   FOR j=0,numAttrs-1 DO BEGIN
+        varAttrList[j] = varAttrStructures[j].name
+   ENDFOR
+   
+   RETURN, varAttrList
+   
+END ;---------------------------------------------------------------------------------------------
 PRO NCDF_DATA::OpenNewFile, event
 
    ; Creates a dialog for the user to specify the name of a new netCDF or HDF file to open.
@@ -650,13 +840,26 @@ PRO NCDF_DATA::ParseFile
    self -> CleanParsedStructures
    Ptr_Free, self.theAttributes
    Ptr_Free, self.theDimensions
+   Ptr_Free, self.theCalibration
+   Ptr_Free, self.theSwaths
    Ptr_Free, self.theVariables
    Ptr_Free, self.zeroDimensionID
    
    ; Special processing if this is an HDF file. Otherwise, we believe it is a netCDF file.
    self.isHDF = HDF_ISHDF(Filepath(ROOT_DIR=self.directory, self.filename))
    IF self.isHDF THEN BEGIN
-        self -> Parse_HDF_File
+   
+        ; Is this an HDF-EOS type file? If so, we want to parse it differently
+        isEOS_File = EOS_Query(Filepath(ROOT_DIR=self.directory, self.filename), info)
+        IF isEOS_File THEN BEGIN
+            IF info.num_grids NE 0 OR info.num_points NE 0 THEN BEGIN
+                Message, 'This program does not current parse HDF-EOS grids or point data.', /INFORMATIONAL
+            ENDIF
+            
+            ; This code is not quite ready. Bypassing this for the moment.
+            ;self -> Parse_HDF_EOS_File
+            self -> Parse_HDF_File
+        ENDIF ELSE self -> Parse_HDF_File
         RETURN
    ENDIF
 
@@ -833,6 +1036,8 @@ PRO NCDF_DATA::Parse_HDF_File
    self -> CleanParsedStructures
    Ptr_Free, self.theAttributes
    Ptr_Free, self.theDimensions
+   Ptr_Free, self.theCalibration
+   Ptr_Free, self.theSwaths
    Ptr_Free, self.theVariables
    Ptr_Free, self.zeroDimensionID
 
@@ -852,11 +1057,371 @@ PRO NCDF_DATA::Parse_HDF_File
           theAttributes[j].name = attribute_name
           IF N_Elements(theAttribute) EQ 1 THEN theAttribute = theAttribute[0]
           theAttributes[j].value = Ptr_New(theAttribute)
-
+          help, theAttribute
       ENDFOR
       self.theAttributes = Ptr_New(theAttributes, /No_Copy)
    ENDIF
 
+   ; Next, get the variables.
+   IF num_vars GT 0 THEN BEGIN
+      theVariables = REPLICATE({NCDF_DATA_VARIABLE}, num_vars)
+      FOR j=0,num_vars-1 DO BEGIN
+
+         ; Get information about the variable.
+         sdID = HDF_SD_Select(fileID, j)
+         
+         ; This routine throws all kinds of scary messages if CALDATA, for example, is
+         ; not in the file. Turn this off for this call.
+         !QUIET = 1
+         HDF_SD_GetInfo, sdID, DIMS=dims, NAME=name, NATTS=natts, NDIMS=ndims, $
+            RANGE=range, TYPE=datatype, CALDATA=calData
+         !QUIET = 0
+         
+         theVariables[j].datatype = datatype
+         theVariables[j].name = name
+         theVariables[j].calibration = Ptr_New(calData)
+
+          ; If this variable has attributes, get those, too.
+          IF natts GT 0 THEN BEGIN
+               varAttributes = Replicate({NCDF_DATA_ATTRIBUTE}, natts+1)
+               FOR k=0,natts-1 DO BEGIN
+                   HDF_SD_ATTRINFO, sdID, k, DATA=theAttribute, NAME=attribute_name, TYPE=attribute_datatype
+                             
+                   varAttributes[k].attrType = StrUpCase(name)
+                   varAttributes[k].dataType = attribute_datatype
+                   varAttributes[k].length = N_Elements(theAttribute)
+                   varAttributes[k].name = attribute_name
+                   IF N_Elements(theAttribute) EQ 1 THEN theAttribute = theAttribute[0]
+                   varAttributes[k].value = Ptr_New(theAttribute)
+               ENDFOR
+               
+               ; Add the calibration data as an attibute.
+               IF calData.cal EQ 0 THEN BEGIN
+                    varAttributes[natts].attrType = StrUpCase(name)
+                    varAttributes[natts].dataType = 'STRING'
+                    varAttributes[natts].length = 0
+                    varAttributes[natts].name = '_calibration_data'
+                    varAttributes[natts].value = Ptr_New('Not Present in File')               
+               ENDIF ELSE BEGIN
+                    varAttributes[natts].attrType = StrUpCase(name)
+                    varAttributes[natts].dataType = 'STRUCT'
+                    varAttributes[natts].length = N_Tags(calData, /Length)
+                    varAttributes[natts].name = '_calibration_data'
+                    varAttributes[natts].value = Ptr_New(calData)
+               ENDELSE
+               
+               theVariables[j].var_attributes = Ptr_New(varAttributes)
+          ENDIF
+
+          ; Now, read the data so you can collect information about it.
+          theVariables[j].dataSize = Ptr_New(dims)
+          IF N_Elements(range) NE 0 THEN BEGIN
+              theVariables[j].minValue = range[0]
+              theVariables[j].maxValue = range[1]
+          ENDIF ELSE BEGIN
+              IF self.no_read_on_parse THEN BEGIN
+                  theVariables[j].minValue = !VALUES.F_NAN
+                  theVariables[j].maxValue = !VALUES.F_NAN             
+              ENDIF ELSE BEGIN
+                  HDF_SD_GetData, sdID, data
+                  IF calData.cal NE 0 THEN BEGIN
+                        data = calData.cal * (Temporary(data) - calData.offset)
+                  ENDIF
+                  minData = Min(data, MAX=maxData)
+                  theVariables[j].minValue = minData
+                  theVariables[j].maxValue = maxData
+                  Undefine, data
+              ENDELSE
+          ENDELSE
+          HDF_SD_EndAccess, sdID
+      ENDFOR
+      self.theVariables = Ptr_New(theVariables, /No_Copy)
+   ENDIF
+
+   ; Successfully parsed file.
+   self.hasBeenParsed = 1
+   
+   ; Close the file
+   HDF_SD_End, fileID
+
+END ;---------------------------------------------------------------------------------------------
+
+
+
+PRO NCDF_DATA::Parse_HDF_EOS_File
+
+   ; This internal method parses the new HDF-EOS file initially, and creates 
+   ; the IDL structures necessary for browsing the object.
+   
+   ; Error handling
+   CATCH, theError
+   IF theError NE 0 THEN BEGIN
+      CATCH, /CANCEL
+      void = Error_Message()
+      self.hasBeenParsed = 0
+      IF N_Elements(fileID) NE 0 THEN BEGIN
+        IF N_Elements(swathID) NE 0 THEN ok = EOS_SW_DETACH(swathID)
+        ok = EOS_SW_CLOSE(fileID)
+      ENDIF
+      RETURN
+   ENDIF
+
+   ; Check to see if file is available.
+   IF self.filename EQ "" THEN BEGIN
+      ok = Dialog_Message('Add a file to the NCDF_DATA object before proceeding.')
+      RETURN
+   ENDIF
+   
+   ; Be sure everything is cleaned up and ready to go.
+   self -> CleanParsedStructures
+   Ptr_Free, self.theAttributes
+   Ptr_Free, self.theDimensions
+   Ptr_Free, self.theSwaths
+   Ptr_Free, self.theCalibration
+   Ptr_Free, self.theVariables
+   Ptr_Free, self.zeroDimensionID
+
+   ; Open the file and find out how many swaths, grids, and points there are.
+   filename = Filepath(ROOT_DIR=self.directory, self.filename)
+   ok = EOS_Query(filename, info)
+   
+   ; Process the swaths first.
+   theSwaths = Replicate({NCDF_DATA_SWATH}, info.num_swaths)
+   FOR j=0, info.num_swaths-1 DO BEGIN
+        swathNames = StrSplit(info.swath_names, ',', /EXTRACT)
+        fileID = EOS_SW_OPEN(filename, /READ)
+        swathID = EOS_SW_Attach(fileID, swathNames[j])
+        Print, 'Swath Name: ', swathNames[j]
+        theSwaths[j].name = swathNames[j]
+        nattr = EOS_SW_INQATTRS(swathID, attrlist)
+        IF nattr GT 0 THEN BEGIN
+            theAttributes = Replicate({NCDF_DATA_ATTRIBUTE}, nattr)
+            attrNames = StrSplit(attrlist, ',', /EXTRACT)
+            FOR k=0,nattr-1 DO BEGIN
+                ok = EOS_SW_READATTR(swathID, attrNames[k], attrValue)
+                theAttributes[k].name = attrNames[k]
+                theAttributes[k].attrType = 'SWATH ATTRIBUTE'
+                theAttributes[k].datatype = Size(attrValue, /TNAME)
+                theAttributes[k].length = N_Elements(attrValue)
+                IF N_Elements(attrValue) EQ 1 THEN attrValue = attrValue[0]
+                theAttributes[k].value = Ptr_New(attrValue)
+                Help, attrValue
+            ENDFOR
+            theSwaths[j].attributes = Ptr_New(theAttributes)
+            theSwaths[j].nattrs = nattr
+        ENDIF
+        ndims = EOS_SW_INQDIMS(swathID, dimslist, dimSize)
+        IF ndims GT 0 THEN BEGIN
+           dimNames = StrSplit(dimslist, ',', /EXTRACT)
+           theDimensions = Replicate({NCDF_DATA_DIMENSION}, ndims)
+            FOR k=0,ndims-1 DO BEGIN
+                theDimensions[k].name = dimNames[k]
+                theDimensions[k].value = dimSize[k]
+            ENDFOR
+            theSwaths[j].dimensions = Ptr_New(theDimensions)
+            theSwaths[j].ndims = ndims
+        ENDIF
+        ngeofields = EOS_SW_INQGEOFIELDS(swathID, geofieldslist, rank, numbertype)
+        IF ngeofields GT 0 THEN BEGIN
+           geoFieldNames = StrSplit(geofieldslist, ',', /EXTRACT)
+           theGeoFields = Replicate({NCDF_DATA_VARIABLE}, ngeofields)
+            FOR k=0,ngeofields-1 DO BEGIN
+
+                ; Get information about the variable.
+                sdFileID = HDF_SD_START(filename)
+                sdIndex = HDF_SD_NameToIndex(sdFileID, geoFieldNames[k])
+                sdID = HDF_SD_Select(sdFileID, sdIndex)
+             
+                ; This routine throws all kinds of scary messages if CALDATA, for example, is
+                ; not in the file. Turn this off for this call.
+                !QUIET = 1
+                HDF_SD_GetInfo, sdID, DIMS=dims, NAME=name, NATTS=natts, NDIMS=ndims, $
+                    RANGE=range, TYPE=datatype, CALDATA=calData
+                !QUIET = 0
+             
+                theGeoFields[k].name = geoFieldNames[k]
+                theGeoFields[k].datatype = datatype
+                theGeoFields[k].calibration = Ptr_New(calData)
+                theGeoFields[k].datasize = Ptr_New(dims)
+                IF N_Elements(range) NE 0 THEN BEGIN
+                    theGeoFields[k].minValue = range[0]
+                    theGeoFields[k].maxValue = range[1]
+                    Undefine, range ; Do this so it is not hanging around for the next variable.
+                ENDIF ELSE BEGIN
+                    IF self.no_read_on_parse THEN BEGIN
+                        theGeoFields[k].minValue = !VALUES.F_NAN
+                        theGeoFields[k].maxValue = !VALUES.F_NAN             
+                    ENDIF ELSE BEGIN
+                        HDF_SD_GetData, sdID, data
+                        IF calData.cal NE 0 THEN BEGIN
+                            data = calData.cal * (Temporary(data) - calData.offset)
+                        ENDIF
+                        minData = Min(data, MAX=maxData)
+                        theGeoFields[k].minValue = minData
+                        theGeoFields[k].maxValue = maxData
+                        Undefine, data
+                     ENDELSE
+                ENDELSE
+              
+                ; If this variable has attributes, get those, too.
+                ; If this variable has attributes, get those, too.
+                IF natts GT 0 THEN BEGIN
+                     varAttributes = Replicate({NCDF_DATA_ATTRIBUTE}, natts+1)
+                     FOR m=0,natts-1 DO BEGIN
+                         HDF_SD_ATTRINFO, sdID, m, DATA=theAttribute, NAME=attribute_name, TYPE=attribute_datatype
+                                 
+                         varAttributes[m].attrType = StrUpCase(name)
+                         varAttributes[m].dataType = attribute_datatype
+                         varAttributes[m].length = N_Elements(theAttribute)
+                         varAttributes[m].name = attribute_name
+                         IF N_Elements(theAttribute) EQ 1 THEN theAttribute = theAttribute[0]
+                         varAttributes[m].value = Ptr_New(theAttribute)
+                     ENDFOR
+                   
+                     ; Add the calibration data as an attibute.
+                     IF calData.cal EQ 0 THEN BEGIN
+                        varAttributes[natts].attrType = StrUpCase(name)
+                        varAttributes[natts].dataType = 'STRING'
+                        varAttributes[natts].length = 0
+                        varAttributes[natts].name = '_calibration_data'
+                        varAttributes[natts].value = Ptr_New('Not Present in File')               
+                     ENDIF ELSE BEGIN
+                        varAttributes[natts].attrType = StrUpCase(name)
+                        varAttributes[natts].dataType = 'STRUCT'
+                        varAttributes[natts].length = N_Tags(calData, /Length)
+                        varAttributes[natts].name = '_calibration_data'
+                        varAttributes[natts].value = Ptr_New(calData)
+                     ENDELSE
+                   
+                     theGeoFields[k].var_attributes = Ptr_New(varAttributes)
+                 ENDIF
+                 theSwaths[j].ngeoFields = ngeoFields
+                 HDF_SD_EndAccess, sdID
+            ENDFOR
+        ENDIF
+        ndatafields = EOS_SW_INQDATAFIELDS(swathID, datafieldslist, rank, numbertype)
+        IF ndatafields GT 0 THEN BEGIN
+           dataFieldNames = StrSplit(datafieldslist, ',', /EXTRACT)
+           theDataFields = Replicate({NCDF_DATA_VARIABLE}, ndatafields)
+            FOR k=0,ndatafields-1 DO BEGIN
+
+                ; Get information about the variable.
+                sdFileID = HDF_SD_START(filename)
+                sdIndex = HDF_SD_NameToIndex(sdFileID, dataFieldNames[k])
+                sdID = HDF_SD_Select(sdFileID, sdIndex)
+             
+                ; This routine throws all kinds of scary messages if CALDATA, for example, is
+                ; not in the file. Turn this off for this call.
+                !QUIET = 1
+                HDF_SD_GetInfo, sdID, DIMS=dims, NAME=name, NATTS=natts, NDIMS=ndims, $
+                    RANGE=range, TYPE=datatype, CALDATA=calData
+                !QUIET = 0
+             Print, 'number of swath dataset attributes for variable ' + name + ': ', natts
+                theDataFields[k].name = dataFieldNames[k]
+                theDataFields[k].datatype = datatype
+                theDataFields[k].calibration = Ptr_New(calData)
+                theDataFields[k].datasize = Ptr_New(dims)
+                IF N_Elements(range) NE 0 THEN BEGIN
+                    theDataFields[k].minValue = range[0]
+                    theDataFields[k].maxValue = range[1]
+                    Undefine, range ; Do this so it is not hanging around for the next variable.
+                ENDIF ELSE BEGIN
+                    IF self.no_read_on_parse THEN BEGIN
+                        theDataFields[k].minValue = !VALUES.F_NAN
+                        theDataFields[k].maxValue = !VALUES.F_NAN             
+                    ENDIF ELSE BEGIN
+                        HDF_SD_GetData, sdID, data
+                        IF calData.cal NE 0 THEN BEGIN
+                            data = calData.cal * (Temporary(data) - calData.offset)
+                        ENDIF
+                        minData = Min(data, MAX=maxData)
+                        theGeoFields[k].minValue = minData
+                        theGeoFields[k].maxValue = maxData
+                        Undefine, data
+                     ENDELSE
+                ENDELSE
+              
+                ; If this variable has attributes, get those, too.
+                ; If this variable has attributes, get those, too.
+                IF natts GT 0 THEN BEGIN
+                     varAttributes = Replicate({NCDF_DATA_ATTRIBUTE}, natts+1)
+                     FOR m=0,natts-1 DO BEGIN
+                         HDF_SD_ATTRINFO, sdID, m, DATA=theAttribute, NAME=attribute_name, TYPE=attribute_datatype
+                                 
+                         varAttributes[m].attrType = StrUpCase(name)
+                         varAttributes[m].dataType = attribute_datatype
+                         varAttributes[m].length = N_Elements(theAttribute)
+                         varAttributes[m].name = attribute_name
+                         IF N_Elements(theAttribute) EQ 1 THEN theAttribute = theAttribute[0]
+                         varAttributes[m].value = Ptr_New(theAttribute)
+                     ENDFOR
+                   
+                     ; Add the calibration data as an attibute.
+                     IF calData.cal EQ 0 THEN BEGIN
+                        varAttributes[natts].attrType = StrUpCase(name)
+                        varAttributes[natts].dataType = 'STRING'
+                        varAttributes[natts].length = 0
+                        varAttributes[natts].name = '_calibration_data'
+                        varAttributes[natts].value = Ptr_New('Not Present in File')               
+                     ENDIF ELSE BEGIN
+                        varAttributes[natts].attrType = StrUpCase(name)
+                        varAttributes[natts].dataType = 'STRUCT'
+                        varAttributes[natts].length = N_Tags(calData, /Length)
+                        varAttributes[natts].name = '_calibration_data'
+                        varAttributes[natts].value = Ptr_New(calData)
+                     ENDELSE
+                   
+                     theDataFields[k].var_attributes = Ptr_New(varAttributes)
+                 ENDIF
+                 theSwaths[j].ndataFields = ndataFields
+                 HDF_SD_EndAccess, sdID
+            ENDFOR
+        ENDIF
+        nmaps = EOS_SW_INQMAPS(swathID, mapslist, offset, increment)
+        theSwaths[j].nmaps = nmaps
+        IF nmaps GT 0 THEN BEGIN
+           mapNames = StrSplit(mapslist, ',', /EXTRACT)
+            FOR k=0,nmaps-1 DO BEGIN
+                Print, 'Map Name: ', mapNames[k], $
+                    '   Offset: ', offset[k], '   Increment: ', increment[k]
+            ENDFOR
+            Print, ''
+        ENDIF
+        nidxmaps = EOS_SW_INQIDXMAPS(swathID, mapslist, sizes)
+        theSwaths[j].nidxmaps = nidxmaps
+        IF nidxmaps GT 0 THEN BEGIN
+           mapNames = StrSplit(mapslist, ',', /EXTRACT)
+            FOR k=0,nidxmaps-1 DO BEGIN
+                Print, 'Map Name: ', mapNames[k], '   Size: ', sizes[k]
+            ENDFOR
+            Print, ''
+        ENDIF
+        ok = EOS_SW_DETACH(swathID)
+        ok = EOS_SW_CLOSE(fileID)
+    ENDFOR 
+   
+   self.theSwaths = Ptr_New(theSwaths)
+   
+   fileID = HDF_SD_START(Filepath(ROOT_DIR=self.directory, self.filename), /READ)
+   HDF_SD_Fileinfo, fileID, num_vars, num_attr
+   
+   ; First, get the global attributes.
+;   IF num_attr GT 0 THEN BEGIN
+;      theAttributes = Replicate({NCDF_DATA_ATTRIBUTE}, num_attr)
+;      FOR j=0,num_attr-1 DO BEGIN
+;          HDF_SD_ATTRINFO, fileID, j, DATA=theAttribute, HDF_TYPE=hdf_type, NAME=attribute_name, TYPE=att_type
+;
+;          theAttributes[j].attrType = 'GLOBAL'
+;          theAttributes[j].dataType = att_type
+;          theAttributes[j].length = N_Elements(theAttribute)
+;          theAttributes[j].name = attribute_name
+;          IF N_Elements(theAttribute) EQ 1 THEN theAttribute = theAttribute[0]
+;          theAttributes[j].value = Ptr_New(theAttribute)
+;
+;      ENDFOR
+;      self.theAttributes = Ptr_New(theAttributes, /No_Copy)
+;   ENDIF
+self.theAttributes = (*self.theSwaths)[0].attributes
    ; Next, get the variables.
    IF num_vars GT 0 THEN BEGIN
       theVariables = REPLICATE({NCDF_DATA_VARIABLE}, num_vars)
@@ -1360,7 +1925,8 @@ FUNCTION NCDF_DATA::ReadFile, theFile, SUCCESS=success
                  attrName = IDL_ValidName(attrName, /CONVERT_ALL)
                  varStruct = Create_Struct(varStruct, attrName, theAttribute)
              ENDFOR
-          struct = Create_Struct(struct, varInfo.name, Temporary(varStruct))
+          struct = Create_Struct(struct, IDL_ValidName(varInfo.name, /CONVERT_ALL), $
+              Temporary(varStruct))
           ENDFOR
        ENDIF
        
@@ -1458,7 +2024,7 @@ FUNCTION NCDF_DATA::ReadGlobalAttr, SUCCESS=success
         HDF_SD_Fileinfo, fileID, num_vars, num_attr
    
        ; Create a structure to hold the global attribute values.
-       attrStruct = Create_Struct('filename', self.filename)
+       attrStruct = Create_Struct('hdf_filename', self.filename)
        FOR j=0,num_attr-1 DO BEGIN
            HDF_SD_ATTRINFO, fileID, j, DATA=value, NAME=name
            
@@ -1481,7 +2047,7 @@ FUNCTION NCDF_DATA::ReadGlobalAttr, SUCCESS=success
        info = NCDF_Inquire(fileID)
     
        ; Create a structure to hold the global attribute values.
-       attrStruct = Create_Struct('filename', self.filename)
+       attrStruct = Create_Struct('ncdf_filename', self.filename)
        FOR j=0,info.ngatts-1 DO BEGIN
           name = NCDF_AttName(fileID, j, /GLOBAL)
           NCDF_AttGet, fileID, name, value, /GLOBAL
@@ -1508,6 +2074,8 @@ END ;---------------------------------------------------------------------------
 FUNCTION NCDF_DATA::ReadVariable, theVariable, $
     SUCCESS=success, $
     COUNT=count, $
+    FILLVALUE=fillvalue, $
+    MISSINGINDICES=missingIndices, $
     OFFSET=offset, $
     START=start, $
     STRIDE=stride
@@ -1531,7 +2099,7 @@ FUNCTION NCDF_DATA::ReadVariable, theVariable, $
 ;
 ;       theVariable: The name of the variable you wish to read from the file.
 ;
-; KEYWORD PARAMETERS:
+; INPUT KEYWORD PARAMETERS:
 ; 
 ;       COUNT:      An optional vector containing the counts to be used in reading theVariable.
 ;                   Count is a 1-based vector with an element for each dimension. The default 
@@ -1547,8 +2115,17 @@ FUNCTION NCDF_DATA::ReadVariable, theVariable, $
 ;                   for a contiguous read, [1, 1, ...]. Note that for HDF files, the default
 ;                   STRIDE vector is [0, 0, ...].
 ;       
+; OUTPUT KEYWORD PARAMETERS:
+; 
+;       FILLVALUE:  The value that is being used for the "missing" value in this variable.
+;                                                                              
+;       MISSINGINDICES: A vector containing the missing indices in the returned data. Missing
+;                   data is identified by either the depreciated "missing_value" attribute
+;                   or the approved "_FillValue" attribute.  
+;       
 ;       SUCCESS:    An output parameter, set to 1 if the file was read successfully,
 ;                   and to 0 otherwise.
+;
 ;-
 
    ; Error handling
@@ -1579,6 +2156,15 @@ FUNCTION NCDF_DATA::ReadVariable, theVariable, $
        
        ; Select the variable and read it.
        varID = HDF_SD_Select(fileID, index)
+       
+       ; Make sure this variable has a valid dimension.
+       HDF_SD_GetInfo, varID, DIMS=dims
+       IF dims[0] EQ 0 THEN BEGIN
+            void = Dialog_Message('Requested data variable has a dimension of 0 and cannot be read.')
+            RETURN, -1
+       ENDIF
+       
+       ; Read the data.
        HDF_SD_GetData, varID, data, COUNT=count, START=start, STRIDE=stride
        
        ; This routine throws all kinds of scary messages if CALDATA is
@@ -1636,9 +2222,21 @@ FUNCTION NCDF_DATA::ReadVariable, theVariable, $
            varAttNames[k] = NCDF_AttName(fileID, varID, k)
        ENDFOR
        
-       ; Is this a CHAR data type? If so, convert it to a string.
-       IF StrUpCase(r.datatype) EQ 'CHAR' THEN data = String(data)
-              
+       ; Does this variable contain "missing" values. If so, identify and return
+       ; the missing data indices so they can be identified after scaling.
+       index = Where(StrUpCase(varAttNames) EQ 'MISSING_VALUE', count)
+       IF count GT 0 THEN BEGIN
+           varAttName = (varAttNames[index])[0]
+           NCDF_AttGet, fileID, varID, varAttName, missingValue
+           missingIndices = Where(data EQ missingValue, missingCount)
+       ENDIF
+       index = Where(StrUpCase(varAttNames) EQ '_FILLVALUE', count)
+       IF count GT 0 THEN BEGIN
+           varAttName = (varAttNames[index])[0]
+           NCDF_AttGet, fileID, varID, varAttName, missingValue
+           missingIndices = Where(data EQ missingValue, missingCount)
+       ENDIF
+    
        ; Is there a scale_factor attribute? If so, get and scale the data.
        IF N_Elements(varAttNames) NE 0 THEN BEGIN
            index = Where(StrUpCase(varAttNames) EQ 'SCALE_FACTOR', count)
@@ -1657,6 +2255,14 @@ FUNCTION NCDF_DATA::ReadVariable, theVariable, $
            ENDIF
        ENDIF
        
+       ; If there was missing data, restore it.
+       IF (N_Elements(missingIndices) NE 0) THEN BEGIN
+            IF missingCount GT 0 THEN data[missingIndices] = missingValue
+       ENDIF
+       
+       ; Is this a CHAR data type? If so, convert it to a string.
+       IF StrUpCase(r.datatype) EQ 'CHAR' THEN data = String(data)
+              
        ; Close the file, set status flag, return the data.
        NCDF_CLOSE, fileID
        success = 1
@@ -1718,6 +2324,50 @@ PRO NCDF_DATA::ReadVariableFromGUI, event
    ; Get it going...
    Widget_Control, tlb, /REALIZE
    XMANAGER, 'read_and_leave', tlb, EVENT_HANDLER='NCDF_DATA_WIDGET_EVENTS', /NO_BLOCK
+END ;---------------------------------------------------------------------------------------------
+
+
+
+FUNCTION NCDF_DATA::ReadVarAttr, theVariableName, theAttributeName
+
+; This method reads and returns a particular variable attribute.
+; Both the name of the variable and the name of the attribute are
+; required parameters.
+
+   ; Error handling
+   CATCH, theError
+   IF theError NE 0 THEN BEGIN
+      CATCH, /CANCEL
+      void = Error_Message()
+      RETURN, ""
+   ENDIF
+
+   IF N_Params() NE 2 THEN Message, 'Both the variable name and the attribute name must be present.'
+
+   ; The file has to be parsed to carry this out.
+   IF self.hasBeenParsed EQ 0 THEN self -> ParseFile
+   
+   ; Get the variable list.
+   theVarStructures = *self.theVariables
+   
+   ; Find this variable in the variable structures.
+   index = Where(StrUpCase(theVarStructures.name) EQ StrUpCase(theVariableName), count)
+   IF count EQ 0 THEN Message, 'Cannot find the variable ' + theVariableName + ' in the file.'
+   thisVariableStruct = theVarStructures[index]
+   
+   ; Get the pointer to the variable attribute structures.
+   varAttrStructures = *thisVariableStruct.var_attributes
+   
+   ; Find the name of the attribute in the varAttrStructures list
+   index = Where(StrUpCase(varAttrStructures.name) EQ StrUpCase(theAttributeName), count)
+   IF count EQ 0 THEN Message, 'Cannot find the attribute ' + theAttributeName + ' in the file.'
+   
+   ; Extract the attribute names.
+   theAttributeStruct = varAttrStructures[index]
+   theAttributeValue = *theAttributeStruct.value
+   
+   RETURN, theAttributeValue
+    
 END ;---------------------------------------------------------------------------------------------
 
 
@@ -1832,7 +2482,10 @@ FUNCTION NCDF_DATA::ReadVariableWithAttr, theVariable, SUCCESS=success
 ; RETURN VALUE:
 ;
 ;       struct:      A structure containing the variable (in the field "data") and its
-;                    attributes.
+;                    attributes in other fields. Plus, the field NDIMS holds the number
+;                    of dimensions of the variable, and the field DIMS is a vector of
+;                    the dimensions of the variable (for HDF files) or the dimension
+;                    IDs (for netCDF file).
 ;
 ; ARGUMENTS:
 ;
@@ -1880,7 +2533,7 @@ FUNCTION NCDF_DATA::ReadVariableWithAttr, theVariable, SUCCESS=success
        ; This routine throws all kinds of scary messages if CALDATA is
        ; not in the file. Turn this off for this call.
        !QUIET = 1
-       HDF_SD_GetInfo, varID, CALDATA=calData
+       HDF_SD_GetInfo, varID, CALDATA=calData, DIMS=dims, NDIMS=ndims
        !QUIET = 0
          
        ; Reverse the indices in HDF files and calibrate, if neccesary.
@@ -1901,7 +2554,10 @@ FUNCTION NCDF_DATA::ReadVariableWithAttr, theVariable, SUCCESS=success
             IF calData.cal EQ 0 $
                 THEN varStruct = Create_Struct(varStruct, '_calibration_data', 'Not Present in File') $
                 ELSE varStruct = Create_Struct(varStruct, '_calibration_data', catData)
-          ENDIF
+       ENDIF
+       
+       ; Add dimension informatio to the structure.
+       varStruct = Create_Struct(varStruct, 'ndims', ndims, 'dims', dims)
 
        HDF_SD_EndAccess, varID
        HDF_SD_END, fileID
@@ -1917,7 +2573,7 @@ FUNCTION NCDF_DATA::ReadVariableWithAttr, theVariable, SUCCESS=success
 
        ; Get information about the variable.
        varInfo = NCDF_VarInq(fileID, varID)
-           
+
        ; Do we have to worry about zero dimensions?
        IF Ptr_Valid(self.zeroDimensionID) THEN BEGIN
        
@@ -1951,6 +2607,9 @@ FUNCTION NCDF_DATA::ReadVariableWithAttr, theVariable, SUCCESS=success
            IF Where(Tag_Names(varStruct) EQ StrUpCase(attrName)) NE -1 THEN CONTINUE
            varStruct = Create_Struct(varStruct, attrName, value)
        ENDFOR
+       
+       ; Add a dimensions field to the structure.
+       varStruct = Create_Struct(varStruct, 'ndims', varInfo.Ndims, 'dims', varInfo.dim)
        
        ; Close the file, set status flag, return the data.
        NCDF_CLOSE, fileID
@@ -2191,24 +2850,25 @@ PRO NCDF_DATA::SelectionInTree, event
            vars = *self.theVariables 
            IF N_Elements(vars) EQ 0 THEN vars = vars[0]
            i = Where(vars.name EQ name, count)
-           thisVar = vars[i]
-           text = StrArr(6)
-           text[0] = tab + 'NAME: ' + name
-           text[1] = tab + 'DATATYPE: ' + thisVar.datatype
-           n = StrTrim(N_Elements(*thisVar.datasize),2)
-           f = ' (' + n + '(I0, :, ", "))'
-           d = String(*thisVar.datasize, FORMAT=f)
-           text[2] = tab + 'N_DIMENSIONS:  ' + StrTrim(N_Elements(*thisVar.datasize),2)
-           text[3] = tab + 'DIMENSIONS:  [' + d + ']'
-           IF (self.no_read_on_parse EQ 0) THEN BEGIN
-                IF  thisVar.datatype NE 'CHAR' THEN BEGIN 
-                    text[4] = tab + 'MIN VALUE:  ' + StrTrim(thisVar.minValue,2)
-                    text[5] = tab + 'MAX VALUE:  ' + StrTrim(thisVar.maxValue,2)
-                ENDIF
-           ENDIF
-                  
-           Widget_Control, self.textDisplay, Set_Value=text
-               
+           FOR k=0,count-1 DO BEGIN
+               thisVar = vars[i[k]]
+               text = StrArr(6)
+               text[0] = tab + 'NAME: ' + name
+               text[1] = tab + 'DATATYPE: ' + thisVar.datatype
+               n = StrTrim(N_Elements(*thisVar.datasize),2)
+               f = ' (' + n + '(I0, :, ", "))'
+               d = String(*thisVar.datasize, FORMAT=f)
+               text[2] = tab + 'N_DIMENSIONS:  ' + StrTrim(N_Elements(*thisVar.datasize),2)
+               text[3] = tab + 'DIMENSIONS:  [' + d + ']'
+               IF (self.no_read_on_parse EQ 0) THEN BEGIN
+                    IF  thisVar.datatype NE 'CHAR' THEN BEGIN 
+                        text[4] = tab + 'MIN VALUE:  ' + StrTrim(thisVar.minValue,2)
+                        text[5] = tab + 'MAX VALUE:  ' + StrTrim(thisVar.maxValue,2)
+                    ENDIF
+               ENDIF
+                      
+               Widget_Control, self.textDisplay, Set_Value=text
+           ENDFOR    
            END
                   
       'FILENAME': BEGIN
@@ -2334,9 +2994,11 @@ PRO NCDF_DATA::CLEANUP
 
    ; This is the main cleanup routine for the object. Delete all created pointers.
    self -> CleanParsedStructures
+   
    Ptr_Free, self.theAttributes
    Ptr_Free, self.theDimensions
    Ptr_Free, self.theCalibration
+   Ptr_Free, self.theSwaths
    Ptr_Free, self.theVariables
    Ptr_Free, self.zeroDimensionID
 
@@ -2348,7 +3010,8 @@ FUNCTION NCDF_DATA::INIT, filename, $
    BROWSE=browse, $
    DESTROY_FROM_BROWSER=destroy_from_browser, $
    EXTENSION=extension, $
-   NO_READ_ON_PARSE=no_read_on_parse
+   NO_READ_ON_PARSE=no_read_on_parse, $
+   NO_NEW_FILE=no_new_file
 
    ; Error handling. Return 0 if can't finish.
    CATCH, theError
@@ -2373,9 +3036,17 @@ FUNCTION NCDF_DATA::INIT, filename, $
    self.destroy_from_browser = Keyword_Set(destroy_from_browser)
    self.extension = extension
    self.no_read_on_parse = Keyword_Set(no_read_on_parse)
-   
+
    ; Browse now?
-   IF Keyword_Set(browse) THEN self -> Browse
+   success = 1
+   IF Keyword_Set(browse) THEN self -> Browse, SUCCESS=success
+   IF success EQ 0 THEN BEGIN
+       Obj_Destroy, self
+       RETURN, 0
+   ENDIF
+   
+   ; Determine if this is a netCDF or HDF file.
+   self.isHDF = HDF_ISHDF(Filepath(ROOT_DIR=self.directory, self.filename))
    
    RETURN, 1
 
@@ -2417,6 +3088,27 @@ PRO NCDF_DATA_VARIABLE__DEFINE
               var_attributes: Ptr_New(), $
               calibration: Ptr_New(), $
               value: Ptr_New() }
+
+END;---------------------------------------------------------------------------------------------
+
+
+
+PRO NCDF_DATA_SWATH__DEFINE
+
+   struct = { NCDF_DATA_SWATH, $
+              name: "", $
+              nattrs: 0L, $
+              ndims: 0L, $
+              ngeofields: 0L, $
+              ndatafields: 0L, $
+              nmaps: 0L, $
+              nidxmaps: 0L, $
+              attributes: Ptr_New(), $
+              dimensions: Ptr_New(), $
+              geofields: Ptr_New(), $
+              datafields: Ptr_New(), $
+              maps: Ptr_New(), $
+              idxmaps: Ptr_New() }
 
 END;---------------------------------------------------------------------------------------------
 
@@ -2465,6 +3157,7 @@ PRO NCDF_DATA__DEFINE, class
              theDimensions: Ptr_New(), $  ; An array of dimension structures.
              theCalibration: Ptr_New(),$  ; An array of calibration structures for the HDF SD variable.
              zeroDimensionID: Ptr_New(), $ ; A pointer to the dimension IDs whose current size is 0.
+             theSwaths: Ptr_New(), $      ; A pointer to an array of swath structures.
              theTree: 0L,              $  ; The tree widget ID.
              theVariables: Ptr_New(),  $  ; An array of variable structures.
              tlb: 0L,                  $  ; The TLB of the browser window.

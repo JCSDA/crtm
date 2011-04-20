@@ -56,16 +56,18 @@
 ;       "Color (Landscape)" - A "centered" landscape plot, with color turned on.
 ;
 ;   Directory - Set this keyword to the name of the starting directory. The current directory is used by default.
-;   Encapsulate - Set this keyword to select Encapsulated PostScript output. Turned off by default.
-;   European - Set this keyword to indicate "european" mode (i.e., A4 page and centimeter units). Turned off by default.
+;   Encapsulated - Set this keyword to select Encapsulated PostScript output. Turned off by default.
+;   European - This keyword has been depreciated in favor of METRIC.
 ;   Filename - Set thie keyword to the name of the PostScript file. The default is "idl.ps".
-;   Inches - Set this keyword to indicate sizes and offsets are in inches as opposed to centimeters. Set by European keyword by default.
+;   Inches - Set this keyword to indicate sizes and offsets are in inches as opposed to centimeters. Set by Metric keyword by default.
 ;   Landscape - Set this keyword to select Landscape page output. Portrait page output is the default.
+;   Language_Level - Set this keyword to select the Language Level interpreter. Default is 1.
+;   Metric - Set this keyword to indicate metric mode (i.e., A4 page and centimeter units). Turned off by default.
 ;   PageType - Set this keyword to the "type" of page. Possible values are:
-;       "Letter" - 8.5 by 11 inches. (Default, unless the European keyword is set.)
+;       "Letter" - 8.5 by 11 inches. (Default, unless the Metric keyword is set.)
 ;       "Legal" - 8.5 by 14 inches.
 ;       "Ledger" - 11 by 17 inches.
-;       "A4" - 21.0 by 29.7 centimeters. (Default, if the European keyword is set.)
+;       "A4" - 21.0 by 29.7 centimeters. (Default, if the Metric keyword is set.)
 ;   XOffset - Set this keyword to the X Offset. Uses "System (Portrait)" defaults. (Note: offset calculated from lower-left corner of page.)
 ;   XSize - Set this keyword to the X size of the PostScript "window". Uses "System (Portrait)" defaults.
 ;   YOffset - Set this keyword to the Y Offset. Uses "System (Portrait)" defaults. (Note: offset calculated from lower-left corner of page.)
@@ -97,7 +99,7 @@
 ;     thisDevice = !D.Name
 ;     Set_Plot, 'PS'
 ;     Device, _Extra=psKeywords
-;     TVImage, image
+;     cgImage, image
 ;     Device, /Close_File
 ;     Set_Plot, thisDevice
 ;     Obj_Destroy, psObject
@@ -156,6 +158,9 @@
 ;   Updated for IDL 7.1 and 24-bit color PostScript support. 24 May 2009. DWF.
 ;   Added PAGETYPE field to returned structure to allow PostScript page type to be determined. 8 August 2009. DWF.
 ;   Fixed a problem with 24-bit color support that allowed only IDL 7 versions to work correctly. 20 Sept 2009. DWF.
+;   Added a LANGUAGE_LEVEL keyword. 13 Dec 2010. DWF.
+;   Added the FONTYPE value to the keyword return structure. 14 Dec 2010. DWF.
+;   Modified the return structure to turn landscape mode off and set offsets to zero if in encapsulated mode. 19 Feb 2011. DWF.
 ;-
 
 ;******************************************************************************************;
@@ -329,7 +334,7 @@ PRO FSC_PSCONFIG_Events, event
 Catch, theError
 IF theError NE 0 THEN BEGIN
    Catch, /Cancel
-   ok = FSC_PSConfig_Error_Message(Traceback=self.debug)
+   ok = FSC_PSConfig_Error_Message()
    RETURN
 ENDIF
 
@@ -430,6 +435,7 @@ self.inchesSet = self.unitsID->GetIndex()
 self.cmykSet = self.cmykID->GetIndex()
 self.colorSet = self.colorID->GetIndex()
 self.encapsulationSet = self.encapsulationID->GetIndex()
+self.langLevelSet = self.langLevelID->GetSelection()
 self.previewSet = self.previewID->GetIndex()
 IF self.encapsulationSet EQ 0 THEN self.previewSet = 0
 self.bitsSet = self.bitsID->GetSelection()
@@ -561,6 +567,19 @@ END ;---------------------------------------------------------------------------
 
 
 
+PRO FSC_PSCONFIG::CMYK, event
+
+; This event handler method responds to changes in the CMYK droplist.
+
+; If event.index is 1, set the Language Level to 2, otherwise to 1.
+IF event.index EQ 1 $
+    THEN self.langLevelID->SetSelection, 2 $
+    ELSE self.langLevelID->SetSelection, 1
+
+END ;--------------------------------------------------------------------------------
+
+
+
 FUNCTION FSC_PSCONFIG::Construct_Full_Filename
 
 ; This method returns the fully-qualified filename. Checks to be
@@ -631,7 +650,7 @@ PRO FSC_PSCONFIG::Encapsulate, event
 
 ; This method responds to a change in the Encapsulation droplist widget.
 
-IF event.index THEN self.previewID->Sensitive, 1 ELSE self.previewID->Sensitive, 0
+IF event.index THEN self.previewID->Sensitive, 1  ELSE self.previewID->Sensitive, 0
 END ;--------------------------------------------------------------------------------
 
 
@@ -696,14 +715,14 @@ END ;---------------------------------------------------------------------------
 
 
 
-PRO FSC_PSCONFIG::EuroStyle, event
+PRO FSC_PSCONFIG::MetricStyle, event
 
-; This event handler sets and unset the "European Style" button.
+; This event handler sets and unset the "Metric Style" button.
 
 IF event.select EQ 1 THEN BEGIN
 
    Widget_Control, event.top, Update=0
-   self.european = 1
+   self.metric = 1
    IF self.inchesSet EQ 1 THEN BEGIN
       sizes = self->GetSizes()
       self.xsizeSet = sizes[0] * 2.54
@@ -719,7 +738,7 @@ IF event.select EQ 1 THEN BEGIN
 ENDIF ELSE BEGIN
 
    Widget_Control, event.top, Update=0
-   self.european = 0
+   self.metric = 0
    IF self.inchesSet EQ 0 THEN BEGIN
       sizes = self->GetSizes()
       self.xsizeSet = sizes[0] / 2.54
@@ -780,18 +799,19 @@ struct = { $
    font_size: Fix(self.fontSizeSet), $
    inches: self.inchesSet, $
    isolatin1: self.isolatinSet, $
+   language_level: self.langLevelSet, $
    preview: self.previewSet, $
    tt_font: self.truetypeSet, $
    xoffset: xoffset, $
    xsize: self.xsizeSet, $
    yoffset: yoffset, $
    ysize: self.ysizeSet, $
-   pagetype: StrUpCase(self.pageType)}
+   pagetype: StrUpCase(self.pageType), $
+   fonttype: self.fonttypeSet}
 
    ; Addition of CMYK keyword implies LANGUAGE_LEVEL keyword set to 2.
    
-IF self.cmykSet THEN struct = Create_Struct(struct, 'language_level', 2) $
-   ELSE struct = Create_Struct(struct, 'language_level', 1)
+IF self.cmykSet THEN struct.language_level = 2
    
    ; Can add DECOMPOSED keyword if IDL 7.1 and higher.
 IF Float(!Version.Release) GE 7.1 THEN struct = Create_Struct(struct, 'decomposed', self.decomposedSet)
@@ -835,6 +855,17 @@ IF self.fontStyleSet[4] THEN struct = Create_Struct(struct, 'light', 1) ELSE str
 IF self.fontStyleSet[5] THEN struct = Create_Struct(struct, 'medium', 1) ELSE struct = Create_Struct(struct, 'medium', 0)
 IF self.fontStyleSet[6] THEN struct = Create_Struct(struct, 'narrow', 1) ELSE struct = Create_Struct(struct, 'narrow', 0)
 IF self.fontStyleSet[7] THEN struct = Create_Struct(struct, 'oblique', 1) ELSE struct = Create_Struct(struct, 'oblique', 0)
+
+; If the user is doing encapsulated PostScript, then landscape mode must be off and
+; offsets must be set to zero.
+IF struct.encapsulated THEN BEGIN
+
+    struct.portrait = 1
+    struct.landscape = 0
+    struct.xoffset = 0
+    struct.yoffset = 0
+
+ENDIF
 
    ; Return the keyword stucture.
 
@@ -981,7 +1012,7 @@ self.encapsulationID = FSC_Droplist(controlBase, Value=values, Title='Encapsulat
    UValue={Method:'ENCAPSULATE', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.encapsulationID->SetIndex, self.encapsulationSet
 
-values = ['None', 'EPSI', 'EPSF']
+values = ['None', 'Bitmap Preview', 'TIFF Preview']
 self.previewID = FSC_Droplist(controlBase, Value=values, Title='Preview Mode:', $
    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.previewID->SetIndex, self.previewSet
@@ -993,9 +1024,15 @@ self.colorID->SetIndex, self.colorSet
 
 values = ['Off', 'On']
 self.cmykID = FSC_Droplist(controlBase, Value=values, Title = 'CMYK Output:', $
-    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
+    UValue={Method:'CMYK', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.cmykID->SetIndex, self.cmykSet
 IF ~self.colorset THEN self.cmykID->Sensitive, 0
+
+values = ['1','2']
+self.langlevelID = FSC_Droplist(controlBase, Value=values, Title = 'Language Level:', $
+    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
+self.langlevelID->SetSelection, self.langlevelSet
+
 
 values = ['8', '4', '2']
 self.bitsID = FSC_Droplist(controlBase, Value=values, Title='Bits Per Image Pixel:', $
@@ -1018,8 +1055,8 @@ self.defaultsID = FSC_Droplist(controlBase, Value=values, Title='Setups:', $
 self.defaultsID->SetSelection, self.defaultsSet
 
 euroBase = Widget_Base(controlBase, row=1, /NonExclusive)
-euroSetUPID = Widget_Button(euroBase, Value='European Style', UValue={Method:'EUROSTYLE', Object:self})
-IF self.european THEN Widget_Control, euroSetUpID, /Set_Button
+euroSetUPID = Widget_Button(euroBase, Value='Metric Style', UValue={Method:'METRICSTYLE', Object:self})
+IF self.metric THEN Widget_Control, euroSetUpID, /Set_Button
 IF self.inchesSet THEN unit = 'INCHES' ELSE unit = 'CENTIMETERS'
 
 windowDims = self->PageDimensions()
@@ -1142,11 +1179,12 @@ self.pageTypeID->Resize, ParentSize=targetsize
 self.orientationID->Resize, targetsize
 self.unitsID->Resize, targetsize
 self.encapsulationID->Resize, targetsize
+self.langLevelID->Resize, targetsize
 self.previewID->Resize, targetsize
 self.cmykID->Resize, targetsize
 self.colorID->Resize, targetsize
 self.bitsID->Resize, targetsize
-IF Float(!Version.Release) GE 7.1 THEN self.decomposedID->Resize, targetsize
+IF Obj_Valid(self.decomposedID) THEN self.decomposedID->Resize, targetsize
 self.defaultsID->Resize, targetsize
 
 IF self.encapsulationID->GetIndex() THEN self.previewID->Sensitive, 1 ELSE self.previewID->Sensitive, 0
@@ -1284,7 +1322,7 @@ self.encapsulationID = FSC_Droplist(controlBase, Value=values, Title='Encapsulat
    UValue={Method:'ENCAPSULATE', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.encapsulationID->SetIndex, self.encapsulationSet
 
-values = ['None', 'EPSI', 'EPSF']
+values = ['None','Bitmap Preview','TIFF Preview']
 self.previewID = FSC_Droplist(controlBase, Value=values, Title='Preview Mode:', $
    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.previewID->SetIndex, self.previewSet
@@ -1299,18 +1337,33 @@ self.cmykID = FSC_Droplist(controlBase, Value=values, Title = 'CMYK Output', $
     UValue={Method:'CMYK', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.cmykID->SetIndex, self.cmykSet
 
+values = ['1','2']
+self.langlevelID = FSC_Droplist(controlBase, Value=values, Title = 'Language Level:', $
+    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
+self.langlevelID->SetSelection, self.langlevelSet
+
 values = ['8', '4', '2']
 self.bitsID = FSC_Droplist(controlBase, Value=values, Title='Bits Per Image Pixel:', $
    UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.bitsID->SetSelection, self.bitsSet
+
+IF Float(!Version.Release) GE 7.1 THEN BEGIN
+    values = ['Off', 'On']
+    self.decomposedID = FSC_Droplist(controlBase, Value=values, Title = 'Color Decomposition:', $
+        UValue={Method:'NULL', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
+    self.decomposedID->SetIndex, self.decomposedSet
+    self.bitsID->SetSelection, 8
+    self.colorID->SetIndex, 1
+    self.colorSet = 1
+ENDIF
 
 values = self->DefaultList()
 self.defaultsID = FSC_Droplist(controlBase, Value=values, Title='Setups:', $
    UValue={Method:'DEFAULTS', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.defaultsID->SetSelection, self.defaultsSet
 
-euroSetUpID = Widget_Button(euroBase, Value='European Style', UValue={Method:'EUROSTYLE', Object:self})
-IF self.european THEN Widget_Control, euroSetUpID, /Set_Button
+euroSetUpID = Widget_Button(euroBase, Value='Metric Style', UValue={Method:'METRICSTYLE', Object:self})
+IF self.metric THEN Widget_Control, euroSetUpID, /Set_Button
 IF self.inchesSet THEN unit = 'INCHES' ELSE unit = 'CENTIMETERS'
 
 windowDims = self->PageDimensions()
@@ -1431,6 +1484,8 @@ self.unitsID->Resize, targetsize
 self.encapsulationID->Resize, targetsize
 self.previewID->Resize, targetsize
 self.cmykID->Resize, targetsize
+IF Obj_Valid(self.decomposedID) THEN self.decomposedID->Resize, targetsize
+self.langlevelID->Resize, targetsize
 self.colorID->Resize, targetsize
 self.bitsID->Resize, targetsize
 self.defaultsID->Resize, targetsize
@@ -1670,6 +1725,7 @@ self.fontnameSet = self.fontnameRevert
 self.inchesSet = self.inchesRevert
 self.isolatinSet = self.isolatinRevert
 self.landscapeSet = self.landscapeRevert
+self.langlevelSet = self.langlevelRevert
 self.pagetypeSet = self.pagetypeRevert
 self.previewSet = self.previewRevert
 self.set_fontSet = self.set_fontRevert
@@ -1739,6 +1795,7 @@ self.fonttypeRevert = self.fonttypeSet
 self.inchesRevert = self.inchesSet
 self.isolatinRevert = self.isolatinSet
 self.landscapeRevert = self.landscapeSet
+self.langlevelRevert = self.langlevelSet
 self.pagetypeRevert = self.pagetypeSet
 self.previewRevert = self.previewSet
 self.truetypeRevert = self.truetypeSet
@@ -1768,7 +1825,7 @@ ENDIF
 
    ; Set the page type and page units here, based on EUROPEAN setting.
 
-IF self.european THEN BEGIN
+IF self.metric THEN BEGIN
    pagetype = 'A4'
    units = 0
 ENDIF ELSE BEGIN
@@ -1842,21 +1899,22 @@ CASE thisDefault OF
          self.directorySet = directoryName           ; Sets the directory name of the PostScript file.
          self.encapsulationSet = 0                   ; Sets the Encapsulation keyword.
          self.filenameSet = defaultFilename + ".ps"  ; Sets the filename of the PostScript file.
-         self.fonttypeSet = !P.Font                  ; Sets the Font keyword.
+         self.fonttypeSet = 2                        ; Sets the Font keyword.
          self.fontsizeSet = 12                       ; Sets the Font_Size keyword.
          self.fontStyleSet = Replicate(0, 8)         ; Sets the font style keywords in this order: Bold, Book, Demi, Italic, Light, Medium, Narrow, and Oblique.
          self.fontnameSet = "Helvetica"              ; Sets the PostScript font name. All PostScript font names acceptable.
          self.inchesSet = units                      ; Sets the Inches keyword.
          self.landscapeSet = 0                       ; Sets the Landscape keyword.
-         self.isolatinSet = 0                        ; Sets the Isolatin1 keyword.
+         self.langlevelSet = 1                       ; Set the Language Level keyword.
+         self.isolatinSet = 1                        ; Sets the Isolatin1 keyword.
          self.pagetypeSet = pagetype                 ; Sets the page type. Possible values include "Letter", "A4", etc.
          self.pagetype = pagetype                    ; Sets the page type. Possible values include "Letter", "A4", etc.
          self.previewSet = 0                         ; Sets the Preview keyword.
          self.truetypeSet = 0                        ; Sets the TT_Font keyword.
-         IF self.european THEN self.xoffsetSet = 1.61 ELSE self.xoffsetSet = 0.75 ; Sets the XOffset keyword.
-         IF self.european THEN self.yoffsetSet = 14.65 ELSE self.yoffsetSet = 5.0 ; Sets the YOffset keyword.
-         IF self.european THEN self.xsizeSet = 17.80 ELSE self.xsizeSet = 7.0     ; Sets the XSize keyword.
-         IF self.european THEN self.ysizeSet = 12.70 ELSE self.ysizeSet = 5.0     ; Sets the YSize keyword.
+         IF self.metric THEN self.xoffsetSet = 1.61 ELSE self.xoffsetSet = 0.75 ; Sets the XOffset keyword.
+         IF self.metric THEN self.yoffsetSet = 14.65 ELSE self.yoffsetSet = 5.0 ; Sets the YOffset keyword.
+         IF self.metric THEN self.xsizeSet = 17.80 ELSE self.xsizeSet = 7.0     ; Sets the XSize keyword.
+         IF self.metric THEN self.ysizeSet = 12.70 ELSE self.ysizeSet = 5.0     ; Sets the YSize keyword.
          self.defaultsSet = 'System (Portrait)'
       ENDCASE
 
@@ -1866,21 +1924,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 1
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1 
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 1.76 ELSE self.xoffsetSet = 0.75
-         IF self.european THEN self.yoffsetSet = 1.69 ELSE self.yoffsetSet = 0.75
-         IF self.european THEN self.xsizeSet = 26.25 ELSE self.xsizeSet = 9.5
-         IF self.european THEN self.ysizeSet = 17.63 ELSE self.ysizeSet = 7.0
+         IF self.metric THEN self.xoffsetSet = 1.76 ELSE self.xoffsetSet = 0.75
+         IF self.metric THEN self.yoffsetSet = 1.69 ELSE self.yoffsetSet = 0.75
+         IF self.metric THEN self.xsizeSet = 26.25 ELSE self.xsizeSet = 9.5
+         IF self.metric THEN self.ysizeSet = 17.63 ELSE self.ysizeSet = 7.0
          self.defaultsSet = 'System (Landscape)'
      ENDCASE
 
@@ -1890,21 +1949,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 0
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 3.51 ELSE self.xoffsetSet = 1.5
-         IF self.european THEN self.yoffsetSet = 3.68 ELSE self.yoffsetSet = 1.5
-         IF self.european THEN self.xsizeSet = 14.00 ELSE self.xsizeSet = 5.5
-         IF self.european THEN self.ysizeSet = 22.40 ELSE self.ysizeSet = 8.0
+         IF self.metric THEN self.xoffsetSet = 3.51 ELSE self.xoffsetSet = 1.5
+         IF self.metric THEN self.yoffsetSet = 3.68 ELSE self.yoffsetSet = 1.5
+         IF self.metric THEN self.xsizeSet = 14.00 ELSE self.xsizeSet = 5.5
+         IF self.metric THEN self.ysizeSet = 22.40 ELSE self.ysizeSet = 8.0
          self.defaultsSet = 'Centered (Portrait)'
       ENDCASE
 
@@ -1914,21 +1974,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 1
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 3.66 ELSE self.xoffsetSet = 1.5
-         IF self.european THEN self.yoffsetSet = 3.52 ELSE self.yoffsetSet = 1.5
-         IF self.european THEN self.xsizeSet = 22.43 ELSE self.xsizeSet = 8.0
-         IF self.european THEN self.ysizeSet = 13.97 ELSE self.ysizeSet = 5.5
+         IF self.metric THEN self.xoffsetSet = 3.66 ELSE self.xoffsetSet = 1.5
+         IF self.metric THEN self.yoffsetSet = 3.52 ELSE self.yoffsetSet = 1.5
+         IF self.metric THEN self.xsizeSet = 22.43 ELSE self.xsizeSet = 8.0
+         IF self.metric THEN self.ysizeSet = 13.97 ELSE self.ysizeSet = 5.5
          self.defaultsSet = 'Centered (Landscape)'
       ENDCASE
 
@@ -1938,21 +1999,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 0
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 2.26 ELSE self.xoffsetSet = 1.0
-         IF self.european THEN self.yoffsetSet = 6.63 ELSE self.yoffsetSet = 2.25
-         IF self.european THEN self.xsizeSet = 16.50 ELSE self.xsizeSet = 6.5
-         IF self.european THEN self.ysizeSet = 16.50 ELSE self.ysizeSet = 6.5
+         IF self.metric THEN self.xoffsetSet = 2.26 ELSE self.xoffsetSet = 1.0
+         IF self.metric THEN self.yoffsetSet = 6.63 ELSE self.yoffsetSet = 2.25
+         IF self.metric THEN self.xsizeSet = 16.50 ELSE self.xsizeSet = 6.5
+         IF self.metric THEN self.ysizeSet = 16.50 ELSE self.ysizeSet = 6.5
          self.defaultsSet = 'Square (Portrait)'
       ENDCASE
 
@@ -1962,21 +2024,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 1
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 6.63 ELSE self.xoffsetSet = 2.25
-         IF self.european THEN self.yoffsetSet = 2.26 ELSE self.yoffsetSet = 1.0
-         IF self.european THEN self.xsizeSet = 16.50 ELSE self.xsizeSet = 6.5
-         IF self.european THEN self.ysizeSet = 16.50 ELSE self.ysizeSet = 6.5
+         IF self.metric THEN self.xoffsetSet = 6.63 ELSE self.xoffsetSet = 2.25
+         IF self.metric THEN self.yoffsetSet = 2.26 ELSE self.yoffsetSet = 1.0
+         IF self.metric THEN self.xsizeSet = 16.50 ELSE self.xsizeSet = 6.5
+         IF self.metric THEN self.ysizeSet = 16.50 ELSE self.ysizeSet = 6.5
          self.defaultsSet = 'Square (Landscape)'
       ENDCASE
 
@@ -1986,21 +2049,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 1
          self.filenameSet = defaultFilename + ".eps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 0
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 2
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 6.06 ELSE self.xoffsetSet = 2.5
-         IF self.european THEN self.yoffsetSet = 11.71 ELSE self.yoffsetSet = 4.25
-         IF self.european THEN self.xsizeSet = 8.89 ELSE self.xsizeSet = 3.5
-         IF self.european THEN self.ysizeSet = 6.35 ELSE self.ysizeSet = 2.5
+         IF self.metric THEN self.xoffsetSet = 6.06 ELSE self.xoffsetSet = 2.5
+         IF self.metric THEN self.yoffsetSet = 11.71 ELSE self.yoffsetSet = 4.25
+         IF self.metric THEN self.xsizeSet = 8.89 ELSE self.xsizeSet = 3.5
+         IF self.metric THEN self.ysizeSet = 6.35 ELSE self.ysizeSet = 2.5
          self.defaultsSet = 'Figure (Small)'
       ENDCASE
 
@@ -2016,15 +2080,16 @@ CASE thisDefault OF
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 0
-         self.isolatinSet = 0
+         self.isolatinSet = 1
+         self.langlevelSet = 1                      
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 2
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 4.16 ELSE self.xoffsetSet = 1.75
-         IF self.european THEN self.yoffsetSet = 9.8 ELSE self.yoffsetSet = 3.5
-         IF self.european THEN self.xsizeSet = 12.70 ELSE self.xsizeSet = 5.0
-         IF self.european THEN self.ysizeSet = 10.16 ELSE self.ysizeSet = 4.0
+         IF self.metric THEN self.xoffsetSet = 4.16 ELSE self.xoffsetSet = 1.75
+         IF self.metric THEN self.yoffsetSet = 9.8 ELSE self.yoffsetSet = 3.5
+         IF self.metric THEN self.xsizeSet = 12.70 ELSE self.xsizeSet = 5.0
+         IF self.metric THEN self.ysizeSet = 10.16 ELSE self.ysizeSet = 4.0
          self.defaultsSet = 'Figure (Large)'
       ENDCASE
 
@@ -2034,21 +2099,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 0
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 3.51 ELSE self.xoffsetSet = 1.5
-         IF self.european THEN self.yoffsetSet = 3.68 ELSE self.yoffsetSet = 1.5
-         IF self.european THEN self.xsizeSet = 14.00 ELSE self.xsizeSet = 5.5
-         IF self.european THEN self.ysizeSet = 22.40 ELSE self.ysizeSet = 8.0
+         IF self.metric THEN self.xoffsetSet = 3.51 ELSE self.xoffsetSet = 1.5
+         IF self.metric THEN self.yoffsetSet = 3.68 ELSE self.yoffsetSet = 1.5
+         IF self.metric THEN self.xsizeSet = 14.00 ELSE self.xsizeSet = 5.5
+         IF self.metric THEN self.ysizeSet = 22.40 ELSE self.ysizeSet = 8.0
          self.defaultsSet = 'Color (Portrait)'
       ENDCASE
 
@@ -2058,21 +2124,22 @@ CASE thisDefault OF
          self.directorySet = directoryName
          self.encapsulationSet = 0
          self.filenameSet = defaultFilename + ".ps"
-         self.fonttypeSet = !P.Font
+         self.fonttypeSet = 2
          self.fontsizeSet = 12
          self.fontstyleSet = Replicate(0, 8)
          self.fontnameSet = "Helvetica"
          self.inchesSet = units
          self.landscapeSet = 1
-         self.isolatinSet = 0
+         self.langlevelSet = 1                      
+         self.isolatinSet = 1
          self.pagetypeSet = pagetype
          self.pagetype = pagetype
          self.previewSet = 0
          self.truetypeSet = 0
-         IF self.european THEN self.xoffsetSet = 3.66 ELSE self.xoffsetSet = 1.5
-         IF self.european THEN self.yoffsetSet = 3.52 ELSE self.yoffsetSet = 1.5
-         IF self.european THEN self.xsizeSet = 22.43 ELSE self.xsizeSet = 8.0
-         IF self.european THEN self.ysizeSet = 13.97 ELSE self.ysizeSet = 5.5
+         IF self.metric THEN self.xoffsetSet = 3.66 ELSE self.xoffsetSet = 1.5
+         IF self.metric THEN self.yoffsetSet = 3.52 ELSE self.yoffsetSet = 1.5
+         IF self.metric THEN self.xsizeSet = 22.43 ELSE self.xsizeSet = 8.0
+         IF self.metric THEN self.ysizeSet = 13.97 ELSE self.ysizeSet = 5.5
          self.defaultsSet = 'Color (Landscape)'
       ENDCASE
 
@@ -2218,6 +2285,7 @@ self.filenameID->SetProperty, Directory=self.directorySet, Filename=self.filenam
 self.encapsulationID->SetIndex, self.encapsulationSet
 self.unitsID->SetIndex, self.inchesSet
 self.orientationID->SetIndex, self.landscapeSet
+self.langlevelID->SetIndex, self.langlevelSet
 self.pagetypeID->SetSelection, self.pagetypeSet
 self.previewID->SetIndex, self.previewSet
 self.xsizeID->Set_Value, self.xsizeSet
@@ -2354,7 +2422,7 @@ PRO FSC_PSCONFIG::SetProperty,        $ ; The SetProperty method of the object.
    Demi=demi,                         $ ; Set this keyword to select the Demi font style.
    Directory=directory,               $ ; Set thie keyword to the name of the starting directory. Current directory by default.
    Encapsulated=encapsulated,         $ ; Set this keyword to select Encapsulated PostScript output.
-   European=european,                 $ ; Set this keyword to indicate "european" mode (i.e., A4 page and centimeter units).
+;   European=european,                 $ ; Set this keyword to indicate "european" mode (i.e., A4 page and centimeter units).
    Filename=filename,                 $ ; Set this keyword to the name of the file. Default: 'idl.ps'
    FontSize=fontsize,                 $ ; Set this keyword to the font size. Between 6 and 36. Default is 12.
    FontType=fonttype,                 $ ; Set this keyword to select the font type: -1 is Hershey, 0 is hardward, 1 is true-type.
@@ -2363,8 +2431,10 @@ PRO FSC_PSCONFIG::SetProperty,        $ ; The SetProperty method of the object.
    Italic=italic,                     $ ; Set this keyword to select the Italic font style.
    Isolatin=isolatin,                 $ ; Set this keyword to select ISOlatin1 encoding.
    Landscape=landscape,               $ ; Set this keyword to select Landscape output.
+   LanguageLevel=langlevel,           $ ; Set this keyword to the Language Level of the PostScript interpreter.
    Light=light,                       $ ; Set this keyword to select the Light font style.
    Medium=medium,                     $ ; Set this keyword to select the Medium font style.
+   Metric=metric,                     $ ; Set this keyword to indicate "metric" mode (i.e., A4 page and centimeter units).
    Name=name,                         $ ; This is the "name" of the object.
    Narrow=narrow,                     $ ; Set this keyword to select the Narrow font style.
    Oblique=oblique, $                 $ ; Set this keyword to select the Oblique font style.
@@ -2406,6 +2476,7 @@ IF N_Elements(fonttype) NE 0 THEN self.fonttypeSet = fonttype
 IF N_Elements(encapsulated) NE 0 THEN self.encapsulationSet = encapsulated
 IF Keyword_Set(inches) NE 0 THEN self.inchesSet = inches
 IF N_Elements(landscape) NE 0 THEN self.landscape = landscape
+IF N_Elements(langlevel) NE 0 THEN self.langlevel = langlevel
 IF Keyword_Set(name) NE 0 THEN self.name = name
 IF N_Elements(pagetype) NE 0 THEN BEGIN
    self.pagetypeSet = pagetype
@@ -2432,13 +2503,14 @@ cmyk = Keyword_Set(cmyk)
 courier = Keyword_Set(courier)
 demi = Keyword_Set(demi)
 encapsulated = Keyword_Set(encapsulated)
-european = Keyword_Set(european)
+;european = Keyword_Set(european)
 helvetica = Keyword_Set(helvetica)
 isolatin = Keyword_Set(isolatin)
 italic = Keyword_Set(italic)
 landscape = Keyword_Set(landscape)
 light = Keyword_Set(light)
 medium = Keyword_Set(medium)
+metric = Keyword_Set(metric)
 narrow = Keyword_Set(narrow)
 oblique = Keyword_Set(oblique)
 palatino = Keyword_Set(palatino)
@@ -2497,7 +2569,7 @@ FUNCTION FSC_PSCONFIG::INIT,          $ ; The INIT method of the FSC_PSCONFIG ob
    Demi=demi,                         $ ; Set this keyword to select the Demi font style.
    Directory=directory,               $ ; Set thie keyword to the name of the starting directory. Current directory by default.
    Encapsulated=encapsulated,         $ ; Set this keyword to select Encapsulated PostScript output.
-   European=european,                 $ ; Set this keyword to indicate "european" mode (i.e., A4 page and centimeter units).
+;   European=european,                 $ ; Set this keyword to indicate "european" mode (i.e., A4 page and centimeter units).
    Filename=filename,                 $ ; Set this keyword to the name of the file. Default: 'idl.ps'
    FontSize=fontsize,                 $ ; Set this keyword to the font size. Between 6 and 36. Default is 12.
    FontType=fonttype,                 $ ; Set this keyword to select the font type: -1 is Hershey, 0 is hardward, 1 is true-type.
@@ -2506,8 +2578,10 @@ FUNCTION FSC_PSCONFIG::INIT,          $ ; The INIT method of the FSC_PSCONFIG ob
    Italic=italic,                     $ ; Set this keyword to select the Italic font style.
    Isolatin=isolatin,                 $ ; Set this keyword to select ISOlatin1 encoding.
    Landscape=landscape,               $ ; Set this keyword to select Landscape output.
+   LanguageLevel=langlevel, $         $ ; Set this keyword to select the language level (1 or 2).
    Light=light,                       $ ; Set this keyword to select the Light font style.
    Medium=medium,                     $ ; Set this keyword to select the Medium font style.
+   Metric=metric,                     $ ; Set this keyword to indicate metric mode (i.e., A4 page and centimeter units).
    Name=name,                         $ ; The "name" of the object. Objects with different names can have their
                                         ; graphical user interfaces appear simultaneously on the display.
    Narrow=narrow,                     $ ; Set this keyword to select the Narrow font style.
@@ -2559,11 +2633,11 @@ self.fontnames = Ptr_New(availableFonts)
    ; Default font and font type.
 
 fontname = "Helvetica"
-IF N_Elements(fonttype) EQ 0 THEN fonttype = !P.Font
+IF N_Elements(fonttype) EQ 0 THEN fonttype = 2
 IF N_Elements(filename) NE 0 THEN self.filenameSet = filename
 
-   ; European style
-self.european = Keyword_Set(european)
+   ; Metric style
+self.metric = Keyword_Set(metric)
 
    ; Set default values if a default setup was not asked for.
 
@@ -2582,9 +2656,9 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
         IF directory EQ "" THEN CD, Current=directory ELSE filename = basename + '.' + ext
    ENDIF
    IF N_Elements(fontsize) EQ 0 THEN fontsize = 12
-   IF Keyword_Set(inches) EQ 0 THEN IF Keyword_Set(european) THEN inches = 0 ELSE inches = 1
+   IF Keyword_Set(inches) EQ 0 THEN IF Keyword_Set(metric) THEN inches = 0 ELSE inches = 1
    IF N_Elements(name) EQ 0 THEN name = ""
-   IF N_Elements(pagetype) EQ 0 THEN IF Keyword_Set(european) THEN pagetype = "A4" ELSE pagetype = "LETTER"
+   IF N_Elements(pagetype) EQ 0 THEN IF Keyword_Set(metric) THEN pagetype = "A4" ELSE pagetype = "LETTER"
    IF N_Elements(preview) EQ 0 THEN preview = 0
    IF N_Elements(set_font) EQ 0 THEN set_font = ""
    IF N_Elements(xoffset) EQ 0 THEN BEGIN
@@ -2615,6 +2689,7 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
             IF inches THEN ysize = 6.0 ELSE ysize = 6.0 * 2.54
         ENDELSE
    ENDIF
+   IF N_Elements(langlevel) EQ 0 THEN langlevel = 1
 
    avantgarde = Keyword_Set(avantgarde)
    bold = Keyword_Set(bold)
@@ -2624,12 +2699,13 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
    courier = Keyword_Set(courier)
    demi = Keyword_Set(demi)
    encapsulated = Keyword_Set(encapsulated)
-   european = Keyword_Set(european)
+;   european = Keyword_Set(european)
    helvetica = Keyword_Set(helvetica)
    IF N_Elements(isolatin) EQ 0 THEN isolatin = 1 ELSE isolatin = Keyword_Set(isolatin)
    italic = Keyword_Set(italic)
    light = Keyword_Set(light)
    medium = Keyword_Set(medium)
+   metric = Keyword_Set(metric)
    narrow = Keyword_Set(narrow)
    oblique = Keyword_Set(oblique)
    palatino = Keyword_Set(palatino)
@@ -2659,7 +2735,7 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
    self.cmykSet = cmyk
    self.colorSet = color
    self.directorySet = directory
-   self.european = european
+   self.metric = metric
    self.encapsulationSet = encapsulated
    self.filenameSet = filename
    self.fonttypeSet = -1 > fonttype < 1
@@ -2668,6 +2744,7 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
    self.inchesSet = inches
    self.isolatinSet = isolatin
    self.landscapeSet = landscape
+   self.langlevelSet = langlevel
    self.name = name
    self.pagetype = pagetype
    self.pagetypeSet = pagetype
@@ -2761,6 +2838,7 @@ PRO FSC_PSCONFIG__DEFINE
               fontstyleButtonID: LonArr(8), $ ; The pagetype droplist ID.
               fonttypeID: Obj_New(),        $ ; The font style button IDs.
               isolatinID: Obj_New(),        $ ; The isolatin1 droplist ID.
+              langlevelID: Obj_New(), $     $ ; The language level droplist ID.
               set_fontID: Obj_New(),        $ ; The set font text widget ID.
               stylebaseID: 0L,              $ ; The style base widget ID.
               truetypeID: Obj_New(),        $ ; The true-type droplist ID.
@@ -2771,11 +2849,12 @@ PRO FSC_PSCONFIG__DEFINE
 
                   ; Data values and flags.
 
-               debug: 0,             $ ; Set if debugging in turned on.
+               debug: 0,             $ ; Set if debugging is turned on.
                fontInfo: 0,          $ ; Set if the user wants font information on GUI.
                fontnames: Ptr_New(), $ ; The allowed font names.
-               european: 0,          $ ; Set if European units and page size are in effect.
+;               european: 0,          $ ; Set if European units and page size are in effect.
                pagetype: "",         $ ; The current page size or type.
+               metric: 0,            $ ; Set if metric units and page size are in effect.
                name: "",             $ ; The "name" of the object.
                noblock: 0,           $ ; A flag that tells whether the GUI is in NOBLOCK state.
                cancel: 0,            $ ; A flag that tells the status of the Cancel button.
@@ -2790,7 +2869,7 @@ PRO FSC_PSCONFIG__DEFINE
                defaultsSet: "",         $ ; Sets the default setup value.
                directorySet: "",        $ ; Sets the directory name value.
                inchesSet: 0,            $ ; Sets the units value.
-               isolatinSet: 0,          $ ; Sets the isolatin1 value.
+               isolatinSet: 1,          $ ; Sets the isolatin1 value.
                encapsulationSet: 0,     $ ; Sets the encapsulation value.
                filenameSet: "",         $ ; Sets the file name value.
                fullFilenameSet: "",     $ ; Sets the fully-qualified filename.
@@ -2799,6 +2878,7 @@ PRO FSC_PSCONFIG__DEFINE
                fontnameSet: "",         $ ; Sets the font name value.
                fonttypeSet: 0,          $ ; Sets the font type value.
                landscapeSet: 0,         $ ; Sets the orientation value.
+               langlevelSet: 0,         $ ; Set the language level value.
                pagetypeSet: "",         $ ; Sets the page type or size value.
                previewSet: 0,           $ ; Sets the preview value.
                set_fontSet: "",         $ ; Sets the Set_Font font name value.
@@ -2817,7 +2897,7 @@ PRO FSC_PSCONFIG__DEFINE
                defaultsRevert: "", $
                directoryRevert: "", $
                inchesRevert: 0, $
-               isolatinRevert: 0, $
+               isolatinRevert: 1, $
                encapsulationRevert: 0, $
                filenameRevert: "", $
                fontsizeRevert: "", $
@@ -2825,6 +2905,7 @@ PRO FSC_PSCONFIG__DEFINE
                fontnameRevert: "", $
                fonttypeRevert: 0, $
                landscapeRevert: 0, $
+               langlevelRevert: 0, $
                pagetypeRevert: "", $
                previewRevert: 0, $
                set_fontRevert: "", $

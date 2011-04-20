@@ -33,15 +33,24 @@
 ;       PS_END
 ;
 ; KEYWORD PARAMETERS FOR PS_START:
-;
+; 
+;       CANCEL:       An output keyword that is set to 1 if the user cancelled from
+;                     PS_Config. Otherwise, set to 0.
+; 
+;       CHARSIZE:     If this keyword is set, the !P.Charsize variable is set to this
+;                     value until PS_END is called.
+;                     
 ;       FONT:         Set this to the type of font you want. A -1 selects Hershey 
 ;                     fonts, a 0 selects hardware fonts (Helvetica, normally), and
-;                     a 1 selects a True-Type font. Set to 1 by default.
+;                     a 1 selects a True-Type font. Set to 0 by default.
 ;
 ;       GUI:          The default behavior is to use PSCONFIG to configure the
 ;                     PostScript device silently. If you wish to allow the user
 ;                     to interatively configure the PostScript device, set this
 ;                     keyword.
+;                     
+;       KEYWORDS:     This output keyword contains the keyword structure returned 
+;                     from PS_Config.
 ;                     
 ;       NOMATCH:      Normally, PS_Start will try to "match" the aspect ratio of the
 ;                     PostScript file "window" to the current display window. If this
@@ -53,7 +62,7 @@
 ;
 ;       SCALE_FACTOR: Set this to the PostScript scale factor. By default: 1.
 ;
-;       TT_FONT:      The name of a true-type font to use of FONT=1. By default, "TIMES".
+;       TT_FONT:      The name of a true-type font to use if FONT=1. By default, "HELVETICA".
 ;
 ;       Any keyword supported by PSCONFIG can be used to configure the PostScript device.
 ;       Common keywords would include FILENAME, XSIZE, YSIZE, XOFFSET, YOFFSET, etc. See
@@ -70,11 +79,20 @@
 ;       When PS_START is called, the current graphics device is set to "PS" (the PostScript 
 ;       device). When PS_END is called the current graphics device is returned to the device
 ;       in effect when PS_START was called.
+;       
+;       PS_Start uses the current display window as a template for the Postscript
+;       file. Thus, if the display window is wider than it is higher, output is
+;       in Landscape mode. To set the size of the PostScript "window" yourself, be
+;       sure to set the NOMATCH keyword to 1.
+;       
+;       To display surface plots correctly the FONT keyword should be set to 1.
+;       Otherwise, the default font is 0, or hardware fonts when outputting to 
+;       PostScript.
 ;
 ; RESTRICTIONS:
 ;
 ;       Requires numerous programs from the Coyote Library. To convert PostScript files
-;       to PNG, JPEG, and TIFF files requires ImageMagick be installed on your
+;       to PNG, JPEG, GIF, and TIFF files requires ImageMagick be installed on your
 ;       computer and configured correctly. You can download Coyote Library programs here:
 ;
 ;             http://www.dfanning.com/programs/coyoteprograms.zip
@@ -95,9 +113,9 @@
 ;       type these commands.
 ;
 ;       PS_Start, FILENAME='lineplot.ps'
-;       Plot, Findgen(11), COLOR=FSC_Color('navy'), /NODATA, XTITLE='Time', YTITLE='Signal'
-;       OPlot, Findgen(11), COLOR=FSC_Color('indian red')
-;       OPlot, Findgen(11), COLOR=FSC_Color('olive'), PSYM=2
+;       Plot, Findgen(11), COLOR=cgColor('navy'), /NODATA, XTITLE='Time', YTITLE='Signal'
+;       OPlot, Findgen(11), COLOR=cgColor('indian red')
+;       OPlot, Findgen(11), COLOR=cgColor('olive'), PSYM=2
 ;       PS_End, /PNG
 ;
 ; NOTES:
@@ -108,11 +126,16 @@
 ;
 ;          !P.Thick = 2
 ;          !P.CharThick = 2
-;          !P.Charsize = 1.25 (or 1.5 if in UNIX)
 ;          !X.Thick = 2
 ;          !Y.Thick = 2
 ;          !Z.Thick = 2
 ;          !P.Font = 0
+;          
+;        The !P.Charsize variable is set differently on Windows computers, and depending
+;        on whether !P.MULTI is being used. On Windows the default is 1.25, or 1.00 for
+;        multiple plots. On other computers, the default is 1.5, or 1.25 for multiple plots.
+;        If true-type fonts are being used (FONT=1), the default is 1.5, or 1.25 for 
+;        multiple plots.
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -125,10 +148,14 @@
 ;           before they call PS_START, rather than after. 23 March  2009. DWF.
 ;       Moved PS_END to its own file to allow the IDLExBr_Assistant to work properly. 7 April 2009. DWF.
 ;       Modified to allow PostScript page type to be stored for future processing with FixPS. 9 August 2009. DWF.
+;       Added NoFix keyword to PS_END calls to repair previous, but unused set-ups. 1 Nov 2010. DWF.
+;       Added Charsize keyword to PS_START. 14 Nov 2010. DWF.
+;       Changed the way default character sizes are set. 19 Nov 2010. DWF.
+;       Added CANCEL and KEYWORDS output keywords. 16 Jan 2011. DWF.
 ;-
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2008 -2009, by Fanning Software Consulting, Inc.                          ;
+;  Copyright (c) 2008 - 2010, by Fanning Software Consulting, Inc.                         ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -155,8 +182,11 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 PRO PS_START, $
+    CANCEL=cancelled, $
+    CHARSIZE=charsize, $
     FONT=font , $
     GUI=gui, $
+    KEYWORDS=keywords, $
     NOMATCH=nomatch, $
     QUIET=quiet, $
     SCALE_FACTOR=scale_factor, $
@@ -179,7 +209,7 @@ PRO PS_START, $
    
    ; If the setup flag is on, then we have to close the previous
    ; start command before we can continue.
-   IF ps_struct.setup EQ 1 THEN PS_END
+   IF ps_struct.setup EQ 1 THEN PS_END, /NoFix
    
    ; Save current setup information in the PS_STRUCT structure.
    ps_struct.setup = 1
@@ -192,7 +222,13 @@ PRO PS_START, $
    ; Change any parameters you feel like changing.
    IF ps_struct.p.thick EQ 0 THEN !P.Thick = 2
    IF ps_struct.p.charthick EQ 0 THEN !P.Charthick = 2
-   IF ps_struct.p.charsize EQ 0 THEN !P.Charsize = 1.25
+   IF ps_struct.p.charsize EQ 0 THEN BEGIN
+        IF N_Elements(charsize) EQ 0 THEN BEGIN
+            !P.Charsize = cgDefCharsize(FONT=font)
+        ENDIF ELSE !P.Charsize = charsize
+   ENDIF ELSE BEGIN
+        IF N_Elements(charsize) NE 0 THEN !P.Charsize = charsize
+   ENDELSE
    IF ps_struct.x.thick EQ 0 THEN !X.Thick = 2
    IF ps_struct.y.thick EQ 0 THEN !Y.Thick = 2
    IF ps_struct.z.thick EQ 0 THEN !Z.Thick = 2
@@ -213,13 +249,21 @@ PRO PS_START, $
       IF !D.X_Size GT !D.Y_Size THEN landscape = 1 ELSE landscape = 0
       sizes = PSWindow(_Extra=extra, LANDSCAPE=landscape)
       keywords = PSConfig(_Extra=extra, INCHES=sizes.inches, XSIZE=sizes.xsize, YSIZE=sizes.ysize, $
-         XOFFSET=sizes.xoffset, YOFFSET=sizes.yoffset, Cancel=cancelled, NOGUI=(~gui), LANDSCAPE=landscape)
+         XOFFSET=sizes.xoffset, YOFFSET=sizes.yoffset, Cancel=cancelled, NOGUI=(~gui), LANDSCAPE=sizes.landscape)
    ENDIF ELSE BEGIN
       keywords = PSConfig(_Extra=extra, Cancel=cancelled, NOGUI=(~gui))
    ENDELSE
    IF cancelled THEN BEGIN
-        PS_END
+        PS_END, /NoFix
         RETURN
+   ENDIF
+   
+   ; If encapsulated then turn off landscape mode.
+   IF keywords.encapsulated THEN BEGIN
+       keywords.portrait = 1
+       keywords.landscape = 0
+       keywords.xoffset = 0
+       keywords.yoffset = 0
    ENDIF
 
    ; Let them know where the output will be.

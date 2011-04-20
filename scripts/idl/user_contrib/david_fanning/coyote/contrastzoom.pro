@@ -983,9 +983,9 @@ On_Error, 2
    ; Find an image, if needed.
 
 IF N_Elements(image) EQ 0 THEN BEGIN
-   filename = FilePath('mr_knee.dcm', SubDir=['examples', 'data'])
-   image = Read_Dicom(filename)
-   image = Reverse(image, 2) ; Knee is upside down.
+   filename = Filepath(Subdir=['examples','data'], 'rbcells.jpg')
+   Read_JPEG, filename, image
+   image = Reverse(image,2) ; Image is upside down.
 ENDIF
 
    ; Only 2D images can be used.

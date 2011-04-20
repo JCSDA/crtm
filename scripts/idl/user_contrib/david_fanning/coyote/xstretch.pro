@@ -15,6 +15,7 @@
 ;       ASINH          An inverse hyperbolic sine function (strong log function).
 ;       SQUARE ROOT    Another type of log function.
 ;       EQUALIZATION   Image histogram is equalized before stretching.
+;       ADAPTIVE EQUALIZATION Image histogram is equalized with Adapt_Hist_Equal before stretching.
 ;       GAUSSIAN       A gaussian normal distribution function.
 ;
 ;       An image histogram is provided to the user as an aid in manipulating
@@ -57,14 +58,14 @@
 ;
 ;                      http://www.dfanning.com/programs/fsc_brewer.tbl
 ;
-;       COLORS:        A five element string array, listing the FSC_COLORS colors for drawing the
+;       COLORS:        A five element string array, listing the cgColorS colors for drawing the
 ;                      histogram plot. The colors are used as follows:
 ;
-;                      colors[0] : Background color. Default: "ivory".
-;                      colors[1] : Axis color. Default: "charcoal".
+;                      colors[0] : Background color. Default: "white".
+;                      colors[1] : Axis color. Default: "black".
 ;                      colors[2] : Min threshold color. Default: "firebrick".
 ;                      colors[3] : Max threshold  color. Default: "steel blue".
-;                      colors[4] : ASinh color. Default: "sea green".
+;                      colors[4] : ASinh color. Default: "grn6".
 ;                      colors[5] : Histogram color. Default: "charcoal".
 ;
 ;                      If a particular color is represented as a null string, then the
@@ -81,7 +82,7 @@
 ;
 ;       FILENAME:      If no image is supplied as a positional parameter, this keyword can be
 ;                      used to specify the name of an image file. The image must be capable of
-;                      being read by SELECTIMAGE, so that means these kinds of files with these
+;                      being read by IMAGESELECT, so that means these kinds of files with these
 ;                      file extensions:
 ;
 ;                      TYPE      FILE EXTENSION
@@ -216,9 +217,7 @@
 ;
 ;       Requires a number of files from the Coyote Library:
 ;
-;       http://www.dfanning.com/programs/xstretch.zip
-;          or
-;       http://www.dfanning.com/programs/coyoteprograms.zip
+;           http://www.idlcoyote.com/programs/coyoteprograms.zip
 ;
 ;
 ; EXAMPLE:
@@ -244,7 +243,7 @@
 ;       October, 1998. Added NO_BLOCK keyword and modified to work with
 ;          24-bit color devices.
 ;       April, 1999. Made lines thicker. Offered default image. DWF.
-;       April, 1999. Replaced TV command with TVIMAGE. DWF.
+;       April, 1999. Replaced TV command with cgImage. DWF.
 ;       April, 1999. Made both windows resizeable. DWF.
 ;       April, 2000. Made several modifications to histogram plot and to
 ;          the way colors were handled. Added ability to pass pointer to
@@ -295,10 +294,22 @@
 ;        Modifications for EQUALIZATION stretch and for working with large images. 26 Aug 2009. DWF.
 ;        Fixed a problem with too strict interpretation of PLOT keywords passed to it from legacy code. Changed
 ;           _STRICT_EXTRA on Plot command to _EXTRA. 26 Aug 2009. DWF.
+;        Fixed a problem when choosing binsize for integer data types GE 12. 25 Jan 2010. DWF.
+;        Fixed a small typo that caused the histogram to be taken of the square-root of the 
+;           image, rather than the image itself. 31 March 2010, DWF.
+;        Byte type data is causing me heartburn. Internally, use INT data when byte type data
+;           is passed in. 10 April 2010. DWF.
+;        Fixed a general problem when working with unsigned integer images. I now make sure
+;           threshold values stay within the data range appropriate for the data type. 21 April 2010. DWF.
+;        Fixed another problem with integer data types and bin size. 23 April 2010. DWF.
+;        Fixed a problem with the display image when starting with a Square Root stretch. 23 April 2010. DWF.
+;        Added ADAPTIVE EQUALIZATION stretch and changed default colors. 24 Nov 2010. DWF.
+;        Changed SELECTIMAGE references to Coyote Library routine IMAGESELECT. 6 Jan 2011. DWF.
+;        Fixed misplaced parenthesis with SQRT function and NAN keyword. 7 March 2011. DWF.
 ;-
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
+;  Copyright (c) 2008-2010, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -336,6 +347,18 @@ FUNCTION XSTRETCH_VALIDATE_THRESHOLD, threshold, info
 
    ; Make sure threshold is inside of the plot.
    threshold = info.xmin > threshold < info.xmax
+
+   ; Make sure threshold doesn't exceed range of data type.
+   CASE info.dataType OF
+        'BYTE': threshold = 0B > threshold < 255B
+        'INT': threshold = (-2L^15+1) > threshold < (2L^15-1)
+        'UINT': threshold = 0 > threshold < (2L^16-1)
+        'LONG': threshold = (-2L^31+1) > threshold < (2L^31-1)
+        'ULONG': threshold = 0 > threshold < (2L^32-1)
+        'LONG64': threshold = (-2LL^64+1) > threshold < (2LL^64-1)
+        'ULONG64': threshold = 0 > threshold < (2LL^64-1)
+        ELSE:
+   ENDCASE
 
    ; Make sure threshold has the same type as the image, unless SQUARE ROOT stretch.
    IF info.type NE 'SQUARE ROOT' THEN $
@@ -377,6 +400,11 @@ FUNCTION XSTRETCH_SCALEIMAGE, info
       'LINEAR 2%': BEGIN
       
          scaledImage = BytScl(*info.image, Max=info.maxThresh, Min=info.minThresh, /NAN)
+         IF info.negative THEN RETURN, 255B - scaledImage ELSE RETURN, scaledImage
+         END
+
+      'ADAPTIVE EQUALIZATION': BEGIN
+         scaledImage = BytScl(Adapt_Hist_Equal(*info.image), Max=info.maxThresh, Min=info.minThresh, /NAN)
          IF info.negative THEN RETURN, 255B - scaledImage ELSE RETURN, scaledImage
          END
 
@@ -625,9 +653,9 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
    !X = info.xbang
    !Y = info.ybang
    PlotS, [minThresh, minThresh], [!Y.CRange(0), !Y.CRange(1)], $
-      Color=FSC_Color(info.colors[2]), Thick=3
+      Color=cgColor(info.colors[2]), Thick=3
    PlotS, [maxThresh, maxThresh], [!Y.CRange(0), !Y.CRange(1)], $
-      Color=FSC_Color(info.colors[3]), Thick=3
+      Color=cgColor(info.colors[3]), Thick=3
 
    ; Label the lines.
    cmax = Convert_Coord(maxThresh, 0, /Data, /To_Normal)
@@ -639,9 +667,9 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
       maxThresh = Float(maxThresh)
    ENDIF
    XYOuts, cmin[0], 0.90, /Normal, Number_Formatter(minThresh, Decimals=3), $
-      Color=FSC_Color(info.colors[2]), Alignment=1.0, Font=0
+      Color=cgColor(info.colors[2]), Alignment=1.0, Font=0
    XYOuts, cmax[0], 0.90, /Normal, Number_Formatter(maxThresh, Decimals=3), $
-      Color=FSC_Color(info.colors[3]), Alignment=0.0, Font=0
+      Color=cgColor(info.colors[3]), Alignment=0.0, Font=0
 
    CASE info.type OF
 
@@ -649,28 +677,35 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
             line = BytScl(Findgen(101))
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'LINEAR 2%': BEGIN
             line = BytScl(Findgen(101))
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
+         END
+
+      'ADAPTIVE EQUALIZATION': BEGIN
+            line = BytScl(Findgen(101))
+            line = Scale_Vector(line, 0.0, !Y.CRange[1])
+            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'EQUALIZATION': BEGIN
             line = BytScl(Findgen(101))
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'LOG': BEGIN
             line = LogScl(Findgen(101), Mean=info.mean, Exponent=info.exponent)
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'GAMMA': BEGIN
@@ -679,7 +714,7 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
             line = Double(line)^info.gamma
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'GAUSSIAN': BEGIN
@@ -688,14 +723,14 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
             line = (1/(2*!PI*info.sigma^2))*EXP(-(line^2/(2*info.sigma^2)))
             line = Scale_Vector(line, 0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'SQUARE ROOT': BEGIN
             line = BytScl(Findgen(101))
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'ASINH': BEGIN
@@ -703,7 +738,7 @@ PRO XSTRETCH_DRAWLINES, minThresh, maxThresh, info
             line = ASinhScl(Findgen(101), BETA=info.beta)
             line = Scale_Vector(line, 0.0, !Y.CRange[1])
              x = Scale_Vector(Findgen(101), minThresh, maxThresh)
-            OPlot, x, line, Color=FSC_Color(info.colors[4]), LineStyle=2, Thick=2
+            OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
    ENDCASE
@@ -785,19 +820,40 @@ PRO XSTRETCH_HISTOPLOT, info, $
 
    ; Normalized pixel density.
    CASE info.type OF
+   
+      'ADAPTIVE EQUALIZATION': BEGIN
+         goodIndices = Where(Finite(*info.image), NCOMPLEMENT=nanCount, count)
+         IF nanCount GT 0 THEN BEGIN
+             binsize = (3.5 * StdDev(ADAPT_HIST_EQUAL(*info.image), /NAN))/N_Elements((*info.image)[goodIndices])^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
+             binsize = Convert_To_Type(binsize, dataType)
+             IF binsize LT 1 THEN binsize = 1
+             histdata = Histogram(/NAN, ADAPT_HIST_EQUAL((*info.image)[goodIndices]), Binsize=binsize, $
+                OMIN=omin, OMAX=omax)/Float(count)         
+         ENDIF ELSE BEGIN
+             binsize = (3.5 * StdDev(ADAPT_HIST_EQUAL(*info.image), /NAN))/N_Elements(*info.image)^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
+             binsize = Convert_To_Type(binsize, dataType)
+             IF binsize LT 1 THEN binsize = 1
+             histdata = Histogram(/NAN, ADAPT_HIST_EQUAL(*info.image), Binsize=binsize, $
+                OMIN=omin, OMAX=omax)/Float(N_Elements(*info.image))
+         ENDELSE
+         imageTitle = 'Adapted Equalization Image Value'
+         END
+   
 
       'EQUALIZATION': BEGIN
          goodIndices = Where(Finite(*info.image), NCOMPLEMENT=nanCount, count)
          IF nanCount GT 0 THEN BEGIN
-             binsize = (3.5 * StdDev(*info.image, /NAN))/N_Elements(SQRT((*info.image)[goodIndices]))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(HIST_EQUAL(*info.image), /NAN))/N_Elements((*info.image)[goodIndices])^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              IF binsize LT 1 THEN binsize = 1
              histdata = Histogram(/NAN, Hist_Equal((*info.image)[goodIndices]), Binsize=binsize, $
                 OMIN=omin, OMAX=omax)/Float(count)         
          ENDIF ELSE BEGIN
-             binsize = (3.5 * StdDev(SQRT(*info.image), /NAN))/N_Elements(SQRT(*info.image))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(HIST_EQUAL(*info.image), /NAN))/N_Elements(*info.image)^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              IF binsize LT 1 THEN binsize = 1
              histdata = Histogram(/NAN, Hist_Equal(*info.image), Binsize=binsize, $
@@ -808,14 +864,14 @@ PRO XSTRETCH_HISTOPLOT, info, $
       'SQUARE ROOT': BEGIN
          goodIndices = Where(Finite(*info.image), NCOMPLEMENT=nanCount, count)
          IF nanCount GT 0 THEN BEGIN
-             binsize = (3.5 * StdDev(*info.image, /NAN))/N_Elements(SQRT((*info.image)[goodIndices]))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(SQRT(*info.image), /NAN))/N_Elements((*info.image)[goodIndices])^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              histdata = Histogram(/NAN, SQRT((*info.image)[goodIndices]), Binsize=binsize, $
                 OMIN=omin, OMAX=omax)/Float(count)
          ENDIF ELSE BEGIN
-             binsize = (3.5 * StdDev(SQRT(*info.image), /NAN))/N_Elements(SQRT(*info.image))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(SQRT(*info.image), /NAN))/N_Elements(*info.image)^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              histdata = Histogram(/NAN, SQRT(*info.image), Binsize=binsize, $
                 OMIN=omin, OMAX=omax)/Float(N_Elements(*info.image))
@@ -826,14 +882,14 @@ PRO XSTRETCH_HISTOPLOT, info, $
       ELSE: BEGIN
          goodIndices = Where(Finite(*info.image), NCOMPLEMENT=nanCount, count)
          IF nanCount GT 0 THEN BEGIN
-             binsize = (3.5 * StdDev(*info.image, /NAN))/N_Elements(SQRT((*info.image)[goodIndices]))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(*info.image, /NAN))/N_Elements((*info.image)[goodIndices])^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              histdata = Histogram(/NAN, (*info.image)[goodIndices], Binsize=binsize, $
                 OMIN=omin, OMAX=omax)/Float(count)
          ENDIF ELSE BEGIN
-             binsize = (3.5 * StdDev(SQRT(*info.image), /NAN))/N_Elements(SQRT(*info.image))^(1./3)
-             IF dataType LE 3 THEN binsize = Round(binsize) > 1
+             binsize = (3.5 * StdDev(*info.image, /NAN))/N_Elements(*info.image)^(1./3)
+             IF (dataType LE 3) OR (dataType GE 12) THEN binsize = Round(binsize) > 1
              binsize = Convert_To_Type(binsize, dataType)
              histdata = Histogram(/NAN, *info.image, Binsize=binsize, $
                 OMIN=omin, OMAX=omax)/Float(N_Elements(*info.image))
@@ -846,16 +902,16 @@ PRO XSTRETCH_HISTOPLOT, info, $
    cWinID = !D.Window
 
    ; Calculate the range of the plot output.
-   ymin = Min(histData, MAX=ymax) < 0
-   ymax = ymax + Abs(ymax-ymin)*0.05
-   xmin = omin - binsize
-   xmax = omax + (2*binsize)
-
+   ymin = 0
+   ymax = Max(histData) * 1.05
+   xmin = Double(omin) - binsize
+   xmax = Double(omax) + (binsize * 2)
+   
    ; Plot the histogram of the display image.
    IF N_Elements(wid) NE 0 THEN WSet, wid
    Plot, [0,0], [1,1], $             
-          Background=FSC_Color(info.colors[0]), $
-          Color=FSC_Color(info.colors[1]), $       ; The color of the axes.
+          Background=cgColor(info.colors[0]), $
+          Color=cgColor(info.colors[1]), $       ; The color of the axes.
           NoData=1, $                              ; Draw the axes only. No data.
           XRange=[xmin, xmax], $                   ; The X data range.          
           XStyle=9, $                              ; Exact axis scaling. No autoscaled axes.
@@ -869,7 +925,7 @@ PRO XSTRETCH_HISTOPLOT, info, $
           Position=[0.15, 0.20, 0.85, 0.85], $
           _Extra=extra                      ; Pass any extra PLOT keywords.
              
-    Axis, !X.CRange[0], !Y.CRange[1], XAXIS=1, XTickformat='(A1)', XMINOR=1, COLOR=FSC_Color(info.colors[1])
+    Axis, !X.CRange[0], !Y.CRange[1], XAXIS=1, XTickformat='(A1)', XMINOR=1, COLOR=cgColor(info.colors[1])
        
     step = (!X.CRange[1] - !X.CRange[0]) / (binsize + 1)
     start = !X.CRange[0] + binsize
@@ -877,8 +933,8 @@ PRO XSTRETCH_HISTOPLOT, info, $
     FOR j=0,N_Elements(histdata)-1 DO BEGIN
         x = [start, start, endpt, endpt, start]
         y = [0, histdata[j], histdata[j], 0, 0]
-        PolyFill, x, y, COLOR=FSC_Color('rose'), NOCLIP=0
-        PlotS, x, y, COLOR=FSC_Color(info.colors[5]), NOCLIP=0
+        PolyFill, x, y, COLOR=cgColor('rose'), NOCLIP=0
+        PlotS, x, y, COLOR=cgColor(info.colors[5]), NOCLIP=0
         start = start + binsize
         endpt = start + binsize
     ENDFOR
@@ -960,7 +1016,7 @@ PRO XSTRETCH_PARAMETERS, event
       WSet, info.windex
       WShow, info.windex
       TVLCT, info.r, info.g, info.b
-      TVImage, displayImage, /NoInterp
+      cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1004,7 +1060,7 @@ PRO XSTRETCH_FLIPIMAGE, event
       WSet, info.windex
       WShow, info.windex
       TVLCT, info.r, info.g, info.b
-      TVImage, displayImage, /NoInterp
+      cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1041,7 +1097,7 @@ PRO XSTRETCH_GAMMA, event
       WSet, info.windex
       WShow, info.windex
       TVLCT, info.r, info.g, info.b
-      TVImage, displayImage, /NoInterp
+      cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1086,7 +1142,7 @@ PRO XSTRETCH_NEGATIVE, event
       WSet, info.windex
       WShow, info.windex
       TVLCT, info.r, info.g, info.b
-      TVImage, displayImage, /NoInterp
+      cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1117,7 +1173,7 @@ PRO XSTRETCH_OPENIMAGE, event
 
       'Formatted Image File...': BEGIN
 
-         newImage = SelectImage(Cancel=cancelled, Palette=palette, Group_Leader=event.top)
+         newImage = ImageSelect(Cancel=cancelled, Palette=palette, Group_Leader=event.top)
          IF cancelled THEN RETURN
          END
 
@@ -1155,6 +1211,7 @@ PRO XSTRETCH_OPENIMAGE, event
    info.maxThresh =  Float(info.maxVal)
    info.minVal = minVal
    info.minThresh = Float(info.minVal)
+   info.dataType = Size(newImage, /TNAME)
 
    ; Calculate a value to tell you if you are "close" to a threshold line.
    info.close = 0.05 * (info.maxval-info.minval)
@@ -1261,7 +1318,7 @@ PRO XSTRETCH_OPENIMAGE, event
      WSet, info.windex
      WShow, info.windex
      TVLCT, info.r, info.g, info.b
-     TVImage, displayImage, /NoInterp
+     cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1302,12 +1359,12 @@ PRO XSTRETCH_SAVEAS, event
    filename = 'xstretch'
    CASE saveAsType OF
 
-      'JPEG': dummy = TVRead(Filename=filename, /JPEG)
-      'PNG': dummy = TVRead(Filename=filename, /PNG)
-      'TIFF': dummy = TVRead(Filename=filename, /TIFF)
-      'GIF': dummy = TVRead(Filename=filename, /GIF)
-      'PICT': dummy = TVRead(Filename=filename, /PICT)
-      'BMP': dummy = TVRead(Filename=filename, /BMP)
+      'JPEG': dummy = cgSnapshot(Filename=filename, /JPEG)
+      'PNG': dummy = cgSnapshot(Filename=filename, /PNG)
+      'TIFF': dummy = cgSnapshot(Filename=filename, /TIFF)
+      'GIF': dummy = cgSnapshot(Filename=filename, /GIF)
+      'PICT': dummy = cgSnapshot(Filename=filename, /PICT)
+      'BMP': dummy = cgSnapshot(Filename=filename, /BMP)
       'PS': BEGIN
 
             WSet, info.windex
@@ -1319,7 +1376,7 @@ PRO XSTRETCH_SAVEAS, event
                   Set_Plot, 'PS', /Copy
                   Device, _Extra=configureIt
                   displayImage = XStretch_ScaleImage(info)
-                  TVImage, displayImage, /NoInterp
+                  cgImage, displayImage, /NoInterp
                   Device, /Close_File
                   Set_Plot, thisDevice
             ENDIF
@@ -1366,12 +1423,12 @@ PRO XSTRETCH_SAVEHISTOAS, event
    filename = 'xstretch_histogram'
    CASE saveAsType OF
 
-      'JPEG': dummy = TVRead(Filename=filename, /JPEG)
-      'PNG': dummy = TVRead(Filename=filename, /PNG)
-      'TIFF': dummy = TVRead(Filename=filename, /TIFF)
-      'GIF': dummy = TVRead(Filename=filename, /GIF)
-      'PICT': dummy = TVRead(Filename=filename, /PICT)
-      'BMP': dummy = TVRead(Filename=filename, /BMP)
+      'JPEG': dummy = cgSnapshot(Filename=filename, /JPEG)
+      'PNG': dummy = cgSnapshot(Filename=filename, /PNG)
+      'TIFF': dummy = cgSnapshot(Filename=filename, /TIFF)
+      'GIF': dummy = cgSnapshot(Filename=filename, /GIF)
+      'PICT': dummy = cgSnapshot(Filename=filename, /PICT)
+      'BMP': dummy = cgSnapshot(Filename=filename, /BMP)
       'PS': BEGIN
 
             keys = PSWindow()
@@ -1437,7 +1494,7 @@ PRO XSTRETCH_SETTHRESHOLD, event
       WSet, info.windex
       WShow, info.windex
       TVLCT, info.r, info.g, info.b
-      TVImage, displayImage, /NoInterp
+      cgImage, displayImage, /NoInterp
    ENDIF
    XStretch_NotifyOthers, info
 
@@ -1485,7 +1542,7 @@ PRO XSTRETCH_PRINT, event
          WSet, info.histo_wid
 
          ; Have to set up drawing colors *before* we go into the PRINTER device.
-         FOR j=0,N_Elements(info.colors)-1 DO color = FSC_Color(info.colors[j])
+         FOR j=0,N_Elements(info.colors)-1 DO color = cgColor(info.colors[j])
       ENDELSE
       configurePrinter = PSWindow(/Printer)
 
@@ -1496,7 +1553,7 @@ PRO XSTRETCH_PRINT, event
       Widget_Control, Hourglass=1
       IF TARGET EQ 'IMAGE' THEN BEGIN
          displayImage = XStretch_ScaleImage(info)
-         TVImage, displayImage, /NoInterp
+         cgImage, displayImage, /NoInterp
       ENDIF ELSE BEGIN
             XStretch_Histoplot, info, MaxValue=info.maxValue, _Extra=*info.extra
             XStretch_DrawLines, info.minThresh, info.maxThresh, info
@@ -1678,6 +1735,7 @@ PRO XSTRETCH_MOVELINE, event
 
       ; Convert the event device coordinates to data coordinates.
       coord = Convert_Coord(event.x, event.y, /Device, /To_Data)
+      coord = XStretch_Validate_Threshold(coord, info)
 
       ; Make sure the coordinate is between the other line and
       ; still inside the plot.
@@ -1727,7 +1785,7 @@ PRO XSTRETCH_MOVELINE, event
          WSet, info.windex
          WShow, info.windex
          TVLCT, info.r, info.g, info.b
-         TVImage, displayImage, /NoInterp
+         cgImage, displayImage, /NoInterp
       ENDIF ELSE BEGIN
 
          imageSize = Size(*info.image)
@@ -1756,7 +1814,7 @@ PRO XSTRETCH_MOVELINE, event
          Widget_Control, image_draw, Get_Value=windex
          info.image_draw = image_draw
          info.windex = windex
-         TVImage, displayImage, /NoInterp
+         cgImage, displayImage, /NoInterp
 
          XManager, 'xstretch_image', image_tlb, Event_Handler='XStretch_Image_Resize', /No_Block
          Widget_Control, info.saveas, Sensitive=1
@@ -1788,6 +1846,7 @@ PRO XSTRETCH_MOVELINE, event
    !X = info.xbang
    !Y = info.ybang
    coord = Convert_Coord(event.x, event.y, /Device, /To_Data)
+   coord[0] = XStretch_Validate_Threshold(coord[0], info)
 
    ; Draw the "other" line on the pixmap (so you don't have to draw
    ; it all the time).
@@ -1796,16 +1855,16 @@ PRO XSTRETCH_MOVELINE, event
       'MIN': BEGIN
          cmax = Convert_Coord(info.maxThresh, 0, /Data, /To_Normal)
          PlotS, [info.maxthresh, info.maxthresh],[info.ymin, info.ymax],  $
-            Color=FSC_Color(info.colors[3]), Thick=2
+            Color=cgColor(info.colors[3]), Thick=2
          XYOuts, cmax[0], 0.90, /Normal, Number_Formatter(XStretch_Validate_Threshold(info.maxThresh, info), Decimals=3), $
-            Color=FSC_Color(info.colors[3]), Alignment=0.0, Font=0
+            Color=cgColor(info.colors[3]), Alignment=0.0, Font=0
          END
       'MAX': BEGIN
          cmin = Convert_Coord(info.minThresh, 0, /Data, /To_Normal)
          PlotS, [info.minthresh, info.minthresh],[info.ymin, info.ymax],  $
-            Color=FSC_Color(info.colors[2]), Thick=2
+            Color=cgColor(info.colors[2]), Thick=2
          XYOuts, cmin[0], 0.90, /Normal, Number_Formatter(XStretch_Validate_Threshold(info.minThresh, info), Decimals=3), $
-            Color=FSC_Color(info.colors[2]), Alignment=1.0, Font=0
+            Color=cgColor(info.colors[2]), Alignment=1.0, Font=0
          END
    ENDCASE
 
@@ -1842,14 +1901,14 @@ PRO XSTRETCH_MOVELINE, event
    theCoord = XStretch_Validate_Threshold(coord[0], info)
    CASE info.lineby OF
       'MIN': BEGIN
-         PlotS, [coord[0], coord[0]],[info.ymin, info.ymax], Color=FSC_Color(info.colors[2]), Thick=2
+         PlotS, [coord[0], coord[0]],[info.ymin, info.ymax], Color=cgColor(info.colors[2]), Thick=2
          XYOuts, Float(event.x)/!D.X_Size, 0.90, /Normal, Number_Formatter(thecoord, Decimals=3), $
-            Color=FSC_Color(info.colors[2]), Alignment=1.0, Font=0
+            Color=cgColor(info.colors[2]), Alignment=1.0, Font=0
          END
       'MAX': BEGIN
-         PlotS, [coord[0], coord[0]],[info.ymin, info.ymax], Color=FSC_Color(info.colors[3]), Thick=2
+         PlotS, [coord[0], coord[0]],[info.ymin, info.ymax], Color=cgColor(info.colors[3]), Thick=2
          XYOuts, Float(event.x)/!D.X_Size, 0.90, /Normal,  Number_Formatter(thecoord, Decimals=3), $
-            Color=FSC_Color(info.colors[3]), Alignment=0.0, Font=0
+            Color=cgColor(info.colors[3]), Alignment=0.0, Font=0
          END
    ENDCASE
 
@@ -1961,7 +2020,7 @@ PRO XSTRETCH_RESTORE, event
       WSet, info.windex
       TVLCT, info.r, info.g, info.b
       WShow, info.windex
-      TVImage, displayImage, /NoInterp, _Extra=*info.extra
+      cgImage, displayImage, /NoInterp, _Extra=*info.extra
    ENDIF
    
    ; Notify others.
@@ -2004,7 +2063,16 @@ PRO XSTRETCH_STRETCHTYPE, event
             ; Calculate binsize.
             maxr = Max(Double(*info.image), MIN=minr, /NAN)
             range = maxr - minr
-            IF Size(*info.image, /TName) EQ 'BYTE' THEN binsize = 1.0 ELSE binsize = range / 300.
+            CASE Size(*info.image, /TName) OF
+                'BYTE': binsize = 1
+                'INT': binsize = 1 > Round(range / 300.)
+                'LONG': binsize = 1 > Round(range / 300.)
+                'UINT': binsize = 1 > Round(range / 300.)
+                'ULONG': binsize = 1 > Round(range / 300.)
+                'LONG64': binsize = 1 > Round(range / 300.)
+                'ULONG64': binsize = 1 > Round(range / 300.)
+                ELSE: binsize = range / 300.
+            ENDCASE
             h = Histogram(/NAN, *info.image, BINSIZE=binsize, OMIN=omin, OMAX=omax)
             n = N_Elements(*info.image)
             cumTotal = Total(h, /CUMULATIVE)
@@ -2038,6 +2106,11 @@ PRO XSTRETCH_STRETCHTYPE, event
          END
 
       'LINEAR 2%': BEGIN
+         IF Widget_Info(info.currentMappedBase, /Valid_ID) THEN $
+           Widget_Control, info.currentMappedBase, Map=0
+         END
+
+      'ADAPTIVE EQUALIZATION': BEGIN
          IF Widget_Info(info.currentMappedBase, /Valid_ID) THEN $
            Widget_Control, info.currentMappedBase, Map=0
          END
@@ -2101,7 +2174,7 @@ PRO XSTRETCH_STRETCHTYPE, event
       WSet, info.windex
       TVLCT, info.r, info.g, info.b
       WShow, info.windex
-      TVImage, displayImage, /NoInterp, _Extra=*info.extra
+      cgImage, displayImage, /NoInterp, _Extra=*info.extra
    ENDIF
 
    ; Notify others of image change.
@@ -2152,7 +2225,7 @@ PRO XSTRETCH_COLORS, event
                 TVLCT, info.r, info.g, info.b
                 WShow, info.windex
                 WSet, info.windex
-                TVImage, displayImage, /NoInterp
+                cgImage, displayImage, /NoInterp
              ENDIF
              XStretch_NotifyOthers, info
 
@@ -2250,7 +2323,7 @@ PRO XSTRETCH_IMAGE_RESIZE, event
    WSet, info.windex
    displayImage = XStretch_ScaleImage(info)
    TVLCT, info.r, info.g, info.b
-   TVImage, displayImage, /NoInterp
+   cgImage, displayImage, /NoInterp
    XStretch_NotifyOthers, info
 
    Widget_Control, histoTLB, Set_UValue=info, /No_Copy
@@ -2368,7 +2441,7 @@ PRO XSTRETCH, theImage, $
    ; Did you specify a filename?
    IF N_Elements(filename) NE 0 AND N_Elements(theImage) EQ 0 THEN BEGIN
       IF filename NE "" THEN BEGIN
-         theImage = SelectImage(Filename=filename, Cancel=cancelled, Palette=palette, /Silent)
+         theImage = ImageSelect(Filename=filename, Cancel=cancelled, Palette=palette, /Silent)
          IF cancelled THEN RETURN
       ENDIF
    ENDIF
@@ -2386,10 +2459,15 @@ PRO XSTRETCH, theImage, $
    IF Size(theImage, /TName) NE 'POINTER' THEN BEGIN
       image = Ptr_New(theImage)
       newPointer = 1
+      datatype = Size(theImage, /TNAME)
    ENDIF ELSE BEGIN
       image = theImage
       newPointer = 0
+      datatype = Size(*theImage, /TNAME)
    ENDELSE
+   
+   ; All kinds of havoc if I work with BYTE data, so do conversion here.
+   IF datatype EQ 'BYTE' THEN *image = Temporary(Fix(*image))
 
    ; Check for underflow of values near 0. Yuck! Necessary with gnarly data.
    curExcept = !Except
@@ -2413,10 +2491,10 @@ PRO XSTRETCH, theImage, $
   IF N_Elements(beta) EQ 0 THEN beta = 3 ELSE beta = beta > 0.0
   brewer = Keyword_Set(brewer)
   IF N_Elements(colors) EQ 0 THEN BEGIN
-      colors = ['ivory', 'charcoal', 'firebrick', 'steel blue', 'sea green', 'charcoal']
+      colors = ['white', 'black', 'firebrick', 'steel blue', 'grn6', 'black']
    ENDIF ELSE BEGIN
       IF N_Elements(colors) NE 6 THEN Message, 'Incorrect number of colors in COLORS vector.'
-      defcolors = ['ivory', 'charcoal', 'firebrick', 'steel blue', 'sea green', 'charcoal']
+      defcolors = ['white', 'black', 'firebrick', 'steel blue', 'grn6', 'black']
       i = Where(colors EQ "", count)
       IF count GT 0 THEN colors[i] = defcolors[i]
    ENDELSE
@@ -2449,14 +2527,15 @@ PRO XSTRETCH, theImage, $
    IF N_Elements(title) EQ 0 THEN title = 'Drag Vertical Lines to STRETCH Image Contrast'
 
    ; Determine scaling type.
-   possibleTypes = ['LINEAR', 'GAMMA', 'LOG', 'ASINH', 'LINEAR 2%', 'SQUARE ROOT', 'EQUALIZATION', 'GAUSSIAN']
+   possibleTypes = ['LINEAR', 'GAMMA', 'LOG', 'ASINH', 'LINEAR 2%', 'SQUARE ROOT', $
+        'EQUALIZATION', 'ADAPTIVE EQUALIZATION', 'GAUSSIAN']
    IF N_Elements(type) EQ 0 THEN type = 'LINEAR'
    IF Size(type, /TName) EQ 'STRING' THEN BEGIN
       type = StrUpCase(type)
       index = WHERE(possibleTypes EQ type, count)
       IF count EQ 0 THEN Message, 'Cannot find specified stretch type: ' + type
    ENDIF ELSE BEGIN
-      type = 0 > Fix(type) < 7
+      type = 0 > Fix(type) < 8
       type = possibleTypes[type]
    ENDELSE
 
@@ -2468,8 +2547,17 @@ PRO XSTRETCH, theImage, $
    histo_tlb = Widget_Base(Column=1, Title=title, XPad=0, YPad=0, $
       MBar=menubaseID, TLB_Size_Events=1, XOffset=xpos, YOffset=ypos, Base_Align_Center=1)
 
+   ; Create draw widget. UNIX versions of IDL have a bug in which creating
+   ; a draw widget as the very first window in an IDL session causes both
+   ; !P.Background and !P.Color to be set to white. I know, it's odd. But
+   ; doing this little trick fixes the problem.
+   tempBackground = !P.Background
+   tempColor = !P.Color
+   retain = (StrUpCase(!Version.OS_Family) EQ 'UNIX') ? 2 : 1
    histo_draw = Widget_Draw(histo_tlb, XSize=histXsize, YSize=histYsize, $
-      Button_Events=1, Event_Pro='XStretch_Process_Events')
+        Button_Events=1, Event_Pro='XStretch_Process_Events', RETAIN=retain)
+   !P.Background = Temporary(tempBackground)
+   !P.Color = Temporary(tempColor)
    controlID = Widget_Button(menubaseID, Value='Controls', Event_Pro='XStretch_MaxValue')
    openit = Widget_Button(controlID, Value='Open', /MENU)
    dummy = Widget_Button(openit, Value='Formatted Image File...', Event_Pro='XStretch_OpenImage')
@@ -2527,10 +2615,12 @@ PRO XSTRETCH, theImage, $
    ; Stretch TYPE buttons.
    paramBaseID = Widget_Base(histo_tlb, XPAD=0, YPAD=0, Column=1, Base_Align_Left=1)
    rowID = Widget_Base(paramBaseID, XPAD=0, YPAD=0, ROW=1, SPACE=10)
-   types = StrUpCase(['Linear', 'Linear 2%', 'Gamma', 'Log', 'Square Root', 'Asinh', 'Equalization', 'Gaussian'])
+   types = StrUpCase(['Linear', 'Linear 2%', 'Gamma', 'Log', 'Square Root', 'Asinh', $
+        'Equalization', 'Adaptive Equalization', 'Gaussian'])
    index = Where(types EQ type) ; Necessary for backward compatibility and for my ordering in pull-down.
    scaleID = FSC_Droplist(rowID, Title='Scaling: ', Spaces=1, $
-      Value=['Linear', 'Linear 2%', 'Gamma', 'Log', 'Square Root', 'Asinh', 'Equalization', 'Gaussian'], $
+      Value=['Linear', 'Linear 2%', 'Gamma', 'Log', 'Square Root', 'Asinh', $
+        'Equalization', 'Adaptive Equalization','Gaussian'], $
       Event_Pro='XStretch_StretchType')
    scaleID -> SetIndex, index[0] > 0
 
@@ -2630,8 +2720,19 @@ PRO XSTRETCH, theImage, $
       ENDIF
       image_tlb = Widget_Base(Row=1, Group_Leader=histo_tlb, Title='XStretch Image', $
          XOffSet=xoff, YOffSet=yoff, TLB_Size_Events=1, XPad=0, YPad=0)
-      image_draw = Widget_Draw(image_tlb, XSize=xsize, YSize=ysize, $
+
+      ; Create draw widget. UNIX versions of IDL have a bug in which creating
+      ; a draw widget as the very first window in an IDL session causes both
+      ; !P.Background and !P.Color to be set to white. I know, it's odd. But
+      ; doing this little trick fixes the problem.
+      tempBackground = !P.Background
+      tempColor = !P.Color
+      retain = (StrUpCase(!Version.OS_Family) EQ 'UNIX') ? 2 : 1
+      image_draw = Widget_Draw(image_tlb, XSize=xsize, YSize=ysize, RETAIN=retain, $
          Kill_Notify='XStretch_ImageWindowKilled', UValue=[saveAs, printit, colorsID])
+      !P.Background = Temporary(tempBackground)
+      !P.Color = Temporary(tempColor)
+
       Widget_Control, image_tlb, /Realize
 
       ; Get window index numbers for the draw widgets.
@@ -2654,7 +2755,7 @@ PRO XSTRETCH, theImage, $
 
    ; Load the color table.
    IF N_Elements(palette) EQ 0 THEN $
-      CTLoad, 0 > ctable < 40, Brewer=brewer ELSE $
+      cgLoadCT, 0 > ctable < 40, Brewer=brewer ELSE $
       TVLCT, palette
    TVLCT, r, g, b, /Get
 
@@ -2662,15 +2763,6 @@ PRO XSTRETCH, theImage, $
    maxVal = Max(Double(*image)) > maxthresh
    minVal = Min(Double(*image)) < minthresh
    range = maxVal - minVal
-
-   ; Store the plotting system variables for later recall.
-   pbang = !P
-   xbang = !X
-   ybang = !Y
-   ymin = !Y.CRange[0]
-   ymax = !Y.CRange[1]
-   xmin = !X.CRange[0]
-   xmax = !X.CRange[1]
 
    ; Calculate a value to tell you if you are "close" to a threshold line.
    close = 0.05 * (maxval-minval)
@@ -2690,16 +2782,16 @@ PRO XSTRETCH, theImage, $
            histo_draw:histo_draw, $         ; The histogram draw widget ID.
            image_draw:image_draw, $         ; The image draw widget ID.
            windex:windex, $                 ; The image window index
-           ymin:ymin, $                     ; The ymin in data coordinates
-           ymax:ymax, $                     ; The ymax in data coordinates
-           xmin:xmin, $                     ; The xmin in data coordinates
-           xmax:xmax, $                     ; The xmax in data coordinates
+           ymin:!Y.CRange[0], $                     ; The ymin in data coordinates
+           ymax:!Y.CRange[1], $                     ; The ymax in data coordinates
+           xmin:!X.CRange[0], $                     ; The xmin in data coordinates
+           xmax:!X.CRange[1], $                     ; The xmax in data coordinates
            r:r, $                           ; The R color vector for the image
            g:g, $                           ; The G color vector for the image
            b:b, $                           ; The B color vector for the image
-           pbang:pbang, $                   ; The !P system variable.
-           xbang:xbang, $                   ; The !X system variable.
-           ybang:ybang, $                   ; The !Y system variable.
+           pbang:!P, $                   ; The !P system variable.
+           xbang:!X, $                   ; The !X system variable.
+           ybang:!Y, $                   ; The !Y system variable.
            lineby:'MIN', $                  ; The line you are close to.
            linex:minThresh, $               ; The x coordinate of line (data coords).
            pixmap:pixmap, $                 ; The pixmap window index
@@ -2732,6 +2824,7 @@ PRO XSTRETCH, theImage, $
            min_xsize: min_xsize, $          ; The minimum X size for the draw widget.
            negative: negative, $            ; Want a negative image.
            type: type, $                    ; The type of scaling requested.
+           datatype: datatype, $            ; The data type of the input image.
            minthreshObj: minthreshObj, $    ; The minThresh object widget.
            maxthreshObj: maxthreshObj, $    ; The maxThresh object widget.
            sigmaObj: sigmaObj, $            ; The sigma object widget.
@@ -2745,12 +2838,22 @@ PRO XSTRETCH, theImage, $
            close:close}                     ; A value to indicate closeness to line
 
    ; Scale the image. Special processing for linear 2%.
-   IF type EQ 'LINEAR 2%' THEN BEGIN
+   CASE type OF 
+      'LINEAR 2%': BEGIN
    
             ; Calculate binsize.
             maxr = Max(Double(*info.image), MIN=minr, /NAN)
             range = maxr - minr
-            IF Size(*info.image, /TName) EQ 'BYTE' THEN binsize = 1.0 ELSE binsize = range / 300.
+            CASE Size(*info.image, /TName) OF
+                'BYTE': binsize = 1
+                'INT': binsize = 1 > Round(range / 300.)
+                'LONG': binsize = 1 > Round(range / 300.)
+                'UINT': binsize = 1 > Round(range / 300.)
+                'ULONG': binsize = 1 > Round(range / 300.)
+                'LONG64': binsize = 1 > Round(range / 300.)
+                'ULONG64': binsize = 1 > Round(range / 300.)
+                ELSE: binsize = range / 300.
+            ENDCASE
             h = Histogram(/NAN, *info.image, BINSIZE=binsize, OMIN=omin, OMAX=omax)
             n = N_Elements(*info.image)
             cumTotal = Total(h, /CUMULATIVE)
@@ -2766,9 +2869,19 @@ PRO XSTRETCH, theImage, $
                 maxIndex = maxIndex - 1
             ENDWHILE
             info.maxThresh = maxIndex * binsize + omin
-            displayImage = BytScl(*info.image, MIN=info.minThresh, MAX=info.maxThresh, /NAN)
    
-   ENDIF ELSE displayImage = XStretch_ScaleImage(info)
+            END
+        
+        'SQUARE ROOT': BEGIN
+            min = Min(SQRT(*info.image), MAX=max)
+            info.minThresh = min
+            info.maxThresh = max
+            END
+            
+        ELSE: 
+        
+   ENDCASE
+   displayImage = XStretch_ScaleImage(info)
    minThresh = info.minThresh
    maxThresh = info.maxThresh
    
@@ -2781,12 +2894,21 @@ PRO XSTRETCH, theImage, $
    WSet, pixmap
    Device, Copy=[0, 0, histXsize, histYsize, 0, 0, histo_wid]
 
+   ; Store the plotting system variables for later recall.
+   info.pbang = !P
+   info.xbang = !X
+   info.ybang = !Y
+   info.ymin = !Y.CRange[0]
+   info.ymax = !Y.CRange[1]
+   info.xmin = !X.CRange[0]
+   info.xmax = !X.CRange[1]
+
    ; Display the image.
    IF NOT Keyword_Set(no_window) THEN BEGIN
       WSet, windex
-      CTLoad, ctable, Brewer=brewer
+      cgLoadCT, ctable, Brewer=brewer
       WShow, windex
-      TVImage, displayImage, /NoInterp, _Extra=*extra
+      cgImage, displayImage, /NoInterp, _Extra=*extra
    ENDIF
 
    ; Set proper threshold values.

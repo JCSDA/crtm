@@ -88,19 +88,19 @@ FUNCTION DBLTOSTR,  value
    ENDIF
 
    ; Data extension.
-   typeExt = theType EQ 4?'E':'D'
+   typeExt = theType EQ 4 ? 'e' : 'd'
 
    ; Create a string, using the full-widtet G format.
    rawstr = StrTrim(String(value, Format = '(g)'), 2)
 
    ; Extract the sign from the string and remove it for the moment.
-   sign = StrMid(rawstr, 0, 1) EQ '-'?'-':''
-   rawstr = sign EQ ''?rawstr:StrMid(rawstr, 1)
+   sign = StrMid(rawstr, 0, 1) EQ '-' ? '-' : ''
+   rawstr = sign EQ '' ? rawstr:StrMid(rawstr, 1)
 
    ; Is there an exponent in the string? If so, remove that for the moment.
    epos = StrPos(rawstr, 'e')
-   indx = epos gt -1?StrMid(rawstr, epos+1):''
-   rawstr = indx EQ ''?rawstr:StrMid(rawstr, 0, epos)
+   indx = epos gt -1 ? StrMid(rawstr, epos+1) : ''
+   rawstr = indx EQ '' ? rawstr:StrMid(rawstr, 0, epos)
 
    ; Find the position of the decimal point.
    dpos = StrPos(rawstr, '.')
@@ -114,7 +114,7 @@ FUNCTION DBLTOSTR,  value
          sumstr = StrTrim(String(aux+fix(outstr[i])), 2)
          sumlen = StrLen(sumstr)
          outstr[i] = StrMid(sumstr, sumlen-1, 1)
-         aux = sumlen EQ 1?0:1
+         aux = sumlen EQ 1 ? 0 : 1
       ENDIF
    ENDFOR
 
@@ -125,7 +125,7 @@ FUNCTION DBLTOSTR,  value
    ENDWHILE
 
    ; Reconstruct the string.
-   saux = aux NE 0?'1':''
+   saux = aux NE 0 ? '1' : ''
    outstr = sign + saux + StrJoin(outstr[0:ii]) + typeExt + indx
 
    ; Return it.

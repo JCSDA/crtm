@@ -41,6 +41,9 @@
 ;
 ;  SUCCESS:            An output keyword whose value is set to 1 if the program
 ;                      successfully finds the resource file. Otherwise, set to 0.
+;                      
+;  VERBOSE:            Set this keyword to enable output that prints the full path 
+;                      to the resource file, or tells you that the file cannot be found.
 ;
 ; RETURN_VALUE:
 ;
@@ -65,6 +68,10 @@
 ;  Written by: David W Fanning, December 12, 2008.
 ;  It seems all my resource files are in "resources" directories, not  "resource" directories.
 ;     So now the program looks in both places. 6 January 2009.
+;  The file did not seem to be looking in the IDL path. It does now. 21 April 2010. DWF.
+;  The file will also look in the directory of the caller of this program. 21 April 2010. DWF.
+;  Fixed a problem when File_Search finds several files with the same name. Always takes the
+;      first file found now. 4 June 2010. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -94,7 +101,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-Function Find_Resource_File, filename, SUCCESS=success
+Function Find_Resource_File, filename, SUCCESS=success, VERBOSE=verbose
 
     Compile_Opt idl2
     
@@ -109,6 +116,7 @@ Function Find_Resource_File, filename, SUCCESS=success
     
     ; Default values.
     success = 0
+    verbose = Keyword_Set(verbose)
     
     ; Require the name of a file resource.
     IF N_Elements(filename) EQ 0 THEN Message, 'The base name of the resource file is required.'
@@ -128,11 +136,28 @@ Function Find_Resource_File, filename, SUCCESS=success
     ; Look in the same directory this program is found in.
     thisDir = ProgramRootDir()
     resourceName = Filepath(ROOT_DIR=thisDir, filename)
+    resourceName = resourceName[0]
     IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
         success = 1
+        IF verbose THEN Print, 'Resource File Found: ', resourceName
         RETURN, resourceName
     ENDIF
     
+    ; Look in the directory where the program that *called* this program lives.
+    HELP, CALLS=calls
+    callingRoutine = (StrSplit(calls[1], /EXTRACT))[0]
+    IF callingRoutine NE '$MAIN$' THEN BEGIN
+       longPath = File_Which(StrLowCase(callingRoutine) + '.pro')
+       thisDir = File_Dirname(longpath)
+       resourceName = File_Search(thisDir, filename, COUNT=count)
+        resourceName = resourceName[0]
+       IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
+            success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
+            RETURN, resourceName
+       ENDIF
+    ENDIF
+       
     ; Look for a file in a resource directory, rooted on this directory.
     thisDir = ProgramRootDir()
     resourceDir = Filepath(ROOT_DIR=thisDir, SUBDIRECTORY='resource', "")
@@ -141,6 +166,7 @@ Function Find_Resource_File, filename, SUCCESS=success
         resourceName = resourceName[0]
         IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
             success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
             RETURN, resourceName
         ENDIF
     ENDIF
@@ -153,6 +179,7 @@ Function Find_Resource_File, filename, SUCCESS=success
         resourceName = resourceName[0]
         IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
             success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
             RETURN, resourceName
         ENDIF
     ENDIF
@@ -165,6 +192,7 @@ Function Find_Resource_File, filename, SUCCESS=success
         resourceName = resourceName[0]
         IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
             success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
             RETURN, resourceName
         ENDIF
     ENDIF
@@ -177,17 +205,25 @@ Function Find_Resource_File, filename, SUCCESS=success
         resourceName = resourceName[0]
         IF File_Test(resourceName, /REGULAR, /READ) THEN BEGIN
             success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
             RETURN, resourceName
         ENDIF
     ENDIF
 
     ; Look for the file in the IDL PATH.
-    resourceName = File_Which(filename, /INCLUDE_CURRENT_DIR)
-    IF resourceName NE "" THEN BEGIN
-        success = 1
-        RETURN, resourceName
-    ENDIF    
+    directories = Expand_Path(!PATH, /ARRAY)
+    FOR j=0L, N_Elements(directories)-1 DO BEGIN
+        resourceName = File_Which(directories[j], filename, /INCLUDE_CURRENT_DIR)
+        resourceName = resourceName[0]
+        IF resourceName NE "" THEN BEGIN
+            success = 1
+            IF verbose THEN Print, 'Resource File Found: ', resourceName
+            RETURN, resourceName
+        ENDIF
+    ENDFOR
 
     IF success EQ 0 THEN resourceName = ""
+    IF verbose THEN Print, 'Resource File Has NOT Been Found: ', filename
+    
     RETURN, resourceName
 END

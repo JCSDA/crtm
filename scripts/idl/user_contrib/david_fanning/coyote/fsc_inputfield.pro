@@ -279,6 +279,8 @@
 ;      to an inadvertant extra line of code. 3 July 2007. DWF.
 ;   Fixed a small problem with input validation when the input is of BYTE type. 1 Oct 2008. DWF.
 ;   Set the default fonts to be the current widget font, rather than the default widget font. 4 Oct 2008. DWF.
+;   Fixed a problem with validating a float or double value when it was written with
+;      exponential notation. 2 April 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -1120,7 +1122,11 @@ IF N_Elements(xsize) NE 0 THEN BEGIN
 ENDIF
 
 IF N_Elements(value) NE 0 THEN BEGIN
-   self.theText = StrTrim(value, 2)
+   CASE Size(value, /TNAME) OF
+       'FLOAT': self.theText = StrTrim(String(value, FORMAT='(F0)'),2)
+       'DOUBLE': self.theText = StrTrim(String(value, FORMAT='(D0)'),2)
+       ELSE: self.theText = StrTrim(value, 2)
+   ENDCASE
    *self.theValue = self->ReturnValue(self.theText)
    Widget_Control, self.textID, Set_Value=self.theText
 ENDIF ELSE BEGIN

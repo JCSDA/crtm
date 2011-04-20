@@ -253,13 +253,13 @@
 ;
 ;             PRO REFRESH_IMAGE, Image=image, _Extra=extra, WID=wid
 ;             IF N_Elements(wid) NE 0 THEN WSet, wid
-;             TVIMAGE, image, _Extra=extra
+;             cgImage, image, _Extra=extra
 ;             END
 ;
 ;          This program can be invoked with this series of commands:
 ;
 ;             IDL> Window, /Free
-;             IDL> TVImage, image, Position=[0.2, 0.2, 0.8, 0.8]
+;             IDL> cgImage, image, Position=[0.2, 0.2, 0.8, 0.8]
 ;             IDL> XColors, NotifyPro='Refresh_Image', Image=image, WID=!D.Window
 ;
 ;          Note that "extra" keywords added to the XCOLORS call are passed along to
@@ -286,6 +286,10 @@
 ;
 ;            IDL> XColors, NColors=100, Bottom=0, Title='First 100 Colors'
 ;            IDL> XColors, NColors=100, Bottom=100, Title='Second 100 Colors'
+;
+;       WINDOW: Set this keyword to send the colors to an FSC_Window program.
+;       
+;       WINID: The window index number of an FSC_Window to receive the color vectors.
 ;
 ;       XOFFSET: This is the X offset of the program on the display. The
 ;          program will be placed approximately in the middle of the display
@@ -403,6 +407,12 @@
 ;           inproved the documentation and made it more accurate. DWF.
 ;       14 Oct 2009. Still a few problems getting the Brewer color tables completely 
 ;            integrated. Fixed several bugs with updating color table names and type. DWF.
+;       29 Sept 2010. Modified the program to work correctly with a user-supplied color
+;            table file. DWF.
+;       26 November 2010. Fixed a problem I noticed when starting the program with reversed
+;            color tables. The initial colors were incorrect on subsequent calls. Also made
+;            a modification so that color index -1 as input is handled properly (ignored). DWF.
+;       26 January 2011. Added WINDOW and WINID keywords. DWF.
 ;
 ;******************************************************************************************;
 ;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
@@ -619,10 +629,10 @@ FOR j=0,nelements-1 DO BEGIN
          ENDIF ELSE BEGIN
             IF info.object_data $
                THEN Call_Method, (info.notifyobj)[j].method, $
-                      (info.notifyobj)[j].object,_Extra=*info.extra, $
+                      (info.notifyobj)[j].object,_Strict_Extra=*info.extra, $
                       XCOLORS_DATA=*info.colorinfoptr $ 
                ELSE Call_Method, (info.notifyobj)[j].method, $
-                      (info.notifyobj)[j].object,_Extra=*info.extra
+                      (info.notifyobj)[j].object,_Strict_Extra=*info.extra
          ENDELSE
       ENDIF ELSE BEGIN
         s = Size(*info.extra)
@@ -637,10 +647,10 @@ FOR j=0,nelements-1 DO BEGIN
             IF info.object_data $
                THEN Call_Method, (info.notifyobj)[j].method, $
                   (info.notifyobj)[j].object, DATA=*info.xcolorsData, $
-                  _Extra=*info.extra, XCOLORS_DATA=*info.colorinfoptr  $
+                  _Strict_Extra=*info.extra, XCOLORS_DATA=*info.colorinfoptr  $
                ELSE Call_Method, (info.notifyobj)[j].method, $
                   (info.notifyobj)[j].object, DATA=*info.xcolorsData, $
-                  _Extra=*info.extra
+                  _Strict_Extra=*info.extra
         ENDELSE
       ENDELSE
    ENDIF
@@ -654,14 +664,14 @@ IF info.notifyPro NE "" THEN BEGIN
       IF s[s[0]+1] EQ 0 THEN BEGIN
          Call_Procedure, info.notifyPro
       ENDIF ELSE BEGIN
-         Call_Procedure, info.notifyPro, _Extra=*info.extra
+         Call_Procedure, info.notifyPro, _Strict_Extra=*info.extra
       ENDELSE
    ENDIF ELSE BEGIN
       s = Size(*info.extra)
       IF s[s[0]+1] EQ 0 THEN BEGIN
          Call_Procedure, info.notifyPro, DATA=*info.xcolorsData
       ENDIF ELSE BEGIN
-         Call_Procedure, info.notifyPro, DATA=*info.xcolorsData, _Extra=*info.extra
+         Call_Procedure, info.notifyPro, DATA=*info.xcolorsData, _Strict_Extra=*info.extra
       ENDELSE
    ENDELSE
 ENDIF
@@ -865,34 +875,70 @@ PRO XCOLORS_REVERSE_BUTTON, event
 
 Widget_Control, event.top, Get_UValue=info, /No_Copy
 
-   ; Is the button set or not?
+; To get the initial colors correct. We have to load the colors as if they
+; were not reversed.
+IF info.index GE 0 THEN BEGIN  
+cgLoadCT, info.index, BREWER=info.brewer, RGB_TABLE=c
+info.r = c[*,0]
+info.g = c[*,1]
+info.b = c[*,2]
+ENDIF ELSE TVLCT, info.r, info.g, info.b
 
+; Is the button set or not?
 buttonSet = Widget_Info(event.id, /BUTTON_SET)
 
-   ; Make a pseudo structure.
+; Make a pseudo structure.
+IF buttonSet THEN  BEGIN
+    
+    IF info.currentBottom GT info.currentTop THEN $
+       pseudo = {currenttop:info.currentbottom, currentbottom:info.currenttop, $
+          reversed:1, bottomcolor:info.topcolor, topcolor:info.bottomcolor, $
+          gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
+          ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
+          notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
+          windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
+          thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
+          colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
+          needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
+          object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer} $
+    ELSE $
+       pseudo = {currenttop:info.currenttop, currentbottom:info.currentbottom, $
+          reversed:1, bottomcolor:info.bottomcolor, topcolor:info.topcolor, $
+          gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
+          ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
+          notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
+          windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
+          thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
+          colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
+          needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
+          object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer}
+          
+ENDIF ELSE BEGIN
 
-IF info.currentBottom GT info.currentTop THEN $
-   pseudo = {currenttop:info.currentbottom, currentbottom:info.currenttop, $
-      reversed:1, bottomcolor:info.topcolor, topcolor:info.bottomcolor, $
-      gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
-      ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
-      notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
-      windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
-      thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
-      colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
-      needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
-      object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer} $
-ELSE $
-   pseudo = {currenttop:info.currenttop, currentbottom:info.currentbottom, $
-      reversed:0, bottomcolor:info.bottomcolor, topcolor:info.topcolor, $
-      gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
-      ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
-      notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
-      windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
-      thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
-      colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
-      needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
-      object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer}
+    IF info.currentBottom GT info.currentTop THEN $
+       pseudo = {currenttop:info.currentbottom, currentbottom:info.currenttop, $
+          reversed:0, bottomcolor:info.topcolor, topcolor:info.bottomcolor, $
+          gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
+          ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
+          notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
+          windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
+          thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
+          colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
+          needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
+          object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer} $
+    ELSE $
+       pseudo = {currenttop:info.currenttop, currentbottom:info.currentbottom, $
+          reversed:0, bottomcolor:info.bottomcolor, topcolor:info.topcolor, $
+          gamma:info.gamma, top:info.top, bottom:info.bottom, index:info.index, $
+          ncolors:info.ncolors, r:info.r, g:info.g, b:info.b, $
+          notifyID:info.notifyID, colorimage:info.colorimage, extra:info.extra, $
+          windowindex:info.windowindex, from:'SLIDER', notifyObj:info.notifyObj, $
+          thisWindow:info.thisWindow, notifyPro:info.notifyPro, xcolorsData:info.xcolorsData, $
+          colorInfoPtr:info.colorInfoPtr, colornames:info.colornames, ctname:info.ctname, $
+          needColorInfo:info.needColorInfo, colortabletype:info.colortabletype, $
+          object_data:info.object_data, reverseID:info.reverseID, brewer:info.brewer}
+          
+ENDELSE
 
    ; Load the colors.
 
@@ -1017,11 +1063,17 @@ PRO XCOLORS_SWITCH_COLORS, event
    
    CASE thisType OF
    
+   
         'IDL': BEGIN
            info.file = Filepath(SubDir=['resource','colors'], 'colors1.tbl')
            info.brewer = 0
            END
            
+        'USER-DEFINED': BEGIN
+           info.file = info.userfile
+           info.brewer = 0
+           END
+
         'BREWER': BEGIN
            info.file = Find_Resource_File('fsc_brewer.tbl')
            info.brewer = 1
@@ -1079,6 +1131,8 @@ PRO XCOLORS, $
     Object_Data=object_data, $
     Reverse=reverse, $
     Title=title, $
+    Window=window, $
+    WinID=winID, $
     XOffset=xoffset, $
     YOffset=yoffset, $
     _EXTRA=extra
@@ -1101,7 +1155,8 @@ IF N_Elements(drag) EQ 0 THEN drag = 0
 
 IF N_Elements(file) EQ 0 THEN BEGIN
     file = Filepath(SubDir=['resource','colors'], 'colors1.tbl')
-ENDIF
+    userfile = ""
+ENDIF ELSE userfile = file
 
    ; Try to locate the brewer file. Check resource/colors directory, then look for it
    ; in the IDL path if it is not found there.
@@ -1116,9 +1171,44 @@ ENDIF ELSE BEGIN
 ENDELSE
 IF locatedBrewerFile AND Keyword_Set(brewer) $
    THEN colortabletype = 'BREWER' $
-   ELSE colortabletype = 'IDL'
+   ELSE IF userfile NE "" THEN colortabletype = 'USER-DEFINED' ELSE colortabletype = 'IDL'
 object_data = Keyword_Set(object_data)
 IF N_Elements(notifyID) EQ 0 THEN notifyID = [-1L, -1L]
+IF StrUpCase(colortabletype) EQ 'BREWER' THEN brewer = 1 ELSE brewer = 0
+
+; Is the window keyword set? If so, you will be sending this to
+; an FSC_Window to load the colors.
+IF Keyword_Set(window) THEN BEGIN
+  
+      ; Does a window object exist somewhere?
+      DefSysV, '!FSC_WINDOW_LIST', EXISTS=exists
+      IF exists THEN BEGIN
+           theList = !FSC_WINDOW_LIST
+           IF Obj_Valid(theList) THEN BEGIN
+                structs = theList -> Get_Item(/ALL, /DEREFERENCE)
+                IF Size(structs, /TNAME) EQ 'POINTER' THEN RETURN
+                IF N_Elements(winID) EQ 0 THEN BEGIN
+                    winID = N_Elements(structs) - 1
+                ENDIF ELSE BEGIN
+                    index = Where(structs.wid[*] EQ winID, count)
+                    IF count GT 0 THEN winID = index[0] ELSE BEGIN
+                        Message, 'Cannot find an FSC_Window with window index ' + StrTrim(winID, 2) + '.'
+                    ENDELSE
+                ENDELSE
+                thisWindowStruct = structs[winID]
+                IF Obj_Valid(thisWindowStruct.windowObj) THEN BEGIN
+                     thisStruct = {XCOLORS_NOTIFYOBJ, thisWindowStruct.windowObj, 'LoadColors'}
+                     object_data = 1
+                    IF N_Elements(notifyObj) EQ 0 THEN BEGIN
+                       notifyObj = thisStruct
+                    ENDIF ELSE BEGIN
+                       notifyObj = [notifyObj, thisStruct]
+                    ENDELSE
+                ENDIF 
+           ENDIF 
+       ENDIF 
+ENDIF
+
 IF N_Elements(notifyObj) EQ 0 THEN BEGIN
    notifyObj = {object:Obj_New(), method:'', wid:-1}
 ENDIF
@@ -1127,7 +1217,6 @@ IF Size(notifyObj, /Type) NE 8 THEN BEGIN
       'be structures. Returning...'])
    RETURN
 END
-IF StrUpCase(colortabletype) EQ 'BREWER' THEN brewer = 1 ELSE brewer = 0
 nelements = Size(notifyObj, /N_Elements)
 FOR j=0,nelements-1 DO BEGIN
    tags = Tag_Names(notifyObj[j])
@@ -1192,10 +1281,13 @@ IF N_Elements(ncolors) EQ 0 THEN ncolors = (256 < !D.Table_Size) - bottom
 IF (ncolors + bottom) GT 256 THEN ncolors = 256 - bottom
 
    ; Load colors in INDEX if specified.
-
-IF N_Elements(index) NE 0 THEN BEGIN
-   LoadCT, index, File=file, /Silent, NColors=ncolors, Bottom=bottom
+IF userfile NE "" THEN file = userfile
+IF N_Elements(index) GE 1 THEN BEGIN
+   IF index GE 0 THEN BEGIN
+        LoadCT, index, File=file, /Silent, NColors=ncolors, Bottom=bottom
+   ENDIF ELSE index = -1
 ENDIF ELSE index = -1
+
 
    ; Create a pointer to the color information.
 
@@ -1204,6 +1296,7 @@ IF Keyword_Set(reverse) THEN BEGIN
    rr = Reverse(rr)
    gg = Reverse(gg)
    bb = Reverse(bb)
+   TVLCT, rr, gg, bb
 ENDIF
 colorInfoPtr = Ptr_New({R:rr, G:gg, B:bb, Name:'Unknown', $
    Index:index, Type:colortabletype, Reversed:Keyword_Set(reverse), $
@@ -1243,8 +1336,15 @@ IF Keyword_Set(reverse) THEN Widget_Control, reverseID, SET_BUTTON=1
 
    ; A row for additional control.
 IF locatedBrewerFile THEN BEGIN
-    colorType = Widget_Droplist(cbase, Value=[' IDL Colors ', ' Brewer Colors '], $
-        /DYNAMIC_RESIZE, EVENT_PRO='XCOLORS_SWITCH_COLORS', UVALUE=['IDL','BREWER']) 
+    IF userfile NE "" THEN BEGIN
+       colorvalues = [' User-Defined Colors ', ' Brewer Colors ']
+       coloruvalue = ['USER-DEFINED', 'BREWER']
+    ENDIF ELSE BEGIN
+       colorvalues = [' IDL Colors ', ' Brewer Colors ']
+       coloruvalue = ['IDL','BREWER']
+    ENDELSE
+    colorType = Widget_Droplist(cbase, Value=colorvalues, $
+        /DYNAMIC_RESIZE, EVENT_PRO='XCOLORS_SWITCH_COLORS', UVALUE=coloruvalue) 
     IF Keyword_Set(Brewer) THEN Widget_Control, colorType, Set_Droplist_Select=1
 ENDIF 
     
@@ -1304,7 +1404,7 @@ colornames = Ptr_New(colornames)
    ; Create a cancel structure.
 
 cancelstruct = {currenttop:top, currentbottom:bottom, $
-   reversed:0, windowindex:windowindex, $
+   reversed:Keyword_Set(reverse), windowindex:windowindex, $
    bottomcolor:bottomcolor, topcolor:topcolor, gamma:1.0, $
    top:top, bottom:bottom, ncolors:ncolors, r:r, $
    g:g, b:b, notifyID:notifyID, index:index, $
@@ -1326,12 +1426,13 @@ info = {  windowIndex:windowIndex, $         ; The WID of the draw widget.
           gammaID:gammaID, $                 ; The widget ID of the gamma label
           ncolors:ncolors, $                 ; The number of colors we are using.
           gamma:1.0, $                       ; The current gamma value.
-          file:file, $                       ; The name of the color table file.
+          file:file, $                       ; The name of the user-supplied or default color table file.
+          userfile:userfile, $               ; The name, if any, of a user-supplied color table file.
           bottom:bottom, $                   ; The bottom color index.
           top:top, $                         ; The top color index.
           topcolor:topColor, $               ; The top color in this color table.
           bottomcolor:bottomColor, $         ; The bottom color in this color table.
-          reversed:0, $                      ; A reverse color table flag.
+          reversed:Keyword_Set(reverse), $   ; A reverse color table flag.
           reverseID:reverseID, $             ; The reverseID button.
           nosliders:Keyword_set(nosliders), $; A no slider flag.
           notifyID:notifyID, $               ; Notification widget IDs.
@@ -1375,9 +1476,9 @@ Widget_Control, tlb, /Managed
 WSet, thisWindow
 
 XManager, registerName, tlb, Group=(group_leader GE 0) ? group_leader : xx, No_Block=noblock, Cleanup="XColors_Cleanup"
+   
    ; Return the colorInfo information as a structure if this program
    ; was called as a modal widget.
-
 IF (Keyword_Set(modal) AND N_Elements(group_leader) NE 0 AND needColorInfo) OR (noblock EQ 0 AND needColorInfo) THEN BEGIN
    colorStruct = *colorInfoPtr
    Ptr_Free, colorInfoPtr

@@ -42,9 +42,13 @@
 ;       shapefile:     The name of the input shapefile. If not provided, the user
 ;                      will be prompted to select a shapefile.
 ;
-; KEYWORDS:
+; OUTPUT KEYWORDS:
 ;
-;     None.
+;     XRANGE:      An output two-element vector containing the minimum and maximum
+;                  X boundary of the shapefile entities.
+;
+;     YRANGE:      An output two-element vector containing the minimum and maximum
+;                  Y boundary of the shapefile entities.
 ;
 ; RESTRICTIONS:
 ;
@@ -59,14 +63,18 @@
 ; EXAMPLE:
 ;
 ;       filename = Filepath(SubDir=['examples','data'], 'states.shp')
-;       ShapeInfo, filename
+;       ShapeInfo, filename, XRANGE=xr, YRANGE=yr
+;       Plot, xr, yr, /NoData, XStyle=1, YStyle=1
+;       DrawShapes, filename
 ;
 ; MODIFICATION HISTORY:
 ;
 ;       Written by David W. Fanning, 21 October 2006.
+;       Slight modifications to the interface. 14 May 2010. DWF.
+;       Added XRANGE and YRANGE output keywords. 15 May 2010. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
+;  Copyright (c) 2006-2010, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -125,11 +133,13 @@ PRO ShapeInfo_Events, event
             ok = Dialog_Message('Unknown type code: ' + types + ' Returning.')
             RETURN
          ENDIF
-         space = String(Replicate(32B, 10))
-         type = 'TYPE = ' + ((*info).shapetype[typeIndex])[0]
-         lat = 'LAT = [' + StrTrim(bounds[1],2) + ', ' + StrTrim(bounds[5],2) + ']'
-         lon = 'LON = [' + StrTrim(bounds[0],2) + ', ' + StrTrim(bounds[4],2) + ']'
-         Widget_Control, (*info).statusbar, Set_Value=type[0] + space + lon + space + lat
+         space = String(Replicate(32B, 5))
+         type = 'Type = ' + ((*info).shapetype[typeIndex])[0]
+         lat = 'Y Bounds = [' + StrTrim(bounds[1],2) + ', ' + StrTrim(bounds[5],2) + ']'
+         lon = 'X Bounds = [' + StrTrim(bounds[0],2) + ', ' + StrTrim(bounds[4],2) + ']'
+         idx = 'Index = ' + StrTrim(event.index,2)
+         Widget_Control, (*info).statusbar, $
+            Set_Value=type[0] + space + lon + space + lat + space + idx
          END
 
       ; User selected a file attribute. Get the entity attributes associated with this file attribute.
@@ -210,7 +220,7 @@ PRO ShapeInfo_Cleanup, tlb
 END ; -----------------------------------------------------------------------------------------
 
 
-PRO ShapeInfo, filename
+PRO ShapeInfo, filename, XRANGE=xrange, YRANGE=yrange
 
    Compile_Opt idl2
 
@@ -255,24 +265,38 @@ PRO ShapeInfo, filename
 
    ; Shapefile Lists.
    nameBase = Widget_Base(listBase, Column=1)
-   label = Widget_Label(nameBase, Value='File Attributes')
-   nameList = Widget_List(nameBase, Value=theNames, YSize=25, XSIZE=50, UVALUE='NAMELIST')
+   label = Widget_Label(nameBase, Value='Attribute Name')
+   nameList = Widget_List(nameBase, Value=theNames, YSize=25, XSIZE=40, UVALUE='NAMELIST')
    Widget_Control, nameList, Set_List_Select=0
    attIndex = 0
 
    ; Cycle through each entity and get the attribute
    entityAttributes = StrArr(N_Elements(*entities))
    entityTypes = IntArr(N_Elements(*entities))
+   entityMinX = FltArr(N_Elements(*entities))
+   entityMaxX = FltArr(N_Elements(*entities))
+   entityMiny = FltArr(N_Elements(*entities))
+   entityMaxY = FltArr(N_Elements(*entities))
    FOR j=0,N_Elements(*entities)-1 DO BEGIN
       thisEntity = (*entities)[j]
       entityAttributes[j] = StrUpCase(StrTrim((*thisEntity.attributes).(attIndex), 2))
       entityTypes[j] = thisEntity.shape_type
+      entityMinX[j] =  thisEntity.bounds[0]
+      entityMaxX[j] =  thisEntity.bounds[4]
+      entityMiny[j] =  thisEntity.bounds[1]
+      entityMaxY[j] =  thisEntity.bounds[5]
    ENDFOR
+   xrange = [Min(entityMinX), Max(entityMaxX)]
+   yrange = [Min(entityMinY), Max(entityMaxY)]
+   
+;   Print, 'XRange = [' + Strtrim(Min(entityMinX),2) + ',' + StrTrim(Max(entityMaxX),2) + ']'
+;   Print, 'YRange = [' + Strtrim(Min(entityMinY),2) + ',' + StrTrim(Max(entityMaxY),2) + ']'
+;   FOR j=0,N_Elements(*entities)-1 DO Print, entityMinx[j], entityMaxx[j], entityminy[j], entitymaxy[j]
 
    ; Entity attribute list.
    nameBase = Widget_Base(listBase, Column=1)
-   label = Widget_Label(nameBase, Value='Entity Attributes')
-   entityList = Widget_List(nameBase, Value=entityAttributes, YSize=25,  XSIZE=50, UVALUE='ENTITYLIST')
+   label = Widget_Label(nameBase, Value='Attribute Value')
+   entityList = Widget_List(nameBase, Value=entityAttributes, YSize=25,  XSIZE=75, UVALUE='ENTITYLIST')
 
    ; Entity statusbar widgets.
    infobase = Widget_Base(tlb, Row=1, XPAD=0, YPAD=0, SPACE=0)

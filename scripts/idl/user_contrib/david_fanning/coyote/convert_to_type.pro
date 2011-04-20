@@ -53,6 +53,7 @@
 ;     Written by David W. Fanning, 19 February 2006.
 ;     Typo had "UNIT" instead of "UINT". 23 February 2009. DWF.
 ;     Added CEILING, FLOOR, and ROUND keywords. 1 April 2009. DWF.
+;     Modified so that the "type" variable is not changed by the program. 5 May 2009. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
@@ -81,21 +82,21 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-FUNCTION Convert_To_Type, input, type, $
+FUNCTION Convert_To_Type, input, theType, $
     CEILING=ceiling, $
     FLOOR=floor, $
     ROUND=round
 
    ; Return to caller on error.
    On_Error, 2
-
+   
    ; Two positional parameters are required.
    IF N_Params() NE 2 THEN Message, 'Two input parameters (INPUT and TYPE) are required.'
 
    ; If type is a string, turn it into a number.
-   IF Size(type, /TNAME) EQ 'STRING' THEN BEGIN
+   IF Size(theType, /TNAME) EQ 'STRING' THEN BEGIN
 
-      type = StrUpCase(type[0])
+      type = StrUpCase(theType[0])
       CASE type OF
          'BYTE': type = 1
          'INT': type = 2
@@ -109,19 +110,19 @@ FUNCTION Convert_To_Type, input, type, $
          'ULONG': type = 13
          'LONG64': type = 14
          'ULONG64': type = 15
-         ELSE: Message, 'Unable to convert input to type: ' + StrUpCase(type)
+         ELSE: Message, 'Unable to convert input to type: ' + StrUpCase(theType)
       ENDCASE
 
    ENDIF ELSE BEGIN
 
       ; Only certain kinds of data conversions can occur.
-      type = type[0]
+      type = theType[0]
       CASE 1 OF
          (type LT 1): Message, 'Unable to convert input to UNDEFINED data type.'
          (type EQ 8): Message, 'Unable to convert input to STRUCTURE data type.'
          (type EQ 10): Message, 'Unable to convert input to POINTER data type.'
          (type EQ 11): Message, 'Unable to convert input to OBJECT data type.'
-         (type GT 15): Message, 'Unable to convert undefined data type: ', StrTrim(type) + '.'
+         (type GT 15): Message, 'Unable to convert undefined data type: ', StrTrim(theType) + '.'
          ELSE:
       ENDCASE
    ENDELSE

@@ -123,6 +123,9 @@
 ;          XSIZE, YSIZE, CATCH, and FRAMES keyword made obsolete.
 ;          HEADDATA, ENDIAN, DATATYPE, DIMENSIONS keywords added.
 ;          Now dependent on FSC_FIELD, ERROR_MESSAGE, and CENTER_TLB from Coyote Library.
+;       Added ability to parse fully qualified file names passed from Dialog_Pickfile. 30 Oct 2010. DWF.
+;       IF a file name is not passed into the program, it asks the user to select one now. 10 Jan 2011. DWF.
+;       Problem with SWAP_ENDIAN keywords fixed. 7 March 2011. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -243,7 +246,7 @@ PRO GETIMAGE_EVENT, event
          startDirectory = startDirectory[0]
 
          ; If this directory doesn't exist, use the current directory.
-         test = Findfile(startDirectory, Count=foundfile)
+         test = File_Search(startDirectory, Count=foundfile)
          IF foundfile NE 1 THEN CD, Current=startDirectory
 
          ; Use PICKFILE to pick a name.
@@ -354,27 +357,29 @@ FUNCTION GETIMAGE, filename, Directory=directory, DataType=datatype, Dimensions=
    IF N_Elements(parent) NE 0 THEN group_leader = parent
 
    ; Check for parameters and keywords.
-   IF N_Params() EQ 0 THEN filename='ctscan.dat'
+   IF N_Elements(filename) EQ 0 THEN BEGIN
+        filename=Dialog_Pickfile()
+        IF filename EQ "" THEN RETURN, ""
+   ENDIF
+   
+   ; Does the file name have a directory? Is so, use it.
+   fileDir = File_Dirname(filename)
+   IF StrLen(fileDir) GT 1 THEN BEGIN
+       filename = File_Basename(filename)
+       directory = fileDir
+   ENDIF ELSE BEGIN
+       IF fileDir EQ "." THEN BEGIN
+          CD, CURRENT=directory
+          filename = File_Basename(filename)
+       ENDIF
+   ENDELSE
 
-   ; If DIRECTORY keyword is not used, use the "coyote" directory.
-   ; If that is not found, use the current directory.
+   ; If DIRECTORY keyword is not used, use the IDL example/data directory.
    IF N_Elements(directory) EQ 0 THEN BEGIN
-
-      startDirectory = GetImage_Find_Coyote()
-      IF startDirectory EQ '' THEN BEGIN
-         ;CD, Current=startDirectory
-         dir = Filepath(Subdirectory=['examples', 'data'], 'ctscan.dat')
-         startDirectory = StrMid(dir, 0, StrLen(dir)-11)
-      ENDIF
-
-   ENDIF ELSE startDirectory = directory
-
-   ; If the default file is not in the directory, make the filename
-   ; a null string.
-   thisFile = Filepath(Root_Dir=startDirectory, filename)
-   ok = Findfile(thisFile, Count=count)
-   IF count EQ 0 THEN filename = ''
-
+       directory = File_DirName(Filepath(Subdirectory=['examples', 'data'], 'nonesense.dat'))
+   ENDIF 
+   startDirectory = directory
+   
    ; Check for size and header keywords. These probably come in as
    ; numbers and you need strings to put them into text widgets.
    IF N_Elements(endian) EQ 0 THEN endian = 0 ELSE endian = 0 > endian < 2
@@ -548,13 +553,13 @@ FUNCTION GETIMAGE, filename, Directory=directory, DataType=datatype, Dimensions=
    ; Read the data file.
    IF formdata.header GT 0 THEN headdata = BytArr(formdata.header)
    Get_Lun, lun
-   OpenR, lun, formdata.filename, XDR=formdata.xdr
-   IF formdata.header GT 0 THEN ReadU, lun, headdata
    CASE formdata.endian OF
-      0: ReadU, lun, image
-      1: ReadU, lun, image, /Swap_If_Little_Endian
-      2: ReadU, lun, image, /Swap_If_Big_Endian
+      0: OpenR, lun, formdata.filename, XDR=formdata.xdr
+      1: OpenR, lun, formdata.filename, XDR=formdata.xdr, /Swap_If_Little_Endian
+      2: OpenR, lun, formdata.filename, XDR=formdata.xdr, /Swap_If_Big_Endian
    ENDCASE
+   IF formdata.header GT 0 THEN ReadU, lun, headdata
+   ReadU, lun, image
    Free_Lun, lun
 
    ; Free the pointer.

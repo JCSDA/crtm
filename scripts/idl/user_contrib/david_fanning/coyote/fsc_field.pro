@@ -324,6 +324,8 @@
 ;      See included EXAMPLE program for details. 10 August 2005. DWF.
 ;   Added functionality to covert double precision values to strings properly. 30 Nov 2005. DWF.
 ;   Set the default fonts to be the current widget font, rather than the default widget font. 4 Oct 2008. DWF.
+;   Fixed a problem with validating a float or double value when it was written with
+;      exponential notation. 2 April 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -1201,7 +1203,11 @@ IF N_Elements(value) NE 0 THEN BEGIN
          Message, 'Data type ' + dataType + ' is not supported. Returning.', /NoName
          END
    ENDCASE
-   self.theText = StrTrim(value, 2)
+   CASE Size(value, /TNAME) OF
+       'FLOAT': self.theText = StrTrim(String(value, FORMAT='(F0)'),2)
+       'DOUBLE': self.theText = StrTrim(String(value, FORMAT='(D0)'),2)
+       ELSE: self.theText = StrTrim(value, 2)
+   ENDCASE
    *self.theValue = self->ReturnValue(self.theText)
    Widget_Control, self.textID, Set_Value=self.theText
    self.dataType = datatype

@@ -7,7 +7,9 @@
 ;   This function provides a device-independent way to ask for a Greek letter as
 ;   a string that can be included, for example, in a plot title. It uses the Greek
 ;   simplex font (!4) when used with Hershey fonts, and the Symbol font (!9) when
-;   used with PostScript or True-Type fonts.
+;   used with PostScript or True-Type fonts. Selects the type of Greek character to 
+;   return based on value of !P.FONT. Updated now to return the UNICODE values for 
+;   Greek characters for those fonts that support them (Macintosh?).
 ;   
 ; AUTHOR:
 ;
@@ -59,6 +61,9 @@
 ;                  
 ;  EXAMPLE:        If this keyword is set, the names of the Greek characters and their
 ;                  symbols are written out in the current graphics window.
+;                                    
+;  UNICODE:        If this keyword is set, the function returns the Unicode for the Greek
+;                  letter.
 ;
 ; EXAMPLE:
 ;
@@ -80,14 +85,18 @@
 ; RESTRICTIONS:
 ; 
 ;  For this program to work correctly on your graphics display, you should be using
-;  Hershey fonts (!P.Font = -1 or the FONT keyword set to -1). It will work correctly
-;  in PostScript with either harwarde fonts (!P.Font=0) or True-Type fonts (!P.Font=1).
+;  Hershey fonts (!P.Font=-1). It will work correctly in PostScript with either 
+;  hardware fonts (!P.Font=0) or True-Type fonts (!P.Font=1).
 ;  
 ; MODIFICATION HISTORY:
 ;
 ;  Written by: David W. Fanning, 9 January 2010.
 ;  An alternative way to get an uppercase letter is to make the first letter of
 ;     the Greek name uppercase. (Maarten Sneep's suggestion!) 11 Jan 2010. DWF
+;  Had the wrong value for the PostScript version of Phi. 26 January 2010. DWF
+;  Added UNICODE keyword and values for Greek characters. 11 June 2010. DWF.
+;  Changed the branching from !D.NAME EQ 'PS' to !P.FONT NE -1. (This is actually
+;      what the documentation says, and what I intended. 13 Dec 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2010, by Fanning Software Consulting, Inc.                                ;
@@ -116,7 +125,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-PRO Greek_Example
+PRO Greek_Example, UNICODE=unicode
 
     Compile_Opt hidden
     
@@ -134,17 +143,17 @@ PRO Greek_Example
     IF (!D.Flags AND 256) NE 0 THEN BEGIN
         thisWindow = !D.Window
         Window, XSIZE=600, YSIZE=500, /Free
-        ERASE, COLOR=FSC_Color('white')
+        ERASE, COLOR=cgColor('white')
     ENDIF
     
     ; Output the letters.
     FOR j=0,11 DO BEGIN
         XYOuts, x[0], y[j], letter[j] + ': ' + $
-            Greek(letter[j]) + Greek(letter[j], /CAPITAL), $
-            /NORMAL, COLOR=FSC_Color('Black'), CHARSIZE=1.5
+            Greek(letter[j], UNICODE=unicode) + Greek(letter[j], /CAPITAL, UNICODE=unicode), $
+            /NORMAL, COLOR=cgColor('Black'), CHARSIZE=1.5
         XYOuts, x[1], y[j], letter[j+12] + ': ' + $
-            Greek(letter[j+12]) + Greek(letter[j+12], /CAPITAL), $
-            /NORMAL, COLOR=FSC_Color('Black'), CHARSIZE=1.5
+            Greek(letter[j+12], UNICODE=unicode) + Greek(letter[j+12], /CAPITAL, UNICODE=unicode), $
+            /NORMAL, COLOR=cgColor('Black'), CHARSIZE=1.5
     ENDFOR
     
     ; Restore the users window.
@@ -155,16 +164,19 @@ PRO Greek_Example
 END ; --------------------------------------------------------------------------------------
 
 
-FUNCTION Greek, letter, CAPITAL=capital, EXAMPLE=example
+FUNCTION Greek, letter, CAPITAL=capital, EXAMPLE=example, UNICODE=unicode
 
     Compile_Opt idl2
     
     ; Return to caller on error.
     ON_Error, 2
     
+    ; Set up PostScript device for working with Greek letters.
+    IF !D.Name EQ 'PS' THEN Device, ISOLATIN1=1
+    
     ; Do you wish to see an example?
     IF Keyword_Set(example) THEN BEGIN
-        Greek_Example
+        Greek_Example, UNICODE=unicode
         RETURN, ""
     ENDIF
 
@@ -177,10 +189,45 @@ FUNCTION Greek, letter, CAPITAL=capital, EXAMPLE=example
     firstLetter = StrMid(letter, 0, 1)
     IF firstLetter EQ StrUpCase(firstLetter) THEN capital = 1
     
-    IF !D.NAME EQ 'PS' THEN BEGIN
+    IF Keyword_Set(unicode) THEN BEGIN
+    
+        CASE StrLowCase(letter) OF
+            'alpha':   greekLetter = (capital) ? '!Z(0391)' : '!Z(03B1)'
+            'beta':    greekLetter = (capital) ? '!Z(0392)' : '!Z(03B2)'
+            'gamma':   greekLetter = (capital) ? '!Z(0393)' : '!Z(03B3)'
+            'delta':   greekLetter = (capital) ? '!Z(0394)' : '!Z(03B4)'
+            'epsilon': greekLetter = (capital) ? '!Z(0395)' : '!Z(03B5)'
+            'zeta':    greekLetter = (capital) ? '!Z(0396)' : '!Z(03B6)'
+            'eta':     greekLetter = (capital) ? '!Z(0397)' : '!Z(03B7)'
+            'theta':   greekLetter = (capital) ? '!Z(0398)' : '!Z(03B8)'
+            'iota':    greekLetter = (capital) ? '!Z(0399)' : '!Z(03B9)'
+            'kappa':   greekLetter = (capital) ? '!Z(039A)' : '!Z(03BA)'
+            'lambda':  greekLetter = (capital) ? '!Z(039B)' : '!Z(03BB)'
+            'mu':      greekLetter = (capital) ? '!Z(039C)' : '!Z(03BC)'
+            'nu':      greekLetter = (capital) ? '!Z(039D)' : '!Z(03BD)'
+            'xi':      greekLetter = (capital) ? '!Z(039E)' : '!Z(03BE)'
+            'omicron': greekLetter = (capital) ? '!Z(039F)' : '!Z(03BF)'
+            'pi':      greekLetter = (capital) ? '!Z(03A0)' : '!Z(03C0)'
+            'rho':     greekLetter = (capital) ? '!Z(03A1)' : '!Z(03C1)'
+            'sigma':   greekLetter = (capital) ? '!Z(03A3)' : '!Z(03C3)'
+            'tau':     greekLetter = (capital) ? '!Z(03A4)' : '!Z(03C4)'
+            'upsilon': greekLetter = (capital) ? '!Z(03A5)' : '!Z(03C5)'
+            'phi':     greekLetter = (capital) ? '!Z(03A6)' : '!Z(03C6)'
+            'chi':     greekLetter = (capital) ? '!Z(03A7)' : '!Z(03C7)'
+            'psi':     greekLetter = (capital) ? '!Z(03A8)' : '!Z(03C8)'
+            'omega':   greekLetter = (capital) ? '!Z(03A9)' : '!Z(03C9)'
+            ELSE: Message, 'The greek letter ' + letter + ' is unrecognized.'
+       ENDCASE
+           
+       ; Return the UNICODE greek letter.
+       RETURN, greekLetter
+       
+    ENDIF
+    
+    IF !P.FONT NE -1  THEN BEGIN
     
         ; Make sure ISOLATIN1 encoding is turned on.
-        DEVICE, /ISOLATIN1
+        IF (!D.Name EQ 'PS') THEN DEVICE, /ISOLATIN1
         
         CASE StrLowCase(letter) OF
             'alpha':   greekLetter = (capital) ? '!9' + String("101B) + '!X' : '!9' + String("141B) + '!X'
@@ -203,7 +250,7 @@ FUNCTION Greek, letter, CAPITAL=capital, EXAMPLE=example
             'sigma':   greekLetter = (capital) ? '!9' + String("123B) + '!X' : '!9' + String("163B) + '!X'
             'tau':     greekLetter = (capital) ? '!9' + String("124B) + '!X' : '!9' + String("164B) + '!X'
             'upsilon': greekLetter = (capital) ? '!9' + String("125B) + '!X' : '!9' + String("165B) + '!X'
-            'phi':     greekLetter = (capital) ? '!9' + String("121B) + '!X' : '!9' + String("161B) + '!X'
+            'phi':     greekLetter = (capital) ? '!9' + String("112B) + '!X' : '!9' + String("152B) + '!X'
             'chi':     greekLetter = (capital) ? '!9' + String("103B) + '!X' : '!9' + String("143B) + '!X'
             'psi':     greekLetter = (capital) ? '!9' + String("131B) + '!X' : '!9' + String("171B) + '!X'
             'omega':   greekLetter = (capital) ? '!9' + String("127B) + '!X' : '!9' + String("167B) + '!X'

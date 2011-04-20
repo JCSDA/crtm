@@ -15,6 +15,12 @@
 ;      An article describing how to use this program can be found here.
 ;
 ;         http://www.dfanning.com/map_tips/gshhs.html
+;         
+;      Note, the authors of the GSHHS software *continually* change the header
+;      structure, which you MUST know to read the data file. There are are now
+;      at least four different structures in common use. Please find the one
+;      you need from the commented list below. The current code uses the structure
+;      for the 2.0 version of the GSHHS software.
 ;
 ; AUTHOR:
 ;
@@ -64,7 +70,7 @@
 ;     Requires the following programs from the Coyote Library:
 ;
 ;         http://www.dfanning.com/programs/error_message.pro
-;         http://www.dfanning.com/programs/fsc_color.pro
+;         http://www.dfanning.com/programs/cgColor.pro
 ;         http://www.dfanning.com/programs/undefine.pro
 ;
 ; EXAMPLE:
@@ -77,16 +83,16 @@
 ;         Map_Set, -25.0, 135.0, Position=pos, Scale=64e6, /Mercator, /NoBorder
 ;         Polyfill, [pos[0], pos[0], pos[2], pos[2], pos[0]], $
 ;                   [pos[1], pos[3], pos[3], pos[1], pos[1]], $
-;                   /Normal, Color=FSC_Color('Almond')
+;                   /Normal, Color=cgColor('Almond')
 ;         Map_GSHHS_Shoreline, datafile, /Fill, Level=3, /Outline
-;         XYOutS, 0.5, 0.85, 'Australia', Font=0, Color=FSC_Color('Almond'), $
+;         XYOutS, 0.5, 0.85, 'Australia', Font=0, Color=cgColor('Almond'), $
 ;               /Normal, Alignment=0.5
 ;
 ;     Example using MAP_PROJ_INIT to set up the map coordinate space.
 ;
 ;         datafile = 'gshhs_h.b'
 ;         Window, XSize=500, YSize=350
-;         Erase, Color=FSC_Color('IVORY')
+;         Erase, Color=cgColor('IVORY')
 ;
 ;        ; Lambert Azimuthal Projection
 ;        map = Map_Proj_Init(111, Limit=[40, -95, 50, -75], $
@@ -97,18 +103,20 @@
 ;          /NoData, XStyle=5, YStyle=5, /NoErase
 ;       Map_GSHHS_Shoreline, datafile, /Fill, Level=3, Map_Projection=map, $
 ;          Water='DODGER BLUE', NoClip=0
-;       Map_Grid, /Label, /Box, Color=FSC_Color('CHARCOAL'), Map_Structure=map
+;       Map_Grid, /Label, /Box, Color=cgColor('CHARCOAL'), Map_Structure=map
 ;       Map_Continents, /USA, Map_Structure=map
-;       XYOutS, 0.5, 0.85, 'Great Lakes Region', Font=0, Color=FSC_Color('CHARCOAL'), $
+;       XYOutS, 0.5, 0.85, 'Great Lakes Region', Font=0, Color=cgColor('CHARCOAL'), $
 ;         /Normal, Alignment=0.5
 ;
 ; MODIFICATION HISTORY:
 ;
 ;     Written by David W. Fanning, 5 February 2006.
 ;     Based on programs by Liam Gumley at ftp://ftp.ssec.wisc.edu/pub/gumley/IDL/gshhs/.
-;     Bit of a dog's dish at the moment reading GHSSH files. I've contacted the author or the
+;     Bit of a dog's dish at the moment reading GSHHS files. I've contacted the author or the
 ;        data files, but haven't heard yet. Choose *one* of the headers below and see which 
 ;        one works for you on the data you have. Best I can do, sorry. 24 December 2008. DWF.
+;     In version 2.0 of the GSHHS they have changed the header again! Unbelievable. Modified
+;        the header structure once again to cope. 4 June 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -190,7 +198,7 @@ PRO Map_GSHHS_Shoreline, filename, $ ; The name of the GSHHS data file to open
 ;              greenwich: 0S, $ ; Set to 1 if Greenwich median is crossed by polygon.
 ;              source: 0S }     ; Database source: 0 WDB, 1 WVS.
 
-   ; Define the polygon header, for GSHHS software 1.4 and higher, which uses a 40 byte
+   ; Define the polygon header, for GSHHS software 1.4 through 1.11, which uses a 40 byte
    ; header structure. For example, gshhs_i.b from the gshhs_1.10.zip file.
 ;   header = { id: 0L, $        ; A unique polygon ID number, starting at 0.
 ;              npoints: 0L, $   ; The number of points in this polygon.
@@ -202,16 +210,31 @@ PRO Map_GSHHS_Shoreline, filename, $ ; The name of the GSHHS data file to open
 ;              area: 0L, $      ; Database source: 0 WDB, 1 WVS.
 ;              junk:bytarr(8)}  ; Eight bytes of junk to pad header.     
 
-   ; Define the polygon header, for GSHHS software 1.4 and higher, which uses a 32 byte
-   ; header structure. For example, gshhs_h.b from the gshhs_1.10.zip file.
+   ; Define the polygon header, for GSHHS software 1.4 through 1.11, which uses a 32 byte
+   ; header structure. For example, gshhs_h.b from the gshhs_1.11.zip.
+;   header = { id: 0L, $        ; A unique polygon ID number, starting at 0.
+;              npoints: 0L, $   ; The number of points in this polygon.
+;              flag: 0L, $      ; Contains polygonlevel, version, greenwich, and source values.
+;              west: 0L, $      ; West extent of polygon boundary in micro-degrees.
+;              east: 0L, $      ; East extent of polygon boundary in micro-degrees.
+;              south: 0L, $     ; South extent of polygon boundary in micro-degrees.
+;              north: 0L, $     ; North extent of polygon boundary in micro-degrees.
+;              area: 0L}        ; Database source: 0 WDB, 1 WVS.
+              
+   ; Define the polygon header, for GSHHS software 2.0, which uses a 44 byte
+   ; header structure. For example, gshhs_h.b from the gshhs_2.0.zip.
    header = { id: 0L, $        ; A unique polygon ID number, starting at 0.
               npoints: 0L, $   ; The number of points in this polygon.
-              flag: 0L, $      ; Contains polygonlevel, version, greenwich, and source values.
+              flag: 0L, $      ; Contains polygon level, version, greenwich, source, and river values.
               west: 0L, $      ; West extent of polygon boundary in micro-degrees.
               east: 0L, $      ; East extent of polygon boundary in micro-degrees.
               south: 0L, $     ; South extent of polygon boundary in micro-degrees.
               north: 0L, $     ; North extent of polygon boundary in micro-degrees.
-              area: 0L}        ; Database source: 0 WDB, 1 WVS.
+              area: 0L, $      ; Area of polygon in 1/10 km^2.
+              area_full: 0L, $ ; Area of origiinal full-resolution polygon in 1/10 km^2.
+              container: 0L, $ ; ID of container polygon that encloses this polygon (-1 if "none").
+              ancestor: 0L }   ; ID of ancestor polygon in the full resolution set that was the source
+                               ; of this polygon (-1 of "none").
 
    ; Read the data and plot if required.
    count = 0L
@@ -219,13 +242,25 @@ PRO Map_GSHHS_Shoreline, filename, $ ; The name of the GSHHS data file to open
    
       READU, lun, header
       
-      ; Parse the flag.
+      ; Parse the flag. Version 6 corresponds to 1.1x. Version 7 cooresponds to 2.0.
       f = header.flag
       version = ISHFT(f, -8) AND 255B
-      IF version GT 3 THEN polygonLevel = (f AND 255B) ELSE polygonLevel = header.polygonLevel
-      greenwich = ISHFT(f, -16) AND 255B
-      source = ISHFT(f, -24) AND 255B
-
+      IF version LT 7 THEN BEGIN
+          IF version GT 3 THEN BEGIN
+             polygonLevel = (f AND 255B) 
+          ENDIF ELSE BEGIN
+             polygonLevel = header.level
+          ENDELSE
+          greenwich = ISHFT(f, -16) AND 255B
+          source = ISHFT(f, -24) AND 255B
+      ENDIF ELSE BEGIN
+          level = f AND 255B
+          polygonLevel = (f AND 255B) 
+          greenwich = ISHFT(f, -16) AND 1B
+          source = ISHFT(f, -24) AND 1B
+          river = ISHFT(f, -25) AND 1B
+      ENDELSE
+      
       ; Get the polygon coordinates. Convert to lat/lon.
       polygon = LonArr(2, header.npoints, /NoZero)
       READU, lun, polygon
@@ -234,7 +269,6 @@ PRO Map_GSHHS_Shoreline, filename, $ ; The name of the GSHHS data file to open
       Undefine, polygon
 
       ; Discriminate polygons based on header information.
-;      polygonLevel = header.level  ;;; This line is required if you are reading headers for v1.3 and older.
       polygonArea = header.area * 0.1
       IF polygonLevel GT level THEN CONTINUE
       IF polygonArea LE minArea THEN CONTINUE
@@ -262,18 +296,18 @@ PRO Map_GSHHS_Shoreline, filename, $ ; The name of the GSHHS data file to open
       IF Keyword_Set(fill) THEN BEGIN
 
          IF (polygonLevel EQ 1) OR (polygonLevel EQ 3) THEN $
-             POLYFILL, lon, lat, Color=FSC_Color(land_color), NoClip=0, _EXTRA=extra ELSE $
-             POLYFILL, lon, lat, Color=FSC_Color(water_color), NoClip=0, _EXTRA=extra
+             POLYFILL, lon, lat, Color=cgColor(land_color), NoClip=0, _EXTRA=extra ELSE $
+             POLYFILL, lon, lat, Color=cgColor(water_color), NoClip=0, _EXTRA=extra
 
       ENDIF ELSE BEGIN
 
-         PLOTS, lon, lat, Color=FSC_Color(color), _EXTRA=extra
+         PLOTS, lon, lat, Color=cgColor(color), _EXTRA=extra
 
       ENDELSE
 
       ; Need outlines with a fill?
       IF Keyword_Set(fill) AND Keyword_Set(outline) THEN $
-         PLOTS, lon, lat, Color=FSC_Color(color), _EXTRA=extra
+         PLOTS, lon, lat, Color=cgColor(color), _EXTRA=extra
 
    ENDWHILE
    Free_Lun, lun
