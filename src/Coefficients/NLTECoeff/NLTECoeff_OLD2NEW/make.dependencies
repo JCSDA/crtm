@@ -1,0 +1,26 @@
+ACCoeff_Define.o : ACCoeff_Define.f90 SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+AntCorr_Define_old.o : AntCorr_Define_old.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+AntCorr_netCDF_IO_old.o : AntCorr_netCDF_IO_old.f90 AntCorr_Define_old.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+NLTECoeff_Define.o : NLTECoeff_Define.f90 SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+NLTECoeff_OLD2NEW.o : NLTECoeff_OLD2NEW.f90 SensorInfo_LinkedList.o SensorInfo_IO.o SensorInfo_Define.o NLTE_Binary_IO.o NLTE_Define.o NLTECoeff_netCDF_IO.o NLTECoeff_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
+NLTECoeff_netCDF_IO.o : NLTECoeff_netCDF_IO.f90 NLTECoeff_Define.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+NLTE_Binary_IO.o : NLTE_Binary_IO.f90 NLTE_Define.o Binary_File_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+NLTE_Define.o : NLTE_Define.f90 Message_Handler.o Type_Kinds.o 
+Search_Utility.o : Search_Utility.f90 Message_Handler.o Type_Kinds.o 
+SensorInfo_Define.o : SensorInfo_Define.f90 SensorInfo_Parameters.o Message_Handler.o Type_Kinds.o 
+SensorInfo_IO.o : SensorInfo_IO.f90 SensorInfo_LinkedList.o SensorInfo_Define.o Message_Handler.o File_Utility.o 
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 SensorInfo_Define.o Message_Handler.o 
+SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+SpcCoeff_Define.o : SpcCoeff_Define.f90 NLTECoeff_Define.o ACCoeff_Define.o SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+SpcCoeff_Define_old.o : SpcCoeff_Define_old.f90 AntCorr_Define_old.o SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+SpcCoeff_netCDF_IO.o : SpcCoeff_netCDF_IO.f90 SpcCoeff_Define.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+SpcCoeff_netCDF_IO_old.o : SpcCoeff_netCDF_IO_old.f90 AntCorr_netCDF_IO_old.o SpcCoeff_Define_old.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+String_Utility.o : String_Utility.f90 
+Type_Kinds.o : Type_Kinds.f90 

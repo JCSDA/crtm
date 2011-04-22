@@ -30,7 +30,7 @@ MODULE CRTM_TauCoeff
   USE File_Utility        , ONLY: File_Exists
   USE Binary_File_Utility , ONLY: Open_Binary_File
   USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE CRTM_Parameters     , ONLY: MAX_N_SENSORS
+  USE CRTM_Parameters     , ONLY: MAX_N_SENSORS, SET
   USE ODAS_TauCoeff       , ONLY: ODAS_Load_TauCoeff    => Load_TauCoeff   , &
                                   ODAS_Destroy_TauCoeff => Destroy_TauCoeff, &
                                   ODAS_TC => TC
@@ -75,8 +75,6 @@ MODULE CRTM_TauCoeff
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
 
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
 
   ! --------------------------------------
   ! The shared data for the gas absorption
@@ -771,9 +769,7 @@ CONTAINS
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID, &
-                                     Message_Log=Message_Log)
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening TauCoeff Binary file '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN

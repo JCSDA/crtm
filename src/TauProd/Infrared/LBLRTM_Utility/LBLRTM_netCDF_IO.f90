@@ -57,27 +57,27 @@ MODULE LBLRTM_netCDF_IO
   CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_VARNAME    = 'begin_frequency'
   CHARACTER(*), PARAMETER :: END_FREQUENCY_VARNAME      = 'end_frequency'
   CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_VARNAME = 'frequency_interval'
-  CHARACTER(*), PARAMETER :: TRANSMITTANCE_VARNAME      = 'transmittance'
+  CHARACTER(*), PARAMETER :: SPECTRUM_VARNAME           = 'spectrum'
 
   ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
   CHARACTER(*), PARAMETER :: DIRECTION_LONGNAME          = &
-    'Direction flag for transmittance calculation. Upwelling=1, Downwelling=2'
+    'Direction flag for radiance or transmittance calculation. Radiance=0, Upwelling=1, Downwelling=2'
   CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_LONGNAME    = &
-    'Begin frequency of the transmittance data'
+    'Begin frequency of the spectrum data'
   CHARACTER(*), PARAMETER :: END_FREQUENCY_LONGNAME      = &
-    'End frequency of the transmittance data'
+    'End frequency of the spectrum data'
   CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_LONGNAME = &
-    'Frequency interval of the transmittance data'
-  CHARACTER(*), PARAMETER :: TRANSMITTANCE_LONGNAME      = &
-    'Layer -> boundary (TOA or SFC) spectral transmittance'
+    'Frequency interval of the spectrum data'
+  CHARACTER(*), PARAMETER :: SPECTRUM_LONGNAME           = &
+    'Radiance or layer -> boundary (TOA or SFC) spectral transmittance'
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
   CHARACTER(*), PARAMETER :: BEGIN_FREQUENCY_UNITS    = 'Inverse centimetres (cm^-1)'
   CHARACTER(*), PARAMETER :: END_FREQUENCY_UNITS      = 'Inverse centimetres (cm^-1)'
   CHARACTER(*), PARAMETER :: FREQUENCY_INTERVAL_UNITS = 'Inverse centimetres (cm^-1)'
-  CHARACTER(*), PARAMETER :: TRANSMITTANCE_UNITS      = 'None'
+  CHARACTER(*), PARAMETER :: SPECTRUM_UNITS      = 'W / (cm^2 sr cm^-1) for radiance; None for transmittance'
 
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
@@ -85,16 +85,17 @@ MODULE LBLRTM_netCDF_IO
   REAL(fp)    , PARAMETER :: BEGIN_FREQUENCY_FILLVALUE    = -1.0_fp
   REAL(fp)    , PARAMETER :: END_FREQUENCY_FILLVALUE      = -1.0_fp
   REAL(fp)    , PARAMETER :: FREQUENCY_INTERVAL_FILLVALUE = -1.0_fp
-  REAL(fp)    , PARAMETER :: TRANSMITTANCE_FILLVALUE      = -1.0_fp
+  REAL(fp)    , PARAMETER :: SPECTRUM_FILLVALUE           = -1.0_fp
 
   ! Variable types
   INTEGER, PARAMETER :: DIRECTION_TYPE          = NF90_INT
   INTEGER, PARAMETER :: BEGIN_FREQUENCY_TYPE    = NF90_DOUBLE
   INTEGER, PARAMETER :: END_FREQUENCY_TYPE      = NF90_DOUBLE
   INTEGER, PARAMETER :: FREQUENCY_INTERVAL_TYPE = NF90_DOUBLE
-  INTEGER, PARAMETER :: TRANSMITTANCE_TYPE      = NF90_DOUBLE
+  INTEGER, PARAMETER :: SPECTRUM_TYPE           = NF90_DOUBLE
 
-  ! Direction flags for transmittance calculation
+  ! Direction flags radiance or for transmittance calculation
+  INTEGER, PARAMETER :: RADIANCE    = 0 
   INTEGER, PARAMETER :: UPWELLING   = 1
   INTEGER, PARAMETER :: DOWNWELLING = 2
 
@@ -625,7 +626,6 @@ CONTAINS
 !
 ! RESTRICTIONS:
 !       - It is assumed the number of frequencies is the same for every layer
-!       - Only transmittance data variables are created in the output netCDF file
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
@@ -693,7 +693,7 @@ CONTAINS
                             Message_Log = Message_Log )
       RETURN
     END IF
-    IF ( Direction /= DOWNWELLING .AND. Direction /= UPWELLING ) THEN
+    IF ( Direction /= RADIANCE .AND. Direction /= DOWNWELLING .AND. Direction /= UPWELLING ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid direction flag', &
@@ -945,15 +945,15 @@ CONTAINS
 
     ! Transmittance
     NF90_Status = NF90_DEF_VAR( NC_FileID, &
-                                TRANSMITTANCE_VARNAME, &
-                                TRANSMITTANCE_TYPE, &
+                                SPECTRUM_VARNAME, &
+                                SPECTRUM_TYPE, &
                                 dimids = (/ Frequency_DimID, &
                                             Layer_DimID     /), &
                                 varid = VarID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error defining '//TRANSMITTANCE_VARNAME//' variable in '// &
+                            'Error defining '//SPECTRUM_VARNAME//' variable in '// &
                             TRIM( NC_Filename )//'- '// &
                             TRIM( NF90_STRERROR( NF90_Status ) ), &
                             Error_Status, &
@@ -963,22 +963,22 @@ CONTAINS
     END IF
     Longname_Status  = Put_netCDF_Attribute( NC_FileID, &
                                              LONGNAME_ATTNAME, &
-                                             TRANSMITTANCE_LONGNAME, &
-                                             Variable_Name = TRANSMITTANCE_VARNAME )
+                                             SPECTRUM_LONGNAME, &
+                                             Variable_Name = SPECTRUM_VARNAME )
     Units_Status     = Put_netCDF_Attribute( NC_FileID, &
                                              UNITS_ATTNAME, &
-                                             TRANSMITTANCE_UNITS, &
-                                             Variable_Name = TRANSMITTANCE_VARNAME )
+                                             SPECTRUM_UNITS, &
+                                             Variable_Name = SPECTRUM_VARNAME )
     FillValue_Status = Put_netCDF_Attribute( NC_FileID, &
                                              FILLVALUE_ATTNAME, &
-                                             TRANSMITTANCE_FILLVALUE, &
-                                             Variable_Name = TRANSMITTANCE_VARNAME )
+                                             SPECTRUM_FILLVALUE, &
+                                             Variable_Name = SPECTRUM_VARNAME )
     IF ( Longname_Status  /= SUCCESS .OR. &
          Units_Status     /= SUCCESS .OR. &
          FillValue_Status /= SUCCESS      ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//TRANSMITTANCE_VARNAME//' attributes to '// &
+                            'Error writing '//SPECTRUM_VARNAME//' attributes to '// &
                             TRIM( NC_Filename ), &
                             Error_Status, &
                             Message_Log = Message_Log )
@@ -1441,7 +1441,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Write_LBLRTM_netCDF( NC_Filename,                   &  ! Input
-!                                           Transmittance = Transmittance, &  ! Optional input
+!                                           Spectrum = Spectrum,           &  ! Optional input
 !                                           RCS_Id        = RCS_Id,        &  ! Revision control
 !                                           Message_Log   = Message_Log    )  ! Error messaging
 !
@@ -1462,7 +1462,7 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUT ARGUMENTS:
-!       Transmittance:  Transmittance data to write to the netCDF LBLRTM file.
+!       Spectrum:       Spectrum data to write to the netCDF LBLRTM file.
 !                       UNITS:      N/A
 !                       TYPE:       REAL(fp)
 !                       DIMENSION:  Rank-1, n_Frequencies
@@ -1501,13 +1501,13 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Write_LBLRTM_netCDF( NC_Filename  , &  ! Input
-                                Transmittance, &  ! Optional input
+                                Spectrum     , &  ! Optional input
                                 RCS_Id       , &  ! Revision control
                                 Message_Log  ) &  ! Error messaging
                                RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    REAL(fp)    , OPTIONAL, INTENT(IN)  :: Transmittance(:)
+    REAL(fp)    , OPTIONAL, INTENT(IN)  :: Spectrum(:)
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -1532,7 +1532,7 @@ CONTAINS
       RCS_Id = MODULE_RCS_ID
     END IF
     ! Return if no data
-    IF ( .NOT. PRESENT(Transmittance) ) RETURN
+    IF ( .NOT. PRESENT(Spectrum) ) RETURN
 
 
     ! -----------------------------
@@ -1553,11 +1553,11 @@ CONTAINS
     END IF
     
     ! Check the number of frequencies
-    IF ( SIZE(Transmittance) /= n_Frequencies ) THEN
+    IF ( SIZE(Spectrum) /= n_Frequencies ) THEN
       Error_Status = FAILURE
-      WRITE( Message,'("Input TRANSMITTANCE array size (",i0,&
+      WRITE( Message,'("Input SPECTRUM array size (",i0,&
                       &") different from netCDF definition (",i0,")")' ) &
-                     SIZE(Transmittance), n_Frequencies
+                     SIZE(Spectrum), n_Frequencies
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
                             Error_Status, &
@@ -1587,13 +1587,13 @@ CONTAINS
     ! Write the data
     ! --------------
     Error_Status = Put_netCDF_Variable( NC_FileID, &
-                                        TRANSMITTANCE_VARNAME, &
-                                        Transmittance, &
+                                        SPECTRUM_VARNAME, &
+                                        Spectrum, &
                                         START=(/1,n_Layers+1/), &
                                         COUNT=(/n_Frequencies,1/) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing TRANSMITTANCE variable to '//TRIM(NC_Filename), &
+                            'Error writing SPECTRUM variable to '//TRIM(NC_Filename), &
                             Error_Status, &
                             Message_Log = Message_Log )
       NF90_Status = NF90_CLOSE( NC_FileID )
@@ -1627,7 +1627,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Read_LBLRTM_netCDF( NC_Filename,                   &  ! Input
 !                                          Layer,                         &  ! Input
-!                                          Transmittance = Transmittance, &  ! Optional output
+!                                          Spectrum = Spectrum          , &  ! Optional output
 !                                          RCS_Id        = RCS_Id,        &  ! Revision control
 !                                          Message_Log   = Message_Log    )  ! Error messaging
 !
@@ -1657,7 +1657,7 @@ CONTAINS
 !                       ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! OPTIONAL OUTPUT ARGUMENTS:
-!       Transmittance:  Transmittance data read from the netCDF LBLRTM file.
+!       Spectrum:  Spectrum data read from the netCDF LBLRTM file.
 !                       UNITS:      N/A
 !                       TYPE:       REAL(fp)
 !                       DIMENSION:  Rank-1, n_Frequencies
@@ -1687,14 +1687,14 @@ CONTAINS
 
   FUNCTION Read_LBLRTM_netCDF( NC_Filename  , &  ! Input
                                Layer        , &  ! Input
-                               Transmittance, &  ! Optional output
+                               Spectrum     , &  ! Optional output
                                RCS_Id       , &  ! Revision control
                                Message_Log  ) &  ! Error messaging
                                RESULT ( Error_Status )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: NC_Filename
     INTEGER     ,           INTENT(IN)  :: Layer
-    REAL(fp)    , OPTIONAL, INTENT(OUT) :: Transmittance(:)
+    REAL(fp)    , OPTIONAL, INTENT(OUT) :: Spectrum(:)
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
@@ -1719,7 +1719,7 @@ CONTAINS
       RCS_Id = MODULE_RCS_ID
     END IF
     ! Return if no data
-    IF ( .NOT. PRESENT(Transmittance) ) RETURN
+    IF ( .NOT. PRESENT(Spectrum) ) RETURN
 
 
     ! --------------------
@@ -1740,10 +1740,10 @@ CONTAINS
     END IF
 
     ! Check the number of frequencies
-    IF ( SIZE(Transmittance) /= n_Frequencies ) THEN
+    IF ( SIZE(Spectrum) /= n_Frequencies ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME,    &
-                            'Input TRANSMITTANCE array size different from netCDF definition.', &
+                            'Input SPECTRUM array size different from netCDF definition.', &
                             Error_Status,    &
                             Message_Log = Message_Log )
       NF90_Status = NF90_CLOSE( NC_FileID )
@@ -1781,12 +1781,12 @@ CONTAINS
     ! Read the data
     ! -------------
     Error_Status = Get_netCDF_Variable( NC_FileID, &
-                                        TRANSMITTANCE_VARNAME, &
-                                        Transmittance, &
+                                        SPECTRUM_VARNAME, &
+                                        Spectrum, &
                                         START=(/1, Layer/), &
                                         COUNT=(/n_Frequencies, 1/) )
     IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message, '( "Error writing TRANSMITTANCE variable for layer #", i3, &
+      WRITE( Message, '( "Error writing SPECTRUM variable for layer #", i3, &
                         &" in ", a )' ) Layer, TRIM( NC_Filename )
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM( Message ), &

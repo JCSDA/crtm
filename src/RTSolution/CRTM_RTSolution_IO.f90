@@ -470,7 +470,7 @@ CONTAINS
 
 
     ! Open the file
-    err_stat = Open_Binary_File( Filename, fid, For_Output=SET )
+    err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error opening '//TRIM(Filename)
       CALL Write_Cleanup(); RETURN

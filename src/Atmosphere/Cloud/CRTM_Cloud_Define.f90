@@ -6,9 +6,9 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!       Written by:     Yong Han,       yong.han@noaa.gov
+!                       Quanhua Liu,    quanhua.liu@noaa.gov
+!                       Paul van Delst, paul.vandelst@noaa.gov
 !                       20-Feb-2004
 !
 
@@ -49,6 +49,7 @@ MODULE CRTM_Cloud_Define
   ! Operators
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_Cloud_Associated
   PUBLIC :: CRTM_Cloud_Destroy
@@ -74,6 +75,10 @@ MODULE CRTM_Cloud_Define
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Cloud_Add
   END INTERFACE OPERATOR(+)
+
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_Cloud_Subtract
+  END INTERFACE OPERATOR(-)
 
   INTERFACE CRTM_SetLayers_Cloud
     MODULE PROCEDURE SetLayers_Scalar
@@ -498,15 +503,19 @@ CONTAINS
   SUBROUTINE CRTM_Cloud_Inspect( Cloud )
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
     INTEGER :: lType
-    ! Display components
-    WRITE(*, '(5x,"Cloud n_Layers:",1x,i0)') Cloud%n_Layers
+    
+    WRITE(*, '(1x,"CLOUD OBJECT")')
+    ! Dimensions
+    WRITE(*, '(3x,"Cloud n_Layers :",1x,i0)') Cloud%n_Layers
+    ! Cloud type and name
     lType = Cloud%Type
     IF ( lType < 1 .OR. lType > N_VALID_CLOUD_TYPES ) lType = INVALID_CLOUD
-    WRITE(*, '(5x,"Cloud type    :",1x,a)') CLOUD_TYPE_NAME(lType)
+    WRITE(*, '(3x,"Cloud type     :",1x,a)') CLOUD_TYPE_NAME(lType)
     IF ( .NOT. CRTM_Cloud_Associated(Cloud) ) RETURN
-    WRITE(*, '(5x,"Cloud Reff    :")') 
+    ! Profile information
+    WRITE(*, '(3x,"Cloud Reff:")') 
     WRITE(*, '(5(1x,es13.6,:))') Cloud%Effective_Radius
-    WRITE(*, '(5x,"Cloud water content:")') 
+    WRITE(*, '(3x,"Cloud water content:")') 
     WRITE(*, '(5(1x,es13.6,:))') Cloud%Water_Content
   END SUBROUTINE CRTM_Cloud_Inspect
 
@@ -857,5 +866,63 @@ CONTAINS
     cldsum%Water_Content(1:n)      = cldsum%Water_Content(1:n)      + cld2%Water_Content(1:n)     
 
   END FUNCTION CRTM_Cloud_Add
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Cloud_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM Cloud objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       clddiff = CRTM_Cloud_Subtract( cld1, cld2 )
+!
+!         or
+!
+!       clddiff = cld1 - cld2
+!
+!
+! INPUTS:
+!       cld1, cld2: The Cloud objects to difference.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Cloud_type
+!                   DIMENSION:  Scalar or any rank
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       clddiff:    Cloud structure containing the differenced components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Cloud_type
+!                   DIMENSION:  Same as input
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Cloud_Subtract( cld1, cld2 ) RESULT( clddiff )
+    TYPE(CRTM_Cloud_type), INTENT(IN) :: cld1, cld2
+    TYPE(CRTM_Cloud_type) :: clddiff
+    ! Variables
+    INTEGER :: n
+
+    ! Check input
+    ! ...If input structures not used, do nothing
+    IF ( .NOT. CRTM_Cloud_Associated( cld1 ) .OR. &
+         .NOT. CRTM_Cloud_Associated( cld2 )      ) RETURN
+    ! ...If input structure for different clouds, or sizes, do nothing
+    IF ( cld1%Type           /= cld2%Type           .OR. &
+         cld1%n_Layers       /= cld2%n_Layers       .OR. &
+         cld1%n_Added_Layers /= cld2%n_Added_Layers      ) RETURN
+    
+    ! Copy the first structure
+    clddiff = cld1
+
+    ! And subtract the second one's components from it
+    n = cld1%n_Layers
+    clddiff%Effective_Radius(1:n)   = clddiff%Effective_Radius(1:n)   - cld2%Effective_Radius(1:n)  
+    clddiff%Effective_Variance(1:n) = clddiff%Effective_Variance(1:n) - cld2%Effective_Variance(1:n)
+    clddiff%Water_Content(1:n)      = clddiff%Water_Content(1:n)      - cld2%Water_Content(1:n)     
+
+  END FUNCTION CRTM_Cloud_Subtract
 
 END MODULE CRTM_Cloud_Define

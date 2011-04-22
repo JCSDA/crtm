@@ -47,8 +47,6 @@ MODULE EmisCoeff_Binary_IO
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
@@ -184,9 +182,7 @@ CONTAINS
 
     ! Open the Binary format EmisCoeff file
     ! -------------------------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID,   &
-                                     Message_Log = Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error opening EmisCoeff file '//&
@@ -432,7 +428,7 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless....
     IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+      IF ( Quiet == 1 ) Noisy = .FALSE.
     END IF
     IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
       IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
@@ -449,9 +445,7 @@ CONTAINS
 
     ! Open the EmisCoeff file
     ! ------------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID,   &
-                                     Message_Log = Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error opening '//TRIM( Filename )//TRIM( Process_ID_Tag ), &
@@ -775,10 +769,9 @@ CONTAINS
 
     ! Open the EmisCoeff data file
     ! ----------------------------
-    Error_Status = Open_Binary_File( TRIM( Filename ),         &
-                                     FileID,                   &
-                                     For_Output  = 1,          &
-                                     Message_Log = Message_Log )
+    Error_Status = Open_Binary_File( TRIM( Filename ),    &
+                                     FileID,              &
+                                     For_Output  = .TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM( Filename )
       GOTO 2000

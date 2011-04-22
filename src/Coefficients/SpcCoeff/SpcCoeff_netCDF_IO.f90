@@ -1,13 +1,13 @@
 !
 ! SpcCoeff_netCDF_IO
 !
-! Module containing routines to read and write netCDF format
-! SpcCoeff files.
+! Module containing routines to read and write SpcCoeff netCDF
+! format files.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 17-Dec-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 17-Dec-2002
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE SpcCoeff_netCDF_IO
@@ -16,24 +16,18 @@ MODULE SpcCoeff_netCDF_IO
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds       , ONLY: Long, Double
-  USE Message_Handler  , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
-                               Display_Message
-  USE File_Utility     , ONLY: File_Exists
-  USE String_Utility   , ONLY: StrClean
-  USE SpcCoeff_Define  , ONLY: INVALID_WMO_SATELLITE_ID, &
-                               INVALID_WMO_SENSOR_ID   , &
-                               INVALID_SENSOR          , &
-                               INVALID_POLARIZATION    , &
-                               SpcCoeff_type           , &
-                               Associated_SpcCoeff     , &
-                               Destroy_SpcCoeff        , &
-                               Allocate_SpcCoeff       , &
-                               CheckRelease_SpcCoeff   , &
-                               Info_SpcCoeff
-  USE AntCorr_netCDF_IO, ONLY: DefineVar_AntCorr_netCDF, &
-                               WriteVar_AntCorr_netCDF , &
-                               ReadVar_AntCorr_netCDF
+  USE Type_Kinds     , ONLY: Long, Double
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE File_Utility   , ONLY: File_Exists
+  USE String_Utility , ONLY: StrClean
+  USE SpcCoeff_Define, ONLY: SpcCoeff_type          , &
+                             SpcCoeff_Associated    , &
+                             SpcCoeff_Destroy       , &
+                             SpcCoeff_Create        , &
+                             SpcCoeff_Inspect       , &
+                             SpcCoeff_ValidRelease  , &
+                             SpcCoeff_Info          , &
+                             SpcCoeff_DefineVersion
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -42,44 +36,43 @@ MODULE SpcCoeff_netCDF_IO
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
-  PUBLIC :: Inquire_SpcCoeff_netCDF
-  PUBLIC :: Write_SpcCoeff_netCDF
-  PUBLIC :: Read_SpcCoeff_netCDF
+  ! Procedures
+  PUBLIC :: SpcCoeff_netCDF_InquireFile
+  PUBLIC :: SpcCoeff_netCDF_ReadFile
+  PUBLIC :: SpcCoeff_netCDF_WriteFile
+  PUBLIC :: SpcCoeff_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
+  ! Default message string length
+  INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
-  ! Default msg string length
-  INTEGER, PARAMETER :: ML = 1024
 
-  ! Global attribute names. Case sensitive
-  CHARACTER(*), PARAMETER :: TITLE_GATTNAME            = 'title' 
-  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME          = 'history'
-  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME          = 'comment'
+
+  ! Global attribute names.
   CHARACTER(*), PARAMETER :: RELEASE_GATTNAME          = 'Release'
   CHARACTER(*), PARAMETER :: VERSION_GATTNAME          = 'Version'
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME            = 'Title' 
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME          = 'History'
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME          = 'Comment'
   CHARACTER(*), PARAMETER :: SENSOR_ID_GATTNAME        = 'Sensor_Id'
   CHARACTER(*), PARAMETER :: WMO_SATELLITE_ID_GATTNAME = 'WMO_Satellite_Id'
   CHARACTER(*), PARAMETER :: WMO_SENSOR_ID_GATTNAME    = 'WMO_Sensor_Id'
-  CHARACTER(*), PARAMETER :: AC_RELEASE_GATTNAME       = 'AC_Release'
-  CHARACTER(*), PARAMETER :: AC_VERSION_GATTNAME       = 'AC_Version'
+
 
   ! Dimension names
   CHARACTER(*), PARAMETER :: CHANNEL_DIMNAME = 'n_Channels'
-  CHARACTER(*), PARAMETER :: FOV_DIMNAME     = 'n_FOVs'     ! Only used if antenna correction data present
 
-  ! Variable names. Case sensitive.
+
+  ! Variable names.
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_VARNAME      = 'Sensor_Type'
   CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_VARNAME   = 'Sensor_Channel'
   CHARACTER(*), PARAMETER :: POLARIZATION_VARNAME     = 'Polarization'
@@ -93,24 +86,8 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: CBR_VARNAME              = 'Cosmic_Background_Radiance'
   CHARACTER(*), PARAMETER :: SOLAR_IRRADIANCE_VARNAME = 'Solar_Irradiance'
 
-  ! Description attribute.
-  CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
 
-  CHARACTER(*), PARAMETER :: SENSOR_TYPE_DESCRIPTION      = 'Sensor type to identify uW, IR, VIS, UV, etc sensor channels'
-  CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_DESCRIPTION   = 'List of sensor channel numbers'
-  CHARACTER(*), PARAMETER :: POLARIZATION_DESCRIPTION     = 'Polarization type flag.'
-  CHARACTER(*), PARAMETER :: CHANNEL_FLAG_DESCRIPTION     = 'Bit position flags for channels'
-  CHARACTER(*), PARAMETER :: FREQUENCY_DESCRIPTION        = 'Channel central frequency, f'
-  CHARACTER(*), PARAMETER :: WAVENUMBER_DESCRIPTION       = 'Channel central wavenumber, v'
-  CHARACTER(*), PARAMETER :: PLANCK_C1_DESCRIPTION        = 'First Planck coefficient, c1.v^3'
-  CHARACTER(*), PARAMETER :: PLANCK_C2_DESCRIPTION        = 'Second Planck coefficient, c2.v'
-  CHARACTER(*), PARAMETER :: BAND_C1_DESCRIPTION          = 'Polychromatic band correction offset'
-  CHARACTER(*), PARAMETER :: BAND_C2_DESCRIPTION          = 'Polychromatic band correction slope'
-  CHARACTER(*), PARAMETER :: CBR_DESCRIPTION              = 'Planck radiance for the cosmic background temperature'
-  CHARACTER(*), PARAMETER :: SOLAR_IRRADIANCE_DESCRIPTION = 'TOA solar irradiance using Kurucz spectrum'
-
-
-  ! Long name attribute.
+  ! Variable long name attribute.
   CHARACTER(*), PARAMETER :: LONGNAME_ATTNAME = 'long_name'
 
   CHARACTER(*), PARAMETER :: SENSOR_TYPE_LONGNAME      = 'Sensor Type'
@@ -126,6 +103,22 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: CBR_LONGNAME              = 'Cosmic Background Radiance'
   CHARACTER(*), PARAMETER :: SOLAR_IRRADIANCE_LONGNAME = 'Kurucz Solar Irradiance'
 
+
+  ! Variable description attribute.
+  CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
+
+  CHARACTER(*), PARAMETER :: SENSOR_TYPE_DESCRIPTION      = 'Sensor type to identify uW, IR, VIS, UV, etc sensor channels'
+  CHARACTER(*), PARAMETER :: SENSOR_CHANNEL_DESCRIPTION   = 'List of sensor channel numbers'
+  CHARACTER(*), PARAMETER :: POLARIZATION_DESCRIPTION     = 'Polarization type flag.'
+  CHARACTER(*), PARAMETER :: CHANNEL_FLAG_DESCRIPTION     = 'Bit position flags for channels'
+  CHARACTER(*), PARAMETER :: FREQUENCY_DESCRIPTION        = 'Channel central frequency, f'
+  CHARACTER(*), PARAMETER :: WAVENUMBER_DESCRIPTION       = 'Channel central wavenumber, v'
+  CHARACTER(*), PARAMETER :: PLANCK_C1_DESCRIPTION        = 'First Planck coefficient, c1.v^3'
+  CHARACTER(*), PARAMETER :: PLANCK_C2_DESCRIPTION        = 'Second Planck coefficient, c2.v'
+  CHARACTER(*), PARAMETER :: BAND_C1_DESCRIPTION          = 'Polychromatic band correction offset'
+  CHARACTER(*), PARAMETER :: BAND_C2_DESCRIPTION          = 'Polychromatic band correction slope'
+  CHARACTER(*), PARAMETER :: CBR_DESCRIPTION              = 'Planck radiance for the cosmic background temperature'
+  CHARACTER(*), PARAMETER :: SOLAR_IRRADIANCE_DESCRIPTION = 'TOA solar irradiance using Kurucz spectrum'
 
 
   ! Variable units attribute.
@@ -144,12 +137,13 @@ MODULE SpcCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: CBR_UNITS              = 'mW/(m^2.sr.cm^-1)'
   CHARACTER(*), PARAMETER :: SOLAR_IRRADIANCE_UNITS = 'mW/(m^2.cm^-1)'
 
+
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
 
-  INTEGER(Long), PARAMETER :: SENSOR_TYPE_FILLVALUE      = INVALID_SENSOR
+  INTEGER(Long), PARAMETER :: SENSOR_TYPE_FILLVALUE      = 0
   INTEGER(Long), PARAMETER :: SENSOR_CHANNEL_FILLVALUE   = 0
-  INTEGER(Long), PARAMETER :: POLARIZATION_FILLVALUE     = INVALID_POLARIZATION        
+  INTEGER(Long), PARAMETER :: POLARIZATION_FILLVALUE     = 0
   INTEGER(Long), PARAMETER :: CHANNEL_FLAG_FILLVALUE     = 0
   REAL(Double),  PARAMETER :: FREQUENCY_FILLVALUE        = ZERO
   REAL(Double),  PARAMETER :: WAVENUMBER_FILLVALUE       = ZERO
@@ -159,6 +153,7 @@ MODULE SpcCoeff_netCDF_IO
   REAL(Double),  PARAMETER :: BAND_C2_FILLVALUE          = ZERO
   REAL(Double),  PARAMETER :: CBR_FILLVALUE              = ZERO
   REAL(Double),  PARAMETER :: SOLAR_IRRADIANCE_FILLVALUE = ZERO
+
 
   ! Variable netCDF datatypes
   INTEGER, PARAMETER :: SENSOR_TYPE_TYPE      = NF90_INT
@@ -190,69 +185,46 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Inquire_SpcCoeff_netCDF
+!       SpcCoeff_netCDF_InquireFile
 !
 ! PURPOSE:
-!       Function to inquire a netCDF SpcCoeff format file to obtain the
-!       dimensions and global attributes.
+!       Function to inquire SpcCoeff object netCDF format files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_SpcCoeff_netCDF( NC_Filename                      , &
-!                                               n_Channels      =n_Channels      , &
-!                                               n_FOVs          =n_FOVs          , &
-!                                               Release         =Release         , &
-!                                               Version         =Version         , &
-!                                               Sensor_Id       =Sensor_Id       , &
-!                                               WMO_Satellite_Id=WMO_Satellite_Id, &
-!                                               WMO_Sensor_Id   =WMO_Sensor_Id   , &
-!                                               AC_Release      =AC_Release      , &
-!                                               AC_Version      =AC_Version      , &
-!                                               Title           =Title           , &
-!                                               History         =History         , &
-!                                               Comment         =Comment         , &
-!                                               RCS_Id          =RCS_Id          , &
-!                                               Message_Log     =Message_Log       )
+!       Error_Status = SpcCoeff_netCDF_InquireFile( &
+!                        Filename, &
+!                        n_Channels       = n_Channels      , &
+!                        Release          = Release         , &
+!                        Version          = Version         , &
+!                        Sensor_Id        = Sensor_Id       , &
+!                        WMO_Satellite_Id = WMO_Satellite_Id, &
+!                        WMO_Sensor_Id    = WMO_Sensor_Id   , &
+!                        Title            = Title           , &
+!                        History          = History         , &
+!                        Comment          = Comment           )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:        Character string specifying the name of the netCDF
-!                           format SpcCoeff data file to inquire.
+! INPUTS:
+!       Filename:           Character string specifying the name of the
+!                           SpcCoeff data file to inquire.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           msgs will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output msgs to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Channels:         The number of spectral channels for the sensor.
+! OPTIONAL OUTPUTS:
+!       n_Channels:         Total number of sensor channels.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_FOVs:             The number of fields-of-view for the sensor.
-!                           If specified and == 0, then this dimension is
-!                           not present in the netCDF SpcCoeff file.
+!       Release:            The release number of the SpcCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Release:            The release number of the netCDF SpcCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Version:            The version number of the netCDF SpcCoeff file.
+!       Version:            The version number of the SpcCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -276,45 +248,22 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       AC_Release:         The release number of the netCDF AntCorr file from
-!                           which the antenna correction data, if present, was
-!                           obtained
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       AC_Version:         The version number of the netCDF AntCorr file from
-!                           which the antenna correction data, if present, was
-!                           obtained
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 !       Title:              Character string written into the TITLE global
-!                           attribute field of the netCDF SpcCoeff file.
+!                           attribute field of the SpcCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       History:            Character string written into the HISTORY global
-!                           attribute field of the netCDF SpcCoeff file.
+!                           attribute field of the SpcCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !       Comment:            Character string written into the COMMENT global
-!                           attribute field of the netCDF SpcCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
+!                           attribute field of the SpcCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -324,9 +273,8 @@ CONTAINS
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
 !                           Message_Handler module.
-!                           If == SUCCESS the netCDF file inquiry was successful
-!                              == FAILURE an error occurred reading any of the
-!                                         requested data
+!                           If == SUCCESS the file inquiry was successful
+!                              == FAILURE an error occurred.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -334,969 +282,840 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_SpcCoeff_netCDF( NC_Filename     , &  ! Input
-                                    n_Channels      , &  ! Optional output
-                                    n_FOVs          , &  ! Optional output
-                                    Release         , &  ! Optional output
-                                    Version         , &  ! Optional output
-                                    Sensor_Id       , &  ! Optional output
-                                    WMO_Satellite_Id, &  ! Optional output
-                                    WMO_Sensor_Id   , &  ! Optional output
-                                    AC_Release      , &  ! Optional output
-                                    AC_Version      , &  ! Optional output
-                                    Title           , &  ! Optional output
-                                    History         , &  ! Optional output
-                                    Comment         , &  ! Optional output
-                                    RCS_Id          , &  ! Revision control
-                                    Message_Log     ) &  ! Error messaging
-                                  RESULT( Error_Status )
+  FUNCTION SpcCoeff_netCDF_InquireFile( &
+    Filename        , &  ! Input
+    n_Channels      , &  ! Optional output  
+    Release         , &  ! Optional Output
+    Version         , &  ! Optional Output
+    Sensor_Id       , &  ! Optional Output
+    WMO_Satellite_Id, &  ! Optional Output
+    WMO_Sensor_Id   , &  ! Optional Output
+    Title           , &  ! Optional output
+    History         , &  ! Optional output
+    Comment         ) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
+    CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_FOVs    
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
-    INTEGER     , OPTIONAL, INTENT(OUT) :: AC_Release         
-    INTEGER     , OPTIONAL, INTENT(OUT) :: AC_Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_SpcCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_InquireFile(netCDF)'
     ! Function variables
     CHARACTER(ML) :: msg
-    INTEGER :: NF90_Status
-    INTEGER :: NC_FileID
-    INTEGER :: n_Dims, DimId
-    TYPE(SpcCoeff_type) :: SpcCoeff
+    LOGICAL :: close_file
+    INTEGER :: nf90_status
+    INTEGER :: fileid
+    INTEGER :: dimid
+    TYPE(SpcCoeff_type) :: spccoeff
     
     ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
+    close_file = .FALSE.
 
 
     ! Open the file
-    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '// &
-            TRIM(NF90_STRERROR( NF90_Status ))
+    nf90_status = NF90_OPEN( Filename,NF90_NOWRITE,fileid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(Filename)//' for read access - '// &
+            TRIM(NF90_STRERROR( nf90_status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    ! ...Close the file if any error from here on
+    close_file = .TRUE.
+
+
+    ! Get the dimensions
+    ! ...n_Channels dimension
+    nf90_status = NF90_INQ_DIMID( FileId,CHANNEL_DIMNAME,DimId )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( nf90_status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=spccoeff%n_Channels )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//CHANNEL_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( nf90_status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+  
+  
+    ! Get the global attributes
+    err_stat = ReadGAtts( Filename, &
+                          fileid  , &
+                          Release          = Release         , &
+                          Version          = Version         , &
+                          Sensor_Id        = Sensor_Id       , &
+                          WMO_Satellite_Id = WMO_Satellite_Id, &
+                          WMO_Sensor_Id    = WMO_Sensor_Id   , &
+                          Title            = Title           , &
+                          History          = History         , &
+                          Comment          = Comment           )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading global attributes from '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Get the dimensions
-    ! ..How many are there?
-    NF90_Status = NF90_INQUIRE( NC_FileID,nDimensions=n_Dims )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error obtaining dimension information from '//TRIM(NC_Filename)//' - '//&
-            TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..The number of spectral channels
-    NF90_Status = NF90_INQ_DIMID( NC_FileId,CHANNEL_DIMNAME,DimId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring dimension ID for '//CHANNEL_DIMNAME//' - '// &
-            TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=SpcCoeff%n_Channels )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading dimension value for '//CHANNEL_DIMNAME//' - '// &
-            TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..The number of sensor fields-of-view
-    IF ( n_Dims > 1 ) THEN
-      NF90_Status = NF90_INQ_DIMID( NC_FileId,FOV_DIMNAME,DimId )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error inquiring dimension ID for '//FOV_DIMNAME//' - '// &
-              TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
-      NF90_Status = NF90_INQUIRE_DIMENSION( NC_FileId,DimId,Len=SpcCoeff%AC%n_FOVs )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error reading dimension value for '//FOV_DIMNAME//' - '// &
-              TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
-    END IF
-
-
-    ! Get the global attributes
-    Error_Status = ReadGAtts( NC_Filename                               , &
-                              NC_FileID                                 , &
-                              Release         =SpcCoeff%Release         , &
-                              Version         =SpcCoeff%Version         , &
-                              Sensor_Id       =SpcCoeff%Sensor_Id       , &
-                              WMO_Satellite_Id=SpcCoeff%WMO_Satellite_Id, &
-                              WMO_Sensor_Id   =SpcCoeff%WMO_Sensor_Id   , &
-                              AC_Release      =SpcCoeff%AC%Release      , &
-                              AC_Version      =SpcCoeff%AC%Version      , &
-                              Title           =Title                    , &
-                              History         =History                  , &
-                              Comment         =Comment                  , &
-                              Message_Log     =Message_Log                )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-
-
     ! Close the file
-    NF90_Status = NF90_CLOSE( NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+    nf90_status = NF90_CLOSE( fileid )
+    close_file = .FALSE.
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Set the return values
-    IF ( PRESENT(n_Channels      ) ) n_Channels       = SpcCoeff%n_Channels
-    IF ( PRESENT(n_FOVs          ) ) n_FOVs           = SpcCoeff%AC%n_FOVs
-    IF ( PRESENT(Release         ) ) Release          = SpcCoeff%Release
-    IF ( PRESENT(Version         ) ) Version          = SpcCoeff%Version
-    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = SpcCoeff%Sensor_Id
-    IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = SpcCoeff%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = SpcCoeff%WMO_Sensor_Id   
-    IF ( PRESENT(AC_Release      ) ) AC_Release       = SpcCoeff%AC%Release
-    IF ( PRESENT(AC_Version      ) ) AC_Version       = SpcCoeff%AC%Version
+    IF ( PRESENT(n_Channels) ) n_Channels = spccoeff%n_Channels
 
   CONTAINS
-  
-    SUBROUTINE Inquire_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileId )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
-        END IF
+ 
+    SUBROUTINE Inquire_CleanUp()
+      IF ( close_file ) THEN
+        nf90_status = NF90_CLOSE( fileid )
+        IF ( nf90_status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup.'
       END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Inquire_CleanUp
 
-  END FUNCTION Inquire_SpcCoeff_netCDF
+  END FUNCTION SpcCoeff_netCDF_InquireFile
+
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Write_SpcCoeff_netCDF
+!       SpcCoeff_netCDF_WriteFile
 !
 ! PURPOSE:
-!       Function to write SpcCoeff data to a netCDF format SpcCoeff file.
+!       Function to write SpcCoeff object files in netCDF format.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_SpcCoeff_netCDF( NC_Filename            , &
-!                                             SpcCoeff               , &
-!                                             Quiet      =Quiet      , &
-!                                             Title      =Title      , &
-!                                             History    =History    , &
-!                                             Comment    =Comment    , &
-!                                             RCS_Id     =RCS_Id     , &
-!                                             Message_Log=Message_Log  )
+!       Error_Status = SpcCoeff_netCDF_WriteFile( &
+!                        Filename         , &
+!                        SpcCoeff         , &
+!                        Quiet   = Quiet  , &
+!                        Title   = Title  , &
+!                        History = History, &
+!                        Comment = Comment  )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:  Character string specifying the name of the netCDF
-!                     format SpcCoeff data file to write data into.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       Filename:       Character string specifying the name of the
+!                       SpcCoeff data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-!       SpcCoeff:     Structure containing the spectral coefficient data
-!                     to write to file.
-!                     UNITS:      N/A
-!                     TYPE:       TYPE(SpcCoeff_type)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+!       SpcCoeff:       SpcCoeff object containing the spectral
+!                       coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       SpcCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information msgs being
-!                     printed to standard output (or the msg log file if
-!                     the Message_Log optional argument is used.) By default,
-!                     information msgs are printed.
-!                     If QUIET = 0, information msgs are OUTPUT.
-!                        QUIET = 1, information msgs are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       Integer
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Title:        Character string written into the TITLE global
-!                     attribute field of the netCDF SpcCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       History:      Character string written into the HISTORY global
-!                     attribute field of the netCDF SpcCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Comment:      Character string written into the COMMENT global
-!                     attribute field of the netCDF SpcCoeff file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:  Character string specifying a filename in which any
-!                     msgs will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output msgs to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the netCDF data write was successful
-!                        == FAILURE an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the data write was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_SpcCoeff_netCDF( NC_Filename , &  ! Input
-                                  SpcCoeff    , &  ! Input
-                                  Quiet       , &  ! Optional input
-                                  Title       , &  ! Optional input
-                                  History     , &  ! Optional input
-                                  Comment     , &  ! Optional input
-                                  RCS_Id      , &  ! Revision control
-                                  Message_Log ) &  ! Error messaging
-                                RESULT( Error_Status )
+  FUNCTION SpcCoeff_netCDF_WriteFile( &
+    Filename, &  ! Input
+    SpcCoeff, &  ! Input
+    Quiet   , &  ! Optional input
+    Title   , &  ! Optional input
+    History , &  ! Optional input
+    Comment ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    TYPE(SpcCoeff_type)   , INTENT(IN)  :: SpcCoeff
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),           INTENT(IN) :: Filename
+    TYPE(SpcCoeff_type),    INTENT(IN) :: SpcCoeff
+    LOGICAL,      OPTIONAL, INTENT(IN) :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_SpcCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_WriteFile(netCDF)'
     ! Local variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    INTEGER :: NC_FileId
-    INTEGER :: NF90_Status
-    INTEGER :: AC_Release, AC_Version
-    INTEGER :: VarId
+    LOGICAL :: close_file
+    LOGICAL :: noisy
+    INTEGER :: nf90_status
+    INTEGER :: fileid
+    INTEGER :: varid
 
     ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+    err_stat = SUCCESS
+    close_file = .FALSE.
+    ! ...Check structure pointer association status
+    IF ( .NOT. SpcCoeff_Associated( SpcCoeff ) ) THEN
+      msg = 'SpcCoeff structure is empty. Nothing to do!'
+      CALL Write_CleanUp(); RETURN
     END IF
-
-    IF ( .NOT. Associated_SpcCoeff( SpcCoeff ) ) THEN
-      msg = 'Some or all INPUT SpcCoeff pointer members are NOT associated.'
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-    Error_Status = CheckRelease_SpcCoeff( SpcCoeff, Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
+    ! ...Check if release is valid
+    IF ( .NOT. SpcCoeff_ValidRelease( SpcCoeff ) ) THEN
       msg = 'SpcCoeff Release check failed.'
       CALL Write_Cleanup(); RETURN
     END IF
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
 
 
-    ! Set the antenna correction GAtts
-    IF ( SpcCoeff%AC_Present ) THEN
-      AC_Release = SpcCoeff%AC%Release
-      AC_Version = SpcCoeff%AC%Version
-    ELSE
-      AC_Release = -1
-      AC_Version = -1
+    ! Create the output file
+    err_stat = CreateFile( &
+                 Filename                                    , &  ! Input
+                 SpcCoeff%n_Channels                         , &  ! Input
+                 fileid                                      , &  ! Output
+                 Version          = SpcCoeff%Version         , &  ! Optional input
+                 Sensor_Id        = SpcCoeff%Sensor_Id       , &  ! Optional input
+                 WMO_Satellite_Id = SpcCoeff%WMO_Satellite_Id, &  ! Optional input
+                 WMO_Sensor_Id    = SpcCoeff%WMO_Sensor_Id   , &  ! Optional input
+                 Title            = Title                    , &  ! Optional input
+                 History          = History                  , &  ! Optional input
+                 Comment          = Comment                    )  ! Optional input
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error creating output file '//TRIM(Filename)
+      CALL Write_Cleanup(); RETURN
     END IF
-    
+    ! ...Close the file if any error from here on
+    close_file = .TRUE.
 
-    ! Create the output data file
-    Error_Status = CreateFile( NC_Filename                               , &  ! Input
-                               SpcCoeff%n_Channels                       , &  ! Input
-                               NC_FileId                                 , &  ! Output
-                               n_FOVs          =SpcCoeff%AC%n_FOVs       , &  ! Optional input
-                               Version         =SpcCoeff%Version         , &  ! Optional input
-                               Sensor_Id       =SpcCoeff%Sensor_Id       , &  ! Optional input
-                               WMO_Satellite_Id=SpcCoeff%WMO_Satellite_Id, &  ! Optional input
-                               WMO_Sensor_Id   =SpcCoeff%WMO_Sensor_Id   , &  ! Optional input
-                               AC_Release      =AC_Release               , &  ! Optional input
-                               AC_Version      =AC_Version               , &  ! Optional input
-                               Title           =Title                    , &  ! Optional input
-                               History         =History                  , &  ! Optional input
-                               Comment         =Comment                  , &  ! Optional input
-                               Message_Log     =Message_Log                )  ! Error messaging
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error creating output file '//TRIM(NC_Filename)
+
+    ! Write the data items
+    ! ...Sensor_Type variable
+    NF90_Status = NF90_INQ_VARID( FileId,SENSOR_TYPE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_TYPE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Sensor_Type )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SENSOR_TYPE_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Sensor_Channel variable
+    NF90_Status = NF90_INQ_VARID( FileId,SENSOR_CHANNEL_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Sensor_Channel )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Polarization variable
+    NF90_Status = NF90_INQ_VARID( FileId,POLARIZATION_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//POLARIZATION_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Polarization )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//POLARIZATION_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Channel_Flag variable
+    NF90_Status = NF90_INQ_VARID( FileId,CHANNEL_FLAG_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//CHANNEL_FLAG_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Channel_Flag )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//CHANNEL_FLAG_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Frequency variable
+    NF90_Status = NF90_INQ_VARID( FileId,FREQUENCY_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Frequency )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//FREQUENCY_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Wavenumber variable
+    NF90_Status = NF90_INQ_VARID( FileId,WAVENUMBER_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//WAVENUMBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Wavenumber )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//WAVENUMBER_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Planck_C1 variable
+    NF90_Status = NF90_INQ_VARID( FileId,PLANCK_C1_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_C1_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Planck_C1 )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PLANCK_C1_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Planck_C2 variable
+    NF90_Status = NF90_INQ_VARID( FileId,PLANCK_C2_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_C2_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Planck_C2 )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//PLANCK_C2_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Band_C1 variable
+    NF90_Status = NF90_INQ_VARID( FileId,BAND_C1_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//BAND_C1_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Band_C1 )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//BAND_C1_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Band_C2 variable
+    NF90_Status = NF90_INQ_VARID( FileId,BAND_C2_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//BAND_C2_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Band_C2 )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//BAND_C2_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Cosmic_Background_Radiance variable
+    NF90_Status = NF90_INQ_VARID( FileId,CBR_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//CBR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Cosmic_Background_Radiance )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//CBR_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Solar_Irradiance variable
+    NF90_Status = NF90_INQ_VARID( FileId,SOLAR_IRRADIANCE_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SOLAR_IRRADIANCE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,SpcCoeff%Solar_Irradiance )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//SOLAR_IRRADIANCE_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
 
 
-    ! Write the SpcCoeff data
-    ! ..Sensor type to identify uW, IR, VIS, UV, etc sensor channels
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_TYPE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_TYPE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Sensor_Type )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//SENSOR_TYPE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..List of sensor channel numbers
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Sensor_Channel )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polarization type flag.
-    NF90_Status = NF90_INQ_VARID( NC_FileId,POLARIZATION_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//POLARIZATION_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Polarization )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//POLARIZATION_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Bit position flags for channels
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CHANNEL_FLAG_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CHANNEL_FLAG_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Channel_Flag )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//CHANNEL_FLAG_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Channel central frequency, f
-    NF90_Status = NF90_INQ_VARID( NC_FileId,FREQUENCY_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FREQUENCY_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Frequency )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//FREQUENCY_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Channel central wavenumber, v
-    NF90_Status = NF90_INQ_VARID( NC_FileId,WAVENUMBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//WAVENUMBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Wavenumber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//WAVENUMBER_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..First Planck coefficient, c1.v^3
-    NF90_Status = NF90_INQ_VARID( NC_FileId,PLANCK_C1_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PLANCK_C1_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Planck_C1 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//PLANCK_C1_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Second Planck coefficient, c2.v
-    NF90_Status = NF90_INQ_VARID( NC_FileId,PLANCK_C2_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PLANCK_C2_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Planck_C2 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//PLANCK_C2_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polychromatic band correction offset
-    NF90_Status = NF90_INQ_VARID( NC_FileId,BAND_C1_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//BAND_C1_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Band_C1 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//BAND_C1_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polychromatic band correction slope
-    NF90_Status = NF90_INQ_VARID( NC_FileId,BAND_C2_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//BAND_C2_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Band_C2 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//BAND_C2_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Planck radiance for the cosmic background temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CBR_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CBR_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Cosmic_Background_Radiance )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//CBR_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..TOA solar irradiance using Kurucz spectrum
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SOLAR_IRRADIANCE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SOLAR_IRRADIANCE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_PUT_VAR( NC_FileId,VarID,SpcCoeff%Solar_Irradiance )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error writing '//SOLAR_IRRADIANCE_VARNAME//' to '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-
-
-    ! Write the antenna correction data
-    IF ( SpcCoeff%AC_Present ) THEN
-      Error_Status = WriteVar_AntCorr_netCDF( NC_Filename            , &
-                                              NC_FileID              , &
-                                              SpcCoeff%AC            , &
-                                              Message_Log=Message_Log  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        msg = 'Error writing AC variables to '//TRIM(NC_Filename)
-        CALL Write_Cleanup(); RETURN
-      END IF
-    END IF
-
-
     ! Close the file
-    NF90_Status = NF90_CLOSE( NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( NF90_Status ))
+    nf90_status = NF90_CLOSE( fileid )
+    close_file = .FALSE.
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
-      CALL Info_SpcCoeff( SpcCoeff, msg )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+    IF ( noisy ) THEN
+      CALL SpcCoeff_Info( SpcCoeff, msg )
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
     END IF
 
   CONTAINS
-  
-    SUBROUTINE Write_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileId )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ))
-        END IF
+
+    SUBROUTINE Write_CleanUp()
+      IF ( close_file ) THEN
+        nf90_status = NF90_CLOSE( fileid )
+        IF ( nf90_status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing output file during error cleanup - '//&
+                TRIM(NF90_STRERROR( nf90_status ))
       END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Write_CleanUp
 
-  END FUNCTION Write_SpcCoeff_netCDF
+  END FUNCTION SpcCoeff_netCDF_WriteFile
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Read_SpcCoeff_netCDF
+!       SpcCoeff_netCDF_ReadFile
 !
 ! PURPOSE:
-!       Function to read data from a netCDF format SpcCoeff file.
+!       Function to read SpcCoeff object files in netCDF format.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_SpcCoeff_netCDF( NC_Filename            , &
-!                                            SpcCoeff               , &
-!                                            Quiet      =Quiet      , &
-!                                            Title      =Title      , &
-!                                            History    =History    , &
-!                                            Comment    =Comment    , &
-!                                            RCS_Id     =RCS_Id     , &
-!                                            Message_Log=Message_Log  )
+!       Error_Status = SpcCoeff_netCDF_ReadFile( &
+!                        Filename         , &
+!                        SpcCoeff         , &
+!                        Quiet   = Quiet  , &
+!                        Title   = Title  , &
+!                        History = History, &
+!                        Comment = Comment  )
 !
-! INPUT ARGUMENTS:
-!       NC_Filename:     Character string specifying the name of the netCDF
-!                        format SpcCoeff data file to read.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       Filename:       Character string specifying the name of the
+!                       SpcCoeff data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       SpcCoeff:        Structure to contain the spectral coefficient data read
-!                        from the file.
-!                        UNITS:      N/A
-!                        TYPE:       SpcCoeff_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT)
+! OUTPUTS:
+!       SpcCoeff:       SpcCoeff object containing the spectral
+!                       coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       SpcCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:           Set this keyword to suppress information msgs being
-!                        printed to standard output (or the msg log file if
-!                        the Message_Log optional argument is used.) By default,
-!                        information msgs are printed.
-!                        If QUIET = 0, information msgs are OUTPUT.
-!                           QUIET = 1, information msgs are SUPPRESSED.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:     Character string specifying a filename in which any
-!                        msgs will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output msgs to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
+! OPTIONAL OUTPUTS:
+!       Title:          Character string written into the TITLE global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Title:           Character string written into the TITLE global
-!                        attribute field of the netCDF SpcCoeff file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       History:        Character string written into the HISTORY global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       History:         Character string written into the HISTORY global
-!                        attribute field of the netCDF SpcCoeff file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       Comment:         Character string written into the COMMENT global
-!                        attribute field of the netCDF SpcCoeff file.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+!       Comment:        Character string written into the COMMENT global
+!                       attribute field of the SpcCoeff file.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the netCDF file read was successful
-!                           == FAILURE an unrecoverable read error occurred.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output SpcCoeff argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined on
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the data write was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Read_SpcCoeff_netCDF( NC_Filename, &  ! Input
-                                 SpcCoeff   , &  ! Output
-                                 Quiet      , &  ! Optional input
-                                 Title      , &  ! Optional output
-                                 History    , &  ! Optional output
-                                 Comment    , &  ! Optional output
-                                 RCS_Id     , &  ! Revision control
-                                 Message_Log) &  ! Error messaging
-                               RESULT( Error_Status )
+  FUNCTION SpcCoeff_netCDF_ReadFile( &
+    Filename, &  ! Input
+    SpcCoeff, &  ! Output
+    Quiet   , &  ! Optional input
+    Title   , &  ! Optional output
+    History , &  ! Optional output
+    Comment ) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)     :: NC_Filename
-    TYPE(SpcCoeff_type)   , INTENT(IN OUT) :: SpcCoeff
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    TYPE(SpcCoeff_type),    INTENT(OUT) :: SpcCoeff
+    LOGICAL,      OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_SpcCoeff_netCDF'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_ReadFile(netCDF)'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    INTEGER :: NF90_Status
-    INTEGER :: NC_FileID
-    INTEGER :: n_Channels, n_FOVs
-    INTEGER :: VarId
+    LOGICAL :: close_file
+    LOGICAL :: noisy
+    INTEGER :: nf90_status
+    INTEGER :: fileid
+    INTEGER :: n_channels
+    INTEGER :: varid
 
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational msgs....
-    Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-
-
-    ! Allocate the structure for the netCDF read
-    ! ..Read the dimension values
-    Error_Status = Inquire_SpcCoeff_netCDF( NC_Filename            , &
-                                            n_Channels =n_Channels , &
-                                            n_FOVs     =n_FOVs     , &
-                                            Message_Log=Message_Log  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error obtaining SpcCoeff dimensions from '//TRIM(NC_Filename)
+    err_stat = SUCCESS
+    close_file = .FALSE.
+    ! ...Check that the file exists
+    IF ( .NOT. File_Exists(Filename) ) THEN
+      msg = 'File '//TRIM(Filename)//' not found.'
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ..Allocate the structure
-    Error_Status = Allocate_SpcCoeff( n_Channels             , &  ! Input
-                                      SpcCoeff               , &  ! Output
-                                      n_FOVs     =n_FOVs     , &  ! Optional Input
-                                      Message_Log=Message_Log  )  ! Error messaging
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error occurred allocating SpcCoeff structure.'
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+
+
+    ! Inquire the file to get the dimensions
+    err_stat = SpcCoeff_netCDF_InquireFile( &
+                 Filename, &
+                 n_Channels = n_channels  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error obtaining SpcCoeff dimensions from '//TRIM(Filename)
       CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Open the netCDF file for reading
-    NF90_Status = NF90_OPEN( NC_Filename,NF90_NOWRITE,NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error opening '//TRIM(NC_Filename)//' for read access - '//&
-            TRIM(NF90_STRERROR( NF90_Status ))
+    ! Allocate the output structure
+    CALL SpcCoeff_Create( SpcCoeff, n_channels )
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) THEN
+      msg = 'Error allocating output SpcCoeff'
       CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Read and assign the remaining global attributes
-    Error_Status = ReadGAtts( NC_Filename                               , &
-                              NC_FileID                                 , &
-                              Release         =SpcCoeff%Release         , &
-                              Version         =SpcCoeff%Version         , &
-                              Sensor_Id       =SpcCoeff%Sensor_Id       , &
-                              WMO_Satellite_Id=SpcCoeff%WMO_Satellite_Id, &
-                              WMO_Sensor_Id   =SpcCoeff%WMO_Sensor_Id   , &
-                              AC_Release      =SpcCoeff%AC%Release      , &
-                              AC_Version      =SpcCoeff%AC%Version      , &
-                              Title           =Title                    , &
-                              History         =History                  , &
-                              Comment         =Comment                  , &
-                              Message_Log     =Message_Log                )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error reading global attribute from '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    ! Open the file for reading
+    nf90_status = NF90_OPEN( Filename,NF90_NOWRITE,fileid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error opening '//TRIM(Filename)//' for read access - '//&
+            TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
     END IF
-    SpcCoeff%AC%Sensor_Id        = SpcCoeff%Sensor_Id       
-    SpcCoeff%AC%WMO_Satellite_Id = SpcCoeff%WMO_Satellite_Id
-    SpcCoeff%AC%WMO_Sensor_Id    = SpcCoeff%WMO_Sensor_Id   
+    ! ...Close the file if any error from here on
+    close_file = .TRUE.
 
 
-    ! Check the release
-    Error_Status = CheckRelease_SpcCoeff( SpcCoeff,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'SpcCoeff Release check failed for '//TRIM(NC_Filename)
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    ! Read the global attributes
+    err_stat = ReadGAtts( &
+                 Filename, &
+                 fileid  , &
+                 Release          = SpcCoeff%Release         , &
+                 Version          = SpcCoeff%Version         , &
+                 Sensor_Id        = SpcCoeff%Sensor_Id       , &
+                 WMO_Satellite_Id = SpcCoeff%WMO_Satellite_Id, &
+                 WMO_Sensor_Id    = SpcCoeff%WMO_Sensor_Id   , &
+                 Title            = Title                    , &
+                 History          = History                  , &
+                 Comment          = Comment                    )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading global attribute from '//TRIM(Filename)
+      CALL Read_Cleanup(); RETURN
     END IF
-
-
-    ! Read the spectral coefficient data
-    ! ..Sensor type to identify uW, IR, VIS, UV, etc sensor channels
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_TYPE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_TYPE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Sensor_Type )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//SENSOR_TYPE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..List of sensor channel numbers
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SENSOR_CHANNEL_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Sensor_Channel )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polarization type flag.
-    NF90_Status = NF90_INQ_VARID( NC_FileId,POLARIZATION_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//POLARIZATION_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Polarization )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//POLARIZATION_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Bit position flags for channels
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CHANNEL_FLAG_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CHANNEL_FLAG_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Channel_Flag )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//CHANNEL_FLAG_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Channel central frequency, f
-    NF90_Status = NF90_INQ_VARID( NC_FileId,FREQUENCY_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//FREQUENCY_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Frequency )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//FREQUENCY_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Channel central wavenumber, v
-    NF90_Status = NF90_INQ_VARID( NC_FileId,WAVENUMBER_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//WAVENUMBER_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Wavenumber )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//WAVENUMBER_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..First Planck coefficient, c1.v^3
-    NF90_Status = NF90_INQ_VARID( NC_FileId,PLANCK_C1_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PLANCK_C1_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Planck_C1 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//PLANCK_C1_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Second Planck coefficient, c2.v
-    NF90_Status = NF90_INQ_VARID( NC_FileId,PLANCK_C2_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//PLANCK_C2_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Planck_C2 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//PLANCK_C2_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polychromatic band correction offset
-    NF90_Status = NF90_INQ_VARID( NC_FileId,BAND_C1_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//BAND_C1_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Band_C1 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//BAND_C1_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Polychromatic band correction slope
-    NF90_Status = NF90_INQ_VARID( NC_FileId,BAND_C2_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//BAND_C2_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Band_C2 )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//BAND_C2_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..Planck radiance for the cosmic background temperature
-    NF90_Status = NF90_INQ_VARID( NC_FileId,CBR_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//CBR_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Cosmic_Background_Radiance )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//CBR_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..TOA solar irradiance using Kurucz spectrum
-    NF90_Status = NF90_INQ_VARID( NC_FileId,SOLAR_IRRADIANCE_VARNAME,VarId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error inquiring '//TRIM(NC_Filename)//' for '//SOLAR_IRRADIANCE_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    NF90_Status = NF90_GET_VAR( NC_FileId,VarID,SpcCoeff%Solar_Irradiance )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error reading '//SOLAR_IRRADIANCE_VARNAME//' from '//TRIM(NC_Filename)//&
-            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+    ! ...Check if release is valid
+    IF ( .NOT. SpcCoeff_ValidRelease( SpcCoeff ) ) THEN
+      msg = 'SpcCoeff Release check failed.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Read the antenna correction data if required
-    IF ( SpcCoeff%AC_Present ) THEN
-      Error_Status = ReadVar_AntCorr_netCDF( NC_Filename            , &
-                                             NC_FileID              , &
-                                             SpcCoeff%AC            , &
-                                             Message_Log=Message_Log  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        msg = 'Error reading AC variables from '//TRIM(NC_Filename)
-        CALL Read_Cleanup(); RETURN
-      END IF
+    ! Read the SpcCoeff data
+    ! ...Sensor_Type variable
+    nf90_status = NF90_INQ_VARID( fileid,SENSOR_TYPE_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_TYPE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Sensor_Type )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SENSOR_TYPE_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Sensor_Channel variable
+    nf90_status = NF90_INQ_VARID( fileid,SENSOR_CHANNEL_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Sensor_Channel )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SENSOR_CHANNEL_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Polarization variable
+    nf90_status = NF90_INQ_VARID( fileid,POLARIZATION_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//POLARIZATION_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Polarization )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//POLARIZATION_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Channel_Flag variable
+    nf90_status = NF90_INQ_VARID( fileid,CHANNEL_FLAG_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//CHANNEL_FLAG_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Channel_Flag )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//CHANNEL_FLAG_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Frequency variable
+    nf90_status = NF90_INQ_VARID( fileid,FREQUENCY_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//FREQUENCY_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Frequency )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//FREQUENCY_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Wavenumber variable
+    nf90_status = NF90_INQ_VARID( fileid,WAVENUMBER_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//WAVENUMBER_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Wavenumber )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//WAVENUMBER_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Planck_C1 variable
+    nf90_status = NF90_INQ_VARID( fileid,PLANCK_C1_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_C1_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Planck_C1 )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PLANCK_C1_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Planck_C2 variable
+    nf90_status = NF90_INQ_VARID( fileid,PLANCK_C2_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_C2_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Planck_C2 )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//PLANCK_C2_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Band_C1 variable
+    nf90_status = NF90_INQ_VARID( fileid,BAND_C1_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//BAND_C1_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Band_C1 )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//BAND_C1_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Band_C2 variable
+    nf90_status = NF90_INQ_VARID( fileid,BAND_C2_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//BAND_C2_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Band_C2 )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//BAND_C2_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Cosmic_Background_Radiance variable
+    nf90_status = NF90_INQ_VARID( fileid,CBR_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//CBR_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Cosmic_Background_Radiance )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//CBR_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Solar_Irradiance variable
+    nf90_status = NF90_INQ_VARID( fileid,SOLAR_IRRADIANCE_VARNAME,varid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//SOLAR_IRRADIANCE_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    nf90_status = NF90_GET_VAR( fileid,varid,SpcCoeff%Solar_Irradiance )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//SOLAR_IRRADIANCE_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
-    NF90_Status = NF90_CLOSE( NC_FileId )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR( NF90_Status ))
+    nf90_status = NF90_CLOSE( fileid ); CLOSE_FILE = .FALSE.
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error closing output file - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
-      CALL Info_SpcCoeff( SpcCoeff, msg )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(NC_Filename)//'; '//TRIM(msg), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+    IF ( noisy ) THEN
+      CALL SpcCoeff_Info( SpcCoeff, msg )
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
     END IF
 
   CONTAINS
-  
-    SUBROUTINE Read_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileId )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup- '//&
-                  TRIM(NF90_STRERROR( NF90_Status ))
-        END IF
+ 
+    SUBROUTINE Read_CleanUp()
+      IF ( close_file ) THEN
+        nf90_status = NF90_CLOSE( fileid )
+        IF ( nf90_status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup- '//&
+                TRIM(NF90_STRERROR( nf90_status ))
       END IF
-      ! Destroy the structure if necessary
-      IF ( Associated_SpcCoeff( SpcCoeff ) ) THEN
-        Error_Status = Destroy_SpcCoeff( SpcCoeff, Message_Log=Message_Log )
-        IF ( Error_Status /= SUCCESS ) &
-          msg = TRIM(msg)//'; Error destroying SpcCoeff structure during error cleanup.'
-      END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      CALL SpcCoeff_Destroy( SpcCoeff )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Read_CleanUp
+    
+  END FUNCTION SpcCoeff_netCDF_ReadFile
 
-  END FUNCTION Read_SpcCoeff_netCDF
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       SpcCoeff_netCDF_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL SpcCoeff_netCDF_IOVersion( Id )
+!
+! OUTPUT ARGUMENTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE SpcCoeff_netCDF_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE SpcCoeff_netCDF_IOVersion
 
 
 !##################################################################################
@@ -1307,1072 +1126,607 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Write_SpcCoeff_GAtts
-!
-! PURPOSE:
-!       Function to write the global attributes to a netCDF SpcCoeff data file.
-!
-! CALLING SEQUENCE:
-!       Error_Status = WriteGAtts( NC_Filename                      , &
-!                                  NC_FileID                        , &
-!                                  Release         =Release         , &
-!                                  Version         =Version         , &
-!                                  Sensor_Id       =Sensor_Id       , &
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
-!                                  AC_Release      =AC_Release      , &
-!                                  AC_Version      =AC_Version      , &
-!                                  Title           =Title           , &
-!                                  History         =History         , &
-!                                  Comment         =Comment         , &
-!                                  Message_Log     =Message_Log       )
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF SpcCoeff format data file to write to.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       NC_FileID:        NetCDF file ID number.
-!                         function.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Release:          The release number of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Version:          The version number of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Sensor_Id:        Character string sensor/platform identifier.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       WMO_Satellite_Id: The WMO code used to identify satellite platforms.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       WMO_Sensor_Id:    The WMO code used to identify sensors.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       AC_Release:       The release number of the netCDF AntCorr file from
-!                         which the antenna correction data, if present, was
-!                         obtained
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       AC_Version:       The version number of the netCDF AntCorr file from
-!                         which the antenna correction data, if present, was
-!                         obtained
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which
-!                         any msgs will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output msgs to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the Message_Handler module.
-!                         If == SUCCESS the global attribute write was successful
-!                            == FAILURE an error occurred writing the supplied
-!                                       global attribute(s).
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!
-!------------------------------------------------------------------------------
+  ! Function to write the global attributes to a SpcCoeff data file.
 
-  FUNCTION WriteGAtts( NC_Filename     , &  ! Input
-                       NC_FileID       , &  ! Input
-                       Version         , &  ! Optional input
-                       Sensor_Id       , &  ! Optional input
-                       WMO_Satellite_Id, &  ! Optional input
-                       WMO_Sensor_Id   , &  ! Optional input
-                       AC_Release      , &  ! Optional input
-                       AC_Version      , &  ! Optional input
-                       Title           , &  ! Optional input
-                       History         , &  ! Optional input
-                       Comment         , &  ! Optional input
-                       Message_Log     ) &  ! Error messaging
-                     RESULT( Error_Status )
+  FUNCTION WriteGAtts( &
+    Filename        , &  ! Input
+    FileId          , &  ! Input
+    Version         , &  ! Optional input
+    Sensor_Id       , &  ! Optional input
+    WMO_Satellite_Id, &  ! Optional input
+    WMO_Sensor_Id   , &  ! Optional input
+    Title           , &  ! Optional input
+    History         , &  ! Optional input
+    Comment         ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN) :: NC_Filename
-    INTEGER     ,           INTENT(IN) :: NC_FileID
+    CHARACTER(*),           INTENT(IN) :: Filename
+    INTEGER     ,           INTENT(IN) :: FileId
     INTEGER     , OPTIONAL, INTENT(IN) :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(IN) :: WMO_Satellite_Id
     INTEGER     , OPTIONAL, INTENT(IN) :: WMO_Sensor_Id   
-    INTEGER     , OPTIONAL, INTENT(IN) :: AC_Release         
-    INTEGER     , OPTIONAL, INTENT(IN) :: AC_Version         
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN) :: History
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteGAtts'
-    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history' 
-    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time' 
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_WriteGAtts(netCDF)'
+    CHARACTER(*), PARAMETER :: WRITE_MODULE_HISTORY_GATTNAME   = 'write_module_history'
+    CHARACTER(*), PARAMETER :: CREATION_DATE_AND_TIME_GATTNAME = 'creation_date_and_time'
     ! Local variables
     CHARACTER(ML) :: msg
-    CHARACTER(ML) :: GAttName
+    CHARACTER(ML) :: gattname
     CHARACTER(8)  :: cdate
     CHARACTER(10) :: ctime
     CHARACTER(5)  :: czone
-    INTEGER :: Ver
-    INTEGER :: NF90_Status
-    TYPE(SpcCoeff_type) :: SpcCoeff_Default
+    INTEGER :: ver
+    INTEGER :: nf90_status
+    TYPE(SpcCoeff_type) :: SpcCoeff
 
     ! Set up
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     msg = ' '
 
     ! Mandatory global attributes
-    ! ..Software ID
-    GAttName = WRITE_MODULE_HISTORY_GATTNAME
-    NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),MODULE_RCS_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Software ID
+    gattname = WRITE_MODULE_HISTORY_GATTNAME
+    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),MODULE_VERSION_ID )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
-    ! ..Creation date
+    ! ...Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
-    GAttName = CREATION_DATE_AND_TIME_GATTNAME
-    NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName), &
+    gattname = CREATION_DATE_AND_TIME_GATTNAME
+    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname), &
                                 cdate(1:4)//'/'//cdate(5:6)//'/'//cdate(7:8)//', '// &
                                 ctime(1:2)//':'//ctime(3:4)//':'//ctime(5:6)//' '// &
                                 czone//'UTC' )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    IF ( nf90_status /= NF90_NOERR ) THEN
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
-    ! ..The Release
-    GAttName = RELEASE_GATTNAME
-    NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),SpcCoeff_Default%Release )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...The Release
+    gattname = RELEASE_GATTNAME
+    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),SpcCoeff%Release )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
 
 
     ! Optional global attributes
-    ! ..The Version
+    ! ...The Version
     IF ( PRESENT(Version) ) THEN
-      Ver = Version
+      ver = Version
     ELSE
-      Ver = SpcCoeff_Default%Version
+      ver = SpcCoeff%Version
     END IF
-    GAttName = VERSION_GATTNAME
-    NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),Ver )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    gattname = VERSION_GATTNAME
+    nf90_status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(gattname),Ver )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       CALL WriteGAtts_Cleanup(); RETURN
     END IF
-    ! ..The Sensor_Id
+    ! ...The Sensor_Id
     IF ( PRESENT(Sensor_Id) ) THEN
-      GAttName = SENSOR_ID_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),Sensor_Id )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = SENSOR_ID_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),Sensor_Id )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The WMO_Satellite_Id
+    ! ...The WMO_Satellite_Id
     IF ( PRESENT(WMO_Satellite_Id) ) THEN
-      GAttName = WMO_SATELLITE_ID_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),WMO_Satellite_Id )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = WMO_SATELLITE_ID_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),WMO_Satellite_Id )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The WMO_Sensor_Id
+    ! ...The WMO_Sensor_Id
     IF ( PRESENT(WMO_Sensor_Id) ) THEN
-      GAttName = WMO_SENSOR_ID_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),WMO_Sensor_Id )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = WMO_SENSOR_ID_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),WMO_Sensor_Id )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The antenna correction Release
-    IF ( PRESENT(AC_Release) ) THEN
-      GAttName = AC_RELEASE_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),AC_Release )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...The title
+    IF ( PRESENT(title) ) THEN
+      gattname = TITLE_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),title )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The antenna correction Version
-    IF ( PRESENT(AC_Version) ) THEN
-      GAttName = AC_VERSION_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),AC_Version )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...The history
+    IF ( PRESENT(history) ) THEN
+      gattname = HISTORY_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),history )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The Title
-    IF ( PRESENT(Title) ) THEN
-      GAttName = TITLE_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),TRIM(Title) )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...The comment
+    IF ( PRESENT(comment) ) THEN
+      gattname = COMMENT_GATTNAME
+      nf90_status = NF90_PUT_ATT( FileID,NF90_GLOBAL,TRIM(gattname),comment )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The History
-    IF ( PRESENT(History) ) THEN
-      GAttName = HISTORY_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),TRIM(History) )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL WriteGAtts_Cleanup(); RETURN
-      END IF
-    END IF
-    ! ..The Comment
-    IF ( PRESENT(Comment) ) THEN
-      GAttName = COMMENT_GATTNAME
-      NF90_Status = NF90_PUT_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),TRIM(Comment) )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL WriteGAtts_Cleanup(); RETURN
-      END IF
-    END IF
-
-  CONTAINS
+    
+ CONTAINS
   
     SUBROUTINE WriteGAtts_CleanUp()
-      ! Close file
-      NF90_Status = NF90_CLOSE( NC_FileID )
-      IF ( NF90_Status /= NF90_NOERR ) &
+      nf90_status = NF90_CLOSE( FileId )
+      IF ( nf90_status /= NF90_NOERR ) &
         msg = '; Error closing input file during error cleanup - '//&
-              TRIM(NF90_STRERROR( NF90_Status ) )
-      ! Set error status and print error message
-      Error_Status = FAILURE
+              TRIM(NF90_STRERROR( nf90_status ) )
+      err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
-                            'Error writing '//TRIM(GAttName)//' attribute to '//&
-                            TRIM(NC_Filename)//' - '// &
-                            TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            'Error writing '//TRIM(gattname)//' attribute to '//&
+                            TRIM(Filename)//' - '// &
+                            TRIM(NF90_STRERROR( nf90_status ) )//TRIM(msg), &
+                            err_stat )
     END SUBROUTINE WriteGAtts_CleanUp
     
   END FUNCTION WriteGAtts
 
 
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       ReadGAtts
-!
-! PURPOSE:
-!       Function to read the global attributes from a netCDF SpcCoeff
-!       data file.
-!
-! CALLING SEQUENCE:
-!       Error_Status = ReadGAtts( NC_Filename                      , &
-!                                 NC_FileID                        , &
-!                                 Release         =Release         , &
-!                                 Version         =Version         , &
-!                                 Sensor_Id       =Sensor_Id       , &
-!                                 WMO_Satellite_Id=WMO_Satellite_Id, &
-!                                 WMO_Sensor_Id   =WMO_Sensor_Id   , &
-!                                 AC_Release      =AC_Release      , &
-!                                 AC_Version      =AC_Version      , &
-!                                 Title           =Title           , &
-!                                 History         =History         , &
-!                                 Comment         =Comment         , &
-!                                 Message_Log     =Message_Log       )
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:      Character string specifying the name of the
-!                         netCDF SpcCoeff format data file to read from.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       NC_FileID:        NetCDF file ID number.
-!                         function.
-!                         UNITS:      N/A
-!                         TYPE:       Integer
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which
-!                         any msgs will be logged. If not specified,
-!                         or if an error occurs opening the log file, the
-!                         default action is to output msgs to standard
-!                         output.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       Release:          The release number of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Version:          The version number of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Sensor_Id:        Character string sensor/platform identifier.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       WMO_Satellite_Id: The WMO code used to identify satellite platforms.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       WMO_Sensor_Id:    The WMO code used to identify sensors.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       AC_Release:       The release number of the netCDF AntCorr file from
-!                         which the antenna correction data, if present, was
-!                         obtained
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       AC_Version:       The version number of the netCDF AntCorr file from
-!                         which the antenna correction data, if present, was
-!                         obtained
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Title:            Character string written into the TITLE global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         Should contain a succinct description of what
-!                         is in the netCDF datafile.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       History:          Character string written into the HISTORY global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-!       Comment:          Character string written into the COMMENT global
-!                         attribute field of the netCDF SpcCoeff file.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the global attribute read was successful.
-!                        == WARNING an error occurred reading the requested
-!                           global attributes.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-!------------------------------------------------------------------------------
+  ! Function to read the global attributes from a SpcCoeff data file.
 
-  FUNCTION ReadGAtts( NC_Filename     , &  ! Input
-                      NC_FileID       , &  ! Input
-                      Release         , &  ! Optional output
-                      Version         , &  ! Optional output
-                      Sensor_Id       , &  ! Optional output
-                      WMO_Satellite_Id, &  ! Optional output
-                      WMO_Sensor_Id   , &  ! Optional output
-                      AC_Release      , &  ! Optional output
-                      AC_Version      , &  ! Optional output
-                      Title           , &  ! Optional output
-                      History         , &  ! Optional output
-                      Comment         , &  ! Optional output
-                      Message_Log     ) &  ! Error messaging
-                    RESULT( Error_Status )
+  FUNCTION ReadGAtts( &
+    Filename        , &  ! Input
+    FileId          , &  ! Input
+    Release         , &  ! Optional output
+    Version         , &  ! Optional output
+    Sensor_Id       , &  ! Optional output
+    WMO_Satellite_Id, &  ! Optional output
+    WMO_Sensor_Id   , &  ! Optional output
+    Title           , &  ! Optional output
+    History         , &  ! Optional output
+    Comment         ) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: NC_Filename
-    INTEGER,                INTENT(IN)  :: NC_FileID
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release         
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER     ,           INTENT(IN)  :: FileId
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release        
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
-    INTEGER     , OPTIONAL, INTENT(OUT) :: AC_Release         
-    INTEGER     , OPTIONAL, INTENT(OUT) :: AC_Version         
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadGAtts'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_ReadGAtts(netCDF)'
     ! Local variables
-    CHARACTER(ML)   :: GAttName
-    CHARACTER(5000) :: GAttString
-    INTEGER :: Rel
-    INTEGER :: NF90_Status
-    TYPE(SpcCoeff_type) :: SpcCoeff_Default
-
+    CHARACTER(ML)   :: msg
+    CHARACTER(256)  :: gattname
+    CHARACTER(5000) :: gattstring
+    INTEGER :: nf90_status
+    
     ! Set up
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
 
-    ! The mandatory GAtts for checking
-    ! ..The Release
-    GAttName = RELEASE_GATTNAME
-    NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),Rel )
-    IF ( NF90_Status /= NF90_NOERR .OR. Rel /= SpcCoeff_Default%Release) THEN
-      CALL ReadGAtts_Cleanup(); RETURN
+    ! The global attributes
+    ! ...The Release
+    IF ( PRESENT(Release) ) THEN
+      gattname = RELEASE_GATTNAME
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),Release )
+      IF ( nf90_status /= NF90_NOERR ) THEN
+        CALL ReadGAtts_Cleanup(); RETURN
+      END IF
     END IF
-    IF ( PRESENT(Release) ) Release = SpcCoeff_Default%Release
-
-
-    ! The optional GAtts
-    ! ..The Version
+    ! ...The Version
     IF ( PRESENT(Version) ) THEN
-      GAttName = VERSION_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),Version )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = VERSION_GATTNAME
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),Version )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The Sensor_Id
+    ! ...The Sensor_Id
     IF ( PRESENT(Sensor_Id) ) THEN
-      GAttString = ' '; Sensor_Id = ' '
-      GAttName = SENSOR_ID_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = SENSOR_ID_GATTNAME; gattstring = ''
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),gattstring )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-      CALL StrClean( GAttString )
-      Sensor_Id = GAttString(1:MIN( LEN(Sensor_Id), LEN_TRIM(GAttString) ))
+      END IF         
+      CALL StrClean( gattstring )
+      Sensor_Id = gattstring(1:MIN(LEN(Sensor_Id), LEN_TRIM(gattstring)))
     END IF
-    ! ..The WMO_Satellite_Id
+    ! ...The WMO_Satellite_Id
     IF ( PRESENT(WMO_Satellite_Id) ) THEN
-      GAttName = WMO_SATELLITE_ID_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),WMO_Satellite_Id )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = WMO_SATELLITE_ID_GATTNAME
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),WMO_Satellite_Id )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The WMO_Sensor_Id
+    ! ...The WMO_Sensor_Id
     IF ( PRESENT(WMO_Sensor_Id) ) THEN
-      GAttName = WMO_SENSOR_ID_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),WMO_Sensor_Id )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = WMO_SENSOR_ID_GATTNAME
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),WMO_Sensor_Id )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
       END IF
     END IF
-    ! ..The antenna correction Release
-    IF ( PRESENT(AC_Release) ) THEN
-      GAttName = AC_RELEASE_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),AC_Release )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-    END IF
-    ! ..The antenna correction Version
-    IF ( PRESENT(AC_Version) ) THEN
-      GAttName = AC_VERSION_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),AC_Version )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-    END IF
-    !.. The Title
+    ! ...The Title
     IF ( PRESENT(Title) ) THEN
-      GAttString = ' '; Title = ' '
-      GAttName = TITLE_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = TITLE_GATTNAME; gattstring = ''
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),gattstring )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-      CALL StrClean( GAttString )
-      Title = GAttString(1:MIN( LEN(Title), LEN_TRIM(GAttString) ))
+      END IF         
+      CALL StrClean( gattstring )
+      Title = gattstring(1:MIN(LEN(Title), LEN_TRIM(gattstring)))
     END IF
-    ! ..The History
+    ! ...The History
     IF ( PRESENT(History) ) THEN
-      GAttString = ' '; History = ' '
-      GAttName = HISTORY_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = HISTORY_GATTNAME; gattstring = ''
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),gattstring )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-      CALL StrClean( GAttString )
-      History = GAttString(1:MIN( LEN(History), LEN_TRIM(GAttString) ))
+      END IF         
+      CALL StrClean( gattstring )
+      History = gattstring(1:MIN(LEN(History), LEN_TRIM(gattstring)))
     END IF
-    ! ..The Comment
+    ! ...The Comment
     IF ( PRESENT(Comment) ) THEN
-      GAttString = ' '; Comment = ' '
-      GAttName = COMMENT_GATTNAME
-      NF90_Status = NF90_GET_ATT( NC_FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
+      gattname = COMMENT_GATTNAME; gattstring = ''
+      nf90_status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(gattname),gattstring )
+      IF ( nf90_status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF
-      CALL StrClean( GAttString )
-      Comment = GAttString(1:MIN( LEN(Comment), LEN_TRIM(GAttString) ))
+      END IF         
+      CALL StrClean( gattstring )
+      Comment = gattstring(1:MIN(LEN(Comment), LEN_TRIM(gattstring)))
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE ReadGAtts_CleanUp()
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error reading '//TRIM(GAttName)//&
-                            ' attribute from '//TRIM(NC_Filename)//' - '// &
-                            TRIM(NF90_STRERROR( NF90_Status ) ), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      err_stat = FAILURE
+      msg = 'Error reading '//TRIM(gattname)//' attribute from '//TRIM(Filename)//' - '// &
+            TRIM(NF90_STRERROR( nf90_status ) )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE ReadGAtts_CleanUp
 
   END FUNCTION ReadGAtts
 
 
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       CreateFile
-!
-! PURPOSE:
-!       Function to create the netCDF format SpcCoeff file
-!
-! CALLING SEQUENCE:
-!       Error_Status = CreateFile( NC_Filename                      , &
-!                                  n_Channels                       , &
-!                                  NC_FileID                        , &
-!                                  n_FOVs,         =n_FOVs          , &
-!                                  Version         =Version         , &
-!                                  Sensor_Id       =Sensor_Id       , &
-!                                  WMO_Satellite_Id=WMO_Satellite_Id, &
-!                                  WMO_Sensor_Id   =WMO_Sensor_Id   , &
-!                                  AC_Release      =AC_Release      , &
-!                                  AC_Version      =AC_Version      , &
-!                                  Title           =Title           , &
-!                                  History         =History         , &
-!                                  Comment         =Comment         , &
-!                                  Message_Log     =Message_Log       )
-!
-! INPUT ARGUMENTS:
-!       NC_Filename:        Character string specifying the name of the
-!                           netCDF SpcCoeff format data file to write to.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       n_Channels:         The number of sensor channels dimension
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       NC_FileID:          NetCDF file ID number to be used for subsequent
-!                           writing to the output file.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       n_FOVs:             The number of fields-of-view dimension for
-!                           antenna correction data
-!                           Must be > 0.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Version:            The version number of the netCDF SpcCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Sensor_Id:          Character string sensor/platform identifier.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       WMO_Satellite_Id:   The WMO code used to identify satellite platforms.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       WMO_Sensor_Id:      The WMO code used to identify sensors.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       AC_Release:         The release number of the netCDF AntCorr file from
-!                           which the antenna correction data, if present, was
-!                           obtained
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       AC_Version:         The version number of the netCDF AntCorr file from
-!                           which the antenna correction data, if present, was
-!                           obtained
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Title:              Character string written into the TITLE global
-!                           attribute field of the netCDF SpcCoeff file.
-!                           Should contain a succinct description of what
-!                           is in the netCDF datafile.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       History:            Character string written into the HISTORY global
-!                           attribute field of the netCDF SpcCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Comment:            Character string written into the COMMENT global
-!                           attribute field of the netCDF SpcCoeff file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which
-!                           any msgs will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output msgs to standard
-!                           output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:       The return value is an integer defining the error status.  
-!                           The error codes are defined in the Message_Handler module. 
-!                           If == SUCCESS the netCDF file creation was successful.     
-!                              == FAILURE an unrecoverable error occurred.
-!                           UNITS:      N/A                                            
-!                           TYPE:       INTEGER                                        
-!                           DIMENSION:  Scalar                                         
-!
-!------------------------------------------------------------------------------
+  ! Function to create a SpcCoeff file for writing
 
-  FUNCTION CreateFile( NC_Filename     , &  ! Input
-                       n_Channels      , &  ! Input
-                       NC_FileID       , &  ! Output
-                       n_FOVs          , &  ! Optional input
-                       Version         , &  ! Optional input
-                       Sensor_Id       , &  ! Optional input
-                       WMO_Satellite_Id, &  ! Optional input
-                       WMO_Sensor_Id   , &  ! Optional input
-                       AC_Release      , &  ! Optional input
-                       AC_Version      , &  ! Optional input
-                       Title           , &  ! Optional input
-                       History         , &  ! Optional input
-                       Comment         , &  ! Optional input
-                       Message_Log     ) &  ! Error messaging
-                     RESULT( Error_Status )
+  FUNCTION CreateFile( &
+    Filename        , &  ! Input
+    n_Channels      , &  ! Input
+    FileId          , &  ! Output
+    Version         , &  ! Optional input
+    Sensor_Id       , &  ! Optional input
+    WMO_Satellite_Id, &  ! Optional input
+    WMO_Sensor_Id   , &  ! Optional input
+    Title           , &  ! Optional input
+    History         , &  ! Optional input
+    Comment         ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*)          , INTENT(IN)  :: NC_Filename
-    INTEGER               , INTENT(IN)  :: n_Channels
-    INTEGER               , INTENT(OUT) :: NC_FileID
-    INTEGER     , OPTIONAL, INTENT(IN)  :: n_FOVs
+    CHARACTER(*),           INTENT(IN)  :: Filename
+    INTEGER     ,           INTENT(IN)  :: n_Channels
+    INTEGER     ,           INTENT(OUT) :: FileId
     INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id       
-    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Satellite_Id
-    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Sensor_Id   
-    INTEGER     , OPTIONAL, INTENT(IN)  :: AC_Release         
-    INTEGER     , OPTIONAL, INTENT(IN)  :: AC_Version         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Satellite_Id         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: WMO_Sensor_Id            
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Comment
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CreateFile'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_CreateFile(netCDF)'
     ! Local variables
     CHARACTER(ML) :: msg
-    LOGICAL :: AC_Present
-    INTEGER :: NF90_Status
-    INTEGER :: n_FOVs_DimID
-    INTEGER :: n_Channels_DimID
-    INTEGER :: VarID
-    INTEGER :: Put_Status(4)
+    LOGICAL :: close_file
+    INTEGER :: nf90_status
+    INTEGER :: n_channels_dimid
+    INTEGER :: varid
+    INTEGER :: put_status(4)
     
-    ! Set up
-    Error_Status = SUCCESS
-
-    IF ( n_Channels < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid channel dimension input.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    
-    AC_Present = .FALSE.
-    IF ( PRESENT(n_FOVs) ) THEN
-      IF ( n_FOVs > 0 ) AC_Present = .TRUE.
-    END IF
+    ! Setup
+    err_stat = SUCCESS
+    close_file = .FALSE.
 
 
     ! Create the data file
-    NF90_Status = NF90_CREATE( NC_Filename,NF90_CLOBBER,NC_FileID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error creating '//TRIM(NC_Filename)//' - '//&
-            TRIM(NF90_STRERROR( NF90_Status ))
+    nf90_status = NF90_CREATE( Filename,NF90_CLOBBER,FileId )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error creating '//TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Close the file if any error from here on
+    close_file = .TRUE.
+
+
+    ! Define the dimensions
+    ! ...Total number of channels for the sensor
+    nf90_status = NF90_DEF_DIM( FileID,CHANNEL_DIMNAME,n_Channels,n_Channels_dimid )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
       CALL Create_Cleanup(); RETURN
     END IF
 
 
-    ! Define the dimensions
-    ! ..The number of spectral channels
-    NF90_Status = NF90_DEF_DIM( NC_FileID,CHANNEL_DIMNAME,n_Channels,n_Channels_DimID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error defining '//CHANNEL_DIMNAME//' dimension in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    ! ..The number of fields-of-view
-    IF ( AC_Present ) THEN
-      NF90_Status = NF90_DEF_DIM( NC_FileID,FOV_DIMNAME,n_FOVs,n_FOVs_DimID )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error defining '//FOV_DIMNAME//' dimension in '//&
-                  TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Create_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
-    END IF
-
-
     ! Write the global attributes
-    Error_Status = WriteGAtts( NC_Filename                      , &
-                               NC_FileID                        , &
-                               Version         =Version         , &
-                               Sensor_Id       =Sensor_Id       , &
-                               WMO_Satellite_Id=WMO_Satellite_Id, &
-                               WMO_Sensor_Id   =WMO_Sensor_Id   , &
-                               AC_Release      =AC_Release      , &
-                               AC_Version      =AC_Version      , &
-                               Title           =Title           , &
-                               History         =History         , &
-                               Comment         =Comment         , &
-                               Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      msg = 'Error writing global attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    err_stat = WriteGAtts( &
+                 Filename, &
+                 FileId  , &
+                 Version          = Version         , &
+                 Sensor_Id        = Sensor_Id       , &
+                 WMO_Satellite_Id = WMO_Satellite_Id, &
+                 WMO_Sensor_Id    = WMO_Sensor_Id   , &
+                 Title            = Title           , &
+                 History          = History         , &
+                 Comment          = Comment           )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing global attribute to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
 
 
     ! Define the variables
-    ! ..Sensor type to identify uW, IR, VIS, UV, etc sensor channels
-    NF90_Status = NF90_DEF_VAR( NC_FileID,SENSOR_TYPE_VARNAME,SENSOR_TYPE_TYPE, &
-                                varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Sensor_Type variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                SENSOR_TYPE_VARNAME, &
+                                SENSOR_TYPE_TYPE, &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//SENSOR_TYPE_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,SENSOR_TYPE_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SENSOR_TYPE_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,SENSOR_TYPE_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,SENSOR_TYPE_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//SENSOR_TYPE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,SENSOR_TYPE_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,SENSOR_TYPE_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,SENSOR_TYPE_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,SENSOR_TYPE_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//SENSOR_TYPE_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..List of sensor channel numbers
-    NF90_Status = NF90_DEF_VAR( NC_FileID,SENSOR_CHANNEL_VARNAME,SENSOR_CHANNEL_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Sensor_Channel variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                SENSOR_CHANNEL_VARNAME, &
+                                SENSOR_CHANNEL_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//SENSOR_CHANNEL_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,SENSOR_CHANNEL_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SENSOR_CHANNEL_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,SENSOR_CHANNEL_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,SENSOR_CHANNEL_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,SENSOR_CHANNEL_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,SENSOR_CHANNEL_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,SENSOR_CHANNEL_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,SENSOR_CHANNEL_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//SENSOR_CHANNEL_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Polarization type flag.
-    NF90_Status = NF90_DEF_VAR( NC_FileID,POLARIZATION_VARNAME,POLARIZATION_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Polarization variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                POLARIZATION_VARNAME, &
+                                POLARIZATION_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//POLARIZATION_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,POLARIZATION_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,POLARIZATION_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,POLARIZATION_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,POLARIZATION_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//POLARIZATION_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,POLARIZATION_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,POLARIZATION_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,POLARIZATION_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,POLARIZATION_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//POLARIZATION_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Bit position flags for channels
-    NF90_Status = NF90_DEF_VAR( NC_FileID,CHANNEL_FLAG_VARNAME,CHANNEL_FLAG_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Channel_Flag variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                CHANNEL_FLAG_VARNAME, &
+                                CHANNEL_FLAG_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//CHANNEL_FLAG_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,CHANNEL_FLAG_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,CHANNEL_FLAG_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,CHANNEL_FLAG_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,CHANNEL_FLAG_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//CHANNEL_FLAG_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,CHANNEL_FLAG_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,CHANNEL_FLAG_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,CHANNEL_FLAG_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,CHANNEL_FLAG_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//CHANNEL_FLAG_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Channel central frequency, f
-    NF90_Status = NF90_DEF_VAR( NC_FileID,FREQUENCY_VARNAME,FREQUENCY_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Frequency variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                FREQUENCY_VARNAME, &
+                                FREQUENCY_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//FREQUENCY_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,FREQUENCY_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,FREQUENCY_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,FREQUENCY_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,FREQUENCY_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//FREQUENCY_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,FREQUENCY_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,FREQUENCY_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,FREQUENCY_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,FREQUENCY_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//FREQUENCY_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Channel central wavenumber, v
-    NF90_Status = NF90_DEF_VAR( NC_FileID,WAVENUMBER_VARNAME,WAVENUMBER_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Wavenumber variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                WAVENUMBER_VARNAME, &
+                                WAVENUMBER_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//WAVENUMBER_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,WAVENUMBER_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,WAVENUMBER_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,WAVENUMBER_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,WAVENUMBER_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//WAVENUMBER_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,WAVENUMBER_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,WAVENUMBER_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,WAVENUMBER_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,WAVENUMBER_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//WAVENUMBER_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..First Planck coefficient, c1.v^3
-    NF90_Status = NF90_DEF_VAR( NC_FileID,PLANCK_C1_VARNAME,PLANCK_C1_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Planck_C1 variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                PLANCK_C1_VARNAME, &
+                                PLANCK_C1_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//PLANCK_C1_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,PLANCK_C1_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,PLANCK_C1_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,PLANCK_C1_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,PLANCK_C1_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//PLANCK_C1_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,PLANCK_C1_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,PLANCK_C1_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,PLANCK_C1_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,PLANCK_C1_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//PLANCK_C1_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Second Planck coefficient, c2.v
-    NF90_Status = NF90_DEF_VAR( NC_FileID,PLANCK_C2_VARNAME,PLANCK_C2_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Planck_C2 variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                PLANCK_C2_VARNAME, &
+                                PLANCK_C2_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//PLANCK_C2_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,PLANCK_C2_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,PLANCK_C2_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,PLANCK_C2_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,PLANCK_C2_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//PLANCK_C2_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,PLANCK_C2_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,PLANCK_C2_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,PLANCK_C2_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,PLANCK_C2_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//PLANCK_C2_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Polychromatic band correction offset
-    NF90_Status = NF90_DEF_VAR( NC_FileID,BAND_C1_VARNAME,BAND_C1_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Band_C1 variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                BAND_C1_VARNAME, &
+                                BAND_C1_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//BAND_C1_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,BAND_C1_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,BAND_C1_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,BAND_C1_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,BAND_C1_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//BAND_C1_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,BAND_C1_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,BAND_C1_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,BAND_C1_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,BAND_C1_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//BAND_C1_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Polychromatic band correction slope
-    NF90_Status = NF90_DEF_VAR( NC_FileID,BAND_C2_VARNAME,BAND_C2_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Band_C2 variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                BAND_C2_VARNAME, &
+                                BAND_C2_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//BAND_C2_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,BAND_C2_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,BAND_C2_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,BAND_C2_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,BAND_C2_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//BAND_C2_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,BAND_C2_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,BAND_C2_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,BAND_C2_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,BAND_C2_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//BAND_C2_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..Planck radiance for the cosmic background temperature
-    NF90_Status = NF90_DEF_VAR( NC_FileID,CBR_VARNAME,CBR_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Cosmic_Background_Radiance variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                CBR_VARNAME, &
+                                CBR_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//CBR_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,CBR_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,CBR_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,CBR_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,CBR_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//CBR_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,CBR_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,CBR_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,CBR_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,CBR_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//CBR_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
-    ! ..TOA solar irradiance using Kurucz spectrum
-    NF90_Status = NF90_DEF_VAR( NC_FileID,SOLAR_IRRADIANCE_VARNAME,SOLAR_IRRADIANCE_TYPE, &
-                                dimIDs=(/n_Channels_DimID/),varID=VarID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
+    ! ...Solar_Irradiance variable
+    nf90_status = NF90_DEF_VAR( FileID, &
+                                SOLAR_IRRADIANCE_VARNAME, &
+                                SOLAR_IRRADIANCE_TYPE, &
+                                dimIDs=(/n_channels_dimid/), &
+                                varID=variD )
+    IF ( nf90_status /= NF90_NOERR ) THEN
       msg = 'Error defining '//SOLAR_IRRADIANCE_VARNAME//' variable in '//&
-                TRIM(NC_Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
-    Put_Status(1) = NF90_PUT_ATT( NC_FileID,VarID,LONGNAME_ATTNAME   ,SOLAR_IRRADIANCE_LONGNAME )
-    Put_Status(2) = NF90_PUT_ATT( NC_FileID,VarID,DESCRIPTION_ATTNAME,SOLAR_IRRADIANCE_DESCRIPTION )
-    Put_Status(3) = NF90_PUT_ATT( NC_FileID,VarID,UNITS_ATTNAME      ,SOLAR_IRRADIANCE_UNITS )
-    Put_Status(4) = NF90_PUT_ATT( NC_FileID,VarID,FILLVALUE_ATTNAME  ,SOLAR_IRRADIANCE_FILLVALUE )
-    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
-      msg = 'Error writing '//SOLAR_IRRADIANCE_VARNAME//' variable attributes to '//TRIM(NC_Filename)
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    put_status(1) = NF90_PUT_ATT( FileID,varid,LONGNAME_ATTNAME   ,SOLAR_IRRADIANCE_LONGNAME    )
+    put_status(2) = NF90_PUT_ATT( FileID,varid,DESCRIPTION_ATTNAME,SOLAR_IRRADIANCE_DESCRIPTION )
+    put_status(3) = NF90_PUT_ATT( FileID,varid,UNITS_ATTNAME      ,SOLAR_IRRADIANCE_UNITS       )
+    put_status(4) = NF90_PUT_ATT( FileID,varid,FILLVALUE_ATTNAME  ,SOLAR_IRRADIANCE_FILLVALUE   )
+    IF ( ANY(put_status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//SOLAR_IRRADIANCE_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
     END IF
 
-
-    ! Define the antenna correction variables if necessary
-    IF ( AC_Present ) THEN
-      Error_Status = DefineVar_AntCorr_netCDF( NC_Filename            , &
-                                               NC_FileID              , &
-                                               n_FOVs_DimID           , &
-                                               n_Channels_DimID       , &
-                                               Message_Log=Message_Log  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        msg = 'Error defining AntCorr variables in '//TRIM(NC_Filename)
-        CALL Create_Cleanup(Close_File=.TRUE.); RETURN
-      END IF
-    END IF
-    
 
     ! Take netCDF file out of define mode
-    NF90_Status = NF90_ENDDEF( NC_FileID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      msg = 'Error taking '//TRIM(NC_Filename)//' out of define mode.'
-      CALL Create_Cleanup(Close_File=.TRUE.); RETURN
+    nf90_status = NF90_ENDDEF( FileId )
+    IF ( nf90_status /= NF90_NOERR ) THEN
+      msg = 'Error taking file '//TRIM(Filename)// &
+            ' out of define mode - '//TRIM(NF90_STRERROR( nf90_status ))
+      CALL Create_Cleanup(); RETURN
     END IF
 
   CONTAINS
-  
-    SUBROUTINE Create_CleanUp(Close_File)
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          NF90_Status = NF90_CLOSE( NC_FileID )
-          IF ( NF90_Status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR( NF90_Status ))
-        END IF
+ 
+    SUBROUTINE Create_CleanUp()
+      IF ( close_file ) THEN
+        nf90_status = NF90_CLOSE( FileID )
+        IF ( nf90_status /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                TRIM(NF90_STRERROR( nf90_status ))
       END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Create_CleanUp
-
+    
   END FUNCTION CreateFile
 
 END MODULE SpcCoeff_netCDF_IO

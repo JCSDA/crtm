@@ -15,8 +15,7 @@ MODULE oSRF_File_Define
   ! -----------------
   ! Module use
   USE Type_Kinds           , ONLY: fp
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, &
-                                   Display_Message
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE String_Utility       , ONLY: StrClean
   USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                                    INVALID_WMO_SENSOR_ID   , &
@@ -35,8 +34,19 @@ MODULE oSRF_File_Define
                                    oSRF_Create    , &           
                                    oSRF_SetValue  , &           
                                    oSRF_Inspect   , &           
-                                   oSRF_Info                 
-                                   
+                                   oSRF_Info      , &           
+                                   ! ...Flag specific procedures
+                                   oSRF_IsInterpolated, oSRF_SetInterpolated, oSRF_ClearInterpolated, &
+                                   oSRF_IsIntegrated  , oSRF_SetIntegrated  , oSRF_ClearIntegrated  , &
+                                   oSRF_IsF0Computed  , oSRF_SetF0Computed  , oSRF_ClearF0Computed  , &
+                                   oSRF_IsFrequencyGHz, oSRF_SetFrequencyGHz, oSRF_ClearFrequencyGHz, &
+                                   oSRF_ClearAllFlags                                               , &
+                                   ! ...Sensor specific procedures
+                                   oSRF_IsMicrowaveSensor  , oSRF_SetMicrowaveSensor  , &
+                                   oSRF_IsInfraredSensor   , oSRF_SetInfraredSensor   , &
+                                   oSRF_IsVisibleSensor    , oSRF_SetVisibleSensor    , &
+                                   oSRF_IsUltravioletSensor, oSRF_SetUltravioletSensor, &
+                                   oSRF_ClearSensor
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -178,23 +188,24 @@ MODULE oSRF_File_Define
   ! oSRF_File data type definitions
   ! -------------------------------
   TYPE :: oSRF_File_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Filename from which any contained oSRFs were read
     CHARACTER(FL) :: Filename
     ! Release and version information
     INTEGER :: Release = oSRF_RELEASE
     INTEGER :: Version = oSRF_VERSION
-    ! Allocation indicator
-    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: n_Channels = 0
     ! Channel independent data
-    CHARACTER(SL) :: Sensor_ID        = ' '
+    CHARACTER(SL) :: Sensor_ID        = ''
     INTEGER       :: WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
     INTEGER       :: WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
     INTEGER       :: Sensor_Type      = INVALID_SENSOR
     ! File global attributes
-    CHARACTER(GL) :: Title   = ' '
-    CHARACTER(GL) :: History = ' '
-    CHARACTER(GL) :: Comment = ' '
+    CHARACTER(GL) :: Title   = ''
+    CHARACTER(GL) :: History = ''
+    CHARACTER(GL) :: Comment = ''
     ! Channel oSRF data
     TYPE(oSRF_type), ALLOCATABLE :: oSRF(:) ! n_Channels
   END TYPE oSRF_File_type
@@ -466,7 +477,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Set_Property'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File_SetValue'
     ! Set up
     err_status = SUCCESS
     ! Set property data
@@ -622,7 +633,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Get_Property'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File_GetValue'
     ! Set up
     err_status = SUCCESS
     ! Get property data
@@ -1052,38 +1063,39 @@ CONTAINS
     self    , &  ! Output
     Filename, &  ! Input
     Quiet   ) &  ! Optional input
-  RESULT( err_status )
+  RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_File_type), INTENT(OUT) :: self
     CHARACTER(*),         INTENT(IN)  :: Filename
     LOGICAL,    OPTIONAL, INTENT(IN)  :: Quiet
     ! Function result
-    INTEGER :: err_status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_File::Read'
     ! Local variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    INTEGER :: FileId
-    INTEGER :: nc_status
-    INTEGER :: alloc_status
-    INTEGER :: Version         
-    CHARACTER(80) :: Sensor_ID       
-    INTEGER :: WMO_Satellite_ID
-    INTEGER :: WMO_Sensor_ID   
-    INTEGER :: Sensor_Type
-    INTEGER :: VarId
-    INTEGER :: n, n_Channels
+    CHARACTER(ML) :: sensor_id       
+    CHARACTER(ML) :: n_Bands_DimName
+    CHARACTER(ML) :: n_Points_DimName
+    CHARACTER(ML) :: Frequency_VarName
+    CHARACTER(ML) :: Response_VarName
+    LOGICAL :: noisy
+    LOGICAL :: close_file
+    INTEGER :: fileid
+    INTEGER :: nc_stat
+    INTEGER :: alloc_stat
+    INTEGER :: version         
+    INTEGER :: wmo_satellite_id
+    INTEGER :: wmo_sensor_id   
+    INTEGER :: sensor_type
+    INTEGER :: varid
+    INTEGER :: n, n_channels
     INTEGER :: i, n_Bands
     INTEGER :: n_Planck_Coeffs
     INTEGER :: n_Polychromatic_Coeffs
-    INTEGER :: Channel_VarId
-    INTEGER :: Channel
-    CHARACTER(80) :: n_Bands_DimName
-    CHARACTER(80) :: n_Points_DimName
+    INTEGER :: channel_varid
+    INTEGER :: channel
     INTEGER, ALLOCATABLE :: n_Points(:) 
-    CHARACTER(80) :: Frequency_VarName
-    CHARACTER(80) :: Response_VarName
     REAL(fp) :: Integral
     INTEGER  :: Flags
     REAL(fp) :: f0
@@ -1093,239 +1105,241 @@ CONTAINS
     TYPE(oSRF_type) :: oSRF    
 
     ! Set up
-    err_status = SUCCESS
+    err_stat = SUCCESS
+    close_file = .FALSE.
     ! ...Determine info message output
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
 
 
     ! Open the file for reading
-    nc_status = NF90_OPEN( Filename, NF90_NOWRITE, FileId )
-    IF ( nc_status /= NF90_NOERR ) THEN
+    nc_stat = NF90_OPEN( Filename, NF90_NOWRITE, fileid )
+    IF ( nc_stat /= NF90_NOERR ) THEN
       msg = 'Error opening '//TRIM(Filename)//' for read access - '//&
-            TRIM(NF90_STRERROR(nc_status))
+            TRIM(NF90_STRERROR(nc_stat))
       CALL Cleanup(); RETURN
     END IF
+    close_file = .TRUE.
     
     
     ! Get the number of channels dimension
-    err_status = Read_Dim( FileId, CHANNEL_DIMNAME, n_Channels )
-    IF ( err_status /= SUCCESS ) THEN
+    err_stat = Read_Dim( fileid, CHANNEL_DIMNAME, n_channels )
+    IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading '//CHANNEL_DIMNAME//' dimension from '//TRIM(Filename)
-      CALL Cleanup(Close_File=.TRUE.); RETURN
+      CALL Cleanup(); RETURN
     END IF
 
 
     ! Allocate the output container
-    CALL oSRF_File_Create( self, n_Channels )    
+    CALL oSRF_File_Create( self, n_channels )    
     IF ( .NOT. oSRF_File_Associated( self ) ) THEN
       msg = 'Error allocating oSRF_File output'
-      CALL Cleanup(Close_File=.TRUE.); RETURN
+      CALL Cleanup(); RETURN
     END IF
     ! ...Set the filename
-    err_status = oSRF_File_SetValue( self, Filename = Filename )
-    IF ( err_status /= SUCCESS ) THEN
+    err_stat = oSRF_File_SetValue( self, Filename = Filename )
+    IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error setting filename property in oSRF_File'
-      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(); RETURN
     END IF
     
     
     ! Read the global attributes
-    err_status = Read_GAtts( self, FileId )
-    IF ( err_status /= SUCCESS ) THEN
+    err_stat = Read_GAtts( self, fileid )
+    IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading global attributes from '//TRIM(Filename)
-      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(); RETURN
     END IF
     ! ...Save them to local variables for insertion into oSRF objects
-    err_status = oSRF_File_GetValue( &
+    err_stat = oSRF_File_GetValue( &
       self, &
-      Version          = Version         , &
-      Sensor_Id        = Sensor_Id       , &
-      WMO_Satellite_Id = WMO_Satellite_Id, &
-      WMO_Sensor_Id    = WMO_Sensor_Id   , &
-      Sensor_Type      = Sensor_Type       )
-    IF ( err_status /= SUCCESS ) THEN
+      version          = version         , &
+      sensor_id        = sensor_id       , &
+      wmo_satellite_id = wmo_satellite_id, &
+      wmo_sensor_id    = wmo_sensor_id   , &
+      sensor_type      = sensor_type       )
+    IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error getting GAtt properties from oSRF_File object.'
-      CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+      CALL Cleanup(); RETURN
     END IF
 
 
     ! Get the sensor channel variable id
-    nc_status = NF90_INQ_VARID( FileId, SENSOR_CHANNEL_VARNAME, Channel_VarId )
-    IF ( nc_status /= NF90_NOERR ) THEN
+    nc_stat = NF90_INQ_VARID( fileid, SENSOR_CHANNEL_VARNAME, channel_varid )
+    IF ( nc_stat /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//SENSOR_CHANNEL_VARNAME//&
-            ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-      CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+            ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+      CALL Cleanup(); RETURN
     END IF
 
     ! Loop over the number of channels 
-    DO n = 1, n_Channels
+    DO n = 1, n_channels
     
       ! Read the current channel number
-      nc_status = NF90_GET_VAR( FileId, Channel_VariD, Channel, START=(/n/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_GET_VAR( fileid, channel_VariD, channel, START=(/n/) )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading sensor channel from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
 
 
       ! Create the band dimension name
-      CALL Create_Names( Channel, n_Bands_DimName = n_Bands_DimName )
+      CALL Create_Names( channel, n_Bands_DimName = n_Bands_DimName )
         
         
       ! Read the current channel band dimension
-      err_status = Read_Dim( FileId, TRIM(n_Bands_DimName), n_Bands )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = Read_Dim( fileid, TRIM(n_Bands_DimName), n_Bands )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading '//TRIM(n_Bands_DimName)//' dimension from '//TRIM(Filename)
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       
       
       ! Allocate the current channel oSRF
       ! ...Allocate the n_Points array
-      ALLOCATE( n_Points(n_Bands), STAT=alloc_status )
-      IF ( alloc_status /= 0 ) THEN
+      ALLOCATE( n_Points(n_Bands), STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
         WRITE( msg, '("Error allocating n_Points array for channel ",i0,". STAT = ",i0)' ) &
-                    Channel, alloc_status
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                    channel, alloc_stat
+        CALL Cleanup(); RETURN
       END IF
       ! ...Get the number of points for each band
       DO i = 1, n_Bands
         ! ...Create the dimension name
-        CALL Create_Names( Channel, Band = i, n_Points_DimName = n_Points_DimName )
+        CALL Create_Names( channel, Band = i, n_Points_DimName = n_Points_DimName )
         ! ...Read the dimension value
-        err_status = Read_Dim( FileId, TRIM(n_Points_DimName), n_Points(i) )
-        IF ( err_status /= SUCCESS ) THEN
+        err_stat = Read_Dim( fileid, TRIM(n_Points_DimName), n_Points(i) )
+        IF ( err_stat /= SUCCESS ) THEN
           msg = 'Error reading '//TRIM(n_Points_DimName)//' dimension from '//TRIM(Filename)
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(); RETURN
         END IF
       END DO
       ! ...Create the current oSRF object
       CALL oSRF_Create( oSRF, n_Points )
       IF ( .NOT. oSRF_Associated( oSRF ) ) THEN
-        WRITE( msg, '("Error creating oSRF object for channel ",i0)' ) Channel
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        WRITE( msg, '("Error creating oSRF object for channel ",i0)' ) channel
+        CALL Cleanup(); RETURN
       END IF
       ! ...Add current properties
-      err_status = oSRF_SetValue( &
+      err_stat = oSRF_SetValue( &
         oSRF, &
-        Channel          = Channel         , &
-        Version          = Version         , &
-        Sensor_Id        = Sensor_Id       , &
-        WMO_Satellite_Id = WMO_Satellite_Id, &
-        WMO_Sensor_Id    = WMO_Sensor_Id   , &
-        Sensor_Type      = Sensor_Type       )
-      IF ( err_status /= SUCCESS ) THEN
-        WRITE( msg, '("Error setting general properties of oSRF for channel ",i0)' ) Channel
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        channel          = channel         , &
+        version          = version         , &
+        sensor_id        = sensor_id       , &
+        wmo_satellite_id = wmo_satellite_id, &
+        wmo_sensor_id    = wmo_sensor_id   , &
+        sensor_type      = sensor_type       )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg, '("Error setting general properties of oSRF for channel ",i0)' ) channel
+        CALL Cleanup(); RETURN
       END IF
       
       
       ! Read the channel dependent data
       ! ...The integrated SRF value
-      nc_status = NF90_INQ_VARID( FileId, INTEGRATED_SRF_VARNAME, VarId )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_INQ_VARID( fileid, INTEGRATED_SRF_VARNAME, varid )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//INTEGRATED_SRF_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_GET_VAR( FileId, VariD, Integral, START=(/n/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_GET_VAR( fileid, VariD, Integral, START=(/n/) )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading '//INTEGRATED_SRF_VARNAME//' from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      err_status = oSRF_SetValue( oSRF, Integral = Integral )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = oSRF_SetValue( oSRF, Integral = Integral )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error setting '//INTEGRATED_SRF_VARNAME//' property in oSRF object'
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       ! ...The processing flags
-      nc_status = NF90_INQ_VARID( FileId, FLAGS_VARNAME, VarId )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_INQ_VARID( fileid, FLAGS_VARNAME, varid )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//FLAGS_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_GET_VAR( FileId, VariD, Flags, START=(/n/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_GET_VAR( fileid, VariD, Flags, START=(/n/) )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading '//FLAGS_VARNAME//' from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      err_status = oSRF_SetValue( oSRF, Flags = Flags )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = oSRF_SetValue( oSRF, Flags = Flags )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error setting '//FLAGS_VARNAME//' property in oSRF object'
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       ! ...The central frequency
-      nc_status = NF90_INQ_VARID( FileId, CENTRAL_FREQUENCY_VARNAME, VarId )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_INQ_VARID( fileid, CENTRAL_FREQUENCY_VARNAME, varid )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//CENTRAL_FREQUENCY_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_GET_VAR( FileId, VariD, f0, START=(/n/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_GET_VAR( fileid, VariD, f0, START=(/n/) )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading '//CENTRAL_FREQUENCY_VARNAME//' from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      err_status = oSRF_SetValue( oSRF, f0 = f0 )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = oSRF_SetValue( oSRF, f0 = f0 )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error setting '//CENTRAL_FREQUENCY_VARNAME//' property in oSRF object'
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       ! ...The Planck coefficients
-      err_status = Read_Dim( FileId, PLANCK_COEFFS_DIMNAME, n_Planck_Coeffs )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = Read_Dim( fileid, PLANCK_COEFFS_DIMNAME, n_Planck_Coeffs )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading '//PLANCK_COEFFS_DIMNAME//' dimension from '//TRIM(Filename)
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_INQ_VARID( FileId, PLANCK_COEFFS_VARNAME, VarId )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_INQ_VARID( fileid, PLANCK_COEFFS_VARNAME, varid )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//PLANCK_COEFFS_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_GET_VAR( FileId, VariD, Planck_Coeffs(1:n_Planck_Coeffs), &
+      nc_stat = NF90_GET_VAR( fileid, VariD, Planck_Coeffs(1:n_Planck_Coeffs), &
                                 START=(/1,n/), &
                                 COUNT=(/n_Planck_Coeffs,1/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading '//PLANCK_COEFFS_VARNAME//' from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      err_status = oSRF_SetValue( oSRF, Planck_Coeffs = Planck_Coeffs(1:n_Planck_Coeffs) )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = oSRF_SetValue( oSRF, Planck_Coeffs = Planck_Coeffs(1:n_Planck_Coeffs) )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error setting '//PLANCK_COEFFS_VARNAME//' property in oSRF object'
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       ! ...The Polychromatic coefficients
-      err_status = Read_Dim( FileId, POLYCHROMATIC_COEFFS_DIMNAME, n_Polychromatic_Coeffs )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = Read_Dim( fileid, POLYCHROMATIC_COEFFS_DIMNAME, n_Polychromatic_Coeffs )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading '//POLYCHROMATIC_COEFFS_DIMNAME//' dimension from '//TRIM(Filename)
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_INQ_VARID( FileId, POLYCHROMATIC_COEFFS_VARNAME, VarId )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      nc_stat = NF90_INQ_VARID( fileid, POLYCHROMATIC_COEFFS_VARNAME, varid )
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error inquiring '//TRIM(Filename)//' for '//POLYCHROMATIC_COEFFS_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      nc_status = NF90_GET_VAR( FileId, VariD, Polychromatic_Coeffs(1:n_Polychromatic_Coeffs), &
+      nc_stat = NF90_GET_VAR( fileid, VariD, Polychromatic_Coeffs(1:n_Polychromatic_Coeffs), &
                                 START=(/1,n/), &
                                 COUNT=(/n_Polychromatic_Coeffs,1/) )
-      IF ( nc_status /= NF90_NOERR ) THEN
+      IF ( nc_stat /= NF90_NOERR ) THEN
         msg = 'Error reading '//POLYCHROMATIC_COEFFS_VARNAME//' from'//TRIM(Filename)//' - '//&
-              TRIM(NF90_STRERROR(nc_status))
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+              TRIM(NF90_STRERROR(nc_stat))
+        CALL Cleanup(); RETURN
       END IF
-      err_status = oSRF_SetValue( oSRF, Polychromatic_Coeffs = Polychromatic_Coeffs(1:n_Polychromatic_Coeffs) )
-      IF ( err_status /= SUCCESS ) THEN
+      err_stat = oSRF_SetValue( oSRF, Polychromatic_Coeffs = Polychromatic_Coeffs(1:n_Polychromatic_Coeffs) )
+      IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error setting '//POLYCHROMATIC_COEFFS_VARNAME//' property in oSRF object'
-        CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+        CALL Cleanup(); RETURN
       END IF
       
 
@@ -1333,93 +1347,93 @@ CONTAINS
       DO i = 1, n_Bands
         ! ...Create the dimension and variable names
         CALL Create_Names( &
-           Channel, &
+           channel, &
            Band = i, &
            Frequency_VarName = Frequency_VarName, &
            Response_VarName  = Response_VarName   )
         ! ...Allocate the data array
-        ALLOCATE( fr( n_Points(i) ), STAT = alloc_status )
-        IF ( alloc_status /= 0 ) THEN
+        ALLOCATE( fr( n_Points(i) ), STAT = alloc_stat )
+        IF ( alloc_stat /= 0 ) THEN
           WRITE( msg, '("Error allocating f/r array for channel ",i0,", band ",i0,". STAT = ",i0)' ) &
-                      Channel, i, alloc_status
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                      channel, i, alloc_stat
+          CALL Cleanup(); RETURN
         END IF
         ! ...Read the frequency data
-        nc_status = NF90_INQ_VARID( FileId, TRIM(Frequency_VarName), VarId )
-        IF ( nc_status /= NF90_NOERR ) THEN
+        nc_stat = NF90_INQ_VARID( fileid, TRIM(Frequency_VarName), varid )
+        IF ( nc_stat /= NF90_NOERR ) THEN
           msg = 'Error inquiring '//TRIM(Filename)//' for '//TRIM(Frequency_VarName)//&
-                ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+          CALL Cleanup(); RETURN
         END IF
-        nc_status = NF90_GET_VAR( FileId, VariD, fr )
-        IF ( nc_status /= NF90_NOERR ) THEN
+        nc_stat = NF90_GET_VAR( fileid, VariD, fr )
+        IF ( nc_stat /= NF90_NOERR ) THEN
           msg = 'Error reading '//TRIM(Frequency_VarName)//' from'//TRIM(Filename)//' - '//&
-                TRIM(NF90_STRERROR(nc_status))
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                TRIM(NF90_STRERROR(nc_stat))
+          CALL Cleanup(); RETURN
         END IF
-        err_status = oSRF_SetValue( oSRF, Band = i, Frequency = fr )
-        IF ( err_status /= SUCCESS ) THEN
+        err_stat = oSRF_SetValue( oSRF, Band = i, Frequency = fr )
+        IF ( err_stat /= SUCCESS ) THEN
           msg = 'Error setting '//TRIM(Frequency_VarName)//' property in oSRF object'
-          CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(); RETURN
         END IF
         ! ...Read the Response data
-        nc_status = NF90_INQ_VARID( FileId, TRIM(Response_VarName), VarId )
-        IF ( nc_status /= NF90_NOERR ) THEN
+        nc_stat = NF90_INQ_VARID( fileid, TRIM(Response_VarName), varid )
+        IF ( nc_stat /= NF90_NOERR ) THEN
           msg = 'Error inquiring '//TRIM(Filename)//' for '//TRIM(Response_VarName)//&
-                ' variable ID - '//TRIM(NF90_STRERROR(nc_status))
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                ' variable ID - '//TRIM(NF90_STRERROR(nc_stat))
+          CALL Cleanup(); RETURN
         END IF
-        nc_status = NF90_GET_VAR( FileId, VariD, fr )
-        IF ( nc_status /= NF90_NOERR ) THEN
+        nc_stat = NF90_GET_VAR( fileid, VariD, fr )
+        IF ( nc_stat /= NF90_NOERR ) THEN
           msg = 'Error reading '//TRIM(Response_VarName)//' from'//TRIM(Filename)//' - '//&
-                TRIM(NF90_STRERROR(nc_status))
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                TRIM(NF90_STRERROR(nc_stat))
+          CALL Cleanup(); RETURN
         END IF
-        err_status = oSRF_SetValue( oSRF, Band = i, Response = fr )
-        IF ( err_status /= SUCCESS ) THEN
+        err_stat = oSRF_SetValue( oSRF, Band = i, Response = fr )
+        IF ( err_stat /= SUCCESS ) THEN
           msg = 'Error setting '//TRIM(Response_VarName)//' property in oSRF object'
-          CALL Cleanup(Close_File=.TRUE., Destroy_Obj=.TRUE.); RETURN
+          CALL Cleanup(); RETURN
         END IF
         ! ...Deallocate the data array
-        DEALLOCATE( fr, STAT = alloc_status )
-        IF ( alloc_status /= 0 ) THEN
+        DEALLOCATE( fr, STAT = alloc_stat )
+        IF ( alloc_stat /= 0 ) THEN
           WRITE( msg, '("Error deallocating f/r array for channel ",i0,", band ",i0,". STAT = ",i0)' ) &
-                      Channel, i, alloc_status
-          CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                      channel, i, alloc_stat
+          CALL Cleanup(); RETURN
         END IF
       END DO      
       
 
       ! Add the oSRF to the OSRF_File object
-      err_status = oSRF_File_AddTo( self, oSRF, pos = n )
-      IF ( err_status /= SUCCESS ) THEN
-        WRITE( msg, '("Error adding channel ",i0," oSRF to oSRF_File container.")' ) Channel
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+      err_stat = oSRF_File_AddTo( self, oSRF, pos = n )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg, '("Error adding channel ",i0," oSRF to oSRF_File container.")' ) channel
+        CALL Cleanup(); RETURN
       END IF
 
       
       ! Clean up for next channels
       CALL oSRF_Destroy( oSRF )
-      DEALLOCATE( n_Points, STAT=alloc_status )
-      IF ( alloc_status /= 0 ) THEN
+      DEALLOCATE( n_Points, STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
         WRITE( msg, '("Error deallocating n_Points array for channel ",i0,". STAT = ",i0)' ) &
-                    Channel, alloc_status
-        CALL Cleanup(Close_File=.TRUE.,Destroy_Obj=.TRUE.); RETURN
+                    channel, alloc_stat
+        CALL Cleanup(); RETURN
       END IF
       
     END DO
 
 
     ! Close the file
-    nc_status = NF90_CLOSE( FileId )
-    IF ( nc_status /= NF90_NOERR ) THEN
-      msg = 'Error closing input file - '//TRIM(NF90_STRERROR(nc_status))
+    nc_stat = NF90_CLOSE( fileid )
+    IF ( nc_stat /= NF90_NOERR ) THEN
+      msg = 'Error closing input file - '//TRIM(NF90_STRERROR(nc_stat))
       CALL Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       CALL oSRF_File_Info( self, msg )
       CALL Display_Message( ROUTINE_NAME, &
                             'FILE: '//TRIM(Filename)//'; '//TRIM(msg), &
@@ -1428,30 +1442,20 @@ CONTAINS
 
   CONTAINS
   
-    SUBROUTINE Cleanup( Close_File, Destroy_Obj )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      LOGICAL, OPTIONAL, INTENT(IN) :: Destroy_Obj
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          nc_status = NF90_CLOSE(FileId)
-          IF ( nc_status /= NF90_NOERR ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
-                  TRIM(NF90_STRERROR(nc_status))
-        END IF
+    SUBROUTINE Cleanup()
+      IF ( close_file ) THEN
+        nc_stat = NF90_CLOSE(fileid)
+        IF ( nc_stat /= NF90_NOERR ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//&
+                TRIM(NF90_STRERROR(nc_stat))
       END IF
-      ! Destroy oSRF_File object if necessary
-      IF ( PRESENT(Destroy_Obj) ) THEN
-        IF ( Destroy_Obj ) THEN
-          CALL oSRF_File_Destroy( self )
-        END IF
-      END IF
-      ! Set error status and print error message
-      err_status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_status )
+      CALL oSRF_File_Destroy( self )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Cleanup
 
   END FUNCTION oSRF_File_Read
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -1527,7 +1531,6 @@ CONTAINS
     LOGICAL :: Noisy
     INTEGER :: FileId
     INTEGER :: VarId
-    INTEGER :: nc_status
     INTEGER :: NF90_Status(4)
     INTEGER :: l, i
     INTEGER :: Channel_DimID
@@ -1535,7 +1538,6 @@ CONTAINS
     INTEGER :: Planck_Coeffs_DimID
     INTEGER :: Band_DimID
     INTEGER :: n_Points_DimID
-    INTEGER :: n_Channels
     INTEGER :: n_Planck_Coeffs
     INTEGER :: n_Polychromatic_Coeffs
     CHARACTER(80) :: n_Bands_DimName
@@ -2201,6 +2203,20 @@ CONTAINS
     END IF
     ! ...Save it
     err_status = oSRF_File_SetValue( self, WMO_Sensor_Id=GAttInteger )
+    IF ( err_status /= SUCCESS ) THEN
+      CALL Read_GAtts_Cleanup(); RETURN
+    END IF
+
+
+    ! The Sensor_Type
+    ! ...Get it
+    GAttName = SENSOR_TYPE_GATTNAME
+    nc_status = NF90_GET_ATT( FileId, NF90_GLOBAL, TRIM(GAttName), GAttInteger )
+    IF ( nc_status /= NF90_NOERR ) THEN
+      CALL Read_GAtts_Cleanup(); RETURN
+    END IF
+    ! ...Save it
+    err_status = oSRF_File_SetValue( self, Sensor_Type=GAttInteger )
     IF ( err_status /= SUCCESS ) THEN
       CALL Read_GAtts_Cleanup(); RETURN
     END IF

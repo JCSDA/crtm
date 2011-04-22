@@ -84,6 +84,9 @@ MODULE CRTM_Options_Define
     ! Antenna correction application
     LOGICAL :: Use_Antenna_Correction = .FALSE.
 
+    ! NLTE radiance correction is ON by default
+    LOGICAL :: Apply_NLTE_Correction = .TRUE.
+    
     ! User defined emissivity/reflectivity
     ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension
@@ -355,7 +358,8 @@ CONTAINS
     ! Display components
     WRITE(*,'(3x,"Check input flag            :",1x,l1)') Options%Check_Input
     WRITE(*,'(3x,"Use old MWSSEM flag         :",1x,l1)') Options%Use_Old_MWSSEM
-    WRITE(*,'(5x,"Use antenna correction flag :",1x,l1)') Options%Use_Antenna_Correction
+    WRITE(*,'(3x,"Use antenna correction flag :",1x,l1)') Options%Use_Antenna_Correction
+    WRITE(*,'(3x,"Apply NLTE correction flag  :",1x,l1)') Options%Apply_NLTE_Correction
     ! ...Emissivity component
     WRITE(*,'(3x,"Emissivity component")')
     WRITE(*,'(5x,"n_Channels                   :",1x,i0)') Options%n_Channels
@@ -457,7 +461,8 @@ CONTAINS
 
     is_equal = (x%Check_Input            .EQV. y%Check_Input           ) .AND. &
                (x%Use_Old_MWSSEM         .EQV. y%Use_Old_MWSSEM        ) .AND. &
-               (x%Use_Antenna_Correction .EQV. y%Use_Antenna_Correction)
+               (x%Use_Antenna_Correction .EQV. y%Use_Antenna_Correction) .AND. &
+               (x%Apply_NLTE_Correction  .EQV. y%Apply_NLTE_Correction )
 
     ! Emissivity component
     is_equal = is_equal .AND. &

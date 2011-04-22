@@ -1,0 +1,27 @@
+ACCoeff_Binary_IO.o : ACCoeff_Binary_IO.f90 ACCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+ACCoeff_Define.o : ACCoeff_Define.f90 SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+CRTM_Planck_Functions.o : CRTM_Planck_Functions.f90 CRTM_SpcCoeff.o CRTM_Parameters.o Type_Kinds.o 
+CRTM_SpcCoeff.o : CRTM_SpcCoeff.f90 CRTM_Parameters.o SpcCoeff_Binary_IO.o SpcCoeff_Define.o SensorInfo_Parameters.o Message_Handler.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Compute_NLTE_Coeff.o : Compute_NLTE_Coeff.f90 CRTM_Planck_Functions.o NLTECoeff_netCDF_IO.o NLTECoeff_Define.o NLTE_Parameters.o Regression.o CRTM_SpcCoeff.o DeltaRadTrainSet_netCDF_IO.o DeltaRad_TrainSet_Define.o Message_Handler.o Type_Kinds.o 
+DeltaRadTrainSet_netCDF_IO.o : DeltaRadTrainSet_netCDF_IO.f90 netCDF_Utility.o DeltaRad_TrainSet_Define.o Message_Handler.o Type_Kinds.o 
+DeltaRad_TrainSet_Define.o : DeltaRad_TrainSet_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+NLTECoeff_Binary_IO.o : NLTECoeff_Binary_IO.f90 NLTECoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+NLTECoeff_Define.o : NLTECoeff_Define.f90 SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+NLTECoeff_netCDF_IO.o : NLTECoeff_netCDF_IO.f90 NLTECoeff_Define.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
+NLTE_Parameters.o : NLTE_Parameters.f90 Type_Kinds.o 
+Regression.o : Regression.f90 Message_Handler.o Type_Kinds.o 
+SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
+SpcCoeff_Binary_IO.o : SpcCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.o NLTECoeff_Define.o ACCoeff_Binary_IO.o ACCoeff_Define.o SpcCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+SpcCoeff_Define.o : SpcCoeff_Define.f90 NLTECoeff_Define.o ACCoeff_Define.o SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+String_Utility.o : String_Utility.f90 
+Type_Kinds.o : Type_Kinds.f90 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 

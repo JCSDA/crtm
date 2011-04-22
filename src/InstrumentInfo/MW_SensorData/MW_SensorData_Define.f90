@@ -6,8 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 03-Jan-2003
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 03-Jan-2003
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE MW_SensorData_Define
@@ -16,54 +16,71 @@ MODULE MW_SensorData_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds,      ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE SpcCoeff_Define, ONLY: INVALID_WMO_SATELLITE_ID, &
-                             INVALID_WMO_SENSOR_ID, &
-                             INVALID_POLARIZATION, &
-                             UNPOLARIZED, &
-                             INTENSITY, &
-                             FIRST_STOKES_COMPONENT, &
-                             SECOND_STOKES_COMPONENT, &
-                             THIRD_STOKES_COMPONENT, &
-                             FOURTH_STOKES_COMPONENT, &
-                             VL_POLARIZATION, &
-                             HL_POLARIZATION, &
-                             plus45L_POLARIZATION, &
-                             minus45L_POLARIZATION, &
-                             VL_MIXED_POLARIZATION, &
-                             HL_MIXED_POLARIZATION, &
-                             RC_POLARIZATION, &
-                             LC_POLARIZATION, &
-                             POLARIZATION_TYPE_NAME
-                             
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   , &
+                                   INVALID_POLARIZATION    , &
+                                   UNPOLARIZED             , &
+                                   INTENSITY               , &
+                                   FIRST_STOKES_COMPONENT  , &
+                                   SECOND_STOKES_COMPONENT , &
+                                   THIRD_STOKES_COMPONENT  , &
+                                   FOURTH_STOKES_COMPONENT , &
+                                   VL_POLARIZATION         , &
+                                   HL_POLARIZATION         , &
+                                   plus45L_POLARIZATION    , &
+                                   minus45L_POLARIZATION   , &
+                                   VL_MIXED_POLARIZATION   , &
+                                   HL_MIXED_POLARIZATION   , &
+                                   RC_POLARIZATION         , &
+                                   LC_POLARIZATION         , &
+                                   POLARIZATION_TYPE_NAME
   ! Disable implicit typing
   IMPLICIT NONE
 
   ! ------------
   ! Visibilities
   ! ------------
+  ! Everything private by default
   PRIVATE
-  ! Public procedures to manipulate the MW_SensorData structure
-  PUBLIC :: Destroy_MW_SensorData
-  PUBLIC :: Allocate_MW_SensorData
-  PUBLIC :: Assign_MW_SensorData
-  PUBLIC :: Load_MW_SensorData
-  PUBLIC :: Print_MW_SensorData
-  PUBLIC :: Get_MW_SensorData_Sensor_ID
+  ! Datatypes
+  PUBLIC :: MW_SensorData_type
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  ! Procedures
+  PUBLIC :: MW_SensorData_Associated
+  PUBLIC :: MW_SensorData_Destroy
+  PUBLIC :: MW_SensorData_Create
+  PUBLIC :: MW_SensorData_Inspect
+  PUBLIC :: MW_SensorData_ValidRelease
+  PUBLIC :: MW_SensorData_Info
+  PUBLIC :: MW_SensorData_DefineVersion
+  PUBLIC :: MW_SensorData_Load
+  PUBLIC :: MW_SensorData_Get_Sensor_Id
+  
+
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE MW_SensorData_Equal
+  END INTERFACE OPERATOR(==)
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-
-  ! The Sensor Id string length
+  ! Default message string length
+  INTEGER, PARAMETER :: ML = 512
+  ! Sensor id string length
   INTEGER, PARAMETER :: SL = 20
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
+  ! Current valid release and version numbers
+  INTEGER, PARAMETER :: MW_SENSORDATA_RELEASE = 1
+  INTEGER, PARAMETER :: MW_SENSORDATA_VERSION = 1
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER ::  ONE   = 1.0_fp
@@ -78,28 +95,32 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: DEFAULT_N_FREQUENCIES = 256
 
 
-  ! ---------------------------------
+  ! ----------------------------------
   ! MW_SensorData data type definition
-  ! ---------------------------------
-  TYPE, PUBLIC :: MW_SensorData_type
-    INTEGER :: n_Allocates = 0
+  ! ----------------------------------
+  TYPE :: MW_SensorData_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Release and version information
+    INTEGER :: Release = MW_SENSORDATA_RELEASE
+    INTEGER :: Version = MW_SENSORDATA_VERSION
     ! Dimensions
     INTEGER :: n_Frequencies = 0  ! Lm
     INTEGER :: n_Channels    = 0  ! L
     ! Sensor IDs
-    CHARACTER(SL) :: Sensor_ID        = ' '
+    CHARACTER(SL) :: Sensor_ID        = ''
     INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID   
     ! Sensor data
-    INTEGER , POINTER :: Sensor_Channel(:)    => NULL()  ! L
-    INTEGER , POINTER :: Zeeman(:)            => NULL()  ! L
-    INTEGER , POINTER :: Polarization(:)      => NULL()  ! L
-    INTEGER , POINTER :: n_Sidebands(:)       => NULL()  ! L
-    REAL(fp), POINTER :: Central_Frequency(:) => NULL()  ! L
-    REAL(fp), POINTER :: IF_Band(:,:,:)       => NULL()  ! 2 x 2 x L
-    REAL(fp), POINTER :: Delta_Frequency(:)   => NULL()  ! L
-    REAL(fp), POINTER :: Frequency(:,:)       => NULL()  ! Lm x L
-    REAL(fp), POINTER :: Response(:,:)        => NULL()  ! Lm x L
+    INTEGER , ALLOCATABLE :: Sensor_Channel(:)     ! L
+    INTEGER , ALLOCATABLE :: Zeeman(:)             ! L
+    INTEGER , ALLOCATABLE :: Polarization(:)       ! L
+    INTEGER , ALLOCATABLE :: n_Sidebands(:)        ! L
+    REAL(fp), ALLOCATABLE :: Central_Frequency(:)  ! L
+    REAL(fp), ALLOCATABLE :: IF_Band(:,:,:)        ! 2 x 2 x L
+    REAL(fp), ALLOCATABLE :: Delta_Frequency(:)    ! L
+    REAL(fp), ALLOCATABLE :: Frequency(:,:)        ! Lm x L
+    REAL(fp), ALLOCATABLE :: Response(:,:)         ! Lm x L
   END TYPE MW_SensorData_type
 
 
@@ -1391,7 +1412,7 @@ MODULE MW_SensorData_Define
   !                           Sensor polariztion data
   !#----------------------------------------------------------------------------#
 
-  ! Parameter definitions inherited from the SPCCOEFF_DEFINE module. Note
+  ! Parameter definitions inherited from the MW_SensorData_DEFINE module. Note
   ! that UNPOLARIZED, INTENSITY, and FIRST_STOKES_COMPONENT all refer to the
   ! same polarization state; that is, Stokes vector of [1,0,0,0]
 
@@ -1669,87 +1690,6 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-!
-! Clear_MW_SensorData
-!
-! Subroutine to clear the scalar members of a MW_SensorData structure.
-!
-! Written by:     Paul van Delst, CIMSS/SSEC 03-Jan-2003
-!                 paul.vandelst@ssec.wisc.edu
-
-  SUBROUTINE Clear_MW_SensorData( MW_SensorData )
-    TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
-    MW_SensorData%Sensor_ID        = ' '
-    MW_SensorData%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    MW_SensorData%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-  END SUBROUTINE Clear_MW_SensorData
-
-
-
-
-!
-! Associated_MW_SensorData
-!
-! Function to test the association status of the pointer members of a
-! MW_SensorData structure.
-!
-!
-! Written by:     Paul van Delst, CIMSS/SSEC 20-Feb-2004
-!                 paul.vandelst@ssec.wisc.edu
-
-  FUNCTION Associated_MW_SensorData( MW_SensorData, & ! Input
-                                     ANY_Test     ) & ! Optional input
-                                   RESULT( Association_Status )
-    ! Arguments
-    TYPE(MW_SensorData_type), INTENT(IN) :: MW_SensorData
-    INTEGER,          OPTIONAL, INTENT(IN) :: ANY_Test
-    ! Function result
-    LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-
-    ! Check input
-    ! -----------
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
-    END IF
-
-
-    ! Test the structure pointer member association status
-    ! ----------------------------------------------------
-    Association_Status = .FALSE.
-    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED( MW_SensorData%Sensor_Channel    ) .AND. &
-           ASSOCIATED( MW_SensorData%Central_Frequency ) .AND. &
-           ASSOCIATED( MW_SensorData%Zeeman            ) .AND. &
-           ASSOCIATED( MW_SensorData%Polarization      ) .AND. &
-           ASSOCIATED( MW_SensorData%n_Sidebands       ) .AND. &
-           ASSOCIATED( MW_SensorData%IF_Band           ) .AND. &
-           ASSOCIATED( MW_SensorData%Delta_Frequency   ) .AND. &
-           ASSOCIATED( MW_SensorData%Frequency         ) .AND. &
-           ASSOCIATED( MW_SensorData%Response          )       ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED( MW_SensorData%Sensor_Channel    ) .OR. &
-           ASSOCIATED( MW_SensorData%Central_Frequency ) .OR. &
-           ASSOCIATED( MW_SensorData%Zeeman            ) .OR. &
-           ASSOCIATED( MW_SensorData%Polarization      ) .OR. &
-           ASSOCIATED( MW_SensorData%n_Sidebands       ) .OR. &
-           ASSOCIATED( MW_SensorData%IF_Band           ) .OR. &
-           ASSOCIATED( MW_SensorData%Delta_Frequency   ) .OR. &
-           ASSOCIATED( MW_SensorData%Frequency         ) .OR. &
-           ASSOCIATED( MW_SensorData%Response          )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-
-  END FUNCTION Associated_MW_SensorData
-
 
 !################################################################################
 !################################################################################
@@ -1759,275 +1699,149 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Destroy_MW_SensorData
-! 
+!       MW_SensorData_Associated
+!
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of 
-!       MW_SensorData data structures.
+!       Elemental function to test the status of the allocatable components
+!       of the MW_SensorData structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_MW_SensorData( MW_SensorData          , &  ! Output
-!                                             RCS_Id     =RCS_Id     , &  ! Revision control
-!                                             Message_Log=Message_Log  )  ! Error messaging
+!       Status = MW_SensorData_Associated( MW_SensorData )
 !
-! OUTPUT ARGUMENTS:
+! OBJECTS:
+!       MW_SensorData: Structure which is to have its member's
+!                      status tested.
+!                      UNITS:      N/A
+!                      TYPE:       MW_SensorData_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value indicating the
+!                      status of the MW_SensorData members.
+!                       .TRUE.  - if ANY of the MW_SensorData allocatable members
+!                                 are in use.
+!                       .FALSE. - if ALL of the MW_SensorData allocatable members
+!                                 are not in use.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION MW_SensorData_Associated( MW_SensorData ) RESULT( Status )
+    TYPE(MW_SensorData_type), INTENT(IN) :: MW_SensorData
+    LOGICAL :: Status
+    Status = MW_SensorData%Is_Allocated             
+  END FUNCTION MW_SensorData_Associated
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       MW_SensorData_Destroy
+! 
+! PURPOSE:
+!       Elemental subroutine to re-initialize MW_SensorData objects.
+!
+! CALLING SEQUENCE:
+!       CALL MW_SensorData_Destroy( MW_SensorData )
+!
+! OBJECTS:
 !       MW_SensorData: Re-initialized MW_SensorData structure.
 !                      UNITS:      N/A
 !                      TYPE:       MW_SensorData_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      Messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output Messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure re-initialisation was successful
-!                         == FAILURE - an error occurred, or
-!                                    - the structure internal allocation counter
-!                                      is not equal to zero (0) upon exiting this
-!                                      function. This value is incremented and
-!                                      decremented for every structure allocation
-!                                      and deallocation respectively.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-!
-! COMMENTS:
-!       Note the INTENT on the output MW_SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_MW_SensorData( MW_SensorData, &  ! Output
-                                  No_Clear     , &  ! Optional input
-                                  RCS_Id       , &  ! Revision control
-                                  Message_Log  ) &  ! Error messaging
-                                RESULT(Error_Status)
-    ! Arguments
-    TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
-    INTEGER,        OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_MW_SensorData'
-    ! Local variables
-    CHARACTER( 256 ) :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Reset the dimension indicators
-    MW_SensorData%n_Frequencies = 0
-    MW_SensorData%n_Channels    = 0
-
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL Clear_MW_SensorData( MW_SensorData )
-
-    ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_MW_SensorData( MW_SensorData ) ) RETURN
-
-    ! Deallocate the pointer members
-    ! ------------------------------
-    DEALLOCATE( MW_SensorData%Sensor_Channel   , &
-                MW_SensorData%Central_Frequency, &
-                MW_SensorData%Zeeman           , &
-                MW_SensorData%Polarization     , &
-                MW_SensorData%n_Sidebands      , &
-                MW_SensorData%IF_Band          , &
-                MW_SensorData%Delta_Frequency  , &
-                MW_SensorData%Frequency        , &
-                MW_SensorData%Response         , &
-                STAT=Allocate_Status             )
-    IF ( Allocate_Status /= 0 ) THEN
-      WRITE( Message, '("Error deallocating MW_SensorData. STAT = ",i0)') &
-                      Allocate_Status
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-    MW_SensorData%n_Allocates = MW_SensorData%n_Allocates - 1
-    IF ( MW_SensorData%n_Allocates /= 0 ) THEN
-      WRITE( Message, '("Allocation counter /= 0, Value = ",i0)') &
-                      MW_SensorData%n_Allocates
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-  END FUNCTION Destroy_MW_SensorData
+  ELEMENTAL SUBROUTINE MW_SensorData_Destroy( MW_SensorData )
+    TYPE(MW_SensorData_type), INTENT(OUT) :: MW_SensorData
+    MW_SensorData%Is_Allocated     = .FALSE.
+    MW_SensorData%n_Frequencies    = 0
+    MW_SensorData%n_Channels       = 0
+    MW_SensorData%Sensor_ID        = ''
+    MW_SensorData%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    MW_SensorData%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID   
+  END SUBROUTINE MW_SensorData_Destroy
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Allocate_MW_SensorData
+!       MW_SensorData_Create
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of a MW_SensorData data structure.
+!       Elemental subroutine to create an instance of an MW_SensorData object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_MW_SensorData( n_Channels             , &  ! Input
-!                                              MW_SensorData          , &  ! Output
-!                                              RCS_Id     =RCS_Id     , &  ! Revision control
-!                                              Message_Log=Message_Log  )  ! Error messaging
+!       CALL MW_SensorData_Create( &
+!              MW_SensorData, &
+!              n_Channels   , &
+!              n_Frequencies = n_Frequencies )
 !
-! INPUT ARGUMENTS:
-!       n_Channels:         Number of channels dimension.
+! OBJECTS:
+!       MW_SensorData:      MW_SensorData object structure.
+!                           UNITS:      N/A
+!                           TYPE:       MW_SensorData_type
+!                           DIMENSION:  Scalar or any rank
+!                           ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       n_Channels:         Number of sensor channels for the MW sensor.
 !                           Must be > 0.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
+!                           DIMENSION:  Conformable
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       MW_SensorData:      MW_SensorData structure with allocated
-!                           pointer members
+! OPTIONAL INPUTS:
+!       n_Frequencies:      Total number of points per channel for computing the
+!                           channel frequencies and responses. Must be evenly
+!                           divisible by 2 and 4, and must be > 0.
+!                           If not specified, default value is 256.
 !                           UNITS:      N/A
-!                           TYPE:       MW_SensorData_type
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT)
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Conformable
+!                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in
-!                           which any Messages will be logged. If not
-!                           specified, or if an error occurs opening
-!                           the log file, the default action is to
-!                           output Messages to standard output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:        The return value is an integer defining the error status.
-!                            The error codes are defined in the Message_Handler module.
-!                            If == SUCCESS the structure re-initialisation was successful
-!                               == FAILURE - an error occurred, or
-!                                          - the structure internal allocation counter
-!                                            is not equal to one (1) upon exiting this
-!                                            function. This value is incremented and
-!                                            decremented for every structure allocation
-!                                            and deallocation respectively.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output MW_SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_MW_SensorData( n_Channels   , &  ! Input
-                                   MW_SensorData, &  ! Output
-                                   n_Frequencies, &  ! Optional input
-                                   RCS_Id       , &  ! Optional output
-                                   Message_Log  ) &  ! Error messaging
-                                 RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE MW_SensorData_Create( &
+    MW_SensorData, &  ! Output
+    n_Channels   , &  ! Input
+    n_Frequencies  )  ! Optional Input
     ! Arguments
-    INTEGER                 , INTENT(IN)     :: n_Channels
-    TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
-    INTEGER     ,   OPTIONAL, INTENT(IN)     :: n_Frequencies
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_MW_SensorData'
+    TYPE(MW_SensorData_type), INTENT(OUT) :: MW_SensorData
+    INTEGER                 , INTENT(IN)  :: n_Channels
+    INTEGER,       OPTIONAL , INTENT(IN)  :: n_Frequencies
     ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: Allocate_Status
-    INTEGER :: local_n_Frequencies
+    INTEGER :: local_n_frequencies
+    INTEGER :: alloc_stat
 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Check dimensions
-    IF ( n_Channels  < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input MW_SensorData channel dimension must be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
+    ! Check input
+    IF ( n_Channels < 1 ) RETURN
     IF ( PRESENT(n_Frequencies) ) THEN
-      local_n_Frequencies = n_Frequencies
+      IF ( n_Frequencies < 1 ) RETURN
+      local_n_frequencies = n_Frequencies
     ELSE
-      local_n_Frequencies = DEFAULT_N_FREQUENCIES
+      local_n_frequencies = DEFAULT_N_FREQUENCIES
     END IF
+    ! ...Ensure local_n_frequencies is /2 and /4
+    IF ( MOD(local_n_Frequencies,4) /= 0 ) RETURN
 
-    ! Check if ANY pointers are already associated. If so,
-    ! deallocate the arrays, but leave the scalars alone.
-    IF ( Associated_MW_SensorData( MW_SensorData, ANY_Test=SET ) ) THEN
-      Error_Status = Destroy_MW_SensorData( MW_SensorData, &
-                                            No_Clear=SET, &
-                                            Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating MW_SensorData prior to allocation.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-    END IF
-
-    ! Perform the pointer allocation
-    ! ------------------------------
+    
+    ! Perform the allocation
     ALLOCATE( MW_SensorData%Sensor_Channel( n_Channels ), &
               MW_SensorData%Central_Frequency( n_Channels ), &
               MW_SensorData%Zeeman( n_Channels ), &
@@ -2035,304 +1849,319 @@ CONTAINS
               MW_SensorData%n_Sidebands( n_Channels ), &
               MW_SensorData%IF_Band( 2, MAX_N_SIDEBANDS, n_Channels ), &
               MW_SensorData%Delta_Frequency( n_Channels ), &
-              MW_SensorData%Frequency( local_n_Frequencies, n_Channels ), &
-              MW_SensorData%Response( local_n_Frequencies, n_Channels ), &
-              STAT=Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Error allocating MW_SensorData data arrays. STAT = ",i0)' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
+              MW_SensorData%Frequency( local_n_frequencies, n_Channels ), &
+              MW_SensorData%Response( local_n_frequencies, n_Channels ), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
 
 
-    ! Assign the dimensions
-    ! ---------------------
-    MW_SensorData%n_Frequencies = local_n_Frequencies
+    ! Initialise
+    ! ...Dimensions
     MW_SensorData%n_Channels    = n_Channels
-
-
-    ! Initialise the arrays
-    ! ---------------------
-    MW_SensorData%Sensor_Channel    = INVALID
-    MW_SensorData%Central_Frequency = REAL(INVALID,fp)
+    MW_SensorData%n_Frequencies = local_n_frequencies
+    ! ...Arrays
+    MW_SensorData%Sensor_Channel    = 0
+    MW_SensorData%Central_Frequency = ZERO
     MW_SensorData%Zeeman            = NO_ZEEMAN
     MW_SensorData%Polarization      = INVALID_POLARIZATION
-    MW_SensorData%n_Sidebands       = INVALID
-    MW_SensorData%IF_Band           = REAL(INVALID,fp)
-    MW_SensorData%Delta_Frequency   = REAL(INVALID,fp)
-    MW_SensorData%Frequency         = REAL(INVALID,fp)
-    MW_SensorData%Response          = REAL(INVALID,fp)
+    MW_SensorData%n_Sidebands       = 0
+    MW_SensorData%IF_Band           = ZERO
+    MW_SensorData%Delta_Frequency   = ZERO
+    MW_SensorData%Frequency         = ZERO
+    MW_SensorData%Response          = ZERO
 
 
-    ! Increment and test the allocation counter
-    ! -----------------------------------------
-    MW_SensorData%n_Allocates = MW_SensorData%n_Allocates + 1
-    IF ( MW_SensorData%n_Allocates /= 1 ) THEN
-      WRITE( Message, '("Allocation counter /= 1, Value = ",i0)') &
-                      MW_SensorData%n_Allocates
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
+    ! Set allocation indicator
+    MW_SensorData%Is_Allocated = .TRUE.
 
-  END FUNCTION Allocate_MW_SensorData
+  END SUBROUTINE MW_SensorData_Create
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Assign_MW_SensorData
+!       MW_SensorData_Inspect
 !
 ! PURPOSE:
-!       Function to copy valid MW_SensorData structures.
+!       Subroutine to print the contents of a MW_SensorData object to stdout.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_MW_SensorData( MW_SensorData_in       , &  ! Input
-!                                            MW_SensorData_out      , &  ! Output
-!                                            RCS_Id     =RCS_Id     , &  ! Revision control
-!                                            Message_Log=Message_Log  )  ! Error messaging
+!       CALL MW_SensorData_Inspect( MW_SensorData )
 !
-! INPUT ARGUMENTS:
-!       MW_SensorData_in:  MW_SensorData structure which is to be copied.
-!                          UNITS:      N/A
-!                          TYPE:       MW_SensorData_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+! OBJECTS:
+!       MW_SensorData: MW_SensorData object to display.
+!                      UNITS:      N/A
+!                      TYPE:       MW_SensorData_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       MW_SensorData_out: Copy of the input structure, MW_SensorData_in.
-!                          UNITS:      N/A
-!                          TYPE:       MW_SensorData_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:       Character string specifying a filename in which any
-!                          Messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output Messages to standard output.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the structure assignment was successful
-!                             == FAILURE an error occurred
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output MW_SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_MW_SensorData( MW_SensorData_in , &  ! Input
-                                 MW_SensorData_out, &  ! Output
-                                 RCS_Id           , &  ! Revision control
-                                 Message_Log      ) &  ! Error messaging
-                               RESULT( Error_Status )
+  SUBROUTINE MW_SensorData_Inspect( MW_SensorData )
+    TYPE(MW_SensorData_type), INTENT(IN) :: MW_SensorData
+    INTEGER :: n
+    WRITE(*,'(1x,"MW_SensorData OBJECT")')
+    ! Release/version info
+    ! Dimensions
+    WRITE(*,'(3x,"n_Channels                :",1x,i0)') MW_SensorData%n_Channels
+    WRITE(*,'(3x,"n_Frequencies             :",1x,i0)') MW_SensorData%n_Frequencies
+    IF ( .NOT. MW_SensorData_Associated(MW_SensorData) ) RETURN
+    ! Scalar info
+    WRITE(*,'(3x,"Sensor_Id        :",1x,a )') TRIM(MW_SensorData%Sensor_Id)
+    WRITE(*,'(3x,"WMO_Satellite_ID :",1x,i0)') MW_SensorData%WMO_Satellite_ID 
+    WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') MW_SensorData%WMO_Sensor_ID
+    ! Data arrays
+    WRITE(*,'(3x,"Sensor_Channel   :")')
+    WRITE(*,'(10(1x,i5,:))') MW_SensorData%Sensor_Channel
+    WRITE(*,'(3x,"Zeeman            :")')
+    DO n = 1, MW_SensorData%n_Channels
+      WRITE(*,'(5x,"Channel ",i0,": ",l1)') MW_SensorData%Sensor_Channel(n), &
+                                            MW_SensorData%Zeeman(n) /= 0
+    END DO
+    WRITE(*,'(3x,"Polarization      :")')
+    DO n = 1, MW_SensorData%n_Channels
+      WRITE(*,'(5x,"Channel ",i0,": ",a)') MW_SensorData%Sensor_Channel(n), &
+                                           POLARIZATION_TYPE_NAME(MW_SensorData%Polarization(n))
+    END DO
+    WRITE(*,'(3x,"n_Sidebands       :")')
+    WRITE(*,'(10(1x,i5,:))') MW_SensorData%n_Sidebands
+    WRITE(*,'(3x,"Central_Frequency :")')
+    WRITE(*,'(5(1x,es13.6,:))') MW_SensorData%Central_Frequency
+    WRITE(*,'(3x,"IF_Band           :")')
+    WRITE(*,'(5(1x,es13.6,:))') MW_SensorData%IF_Band
+    WRITE(*,'(3x,"Delta_Frequency   :")')
+    WRITE(*,'(5(1x,es13.6,:))') MW_SensorData%Delta_Frequency
+    WRITE(*,'(3x,"Frequency         :")')
+    WRITE(*,'(5(1x,es13.6,:))') MW_SensorData%Frequency
+    WRITE(*,'(3x,"Response          :")')
+    WRITE(*,'(5(1x,es13.6,:))') MW_SensorData%Response
+    
+  END SUBROUTINE MW_SensorData_Inspect
+  
+  
+!----------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       MW_SensorData_ValidRelease
+!
+! PURPOSE:
+!       Function to check the MW_SensorData Release value.
+!
+! CALLING SEQUENCE:
+!       IsValid = MW_SensorData_ValidRelease( MW_SensorData )
+!
+! INPUTS:
+!       MW_SensorData: MW_SensorData object for which the Release component
+!                      is to be checked.
+!                      UNITS:      N/A
+!                      TYPE:       MW_SensorData_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       IsValid:       Logical value defining the release validity.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!----------------------------------------------------------------------------------
+
+  FUNCTION MW_SensorData_ValidRelease( MW_SensorData ) RESULT( IsValid )
     ! Arguments
-    TYPE(MW_SensorData_type), INTENT(IN)     :: MW_SensorData_in
-    TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData_out
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(MW_SensorData_type), INTENT(IN) :: MW_SensorData
     ! Function result
-    INTEGER :: Error_Status
+    LOGICAL :: IsValid
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_MW_SensorData'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MW_SensorData_ValidRelease'
+    ! Local variables
+    CHARACTER(ML) :: msg
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    IsValid = .TRUE.
 
-    ! ALL *input* pointers must be associated
-    IF ( .NOT. Associated_MW_SensorData( MW_SensorData_in ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT MW_SensorData_in pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+
+    ! Check release is not too old
+    IF ( MW_SensorData%Release < MW_SENSORDATA_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("An MW_SensorData data update is needed. ", &
+                  &"MW_SensorData release is ",i0,". Valid release is ",i0,"." )' ) &
+                  MW_SensorData%Release, MW_SENSORDATA_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
 
 
-    ! Allocate data arrays
-    ! --------------------
-    Error_Status = Allocate_MW_SensorData( MW_SensorData_in%n_Channels, &
-                                           MW_SensorData_out, &
-                                           Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating output MW_SensorData arrays.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
+    ! Check release is not too new
+    IF ( MW_SensorData%Release > MW_SENSORDATA_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("An MW_SensorData software update is needed. ", &
+                  &"MW_SensorData release is ",i0,". Valid release is ",i0,"." )' ) &
+                  MW_SensorData%Release, MW_SENSORDATA_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
 
-
-    ! Assign non-dimension scalar members
-    ! -----------------------------------
-    MW_SensorData_out%Sensor_ID        = MW_SensorData_in%Sensor_ID
-    MW_SensorData_out%WMO_Satellite_ID = MW_SensorData_in%WMO_Satellite_ID
-    MW_SensorData_out%WMO_Sensor_ID    = MW_SensorData_in%WMO_Sensor_ID
+  END FUNCTION MW_SensorData_ValidRelease
 
 
-    ! Copy array data
-    ! ---------------
-    MW_SensorData_out%Sensor_Channel    = MW_SensorData_in%Sensor_Channel
-    MW_SensorData_out%Central_Frequency = MW_SensorData_in%Central_Frequency
-    MW_SensorData_out%Zeeman            = MW_SensorData_in%Zeeman
-    MW_SensorData_out%Polarization      = MW_SensorData_in%Polarization
-    MW_SensorData_out%n_Sidebands       = MW_SensorData_in%n_Sidebands
-    MW_SensorData_out%IF_Band           = MW_SensorData_in%IF_Band
-    MW_SensorData_out%Delta_Frequency   = MW_SensorData_in%Delta_Frequency
-    MW_SensorData_out%Frequency         = MW_SensorData_in%Frequency
-    MW_SensorData_out%Response          = MW_SensorData_in%Response 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       MW_SensorData_Info
+!
+! PURPOSE:
+!       Subroutine to return a string containing version and dimension
+!       information about a MW_SensorData object.
+!
+! CALLING SEQUENCE:
+!       CALL MW_SensorData_Info( MW_SensorData, Info )
+!
+! OBJECTS:
+!       MW_SensorData: MW_SensorData object about which info is required.
+!                      UNITS:      N/A
+!                      TYPE:       MW_SensorData_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Info:          String containing version and dimension information
+!                      about the MW_SensorData object.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  END FUNCTION Assign_MW_SensorData
+  SUBROUTINE MW_SensorData_Info( MW_SensorData, Info )
+    ! Arguments
+    TYPE(MW_SensorData_type), INTENT(IN)  :: MW_SensorData
+    CHARACTER(*),     INTENT(OUT) :: Info
+    ! Parameters
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
+    ! Local variables
+    CHARACTER(2000) :: Long_String
+
+    ! Write the required data to the local string
+    WRITE( Long_String, &
+           '(a,1x,"MW_SensorData RELEASE.VERSION: ",i2,".",i2.2,a,3x, &
+           &"N_CHANNELS=",i0,2x,&
+           &"N_FREQUENCIES=",i0 )' ) &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           MW_SensorData%Release, MW_SensorData%Version, &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           MW_SensorData%n_Channels, MW_SensorData%n_Frequencies
+                       
+    ! Trim the output based on the
+    ! dummy argument string length
+    Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
+
+  END SUBROUTINE MW_SensorData_Info
+ 
+ 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       MW_SensorData_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL MW_SensorData_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE MW_SensorData_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE MW_SensorData_DefineVersion
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Load_MW_SensorData
+!       MW_SensorData_Load
 !
 ! PURPOSE:
-!       Function to allocate and load an MW_SensorData structure based on
-!       input sensor ID information.
+!       Function to load an MW_SensorData object with information
+!       based on input sensor ID.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Load_MW_SensorData( MW_SensorData                    , &  ! Output
-!                                          Sensor_ID       =Sensor_ID       , &  ! Optional Input
-!                                          WMO_Satellite_ID=WMO_Satellite_ID, &  ! Optional Input
-!                                          WMO_Sensor_ID   =WMO_Sensor_ID   , &  ! Optional Input
-!                                          RCS_Id          =RCS_Id          , &  ! Revision control
-!                                          Message_Log     =Message_Log       )  ! Error messaging
+!       Error_Status = MW_SensorData_Load( &
+!                        MW_SensorData, &
+!                        Sensor_Id    , &
+!                        n_Frequencies = n_Frequencies )
 !
-! OUTPUT ARGUMENTS:
-!       MW_SensorData:     MW_SensorData structure containing the required
-!                          sensor frequency data.
+! OBJECTS:
+!       MW_SensorData:     MW_SensorData object containing the required
+!                          sensor data.
 !                          UNITS:      N/A
 !                          TYPE:       MW_SensorData_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! INPUTS:
 !       Sensor_Id:         Character string sensor/platform identifier.
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       WMO_Satellite_ID:  The WMO code for identifying satellite
-!                          platforms. Taken from the WMO common
-!                          code tables at:
-!                            http://www.wmo.ch/web/ddbs/Code-tables.html
-!                          The Satellite ID is from Common Code
-!                          table C-5, or code table 0 01 007 in BUFR.
-!                          - This argument is ignored if the Sensor_ID
-!                            argument is passed.
-!                          - If this argument is used, the WMO_Sensor_ID
-!                            *must* be passed also.
+! OPTIONAL INPUTS:
+!       n_Frequencies:     Total number of points per channel for computing the
+!                          channel frequencies and responses. Must be evenly
+!                          divisible by 2 and 4, and must be > 0.
+!                          If not specified, default value is 256.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
 !                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       WMO_Sensor_ID:     The WMO code for identifying a satelite
-!                          sensor. Taken from the WMO common
-!                          code tables at:
-!                            http://www.wmo.ch/web/ddbs/Code-tables.html
-!                          The Sensor ID is from Common Code
-!                          table C-8, or code table 0 02 019 in BUFR
-!                          - This argument is ignored if the Sensor_ID
-!                            argument is passed.
-!                          - If this argument is used, the WMO_Satellite_ID
-!                            *must* be passed also.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:       Character string specifying a filename in which any
-!                          Messages will be logged. If not specified, or if an
-!                          error occurs opening the log file, the default action
-!                          is to output Messages to standard output.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:            Character string containing the Revision Control
-!                          System Id field for the module.
-!                          UNITS:      N/A
-!                          TYPE:       CHARACTER(*)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT), OPTIONAL
+!                          ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
 !       Error_Status:      The return value is an integer defining the error status.
 !                          The error codes are defined in the Message_Handler module.
 !                          If == SUCCESS the data load was successful
-!                             == FAILURE - an error occurred
-!                                        - nothing was done due to lack
-!                                          of user input
+!                             == FAILURE an error occurred
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
-!
+!                          DIMENSION:  Scalar!:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Load_MW_SensorData( MW_SensorData   , &  ! Output
-                               n_Frequencies   , &  ! Optional input
-                               Sensor_ID       , &  ! Optional Input
-                               WMO_Satellite_ID, &  ! Optional Input
-                               WMO_Sensor_ID   , &  ! Optional Input
-                               RCS_Id          , &  ! Revision control
-                               Message_Log     ) &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION MW_SensorData_Load( &
+    MW_SensorData, &  ! Output
+    Sensor_Id    , &  ! Input
+    n_Frequencies) &  ! Optional input
+  RESULT( Error_Status )
     ! Arguments
-    TYPE(MW_SensorData_type), INTENT(IN OUT) :: MW_SensorData
-    INTEGER     ,   OPTIONAL, INTENT(IN)     :: n_Frequencies
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Sensor_ID
-    INTEGER     ,   OPTIONAL, INTENT(IN)     :: WMO_Satellite_ID
-    INTEGER     ,   OPTIONAL, INTENT(IN)     :: WMO_Sensor_ID
-    CHARACTER(*),   OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),   OPTIONAL, INTENT(IN)     :: Message_Log
+    TYPE(MW_SensorData_type), INTENT(OUT) :: MW_SensorData
+    CHARACTER(*)            , INTENT(IN)  :: Sensor_Id
+    INTEGER     ,   OPTIONAL, INTENT(IN)  :: n_Frequencies
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Load_MW_SensorData'
-
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'MW_SensorData_Load'
     ! Local variables
-    CHARACTER(256) :: Message
-    CHARACTER(SL) :: Local_Sensor_Id
-    LOGICAL :: No_Sensor_Id, No_WMO_Ids
-    INTEGER :: local_n_Frequencies, n_Halfpoints
+    CHARACTER(ML) :: Message
+    INTEGER :: n_Halfpoints
     INTEGER :: i, n
     INTEGER :: idx(1)
     INTEGER :: n_Points(2)
@@ -2343,120 +2172,35 @@ CONTAINS
 
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check dimensions
-    IF ( PRESENT(n_Frequencies) ) THEN
-      local_n_Frequencies = n_Frequencies
-    ELSE
-      local_n_Frequencies = DEFAULT_N_FREQUENCIES
+    ! ...Check sensor id is valid
+    n = COUNT(VALID_SENSOR_ID == Sensor_Id)
+    IF ( n == 0 ) THEN
+      Message = 'Specified Sensor_Id, '//TRIM(Sensor_Id)//', not found in valid list'
+      CALL Load_Cleanup(); RETURN
     END IF
-    
-    ! ensure local_n_frequencies is /2 and /4
-    IF(MOD(local_n_Frequencies,4) /= ZERO) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'The n_frequencies field supplied is not divisble by /2, /4.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    
-    n_Halfpoints = local_n_Frequencies/2
-
-    
-    ! Were *any* ids passed?
-    No_Sensor_Id = .NOT. PRESENT(Sensor_ID)
-    No_WMO_Ids   = .NOT. ( PRESENT(WMO_Satellite_ID) .AND. PRESENT(WMO_Sensor_ID) )
-    IF ( No_Sensor_Id .AND. No_WMO_Ids ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'No sensor ID arguments passed.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Determine the sensor id index
-    ! -----------------------------
-    IF ( PRESENT(Sensor_ID) ) THEN
-
-      ! Use the character string Sensor ID if available...
-      ! --------------------------------------------------
-      ! Create a local copy
-      Local_Sensor_Id = ADJUSTL(Sensor_Id)
-      
-      ! Check it's valid
-      n = COUNT(VALID_SENSOR_ID == Local_Sensor_ID)
-      IF ( n == 0 ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Specified Sensor_Id not found in valid list.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
- 
-      ! Determine the sensor ID index
-      idx = PACK((/ (i,i=1,N_VALID_SENSORS) /), &
-                 VALID_SENSOR_ID == Local_Sensor_ID)
-
-    ELSE
-
-      ! ...otherwise use the WMO IDs
-      ! ----------------------------
-      ! Check if the Ids are valid
-      n = COUNT(( VALID_WMO_SATELLITE_ID == WMO_Satellite_ID ) .AND. &
-                ( VALID_WMO_SENSOR_ID    == WMO_Sensor_ID    )       )
-      IF ( n == 0 ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Specified WMO Ids not found in valid list.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-
-      ! Determine the sensor ID index
-      idx = PACK((/ (i,i=1,N_VALID_SENSORS) /), &
-                 ( VALID_WMO_SATELLITE_ID == WMO_Satellite_ID ) .AND. &
-                 ( VALID_WMO_SENSOR_ID    == WMO_Sensor_ID    )       )
-
-    END IF
+    ! ...Determine the sensor ID index
+    idx = PACK((/ (i,i=1,N_VALID_SENSORS) /), VALID_SENSOR_ID == Sensor_Id)
 
 
     ! Allocate the MW_SensorData structure
-    ! ------------------------------------
-    Error_Status = Allocate_MW_SensorData( VALID_N_CHANNELS( idx(1) ), &
-                                           MW_SensorData, &
-                                           n_Frequencies=local_n_Frequencies, &
-                                           Message_Log  =Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error occurred allocating MW_SensorData structure..', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    CALL MW_SensorData_Create( &
+      MW_SensorData, &
+      VALID_N_CHANNELS( idx(1) ), &
+      n_Frequencies = n_Frequencies )
+    IF ( .NOT. MW_SensorData_Associated( MW_SensorData ) ) THEN
+      Message = 'Error allocating MW_SensorData object'
+      CALL Load_Cleanup(); RETURN
     END IF
 
 
-    ! Assign the sensor ID info
-    ! -------------------------
+    ! Assign sensor info and defaults
     MW_SensorData%Sensor_ID        = VALID_SENSOR_ID( idx(1) )
     MW_SensorData%WMO_Satellite_ID = VALID_WMO_SATELLITE_ID( idx(1) )
     MW_SensorData%WMO_Sensor_ID    = VALID_WMO_SENSOR_ID( idx(1) )
-
-
-    ! Assign the default Zeeman flag
-    ! ------------------------------
     MW_SensorData%Zeeman = NO_ZEEMAN
     
     
     ! Load the structure with the relevant sensor's data
-    ! --------------------------------------------------
     Load_Data: SELECT CASE ( TRIM(MW_SensorData%Sensor_ID) )
 
       CASE ('msu_tirosn','msu_n06','msu_n07','msu_n08','msu_n09',&
@@ -2742,40 +2486,41 @@ CONTAINS
         MW_SensorData%IF_Band           = MWTS_FY3B_IF_BAND
 
       ! No match! Should never get here!
-      ! --------------------------------
       CASE DEFAULT
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'No sensor ID match!!', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+        Message = 'No sensor ID match!!'
+        CALL Load_Cleanup(); RETURN
 
     END SELECT Load_Data
 
 
-    ! Compute the channel frequency response grid
-    ! -------------------------------------------
+    ! Compute the frequency response grids
+    ! ...The number of halfpoints
+    n_Halfpoints = MW_SensorData%n_Frequencies/2
+    ! ...Begin channel loop
     Channel_Response_Loop: DO l = 1, MW_SensorData%n_Channels
 
-      ! Compute the number of points in the sideband(s)
-      ! -----------------------------------------------
-      ! First determine the total frequency range in the sidebands
+
+      ! NOTE: The logical test
+      !         IF( MW_SensorData%IF_Band(1,1,l) == ZERO ) THEN
+      !       is to test for no stopband and single passband
       
-      df=ZERO
-      ! Test for instances of no stopband and single passband
-      IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
+      
+      ! Compute the number of points in the sideband(s)
+      ! ...First determine the total frequency range in the sidebands
+      df = ZERO
+      IF( MW_SensorData%IF_Band(1,1,l) == ZERO ) THEN
         df = TWO*MW_SensorData%IF_Band(2,1,l)
       ELSE
         DO ln = 1, MW_SensorData%n_Sidebands( l )
           df = df + ( MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l) )
         END DO
       ENDIF
-      ! Now determine the frequency interval for this frequency
-      ! range to provide the required number of points. Note that
-      ! for > 1 sideband channels, the divisor is n-2, not n-1.
-      ! This is to exclude the "space" between the sidebands in
-      ! the frequency interval calculation. E.g.:
+      
+      ! ...Now determine the frequency interval for this frequency
+      !    range to provide the required number of points. Note that
+      !    for > 1 sideband channels, the divisor is n-2, not n-1.
+      !    This is to exclude the "space" between the sidebands in
+      !    the frequency interval calculation. E.g.:
       ! --
       !       Sideband 1             Sideband 2
       !     |-----------|      |-------------------|
@@ -2784,26 +2529,18 @@ CONTAINS
       ! --
       !       1   2   3          4   5   6   7   8     INTERVALS    (n-2)
       !
-      
-      ! Test for instances of no stopband and single passband
       IF(MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
-        ! In this case the number of intervals used is local_n_Frequencies-1
-        MW_SensorData%Delta_Frequency(l) = df / REAL(local_n_Frequencies-1,fp)        
+        MW_SensorData%Delta_Frequency(l) = df / REAL(MW_SensorData%n_Frequencies-1,fp)        
       ELSE IF( MW_SensorData%n_Sidebands( l ) == 1) THEN
         MW_SensorData%Delta_Frequency(l) = df / REAL(n_Halfpoints-1,fp)
       ELSE
         MW_SensorData%Delta_Frequency(l) = df / REAL(n_Halfpoints-2,fp)
       END IF
-      
-      ! Now determine the number of points for each sideband.
+      ! ...Now determine the number of points for each sideband.
       n_Points(:) = 0
-    
-      ! Test for instances of no stopband and single passband
-      ! where only one band is considered. Therefore, the
-      ! number of points in these instances is local_n_Frequencies
       IF( MW_SensorData%IF_Band(1,1,l) == ZERO) THEN
         ! Case of single passband *AND* no stopband
-        n_Points(1)=local_n_Frequencies
+        n_Points(1) = MW_SensorData%n_Frequencies
       ELSE
         ! All other channels:
         ! - single passband with stopband
@@ -2813,21 +2550,17 @@ CONTAINS
           df = MW_SensorData%IF_Band(2,ln,l) - MW_SensorData%IF_Band(1,ln,l)
           n_Points(ln) = NINT(df/MW_SensorData%Delta_Frequency(l)) + 1
         END DO
-        ! check the result
+        ! Check the result
         IF ( SUM(n_Points) /= n_HalfPoints ) THEN
-          Error_Status = FAILURE
-          WRITE( Message,'("Error computing n_HalfPoints for channel ",i0,&
-                          &" of ",a,". Computed value is ",i0)' ) &
-                          MW_SensorData%Sensor_Channel( l ), &
-                          TRIM(MW_SensorData%Sensor_ID), &
+          WRITE( Message,'("Error comparing SUM(n_Points) to n_HalfPoints for channel ",i0,&
+                          &" of ",a,". Sum of n_Points ",i0)' ) &
+                          MW_SensorData%Sensor_Channel(l), &
+                          TRIM(MW_SensorData%Sensor_Id), &
                           SUM(n_Points)
-          CALL Display_Message( ROUTINE_NAME, &
-                                TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          STOP
+          CALL Load_Cleanup(); RETURN
         END IF
       END IF
+
 
       ! Fill the frequency array. It's a bit convoluted as I
       ! want the frequencies to be in ascending order.
@@ -2892,93 +2625,22 @@ CONTAINS
       END IF
 
       ! The response is assumed unity
-      ! -----------------------------
       MW_SensorData%Response(:,l) = ONE
 
     END DO Channel_Response_Loop
 
-  END FUNCTION Load_MW_SensorData
+  CONTAINS
+  
+    SUBROUTINE Load_Cleanup()
+      CALL MW_SensorData_Destroy( MW_SensorData )
+      Error_Status = FAILURE
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+    END SUBROUTINE Load_Cleanup
+    
+  END FUNCTION MW_SensorData_Load
+  
 
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Print_MW_SensorData
-!
-! PURPOSE:
-!       Subroutine to print information contained in the MW_SensorData data
-!       structure to stdout.
-!
-! CALLING SEQUENCE:
-!       CALL Print_MW_SensorData( MW_SensorData )
-!
-! INPUT ARGUMENTS:
-!       MW_SensorData:     MW_SensorData structure the contents of which
-!                          are output.
-!                          UNITS:      N/A
-!                          TYPE:       MW_SensorData_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Print_MW_SensorData( MW_SensorData )
-    ! Arguments
-    TYPE(MW_SensorData_type), INTENT(IN)  :: MW_SensorData
-    ! Local parameters
-    INTEGER, PARAMETER :: N_HALFBANDS = MAX_N_SIDEBANDS * 2
-    ! Local variables
-    INTEGER :: i, l
-    INTEGER :: iL1, iL2
-    INTEGER :: iU1, iU2
-    REAL(fp), DIMENSION( 1:N_HALFBANDS*2 ) :: Frequency
-
-    ! Write a header
-    ! --------------
-    WRITE( *,'(//5x,"SensorData for ",a,&
-               &/5x,"WMO Satellite/Sensor IDs:",2(1x,i0))' ) &
-              TRIM(MW_SensorData%Sensor_ID), &
-              MW_SensorData%WMO_Satellite_ID, &
-              MW_SensorData%WMO_Sensor_ID
-    WRITE( *,'(1x,"Ch",20x,"Polarization",25x,"f0        f0-f4      f0-f3      f0-f2",&
-                 &"      f0-f1          f0+f1      f0+f2      f0+f3      f0+f4")' )
-
-    ! Print information for each channel
-    ! ----------------------------------
-    Channel_Loop : DO l = 1, MW_SensorData%n_Channels
-
-      ! Fill frequency array with format string overflow values
-      Frequency = -9999.0_fp
-
-      ! Loop over sidebands
-      Sideband_Loop : DO i = 1, MW_SensorData%n_Sidebands(l)
-
-        ! Define the lower frequency indices
-        iL2 = N_HALFBANDS - ( 2*i ) + 1
-        iL1 = iL2 + 1
-
-        ! Define the upper frequency indices
-        iU1 = N_HALFBANDS + ( 2*i ) - 1
-        iU2 = iU1 + 1
-
-        ! Compute the frequencies
-        Frequency( iL1:iL2:-1 ) = MW_SensorData%Central_Frequency(l) - MW_SensorData%IF_Band( :, i, l )
-        Frequency( iU1:iU2 )    = MW_SensorData%Central_Frequency(l) + MW_SensorData%IF_Band( :, i, l )
-
-      END DO Sideband_Loop
-
-      ! Output the data
-      WRITE( *,'(1x,i2,2x,a,2x,f10.6,4(1x,f10.6)," -|-",4(1x,f10.6))' ) &
-                MW_SensorData%Sensor_Channel(l), &
-                POLARIZATION_TYPE_NAME(MW_SensorData%Polarization(l) ), &
-                MW_SensorData%Central_Frequency(l), &
-                Frequency
-
-    END DO Channel_Loop
-
-  END SUBROUTINE Print_MW_SensorData
-
-
-  FUNCTION Get_MW_SensorData_Sensor_ID( Reset ) RESULT( Sensor_ID )
+  FUNCTION MW_SensorData_Get_Sensor_ID( Reset ) RESULT( Sensor_Id )
     ! Arguments
     LOGICAL, OPTIONAL, INTENT(IN) :: Reset
     ! Function result
@@ -2994,13 +2656,91 @@ CONTAINS
     ! Increment and test the index counter
     Idx = Idx + 1
     IF ( Idx > N_VALID_SENSORS ) THEN
-      Sensor_ID = ' '
+      Sensor_Id = ''
       RETURN
     END IF
     
     ! Assign a sensor Id
     Sensor_ID = VALID_SENSOR_ID(Idx)
     
-  END FUNCTION Get_MW_SensorData_Sensor_ID
+  END FUNCTION MW_SensorData_Get_Sensor_ID
+  
+  
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       MW_SensorData_Equal
+!
+! PURPOSE:
+!       Elemental function to test the equality of two MW_SensorData objects.
+!       Used in OPERATOR(==) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = MW_SensorData_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two MW_SensorData objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       MW_SensorData_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION MW_SensorData_Equal( x, y ) RESULT( is_equal )
+    TYPE(MW_SensorData_type), INTENT(IN) :: x, y
+    LOGICAL :: is_equal
+
+    ! Set up
+    is_equal = .FALSE.
+   
+    ! Check the object association status
+    IF ( (.NOT. MW_SensorData_Associated(x)) .OR. &
+         (.NOT. MW_SensorData_Associated(y))      ) RETURN
+
+    ! Check contents
+    ! ...Release/version info
+    IF ( (x%Release /= y%Release) .OR. &
+         (x%Version /= y%Version) ) RETURN
+    ! ...Dimensions
+    IF ( (x%n_Channels    /= y%n_Channels    ) .OR. &
+         (x%n_Frequencies /= y%n_Frequencies ) ) RETURN
+    ! ...Scalars
+    IF ( (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) ) RETURN
+    ! ...Arrays
+    IF ( ALL(x%Sensor_Channel       ==     y%Sensor_Channel    ) .AND. &
+         ALL(x%Zeeman               ==     y%Zeeman            ) .AND. &
+         ALL(x%Polarization         ==     y%Polarization      ) .AND. &
+         ALL(x%n_Sidebands          ==     y%n_Sidebands       ) .AND. &
+         ALL(x%Central_Frequency .EqualTo. y%Central_Frequency ) .AND. &
+         ALL(x%IF_Band           .EqualTo. y%IF_Band           ) .AND. &
+         ALL(x%Delta_Frequency   .EqualTo. y%Delta_Frequency   ) .AND. &
+         ALL(x%Frequency         .EqualTo. y%Frequency         ) .AND. &
+         ALL(x%Response          .EqualTo. y%Response          ) ) &
+      is_equal = .TRUE.
+
+  END FUNCTION MW_SensorData_Equal
 
 END MODULE MW_SensorData_Define

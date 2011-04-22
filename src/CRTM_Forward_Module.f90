@@ -25,7 +25,8 @@ MODULE CRTM_Forward_Module
                                         MAX_N_ANGLES        , &
                                         MAX_N_AZIMUTH_FOURIER, &
                                         MAX_SOURCE_ZENITH_ANGLE
-  USE CRTM_SpcCoeff,              ONLY: SC, VISIBLE_SENSOR
+  USE CRTM_SpcCoeff,              ONLY: SC, &
+                                        SpcCoeff_IsVisibleSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
                                         CRTM_Atmosphere_IsValid
@@ -79,12 +80,23 @@ MODULE CRTM_Forward_Module
                                         RTV_Associated, &
                                         RTV_Destroy   , &
                                         RTV_Create
-  USE CRTM_AntCorr,               ONLY: CRTM_Compute_AntCorr
+  USE CRTM_AntennaCorrection,     ONLY: CRTM_Compute_AntCorr
   USE CRTM_MoleculeScatter,       ONLY: CRTM_Compute_MoleculeScatter
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
 
   USE CRTM_CloudCoeff,            ONLY: CRTM_CloudCoeff_IsLoaded
   USE CRTM_AerosolCoeff,          ONLY: CRTM_AerosolCoeff_IsLoaded
+  
+  USE CRTM_NLTECorrection,        ONLY: NLTE_Predictor_type    , &
+                                        NLTE_Predictor_IsActive, &
+                                        Compute_NLTE_Predictor , &
+                                        Compute_NLTE_Correction
+  
+  USE ACCoeff_Define,             ONLY: ACCoeff_Associated
+  USE NLTECoeff_Define,           ONLY: NLTECoeff_Associated
+
+  USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature
+
 
   ! -----------------------
   ! Disable implicit typing
@@ -191,10 +203,6 @@ CONTAINS
 !         spectral dimensionality (the "L" dimension) as the output
 !         RTSolution structure.
 !
-!       - The INTENT on the output RTSolution argument is IN OUT rather
-!         than just OUT. This is necessary because the argument may be defined
-!         upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -223,6 +231,7 @@ CONTAINS
     LOGICAL :: Check_Input
     LOGICAL :: User_Emissivity, User_Direct_Reflectivity
     LOGICAL :: User_AntCorr, Compute_AntCorr
+    LOGICAL :: Apply_NLTE_Correction
     LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
     INTEGER :: iFOV
     INTEGER :: n, n_Sensors,  SensorIndex
@@ -235,6 +244,8 @@ CONTAINS
     REAL(fp) :: Wavenumber
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
+    ! Local options structure for default values
+    TYPE(CRTM_Options_type) :: Default_Options
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm
     ! Component variables
@@ -249,6 +260,8 @@ CONTAINS
     TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
     TYPE(RTV_type) :: RTV  ! RTSolution
+    ! NLTE correction term predictor
+    TYPE(NLTE_Predictor_type)   :: NLTE_Predictor
 
  
     ! ------
@@ -269,7 +282,7 @@ CONTAINS
       WRITE( Message,'("Output RTSolution structure array too small (",i0,&
              &") to hold results for the number of requested channels (",i0,")")') &
              SIZE(RTSolution,DIM=1), n_Channels
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
 
@@ -283,7 +296,7 @@ CONTAINS
          SIZE(RTSolution,DIM=2) /= n_Profiles      ) THEN
       Error_Status = FAILURE
       Message = 'Inconsistent profile dimensionality for input arguments.'
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
     ! ...Check the profile dimensionality of the other optional arguments
@@ -293,7 +306,7 @@ CONTAINS
       IF ( SIZE(Options) /= n_Profiles ) THEN
         Error_Status = FAILURE
         Message = 'Inconsistent profile dimensionality for Options optional input argument.'
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
     END IF
@@ -304,7 +317,7 @@ CONTAINS
     IF ( .NOT. CRTM_SfcOptics_Associated(SfcOptics) ) THEN
       Error_Status = FAILURE
       Message = 'Error allocating SfcOptics data structures'
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
 
@@ -327,16 +340,17 @@ CONTAINS
          Error_Status = FAILURE                                                                 
          WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
                 &"for the aerosol case profile #",i0)' ) m                                      
-         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )                      
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                      
          RETURN                                                                                 
       END IF
 
       
       ! Check the optional Options structure argument
       ! ...Specify default actions
-      Check_Input     = .TRUE.
-      User_Emissivity = .FALSE.
-      User_AntCorr    = .FALSE.
+      Check_Input           = Default_Options%Check_Input
+      User_Emissivity       = Default_Options%Use_Emissivity
+      User_AntCorr          = Default_Options%Use_Antenna_Correction
+      Apply_NLTE_Correction = Default_Options%Apply_NLTE_Correction
       ! ...Check the Options argument
       IF (Options_Present) THEN
         ! Override input checker with option
@@ -350,7 +364,7 @@ CONTAINS
             WRITE( Message,'( "Input Options channel dimension (", i0, ") is less ", &
                    &"than the number of requested channels (",i0, ")" )' ) &
                    Options(m)%n_Channels, n_Channels
-            CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+            CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
           ! Check if the supplied direct reflectivity should be used
@@ -358,6 +372,8 @@ CONTAINS
         END IF
         ! Check if antenna correction should be attempted
         User_AntCorr = Options(m)%Use_Antenna_Correction
+        ! Set NLTE correction option
+        Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -412,7 +428,7 @@ CONTAINS
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error adding extra layers to profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
       IF ( Atm%n_Layers > MAX_N_LAYERS ) THEN
@@ -420,7 +436,7 @@ CONTAINS
         WRITE( Message,'("Added layers [",i0,"] cause total [",i0,"] to exceed the ",&
                &"maximum allowed [",i0,"] for profile #",i0)' ) &
                Atm%n_Added_Layers, Atm%n_Layers, MAX_N_LAYERS, m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
       ! ...Allocate the atmospheric optics structures based on Atm extension
@@ -431,7 +447,7 @@ CONTAINS
       IF ( AllocStatus(1) /= SUCCESS ) THEN
         Error_Status=FAILURE
         WRITE( Message,'("Error allocating AtmOptics data structure for profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
 
@@ -450,7 +466,9 @@ CONTAINS
 
 
         ! Check if antenna correction to be applied for current sensor
-        IF ( User_AntCorr .AND. SC(SensorIndex)%AC_Present .AND. iFOV /= 0 ) THEN
+        IF ( User_AntCorr                             .AND. &
+             ACCoeff_Associated( SC(SensorIndex)%AC ) .AND. &
+             iFOV /= 0 ) THEN
           Compute_AntCorr = .TRUE.
         ELSE
           Compute_AntCorr = .FALSE.
@@ -466,7 +484,7 @@ CONTAINS
           Error_Status=FAILURE
           WRITE( Message,'("Error allocating predictor structure for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
         ! ...And now fill them
@@ -481,7 +499,7 @@ CONTAINS
         ! Allocate the RTV structure if necessary
         IF( Atm%n_Clouds   > 0 .OR. &
             Atm%n_Aerosols > 0 .OR. &
-            SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR ) THEN
+            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
           CALL RTV_Create( RTV, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, Atm%n_Layers )
           IF ( .NOT. RTV_Associated(RTV) ) THEN
             Error_Status=FAILURE
@@ -490,6 +508,16 @@ CONTAINS
             CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
+        END IF
+
+
+        ! Compute NLTE correction predictors
+        IF ( Apply_NLTE_Correction ) THEN
+          CALL Compute_NLTE_Predictor( &
+                 SC(SensorIndex)%NC, &  ! Input 
+                 Atm               , &  ! Input 
+                 GeometryInfo      , &  ! Input 
+                 NLTE_Predictor      )  ! Output
         END IF
 
         
@@ -539,7 +567,7 @@ CONTAINS
              RTV%Solar_Flag_true = .TRUE.
           END IF
           ! ...Visible channel with solar radiation
-          IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .AND. RTV%Solar_Flag_true ) THEN 
+          IF( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) .AND. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .TRUE.
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
@@ -560,13 +588,13 @@ CONTAINS
                      TRIM(ChannelInfo(n)%Sensor_ID), &
                      ChannelInfo(n)%Sensor_Channel(l), &
                      m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           ELSE
             RTV%Visible_Flag_true = .FALSE.
             RTV%n_Azi = 0
-          END IF        
+          END IF
                    
 
           ! Compute the cloud particle absorption/scattering properties
@@ -580,7 +608,7 @@ CONTAINS
               WRITE( Message,'("Error computing CloudScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -597,7 +625,7 @@ CONTAINS
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -629,41 +657,58 @@ CONTAINS
           RTSolution(ln,m)%Radiance = ZERO
           ! ...Fourier expansion over azimuth angle
           Azimuth_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
-          
+
             ! Set dependent component counters 
             RTV%mth_Azi = mth_Azi
             SfcOptics%mth_Azi = mth_Azi
             
             ! Solve the radiative transfer problem
-            Error_Status = CRTM_Compute_RTSolution( Atm             , &  ! Input
-                                                    Surface(m)      , &  ! Input
-                                                    AtmOptics       , &  ! Input
-                                                    SfcOptics       , &  ! Input
-                                                    GeometryInfo    , &  ! Input
-                                                    SensorIndex     , &  ! Input
-                                                    ChannelIndex    , &  ! Input
-                                                    RTSolution(ln,m), &  ! Output
-                                                    RTV               )  ! Internal variable output
+            Error_Status = CRTM_Compute_RTSolution( &
+                             Atm             , &  ! Input
+                             Surface(m)      , &  ! Input
+                             AtmOptics       , &  ! Input
+                             SfcOptics       , &  ! Input
+                             GeometryInfo    , &  ! Input
+                             SensorIndex     , &  ! Input
+                             ChannelIndex    , &  ! Input
+                             RTSolution(ln,m), &  ! Output
+                             RTV               )  ! Internal variable output
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'( "Error computing RTSolution for ", a, &
                      &", channel ", i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END DO Azimuth_Fourier_Loop
 
-        
-          ! Compute Antenna correction if required
+          ! Compute non-LTE correction to radiance if required
+          IF ( Apply_NLTE_Correction .AND. NLTE_Predictor_IsActive(NLTE_Predictor) ) THEN
+            CALL Compute_NLTE_Correction( &
+                   SC(SensorIndex)%NC       , &  ! Input    
+                   ChannelIndex             , &  ! Input    
+                   NLTE_Predictor           , &  ! Input    
+                   RTSolution(ln,m)%Radiance  )  ! In/Output      
+          END IF                                                                       
+
+          ! Convert the radiance to brightness temperature
+          CALL CRTM_Planck_Temperature( &
+                 SensorIndex                            , & ! Input
+                 ChannelIndex                           , & ! Input
+                 RTSolution(ln,m)%Radiance              , & ! Input
+                 RTSolution(ln,m)%Brightness_Temperature  ) ! Output
+
+          ! Compute Antenna correction to brightness temperature if required
           IF ( Compute_AntCorr ) THEN
-            CALL CRTM_Compute_AntCorr( GeometryInfo    , &  ! Input
-                                       SensorIndex     , &  ! Input
-                                       ChannelIndex    , &  ! Input
-                                       RTSolution(ln,m)  )  ! Output
+            CALL CRTM_Compute_AntCorr( &
+                   GeometryInfo    , &  ! Input
+                   SensorIndex     , &  ! Input
+                   ChannelIndex    , &  ! Input
+                   RTSolution(ln,m)  )  ! Output
           END IF
         END DO Channel_Loop
 
-
+          
         ! Deallocate local sensor dependent data structures
         ! ...RTV structure
         IF ( RTV_Associated(RTV) ) CALL RTV_Destroy(RTV)
@@ -672,7 +717,7 @@ CONTAINS
         IF ( AllocStatus(1) /= SUCCESS ) THEN
           WRITE( Message,'("Error deallocating predictor structure for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
 
@@ -685,7 +730,7 @@ CONTAINS
       IF ( AllocStatus(1) /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error deallocating AtmOptics data structures for profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
 

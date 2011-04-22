@@ -19,7 +19,6 @@ MODULE CRTM_Cloud_IO
   USE File_Utility,        ONLY: File_Open, File_Exists
   USE Message_Handler,     ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE CRTM_Parameters    , ONLY: SET
   USE CRTM_Cloud_Define  , ONLY: CRTM_Cloud_type, &
                                  CRTM_Cloud_Associated, &
                                  CRTM_Cloud_Destroy, &
@@ -496,7 +495,7 @@ CONTAINS
       END IF
     ELSE
       ! No, the file is not open
-      err_stat = Open_Binary_File( Filename, fid, For_Output=SET )
+      err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error opening '//TRIM(Filename)
         CALL Write_Cleanup(); RETURN

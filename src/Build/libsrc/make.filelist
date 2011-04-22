@@ -11,8 +11,8 @@ SRC_FILES = Type_Kinds.f90 \
             Hyperbolic_Step.f90 \
             Spectral_Units_Conversion.f90 \
             SensorInfo_Parameters.f90 \
-            AntCorr_Define.f90 AntCorr_Binary_IO.f90 \
-            SpcCoeff_Define.f90 SpcCoeff_Binary_IO.f90 \
+            SpcCoeff_Define.f90 ACCoeff_Define.f90 NLTECoeff_Define.f90 \
+            SpcCoeff_Binary_IO.f90 ACCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.f90 \
             CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
             AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
             EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
@@ -45,7 +45,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_SensorInfo.f90 \
             CRTM_ChannelInfo_Define.f90 \
             CRTM_Geometry_Define.f90 CRTM_Geometry_IO.f90 \
-            CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo.f90 \
+            CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo_IO.f90 CRTM_GeometryInfo.f90 \
             CRTM_Atmosphere.f90 iAtm_Define.f90 \
             CRTM_Model_Profiles.f90 \
             CRTM_AtmAbsorption.f90 \
@@ -78,7 +78,7 @@ SRC_FILES = Type_Kinds.f90 \
             RTV_Define.f90 \
             CRTM_RTSolution.f90 \
             CRTM_Planck_Functions.f90 \
-            CRTM_AntCorr.f90 \
+            CRTM_AntennaCorrection.f90 \
             CRTM_AncillaryInput_Define.f90 \
               SSU_Input_Define.f90 \
               Zeeman_Input_Define.f90 \
@@ -112,7 +112,11 @@ SRC_FILES = Type_Kinds.f90 \
             ODZeeman_TauCoeff.f90 \
             ODZeeman_AtmAbsorption.f90 \
             ODZeeman_Predictor.f90 \
-            Zeeman_Utility.f90
+            Zeeman_Utility.f90 \
+            CRTM_NLTECorrection.f90 \
+              NLTE_Parameters.f90 \
+              NLTE_Predictor_Define.f90 \
+              NLTE_Predictor_IO.f90
             
                         
             #CRTM_ChannelInfo.f90 \

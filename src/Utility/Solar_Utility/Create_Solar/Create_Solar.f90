@@ -55,17 +55,17 @@ PROGRAM Create_Solar
   ! Module usage
   USE Type_Kinds           , ONLY: fp
   USE File_Utility         , ONLY: Get_Lun
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, &
-                                   Display_Message, Program_Message
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message, Program_Message
   USE Fundamental_Constants, ONLY: PI
   USE Interpolate_Utility  , ONLY: Polynomial_Interpolate
   USE Average_Utility      , ONLY: Boxcar_Average
   USE Planck_Functions     , ONLY: Planck_Radiance
-  USE Solar_Define         , ONLY: Solar_type    , &
-                                   Allocate_Solar, &
-                                   Destroy_Solar , &
-                                   Frequency_Solar
-  USE Solar_netCDF_IO      , ONLY: Write_Solar_netCDF
+  USE Solar_Define         , ONLY: Solar_type      , &
+                                   Solar_Associated, &
+                                   Solar_Create    , &
+                                   Solar_Destroy   , &
+                                   Solar_Frequency
+  USE Solar_IO             , ONLY: Solar_WriteFile
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -74,10 +74,17 @@ PROGRAM Create_Solar
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_Solar'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
-  ! The input ASCII filename
-  CHARACTER(*), PARAMETER :: INFILE = 'Kurucz_solar_extracted_490.0-26000cm-1.asc'
+  ! The input ASCII filename and data attributes
+  CHARACTER(*), PARAMETER :: INFILE     = 'Kurucz_solar_extracted_490.0-26000cm-1.asc'
+  CHARACTER(*), PARAMETER :: TITLE      = 'Kurucz synthetic and blackbody extraterrestrial solar source functions.'
+  CHARACTER(*), PARAMETER :: HISTORY    = '; AER extract_solar.f'
+  CHARACTER(*), PARAMETER :: COMMENT    = '; Data extracted from AER solar.kurucz.rad.mono.full_disk.bin file.'
+  CHARACTER(*), PARAMETER :: SOURCE     = 'Solar spectrum computed with a version of the model atmosphere program ATLAS'
+  CHARACTER(*), PARAMETER :: REFERENCES = 'Kurucz, R.L., Synthetic infrared spectra, in Infrared Solar Physics, '//&
+                                          'IAU Symp. 154, edited by D.M. Rabin, J.T. Jefferies, and C. Lindsey, '//&
+                                          'Kluwer, Acad., Norwell, MA, 1992.'
   ! Solar source function interpolation parameters
   INTEGER     , PARAMETER :: N_DF = 3
   REAL(fp)    , PARAMETER :: DF(N_DF) = (/  0.001_fp, 0.0025_fp,     0.1_fp /)
@@ -89,18 +96,19 @@ PROGRAM Create_Solar
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
-  CHARACTER(256) :: Outfile
-  CHARACTER(256) :: Process_RCS_Id, Process_Comment 
-  INTEGER :: FileID
-  INTEGER :: IO_Status
-  INTEGER :: Error_Status
-  INTEGER :: Allocate_Status
-  INTEGER :: i, n, idf
+  CHARACTER(256) :: msg
+  CHARACTER(256) :: outfile
+  CHARACTER(256) :: process_history, process_comment 
+  CHARACTER(256) :: io_msg
+  INTEGER :: fid
+  INTEGER :: io_stat
+  INTEGER :: err_stat
+  INTEGER :: alloc_stat
+  INTEGER :: i, n, idf, n_frequencies
   REAL(fp) :: f1_in, f2_in, df_in
-  REAL(fp) :: Omega
-  REAL(fp), ALLOCATABLE :: f_in(:), irrad_in(:)
-  TYPE(Solar_type) :: Solar
+  REAL(fp) :: omega
+  REAL(fp), ALLOCATABLE :: f_in(:), h_in(:)
+  TYPE(Solar_type) :: solar
 
 
   ! Program header
@@ -110,209 +118,160 @@ PROGRAM Create_Solar
                         'function to a netCDF format file.', &
                         '$Revision$' )
 
-  ! Get user frequency interval input
-  WRITE( *,'(/5x,"Select frequency interval")' )
-  DO i = 1, N_DF
-    WRITE( *,'(10x,i1,") ",f6.4,3x,"(for ",f7.1,"-",f7.1,"cm-1)")' ) i, DF(i), F1(i), f2(i)
-  END DO
-  WRITE( *,'(5x,"Enter choice : ")',ADVANCE='NO' )
-  READ( *,* ) idf
-  
 
   ! Read the ASCII solar data file
-  WRITE( *,'(/5x,"Reading ASCII Solar data file...")' )
-  ! ..Open it
-  FileID = Get_Lun()
-  IF ( FileID < 0 ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error obtaining file unit number for '//INFILE//' read.', &
-                          FAILURE )
-    STOP
+  WRITE( *,'(/2x,"Reading ASCII Solar data file...")' )
+  ! ...Open it
+  fid = Get_Lun()
+  IF ( fid < 0 ) THEN
+    msg = 'Error obtaining file unit number for '//INFILE//' read.'
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  OPEN( FileID, FILE  =INFILE, &
-                STATUS='OLD', &
-                ACCESS='SEQUENTIAL', &
-                FORM  ='FORMATTED', &
-                ACTION='READ', &
-                IOSTAT=IO_Status )
-  IF ( IO_Status /= 0 ) THEN
-    WRITE( Message,'("Error opening ",a,". IOSTAT = ",i0)' ) &
-                    INFILE, IO_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          FAILURE )
-    STOP
+  OPEN( fid, &
+        FILE   = INFILE      , &
+        STATUS = 'OLD'       , &
+        ACCESS = 'SEQUENTIAL', &
+        FORM   = 'FORMATTED' , &
+        ACTION = 'READ'      , &
+        IOSTAT = io_stat     , &
+        IOMSG  = io_msg        )
+  IF ( io_stat /= 0 ) THEN
+    msg = 'Error opening '//INFILE//' - '//TRIM(io_msg)
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  ! ..Read the file header
-  READ( FileID,*,IOSTAT=IO_Status ) f1_in, f2_in, df_in, n
-  IF ( IO_Status /= 0 ) THEN
-    WRITE( Message,'("Error reading ",a," header. IOSTAT = ",i0)' ) &
-                    INFILE, IO_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          FAILURE )
-    CLOSE( FileID )
-    STOP
+  ! ...Read the file header
+  READ( fid, &
+        FMT    = *      , &
+        IOSTAT = io_stat, &
+        IOMSG  = io_msg   ) f1_in, f2_in, df_in, n
+  IF ( io_stat /= 0 ) THEN
+    msg = 'Error reading '//INFILE//' header - '//TRIM(io_msg)
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  ! ..Allocate the input data arrays
-  ALLOCATE( f_in(n), irrad_in(n), &
-            STAT = Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE( Message,'( "Error allocating input solar data arrays. STAT = ",i0)' ) &
-                    Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          FAILURE )
-    CLOSE( FileID )
-    STOP
+  ! ...Allocate the input data arrays
+  ALLOCATE( f_in(n), h_in(n), &
+            STAT = alloc_stat )
+  IF ( alloc_stat /= 0 ) THEN
+    WRITE( msg,'("Error allocating input solar data arrays. STAT = ",i0)' ) alloc_stat
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  ! ..Read the data
+  ! ...Read the data
   DO i = 1, n
-    READ( FileID,*,IOSTAT=IO_Status ) f_in(i), irrad_in(i)
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading point number ",i0,&
-                      &" irradiance value from ",a,&
-                      &". IOSTAT = ",i5)' ) &
-                      i, INFILE, IO_Status
-      CALL Display_Message( PROGRAM_NAME, &
-                            TRIM(Message), &
-                            FAILURE )
-      CLOSE( FileID )
-      STOP
+    READ( fid, &
+          FMT    = *      , &
+          IOSTAT = io_stat, &
+          IOMSG  = io_msg   ) f_in(i), h_in(i)
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading point number ",i0,&
+                  &" irradiance value from ",a,&
+                  &" - ",a)' ) i, INFILE, TRIM(io_msg)
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
     END IF
   END DO
-  CLOSE( FileID )
-  WRITE( *, '( 10x, "Input begin frequency:     ", f12.6, " cm-1", &
-             &/10x, "Input end frequency:       ", f12.6, " cm-1", &
-             &/10x, "Input number of values:    ", i0 )' ) &
+  CLOSE( fid )
+  ! ...Output some info
+  WRITE( *, '( 4x, "Input begin frequency : ", f12.6, " cm-1", &
+             &/4x, "Input end frequency   : ", f12.6, " cm-1", &
+             &/4x, "Input number of values: ", i0 )' ) &
             f_in(1), f_in(n), n
-  ! ..Ensure the input data spans the required frequencies
-  IF ( MINVAL(f_in) > F1(idf) .OR. MAXVAL(f_in) < F2(idf) ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Input data does not span interpolation frequency range.', &
-                          FAILURE )
-    STOP
-  END IF
-
-  ! Interpolate or average the solar source data
-  WRITE( *,'(/5x,"Processing the input Solar data...")' )
-  ! ..Determine the number of interpolated points
-  n = NINT((F2(idf)-F1(idf))/DF(idf)) + 1
-  ! ..Allocate the Solar data structure
-  Error_Status = Allocate_Solar( n, Solar )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error allocating Solar structure.', &
-                          FAILURE )
-    STOP
-  END IF
-  Solar%Begin_Frequency    = F1(idf)
-  Solar%End_Frequency      = F2(idf)
-  Solar%Frequency_Interval = DF(idf)
-  ! ..Create the interpolation frequency grid
-  Error_Status = Frequency_Solar( Solar )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error computing the Solar interpolated frequency grid.', &
-                          FAILURE )
-    STOP
-  END IF
-  ! ..Perform the interpolation/averaging
-  SELECT CASE (TRIM(CF(idf)))
-    CASE ('IR only')
-      WRITE( *,'(/5x,"Interpolating the input Solar data...")' )
-      Process_Comment = '4-pt polynomial interpolation of original Kurucz data. '
-      Error_Status = Polynomial_Interpolate( f_in, irrad_in, &
-                                             Solar%Frequency, &
-                                             Solar%Irradiance, &
-                                             Order=3, &
-                                             RCS_Id=Process_RCS_Id )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME, &
-                              'Error interpolating the solar data.', &
-                              Error_Status )
-        STOP
-      END IF
-    CASE ('IR+VIS')
-      WRITE( *,'(/5x,"Averaging the input Solar data...")' )
-      Process_Comment = 'Boxcar average of original Kurucz data. '
-      Error_Status = Boxcar_Average( f_in, irrad_in, &
-                                     F1(idf), F2(idf), DF(idf), &
-                                     Solar%Irradiance, i, &
-                                     RCS_Id=Process_RCS_Id )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME, &
-                              'Error averaging the solar data.', &
-                              Error_Status )
-        STOP
-      END IF
-  END SELECT
-  WRITE( *,'( 10x, "Output begin frequency:    ",f12.6," cm-1", &
-            &/10x, "Output end frequency:      ",f12.6," cm-1", &
-            &/10x, "Output frequency interval: ",es13.6," cm-1", &
-            &/10x, "Output number of values:   ",i0)' ) &
-           F1(idf), F2(idf), DF(idf), n
 
 
-  ! Compute the blackbody solar source irradiance
-  WRITE( *,'(/5x,"Calculating the blackbody solar source irradiance...")' )
-  ! ..Calculate a blackbody radiance spectrum at the solar temperature
-  Error_Status = Planck_Radiance( Solar%Frequency, &
-                                  Solar%Blackbody_Temperature, &
-                                  Solar%Blackbody_Irradiance )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error calculating solar blackbody radiance spectrum.', &
-                          Error_Status )
-    STOP
-  END IF
-  ! ..Compute the geometry factor
-  Omega = PI * ( Solar%Radius / Solar%Earth_Sun_Distance )**2
-  ! ..Compute the irradiance
-  Solar%Blackbody_Irradiance = Omega * Solar%Blackbody_Irradiance
+  ! Loop over the solar source function interpolation outputs
+  Process_Loop: DO idf = 1, N_DF
+  
+    WRITE( *,'(/2x,"Processing data for df=",f6.4,"cm^-1 output...")' ) DF(idf)
+    
+    
+    ! Ensure the input data spans the required frequencies
+    IF ( MINVAL(f_in) > F1(idf) .OR. MAXVAL(f_in) < F2(idf) ) THEN
+      msg = 'Input data does not span interpolation frequency range.'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
 
 
-  ! Write the output netCDF file
-  WRITE( *,'(/5x,"Writing the output netCDF Solar data file...")' )
-  WRITE( Outfile,'("dF_",f6.4,".Solar.nc")' ) DF(idf)
-  Error_Status = Write_Solar_netCDF( Outfile, &
-                                     Solar, &
-                   Title = 'Kurucz synthetic and blackbody extraterrestrial solar source functions.', &
-                   History = PROGRAM_RCS_ID//'; '//&
-                             TRIM(Process_RCS_Id)//'; '//&
-                             'AER extract_solar.f', &
-                   Comment = 'Data for use with '//TRIM(CF(idf))//' channel SRFs. '//&
-                             TRIM(Process_Comment)//&
-                             ' Data extracted from AER solar.kurucz.rad.mono.full_disk.bin file.', &
-                   Source = 'Solar spectrum computed with a version of the model atmosphere program ATLAS', &
-                   References = 'Kurucz, R.L., Synthetic infrared spectra, in Infrared Solar Physics, '//&
-                                'IAU Symp. 154, edited by D.M. Rabin, J.T. Jefferies, and C. Lindsey, '//&
-                                'Kluwer, Acad., Norwell, MA, 1992.' )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error writing netCDF Solar file '//&
-                          TRIM(Outfile), &
-                          Error_Status )
-    STOP
-  END IF
+    ! Allocate the solar data object
+    n_frequencies = NINT((F2(idf) - F1(idf)) / DF(idf)) + 1
+    CALL Solar_Create( solar, n_frequencies )
+    IF ( .NOT. Solar_Associated( solar ) ) THEN
+      msg = 'Error allocating Solar structure'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+  
+  
+    ! Interpolate or average the solar source data
+    ! ...Create the interpolation frequency grid
+    CALL Solar_Frequency( solar, F1(idf), F2(idf) )
+    ! ...Perform the interpolation/averaging
+    SELECT CASE (TRIM(CF(idf)))
+      CASE ('IR only')
+        process_comment = '4-pt polynomial interpolation of original data'
+        err_stat = Polynomial_Interpolate( &
+          f_in, h_in, &
+          solar%Frequency, &
+          solar%Irradiance, &
+          Order=3, &
+          RCS_Id=process_history )
+        IF ( err_stat /= SUCCESS ) THEN
+          msg = 'Error interpolating the solar data'
+          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+        END IF
+      CASE ('IR+VIS')
+        process_comment = 'Boxcar average of original data'
+        err_stat = Boxcar_Average( &
+          f_in, h_in, &
+          F1(idf), F2(idf), DF(idf), &
+          solar%Irradiance, i, &
+          RCS_Id=process_history )
+        IF ( err_stat /= SUCCESS ) THEN
+          msg = 'Error averaging the solar data'
+          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+        END IF
+
+    END SELECT
+    WRITE( *,'( 4x, "Output begin frequency   : ",f12.6," cm-1", &
+              &/4x, "Output end frequency     : ",f12.6," cm-1", &
+              &/4x, "Output frequency interval: ",es13.6," cm-1", &
+              &/4x, "Output number of values  : ",i0)' ) &
+             solar%f1, solar%f2, DF(idf), n_frequencies
+!             F1(idf), F2(idf), DF(idf), n_frequencies
 
 
+    ! Compute the blackbody solar source irradiance
+    ! ...Calculate a blackbody radiance spectrum at the solar temperature
+    err_stat = Planck_Radiance( &
+      solar%Frequency, &
+      solar%Blackbody_Temperature, &
+      solar%Blackbody_Irradiance )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error calculating solar blackbody radiance spectrum'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...Convert the radiance to irradiance
+    omega = PI * ( solar%Radius / solar%Earth_Sun_Distance )**2
+    solar%Blackbody_Irradiance = omega * solar%Blackbody_Irradiance
+
+
+    ! Write the output file
+    WRITE( outfile,'("dF_",f6.4,".Solar.nc")' ) DF(idf)
+    err_stat = Solar_WriteFile( &
+      outfile, &
+      solar  , &
+      Title      = TITLE, &
+      History    = PROGRAM_VERSION_ID//'; '//TRIM(process_history)//'; '//HISTORY, &
+      Comment    = 'Data for use with '//TRIM(CF(idf))//' channel SRFs; '//&
+                   TRIM(process_comment)//'; '//COMMENT, &
+      Source     = SOURCE, &
+      References = REFERENCES )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing Solar file '//TRIM(outfile)
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+  END DO Process_Loop
+  
+  
   ! Clean up
-  ! ..Destroy the solar structure
-  Error_Status = Destroy_Solar( Solar )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying Solar data structure.', &
-                          WARNING )
-  END IF
-  ! ..Deallocate input data arrays
-  DEALLOCATE( f_in, irrad_in, STAT=Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE( Message,'("Error deallocating input data arrays. STAT = ",i0)' ) &
-                    Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          WARNING )
-  END IF
+  CALL Solar_Destroy( solar )
+  DEALLOCATE( f_in, h_in, STAT=alloc_stat )
 
 END PROGRAM Create_Solar

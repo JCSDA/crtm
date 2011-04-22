@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 14-Jan-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 14-Jan-2002
+!                       paul.vandelst@noaa.gov
 !
 !
 
@@ -16,7 +16,7 @@ MODULE Spectral_Units_Conversion
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds,            ONLY: fp=>fp_kind
+  USE Type_Kinds,            ONLY: fp
   USE Fundamental_Constants, ONLY: C => SPEED_OF_LIGHT
   ! Disable implicit typing
   IMPLICIT NONE
@@ -35,14 +35,18 @@ MODULE Spectral_Units_Conversion
   ! -----------------
   ! Module parameters
   ! -----------------
-  REAL(fp), PRIVATE, PARAMETER :: ZERO = 0.0_fp
-  REAL(fp), PRIVATE, PARAMETER :: TOLERANCE = EPSILON( ZERO )
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: TOLERANCE = EPSILON(ZERO)
 
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       GHz_to_inverse_cm
@@ -54,7 +58,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Wavenumber = GHz_to_inverse_cm( Frequency )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Frequency:      Frequency in gigahertz. Must be > 0.0
 !                       UNITS:      GHz
 !                       TYPE:       REAL(fp)
@@ -104,6 +108,7 @@ CONTAINS
 !       Therefore the conversion factor from GHz to inverse centimeters is
 !       10^7/c where c is in m.s^-1.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION GHz_to_inverse_cm( Frequency ) RESULT( Wavenumber )
@@ -120,6 +125,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       inverse_cm_to_GHz
@@ -131,7 +137,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Frequency = inverse_cm_to_GHz( Wavenumber )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Wavenumber:   Frequency in inverse centimetres. Must be > 0.0
 !                     UNITS:      cm^-1
 !                     TYPE:       REAL(fp)
@@ -173,6 +179,7 @@ CONTAINS
 !       Therefore the conversion factor from inverse centimeters to GHz is
 !       10^-7.c where c is in m.s^-1.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION inverse_cm_to_GHz( Wavenumber ) RESULT( Frequency )
@@ -189,6 +196,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       micron_to_inverse_cm
@@ -200,7 +208,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Wavenumber = micron_to_inverse_cm( Wavelength )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Wavelength:   Wavelength in microns. Must be > 0.0
 !                     UNITS:      um (10^-6 m)
 !                     TYPE:       REAL(fp)
@@ -234,6 +242,7 @@ CONTAINS
 !           = ------ cm^-1
 !               l
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION micron_to_inverse_cm( Wavelength ) RESULT( Wavenumber )
@@ -250,6 +259,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       inverse_cm_to_micron
@@ -261,7 +271,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Wavelength = inverse_cm_to_micron( Wavenumber )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Wavenumber:   Frequency in inverse centimetres. Must be > 0.0
 !                     UNITS:      cm^-1
 !                     TYPE:       REAL(fp)
@@ -294,6 +304,7 @@ CONTAINS
 !           = ------ um
 !               v
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   ELEMENTAL FUNCTION inverse_cm_to_micron( Wavenumber ) RESULT( Wavelength )

@@ -2,216 +2,61 @@
 #
 # Makefile for SpcCoeff_OLD2NEW program
 #
-# $Id: Makefile,v 1.4 2006/05/02 16:58:03 dgroff Exp $
+# $Id$
 #
 #==============================================================================
 
-#-----------------------------------------------------------------------------
-#                          -- Define macros --
-#-----------------------------------------------------------------------------
+# Define macros
+include $(CRTM_SOURCE_ROOT)/make.macros
 
-F90_DIR = $(HOME)/f90
+# This makefile
+MAKE_FILE = Makefile
 
-include $(F90_DIR)/make.macros
-
-
-# ----------------
-# Executable files
-# ----------------
-
+# Executable file
 EXE_FILE = SpcCoeff_OLD2NEW
 
+# Source files to link
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Sort_Utility.f90 \
+            Message_Handler.f90 \
+            Compare_Float_Numbers.f90 \
+            Fundamental_Constants.f90 \
+            String_Utility.f90 \
+            Search_Utility.f90 \
+            SensorInfo_Parameters.f90 \
+            SpcCoeff_Define.f90 \
+              ACCoeff_Define.f90 \
+              NLTECoeff_Define.f90 \
+            SpcCoeff_netCDF_IO.f90 \
+            SpcCoeff_Define_old.f90 \
+              AntCorr_Define_old.f90 \
+            SpcCoeff_netCDF_IO_old.f90 \
+              AntCorr_netCDF_IO_old.f90
 
-# -------------
-# This makefile
-# -------------
-
-MAKEFILE = Makefile
-
-
-# ------------
-# Object files
-# ------------
-
-UTILITY_OBJ_FILES = Type_Kinds.o \
-                    File_Utility.o \
-                    Message_Handler.o \
-                    Compare_Float_Numbers.o
-SENSORINFO_OBJ_FILES = SensorInfo_Define.o \
-                       SensorInfo_LinkedList.o \
-                       SensorInfo_IO.o
-NETCDF_OBJ_FILES = netCDF_Utility.o \
-                   netCDF_Dimension_Utility.o \
-                   netCDF_Variable_Utility.o \
-                   netCDF_Attribute_Utility.o
-SPCCOEFF_OBJ_FILES = SpcCoeff_Define.o \
-                     SpcCoeff_netCDF_IO.o \
-                     SpcCoeff_Define_old.o \
-                     SpcCoeff_netCDF_IO_old.o
-
-OBJ_FILES = $(UTILITY_OBJ_FILES) \
-            $(SENSORINFO_OBJ_FILES) \
-            $(NETCDF_OBJ_FILES) \
-            $(SPCCOEFF_OBJ_FILES) \
+# Obj files used in link phase
+OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
-
-# -------------------------------
 # Include and library definitions
-# -------------------------------
-
 INCLUDES = -I$(HOME)/local/netcdf/include
 LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
+# Define common make targets (all, build, clean, install)
+include $(CRTM_SOURCE_ROOT)/make.common_targets
 
+# Source link creation and removal
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-#-----------------------------------------------------------------------------
-#                          -- Define dependecies --
-#-----------------------------------------------------------------------------
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
+# Squeaky clean target
+realclean:: clean remove_links
 
+# Source dependency lists
+include make.dependencies
 
-# ---------------------
-# Make based on OS type
-# ---------------------
-
-all:
-	@echo "OS type detected: "`uname -s`
-	@case `uname -s` in \
-	  "SunOS")   make -f $(MAKEFILE) the_program $(SUNOS_FLAGS) ;; \
-	  "AIX")     make -f $(MAKEFILE) the_program $(AIX_FLAGS) ;; \
-	  "IRIX64" ) make -f $(MAKEFILE) the_program $(IRIX64_FLAGS) ;; \
-	  "Linux" )  make -f $(MAKEFILE) the_program $(Linux_FLAGS) ;; \
-	  *) echo "This system is not supported" ;; \
-	esac
-
-
-# ---------------------
-# Make the test program
-# ---------------------
-
-the_program: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(FL_FLAGS) $(EXE_FILE)
-
-
-# --------
-# Clean up
-# --------
-
-clean:
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD *.stb
-
-realclean: remove_links clean
-
-
-# ----------
-# Install it
-# ----------
-
-install:
-	@if [ -d $(HOME)/bin ]; then \
-	    $(MOVE) $(EXE_FILE) $(HOME)/bin; \
-	fi
-
-	
-# ----------------------------
-# Create links for compilation
-# ----------------------------
-
-UTILITY_SOURCE_DIR = $(F90_DIR)/Utility
-UTILITY_SOURCE_FILES = ${UTILITY_OBJ_FILES:.o=.f90}
-
-SENSORINFO_SOURCE_DIR = $(F90_DIR)/Instrument_Information/SensorInfo
-SENSORINFO_SOURCE_FILES = ${SENSORINFO_OBJ_FILES:.o=.f90}
-
-NETCDF_SOURCE_DIR = $(F90_DIR)/NETCDF
-NETCDF_SOURCE_FILES = ${NETCDF_OBJ_FILES:.o=.f90}
-
-SPCCOEFF_SOURCE_DIR = $(F90_DIR)/Instrument_Information/SpcCoeff
-SPCCOEFF_SOURCE_FILES = ${SPCCOEFF_OBJ_FILES:.o=.f90}
-
-create_links:
-	@for source_file in ${UTILITY_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${UTILITY_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-	@for source_file in ${SENSORINFO_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${SENSORINFO_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-	@for source_file in ${NETCDF_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${NETCDF_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-	@for source_file in ${SPCCOEFF_SOURCE_FILES}; do \
-	  if [ ! -f $$source_file ]; then \
-	    $(LINK) ${SPCCOEFF_SOURCE_DIR}/$$source_file . ; \
-	  fi ; \
-	done
-
-
-ALL_SOURCE_FILES = $(UTILITY_SOURCE_FILES) \
-                   $(SENSORINFO_SOURCE_FILES) \
-                   $(NETCDF_SOURCE_FILES) \
-                   $(SPCCOEFF_SOURCE_FILES)
-                   
-remove_links:
-	@for source_file in ${ALL_SOURCE_FILES}; do \
-	  $(REMOVE) $$source_file ; \
-	done
-
-
-# ---------------
-# Dependency list
-# ---------------
-
-Type_Kinds.o : Type_Kinds.f90 
-File_Utility.o : File_Utility.f90 
-Message_Handler.o : Message_Handler.f90 File_Utility.o
-Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o Message_Handler.o
-
-SensorInfo_Define.o : SensorInfo_Define.f90 Type_Kinds.o Message_Handler.o
-SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 Type_Kinds.o Message_Handler.o SensorInfo_Define.o 
-SensorInfo_IO.o : SensorInfo_IO.f90 Type_Kinds.o File_Utility.o Message_Handler.o SensorInfo_Define.o 
-
-netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
-netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 
-netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
-netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
-
-SpcCoeff_Define.o : SpcCoeff_Define.f90 Type_Kinds.o File_Utility.o Message_Handler.o Compare_Float_Numbers.o
-SpcCoeff_netCDF_IO.o : SpcCoeff_netCDF_IO.f90 Type_Kinds.o Message_Handler.o SpcCoeff_Define.o netCDF_Utility.o 
-SpcCoeff_Define_old.o : SpcCoeff_Define_old.f90 Type_Kinds.o File_Utility.o Message_Handler.o Compare_Float_Numbers.o
-SpcCoeff_netCDF_IO_old.o : SpcCoeff_netCDF_IO_old.f90 Type_Kinds.o Message_Handler.o SpcCoeff_Define_old.o netCDF_Utility.o 
-
-$(EXE_FILE).o : $(EXE_FILE).f90 Type_Kinds.o File_Utility.o Message_Handler.o SensorInfo_Define.o SensorInfo_LinkedList.o SensorInfo_IO.o SpcCoeff_Define.o SpcCoeff_netCDF_IO.o SpcCoeff_netCDF_IO_old.o 
-
-
-# -------------------------------
-# Create tarball for distribution
-# -------------------------------
-
-TAR_FILE = $(EXE_FILE)_software.tar
-
-tar: create_links
-	$(TARBALL_CREATE) $(TAR_FILE) ${OBJ_FILES:.o=.f90}
-	@$(COPY) makefile.dist makefile
-	$(TARBALL_APPEND) $(TAR_FILE) makefile
-	@$(REMOVE) makefile
-	@$(COPY) $(F90_DIR)/make.macros .
-	@$(COPY) $(F90_DIR)/make.rules .
-	$(TARBALL_APPEND) $(TAR_FILE) make.macros make.rules
-	@$(REMOVE) make.macros make.rules
-	compress $(TAR_FILE)
-
-
-
-#-----------------------------------------------------------------------------
-#                          -- Define default rules --
-#-----------------------------------------------------------------------------
-
-include $(F90_DIR)/make.rules
-
+# Define default rules
+include $(CRTM_SOURCE_ROOT)/make.rules

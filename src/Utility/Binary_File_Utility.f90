@@ -17,7 +17,7 @@ MODULE Binary_File_Utility
   ! ------------------
   ! Module use
   USE Type_Kinds,      ONLY: Long, n_Bytes_Long
-  USE File_Utility,    ONLY: Get_Lun, File_Exists
+  USE File_Utility,    ONLY: Get_Lun, File_Exists, File_Open
   USE Message_Handler, ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE Endian_Utility,  ONLY: Swap_Endian
   ! Disable all implicit typing
@@ -38,7 +38,9 @@ MODULE Binary_File_Utility
   '$Id$'
   ! Magic number header value for byte-swap checks
   INTEGER(Long), PARAMETER :: MAGIC_NUMBER = 123456789_Long
-
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
+  
 
 CONTAINS
 
@@ -58,14 +60,13 @@ CONTAINS
 !       Open_Binary_File
 !
 ! PURPOSE:
-!       Function to open the unformatted, sequential access Binary files
+!       Function to open unformatted, sequential access "Binary" files
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Open_Binary_File( Filename,                 &  ! Input
-!                                        FileID,                   &  ! Output
-!                                        For_Output  = For_Output, &  ! Optional input
-!                                        No_Check    = No_Check  , &  ! Optional input
-!                                        Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Open_Binary_File( Filename,                &
+!                                        FileID,                  &
+!                                        For_Output = For_Output, &
+!                                        No_Check   = No_Check    )
 !
 ! INPUTS:
 !       Filename:         Name of the Binary file to open.
@@ -75,40 +76,31 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
-!       For_Output:       Set this optional argument to open a new file for
+!       For_Output:       Set this logical argument to open a new file for
 !                         writing. Default action is to open an existing file
 !                         for read access. Note, if the file already exists and
 !                         it is opened with this keyword set, the file is
 !                         overwritten.
-!                         If == 0, existing file is opened for READ access (DEFAULT)
-!                                  ACTION='READ', STATUS='OLD'
-!                            == 1, new file is opened for WRITE access.
-!                                  ACTION='WRITE', STATUS='REPLACE'
+!                         If == .FALSE., existing file is opened for READ access (DEFAULT)
+!                                        ACTION='READ', STATUS='OLD'
+!                            == .TRUE. , new file is opened for WRITE access.
+!                                        ACTION='WRITE', STATUS='REPLACE'
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
+!                         TYPE:       LOGICAL
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       No_Check:         Set this optional argument to suppress the byte-order
+!       No_Check:         Set this logical argument to suppress the byte-order
 !                         check made on an existing file by NOT reading the file
 !                         header magic number.  Default action is to check the
 !                         file. This argument is ignored if the FOR_OUTPUT 
 !                         optional argument is set.
-!                         If == 0, existing file magic number is read and the
-!                                  byte order is checked (DEFAULT)
-!                            == 1, magic number is *NOT* read from file and
-!                                  checked for validity.
+!                         If == .FALSE., existing file magic number is read and the
+!                                        byte order is checked (DEFAULT)
+!                            == .TRUE.,  magic number is *NOT* read from file and
+!                                        checked for validity.
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         Messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output Messages to the screen.
-!                         UNITS:      N/A
-!                         TYPE:       CHARACTER(*)
+!                         TYPE:       LOGICAL
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -125,8 +117,7 @@ CONTAINS
 !                         the Message_Handler module. Values returned by
 !                         this function are:
 !                           SUCCESS == file open was successful
-!                           FAILURE == - error occurred during file open,
-!                                      - error occurred during file check.
+!                           FAILURE == an unrecoverable error occurred
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
@@ -134,146 +125,120 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Open_Binary_File( Filename,     &  ! Input
-                             FileID,       &  ! Output
-                             For_Output,   &  ! Optional input
-                             No_Check,     &  ! Optional input
-                             Message_Log ) &  ! Error messaging
-                           RESULT( Error_Status )
+  FUNCTION Open_Binary_File( &
+    Filename,   &  ! Input
+    FileID,     &  ! Output
+    For_Output, &  ! Optional input
+    No_Check  ) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER,                INTENT(OUT) :: FileID
-    INTEGER,      OPTIONAL, INTENT(IN)  :: For_Output
-    INTEGER,      OPTIONAL, INTENT(IN)  :: No_Check
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    LOGICAL,      OPTIONAL, INTENT(IN)  :: For_Output
+    LOGICAL,      OPTIONAL, INTENT(IN)  :: No_Check
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Open_Binary_File'
     ! Local variables
-    CHARACTER(256) :: Message
-    LOGICAL :: File_Check
-    LOGICAL :: File_Input
-    INTEGER :: IO_Status
-    INTEGER(Long) :: Magic_Number_Read
-    CHARACTER(7) :: File_Status
-    CHARACTER(5) :: File_Action
+    CHARACTER(ML) :: msg
+    LOGICAL :: file_check
+    LOGICAL :: file_input
+    INTEGER :: io_stat
+    INTEGER(Long) :: magic_number_read
+    CHARACTER(7) :: file_status
+    CHARACTER(5) :: file_action
 
     ! Set up
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
+    ! ...Check the For_Output argument
+    file_input = .TRUE.
+    IF ( PRESENT(For_Output) ) file_input = .NOT. For_Output
+    ! ...Check the No_Check argument
+    file_check = file_input
+    IF ( PRESENT(No_Check) ) file_check = (.NOT. No_Check) .AND. file_input
 
-    ! Default action is to check the file byte order...
-    File_Check = .TRUE.
-    ! Unless the No_Check argument is set
-    IF ( PRESENT( No_Check ) ) THEN
-      IF ( No_Check == 1 ) File_Check = .FALSE.
-    END IF
-
-    ! Default action is to READ file
-    File_Input = .TRUE.
-    ! ...unless the For_Output keyword is set
-    IF ( PRESENT( For_Output ) ) THEN
-      IF ( For_Output == 1 ) THEN
-        File_Input = .FALSE.
-        File_Check = .FALSE.
-      END IF
-    END IF
 
     ! Branch depending on type of file I/O
-    IF ( File_Input ) THEN
+    IF ( file_input ) THEN
       ! File is to be READ. If the file
       ! does not exist, return an error
-      IF ( .NOT. File_Exists( TRIM( Filename ) ) ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAMe, &
-                              'File '//TRIM( Filename )//' not found.', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
+      IF ( .NOT. File_Exists( Filename ) ) THEN
+        err_stat = FAILURE
+        msg = 'File '//TRIM(Filename)//' not found.'
+        CALL CleanUp(); RETURN
       END IF
       ! Set OPEN keywords for READING
-      File_Status = 'OLD'
-      File_Action = 'READ'
+      file_status = 'OLD'
+      file_action = 'READ'
     ELSE
       ! File is to be WRITTEN.
       ! Set OPEN keywords for WRITING
-      File_Status = 'REPLACE'
-      File_Action = 'WRITE'
+      file_status = 'REPLACE'
+      file_action = 'WRITE'
     END IF
 
+
     ! Check the file byte order
-    IF ( File_Check ) THEN
-      Error_Status = Check_Binary_File( TRIM( Filename ), &
-                                        Message_Log = Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message, '( "Error checking ", a )' ) &
-                        TRIM( Filename )
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
+    IF ( file_check ) THEN
+      err_stat = Check_Binary_File( Filename )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error checking '//TRIM(Filename)//' file byte order'
+        CALL CleanUp(); RETURN
       END IF
     END IF
+
 
     ! Get a free unit number
     FileID = Get_Lun()
     IF ( FileID < 0 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error obtaining file unit number for '//TRIM( Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Error obtaining file unit number for '//TRIM(Filename)
+      CALL CleanUp(); RETURN
     END IF
 
+
     ! Open the file
-    OPEN( FileID, FILE   = TRIM( Filename ), &
-                  STATUS = TRIM( File_Status ), &
-                  ACTION = TRIM( File_Action ), &
+    OPEN( FileID, FILE   = Filename, &
+                  STATUS = file_status, &
+                  ACTION = file_action, &
                   ACCESS = 'SEQUENTIAL', &
                   FORM   = 'UNFORMATTED', &
-                  IOSTAT = IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error opening ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+                  IOSTAT = io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error opening ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL CleanUp(); RETURN
     END IF
+
 
     ! Skip past, or write the magic number
     IF ( File_Input ) THEN
-      READ( FileID, IOSTAT=IO_Status ) Magic_Number_Read
-      IF ( IO_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error reading magic number from ", a, ". IOSTAT = ", i5 )' ) &
-                        TRIM( Filename ), IO_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        CLOSE( FileID )
-        RETURN
+      READ( FileID, IOSTAT=io_stat ) magic_number_read
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error reading magic number from ",a,". IOSTAT = ",i0)' ) &
+               TRIM(Filename), io_stat
+        CALL CleanUp(); RETURN
       END IF
     ELSE
-      WRITE( FileID, IOSTAT = IO_Status ) MAGIC_NUMBER
-      IF ( IO_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error writing magic number to ", a, ". IOSTAT = ", i5 )' ) &
-                        TRIM( Filename ), IO_Status
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM( Message ), &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        CLOSE( FileID )
-        RETURN
+      WRITE( FileID, IOSTAT=io_stat ) MAGIC_NUMBER
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error writing magic number to ",a,". IOSTAT = ",i0)' ) &
+               TRIM(Filename), io_stat
+        CALL CleanUp(); RETURN
       END IF
     END IF
     
+  CONTAINS
+   
+     SUBROUTINE CleanUp()
+       IF ( File_Open(Filename) ) THEN
+         CLOSE( FileID,IOSTAT=io_stat )
+         IF ( io_stat /= 0 ) &
+           msg = TRIM(msg)//'; Error closing file during error cleanup.'
+       END IF
+       err_stat = FAILURE
+       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+     END SUBROUTINE CleanUp
+
   END FUNCTION Open_Binary_File
 
 
@@ -295,8 +260,7 @@ CONTAINS
 !       byte order.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Check_Binary_File( Filename                  &  ! Input
-!                                         Message_Log = Message_Log )  ! Error messaging
+!       Error_Status = Check_Binary_File( Filename )
 !
 ! INPUTS:
 !       Filename:         Name of the Binary file to check.
@@ -329,110 +293,92 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Check_Binary_File( Filename,     &
-                              Message_Log ) &
-                            RESULT( Error_Status )
+  FUNCTION Check_Binary_File( Filename ) RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN) :: Filename
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    CHARACTER(*), INTENT(IN) :: Filename
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'Check_Binary_File'
     ! Local variables
-    CHARACTER(256) :: Message
-    INTEGER :: FileID
-    INTEGER :: IO_Status
-    INTEGER(Long) :: Magic_Number_Read
-    INTEGER(Long) :: Magic_Number_Swapped
+    CHARACTER(ML) :: msg
+    INTEGER :: fid
+    INTEGER :: io_stat
+    INTEGER(Long) :: magic_number_read
+    INTEGER(Long) :: magic_number_swapped
 
     ! Set up
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
+
 
     ! Check that 4-byte integers are supported
     IF ( BIT_SIZE( 1_Long ) /= 32 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            '32-bit integers not supported. '//&
-                            'Unable to determine endian-ness', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = '32-bit integers not supported. Unable to determine endian-ness'
+      CALL CleanUp(); RETURN
     END IF
+
 
     ! Get a free unit number
-    FileID = Get_Lun()
-    IF ( FileID < 0 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error obtaining file unit number for '//TRIM( Filename ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+    fid = Get_Lun()
+    IF ( fid < 0 ) THEN
+      msg = 'Error obtaining file unit number for '//TRIM(Filename)
+      CALL CleanUp(); RETURN
     END IF
+
 
     ! Open the file as direct access
-    OPEN( FileID, FILE   = TRIM( Filename ), &
-                  STATUS = 'OLD', &
-                  ACTION = 'READ', &
-                  ACCESS = 'DIRECT', &
-                  FORM   = 'UNFORMATTED', &
-                  RECL   = n_Bytes_Long, &
-                  IOSTAT = IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error opening ", a, ". IOSTAT = ", i5 )' ) &
-                      TRIM( Filename ), IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+    OPEN( fid, FILE   = Filename, &
+               STATUS = 'OLD', &
+               ACTION = 'READ', &
+               ACCESS = 'DIRECT', &
+               FORM   = 'UNFORMATTED', &
+               RECL   = n_Bytes_Long, &
+               IOSTAT = io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error opening ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL CleanUp(); RETURN
     END IF
+
 
     ! Read the magic number
-    READ( FileID, REC=2, IOSTAT=IO_Status ) Magic_Number_Read
-    IF ( IO_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error reading file magic number. IOSTAT = ", i5 )' ) &
-                      IO_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM( Message ), &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      CLOSE( FileID )
-      RETURN
+    READ( fid, REC=2, IOSTAT=io_stat ) magic_number_read
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading file magic number. IOSTAT = ",i0)' ) io_stat
+      CALL CleanUp(); RETURN
     END IF
 
+
     ! Close the file
-    CLOSE( FileID )
+    CLOSE( fid )
+
 
     ! Compare the magic numbers
-    IF ( Magic_Number_Read /= MAGIC_NUMBER ) THEN
-
-      ! Set the return error status
-      Error_Status = FAILURE
+    IF ( magic_number_read /= MAGIC_NUMBER ) THEN
 
       ! Byte swap the magic number
-      Magic_Number_Swapped = Swap_Endian( Magic_Number_Read )
-
-      ! Check the magic number again
-      IF ( Magic_Number_Swapped /= MAGIC_NUMBER ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Unrecognised file format. Invalid magic number.', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
+      magic_number_swapped = Swap_Endian( magic_number_read )
+      IF ( magic_number_swapped /= MAGIC_NUMBER ) THEN
+        msg = 'Unrecognised file format. Invalid magic number.'
+        CALL CleanUp(); RETURN
       END IF
 
       ! If we get here then the data does need to be byte-swapped
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Data file needs to be byte-swapped.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Data file needs to be byte-swapped.'
+      CALL CleanUp(); RETURN
 
     END IF
+    
+  CONTAINS
+   
+     SUBROUTINE CleanUp()
+       IF ( File_Open(Filename) ) THEN
+         CLOSE( fid,IOSTAT=io_stat )
+         IF ( io_stat /= 0 ) &
+           msg = TRIM(msg)//'; Error closing file during error cleanup.'
+       END IF
+       err_stat = FAILURE
+       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+     END SUBROUTINE CleanUp
 
   END FUNCTION Check_Binary_File
 

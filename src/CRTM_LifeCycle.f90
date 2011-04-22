@@ -16,7 +16,9 @@ MODULE CRTM_LifeCycle
   ! -----------------
   ! Module usage
   USE Message_Handler
-  USE CRTM_SpcCoeff
+  USE CRTM_SpcCoeff          , ONLY: SC, &
+                                     CRTM_SpcCoeff_Load, &
+                                     CRTM_SpcCoeff_Destroy
   USE CRTM_TauCoeff
   USE CRTM_AerosolCoeff      , ONLY: CRTM_AerosolCoeff_Load, &
                                      CRTM_AerosolCoeff_Destroy
@@ -49,7 +51,7 @@ MODULE CRTM_LifeCycle
   '$Id$'
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! Error message length
-  INTEGER, PARAMETER :: SL = 2000  ! Maximum length for path+filenames
+  INTEGER, PARAMETER :: SL = 5000  ! Maximum length for path+filenames
 
 
 CONTAINS
@@ -200,10 +202,6 @@ CONTAINS
 !       All public data arrays accessed by this module and its dependencies
 !       are overwritten.
 !
-! RESTRICTIONS:
-!       If specified, the length of the combined file path and filename strings
-!       cannot exceed 2000 characters.
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -278,6 +276,7 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Specify sensor-independent coefficient filenames
     ! ...Default filenames
     Default_CloudCoeff_File   = 'CloudCoeff.bin'
@@ -296,10 +295,10 @@ CONTAINS
 
 
     ! Load the spectral coefficients
-    err_stat = CRTM_Load_SpcCoeff( &
-                 Sensor_ID         = Sensor_ID        , &
+    err_stat = CRTM_SpcCoeff_Load( &
+                 Sensor_ID                            , &
                  File_Path         = File_Path        , &
-                 Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+                 Quiet             = Quiet            , &
                  Process_ID        = Process_ID       , &
                  Output_Process_ID = Output_Process_ID  )
     IF ( err_stat /= SUCCESS ) THEN
@@ -319,6 +318,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,'Error loading TauCoeff data'//TRIM(pid_msg),err_stat )
       RETURN
     END IF
+
 
     ! Load the cloud coefficients
     IF ( Local_Load_CloudCoeff ) THEN
@@ -509,7 +509,7 @@ CONTAINS
                             'Error deallocating shared TauCoeff data structure(s)'//TRIM(pid_msg), &
                             err_stat )
     END IF
-    Destroy_Status = CRTM_Destroy_SpcCoeff( Process_ID = Process_ID )
+    Destroy_Status = CRTM_SpcCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       CALL Display_Message( ROUTINE_NAME, &

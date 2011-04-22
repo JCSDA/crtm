@@ -6,10 +6,10 @@
 !       
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 22-Feb-2005
-!                       paul.vandelst@ssec.wisc.edu
-!                       Quanhua Liu, QSS
-!                       Quanhua.Liu@noaa.gov
+!       Written by:     Yong Han,       yong.han@noaa.gov
+!                       Quanhua Liu,    quanhua.liu@noaa.gov
+!                       Paul van Delst, paul.vandelst@noaa.gov
+!                       22-Feb-2005
 !
 
 MODULE CRTM_Aerosol_Define
@@ -50,6 +50,7 @@ MODULE CRTM_Aerosol_Define
   ! Operators
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_Aerosol_Associated
   PUBLIC :: CRTM_Aerosol_Destroy
@@ -74,6 +75,10 @@ MODULE CRTM_Aerosol_Define
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Aerosol_Add
   END INTERFACE OPERATOR(+)
+
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_Aerosol_Subtract
+  END INTERFACE OPERATOR(-)
 
   INTERFACE CRTM_SetLayers_Aerosol
     MODULE PROCEDURE SetLayers_Scalar
@@ -489,15 +494,19 @@ CONTAINS
   SUBROUTINE CRTM_Aerosol_Inspect( Aerosol )
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol
     INTEGER :: lType
-    ! Display components
-    WRITE(*, '(5x,"Aerosol n_Layers:",1x,i0)') Aerosol%n_Layers
+    
+    WRITE(*, '(1x,"AEROSOL OBJECT")')
+    ! Dimensions
+    WRITE(*, '(3x,"Aerosol n_Layers :",1x,i0)') Aerosol%n_Layers
+    ! Aerosol type and name
     lType = Aerosol%Type
     IF ( lType < 1 .OR. lType > N_VALID_AEROSOL_TYPES ) lType = INVALID_AEROSOL
-    WRITE(*, '(5x,"Aerosol type    :",1x,a)') Aerosol_TYPE_NAME(lType)
+    WRITE(*, '(3x,"Aerosol type     :",1x,a)') AEROSOL_TYPE_NAME(lType)
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
-    WRITE(*, '(5x,"Aerosol Reff    :")') 
+    ! Profile information
+    WRITE(*, '(3x,"Aerosol Reff:")') 
     WRITE(*, '(5(1x,es13.6,:))') Aerosol%Effective_Radius
-    WRITE(*, '(5x,"Aerosol concentration:")') 
+    WRITE(*, '(3x,"Aerosol concentration:")') 
     WRITE(*, '(5(1x,es13.6,:))') Aerosol%Concentration
   END SUBROUTINE CRTM_Aerosol_Inspect
 
@@ -846,5 +855,63 @@ CONTAINS
     aersum%Concentration(1:n)    = aersum%Concentration(1:n)    + aer2%Concentration(1:n)     
 
   END FUNCTION CRTM_Aerosol_Add
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Aerosol_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM Aerosol objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       aerdiff = CRTM_Aerosol_Subtract( aer1, aer2 )
+!
+!         or
+!
+!       aersum = aer1 - aer2
+!
+!
+! INPUTS:
+!       aer1, aer2: The Aerosol objects to difference.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Aerosol_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       aerdiff:    Aerosol object containing the differenced components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Aerosol_type
+!                   DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Aerosol_Subtract( aer1, aer2 ) RESULT( aerdiff )
+    TYPE(CRTM_Aerosol_type), INTENT(IN) :: aer1, aer2
+    TYPE(CRTM_Aerosol_type) :: aerdiff
+    ! Variables
+    INTEGER :: n
+
+    ! Check input
+    ! ...If input structures not used, do nothing
+    IF ( .NOT. CRTM_Aerosol_Associated( aer1 ) .OR. &
+         .NOT. CRTM_Aerosol_Associated( aer2 )      ) RETURN
+    ! ...If input structure for different aerosols, or sizes, do nothing
+    IF ( aer1%Type           /= aer2%Type           .OR. &
+         aer1%n_Layers       /= aer2%n_Layers       .OR. &
+         aer1%n_Added_Layers /= aer2%n_Added_Layers      ) RETURN
+    
+    ! Copy the first structure
+    aerdiff = aer1
+
+    ! And subtract the second one's components from it
+    n = aer1%n_Layers
+    aerdiff%Effective_Radius(1:n) = aerdiff%Effective_Radius(1:n) - aer2%Effective_Radius(1:n)  
+    aerdiff%Concentration(1:n)    = aerdiff%Concentration(1:n)    - aer2%Concentration(1:n)     
+
+  END FUNCTION CRTM_Aerosol_Subtract
 
 END MODULE CRTM_Aerosol_Define

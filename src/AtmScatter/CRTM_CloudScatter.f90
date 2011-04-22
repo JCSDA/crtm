@@ -29,7 +29,10 @@ MODULE CRTM_CloudScatter
                                       MAX_N_PHASE_ELEMENTS, &
                                       HGPHASE  ! <<< NEED TO REMOVE THIS IN FUTURE
   USE CRTM_SpcCoeff,            ONLY: SC, &
-                                      INFRARED_SENSOR, MICROWAVE_SENSOR, VISIBLE_SENSOR
+                                      SpcCoeff_IsMicrowaveSensor , & 
+                                      SpcCoeff_IsInfraredSensor  , & 
+                                      SpcCoeff_IsVisibleSensor   , &
+                                      SpcCoeff_IsUltravioletSensor
   USE CRTM_CloudCoeff,          ONLY: CloudC
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type, &
                                       WATER_CLOUD, &
@@ -252,7 +255,6 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER  :: k, kc, l, m, n
-    INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
@@ -267,7 +269,6 @@ CONTAINS
     IF (Atm%n_Clouds == 0) RETURN
     CSV%Total_bs = ZERO
     ! Spectral variables
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Determine offset for Legendre coefficients in
@@ -314,32 +315,32 @@ CONTAINS
 
 
         ! Call sensor specific routines
-        SELECT CASE (Sensor_Type)
-          CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW(CScat                            , & ! Input
-                                  Frequency_MW                     , & ! Input
-                                  Atm%Cloud(n)%Type                , & ! Input
-                                  Atm%Cloud(n)%Effective_Radius(kc), & ! Input
-                                  Atm%Temperature(kc)              , & ! Input
-                                  CSV%ke(kc,n)                     , & ! Output
-                                  CSV%w(kc,n)                      , & ! Output
-                                  CSV%pcoeff(:,:,kc,n)             , & ! Output
-                                  CSV%csi(kc,n)                      ) ! Interpolation
+        IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
+          CALL Get_Cloud_Opt_MW(CScat                            , & ! Input
+                                Frequency_MW                     , & ! Input
+                                Atm%Cloud(n)%Type                , & ! Input
+                                Atm%Cloud(n)%Effective_Radius(kc), & ! Input
+                                Atm%Temperature(kc)              , & ! Input
+                                CSV%ke(kc,n)                     , & ! Output
+                                CSV%w(kc,n)                      , & ! Output
+                                CSV%pcoeff(:,:,kc,n)             , & ! Output
+                                CSV%csi(kc,n)                      ) ! Interpolation
+        ELSE IF ( SpcCoeff_IsInfraredSensor(SC(SensorIndex)) .OR. &
+                  SpcCoeff_IsVisibleSensor( SC(SensorIndex))      ) THEN
           ! IR and visible use the same cloud optical data file, but distingished with Frequency
-          CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR(CScat                            , & ! Input
-                                  Frequency_IR                     , & ! Input
-                                  Atm%Cloud(n)%Type                , & ! Input
-                                  Atm%Cloud(n)%Effective_Radius(kc), & ! Input
-                                  CSV%ke(kc,n)                     , & ! Output
-                                  CSV%w(kc,n)                      , & ! Output
-                                  CSV%pcoeff(:,:,kc,n)             , & ! Output
-                                  CSV%csi(kc,n)                      ) ! Interpolation
-          CASE DEFAULT
-            CSV%ke(kc,n)         = ZERO
-            CSV%w(kc,n)          = ZERO
-            CSV%pcoeff(:,:,kc,n) = ZERO
-        END SELECT
+          CALL Get_Cloud_Opt_IR(CScat                            , & ! Input
+                                Frequency_IR                     , & ! Input
+                                Atm%Cloud(n)%Type                , & ! Input
+                                Atm%Cloud(n)%Effective_Radius(kc), & ! Input
+                                CSV%ke(kc,n)                     , & ! Output
+                                CSV%w(kc,n)                      , & ! Output
+                                CSV%pcoeff(:,:,kc,n)             , & ! Output
+                                CSV%csi(kc,n)                      ) ! Interpolation
+        ELSE
+          CSV%ke(kc,n)         = ZERO
+          CSV%w(kc,n)          = ZERO
+          CSV%pcoeff(:,:,kc,n) = ZERO
+        END IF
 
         ! interpolation quality control
         IF( CSV%ke(kc,n) <= ZERO ) THEN
@@ -523,7 +524,6 @@ CONTAINS
     ! Local variables
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
-    INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
@@ -538,7 +538,6 @@ CONTAINS
     Error_Status = SUCCESS
     IF (Atm%n_Clouds == 0) RETURN
     ! Spectral variables
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -566,29 +565,29 @@ CONTAINS
         kc = Layer_Index(k)
 
         ! Call sensor specific routines
-        SELECT CASE (Sensor_Type)
-          CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW_TL(CScat_TL                            , & ! Input
-                                     Atm%Cloud(n)%Type                   , & ! Input
-                                     Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
-                                     Atm_TL%Temperature(kc)              , & ! TL  Input
-                                     ke_TL                               , & ! TL  Output
-                                     w_TL                                , & ! TL  Output
-                                     pcoeff_TL                           , & ! TL  Output
-                                     CSV%csi(kc,n)                         ) ! Interpolation
-          CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR_TL(CScat_TL                            , & ! Input
-                                     Atm%Cloud(n)%Type                   , & ! Input
-                                     Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
-                                     ke_TL                               , & ! TL  Output
-                                     w_TL                                , & ! TL  Output
-                                     pcoeff_TL                           , & ! TL  Output
-                                     CSV%csi(kc,n)                         ) ! Interpolation
-          CASE DEFAULT
-            ke_TL     = ZERO
-            w_TL      = ZERO
-            pcoeff_TL = ZERO
-        END SELECT
+        IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
+          CALL Get_Cloud_Opt_MW_TL(CScat_TL                            , & ! Input
+                                   Atm%Cloud(n)%Type                   , & ! Input
+                                   Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
+                                   Atm_TL%Temperature(kc)              , & ! TL  Input
+                                   ke_TL                               , & ! TL  Output
+                                   w_TL                                , & ! TL  Output
+                                   pcoeff_TL                           , & ! TL  Output
+                                   CSV%csi(kc,n)                         ) ! Interpolation
+        ELSE IF ( SpcCoeff_IsInfraredSensor(SC(SensorIndex)) .OR. &
+                  SpcCoeff_IsVisibleSensor( SC(SensorIndex))      ) THEN
+          CALL Get_Cloud_Opt_IR_TL(CScat_TL                            , & ! Input
+                                   Atm%Cloud(n)%Type                   , & ! Input
+                                   Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
+                                   ke_TL                               , & ! TL  Output
+                                   w_TL                                , & ! TL  Output
+                                   pcoeff_TL                           , & ! TL  Output
+                                   CSV%csi(kc,n)                         ) ! Interpolation
+        ELSE
+          ke_TL     = ZERO
+          w_TL      = ZERO
+          pcoeff_TL = ZERO
+        END IF
 
         ! interpolation quality control
         IF( CSV%ke(kc,n) <= ZERO ) THEN
@@ -754,7 +753,6 @@ CONTAINS
     ! Local variables
     INTEGER  :: k, kc, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
-    INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency_MW, Frequency_IR
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
@@ -767,10 +765,8 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF (Atm%n_Clouds == 0) RETURN
-    ! Initialize local adjoint variables
+    IF ( Atm%n_Clouds == 0 ) RETURN
     ! Spectral variables
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Frequency_MW = SC(SensorIndex)%Frequency(ChannelIndex)
     Frequency_IR = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -852,30 +848,29 @@ CONTAINS
         END IF        
 
         ! Call sensor specific routines
-
-        SELECT CASE (Sensor_Type)
-          CASE (MICROWAVE_SENSOR)
-            CALL Get_Cloud_Opt_MW_AD(CScat_AD                            , & ! Input
-                                     Atm%Cloud(n)%Type                   , & ! Input
-                                     ke_AD                               , & ! AD  Input
-                                     w_AD                                , & ! AD  Input
-                                     pcoeff_AD                           , & ! AD  Input
-                                     Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
-                                     Atm_AD%Temperature(kc)              , & ! AD  Output
-                                     CSV%csi(kc,n)                         ) ! Interpolation
-          CASE (INFRARED_SENSOR, VISIBLE_SENSOR)
-            CALL Get_Cloud_Opt_IR_AD(CScat_AD                            , & ! Input
-                                     Atm%Cloud(n)%Type                   , & ! Input
-                                     ke_AD                               , & ! AD  Input
-                                     w_AD                                , & ! AD  Input
-                                     pcoeff_AD                           , & ! AD  Input
-                                     Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
-                                     CSV%csi(kc,n)                         ) ! Interpolation     
-          CASE DEFAULT
-            ke_AD     = ZERO
-            w_AD      = ZERO
-            pcoeff_AD = ZERO
-        END SELECT
+        IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
+          CALL Get_Cloud_Opt_MW_AD(CScat_AD                            , & ! Input
+                                   Atm%Cloud(n)%Type                   , & ! Input
+                                   ke_AD                               , & ! AD  Input
+                                   w_AD                                , & ! AD  Input
+                                   pcoeff_AD                           , & ! AD  Input
+                                   Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
+                                   Atm_AD%Temperature(kc)              , & ! AD  Output
+                                   CSV%csi(kc,n)                         ) ! Interpolation
+        ELSE IF ( SpcCoeff_IsInfraredSensor(SC(SensorIndex)) .OR. &
+                  SpcCoeff_IsVisibleSensor( SC(SensorIndex))      ) THEN
+          CALL Get_Cloud_Opt_IR_AD(CScat_AD                            , & ! Input
+                                   Atm%Cloud(n)%Type                   , & ! Input
+                                   ke_AD                               , & ! AD  Input
+                                   w_AD                                , & ! AD  Input
+                                   pcoeff_AD                           , & ! AD  Input
+                                   Atm_AD%Cloud(n)%Effective_Radius(kc), & ! AD  Output
+                                   CSV%csi(kc,n)                         ) ! Interpolation     
+        ELSE
+          ke_AD     = ZERO
+          w_AD      = ZERO
+          pcoeff_AD = ZERO
+        END IF
       END DO Cloud_Layer_loop
     END DO Cloud_loop
                                  

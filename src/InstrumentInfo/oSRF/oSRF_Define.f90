@@ -14,32 +14,32 @@ MODULE oSRF_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds           , ONLY: fp
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
-  USE Integrate_Utility    , ONLY: Integral
-  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
-                                   INVALID_WMO_SENSOR_ID   , &
-                                   N_SENSOR_TYPES          , &
-                                   INVALID_SENSOR          , &
-                                   MICROWAVE_SENSOR        , &
-                                   INFRARED_SENSOR         , &
-                                   VISIBLE_SENSOR          , &
-                                   ULTRAVIOLET_SENSOR      , &  
-                                   SENSOR_TYPE_NAME
-  USE PtrArr_Define        , ONLY: PtrArr_type      , &
-                                   OPERATOR(==)     , &
-                                   PtrArr_Associated, &
-                                   PtrArr_Destroy   , &
-                                   PtrArr_Create    , &
-                                   PtrArr_SetValue  , &
-                                   PtrArr_GetValue  , &
-                                   PtrArr_Inspect
-  USE Planck_Functions     , ONLY: Planck_Temperature, &
-                                   Planck_Radiance
-  USE Fundamental_Constants , ONLY: C_1, &
-                                    C_2
-  USE Spectral_Units_Conversion , ONLY: GHz_to_inverse_cm
+  USE Type_Kinds               , ONLY: fp
+  USE Message_Handler          , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
+  USE Compare_Float_Numbers    , ONLY: OPERATOR(.EqualTo.)
+  USE Integrate_Utility        , ONLY: Integral
+  USE SensorInfo_Parameters    , ONLY: INVALID_WMO_SATELLITE_ID, &
+                                       INVALID_WMO_SENSOR_ID   , &
+                                       N_SENSOR_TYPES          , &
+                                       INVALID_SENSOR          , &
+                                       MICROWAVE_SENSOR        , &
+                                       INFRARED_SENSOR         , &
+                                       VISIBLE_SENSOR          , &
+                                       ULTRAVIOLET_SENSOR      , &  
+                                       SENSOR_TYPE_NAME
+  USE PtrArr_Define            , ONLY: PtrArr_type      , &
+                                       OPERATOR(==)     , &
+                                       PtrArr_Associated, &
+                                       PtrArr_Destroy   , &
+                                       PtrArr_Create    , &
+                                       PtrArr_SetValue  , &
+                                       PtrArr_GetValue  , &
+                                       PtrArr_Inspect
+  USE Planck_Functions         , ONLY: Planck_Temperature, &
+                                       Planck_Radiance
+  USE Fundamental_Constants    , ONLY: C_1, &
+                                       C_2
+  USE Spectral_Units_Conversion, ONLY: GHz_to_inverse_cm
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -56,17 +56,16 @@ MODULE oSRF_Define
   ! Parameters
   PUBLIC :: OSRF_RELEASE
   PUBLIC :: OSRF_VERSION
-  PUBLIC :: INVALID_WMO_SATELLITE_ID
-  PUBLIC :: INVALID_WMO_SENSOR_ID
-  PUBLIC :: N_SENSOR_TYPES
-  PUBLIC :: INVALID_SENSOR  
-  PUBLIC :: MICROWAVE_SENSOR
-  PUBLIC :: INFRARED_SENSOR 
-  PUBLIC :: VISIBLE_SENSOR  
-  PUBLIC :: ULTRAVIOLET_SENSOR  
-  PUBLIC :: SENSOR_TYPE_NAME
+!  PUBLIC :: INVALID_WMO_SATELLITE_ID
+!  PUBLIC :: INVALID_WMO_SENSOR_ID
+!  PUBLIC :: N_SENSOR_TYPES
+!  PUBLIC :: INVALID_SENSOR  
+!  PUBLIC :: MICROWAVE_SENSOR
+!  PUBLIC :: INFRARED_SENSOR 
+!  PUBLIC :: VISIBLE_SENSOR  
+!  PUBLIC :: ULTRAVIOLET_SENSOR  
+!  PUBLIC :: SENSOR_TYPE_NAME
   ! Procedures
-  PUBLIC :: oSRF_IsFlagSet, oSRF_SetFlag, oSRF_ClearFlag, oSRF_DefaultFlags
   PUBLIC :: oSRF_Associated
   PUBLIC :: oSRF_Destroy
   PUBLIC :: oSRF_Create
@@ -80,6 +79,18 @@ MODULE oSRF_Define
   PUBLIC :: oSRF_Polychromatic_Coefficients
   PUBLIC :: oSRF_Planck_Coefficients
   PUBLIC :: oSRF_Convolve
+  ! ...Flag specific procedures
+  PUBLIC :: oSRF_IsInterpolated, oSRF_SetInterpolated, oSRF_ClearInterpolated
+  PUBLIC :: oSRF_IsIntegrated  , oSRF_SetIntegrated  , oSRF_ClearIntegrated
+  PUBLIC :: oSRF_IsF0Computed  , oSRF_SetF0Computed  , oSRF_ClearF0Computed
+  PUBLIC :: oSRF_IsFrequencyGHz, oSRF_SetFrequencyGHz, oSRF_ClearFrequencyGHz
+  PUBLIC :: oSRF_ClearAllFlags
+  ! ...Sensor specific procedures
+  PUBLIC :: oSRF_IsMicrowaveSensor  , oSRF_SetMicrowaveSensor
+  PUBLIC :: oSRF_IsInfraredSensor   , oSRF_SetInfraredSensor
+  PUBLIC :: oSRF_IsVisibleSensor    , oSRF_SetVisibleSensor
+  PUBLIC :: oSRF_IsUltravioletSensor, oSRF_SetUltravioletSensor
+  PUBLIC :: oSRF_ClearSensor
   
 
 
@@ -108,8 +119,8 @@ MODULE oSRF_Define
   INTEGER, PARAMETER :: OSRF_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: OSRF_VERSION = 1  ! This is just the data version.
   ! Some internal dimensions
-  INTEGER, PARAMETER :: MAX_N_PLANCK_COEFFS = 2
-  INTEGER, PARAMETER :: MAX_N_POLYCHROMATIC_COEFFS = 2
+  INTEGER, PARAMETER :: N_PLANCK_COEFFS = 2
+  INTEGER, PARAMETER :: DEFAULT_N_POLYCHROMATIC_COEFFS = 2
   ! First Planck function constant (C1) scale factors. Units of C1 are W.m^2.
   ! Length scaling: To convert to W/(m^2.cm^-4) requires a scaling of m->cm,
   !                 which is 100, to the fourth power, which is 1.0e+08.
@@ -120,11 +131,13 @@ MODULE oSRF_Define
   ! Second Planck function constant (C2) scale factor. Units of C2 are K.m,
   ! So to convert to K.cm, a scaling of 100 is applied.
   REAL(fp), PARAMETER :: C2_SCALE_FACTOR = 100.0_fp
-  ! Bit positions of the flags
-  INTEGER, PUBLIC, PARAMETER :: INTERPOLATED_FLAG    = 0  ! 0==no    , 1==yes
-  INTEGER, PUBLIC, PARAMETER :: INTEGRATED_FLAG      = 1  ! 0==no    , 1==yes
-  INTEGER, PUBLIC, PARAMETER :: F0_COMPUTED_FLAG     = 2  ! 0==no    , 1==yes
-  INTEGER, PUBLIC, PARAMETER :: FREQUENCY_UNITS_FLAG = 3  ! 0==cm^-1 , 1==GHz
+  ! The bit positions for the various flags
+  INTEGER, PARAMETER :: BEGIN_FLAG_POSITION = 0
+  INTEGER, PARAMETER :: END_FLAG_POSITION   = BIT_SIZE(0)
+  INTEGER, PARAMETER :: INTERPOLATED_FLAG = 0  ! 0==no , 1==yes
+  INTEGER, PARAMETER :: INTEGRATED_FLAG   = 1  ! 0==no , 1==yes
+  INTEGER, PARAMETER :: F0COMPUTED_FLAG   = 2  ! 0==no , 1==yes
+  INTEGER, PARAMETER :: FREQUENCYGHZ_FLAG = 3  ! 0==no , 1==yes
 
 
   ! --------------------------
@@ -132,14 +145,14 @@ MODULE oSRF_Define
   ! --------------------------
   TYPE :: oSRF_type
     ! Release and version information
-    INTEGER :: Release = oSRF_RELEASE
-    INTEGER :: Version = oSRF_VERSION
+    INTEGER :: Release = OSRF_RELEASE
+    INTEGER :: Version = OSRF_VERSION
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Dimension values
     INTEGER :: n_Bands = 0  ! nB
-    ! Non-pointer components
-    CHARACTER(SL) :: Sensor_ID  = ' '
+    ! Scalar components
+    CHARACTER(SL) :: Sensor_ID  = ''
     INTEGER  :: WMO_Satellite_Id = INVALID_WMO_SATELLITE_ID
     INTEGER  :: WMO_Sensor_Id    = INVALID_WMO_SENSOR_ID
     INTEGER  :: Sensor_Type      = INVALID_SENSOR
@@ -147,9 +160,9 @@ MODULE oSRF_Define
     REAL(fp) :: Integral        = ZERO
     INTEGER  :: Flags           = 0
     REAL(fp) :: f0              = ZERO
-    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)               = ZERO
-    REAL(fp) :: Polychromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS) = ZERO
-    ! Pointer components
+    ! Array components
+    REAL(fp) :: Planck_Coeffs(N_PLANCK_COEFFS)               = ZERO
+    REAL(fp) :: Polychromatic_Coeffs(DEFAULT_N_POLYCHROMATIC_COEFFS) = ZERO
     INTEGER,           ALLOCATABLE :: n_Points(:)  ! nB
     REAL(fp),          ALLOCATABLE :: f1(:)        ! nB
     REAL(fp),          ALLOCATABLE :: f2(:)        ! nB
@@ -169,34 +182,6 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-  ELEMENTAL FUNCTION oSRF_IsFlagSet(self, flag) RESULT(Is_Set)
-    TYPE(oSRF_type), INTENT(IN) :: self
-    INTEGER        , INTENT(IN) :: flag
-    LOGICAL :: Is_Set
-    Is_Set = BTEST(self%Flags,flag)
-  END FUNCTION oSRF_IsFlagSet
-
- 
-  ELEMENTAL SUBROUTINE oSRF_SetFlag(self, flag)
-    TYPE(oSRF_type), INTENT(IN OUT) :: self
-    INTEGER        , INTENT(IN)     :: flag
-    self%Flags = IBSET(self%Flags,flag)
-  END SUBROUTINE oSRF_SetFlag
- 
-
-  ELEMENTAL SUBROUTINE oSRF_ClearFlag(self, flag)
-    TYPE(oSRF_type), INTENT(IN OUT) :: self
-    INTEGER        , INTENT(IN)     :: flag
-    self%Flags = IBCLR(self%Flags,flag)
-  END SUBROUTINE oSRF_ClearFlag
-  
-  
-  ELEMENTAL SUBROUTINE oSRF_DefaultFlags(self)
-    TYPE(oSRF_type), INTENT(IN OUT) :: self
-    self%Flags = 0
-  END SUBROUTINE oSRF_DefaultFlags
-  
-  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -204,7 +189,7 @@ CONTAINS
 !       oSRF_Associated
 !
 ! PURPOSE:
-!       Function to test the status of the allocatable components
+!       Pure function to test the status of the allocatable components
 !       of an oSRF object.
 !
 ! CALLING SEQUENCE:
@@ -247,7 +232,7 @@ CONTAINS
 !       oSRF_Destroy
 ! 
 ! PURPOSE:
-!       Subroutine to re-initialize oSRF objects.
+!       Pure subroutine to re-initialize oSRF objects.
 !
 ! CALLING SEQUENCE:
 !       CALL oSRF_Destroy( oSRF )
@@ -276,7 +261,7 @@ CONTAINS
 !       oSRF_Create
 ! 
 ! PURPOSE:
-!       Subroutine to create an instance of the oSRF object.
+!       Pure subroutine to create an instance of the oSRF object.
 !
 ! CALLING SEQUENCE:
 !       CALL oSRF_Create(oSRF, n_Points)
@@ -366,7 +351,7 @@ CONTAINS
 !       Function to set the value of an oSRF object component.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CALL oSRF_SetValue( &
+!       Error_Status = oSRF_SetValue( &
 !                        oSRF                                       , &
 !                        Band                 = Band                , &
 !                        Version              = Version             , &
@@ -427,13 +412,14 @@ CONTAINS
 !                              TYPE:       INTEGER
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Sensor_Type:           The flag indicating the type of sensor (IR, MW, etc)
 !                              UNITS:      N/A
 !                              TYPE:       INTEGER
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Channel:               The sensor channel for the currenobject.
+!       Channel:               The sensor channel number.
 !                              UNITS:      N/A
 !                              TYPE:       INTEGER
 !                              DIMENSION:  Scalar
@@ -694,13 +680,14 @@ CONTAINS
 !                               TYPE:       INTEGER
 !                               DIMENSION:  Scalar
 !                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       Sensor_Type:            The flag indicating the type of sensor (IR, MW, etc)
 !                               UNITS:      N/A
 !                               TYPE:       INTEGER
 !                               DIMENSION:  Scalar
 !                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Channel:                The sensor channel for the currenobject.
+!       Channel:                The sensor channel number.
 !                               UNITS:      N/A
 !                               TYPE:       INTEGER
 !                               DIMENSION:  Scalar
@@ -831,8 +818,8 @@ CONTAINS
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral            
     INTEGER,      OPTIONAL, INTENT(OUT) :: Flags               
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f0                  
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: n_Planck_Coeffs
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: n_Polychromatic_Coeffs
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Planck_Coeffs
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Polychromatic_Coeffs
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
@@ -873,8 +860,8 @@ CONTAINS
     IF ( PRESENT(Integral              ) ) Integral               = self%Integral        
     IF ( PRESENT(Flags                 ) ) Flags                  = self%Flags           
     IF ( PRESENT(f0                    ) ) f0                     = self%f0              
-    IF ( PRESENT(n_Planck_Coeffs       ) ) n_Planck_Coeffs        = MAX_N_PLANCK_COEFFS                       
-    IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = MAX_N_POLYCHROMATIC_COEFFS                
+    IF ( PRESENT(n_Planck_Coeffs       ) ) n_Planck_Coeffs        = N_PLANCK_COEFFS                       
+    IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = DEFAULT_N_POLYCHROMATIC_COEFFS                
     IF ( PRESENT(Planck_Coeffs         ) ) Planck_Coeffs          = self%Planck_Coeffs                   
     IF ( PRESENT(Polychromatic_Coeffs  ) ) Polychromatic_Coeffs   = self%Polychromatic_Coeffs            
     IF ( PRESENT(n_Points              ) ) n_Points               = self%n_Points(l_Band)    
@@ -918,7 +905,7 @@ CONTAINS
 !       oSRF_Inspect
 !
 ! PURPOSE:
-!       Function to view the contents of an oSRF structure.
+!       Subroutine to view the contents of an oSRF structure.
 !
 ! CALLING SEQUENCE:
 !       CALL oSRF_Inspect( oSRF )
@@ -1076,7 +1063,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Integrate'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_Integrate'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: alloc_stat
@@ -1144,9 +1131,10 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
       RETURN
     END IF
-    CALL oSRF_SetFlag( self, INTEGRATED_FLAG )
+    CALL oSRF_SetIntegrated( self )
 
   END FUNCTION oSRF_Integrate
+  
   
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -1190,7 +1178,8 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Planck_Coefficients'
     ! Local variables
-    REAL(fp) :: Planck_Coeffs(MAX_N_PLANCK_COEFFS)
+    CHARACTER(ML) :: msg
+    REAL(fp) :: Planck_Coeffs(N_PLANCK_COEFFS)
     REAL(fp) :: f0
 
     ! Set up
@@ -1198,20 +1187,21 @@ CONTAINS
     ! ...Check object contains something
     IF ( .NOT. oSRF_Associated(self) ) THEN
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
-      RETURN
+      msg = 'Input oSRF object is empty'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
     ! Compute the central frequency if necessary
-    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) &
+    IF ( .NOT. oSRF_IsF0Computed( self ) ) THEN
       err_stat = oSRF_Central_Frequency( self )
-    IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,'Error occurred computing the central frequency',err_stat )
-      RETURN
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error occurred computing the central frequency'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+      END IF
     END IF
     
     ! Convert to inverse cm for the microwave
-    IF ( oSRF_IsFlagSet(self, FREQUENCY_UNITS_FLAG) ) THEN
+    IF ( oSRF_IsFrequencyGHz( self ) ) THEN
       f0 = GHz_to_inverse_cm(self%f0)
     ELSE
       f0 = self%f0
@@ -1224,8 +1214,8 @@ CONTAINS
     ! Save the computed Planck coefficients
     err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
     IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF Planck Coefficients',err_stat )
-      RETURN
+      msg = 'Error occurred saving the oSRF Planck Coefficients'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF  
       
   END FUNCTION oSRF_Planck_Coefficients
@@ -1274,6 +1264,7 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Central_Frequency'
     ! Local variables
+    CHARACTER(ML) :: msg
     REAL(fp) :: f0
 
     ! Set up
@@ -1281,26 +1272,27 @@ CONTAINS
     ! ...Check object contains something
     IF ( .NOT. oSRF_Associated(self) ) THEN
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
-      RETURN
+      msg = 'Input oSRF object is empty'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
     ! Compute the oSRF first moment
     err_stat = oSRF_Convolve( self, self%Frequency, f0 )
     IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, 'Error convolving oSRF with frequency.', err_stat )
-      RETURN
+      msg = 'Error convolving oSRF with frequency'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     
     ! Save the central frequency value
     err_stat = oSRF_SetValue( self, f0 = f0 )
     IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF central frequency',err_stat )
-      RETURN
+      msg = 'Error occurred saving the oSRF central frequency'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-    CALL oSRF_SetFlag( self, F0_COMPUTED_FLAG )
+    CALL oSRF_SetF0Computed( self )
     
   END FUNCTION oSRF_Central_Frequency
+  
   
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -1355,7 +1347,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF::Convolve'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'oSRF_Convolve'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: alloc_stat
@@ -1364,25 +1356,31 @@ CONTAINS
     REAL(fp):: Int_SRF, Int_Band
 
     ! Setup
-    y = ZERO
+    err_stat = SUCCESS
     ! ...Check object contains something
-    IF ( .NOT. oSRF_Associated(self) ) RETURN
+    IF ( .NOT. oSRF_Associated(self) ) THEN
+      err_stat = FAILURE
+      msg = 'Input oSRF object is empty'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
     ! ...Check the band count is the same
     IF ( self%n_Bands /= SIZE(p) ) THEN
-      CALL Display_Message( ROUTINE_NAME, 'Input data does not conform with oSRF.', FAILURE )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input data does not conform with oSRF'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     ! ...Integrate oSRF if necessary
-    IF ( .NOT. oSRF_IsFlagSet(self, INTEGRATED_FLAG) ) THEN
+    IF ( .NOT. oSRF_IsIntegrated( self ) ) THEN
       err_stat = oSRF_Integrate( self )
       IF ( err_stat /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, 'Error integrating oSRF.', err_stat )
-        RETURN
+        msg = 'Error integrating oSRF'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
     
 
     ! Sum up band integrals
+    y = ZERO
     Band_Loop: DO n = 1, self%n_Bands
     
       ! Get band response
@@ -1390,44 +1388,40 @@ CONTAINS
       err_stat = oSRF_GetValue( self, n, n_Points=n_Points )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error occurred retrieving band#",i0," n_Points")' ) n
-        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
-        RETURN
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! ...Check that the number of bands agrees with the input
       IF ( p(n)%n /= n_Points ) THEN
+        err_stat = FAILURE
         WRITE( msg,'("oSRF and input data have different sizes for band#",i0)' ) n
-        CALL Display_Message( ROUTINE_NAME,msg,FAILURE )
-        RETURN
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! ...Allocate local arrays
       ALLOCATE( f(n_Points), r(n_Points), STAT=alloc_stat )
       IF ( alloc_stat /= 0 ) THEN
         err_stat = FAILURE
         WRITE( msg,'("Error allocating band#",i0," arrays. STAT=",i0)' ) n, alloc_stat
-        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
-        RETURN
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! ...The band data
       err_stat = oSRF_GetValue( self, n, Frequency=f, Response=r )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error occurred retrieving band#",i0," data")' ) n
-        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
-        RETURN
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       
       ! Integrate the band
       err_stat = Integral(f, (p(n)%arr * r), Int_Band)
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error integrating band#",i0," response")' ) n
-        CALL Display_Message( ROUTINE_NAME,msg,err_stat )
-        RETURN
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       
       ! Accumulate
       y = y + Int_Band
       
       ! Clean up
-      DEALLOCATE( f, r )
+      DEALLOCATE( f, r, STAT=alloc_stat )
       
     END DO Band_Loop
     
@@ -1435,12 +1429,13 @@ CONTAINS
     ! Normalise the integrated value
     err_stat = oSRF_GetValue( self, Integral=Int_SRF )
     IF ( err_stat /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,'Error occurred saving the oSRF integral',err_stat )
-      RETURN
+      msg = 'Error occurred retrieving the oSRF integral'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     y = y / Int_SRF
 
   END FUNCTION oSRF_Convolve
+  
   
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -1491,7 +1486,7 @@ CONTAINS
     REAL(fp) :: Convolved_Radiance
     REAL(fp) :: x_Temperature(N_TEMPERATURES)
     REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES) 
-    REAL(fp) :: PolyChromatic_Coeffs(MAX_N_POLYCHROMATIC_COEFFS)
+    REAL(fp) :: PolyChromatic_Coeffs(DEFAULT_N_POLYCHROMATIC_COEFFS)
     TYPE(PtrArr_type) :: Radiance(self%n_Bands)
     TYPE(oSRF_type)   :: new
     
@@ -1500,15 +1495,15 @@ CONTAINS
     ! ...Check object contains something
     IF ( .NOT. oSRF_Associated(self) ) THEN
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, 'Input oSRF object is empty.', err_stat )
-      RETURN
+      msg = 'Input oSRF object is empty'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     ! ...Compute central frequency if necessary
-    IF ( .NOT. oSRF_IsFlagSet(self, F0_COMPUTED_FLAG) ) THEN
+    IF ( .NOT. oSRF_IsF0Computed( self ) ) THEN
       err_stat = oSRF_Central_Frequency( self )
       IF ( err_stat /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, 'Error computing central frequency.', err_stat )
-        RETURN
+        msg = 'Error computing central frequency'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
     
@@ -1517,13 +1512,13 @@ CONTAINS
     new = self
     
     ! Perform conversions to units of inverse centimetres if necessary
-    IF ( oSRF_IsFlagSet(new, FREQUENCY_UNITS_FLAG) ) THEN
+    IF ( oSRF_IsFrequencyGHz( new ) ) THEN
       ! ...Convert frequency arrays
       DO n = 1, new%n_Bands
         new%Frequency(n)%Arr = GHz_to_inverse_cm( new%Frequency(n)%Arr )
       END DO      
       ! ...Clear the frequency units flag to indicate cm-1
-      CALL oSRF_ClearFlag(new, FREQUENCY_UNITS_FLAG)
+      CALL oSRF_ClearFrequencyGHz( new )
       ! ...Recompute the integral
       err_stat = oSRF_Integrate( new )
       IF ( err_stat /= SUCCESS ) THEN
@@ -1616,6 +1611,886 @@ CONTAINS
 
     
 !--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE oSRF_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE oSRF_DefineVersion
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearAllFlags
+!
+! PURPOSE:
+!       Elemental subroutine to clear ALL oSRF flags.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearAllFlags( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearAllFlags( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    INTEGER :: n
+    DO n = BEGIN_FLAG_POSITION, END_FLAG_POSITION
+      CALL oSRF_ClearFlag( oSRF, n )
+    END DO
+  END SUBROUTINE oSRF_ClearAllFlags
+  
+
+!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+! NOTE: The following flag check, set, and clear procedures were generated
+!       automatically using the
+!         gen_flag_procedures.rb
+!       script. Modify at your own risk!
+!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsInterpolated
+!
+! PURPOSE:
+!       Elemental function to test if an oSRF object is flagged as being
+!       interpolated.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsInterpolated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The data are interpolated.
+!                       .FALSE. - The data are NOT interpolated.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsInterpolated(oSRF ) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsFlagSet(oSRF, INTERPOLATED_FLAG)
+  END FUNCTION oSRF_IsInterpolated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsIntegrated
+!
+! PURPOSE:
+!       Elemental function to test if an oSRF object is flagged as being
+!       integrated.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsIntegrated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The data are integrated.
+!                       .FALSE. - The data are NOT integrated.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsIntegrated(oSRF ) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsFlagSet(oSRF, INTEGRATED_FLAG)
+  END FUNCTION oSRF_IsIntegrated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsF0Computed
+!
+! PURPOSE:
+!       Elemental function to test if an oSRF object is flagged as having
+!       the central frequency computed.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsF0Computed( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The central frequency has been computed.
+!                       .FALSE. - The central frequency has NOT been computed.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsF0Computed(oSRF ) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsFlagSet(oSRF, F0COMPUTED_FLAG)
+  END FUNCTION oSRF_IsF0Computed
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsFrequencyGHz
+!
+! PURPOSE:
+!       Elemental function to test if an oSRF object is flagged as having
+!       frequency units in GHz.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsFrequencyGHz( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The frequency units are GHz.
+!                       .FALSE. - The frequency units are NOT GHz, but cm^-1.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsFrequencyGHz(oSRF ) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsFlagSet(oSRF, FREQUENCYGHZ_FLAG)
+  END FUNCTION oSRF_IsFrequencyGHz
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetInterpolated
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as being interpolated.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetInterpolated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetInterpolated( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetFlag(oSRF, INTERPOLATED_FLAG)
+  END SUBROUTINE oSRF_SetInterpolated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetIntegrated
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as being integrated.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetIntegrated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetIntegrated( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetFlag(oSRF, INTEGRATED_FLAG)
+  END SUBROUTINE oSRF_SetIntegrated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetF0Computed
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as having
+!       a computed central frequency.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetF0Computed( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetF0Computed( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetFlag(oSRF, F0COMPUTED_FLAG)
+  END SUBROUTINE oSRF_SetF0Computed
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetFrequencyGHz
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as having
+!       frequency units in GHz.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetFrequencyGHz( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetFrequencyGHz( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetFlag(oSRF, FREQUENCYGHZ_FLAG)
+  END SUBROUTINE oSRF_SetFrequencyGHz
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearInterpolated
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as NOT being interpolated.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearInterpolated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearInterpolated( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_ClearFlag( oSRF, INTERPOLATED_FLAG )
+  END SUBROUTINE oSRF_ClearInterpolated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearIntegrated
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as NOT being integrated.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearIntegrated( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearIntegrated( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_ClearFlag( oSRF, INTEGRATED_FLAG )
+  END SUBROUTINE oSRF_ClearIntegrated
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearF0Computed
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as NOT having
+!       a computed central frequency.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearF0Computed( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearF0Computed( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_ClearFlag( oSRF, F0COMPUTED_FLAG )
+  END SUBROUTINE oSRF_ClearF0Computed
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearFrequencyGHz
+!
+! PURPOSE:
+!       Elemental subroutine to flag an oSRF object as NOT having
+!       frequency units are GHz.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearFrequencyGHz( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearFrequencyGHz( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_ClearFlag( oSRF, FREQUENCYGHZ_FLAG )
+  END SUBROUTINE oSRF_ClearFrequencyGHz
+
+  
+!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+! NOTE: The following sensor check and set procedures were generated
+!       automatically using the
+!         gen_sensor_procedures.rb
+!       script. Modify at your own risk!
+!--------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsMicrowaveSensor
+!
+! PURPOSE:
+!       Elemental function to test if the oSRF object is for
+!       a microwave sensor.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsMicrowaveSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The sensor is a microwave instrument.
+!                       .FALSE. - The sensor is NOT a microwave instrument.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsMicrowaveSensor(oSRF) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsSensor(oSRF, MICROWAVE_SENSOR)
+  END FUNCTION oSRF_IsMicrowaveSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsInfraredSensor
+!
+! PURPOSE:
+!       Elemental function to test if the oSRF object is for
+!       an infrared sensor.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsInfraredSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The sensor is an infrared instrument.
+!                       .FALSE. - The sensor is NOT an infrared instrument.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsInfraredSensor(oSRF) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsSensor(oSRF, INFRARED_SENSOR)
+  END FUNCTION oSRF_IsInfraredSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsVisibleSensor
+!
+! PURPOSE:
+!       Elemental function to test if the oSRF object is for
+!       a visible sensor.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsVisibleSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The sensor is a visible instrument.
+!                       .FALSE. - The sensor is NOT a visible instrument.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsVisibleSensor(oSRF) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsSensor(oSRF, VISIBLE_SENSOR)
+  END FUNCTION oSRF_IsVisibleSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_IsUltravioletSensor
+!
+! PURPOSE:
+!       Elemental function to test if the oSRF object is for
+!       an ultraviolet sensor.
+!
+! CALLING SEQUENCE:
+!       Status = oSRF_IsUltravioletSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be tested.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:        The return value is a logical value.
+!                       .TRUE.  - The sensor is an ultraviolet instrument.
+!                       .FALSE. - The sensor is NOT an ultraviolet instrument.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as oSRF input
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION oSRF_IsUltravioletSensor(oSRF) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    LOGICAL :: Is_Set
+    Is_Set = oSRF_IsSensor(oSRF, ULTRAVIOLET_SENSOR)
+  END FUNCTION oSRF_IsUltravioletSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetMicrowaveSensor
+!
+! PURPOSE:
+!       Elemental subroutine to set a oSRF object as being
+!       for a microwave sensor.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetMicrowaveSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetMicrowaveSensor( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetSensor(oSRF, MICROWAVE_SENSOR)
+  END SUBROUTINE oSRF_SetMicrowaveSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetInfraredSensor
+!
+! PURPOSE:
+!       Elemental subroutine to set a oSRF object as being
+!       for an infrared sensor.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetInfraredSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetInfraredSensor( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetSensor(oSRF, INFRARED_SENSOR)
+  END SUBROUTINE oSRF_SetInfraredSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetVisibleSensor
+!
+! PURPOSE:
+!       Elemental subroutine to set a oSRF object as being
+!       for a visible sensor.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetVisibleSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetVisibleSensor( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetSensor(oSRF, VISIBLE_SENSOR)
+  END SUBROUTINE oSRF_SetVisibleSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_SetUltravioletSensor
+!
+! PURPOSE:
+!       Elemental subroutine to set a oSRF object as being
+!       for an ultraviolet sensor.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_SetUltravioletSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_SetUltravioletSensor( oSRF )
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    CALL oSRF_SetSensor(oSRF, ULTRAVIOLET_SENSOR)
+  END SUBROUTINE oSRF_SetUltravioletSensor
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       oSRF_ClearSensor
+!
+! PURPOSE:
+!       Elemental subroutine to reinitialise the sensor type.
+!
+! CALLING SEQUENCE:
+!       CALL oSRF_ClearSensor( oSRF )
+!
+! OBJECTS:
+!       oSRF:          Structure which is to be altered.
+!                      UNITS:      N/A
+!                      TYPE:       oSRF_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE oSRF_ClearSensor(oSRF)
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    oSRF%Sensor_Type = INVALID_SENSOR
+  END SUBROUTINE oSRF_ClearSensor
+  
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+  ! ---------------------
+  ! Generic flag routines
+  ! ---------------------
+
+  ELEMENTAL FUNCTION oSRF_IsFlagSet(self, flag) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: self
+    INTEGER        , INTENT(IN) :: flag
+    LOGICAL :: Is_Set
+    Is_Set = BTEST(self%Flags,flag)
+  END FUNCTION oSRF_IsFlagSet
+
+ 
+  ELEMENTAL SUBROUTINE oSRF_SetFlag(self, flag)
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    INTEGER        , INTENT(IN)     :: flag
+    self%Flags = IBSET(self%Flags,flag)
+  END SUBROUTINE oSRF_SetFlag
+ 
+
+  ELEMENTAL SUBROUTINE oSRF_ClearFlag(self, flag)
+    TYPE(oSRF_type), INTENT(IN OUT) :: self
+    INTEGER        , INTENT(IN)     :: flag
+    self%Flags = IBCLR(self%Flags,flag)
+  END SUBROUTINE oSRF_ClearFlag
+  
+  
+  ! -----------------------
+  ! Generic sensor routines
+  ! -----------------------
+
+  ELEMENTAL FUNCTION oSRF_IsSensor(oSRF, Sensor_Type) RESULT(Is_Set)
+    TYPE(oSRF_type), INTENT(IN) :: oSRF
+    INTEGER,         INTENT(IN) :: Sensor_Type
+    LOGICAL :: Is_Set
+    Is_Set = .FALSE.
+    IF ( .NOT. oSRF_Associated(oSRF) ) RETURN
+    Is_Set = (oSRF%Sensor_Type == Sensor_Type)
+  END FUNCTION oSRF_IsSensor
+
+
+  ELEMENTAL SUBROUTINE oSRF_SetSensor(oSRF, Sensor_Type)
+    TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
+    INTEGER        , INTENT(IN)     :: Sensor_Type
+    oSRF%Sensor_Type = Sensor_Type
+  END SUBROUTINE oSRF_SetSensor
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       oSRF_Equal
+!
+! PURPOSE:
+!       Function to test the equality of two oSRF objects.
+!       Used in OPERATOR(==) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = oSRF_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two oSRF objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(oSRF_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  PURE FUNCTION oSRF_Equal( x, y ) RESULT( is_equal )
+    TYPE(oSRF_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+
+    ! Set up
+    is_equal = .FALSE.
+    
+    ! Check the structure association status
+    IF ( (.NOT. oSRF_Associated(x)) .OR. &
+         (.NOT. oSRF_Associated(y))      ) RETURN
+
+    ! Check contents
+    ! ...Scalar Integers/characters
+    IF ( (x%Version          /= y%Version         ) .OR. &
+         (x%n_Bands          /= y%n_Bands         ) .OR. &
+         (x%WMO_Satellite_Id /= y%WMO_Satellite_Id) .OR. &
+         (x%WMO_Sensor_Id    /= y%WMO_Sensor_Id   ) .OR. &
+         (x%Sensor_Type      /= y%Sensor_Type     ) .OR. &
+         (x%Channel          /= y%Channel         ) .OR. &
+         (x%Flags            /= y%Flags           ) ) RETURN
+    ! ...Reals
+    IF ( (x%Integral .EqualTo. y%Integral ) .AND. &
+         (x%f0       .EqualTo. y%f0       ) .AND. &
+         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
+         ALL(x%Polychromatic_Coeffs .EqualTo. y%Polychromatic_Coeffs) .AND. &
+         ALL(x%n_Points                ==     y%n_Points            ) .AND. &
+         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
+         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
+         ALL(x%f1                   .EqualTo. y%f1                  ) .AND. &
+         ALL(x%f2                   .EqualTo. y%f2                  ) ) is_equal = .TRUE.
+    ! ...Structures
+    is_equal = is_equal .AND. &
+               ALL(x%Frequency == y%Frequency) .AND. &
+               ALL(x%Response  == y%Response )
+    
+  END FUNCTION oSRF_Equal
+ 
+
+!--------------------------------------------------------------------------------
 !
 ! NAME:
 !       Least_Squares_Linear_Fit
@@ -1629,8 +2504,7 @@ CONTAINS
 !                                                a, b,        &  ! Output
 !                                                yFit = yFit, &  ! Optional output
 !                                                SSE  = SSE,  &  ! Optional output
-!                                                MSE  = MSE,  &  ! Optional output
-!                                                Message_Log = Message_Log ) !  Error messaging
+!                                                MSE  = MSE   )  ! Optional output
 !
 ! INPUT ARGUMENTS:
 !       x:               Input ordinate data on which to perform the fit
@@ -1713,12 +2587,12 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !
 !--------------------------------------------------------------------------------
+
   FUNCTION Least_Squares_Linear_Fit( x, y,         &  ! Input
                                      a, b,         &  ! Output
                                      yFit,         &  ! Optional output
                                      SSE,          &  ! Optional output
-                                     MSE,          &  ! Optional output
-                                     Message_Log ) &  ! Error messaging
+                                     MSE         ) &  ! Optional output
                                    RESULT( Error_Status )
     ! Arguments
     REAL(fp),                INTENT(IN)  :: x(:)
@@ -1728,13 +2602,13 @@ CONTAINS
     REAL(fp),     OPTIONAL,  INTENT(OUT) :: yFit(:)
     REAL(fp),     OPTIONAL,  INTENT(OUT) :: SSE
     REAL(fp),     OPTIONAL,  INTENT(OUT) :: MSE
-    CHARACTER(*), OPTIONAL,  INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Least_Squares_Linear_Fit'
     REAL(fp),     PARAMETER :: TOLERANCE = EPSILON(1.0_fp)
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: n
     REAL(fp) :: xAverage
     REAL(fp) :: yAverage
@@ -1745,185 +2619,60 @@ CONTAINS
 
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-
-    ! Check input
+    ! ...Check input
     n = SIZE(x)
     IF ( n < 3 ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input data must be at least 3 points.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Input data must be at least 3 points'
+      CALL Display_Message( ROUTINE_NAME, msg, Error_Status ); RETURN
     END IF
     IF ( SIZE(y) /= n ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Sizes of input X,Y arguments are inconsistent', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Sizes of input X,Y arguments are inconsistent'
+      CALL Display_Message( ROUTINE_NAME, msg, Error_Status ); RETURN
     END IF
     IF ( PRESENT(yFit) ) THEN
       IF ( SIZE(yFit) /= n ) THEN
         Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Sizes of output YFIT argument is inconsistent', &
-                              Error_Status, &
-                              Message_Log = Message_Log )
-        RETURN
+        msg = 'Size of output YFIT argument is inconsistent'
+        CALL Display_Message( ROUTINE_NAME, msg, Error_Status ); RETURN
       END IF
     END IF
 
 
     ! Calculate averages
-    ! ------------------
     xAverage = SUM(x) / REAL(n,fp)
     yAverage = SUM(y) / REAL(n,fp)
 
 
     ! Calculate the sums of the square of the mean difference for X
-    ! -------------------------------------------------------------
     sum_dx2 = SUM(( x-xAverage )**2)
     IF ( sum_dx2 < TOLERANCE ) THEN
       Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Sum of the squares of mean difference for X is zero.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
+      msg = 'Sum of the squares of mean difference for X is zero'
+      CALL Display_Message( ROUTINE_NAME, msg, Error_Status ); RETURN
     END IF
 
 
     ! Calculate coefficients
-    ! ----------------------
     b = SUM(( x-xAverage )*( y-yAverage )) / sum_dx2
     a = yAverage - ( b*xAverage )
 
 
     ! Calculate the regression Y values
-    ! ---------------------------------
     yCalculated = a + ( b*x )
     Residual_Sum_of_Squares = SUM(( y-yCalculated )**2)
     Residual_Mean_Square    = Residual_Sum_of_Squares / REAL(n-2,fp)
 
 
     ! Assign optional arguments
-    ! -------------------------
     IF ( PRESENT(yFit) ) yFit = yCalculated
     IF ( PRESENT(SSE)  ) SSE  = Residual_Sum_of_Squares
     IF ( PRESENT(MSE)  ) MSE  = Residual_Mean_Square
 
-  END FUNCTION Least_Squares_Linear_Fit      
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       oSRF_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL oSRF_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE oSRF_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE oSRF_DefineVersion
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       oSRF_Equal
-!
-! PURPOSE:
-!       Function to test the equality of two oSRF objects.
-!       Used in OPERATOR(==) interface block.
-!
-! CALLING SEQUENCE:
-!       is_equal = oSRF_Equal( x, y )
-!
-!         or
-!
-!       IF ( x == y ) THEN
-!         ...
-!       END IF
-!
-! OBJECTS:
-!       x, y:          Two oSRF objects to be compared.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(oSRF_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! FUNCTION RESULT:
-!       is_equal:      Logical value indicating whether the inputs are equal.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
-!
-!--------------------------------------------------------------------------------
-
-  PURE FUNCTION oSRF_Equal( x, y ) RESULT( is_equal )
-    TYPE(oSRF_type) , INTENT(IN)  :: x, y
-    LOGICAL :: is_equal
-
-    ! Set up
-    is_equal = .FALSE.
+  END FUNCTION Least_Squares_Linear_Fit
     
-    ! Check the structure association status
-    IF ( (.NOT. oSRF_Associated(x)) .OR. &
-         (.NOT. oSRF_Associated(y))      ) RETURN
-
-    ! Check contents
-    ! ...Scalar Integers/characters
-    IF ( (x%Version          /= y%Version         ) .OR. &
-         (x%n_Bands          /= y%n_Bands         ) .OR. &
-         (x%WMO_Satellite_Id /= y%WMO_Satellite_Id) .OR. &
-         (x%WMO_Sensor_Id    /= y%WMO_Sensor_Id   ) .OR. &
-         (x%Sensor_Type      /= y%Sensor_Type     ) .OR. &
-         (x%Channel          /= y%Channel         ) .OR. &
-         (x%Flags            /= y%Flags           ) ) RETURN
-    ! ...Reals
-    IF ( (x%Integral .EqualTo. y%Integral ) .AND. &
-         (x%f0       .EqualTo. y%f0       ) .AND. &
-         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
-         ALL(x%Polychromatic_Coeffs .EqualTo. y%Polychromatic_Coeffs) .AND. &
-         ALL(x%n_Points                ==     y%n_Points            ) .AND. &
-         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
-         ALL(x%Planck_Coeffs        .EqualTo. y%Planck_Coeffs       ) .AND. &
-         ALL(x%f1                   .EqualTo. y%f1                  ) .AND. &
-         ALL(x%f2                   .EqualTo. y%f2                  ) ) is_equal = .TRUE.
-    ! ...Structures
-    is_equal = is_equal .AND. &
-               ALL(x%Frequency == y%Frequency) .AND. &
-               ALL(x%Response  == y%Response )
-    
-  END FUNCTION oSRF_Equal
- 
 END MODULE oSRF_Define
 
  

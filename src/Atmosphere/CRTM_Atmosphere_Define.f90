@@ -38,6 +38,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Cloud_type, &
                                    OPERATOR(==), &
                                    OPERATOR(+), &
+                                   OPERATOR(-), &
                                    CRTM_Cloud_Associated, &
                                    CRTM_Cloud_Destroy, &
                                    CRTM_Cloud_Create, &
@@ -63,6 +64,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Aerosol_type, &
                                    OPERATOR(==), &
                                    OPERATOR(+), &
+                                   OPERATOR(-), &
                                    CRTM_Aerosol_Associated, &
                                    CRTM_Aerosol_Destroy, &
                                    CRTM_Aerosol_Create, &
@@ -86,6 +88,7 @@ MODULE CRTM_Atmosphere_Define
   ! Operators
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! Cloud entities
   ! ...Parameters
   PUBLIC :: N_VALID_CLOUD_TYPES
@@ -191,6 +194,10 @@ MODULE CRTM_Atmosphere_Define
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Atmosphere_Add
   END INTERFACE OPERATOR(+)
+
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_Atmosphere_Subtract
+  END INTERFACE OPERATOR(-)
 
   INTERFACE CRTM_SetLayers_Atmosphere
     MODULE PROCEDURE SetLayers_Scalar
@@ -885,15 +892,15 @@ CONTAINS
 
     WRITE(*, '(1x,"ATMOSPHERE OBJECT")')
     ! Dimensions
-    WRITE(*, '(3x,"n_Layers   :",1x,i0)') Atm%n_Layers   
-    WRITE(*, '(3x,"n_Absorbers:",1x,i0)') Atm%n_Absorbers
-    WRITE(*, '(3x,"n_Clouds   :",1x,i0)') Atm%n_Clouds   
-    WRITE(*, '(3x,"n_Aerosols :",1x,i0)') Atm%n_Aerosols 
+    WRITE(*, '(3x,"n_Layers    :",1x,i0)') Atm%n_Layers   
+    WRITE(*, '(3x,"n_Absorbers :",1x,i0)') Atm%n_Absorbers
+    WRITE(*, '(3x,"n_Clouds    :",1x,i0)') Atm%n_Clouds   
+    WRITE(*, '(3x,"n_Aerosols  :",1x,i0)') Atm%n_Aerosols 
     ! Climatology
     lClimatology = Atm%Climatology
     IF ( lClimatology < 1 .OR. &
          lClimatology > N_VALID_CLIMATOLOGY_MODELS ) lClimatology = INVALID_MODEL
-    WRITE(*, '(3x,"Climatology    :",1x,a)') CLIMATOLOGY_MODEL_NAME(lClimatology)
+    WRITE(*, '(3x,"Climatology :",1x,a)') CLIMATOLOGY_MODEL_NAME(lClimatology)
     IF ( .NOT. CRTM_Atmosphere_Associated(Atm) ) RETURN
     ! Profile information
     k = Atm%n_Layers
@@ -1464,5 +1471,85 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_Atmosphere_Add
+
+  
+  
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Atmosphere_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM Atmosphere objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       atmdiff = CRTM_Atmosphere_Subtract( atm1, atm2 )
+!
+!         or
+!
+!       atmdiff = atm1 - atm2
+!
+!
+! INPUTS:
+!       atm1, atm2: The Atmosphere objects to subtract.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Atmosphere_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       atmdiff:    Atmosphere structure containing the differenced components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Atmosphere_type
+!                   DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Atmosphere_Subtract( atm1, atm2 ) RESULT( atmdiff )
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: atm1, atm2
+    TYPE(CRTM_Atmosphere_type) :: atmdiff
+    ! Variables
+    INTEGER :: i, j, k
+
+    ! Check input
+    ! ...If input structures not used, do nothing
+    IF ( .NOT. CRTM_Atmosphere_Associated( atm1 ) .OR. &
+         .NOT. CRTM_Atmosphere_Associated( atm2 ) ) RETURN
+    ! ...If input structure for different Atmospheres, or sizes, do nothing
+    IF ( atm1%Climatology    /= atm2%Climatology    .OR. &
+         atm1%n_Layers       /= atm2%n_Layers       .OR. &
+         atm1%n_Absorbers    /= atm2%n_Absorbers    .OR. &
+         atm1%n_Clouds       /= atm2%n_Clouds       .OR. &
+         atm1%n_Aerosols     /= atm2%n_Aerosols     .OR. &
+         atm1%n_Added_Layers /= atm2%n_Added_Layers ) RETURN
+    ! ...Dimenions the same, check absorber info
+    IF ( ANY(atm1%Absorber_ID    /= atm2%Absorber_ID   ) .OR. &
+         ANY(atm1%Absorber_Units /= atm2%Absorber_Units) ) RETURN
+    
+    ! Copy the first structure
+    atmdiff = atm1
+
+    ! And subtract the second one's components from it
+    k = atm1%n_Layers
+    j = atm1%n_Absorbers
+    atmdiff%Level_Pressure(0:k) = atmdiff%Level_Pressure(0:k) - atm2%Level_Pressure(0:k)
+    atmdiff%Pressure(1:k)       = atmdiff%Pressure(1:k)       - atm2%Pressure(1:k)
+    atmdiff%Temperature(1:k)    = atmdiff%Temperature(1:k)    - atm2%Temperature(1:k)
+    atmdiff%Absorber(1:k,1:j)   = atmdiff%Absorber(1:k,1:j)   - atm2%Absorber(1:k,1:j)
+    ! ...Cloud component
+    IF ( atm1%n_Clouds > 0 ) THEN
+      DO i = 1, atm1%n_Clouds
+        atmdiff%Cloud(i) = atmdiff%Cloud(i) - atm2%Cloud(i)
+      END DO
+    END IF
+    ! ...Aerosol component
+    IF ( atm1%n_Aerosols > 0 ) THEN
+      DO i = 1, atm1%n_Aerosols
+        atmdiff%Aerosol(i) = atmdiff%Aerosol(i) - atm2%Aerosol(i)
+      END DO
+    END IF
+
+  END FUNCTION CRTM_Atmosphere_Subtract
 
 END MODULE CRTM_Atmosphere_Define

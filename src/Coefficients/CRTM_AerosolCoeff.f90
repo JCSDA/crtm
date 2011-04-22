@@ -207,6 +207,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_AerosolCoeff_Destroy
@@ -218,7 +219,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AerosolCoeff_Destroy( Process_ID = Process_ID )
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
 !                         function call is running under. This value is used
 !                         solely for controlling message output. If MPI is not
@@ -242,11 +243,12 @@ CONTAINS
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data structure AeroC.
 !
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_AerosolCoeff_Destroy( Process_ID ) RESULT( err_stat )
     ! Arguments
-    INTEGER, OPTIONAL, INTENT(IN)  :: Process_ID
+    INTEGER, OPTIONAL, INTENT(IN) :: Process_ID
     ! Function result
     INTEGER :: err_stat
     ! Local parameters

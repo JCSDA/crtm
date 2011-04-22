@@ -22,9 +22,10 @@ MODULE CRTM_SfcOptics
   USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, POINT_5, ONE, DEGREES_TO_RADIANS, MAX_N_STOKES
   USE CRTM_SpcCoeff,            ONLY: SC, &
-                                      MICROWAVE_SENSOR, &
-                                      INFRARED_SENSOR, &
-                                      VISIBLE_SENSOR, &
+                                      SpcCoeff_IsMicrowaveSensor  , &
+                                      SpcCoeff_IsInfraredSensor   , &
+                                      SpcCoeff_IsVisibleSensor    , &
+                                      SpcCoeff_IsUltravioletSensor, &
                                       UNPOLARIZED, &
                                       INTENSITY, &
                                       FIRST_STOKES_COMPONENT, &
@@ -448,28 +449,21 @@ CONTAINS
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
                         SfcOptics%n_Angles,MAX_N_STOKES) :: Reflectivity
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Direct_Reflectivity
-    INTEGER :: Sensor_Type, Polarization
+    INTEGER :: Polarization
 
 
     ! ------
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Assign a short name to the USED SfcOptics dimensions
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
-    ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization(ChannelIndex)
     ! Initialise the local emissivity and reflectivities
     Emissivity   = ZERO 
     Reflectivity = ZERO
     Direct_Reflectivity = ZERO
 
-    ! ---------------------
-    ! Branch on sensor type
-    ! ---------------------
-    Sensor_Select: SELECT CASE ( Sensor_type)
 
       !##########################################################################
       !##########################################################################
@@ -479,7 +473,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( MICROWAVE_SENSOR )
+      Sensor_Select: IF ( SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
 
         ! --------------------------------------
         ! Microwave LAND emissivity/reflectivity
@@ -742,7 +736,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( INFRARED_SENSOR )
+      ELSE IF ( SpcCoeff_IsInfraredSensor( SC(SensorIndex) ) ) THEN
 
         ! -------------------------------------          
         ! Infrared LAND emissivity/reflectivity
@@ -886,7 +880,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( VISIBLE_SENSOR )
+      ELSE IF ( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
 
         mth_Azi_Test: IF( SfcOptics%mth_Azi == 0 ) THEN
 
@@ -1024,7 +1018,7 @@ CONTAINS
           SfcOptics%Emissivity(1:nZ,1)          = Emissivity(1:nZ,1)
           SfcOptics%Reflectivity(1:nZ,1,1:nZ,1) = Reflectivity(1:nZ,1,1:nZ,1)
           SfcOptics%Direct_Reflectivity(1:nZ,1) = Direct_Reflectivity(1:nZ,1)
-        
+
         ELSE
      
           SfcOptics%Emissivity(1:nZ,1)          = ZERO
@@ -1032,6 +1026,7 @@ CONTAINS
           SfcOptics%Direct_Reflectivity         = ZERO
         
         END IF mth_Azi_Test
+
 
 
       !##########################################################################
@@ -1042,14 +1037,15 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE DEFAULT
+      ELSE Sensor_Select
+      
         Error_Status = FAILURE
         WRITE( Message,'("Unrecognised sensor type for channel index ",i0)' ) &
                        ChannelIndex
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
-
-    END SELECT Sensor_Select
+        
+      END IF Sensor_Select
 
   END FUNCTION CRTM_Compute_SfcOptics
 
@@ -1189,7 +1185,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: i
     INTEGER :: nL, nZ
-    INTEGER :: Sensor_Type, Polarization
+    INTEGER :: Polarization
     REAL(fp) :: SIN2_Angle
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Emissivity_TL
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
@@ -1200,21 +1196,14 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Assign a short name to the USED SfcOptics dimensions
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
-    ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization( ChannelIndex )
     ! Initialise the local emissivity and reflectivities
     Emissivity_TL   = ZERO 
     Reflectivity_TL = ZERO
     Direct_Reflectivity_TL = ZERO
 
-    ! ---------------------
-    ! Branch on sensor type
-    ! ---------------------
-    Sensor_Select: SELECT CASE ( Sensor_type)
 
       !##########################################################################
       !##########################################################################
@@ -1224,7 +1213,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( MICROWAVE_SENSOR )
+      Sensor_Select: IF ( SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
 
         ! --------------------------------------
         ! Microwave LAND emissivity/reflectivity
@@ -1497,7 +1486,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( INFRARED_SENSOR )
+      ELSE IF ( SpcCoeff_IsInfraredSensor( SC(SensorIndex) ) ) THEN
 
 
         ! -------------------------------------
@@ -1650,7 +1639,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( VISIBLE_SENSOR )
+      ELSE IF ( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
 
 
         ! -------------------
@@ -1669,14 +1658,15 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE DEFAULT
+      ELSE Sensor_Select
+      
         Error_Status = FAILURE
         WRITE( Message,'("Unrecognised sensor type for channel index ",i0)' ) &
                        ChannelIndex
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
 
-    END SELECT Sensor_Select
+      END IF Sensor_Select
 
   END FUNCTION CRTM_Compute_SfcOptics_TL
 
@@ -1820,7 +1810,7 @@ CONTAINS
     CHARACTER(256)  :: Message
     INTEGER :: i
     INTEGER :: nL, nZ
-    INTEGER :: Sensor_Type, Polarization
+    INTEGER :: Polarization
     REAL(fp) :: SIN2_Angle
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES) :: Emissivity_AD
     REAL(fp), DIMENSION(SfcOptics%n_Angles,MAX_N_STOKES, &
@@ -1831,21 +1821,14 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Assign a short name to the USED SfcOptics dimensions
     nL = SfcOptics%n_Stokes
     nZ = SfcOptics%n_Angles
-    ! Sensor type and polarization
-    Sensor_Type  = SC(SensorIndex)%Sensor_Type
     Polarization = SC(SensorIndex)%Polarization( ChannelIndex )
     ! Initialise the local emissivity and reflectivity adjoints
     Emissivity_AD = ZERO 
     Reflectivity_AD = ZERO
     Direct_Reflectivity_AD = ZERO
 
-    ! ---------------------
-    ! Branch on sensor type
-    ! ---------------------
-    Sensor_Select: SELECT CASE ( Sensor_type)
 
       !##########################################################################
       !##########################################################################
@@ -1855,7 +1838,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( MICROWAVE_SENSOR )
+      Sensor_Select: IF ( SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
 
 
         !#----------------------------------------------------------------------#
@@ -2164,7 +2147,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( INFRARED_SENSOR )
+      ELSE IF ( SpcCoeff_IsInfraredSensor( SC(SensorIndex) ) ) THEN
 
 
         ! ------------------------------------
@@ -2316,7 +2299,7 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE ( VISIBLE_SENSOR )
+      ELSE IF ( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
 
 
         ! -------------------
@@ -2335,14 +2318,14 @@ CONTAINS
       !##########################################################################
       !##########################################################################
 
-      CASE DEFAULT
+      ELSE Sensor_Select
         Error_Status = FAILURE
         WRITE( Message,'("Unrecognised sensor type for channel index ",i0)' ) &
                        ChannelIndex
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
 
-    END SELECT Sensor_Select
+      END IF Sensor_Select
 
   END FUNCTION CRTM_Compute_SfcOptics_AD
 

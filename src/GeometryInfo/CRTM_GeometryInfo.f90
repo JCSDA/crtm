@@ -103,6 +103,8 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_GeometryInfo_Compute( gInfo )
     TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
+    
+    REAL(fp) :: COSv
 
     ! Compute the derived values
     ! ...Derived sensor angles
@@ -127,7 +129,14 @@ CONTAINS
     ! ...Derived source angles
     gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Source_Zenith_Angle
     gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Source_Azimuth_Angle
-    gInfo%Secant_Source_Zenith  = ONE / COS(gInfo%Source_Zenith_Radian)
+    COSv = COS(gInfo%Source_Zenith_Radian)
+    IF( COSv /= ZERO )THEN
+      gInfo%Secant_Source_Zenith = ONE / COSv
+    ELSE
+      ! set to a large number with the sign of the original value, but not an infinity
+      gInfo%Secant_Source_Zenith = HUGE(COSv) * COSv/ABS(COSv)
+    ENDIF
+      
     ! ...Derived flux angles
     gInfo%Flux_Zenith_Radian = DEGREES_TO_RADIANS * gInfo%user%Flux_Zenith_Angle
     gInfo%Secant_Flux_Zenith = ONE / COS(gInfo%Flux_Zenith_Radian)

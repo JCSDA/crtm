@@ -47,8 +47,6 @@ MODULE CloudCoeff_Binary_IO
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
-  ! Old integer flag setting
-  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
@@ -583,7 +581,7 @@ CONTAINS
 
 
     ! Open the file for writing
-    err_stat = Open_Binary_File( Filename, fid, For_Output=SET )
+    err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error opening '//TRIM(Filename)
       CALL Write_Cleanup(); RETURN

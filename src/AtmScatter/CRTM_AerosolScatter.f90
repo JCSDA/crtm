@@ -30,7 +30,10 @@ MODULE CRTM_AerosolScatter
                                       MAX_N_PHASE_ELEMENTS, &
                                       HGPHASE  ! <<< NEED TO REMOVE THIS IN FUTURE
   USE CRTM_SpcCoeff,            ONLY: SC, &
-                                      INFRARED_SENSOR, VISIBLE_SENSOR, MICROWAVE_SENSOR
+                                      SpcCoeff_IsMicrowaveSensor , & 
+                                      SpcCoeff_IsInfraredSensor  , & 
+                                      SpcCoeff_IsVisibleSensor   , &
+                                      SpcCoeff_IsUltravioletSensor
   USE CRTM_AerosolCoeff,        ONLY: AeroC 
   USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type      , &
                                       DUST_AEROSOL              , &
@@ -242,7 +245,6 @@ CONTAINS
     ! Local Variables
     CHARACTER(ML) :: Message
     INTEGER :: k, ka, l, m, n
-    INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
@@ -253,10 +255,8 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Sensor Type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type
-    IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
-    IF (Atm%n_Aerosols == 0) RETURN
+    IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) RETURN 
+    IF ( Atm%n_Aerosols == 0 ) RETURN
     ASV%Total_bs = ZERO
     ! Frequency in inverse centimetres
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
@@ -491,7 +491,6 @@ CONTAINS
     ! Local variables
     INTEGER  :: k, ka, l, m, n
     INTEGER  :: n_Legendre_Terms, n_Phase_Elements
-    INTEGER  :: Sensor_Type
     REAL(fp) :: Frequency
     LOGICAL  :: Layer_Mask(Atm%n_Layers)
     INTEGER  :: Layer_Index(Atm%n_Layers)
@@ -504,10 +503,8 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Sensor Type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type
-    IF (Sensor_Type == MICROWAVE_SENSOR) RETURN 
-    IF (Atm%n_Aerosols == 0) RETURN
+    IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) RETURN 
+    IF ( Atm%n_Aerosols == 0 ) RETURN
     ! Frequency
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions
@@ -704,7 +701,6 @@ CONTAINS
     ! Local variables
     INTEGER   :: k, ka, l, m, n
     INTEGER   :: n_Legendre_Terms, n_Phase_Elements
-    INTEGER   :: Sensor_Type
     REAL(fp)  :: Frequency
     LOGICAL   :: Layer_Mask(Atm%n_Layers)
     INTEGER   :: Layer_Index(Atm%n_Layers)
@@ -717,10 +713,8 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    ! Sensor type
-    Sensor_Type = SC(SensorIndex)%Sensor_Type
-    IF (Sensor_Type == MICROWAVE_SENSOR) RETURN
-    IF (Atm%n_Aerosols == 0) RETURN
+    IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) RETURN 
+    IF ( Atm%n_Aerosols == 0 ) RETURN
     ! Frequency
     Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
     ! Phase matrix dimensions

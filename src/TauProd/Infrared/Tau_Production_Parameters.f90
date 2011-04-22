@@ -1,5 +1,5 @@
 !
-! Tau_Production_Parameters
+! Tau_Production_Parameters_new
 !
 ! Module defining parameters used in the LBL transmittance production runs.
 ! This module is mostly used for the spectral convolution code. The Fourier
@@ -305,11 +305,13 @@ MODULE Tau_Production_Parameters
   ! -------------------------
   ! The calculation direction
   ! -------------------------
-  INTEGER, PUBLIC, PARAMETER :: N_DIRECTIONS = 2
+  INTEGER, PUBLIC, PARAMETER :: N_DIRECTIONS = 3
+  INTEGER, PUBLIC, PARAMETER ::           RADIANCE    = 0
   INTEGER, PUBLIC, PARAMETER ::   UPWELLING_DIRECTION = 1
   INTEGER, PUBLIC, PARAMETER :: DOWNWELLING_DIRECTION = 2
   CHARACTER(*), PUBLIC, PARAMETER, DIMENSION(N_DIRECTIONS) :: &
-    DIRECTION_NAME = (/ 'upwelling  ', &
+    DIRECTION_NAME = (/ 'radiance   ', &
+                        'upwelling  ', &
                         'downwelling' /)
   
 END MODULE Tau_Production_Parameters

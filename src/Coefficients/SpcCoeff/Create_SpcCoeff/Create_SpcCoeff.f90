@@ -24,48 +24,44 @@ PROGRAM Create_SpcCoeff
   USE File_Utility             , ONLY: Get_Lun, File_Exists
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                        Display_Message, Program_Message
-  USE CRTM_Parameters          , ONLY: ZERO
+  USE Compare_Float_Numbers    , ONLY: OPERATOR(.EqualTo.)
+  USE SensorInfo_Parameters    , ONLY: MICROWAVE_SENSOR, &
+                                       INFRARED_SENSOR , &
+                                       VISIBLE_SENSOR  , &
+                                       UNPOLARIZED     
   USE Planck_Functions         , ONLY: Planck_Radiance
-  USE Interpolate_Utility      , ONLY: Spline_Initialize, &
-                                       Spline_Interpolate
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz, &
                                        GHz_to_inverse_cm
   USE MW_SensorData_Define     , ONLY: MW_SensorData_type, &
-                                       Load_MW_SensorData, &
-                                       Destroy_MW_SensorData
-  USE SensorInfo_Define        , ONLY: MICROWAVE_SENSOR        , &
-                                       INFRARED_SENSOR         , &
-                                       VISIBLE_SENSOR          , &
-                                       UNPOLARIZED             , &
-                                       SensorInfo_type         , &
-                                       Destroy_SensorInfo
-  USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type,    &
-                                       Count_SensorInfo_Nodes,  &
-                                       GetFrom_SensorInfo_List, &
-                                       Destroy_SensorInfo_List
-  USE SensorInfo_IO            , ONLY: Read_SensorInfo
+                                       MW_SensorData_Destroy, &
+                                       MW_SensorData_Load   , &
+                                       MW_SensorData_DefineVersion
   USE Solar_Define             , ONLY: Solar_type, &
-                                       Destroy_Solar
-  USE Solar_netCDF_IO          , ONLY: Inquire_Solar_netCDF, &
-                                       Read_Solar_netCDF
-  USE AntCorr_Define           , ONLY: AntCorr_type, &
-                                       Assign_AntCorr, &
-                                       Destroy_AntCorr
-  USE AntCorr_netCDF_IO        , ONLY: Read_AntCorr_netCDF
-  USE SpcCoeff_Define          , ONLY: SOLAR_FLAG, &
-                                       ZEEMAN_FLAG, &
-                                       SpcCoeff_type, &
-                                       SetFlag_SpcCoeff, &
-                                       ClearFlag_SpcCoeff, &
-                                       Allocate_SpcCoeff, &
-                                       Destroy_SpcCoeff
-  USE SpcCoeff_netCDF_IO       , ONLY: Write_SpcCoeff_netCDF
+                                       Solar_Destroy,solar_inspect
+  USE Solar_IO                 , ONLY: Solar_ReadFile
+  USE SpcCoeff_Define          , ONLY: SpcCoeff_type      , &
+                                       SpcCoeff_Associated, &
+                                       SpcCoeff_Create    , &
+                                       SpcCoeff_Destroy   , &
+                                       SpcCoeff_IsSolar   , &
+                                       SpcCoeff_IsMicrowaveSensor, &
+                                       SpcCoeff_SetSolar  , &
+                                       SpcCoeff_SetZeeman
+  USE SpcCoeff_netCDF_IO       , ONLY: SpcCoeff_netCDF_WriteFile
+  USE PtrArr_Define            , ONLY: PtrArr_type, &
+                                       PtrArr_Associated, &
+                                       PtrArr_Destroy   , &
+                                       PtrArr_Create
+  USE oSRF_Define              , ONLY: oSRF_type, &
+                                       oSRF_Destroy , &
+                                       oSRF_GetValue, &
+                                       oSRF_Convolve, &
+                                       oSRF_IsFrequencyGHz
   USE oSRF_File_Define         , ONLY: oSRF_File_type, &
                                        oSRF_File_GetValue, &
-                                       oSRF_File_Read, &
+                                       oSRF_File_GetFrom , &
+                                       oSRF_File_Read    , &
                                        oSRF_File_Destroy
-  USE Integrate_Utility        , ONLY: Integral
-
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -73,578 +69,325 @@ PROGRAM Create_SpcCoeff
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SpcCoeff'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
-
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
-  
   ! Cosmic background temperature
-  REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253
+  REAL(fp), PARAMETER :: COSMIC_BACKGROUND_TEMPERATURE = 2.7253_fp
+  ! Coefficient dimensions
+  INTEGER, PARAMETER :: N_PLANCK_COEFFS = 2
+  INTEGER, PARAMETER :: N_POLYCHROMATIC_COEFFS = 2
+
 
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
-  CHARACTER(256) :: SensorInfo_Filename
-  CHARACTER(256) :: oSRF_Filename
-  CHARACTER(256) :: Solar_Filename
-  CHARACTER(256) :: SpcCoeff_Filename
-  CHARACTER(256) :: ASCII_Filename
-  CHARACTER(256) :: AntCorr_Filename
-  CHARACTER(256) :: MW_SensorData_History
-  INTEGER :: ASCII_FileID
-  INTEGER :: Error_Status
-  INTEGER :: Allocate_Status
-  INTEGER :: IO_Status
+  CHARACTER(256) :: msg
+  CHARACTER(256) :: osrf_filename
+  CHARACTER(256) :: solar_filename
+  CHARACTER(256) :: spccoeff_filename
+  CHARACTER(20)  :: sensor_id
+  CHARACTER(2000) :: comment               = ''
+  CHARACTER(2000) :: osrf_history          = ''
+  CHARACTER(2000) :: osrf_comment          = ''
+  CHARACTER(2000) :: solar_history         = ''
+  CHARACTER(2000) :: solar_comment         = ''
+  CHARACTER(2000) :: mw_sensordata_history = ''
+  INTEGER :: err_stat
+  INTEGER :: sensor_type     
+  INTEGER :: wmo_satellite_id, wmo_sensor_id
+  INTEGER :: n_channels, n_points
+  INTEGER :: channel      
+  INTEGER :: idx_f1, idx_f2
   INTEGER :: l
-  INTEGER :: n, b
-  INTEGER :: n_FOVs
+  INTEGER :: n_coeffs
   INTEGER :: SpcCoeff_File_Version
-  CHARACTER( 256) :: Title
-  CHARACTER(2000) :: oSRF_History, Solar_History, Solar_Comment
-  CHARACTER(2000) :: AntCorr_Comment, AntCorr_History
-  CHARACTER(2000) :: Comment
-  REAL(fp), ALLOCATABLE :: Solar_Derivative(:)
-  REAL(fp), ALLOCATABLE, TARGET :: Spectrum(:)
-  REAL(fp), POINTER             :: Irradiance(:) => NULL()
-  INTEGER :: n_Sensors
-  TYPE(SensorInfo_type)      :: SensorInfo
-  TYPE(SensorInfo_List_type) :: SensorInfo_List
-  TYPE(oSRF_File_type)       :: oSRF_File
-  TYPE(Solar_type)           :: Solar
-  TYPE(SpcCoeff_type)        :: SpcCoeff
-  TYPE(MW_SensorData_type)   :: MW_SensorData
-  TYPE(AntCorr_type)         :: AntCorr
+  REAL(fp) :: f0, f1, f2
+  REAL(fp) :: df_osrf, df_solar
+  REAL(fp) :: planck_coeffs(N_PLANCK_COEFFS)
+  REAL(fp) :: polychromatic_coeffs(N_POLYCHROMATIC_COEFFS)
+  TYPE(PtrArr_type)        :: solar_irradiance(1)
+  TYPE(oSRF_File_type)     :: osrf_file
+  TYPE(oSRF_type)          :: osrf
+  TYPE(Solar_type)         :: solar
+  TYPE(SpcCoeff_type)      :: spccoeff
+  TYPE(MW_SensorData_type) :: mw_sensordata
 
   ! Program header
-  ! --------------
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to create the SpcCoeff '//&
                        'files from the sensor oSRF data files.', &
                        '$Revision$' )
 
+
   ! Get user inputs
-  ! ---------------
-  ! The solar filename
-  WRITE( *,FMT='(/5x,"Enter a Solar filename: ")',ADVANCE='NO' )
-  READ( *,FMT='(a)' ) Solar_Filename
-  Solar_Filename = ADJUSTL(Solar_Filename)
-  
-  ! The SensorInfo filename and data
-  WRITE( *,FMT='(/5x,"Enter a SensorInfo filename: ")',ADVANCE='NO' )
-  READ( *,FMT='(a)' ) SensorInfo_Filename
-  SensorInfo_Filename = ADJUSTL(SensorInfo_Filename)
-
-  Error_Status = Read_SensorInfo( SensorInfo_Filename, &
-                                  SensorInfo_List    , &
-                                  Quiet=SET            )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error reading SensorInfo file '//&
-                          TRIM(SensorInfo_Filename), &
-                          FAILURE )
-    STOP
+  ! ...The spectral response function data filename
+  WRITE( *,FMT='(/5x,"Enter the oSRF netCDF filename: ")',ADVANCE='NO' )
+  READ( *,FMT='(a)' ) oSRF_Filename
+  oSRF_Filename = ADJUSTL(oSRF_Filename)
+  IF ( .NOT. File_Exists( oSRF_Filename ) ) THEN
+    msg = 'oSRF file '//TRIM(oSRF_Filename)//' not found.'
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-
-  n_Sensors = Count_SensorInfo_Nodes( SensorInfo_List )
-  IF ( n_Sensors < 1 ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'SensorInfo_List is empty.', &
-                          FAILURE )
-    STOP
-  END IF
-
-  ! The SpcCoeff version
-  WRITE( *,FMT='(/5x,"Default SpcCoeff file version is: ",i0, &
-               &".  Enter value: ")', &
-           ADVANCE='NO' ) SpcCoeff%Version
+  ! ...The SpcCoeff version
+  WRITE( *,FMT='(/5x,"Default SpcCoeff version is: ",i0,". Enter value: ")',ADVANCE='NO' ) SpcCoeff%Version
   READ( *,* ) SpcCoeff_File_Version
   IF ( SpcCoeff_File_Version < SpcCoeff%Version ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid version number specified. Using default.', &
-                          INFORMATION )
+    msg = 'Invalid version number specified. Using default.'
+    CALL Display_Message( PROGRAM_NAME, msg, INFORMATION )
     SpcCoeff_File_Version = SpcCoeff%Version
   END IF
 
-  ! Read the netCDF Solar file
-  ! --------------------------
-  WRITE( *,'(/5x,"Reading the solar irradiance data file ",a,"...")' ) &
-            TRIM(Solar_Filename)
 
-  ! Inquire the file to get the history attribute
-  Error_Status = Inquire_Solar_netCDF( Solar_Filename, History=Solar_History )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error inquiring netCDF Solar file '//TRIM(Solar_Filename), &
-                          Error_Status )
-    STOP
+  ! Read the spectral response function data file
+  err_stat = oSRF_File_Read( oSRF_File, oSRF_Filename )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error reading oSRF data from '//TRIM(oSRF_Filename)
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  
-  Solar_Comment = ' '
-  Solar_History = ' '
-
-  ! Read the file
-  Error_Status = Read_Solar_netCDF( Solar_Filename         , &
-                                    Solar                  , &
-                                    Comment = Solar_Comment, &
-                                    History = Solar_History  )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error reading netCDF Solar file '//TRIM(Solar_Filename), &
-                          Error_Status )
-    STOP
+  ! ...Retrieve the oSRF file attributes
+  err_stat = oSRF_File_GetValue( &
+    oSRF_File                          , &
+    n_Channels       = n_channels      , &
+    Sensor_Id        = sensor_id       , &
+    WMO_Satellite_Id = wmo_satellite_id, &
+    WMO_Sensor_Id    = wmo_sensor_id   , &
+    Sensor_Type      = sensor_type     , &
+    History          = osrf_history    , &
+    Comment          = osrf_comment      )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error retrieving attributes from'//TRIM(oSRF_Filename)
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
 
-  ! Compute the derivatives for
-  ! solar spectrum interpolation
-  ! ----------------------------
-  ! Allocate the solar derivative array
-  ALLOCATE( Solar_Derivative( Solar%n_Frequencies ),STAT=Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE( Message,'("Error allocating solar array for interpolation. STAT = ",i0)' ) &
-                    Allocate_Status
-    CALL Display_Message( PROGRAM_NAME,  &
-                          TRIM(Message), &
-                          FAILURE        )
-    STOP
-  END IF
-  
-  ! Initialise the spline
-  Error_Status = Spline_Initialize( Solar%Frequency , &
-                                    Solar%Irradiance, &
-                                    Solar_Derivative  )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error computing solar irradiance derivatives.', &
-                          Error_Status )
-    STOP
-  END IF
-  
-  ! Begin the main sensor loop
-  ! ---------------------------
-  Sensor_Loop: DO n = 1, n_Sensors
-    
-    ! Get the current SensorInfo data from the list
-    ! ---------------------------------------------
-    Error_Status = GetFrom_SensorInfo_List( SensorInfo_List, &
-                                            n,               &
-                                            SensorInfo       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message,'("Error retrieving SensorInfo data for sensor # ",i0)' ) n
-      CALL Display_Message( PROGRAM_NAME,  &
-                            TRIM(Message), &
-                            FAILURE        )
-      STOP
-    END IF
-    
-    ! Only operate on sensors with SRF file present
-    ! ---------------------------------------------
-    oSRF_Filename = TRIM(SensorInfo%Sensor_ID)//'.osrf.nc'
-    IF ( .NOT. File_Exists( oSRF_Filename ) ) CYCLE Sensor_Loop
-    
-    ! Output an info message
-    ! ----------------------
-    WRITE( *,'(//5x,"Creating the SpcCoeff data file for ",a)' ) &
-              TRIM(SensorInfo%Sensor_Id)
 
-    ! Read MW_SENSORDATA AND ANTCORR data for microwave
-    ! -------------------------------------------------
-    IF(SensorInfo%Sensor_Type == MICROWAVE_SENSOR) THEN
-      
-      ! Load the current microwave sensor data
-      ! --------------------------------------
-      Error_Status = Load_MW_SensorData( MW_SensorData,                     &
-                                         Sensor_ID = SensorInfo%Sensor_ID,  &
-                                         RCS_Id    = MW_SensorData_History  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME,                        &
-                              'Error loading MW sensor data for '//&
-                              TRIM(SensorInfo%Sensor_Id),          &
-                              FAILURE                              )
-        STOP
+  ! Allocate the SpcCoeff structure                                                   
+  CALL SpcCoeff_Create( SpcCoeff, n_channels )
+  IF ( .NOT. SpcCoeff_Associated( SpcCoeff ) ) THEN
+    msg = 'Error allocating SpcCoeff data structure.'
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP                      
+  END IF
+  ! ...Copy over the version and sensor id information
+  SpcCoeff%Version          = spccoeff_file_version
+  SpcCoeff%Sensor_Id        = sensor_id
+  SpcCoeff%Sensor_Type      = sensor_type
+  SpcCoeff%WMO_Satellite_ID = wmo_satellite_id
+  SpcCoeff%WMO_Sensor_ID    = wmo_sensor_id
+
+
+  ! Set some sensor dependent stuff
+  SELECT CASE( sensor_type )
+    CASE( MICROWAVE_SENSOR )
+      err_stat = MW_SensorData_Load( MW_SensorData, Sensor_Id )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading MW sensor data for '//TRIM(sensor_id)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
-             
-      ! Modify GAtts for concatenation
+      SpcCoeff%Polarization(l) = mw_sensordata%Polarization(l)
+      CALL MW_SensorData_DefineVersion( MW_SensorData_History )
       MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
 
-      ! Load antenna correction data if required
-      ! ----------------------------------------
-      AntCorr_Filename = TRIM(SensorInfo%Sensor_ID)//'.AntCorr.nc'
-      AntCorr_History  = ' '
-      AntCorr_Comment  = ' '
-      n_FOVs = 0
-      IF ( File_Exists(AntCorr_Filename) ) THEN
-        
-        ! Read the antenna correction data
-        Error_Status = Read_AntCorr_netCDF( AntCorr_Filename,        &
-                                            AntCorr,                 &
-                                            History=AntCorr_History, &
-                                            Comment=AntCorr_Comment  )
-        IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME,                                  &
-                                'Error loading antenna correction data for '// &
-                                TRIM(SensorInfo%Sensor_Id),                    &
-                                FAILURE                                        )
-          STOP
-        END IF
-        
-        ! Modify GAtts for concatenation
-        AntCorr_History = '; AntCorr: '//TRIM(AntCorr_History)
-        AntCorr_Comment = '; AntCorr: '//TRIM(AntCorr_Comment)
-        
-        ! Set the FOV dimension for the SpcCoeff allocation
-        n_FOVs = AntCorr%n_FOVs
-                
-      END IF      
-      
-      ! Allocate the SpcCoeff structure                                                   
-      ! -------------------------------                                                   
-      Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff, n_FOVs=n_FOVs )  
-      IF ( Error_Status /= SUCCESS ) THEN                                                 
-        CALL Display_Message( PROGRAM_NAME,                                &              
-                              'Error allocating SpcCoeff data structure.', &              
-                              FAILURE                                      )              
-        STOP                                                                              
-      END IF 
-      
-      ! The antenna correction data
-      IF ( SpcCoeff%AC_Present ) THEN
-        ! Copy it
-        Error_Status = Assign_AntCorr( AntCorr, SpcCoeff%AC )
-        IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME,                                                         & 
-                                'Error copying antenna correction data into SpcCoeff structure for '//&
-                                TRIM(SensorInfo%Sensor_Id),                                           &
-                                FAILURE                                                               )
-          STOP
-        END IF
-        
-        ! Destroy it
-        Error_Status = Destroy_AntCorr( AntCorr )
-        IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME, &
-                                'Error destroying AntCorr structure for '//&
-                                TRIM(SensorInfo%Sensor_Id), &
-                                FAILURE )
-          STOP
-        END IF
-      END IF
-                                                                                   
-    ELSE 
-          
-      ! Allocate the SpcCoeff structure                                      
-      ! -------------------------------                                      
-      Error_Status = Allocate_SpcCoeff( SensorInfo%n_Channels, SpcCoeff)     
-      IF ( Error_Status /= SUCCESS ) THEN                                    
-        CALL Display_Message( PROGRAM_NAME,                                & 
-                              'Error allocating SpcCoeff data structure.', & 
-                              FAILURE                                      ) 
-        STOP                                                                   
-      END IF
-    END IF
-      
-    ! Read the current oSRF data
-    ! --------------------------
-    Error_Status = oSRF_File_Read( oSRF_File   , &  ! Output
-                                   oSRF_Filename )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error occured when reading the oSRF_File', &
-                            FAILURE )
-      STOP
-    END IF
-    
-    ! Get the title history and comment from oSRF file
-    ! ------------------------------------------------
-    Error_Status = oSRF_File_GetValue( oSRF_File             , & ! Input
-                                       Title   = Title       , & ! Optional output
-                                       History = oSRF_History, & ! Optional output
-                                       Comment = Comment       ) ! Optional output
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error getting title, history and/or '//&
-                            'comment from '//TRIM(oSRF_Filename), &
-                            Error_Status )
-      STOP
-    END IF
-              
-    ! Assign fields that are independent of sensor-type 
-    ! -------------------------------------------------
-    SpcCoeff%Version          = SpcCoeff_File_Version
-    SpcCoeff%Sensor_Id        = SensorInfo%Sensor_Id
-    SpcCoeff%Sensor_Type      = SensorInfo%Sensor_Type
-    SpcCoeff%WMO_Satellite_ID = SensorInfo%WMO_Satellite_ID
-    SpcCoeff%WMO_Sensor_ID    = SensorInfo%WMO_Sensor_ID
-    SpcCoeff%Sensor_Channel   = SensorInfo%Sensor_Channel
-    
-    ! Initialise
-    SpcCoeff%Solar_Irradiance = ZERO
-    SpcCoeff%Cosmic_Background_Radiance = ZERO
-    CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,SOLAR_FLAG)
-    CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,ZEEMAN_FLAG)
-    
-    ! Set Polarization Status
-    IF (SpcCoeff%Sensor_Type==MICROWAVE_SENSOR) THEN 
-      SpcCoeff%Polarization = MW_SensorData%Polarization
-    ELSE
+    CASE( INFRARED_SENSOR )
       SpcCoeff%Polarization = UNPOLARIZED
-    ENDIF 
-     
-    ! Open file for band correction fit output
-    ! ----------------------------------------
-    ASCII_Filename = TRIM(SensorInfo%Sensor_Id)//'.SpcCoeff.asc'
-    ASCII_FileID = Get_Lun()
-    IF ( ASCII_FileID < 0 ) THEN
-      CALL Display_Message( PROGRAM_NAME,                                      &
-                            'Error obtaining file unit number for output to '//&
-                            TRIM(ASCII_Filename),                              &
-                            FAILURE                                            )
-      STOP
-    END IF
-    OPEN( ASCII_FileID, FILE  =TRIM(ASCII_Filename), &
-                        ACCESS='SEQUENTIAL',         &
-                        FORM  ='FORMATTED',          &
-                        STATUS='REPLACE',            &
-                        ACTION='WRITE',              &
-                        IOSTAT=IO_Status             )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error opening statistics output file ",a,". STAT = ",i0)' ) &
-                     TRIM(ASCII_Filename), IO_Status
-      CALL Display_Message( PROGRAM_NAME, &
-                            TRIM(Message), &
-                            FAILURE )
-      STOP
-    END IF
-    WRITE( ASCII_FileID,'(5x,"SRF data from file: ",a)' ) TRIM(oSRF_Filename)
-
-    ! Begin loop over channels
-    ! ------------------------
-    WRITE( *,'(/,"    CH        V0            ",                              &
-                &"FK1            FK2            BC1            BC2          ",&
-                &"CBR            F(Solar)       POLARIZATION")'               )
-
-    Channel_Loop: DO l = 1, SpcCoeff%n_Channels
-        
-      WRITE( *,FMT='(2x,i4)',ADVANCE='NO') SpcCoeff%Sensor_Channel(l) 
-         
-      ! Set the SRF centroid and determine the Planck coefficients
-      ! ----------------------------------------------------------
-      SELECT CASE (SpcCoeff%Sensor_Type)
-        CASE (MICROWAVE_SENSOR)
-          SpcCoeff%Frequency(l)  = oSRF_File%oSRF(l)%f0 
-          SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( SpcCoeff%Frequency(l) )
-          DO b = 1, oSRF_File%oSRF(l)%n_Bands
-            oSRF_File%oSRF(l)%Frequency(b)%Arr = GHz_to_inverse_cm( oSRF_File%oSRF(l)%Frequency(b)%Arr )
-          END DO         
-        CASE (INFRARED_SENSOR, VISIBLE_SENSOR)        
-          SpcCoeff%Wavenumber(l) = oSRF_File%oSRF(l)%f0
-          SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber(l) )
-      END SELECT
-      
-      ! Assign the coefficients
-      ! -----------------------
-      
-      ! Planck Coefficients
-      SpcCoeff%Planck_C1(l) = oSRF_File%oSRF(l)%Planck_Coeffs(1)
-      SpcCoeff%Planck_C2(l) = oSRF_File%oSRF(l)%Planck_Coeffs(2)
-      
-      WRITE( *,FMT='(3(2x,es13.6))',ADVANCE='NO' ) SpcCoeff%Wavenumber(l), &
-                                                   SpcCoeff%Planck_C1(l), &
-                                                   SpcCoeff%Planck_C2(l)
-      ! Polychromatic correction coefficients
-      SpcCoeff%Band_C1(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(1)
-      SpcCoeff%Band_C2(l) = oSRF_File%oSRF(l)%Polychromatic_Coeffs(2)
-      
-      ! Output fit coefficients to screen
-      WRITE( *,FMT='(2(2x,es13.6))',ADVANCE='NO' ) SpcCoeff%Band_C1(l), &
-                                                   SpcCoeff%Band_C2(l)
-        
-      IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
-      
-        ! Set the zeeman flag based on MW_SensorData
-        IF ( MW_SensorData%Zeeman(l) == SET ) &
-        CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),ZEEMAN_FLAG)      
-        
-        ! Compute the cosmic background radiance
-        ! --------------------------------------
-        Error_Status = Planck_Radiance( SpcCoeff%Wavenumber(l),                &
-                                        COSMIC_BACKGROUND_TEMPERATURE,         &
-                                        SpcCoeff%Cosmic_Background_Radiance(l) )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( *,* )
-          WRITE( Message,'("Error computing cosmic background radiance for ",a,&
-                          &" channel ", i0,".")' ) &
-                          TRIM(SensorInfo%Sensor_Id ), &
-                          SpcCoeff%Sensor_Channel(l)
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF      
-        
+      CALL SpcCoeff_SetSolar( SpcCoeff )
+      IF ( sensor_id(1:4) == 'airs' ) THEN
+        solar_filename = 'dF_0.0025.Solar.nc'
       ELSE
-        
-        ! Set the solar channel flag
-        CALL SetFlag_SpcCoeff(SpcCoeff%Channel_Flag(l),SOLAR_FLAG)
+        solar_filename = 'dF_0.1000.Solar.nc'
+      END IF
 
-        ! Allocate the radiance/irradiance spectrum workarray
-        ! ---------------------------------------------------
-        ALLOCATE( Spectrum( oSRF_File%oSRF(l)%n_Points(1) ),STAT=Allocate_Status )
-        IF ( Allocate_Status /= 0 ) THEN
-          WRITE( Message,'("Error allocating spectrum array. STAT = ",i0)' ) &
-                         Allocate_Status
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF
-            
-        ! Interpolate the solar spectrum to the SRF spacing
-        Irradiance => Spectrum
-        Error_Status = Spline_Interpolate( Solar%Frequency                    , &  ! X
-                                           Solar%Irradiance                   , &  ! Y
-                                           oSRF_File%oSRF(l)%Frequency(1)%Arr , &  ! Xint
-                                           Irradiance                         , &  ! Yint
-                                           y2=Solar_Derivative                  )
-        IF ( Error_Status /= SUCCESS ) THEN
-          WRITE( Message,'("Error interpolating solar spectrum for SRF channel ",i0)' ) &
-                         oSRF_File%oSRF(l)%Channel
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF
-             
-        ! via integration
-        Error_Status = Integral( oSRF_File%oSRF(l)%Frequency(1)%Arr             , &
-                                 oSRF_File%oSRF(l)%Response(1)%Arr * Irradiance , &
-                                 SpcCoeff%Solar_Irradiance(l)                     )
-        IF ( Error_Status /= SUCCESS ) THEN
-          CALL Display_Message( PROGRAM_NAME, &
-                                'Error occurred convoling solar irradiance with SRF.', &
-                                FAILURE )
-          STOP
-        END IF
-        
-        SpcCoeff%Solar_Irradiance(l) = SpcCoeff%Solar_Irradiance(l)/oSRF_File%oSRF(l)%Integral
-        NULLIFY( Irradiance )
-        
-        ! Deallocate the radiance/irradiance spectrum workarray
-        ! -----------------------------------------------------
-        DEALLOCATE( Spectrum, STAT=Allocate_Status )
-        IF ( Allocate_Status /= 0 ) THEN
-          WRITE( Message,'("Error deallocating spectrum array. STAT = ",i0)' ) &
-                          Allocate_Status
-          CALL Display_Message( PROGRAM_NAME, &
-                                TRIM(Message), &
-                                FAILURE )
-          STOP
-        END IF
-          
-      ENDIF
+    CASE( VISIBLE_SENSOR )
+      SpcCoeff%Polarization = UNPOLARIZED
+      CALL SpcCoeff_SetSolar( SpcCoeff )
+      solar_filename = 'dF_0.1000.Solar.nc'
+
+    CASE DEFAULT
+      msg = 'Can only handle MW, IR, and VIS sensors so far.'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+  END SELECT
+    
+    
+  ! Read the solar irradiance data if required
+  IF ( SpcCoeff_IsSolar( SpcCoeff ) ) THEN
+    err_stat = Solar_ReadFile( &
+      solar_filename         , &
+      solar                  , &
+      Comment = solar_comment, &
+      History = solar_history  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading solar data file '//TRIM(solar_filename)
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+  END IF
+
+
+  ! Begin loop over channels
+  Channel_Loop: DO l = 1, SpcCoeff%n_Channels
+
+
+    ! Get the current oSRF object from the file container
+    err_stat = oSRF_File_GetFrom( &
+      osrf_file, &
+      osrf     , &
+      pos = l    )
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error retrieving oSRF #",i0," from oSRF_File container")') l
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Retrieve information from the oSRF object
+    err_stat = oSRF_GetValue( &
+      oSRF, &
+      Sensor_Id              = sensor_id       , &
+      WMO_Satellite_Id       = wmo_satellite_id, &
+      WMO_Sensor_Id          = wmo_sensor_id   , &
+      Sensor_Type            = sensor_type     , &
+      Channel                = channel         , &
+      f0                     = f0              , &
+      Planck_Coeffs          = planck_coeffs   , &
+      n_Polychromatic_Coeffs = n_coeffs          )
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error retrieving oSRF #",i0," attributes")') l
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...Check that we can handle the number of polychromatic coefficients
+    IF ( n_coeffs /= N_POLYCHROMATIC_COEFFS ) THEN
+      WRITE( msg,'("The number of polychromatic correction coefficients for oSRF #",i0,&
+                  &", ",i0,", is different from that for the SpcCoeff file, ",i0)' ) &
+                  l, n_coeffs, N_POLYCHROMATIC_COEFFS
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...Get the polychromatic coefficients
+    err_stat = oSRF_GetValue( &
+      oSRF, &
+      Polychromatic_Coeffs = polychromatic_coeffs )    
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error retrieving oSRF #",i0," polychromatic correction coefficients")') l
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Double-check the sensor information is consistent
+    IF ( TRIM(SpcCoeff%Sensor_Id)  /= TRIM(sensor_id)  .OR. &
+         SpcCoeff%Sensor_Type      /= sensor_type      .OR. &
+         SpcCoeff%WMO_Satellite_ID /= wmo_satellite_id .OR. &
+         SpcCoeff%WMO_Sensor_ID    /= wmo_sensor_id         ) THEN
+      WRITE( msg,'("oSRF #",i0," sensor information different from oSRF_File object")') l
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Assign (ostensibly) sensor independent data
+    SpcCoeff%Sensor_Channel(l) = channel
+    ! ...Frequency information
+    IF ( oSRF_IsFrequencyGHz( oSRF ) ) THEN
+      SpcCoeff%Frequency(l)  = f0 
+      SpcCoeff%Wavenumber(l) = GHz_to_inverse_cm( f0 )
+    ELSE
+      SpcCoeff%Frequency(l)  = Inverse_cm_to_GHz( f0 )
+      SpcCoeff%Wavenumber(l) = f0
+    END IF
+    ! ...Planck coefficients
+    SpcCoeff%Planck_C1(l) = planck_coeffs(1)
+    SpcCoeff%Planck_C2(l) = planck_coeffs(2)
+    ! ...Polychromatic correction coefficients
+    SpcCoeff%Band_C1(l) = polychromatic_coeffs(1)
+    SpcCoeff%Band_C2(l) = polychromatic_coeffs(2)
+    ! ...Set the microwave specific items
+    IF ( SpcCoeff_IsMicrowaveSensor( SpcCoeff ) ) THEN
+      ! The Zeeman flag
+      IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff)
+      ! The CBR
+      err_stat = Planck_Radiance( &
+        SpcCoeff%Wavenumber(l)                , &
+        COSMIC_BACKGROUND_TEMPERATURE         , &
+        SpcCoeff%Cosmic_Background_Radiance(l)  )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error computing CBR for ",a," channel ",i0)' ) TRIM(sensor_id), channel
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+    END IF
+    
+    
+    ! Add the solar information to the SpcCoeff if necessary
+    Add_Solar: IF ( SpcCoeff_IsSolar( SpcCoeff ) ) THEN
+      ! ...Get the number of oSRF points, the begin and end frequencies
+      err_stat = oSRF_GetValue( oSRF, n_Points = n_points, f1 = f1, f2 = f2 )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error retrieving oSRF #",i0," n_Points, f1, and f2")') l
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      ! ...Compute the frequency intervals
+      df_osrf  = (f2-f1)/REAL(n_points-1,fp)
+      df_solar = (solar%f2-solar%f1)/REAL(solar%n_frequencies-1,fp)
+      IF ( ABS(df_osrf-df_solar) > 1.0e-06_fp ) THEN
+        WRITE( msg,'("df values for oSRF(",es23.16,") ",&
+                             &"and Solar(",es23.16,") are different")' ) df_osrf, df_solar
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      ! ...Find the indices of the solar spectrum corresponding to the oSRF begin and end frequencies
+      idx_f1 = NINT((f1 - solar%f1)/df_solar) + 1
+      idx_f2 = NINT((f2 - solar%f1)/df_solar) + 1
+      IF ( (idx_f1 < 1 .OR. idx_f1 > solar%n_Frequencies) .OR. &
+           (idx_f2 < 1 .OR. idx_f2 > solar%n_Frequencies) ) THEN
+        msg = 'Solar indices for oSRF end points are invalid'
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      IF ( (idx_f2 - idx_f1 + 1) /= n_points ) THEN
+        msg = 'No. of solar points corresponding to oSRF are different'
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      ! ...Allocate the solar irradiance pointer array
+      CALL PtrArr_Create( solar_irradiance, n_points )
+      IF ( .NOT. ALL(PtrArr_Associated( solar_irradiance )) ) THEN
+        WRITE( msg,'("Error allocating oSRF #",i0," solar irradiance PtrArr")' ) l
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      ! ...Convolve the solar spectrum with the oSRF
+      solar_irradiance(1)%Arr = solar%irradiance(idx_f1:idx_f2)
+      err_stat = oSRF_Convolve( &
+        osrf                        , &
+        solar_irradiance            , &
+        spccoeff%Solar_Irradiance(l)  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error occurred convolving solar irradiance'
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      ! ...Cleanup
+      CALL PtrArr_Destroy( solar_irradiance )
+    END IF Add_Solar
+
+
+    ! Destroy current oSRF object
+    CALL oSRF_Destroy( osrf )
       
-      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Cosmic_Background_Radiance(l)
-      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
-      WRITE( *,FMT='(2x,es13.6)' ) SpcCoeff%Solar_Irradiance(l)
-      
-    END DO Channel_Loop
+  END DO Channel_Loop
 
-    ! Close the ASCII output file
-    ! ---------------------------
-    CLOSE( ASCII_FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error closing ASCII statistics file '//&
-                            TRIM(ASCII_Filename), &
-                            WARNING )
-    END IF
 
-    ! Write the SpcCoeff data file
-    ! ----------------------------
-    SpcCoeff_Filename = TRIM(SensorInfo%Sensor_ID)//'.SpcCoeff.nc'
-    
-    Error_Status = Write_SpcCoeff_netCDF( TRIM(SpcCoeff_Filename), &
-                                          SpcCoeff, &
-                                          Title = 'Spectral coefficients for '//&
-                                                  TRIM(SensorInfo%Sensor_Id)//&
-                                                  ' derived from SRF data file '//&
-                                                  TRIM(oSRF_Filename)//&
-                                                  ' and solar data file '//&
-                                                  TRIM(Solar_Filename), &
-                                          History = PROGRAM_RCS_ID//&
-                                                    '; '//TRIM(oSRF_History)//&
-                                                    '; '//TRIM(Solar_History), &
-                                          Comment = TRIM(Comment)//&
-                                                    '; Solar Information'//&
-                                                    ': '//TRIM(Solar_Comment) )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error writing netCDF SpcCoeff data file '//&
-                            TRIM(SpcCoeff_Filename), &
-                            FAILURE )
-      STOP
-    END IF
-
-    ! Destroy the current sensor data structures
-    ! ------------------------------------------
-    Error_Status = Destroy_SpcCoeff( SpcCoeff )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying SpcCoeff data structure for '//&
-                            TRIM(oSRF_Filename)//' processing.', &
-                            FAILURE )
-      STOP
-    END IF
-
-    Error_Status = Destroy_SensorInfo( SensorInfo )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying SensorInfo data structure.', &
-                            FAILURE )
-      STOP
-    END IF
-    
-    ! For microwave sensors destroy MW_SensorData structure
-    IF(SpcCoeff%Sensor_Type == MICROWAVE_SENSOR) THEN
-      Error_Status = Destroy_MW_SensorData( MW_SensorData )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( PROGRAM_NAME, &
-                              'Error destroying MW_SensorData data structure.', &
-                              WARNING )
-      END IF 
-    END IF 
-    
-    ! Destroy current oSRF_File
-    ! -------------------------
-    CALL oSRF_File_Destroy(oSRF_File)
-    
-  END DO Sensor_loop
-
-  ! Destroy the sensor independent data arrays/structures
-  ! -----------------------------------------------------
-  DEALLOCATE( Solar_Derivative, STAT=Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE( Message,'("Error deallocating solar array for interpolation. STAT = ",i0)' ) &
-                    Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          WARNING )
+  ! Write the SpcCoeff data file
+  spccoeff_filename = TRIM(sensor_id)//'.SpcCoeff.nc'
+  err_stat = SpcCoeff_netCDF_WriteFile( &
+    spccoeff_filename, &
+    spccoeff, &
+    Title   = 'Spectral coefficients for '//TRIM(sensor_id)//&
+              ' derived from SRF data file '//TRIM(osrf_filename)//&
+              ' and solar data file '//TRIM(solar_filename), &
+    History = PROGRAM_VERSION_ID//'; '//TRIM(osrf_history)//'; '//TRIM(solar_history), &
+    Comment = TRIM(comment)//&
+              '; oSRF Information: '//TRIM(osrf_comment)//&
+              '; Solar Information: '//TRIM(solar_comment) )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error writing netCDF SpcCoeff data file '//TRIM(spccoeff_filename)
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
 
-  Error_Status = Destroy_Solar(Solar)
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying Solar data structure.', &
-                          WARNING )
-  END IF
 
-  ! Destroy the SensorInfo linked list
-  Error_Status = Destroy_SensorInfo_List( SensorInfo_List )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying SensorInfo linked list.', &
-                          WARNING )
-  END IF
+  ! Clean up
+  CALL SpcCoeff_Destroy( spccoeff )
+  CALL oSRF_File_Destroy( osrf_file )
+  CALL Solar_Destroy( solar )
+  CALL MW_SensorData_Destroy( mw_sensordata )
 
 END PROGRAM Create_SpcCoeff

@@ -6,24 +6,9 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:   Paul van Delst, CIMSS/SSEC, 14-Oct-1999
-!                     paul.vandelst@ssec.wisc.edu
+!       Written by:   Paul van Delst, 14-Oct-1999
+!                     paul.vandelst@noaa.gov
 !
-!  Copyright (C) 1999, 2001, 2003, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 MODULE Planck_Functions
 
@@ -130,8 +115,7 @@ CONTAINS
 !       Error_Status = Planck_Radiance( x                                , & ! Input
 !                                       Temperature                      , & ! Input
 !                                       Radiance                         , & ! Output
-!                                       Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                       Message_Log     =Message_Log       )  ! Error messaging
+!                                       Wavelength_Units=Wavelength_Units  ) ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       x:                  Spectral ordinate.
@@ -187,15 +171,6 @@ CONTAINS
 !                                    Ouptut Radiance units are W/(m2.sr.micron)
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -261,15 +236,13 @@ CONTAINS
   FUNCTION scalar_Planck_Radiance( x               , &  ! Input
                                    Temperature     , &  ! Input
                                    Radiance        , &  ! Output
-                                   Wavelength_Units, &  ! Optional input
-                                   Message_Log     ) &  ! Error messaging
+                                   Wavelength_Units) &  ! Optional input
                                  RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Temperature
     REAL(fp),               INTENT(OUT) :: Radiance
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -329,15 +302,13 @@ CONTAINS
   FUNCTION R1_x_S_t_Planck_Radiance( x               , &  ! Input
                                      Temperature     , &  ! Input
                                      Radiance        , &  ! Output
-                                     Wavelength_Units, &  ! Optional input
-                                     Message_Log     ) &  ! Error messaging
+                                     Wavelength_Units) &  ! Optional input
                                    RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)         ! N
     REAL(fp),               INTENT(IN)  :: Temperature
     REAL(fp),               INTENT(OUT) :: Radiance(:)  ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result
     INTEGER :: Error_Status
     ! Local parameters
@@ -352,8 +323,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X input and Radiance output.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
     
@@ -361,8 +331,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_Radiance( x(i), Temperature, Radiance(i), &
-                                             Wavelength_Units=Wavelength_Units, &
-                                             Message_Log     =Message_Log )
+                                             Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -381,15 +350,13 @@ CONTAINS
   FUNCTION S_x_R1_t_Planck_Radiance( x               , &  ! Input
                                      Temperature     , &  ! Input
                                      Radiance        , &  ! Output
-                                     Wavelength_Units, &  ! Optional input
-                                     Message_Log     ) &  ! Error messaging
+                                     Wavelength_Units) &  ! Optional input
                                    RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Temperature(:)  ! K
     REAL(fp),               INTENT(OUT) :: Radiance(:)     ! K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result
     INTEGER :: Error_Status
     ! Local parameters
@@ -405,8 +372,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of Temperature and Radiance arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -416,8 +382,7 @@ CONTAINS
       Error_Status = scalar_Planck_Radiance( x, &
                                              Temperature(i), &
                                              Radiance(i), &
-                                             Wavelength_Units=Wavelength_Units, &
-                                             Message_Log     =Message_Log )
+                                             Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -436,15 +401,13 @@ CONTAINS
   FUNCTION R1_xt_Planck_Radiance( x               , &  ! Input
                                   Temperature     , &  ! Input
                                   Radiance        , &  ! Output
-                                  Wavelength_Units, &  ! Optional input
-                                  Message_Log     ) &  ! Error messaging
+                                  Wavelength_Units) &  ! Optional input
                                 RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)            ! N
     REAL(fp),               INTENT(IN)  :: Temperature(:)  ! N
     REAL(fp),               INTENT(OUT) :: Radiance(:)     ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result
     INTEGER :: Error_Status
     ! Local parameters
@@ -460,8 +423,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Temperature, and Radiance arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -469,8 +431,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_Radiance( x(i), Temperature(i), Radiance(i), &
-                                             Wavelength_Units=Wavelength_Units, &
-                                             Message_Log     =Message_Log )
+                                             Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -490,15 +451,13 @@ CONTAINS
   FUNCTION R1_x_R2_t_Planck_Radiance( x               , &  ! Input
                                       Temperature     , &  ! Input
                                       Radiance        , &  ! Output
-                                      Wavelength_Units, &  ! Optional input
-                                      Message_Log     ) &  ! Error messaging
+                                      Wavelength_Units) &  ! Optional input
                                     RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)              ! N
     REAL(fp),               INTENT(IN)  :: Temperature(:,:)  ! N x K
     REAL(fp),               INTENT(OUT) :: Radiance(:,:)     ! N x K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result
     INTEGER :: Error_Status
     ! Local parameters
@@ -516,8 +475,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Temperature, and Radiance arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -526,8 +484,7 @@ CONTAINS
     Spectra_Loop: DO j = 1, k
       Frequency_loop: DO i = 1, n
         Error_Status = scalar_Planck_Radiance( x(i), Temperature(i,j), Radiance(i,j), &
-                                               Wavelength_Units=Wavelength_Units, &
-                                               Message_Log     =Message_Log )
+                                               Wavelength_Units=Wavelength_Units )
         IF ( Error_Status /= SUCCESS ) EXIT Spectra_loop
       END DO Frequency_loop
     END DO Spectra_loop
@@ -551,8 +508,7 @@ CONTAINS
 !       Error_Status = Planck_Temperature( x                                , & ! Input
 !                                          Radiance                         , & ! Input
 !                                          Temperature                      , & ! Output
-!                                          Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                          Message_Log     =Message_Log       )  ! Error messaging
+!                                          Wavelength_Units=Wavelength_Units  ) ! Optional input
 !  
 ! INPUT ARGUMENTS:
 !       x:                  Spectral ordinate.
@@ -607,15 +563,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
 !                           The error codes are defined in the Message_Handler module.
@@ -665,10 +612,6 @@ CONTAINS
 !       i.e. W/(m2.um-4) => W/(m2.sr.um-4). Similarly for c2, K.m ->
 !       K.um a multiplier of 1.0e+06 is required.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 16-Jul-1996
-!                       paul.vandelst@ssec.wisc.edu
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -682,15 +625,13 @@ CONTAINS
   FUNCTION scalar_Planck_Temperature( x               , &  ! Input
                                       Radiance        , &  ! Input
                                       Temperature     , &  ! output
-                                      Wavelength_Units, &  ! Optional input
-                                      Message_Log     ) &  ! Error messaging
+                                      Wavelength_Units) &  ! Optional input
                                     RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Radiance
     REAL(fp),               INTENT(OUT) :: Temperature
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -750,15 +691,13 @@ CONTAINS
   FUNCTION R1_x_S_r_Planck_Temperature( x               , &  ! Input
                                         Radiance        , &  ! Input
                                         Temperature     , &  ! output
-                                        Wavelength_Units, &  ! Optional input
-                                        Message_Log     ) &  ! Error messaging
+                                        Wavelength_Units) &  ! Optional input
                                       RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)            ! N
     REAL(fp),               INTENT(IN)  :: Radiance
     REAL(fp),               INTENT(OUT) :: Temperature(:)  ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -773,8 +712,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X and Temperature arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -782,8 +720,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_Temperature( x(i), Radiance, Temperature(i), &
-                                                Wavelength_Units=Wavelength_Units, &
-                                                Message_Log     =Message_Log )
+                                                Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -802,15 +739,13 @@ CONTAINS
   FUNCTION S_x_R1_r_Planck_Temperature( x               , &  ! Input
                                         Radiance        , &  ! Input
                                         Temperature     , &  ! output
-                                        Wavelength_Units, &  ! Optional input
-                                        Message_Log     ) &  ! Error messaging
+                                        Wavelength_Units) &  ! Optional input
                                       RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Radiance(:)     ! K
     REAL(fp),               INTENT(OUT) :: Temperature(:)  ! K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -826,8 +761,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of Radiance and Temperature arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -835,8 +769,7 @@ CONTAINS
     ! ----------------------------
     DO i = 1, k
       Error_Status = scalar_Planck_Temperature( x, Radiance(i), Temperature(i), &
-                                                Wavelength_Units=Wavelength_Units, &
-                                                Message_Log     =Message_Log )
+                                                Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -855,15 +788,13 @@ CONTAINS
   FUNCTION R1_xr_Planck_Temperature( x               , &  ! Input
                                      Radiance        , &  ! Input
                                      Temperature     , &  ! output
-                                     Wavelength_Units, &  ! Optional input
-                                     Message_Log     ) &  ! Error messaging
+                                     Wavelength_Units) &  ! Optional input
                                    RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)            ! N
     REAL(fp),               INTENT(IN)  :: Radiance(:)     ! N
     REAL(fp),               INTENT(OUT) :: Temperature(:)  ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -879,8 +810,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Radiance, and Temperature arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -888,8 +818,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_Temperature( x(i), Radiance(i), Temperature(i), &
-                                                Wavelength_Units=Wavelength_Units, &
-                                                Message_Log     =Message_Log )
+                                                Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -909,15 +838,13 @@ CONTAINS
   FUNCTION R1_x_R2_r_Planck_Temperature( x               , &  ! Input
                                          Radiance        , &  ! Input
                                          Temperature     , &  ! output
-                                         Wavelength_Units, &  ! Optional input
-                                         Message_Log     ) &  ! Error messaging
+                                         Wavelength_Units) &  ! Optional input
                                        RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)              ! N
     REAL(fp),               INTENT(IN)  :: Radiance(:,:)     ! N x K
     REAL(fp),               INTENT(OUT) :: Temperature(:,:)  ! N x K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -935,8 +862,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Radiance, and Temperature arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -945,8 +871,7 @@ CONTAINS
     Spectra_Loop: DO j = 1, k
       Frequency_loop: DO i = 1, n
         Error_Status = scalar_Planck_Temperature( x(i), Radiance(i,j), Temperature(i,j), &
-                                                  Wavelength_Units=Wavelength_Units, &
-                                                  Message_Log     =Message_Log )
+                                                  Wavelength_Units=Wavelength_Units )
         IF ( Error_Status /= SUCCESS ) EXIT Spectra_loop
       END DO Frequency_loop
     END DO Spectra_loop
@@ -969,8 +894,7 @@ CONTAINS
 !       Error_Status = Planck_dBdT( x                                , &  ! Input
 !                                   Temperature                      , &  ! Input
 !                                   dBdT                             , &  ! Output
-!                                   Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                   Message_Log     =Message_Log       )  ! Error messaging
+!                                   Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       x:                  Spectral ordinate.
@@ -1028,15 +952,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
 !                           The error codes are defined in the Message_Handler module.
@@ -1091,10 +1006,6 @@ CONTAINS
 !       i.e. W/(m2.um-4) => W/(m2.sr.um-4). Similarly for c2, K.m ->
 !       K.um a multiplier of 1.0e+06 is required.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 16-Jul-1996
-!                       paul.vandelst@ssec.wisc.edu
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -1108,15 +1019,13 @@ CONTAINS
   FUNCTION scalar_Planck_dBdT( x               , &  ! Input
                                Temperature     , &  ! Input
                                dBdT            , &  ! Output
-                               Wavelength_Units, &  ! Optional input
-                               Message_Log     ) &  ! Error messaging
+                               Wavelength_Units) &  ! Optional input
                              RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Temperature
     REAL(fp),               INTENT(OUT) :: dBdT
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1179,15 +1088,13 @@ CONTAINS
   FUNCTION R1_x_S_t_Planck_dBdT( x               , &  ! Input
                                  Temperature     , &  ! Input
                                  dBdT            , &  ! Output
-                                 Wavelength_Units, &  ! Optional input
-                                 Message_Log     ) &  ! Error messaging
+                                 Wavelength_Units) &  ! Optional input
                                RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)         ! N
     REAL(fp),               INTENT(IN)  :: Temperature 
     REAL(fp),               INTENT(OUT) :: dBdT(:)      ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1202,8 +1109,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X and dBdT arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1211,8 +1117,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_dBdT( x(i), Temperature, dBdT(i), &
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1231,15 +1136,13 @@ CONTAINS
   FUNCTION S_x_R1_t_Planck_dBdT( x               , &  ! Input
                                  Temperature     , &  ! Input
                                  dBdT            , &  ! Output
-                                 Wavelength_Units, &  ! Optional input
-                                 Message_Log     ) &  ! Error messaging
+                                 Wavelength_Units) &  ! Optional input
                                RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Temperature(:)  ! K
     REAL(fp),               INTENT(OUT) :: dBdT(:)         ! K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1254,8 +1157,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of Temperature and dBdT arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1263,8 +1165,7 @@ CONTAINS
     ! ----------------------------
     DO i = 1, k
       Error_Status = scalar_Planck_dBdT( x, Temperature(i), dBdT(i), &
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1286,15 +1187,13 @@ CONTAINS
   FUNCTION R1_xt_Planck_dBdT( x               , &  ! Input
                               Temperature     , &  ! Input
                               dBdT            , &  ! Output
-                              Wavelength_Units, &  ! Optional input
-                              Message_Log     ) &  ! Error messaging
+                              Wavelength_Units) &  ! Optional input
                             RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)            ! N
     REAL(fp),               INTENT(IN)  :: Temperature(:)  ! N
     REAL(fp),               INTENT(OUT) :: dBdT(:)         ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1310,8 +1209,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Temperature, and dBdT arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1319,8 +1217,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_dBdT( x(i), Temperature(i), dBdT(i), &
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1340,15 +1237,13 @@ CONTAINS
   FUNCTION R1_x_R2_t_Planck_dBdT( x               , &  ! Input
                                   Temperature     , &  ! Input
                                   dBdT            , &  ! Output
-                                  Wavelength_Units, &  ! Optional input
-                                  Message_Log     ) &  ! Error messaging
+                                  Wavelength_Units) &  ! Optional input
                                 RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)              ! N
     REAL(fp),               INTENT(IN)  :: Temperature(:,:)  ! N x K
     REAL(fp),               INTENT(OUT) :: dBdT(:,:)         ! N x K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1367,8 +1262,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Temperature, and dBdT arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1378,8 +1272,7 @@ CONTAINS
     Spectra_loop: DO j = 1, k
       Frequency_loop: DO i = 1, n
         Error_Status = scalar_Planck_dBdT( x(i), Temperature(i,j), dBdT(i,j), &
-                                           Wavelength_Units=Wavelength_Units, &
-                                           Message_Log     =Message_Log )
+                                           Wavelength_Units=Wavelength_Units )
         IF ( Error_Status /= SUCCESS ) EXIT Spectra_loop
       END DO Frequency_loop
     END DO Spectra_loop
@@ -1403,8 +1296,7 @@ CONTAINS
 !       Error_Status = Planck_dTdB( x                                , & ! Input
 !                                   Radiance                         , & ! Input
 !                                   dTdB                             , & ! Output
-!                                   Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                   Message_Log     =Message_Log       )  ! Error messaging
+!                                   Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
 !
 ! INPUT ARGUMENTS:
@@ -1467,15 +1359,6 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
-!                           UNITS:      None
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error status.
 !                           The error codes are defined in the Message_Handler module.
@@ -1527,10 +1410,6 @@ CONTAINS
 !       i.e. W/(m2.um-4) => W/(m2.sr.um-4). Similarly for c2, K.m ->
 !       K.um a multiplier of 1.0e+06 is required.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 16-Nov-2000
-!                       paul.vandelst@ssec.wisc.edu
-!
 !:sdoc-:
 !------------------------------------------------------------------------------
 
@@ -1544,15 +1423,13 @@ CONTAINS
   FUNCTION scalar_Planck_dTdB( x               , &  ! Input
                                Radiance        , &  ! Input
                                dTdB            , &  ! Output
-                               Wavelength_Units, &  ! Optional input
-                               Message_Log     ) &  ! Error messaging
+                               Wavelength_Units) &  ! Optional input
                              RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Radiance
     REAL(fp),               INTENT(OUT) :: dTdB
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1622,15 +1499,13 @@ CONTAINS
   FUNCTION R1_x_S_r_Planck_dTdB( x               , &  ! Input
                                  Radiance        , &  ! Input
                                  dTdB            , &  ! Output
-                                 Wavelength_Units, &  ! Optional input
-                                 Message_Log     ) &  ! Error messaging
+                                 Wavelength_Units) &  ! Optional input
                                RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)      ! N
     REAL(fp),               INTENT(IN)  :: Radiance
     REAL(fp),               INTENT(OUT) :: dTdB(:)   ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1645,8 +1520,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X and dTdB arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1654,8 +1528,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_dTdB( x(i), Radiance, dTdB(i), &
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1674,15 +1547,13 @@ CONTAINS
   FUNCTION S_x_R1_r_Planck_dTdB( x               , &  ! Input
                                  Radiance        , &  ! Input
                                  dTdB            , &  ! Output
-                                 Wavelength_Units, &  ! Optional input
-                                 Message_Log     ) &  ! Error messaging
+                                 Wavelength_Units) &  ! Optional input
                                RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x
     REAL(fp),               INTENT(IN)  :: Radiance(:)
     REAL(fp),               INTENT(OUT) :: dTdB(:)
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1697,8 +1568,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of Radiance and dTdB arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1706,8 +1576,7 @@ CONTAINS
     ! ----------------------------
     DO i = 1, k
       Error_Status = scalar_Planck_dTdB( x, Radiance(i), dTdB(i), &
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1726,15 +1595,13 @@ CONTAINS
   FUNCTION R1_xr_Planck_dTdB( x               , &  ! Input
                               Radiance        , &  ! Input
                               dTdB            , &  ! Output
-                              Wavelength_Units, &  ! Optional input
-                              Message_Log     ) &  ! Error messaging
+                              Wavelength_Units) &  ! Optional input
                             RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)         ! N
     REAL(fp),               INTENT(IN)  :: Radiance(:)  ! N
     REAL(fp),               INTENT(OUT) :: dTdB(:)      ! N
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -1750,8 +1617,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Radiance, and dTdB arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1759,8 +1625,7 @@ CONTAINS
     ! -------------------------
     DO i = 1, n
       Error_Status = scalar_Planck_dTdB( x(i), Radiance(i), dTdB(i), & 
-                                         Wavelength_Units=Wavelength_Units, &
-                                         Message_Log     =Message_Log )
+                                         Wavelength_Units=Wavelength_Units )
       IF ( Error_Status /= SUCCESS ) EXIT
     END DO
 
@@ -1780,15 +1645,13 @@ CONTAINS
   FUNCTION R1_x_R2_r_Planck_dTdB( x               , &  ! Input
                                   Radiance        , &  ! Input
                                   dTdB            , &  ! Output
-                                  Wavelength_Units, &  ! Optional input
-                                  Message_Log     ) &  ! Error messaging
+                                  Wavelength_Units) &  ! Optional input
                                 RESULT( Error_Status )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: x(:)           ! N
     REAL(fp),               INTENT(IN)  :: Radiance(:,:)  ! N x K
     REAL(fp),               INTENT(OUT) :: dTdB(:,:)      ! N x K
     INTEGER,      OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Result status
     INTEGER :: Error_Status
     ! Local parameters
@@ -1806,8 +1669,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Inconsistent size of X, Radiance, and dTdB arguments', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     ENDIF
 
@@ -1816,8 +1678,7 @@ CONTAINS
     Spectra_loop: DO j = 1, k
       Frequency_loop: DO i = 1, n
         Error_Status = scalar_Planck_dTdB( x(i), Radiance(i,j), dTdB(i,j), &
-                                           Wavelength_Units=Wavelength_Units, &
-                                           Message_Log     =Message_Log )
+                                           Wavelength_Units=Wavelength_Units )
         IF ( Error_Status /= SUCCESS ) EXIT Spectra_loop
       END DO Frequency_loop
     END DO Spectra_loop

@@ -48,10 +48,10 @@ MODULE ODAS_Binary_IO
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
   ! Message character length
   INTEGER, PARAMETER :: ML = 512
+  ! Keyword set value
+  INTEGER, PARAMETER :: SET = 1
 
 
 CONTAINS
@@ -247,9 +247,7 @@ CONTAINS
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID, &
-                                     Message_Log=Message_Log)
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening ODAS Binary file '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN
@@ -526,9 +524,7 @@ CONTAINS
 
     ! Open the ODAS file
     ! ------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID  , &
-                                     Message_Log=Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM(Filename)
       Error_Status = FAILURE
@@ -866,10 +862,7 @@ CONTAINS
 
     ! Open the ODAS data file
     ! -----------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID,   &
-                                     For_Output =SET, &
-                                     Message_Log=Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID, For_Output = .TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM( Filename )
       Error_Status = FAILURE

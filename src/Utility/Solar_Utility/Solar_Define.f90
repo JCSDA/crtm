@@ -16,9 +16,9 @@ MODULE Solar_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds           , ONLY: Long, Double
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE Type_Kinds,            ONLY: fp, Long, Double
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -28,71 +28,74 @@ MODULE Solar_Define
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Public types
+  ! Datatypes
   PUBLIC :: Solar_type
-  ! Public procedures
-  PUBLIC :: Associated_Solar
-  PUBLIC :: Destroy_Solar
-  PUBLIC :: Allocate_Solar
-  PUBLIC :: Assign_Solar
-  PUBLIC :: Equal_Solar
-  PUBLIC :: CheckRelease_Solar
-  PUBLIC :: Info_Solar
-  PUBLIC :: Frequency_Solar
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  ! Procedures
+  PUBLIC :: Solar_Associated
+  PUBLIC :: Solar_Destroy
+  PUBLIC :: Solar_Create
+  PUBLIC :: Solar_Frequency
+  PUBLIC :: Solar_Inspect
+  PUBLIC :: Solar_ValidRelease
+  PUBLIC :: Solar_Info
+  PUBLIC :: Solar_DefineVersion
+
+
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE Solar_Equal
+  END INTERFACE OPERATOR(==)
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
+  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
-  ! Message character length
+  ! Default message string length
   INTEGER, PARAMETER :: ML = 512
+  ! Sensor id string length
+  INTEGER, PARAMETER :: SL = 20
   ! Current valid release and version numbers
-  INTEGER, PARAMETER :: SOLAR_RELEASE = 1  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: SOLAR_VERSION = 1  ! This is just the data version.
-  ! ASCII codes for Version routine
-  INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-  INTEGER, PARAMETER :: LINEFEED = 10
-
+  INTEGER, PARAMETER :: SOLAR_RELEASE = 2
+  INTEGER, PARAMETER :: SOLAR_VERSION = 1
   ! Physical constants
-  ! ------------------
-  ! Default Solar blackbody temperature in KELVIN
+  ! ...Default Solar blackbody temperature in KELVIN
   REAL(Double), PARAMETER :: DEFAULT_BLACKBODY_TEMPERATURE = 5783.0_Double
-  ! Default mean Solar radius in METRES
+  ! ...Default mean Solar radius in METRES
   REAL(Double), PARAMETER :: DEFAULT_RADIUS = 6.599e+08_Double
-  ! Default mean Earth-Solar distance in METRES
+  ! ...Default mean Earth-Solar distance in METRES
   REAL(Double), PARAMETER :: DEFAULT_EARTH_SUN_DISTANCE = 1.495979e+11_Double
-
 
 
   ! --------------------------
   ! Solar data type definition
   ! --------------------------
   TYPE :: Solar_type
-    INTEGER :: n_Allocates = 0
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Release and version information
     INTEGER(Long) :: Release = SOLAR_RELEASE
     INTEGER(Long) :: Version = SOLAR_VERSION
     ! Dimensions
     INTEGER(Long) :: n_Frequencies = 0
     ! Scalar components
-    REAL(Double) :: Begin_Frequency       = ZERO
-    REAL(Double) :: End_Frequency         = ZERO
-    REAL(Double) :: Frequency_Interval    = ZERO
     REAL(Double) :: Blackbody_Temperature = DEFAULT_BLACKBODY_TEMPERATURE
     REAL(Double) :: Radius                = DEFAULT_RADIUS
     REAL(Double) :: Earth_Sun_Distance    = DEFAULT_EARTH_SUN_DISTANCE
+    REAL(Double) :: f1 = ZERO
+    REAL(Double) :: f2 = ZERO
     ! Array components
-    REAL(Double), POINTER :: Frequency(:)            => NULL()
-    REAL(Double), POINTER :: Irradiance(:)           => NULL()
-    REAL(Double), POINTER :: Blackbody_Irradiance(:) => NULL()
+    REAL(Double), ALLOCATABLE :: Frequency(:)           
+    REAL(Double), ALLOCATABLE :: Irradiance(:)          
+    REAL(Double), ALLOCATABLE :: Blackbody_Irradiance(:)
   END TYPE Solar_type
 
 
@@ -108,1152 +111,408 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Associated_Solar
+!       Solar_Associated
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       Solar structure.
+!       Elemental function to test the status of the allocatable components
+!       of the Solar structure.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_Solar( Solar,              &  ! Input
-!                                              ANY_Test = Any_Test )  ! Optional input
+!       Status = Solar_Associated( Solar )
 !
-! INPUT ARGUMENTS:
-!       Solar:               Solar structure which is to have its pointer
-!                            member's association status tested.
-!                            UNITS:      N/A
-!                            TYPE:       Solar_type
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:            Set this argument to test if ANY of the
-!                            Solar structure pointer members are associated.
-!                            The default is to test if ALL the pointer members
-!                            are associated.
-!                            If ANY_Test = 0, test if ALL the pointer members
-!                                             are associated.  (DEFAULT)
-!                               ANY_Test = 1, test if ANY of the pointer members
-!                                             are associated.
-!                            UNITS:      N/A
-!                            TYPE:       INTEGER
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN), OPTIONAL
+! OBJECTS:
+!       Solar:      Structure which is to have its member's
+!                   status tested.
+!                   UNITS:      N/A
+!                   TYPE:       Solar_type
+!                   DIMENSION:  Scalar or any rank
+!                   ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            association status of the Solar pointer members.
-!                            .TRUE.  - if ALL the Solar pointer members are
-!                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the Solar pointer
-!                                      members are associated.
-!                            .FALSE. - some or all of the Solar pointer
-!                                      members are NOT associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!       Status:     The return value is a logical value indicating the
+!                   status of the Solar members.
+!                    .TRUE.  - if ANY of the Solar allocatable members
+!                              are in use.
+!                    .FALSE. - if ALL of the Solar allocatable members
+!                              are not in use.
+!                   UNITS:      N/A
+!                   TYPE:       LOGICAL
+!                   DIMENSION:  Same as input
 !
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_Solar( Solar   , & ! Input
-                             ANY_Test) & ! Optional input
-                           RESULT( Association_Status )
-    ! Arguments
-    TYPE(Solar_type),  INTENT(IN) :: Solar
-    INTEGER, OPTIONAL, INTENT(IN) :: ANY_Test
-    ! Function result
-    LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-
-    ! Set up
-    ! ------
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
-    END IF
-
-    ! Test the members that MUST be associated
-    ! ----------------------------------------
-    Association_Status = .FALSE.
-    IF ( ALL_Test ) THEN
-      IF ( ASSOCIATED(Solar%Frequency           ) .AND. &
-           ASSOCIATED(Solar%Irradiance          ) .AND. &
-           ASSOCIATED(Solar%Blackbody_Irradiance)       ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED(Solar%Frequency           ) .OR. &
-           ASSOCIATED(Solar%Irradiance          ) .OR. &
-           ASSOCIATED(Solar%Blackbody_Irradiance)      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-
-  END FUNCTION Associated_Solar
+  ELEMENTAL FUNCTION Solar_Associated( Solar ) RESULT( Status )
+    TYPE(Solar_type), INTENT(IN) :: Solar
+    LOGICAL :: Status
+    Status = Solar%Is_Allocated             
+  END FUNCTION Solar_Associated
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Destroy_Solar
+!       Solar_Destroy
 ! 
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of a 
-!       Solar data structure.
+!       Elemental subroutine to re-initialize Solar objects.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_Solar( Solar                  , &  ! Output
-!                                     RCS_Id     =RCS_Id,    , &  ! Revision control
-!                                     Message_Log=Message_Log  )  ! Error messaging
+!       CALL Solar_Destroy( Solar )
 !
-! OUTPUT ARGUMENTS:
-!       Solar:        Re-initialized Solar structure
+! OBJECTS:
+!       Solar:        Re-initialized Solar structure.
 !                     UNITS:      N/A
 !                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Solar argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Solar( Solar      , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
-                          Message_Log) &  ! Error messaging
-                        RESULT( Error_Status )
-    ! Arguments
-    TYPE(Solar_type)      , INTENT(IN OUT) :: Solar
-    INTEGER,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_Solar'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Reinitialise the dimensions
+  ELEMENTAL SUBROUTINE Solar_Destroy( Solar )
+    TYPE(Solar_type), INTENT(OUT) :: Solar
+    Solar%Is_Allocated = .FALSE.
     Solar%n_Frequencies = 0
-
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL Clear_Solar( Solar )
-
-    ! If ALL components are NOT associated, do nothing
-    IF ( .NOT. Associated_Solar( Solar ) ) RETURN
+    Solar%Blackbody_Temperature = DEFAULT_BLACKBODY_TEMPERATURE
+    Solar%Radius                = DEFAULT_RADIUS
+    Solar%Earth_Sun_Distance    = DEFAULT_EARTH_SUN_DISTANCE
+    Solar%f1 = ZERO
+    Solar%f2 = ZERO
+  END SUBROUTINE Solar_Destroy
 
 
-    ! Deallocate the regular arrays components
-    ! ----------------------------------------
-    DEALLOCATE( Solar%Frequency           , &
-                Solar%Irradiance          , &
-                Solar%Blackbody_Irradiance, &
-                STAT=Allocate_Status      )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Error deallocating Solar components. STAT = ",i0)') &
-                     Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
-
-
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-    Solar%n_Allocates = Solar%n_Allocates - 1
-    IF ( Solar%n_Allocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Allocation counter /= 0, Value = ",i0)' ) &
-                      Solar%n_Allocates
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-  END FUNCTION Destroy_Solar
-
-
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Allocate_Solar
+!       Solar_Create
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of the Solar data structure.
+!       Elemental subroutine to create an instance of an Solar object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_Solar( n_Frequencies          , &  ! Input 
-!                                      Solar                  , &  ! Output
-!                                      RCS_Id     =RCS_Id     , &  ! Revision control
-!                                      Message_Log=Message_Log  )  ! Error messaging
+!       CALL Solar_Create( Solar, n_Frequencies )
 !
-! INPUT ARGUMENTS:
-!       n_Frquencies: Spectral dimension of the Solar structure pointer
-!                     members. Must be > 0.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
+! OBJECTS:
+!       Solar:              Solar object structure.
+!                           UNITS:      N/A
+!                           TYPE:       Solar_type
+!                           DIMENSION:  Scalar or any rank
+!                           ATTRIBUTES: INTENT(OUT)
 !
-! OUTPUT ARGUMENTS:
-!       Solar:        Solar structure with allocated pointer members
-!                     UNITS:      N/A
-!                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
+! INPUTS:
+!       n_Frequencies:      Size of the solar spectral arrays.
+!                           Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure pointer allocations were
-!                                   successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Solar argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Solar( n_Frequencies , &  ! Input
-                           Solar         , &  ! Output
-                           RCS_Id        , &  ! Revision control
-                           Message_Log   ) &  ! Error messaging
-                         RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE Solar_Create( &
+    Solar        , &  ! Output
+    n_Frequencies  )  ! Input
     ! Arguments
-    INTEGER               , INTENT(IN)     :: n_Frequencies
-    TYPE(Solar_type)      , INTENT(IN OUT) :: Solar
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_Solar'
+    TYPE(Solar_type), INTENT(OUT) :: Solar
+    INTEGER         , INTENT(IN)  :: n_Frequencies
     ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Allocate_Status
+    INTEGER :: alloc_stat
 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check dimension input
-    IF ( n_Frequencies < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input N_FREQUENCIES must be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check if ANY pointers are already associated
-    ! If they are, deallocate them but leave scalars.
-    IF ( Associated_Solar( Solar, ANY_Test = SET ) ) THEN
-      Error_Status = Destroy_Solar( Solar, &
-                                    No_Clear = SET, &
-                                    Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Error deallocating Solar pointer members.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
-      END IF
-
-    END IF
+    ! Check input
+    IF ( n_Frequencies < 1 ) RETURN
+    
+    ! Perform the allocation
+    ALLOCATE( Solar%Frequency( n_Frequencies ), &
+              Solar%Irradiance( n_Frequencies ), &
+              Solar%Blackbody_Irradiance( n_Frequencies ), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
 
 
-    ! Allocate the intrinsic type arrays
-    ! ----------------------------------
-    ALLOCATE(  Solar%Frequency( n_Frequencies ),            &
-               Solar%Irradiance( n_Frequencies ),           &
-               Solar%Blackbody_Irradiance( n_Frequencies ), &
-               STAT=Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Error allocating Solar data arrays. STAT = ",i0)' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Assign the dimensions and initialise arrays
+    ! Initialise
+    ! ...Dimensions
     Solar%n_Frequencies = n_Frequencies
-
+    ! ...Arrays
     Solar%Frequency            = ZERO
     Solar%Irradiance           = ZERO
     Solar%Blackbody_Irradiance = ZERO
 
 
-    ! Increment and test allocation counter
-    ! -------------------------------------
-    Solar%n_Allocates = Solar%n_Allocates + 1
-    IF ( Solar%n_Allocates /= 1 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Allocation counter /= 1, Value = ",i0)' ) &
-                      Solar%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM(Message), &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-    END IF
+    ! Set allocation indicator
+    Solar%Is_Allocated = .TRUE.
 
-  END FUNCTION Allocate_Solar
-
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Assign_Solar
-!
-! PURPOSE:
-!       Function to copy valid Solar structures.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Assign_Solar( Solar_in               , &  ! Input
-!                                    Solar_out              , &  ! Output
-!                                    RCS_Id     =RCS_Id     , &  ! Revision control
-!                                    Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       Solar_in:     Solar structure which is to be copied.
-!                     UNITS:      N/A
-!                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       Solar_out:    Copy of the input structure, Solar_in.
-!                     UNITS:      N/A
-!                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure assignment was successful
-!                        == FAILURE an error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Solar argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Assign_Solar( Solar_in   , &  ! Input
-                         Solar_out  , &  ! Output
-                         RCS_Id     , &  ! Revision control
-                         Message_Log) &  ! Error messaging
-                       RESULT( Error_Status )
-    ! Arguments
-    TYPE(Solar_type)      , INTENT(IN)     :: Solar_in
-    TYPE(Solar_type)      , INTENT(IN OUT) :: Solar_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_Solar'
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-    
-    ! ALL *input* pointers must be associated
-    ! BUT the antenna correction AC component
-    ! may not be.
-    IF ( .NOT. Associated_Solar( Solar_In ) ) THEN
-      Error_Status = Destroy_Solar( Solar_Out, &
-                                    Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output Solar components.', &
-                              Error_Status,    &
-                              Message_Log=Message_Log )
-      END IF
-      RETURN
-    END IF
-
-    
-    ! Allocate the output structure
-    ! -----------------------------
-    Error_Status = Allocate_Solar( Solar_in%n_Frequencies, &
-                                   Solar_out, &
-                                   Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating output Solar structure.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Assign components
-    ! -----------------
-    Solar_out%Release = Solar_in%Release
-    Solar_out%Version = Solar_in%Version
-
-    Solar_out%Begin_Frequency       = Solar_in%Begin_Frequency
-    Solar_out%End_Frequency         = Solar_in%End_Frequency
-    Solar_out%Frequency_Interval    = Solar_in%Frequency_Interval
-    Solar_out%Blackbody_Temperature = Solar_in%Blackbody_Temperature
-    Solar_out%Radius                = Solar_in%Radius
-    Solar_out%Earth_Sun_Distance    = Solar_in%Earth_Sun_Distance
-
-    Solar_out%Frequency            = Solar_in%Frequency
-    Solar_out%Irradiance           = Solar_in%Irradiance
-    Solar_out%Blackbody_Irradiance = Solar_in%Blackbody_Irradiance
-
-  END FUNCTION Assign_Solar
+  END SUBROUTINE Solar_Create
 
 
 !--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Equal_Solar
-!
+!       Solar_Frequency
+! 
 ! PURPOSE:
-!       Function to test if two Solar structures are equal.
+!       Elemental subroutine to compute a regular frequency grid for the
+!       solar data object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Equal_Solar( Solar_LHS              , &  ! Input
-!                                   Solar_RHS              , &  ! Input
-!                                   ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                   Check_All  =Check_All  , &  ! Optional input
-!                                   RCS_Id     =RCS_Id     , &  ! Revision control
-!                                   Message_Log=Message_Log  )  ! Error messaging
+!       CALL Solar_Frequency( Solar          , &
+!                             Begin_Frequency, &
+!                             End_Frequency    )
 !
-! INPUT ARGUMENTS:
-!       Solar_LHS:     Solar structure to be compared; equivalent to the
-!                      left-hand side of a lexical comparison, e.g.
-!                        IF ( Solar_LHS == Solar_RHS ).
+! OBJECTS:
+!       Solar:              Solar object structure which is to have its
+!                           frequency component modified.
+!                           UNITS:      N/A
+!                           TYPE:       Solar_type
+!                           DIMENSION:  Scalar or any rank
+!                           ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!       Begin_Frequency:    The begin frequency of the irradiance spectra.
+!                           UNITS:      Inverse centimetres (cm^-1)
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       End_Frequency:      The end frequency of the irradiance spectra.
+!                           UNITS:      Inverse centimetres (cm^-1)
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE Solar_Frequency( &
+    Solar             , &  ! In/Output
+    Begin_Frequency   , &  ! Input
+    End_Frequency       )  ! Input
+    ! Arguments
+    TYPE(Solar_type), INTENT(IN OUT) :: Solar
+    REAL(fp)        , INTENT(IN)     :: Begin_Frequency    
+    REAL(fp)        , INTENT(IN)     :: End_Frequency     
+    ! Local variables
+    INTEGER :: i, n
+
+    ! Setup
+    IF ( (.NOT. Solar_Associated( Solar ) ) .OR. &
+         (End_Frequency <= Begin_Frequency) ) RETURN
+    n = Solar%n_Frequencies
+    Solar%f1 = REAL(Begin_Frequency,Double)
+    Solar%f2 = REAL(End_Frequency  ,Double)
+    
+    ! Compute the grid
+    Solar%Frequency = (/(REAL(i-1,Double), i=1,n)/) / REAL(n-1,Double)
+    Solar%Frequency = Solar%f1 + Solar%Frequency * (Solar%f2 - Solar%f1)
+
+  END SUBROUTINE Solar_Frequency
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Solar_Inspect
+!
+! PURPOSE:
+!       Subroutine to print the contents of a Solar object to stdout.
+!
+! CALLING SEQUENCE:
+!       CALL Solar_Inspect( Solar )
+!
+! OBJECTS:
+!       Solar:         Solar object to display.
 !                      UNITS:      N/A
 !                      TYPE:       Solar_type
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-!       Solar_RHS:     Solar structure to be compared to; equivalent to
-!                      right-hand side of a lexical comparison, e.g.
-!                        IF ( Solar_LHS == Solar_RHS ).
-!                      UNITS:      N/A
-!                      TYPE:       Same as Solar_LHS
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:     Unit of data precision used to scale the floating
-!                      point comparison. ULP stands for "Unit in the Last Place,"
-!                      the smallest possible increment or decrement that can be
-!                      made using a machine's floating point arithmetic.
-!                      Value must be positive - if a negative value is supplied,
-!                      the absolute value is used. If not specified, the default
-!                      value is 1.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Check_All:     Set this argument to check ALL the floating point
-!                      channel data of the Solar structures. The default
-!                      action is return with a FAILURE status as soon as
-!                      any difference is found. This optional argument can
-!                      be used to get a listing of ALL the differences
-!                      between data in Solar structures.
-!                      If == 0, Return with FAILURE status as soon as
-!                               ANY difference is found  *DEFAULT*
-!                         == 1, Set FAILURE status if ANY difference is
-!                               found, but continue to check ALL data.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structures were equal
-!                         == FAILURE - an error occurred, or
-!                                    - the structures were different.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Equal_Solar( Solar_LHS  , &  ! Input
-                        Solar_RHS  , &  ! Input
-                        ULP_Scale  , &  ! Optional input
-                        Check_All  , &  ! Optional input
-                        RCS_Id     , &  ! Revision control
-                        Message_Log) &  ! Error messaging
-                      RESULT( Error_Status )
-    ! Arguments
-    TYPE(Solar_type)      , INTENT(IN)  :: Solar_LHS
-    TYPE(Solar_type)      , INTENT(IN)  :: Solar_RHS
-    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_Solar'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: ULP
-    LOGICAL :: Check_Once
-    INTEGER :: i
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Default precision is a single unit in last place
-    ULP = 1
-    ! ... unless the ULP_Scale argument is set and positive
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
-
-    ! Default action is to return on ANY difference...
-    Check_Once = .TRUE.
-    ! ...unless the Check_All argument is set
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All == SET ) Check_Once = .FALSE.
-    END IF
-
-    ! Check the structure association status
-    IF ( .NOT. Associated_Solar( Solar_LHS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT Solar_LHS pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    IF ( .NOT. Associated_Solar( Solar_RHS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT Solar_RHS pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
+  SUBROUTINE Solar_Inspect( Solar )
+    TYPE(Solar_type), INTENT(IN) :: Solar
+    WRITE(*,'(1x,"Solar OBJECT")')
+    ! Release/version info
+    WRITE(*,'(3x,"Release.Version           :",1x,i0,".",i0)') Solar%Release, Solar%Version
+    ! Dimensions
+    WRITE(*,'(3x,"n_Frequencies             :",1x,i0)') Solar%n_Frequencies
+    IF ( .NOT. Solar_Associated(Solar) ) RETURN
+    ! Scalar info
+    WRITE(*,'(3x,"Blackbody Temperature (K) :",1x,es13.6)') Solar%Blackbody_Temperature
+    WRITE(*,'(3x,"Radius (m)                :",1x,es13.6)') Solar%Radius               
+    WRITE(*,'(3x,"Earth-Sun Distance (m)    :",1x,es13.6)') Solar%Earth_Sun_Distance   
+    WRITE(*,'(3x,"Begin Frequency (cm^-1)   :",1x,es13.6)') Solar%f1                   
+    WRITE(*,'(3x,"End Frequency (cm^-1)     :",1x,es13.6)') Solar%f2
+    ! Data arrays
+    WRITE(*,'(3x,"Frequency :")')    
+    WRITE(*,'(5(1x,es13.6,:))') Solar%Frequency           
+    WRITE(*,'(3x,"Irradiance :")')    
+    WRITE(*,'(5(1x,es13.6,:))') Solar%Irradiance          
+    WRITE(*,'(3x,"Blackbody Irradiance :")')    
+    WRITE(*,'(5(1x,es13.6,:))') Solar%Blackbody_Irradiance
     
-    ! Check dimensions
-    IF (Solar_LHS%n_Frequencies /= Solar_RHS%n_Frequencies ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Structure dimensions are different.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Check release and version
-    ! -------------------------
-    ! The release should *never* be different, but...
-    IF ( Solar_LHS%Release /= Solar_RHS%Release ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar RELEASE values are different: ",i0," vs ",i0)') &
-                    Solar_LHS%Release, Solar_RHS%Release
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-    ! The version *could* be different
-    IF ( Solar_LHS%Version /= Solar_RHS%Version ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar VERSION values are different: ",i0," vs ",i0)') &
-                    Solar_LHS%Version, Solar_RHS%Version
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-
-    ! Check the scalar components
-    ! ---------------------------
-    IF ( .NOT. Compare_Float( Solar_LHS%Begin_Frequency, &
-                              Solar_RHS%Begin_Frequency, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar Begin_Frequency values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%Begin_Frequency,Solar_RHS%Begin_Frequency, &
-                    Solar_LHS%Begin_Frequency-Solar_RHS%Begin_Frequency
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( Solar_LHS%End_Frequency, &
-                              Solar_RHS%End_Frequency, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar End_Frequency values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%End_Frequency,Solar_RHS%End_Frequency, &
-                    Solar_LHS%End_Frequency-Solar_RHS%End_Frequency
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( Solar_LHS%Frequency_Interval, &
-                              Solar_RHS%Frequency_Interval, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar Frequency_Interval values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%Frequency_Interval,Solar_RHS%Frequency_Interval, &
-                    Solar_LHS%Frequency_Interval-Solar_RHS%Frequency_Interval
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( Solar_LHS%Blackbody_Temperature, &
-                              Solar_RHS%Blackbody_Temperature, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar Blackbody_Temperature values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%Blackbody_Temperature,Solar_RHS%Blackbody_Temperature, &
-                    Solar_LHS%Blackbody_Temperature-Solar_RHS%Blackbody_Temperature
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( Solar_LHS%Radius, &
-                              Solar_RHS%Radius, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar Radius values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%Radius,Solar_RHS%Radius, &
-                    Solar_LHS%Radius-Solar_RHS%Radius
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-    
-    IF ( .NOT. Compare_Float( Solar_LHS%Earth_Sun_Distance, &
-                              Solar_RHS%Earth_Sun_Distance, &
-                              ULP=ULP ) ) THEN
-      Error_Status = FAILURE
-      WRITE(Message,'("Solar Earth_Sun_Distance values are different: ",es13.6,&
-                     &" vs ",es13.6," (",es13.6,")")') &
-                    Solar_LHS%Earth_Sun_Distance,Solar_RHS%Earth_Sun_Distance, &
-                    Solar_LHS%Earth_Sun_Distance-Solar_RHS%Earth_Sun_Distance
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      IF ( Check_Once ) RETURN
-    END IF
-
-    
-    ! Check the array components
-    ! --------------------------
-    DO i = 1, Solar_LHS%n_Frequencies
-      IF ( .NOT. Compare_Float( Solar_LHS%Frequency(i), &
-                                Solar_RHS%Frequency(i), &
-                                ULP=ULP ) ) THEN
-        WRITE(Message,'("Solar Frequency values are different at index (",1(1x,i0),"): ",&
-                       &es13.6," vs ",es13.6," (",es13.6,")")') &
-                       i, &
-                       Solar_LHS%Frequency(i),Solar_RHS%Frequency(i), &
-                       Solar_LHS%Frequency(i)-Solar_RHS%Frequency(i)
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    
-    DO i = 1, Solar_LHS%n_Frequencies
-      IF ( .NOT. Compare_Float( Solar_LHS%Irradiance(i), &
-                                Solar_RHS%Irradiance(i), &
-                                ULP=ULP ) ) THEN
-        WRITE(Message,'("Solar Irradiance values are different at index (",1(1x,i0),"): ",&
-                       &es13.6," vs ",es13.6," (",es13.6,")")') &
-                       i, &
-                       Solar_LHS%Irradiance(i),Solar_RHS%Irradiance(i), &
-                       Solar_LHS%Irradiance(i)-Solar_RHS%Irradiance(i)
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-    DO i = 1, Solar_LHS%n_Frequencies
-      IF ( .NOT. Compare_Float( Solar_LHS%Blackbody_Irradiance(i), &
-                                Solar_RHS%Blackbody_Irradiance(i), &
-                                ULP=ULP ) ) THEN
-        WRITE(Message,'("Solar Blackbody_Irradiance values are different at index (",1(1x,i0),"): ",&
-                       &es13.6," vs ",es13.6," (",es13.6,")")') &
-                       i, &
-                       Solar_LHS%Blackbody_Irradiance(i),Solar_RHS%Blackbody_Irradiance(i), &
-                       Solar_LHS%Blackbody_Irradiance(i)-Solar_RHS%Blackbody_Irradiance(i)
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        IF ( Check_Once ) RETURN
-      END IF
-    END DO
-
-  END FUNCTION Equal_Solar
-
-
+  END SUBROUTINE Solar_Inspect
+  
+  
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       CheckRelease_Solar
+!       Solar_ValidRelease
 !
 ! PURPOSE:
 !       Function to check the Solar Release value.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CheckRelease_Solar( Solar                  , &  ! Input
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       IsValid = Solar_ValidRelease( Solar )
 !
-! INPUT ARGUMENTS:
-!       Solar:         Solar structure for which the Release member
+! INPUTS:
+!       Solar:         Solar object for which the Release component
 !                      is to be checked.
-!                      UNITS:      N/A
-!                      TYPE:       Solar_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure Release value is valid.
-!                         == FAILURE the structure Release value is NOT valid
-!                                    and either a data file file or software
-!                                    update is required.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
-
-  FUNCTION CheckRelease_Solar( Solar      , &  ! Input
-                               RCS_Id     , &  ! Revision control
-                               Message_Log) &  ! Error messaging
-                             RESULT( Error_Status )
-    ! Arguments
-    TYPE(Solar_type)      , INTENT(IN)  :: Solar
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CheckRelease_Solar'
-    ! Local variables
-    CHARACTER(ML) :: Message
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check the release
-    ! -----------------
-    ! Check that release is not too old
-    IF ( Solar%Release < SOLAR_RELEASE ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "A Solar data update is needed. ", &
-                        &"Solar release is ", i2, &
-                        &". Valid release is ",i2,"." )' ) &
-                      Solar%Release, SOLAR_RELEASE
-      CALL Display_Message( TRIM(Routine_Name), &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check that release is not too new
-    IF ( Solar%Release > SOLAR_RELEASE ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "A Solar software update is needed. ", &
-                        &"Solar release is ", i2, &
-                        &". Valid release is ",i2,"." )' ) &
-                      Solar%Release, SOLAR_RELEASE
-      CALL Display_Message( TRIM(Routine_Name), &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-  END FUNCTION CheckRelease_Solar
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Info_Solar
-!
-! PURPOSE:
-!       Subroutine to return a string containing version and dimension
-!       information about the Solar data structure.
-!
-! CALLING SEQUENCE:
-!       CALL Info_Solar( Solar        , &  ! Input
-!                        Info         , &  ! Output
-!                        RCS_Id=RCS_Id  )  ! Revision control
-!
-! INPUT ARGUMENTS:
-!       Solar:         Filled Solar structure.
 !                      UNITS:      N/A
 !                      TYPE:       Solar_type
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! FUNCTION RESULT:
+!       IsValid:       Logical value defining the release validity.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!----------------------------------------------------------------------------------
+
+  FUNCTION Solar_ValidRelease( Solar ) RESULT( IsValid )
+    ! Arguments
+    TYPE(Solar_type), INTENT(IN) :: Solar
+    ! Function result
+    LOGICAL :: IsValid
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Solar_ValidRelease'
+    ! Local variables
+    CHARACTER(ML) :: msg
+
+    ! Set up
+    IsValid = .TRUE.
+
+
+    ! Check release is not too old
+    IF ( Solar%Release < SOLAR_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("An Solar data update is needed. ", &
+                  &"Solar release is ",i0,". Valid release is ",i0,"." )' ) &
+                  Solar%Release, SOLAR_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      RETURN
+    END IF
+
+
+    ! Check release is not too new
+    IF ( Solar%Release > SOLAR_RELEASE ) THEN
+      IsValid = .FALSE.
+      WRITE( msg,'("An Solar software update is needed. ", &
+                  &"Solar release is ",i0,". Valid release is ",i0,"." )' ) &
+                  Solar%Release, SOLAR_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      RETURN
+    END IF
+
+  END FUNCTION Solar_ValidRelease
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Solar_Info
+!
+! PURPOSE:
+!       Subroutine to return a string containing version and dimension
+!       information about a Solar object.
+!
+! CALLING SEQUENCE:
+!       CALL Solar_Info( Solar, Info )
+!
+! OBJECTS:
+!       Solar:         Solar object about which info is required.
+!                      UNITS:      N/A
+!                      TYPE:       Solar_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
 !       Info:          String containing version and dimension information
-!                      about the passed Solar data structure.
+!                      about the Solar object.
 !                      UNITS:      N/A
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Info_Solar( Solar , &  ! Input
-                         Info  , &  ! Output
-                         RCS_Id  )  ! Revision control
+  SUBROUTINE Solar_Info( Solar, Info )
     ! Arguments
-    TYPE(Solar_type)      , INTENT(IN)  :: Solar
-    CHARACTER(*)          , INTENT(OUT) :: Info
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
+    TYPE(Solar_type), INTENT(IN)  :: Solar
+    CHARACTER(*),     INTENT(OUT) :: Info
     ! Parameters
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
-    CHARACTER(2000) :: LongString
-
-    ! Set up
-    ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    CHARACTER(2000) :: Long_String
 
     ! Write the required data to the local string
-    ! -------------------------------------------
-    WRITE( LongString,'(a,1x,"Solar RELEASE.VERSION: ",i2,".",i2.2,2x,&
-                      &"N_FREQUENCIES=",i0)' ) &
-                      ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                      Solar%Release, Solar%Version, &
-                      Solar%n_Frequencies
-    
+    WRITE( Long_String, &
+           '(a,1x,"Solar RELEASE.VERSION: ",i2,".",i2.2,a,3x, &
+           &"N_FREQUENCIES=",i0 )' ) &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           Solar%Release, Solar%Version, &
+           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+           Solar%n_Frequencies
+                       
     ! Trim the output based on the
     ! dummy argument string length
-    ! ----------------------------
-    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
+    Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
-  END SUBROUTINE Info_Solar
-
-
-!------------------------------------------------------------------------------
+  END SUBROUTINE Solar_Info
+ 
+ 
+!--------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Frequency_Solar
+!       Solar_DefineVersion
 !
 ! PURPOSE:
-!       Function to compute the frequency grid for a supplied Solar data
-!       structure.
+!       Subroutine to return the module version information.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Frequency_Solar( Solar                  , &  ! In/Output
-!                                       RCS_Id     =RCS_Id     , &  ! Revision control
-!                                       Message_Log=Message_Log  )  ! Error messaging
+!       CALL Solar_DefineVersion( Id )
 !
-! INPUT ARGUMENTS:
-!       Solar:        Solar structure with fields containing the begin and
-!                     end frequencies of the frequency grid to compute.
-!                     UNITS:      N/A
-!                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
 !
-! OUTPUT ARGUMENTS:
-!       Solar:        Solar structure with the frequency component filled.
-!                     UNITS:      N/A
-!                     TYPE:       Solar_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      None
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the frequency grid calculation was successful
-!                        == FAILURE an error occurred processing the input
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       The FREQUENCY field of the input Solar structure is modified.
-!
-! RESTRICTIONS:
-!       Solar structure must contain at least 2 points of frequency and response
-!       data.
-!
-!------------------------------------------------------------------------------
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  FUNCTION Frequency_Solar( Solar      , &  ! Input
-                            RCS_Id     , &  ! Revision control
-                            Message_Log) &  ! Error messaging
-                          RESULT( Error_Status )
-    ! Arguments
-    TYPE(Solar_type)      , INTENT(IN OUT) :: Solar
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Frequency_Solar'
-    ! Local variables
-    INTEGER :: i, n
-
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! ALL pointers must be associated
-    IF ( .NOT. Associated_Solar( Solar ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT Solar pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Check the number of points
-    n = Solar%n_Frequencies
-    IF ( n < 2 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Allocated Solar structure arrays must contain at least 2 points.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Compute the frequency grid
-    ! --------------------------
-    ! Construct a normalised grid of 0->1
-    Solar%Frequency(1:n) = (/(REAL(i-1,Double), i=1,n)/) / REAL(n-1,Double)
-
-    ! Scale it to the actual values
-    Solar%Frequency(1:n) = Solar%Begin_Frequency + &
-                           (Solar%Frequency(1:n) * ( Solar%End_Frequency-Solar%Begin_Frequency ))
-
-  END FUNCTION Frequency_Solar
+  SUBROUTINE Solar_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE Solar_DefineVersion
 
 
 !##################################################################################
@@ -1264,40 +523,67 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-!----------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
 !
 ! NAME:
-!       Clear_Solar
+!       Solar_Equal
 !
 ! PURPOSE:
-!       Subroutine to clear the scalar members of a Solar structure.
+!       Elemental function to test the equality of two Solar objects.
+!       Used in OPERATOR(==) interface block.
 !
 ! CALLING SEQUENCE:
-!       CALL Clear_Solar( Solar ) ! Output
+!       is_equal = Solar_Equal( x, y )
 !
-! OUTPUT ARGUMENTS:
-!       Solar:       Solar structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       Solar_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT(IN OUT)
+!         or
 !
-! COMMENTS:
-!       Note the INTENT on the output Solar argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
 !
-!----------------------------------------------------------------------------------
+! OBJECTS:
+!       x, y:          Two Solar objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       Solar_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
 
-  SUBROUTINE Clear_Solar( Solar )
-    TYPE(Solar_type), INTENT(IN OUT) :: Solar
-    Solar%Begin_Frequency       = ZERO
-    Solar%End_Frequency         = ZERO
-    Solar%Frequency_Interval    = ZERO
-    Solar%Blackbody_Temperature = DEFAULT_BLACKBODY_TEMPERATURE
-    Solar%Radius                = DEFAULT_RADIUS
-    Solar%Earth_Sun_Distance    = DEFAULT_EARTH_SUN_DISTANCE
-  END SUBROUTINE Clear_Solar
+  ELEMENTAL FUNCTION Solar_Equal( x, y ) RESULT( is_equal )
+    TYPE(Solar_type), INTENT(IN) :: x, y
+    LOGICAL :: is_equal
+
+    ! Set up
+    is_equal = .FALSE.
+   
+    ! Check the object association status
+    IF ( (.NOT. Solar_Associated(x)) .OR. &
+         (.NOT. Solar_Associated(y))      ) RETURN
+
+    ! Check contents
+    ! ...Release/version info
+    IF ( (x%Release /= y%Release) .OR. &
+         (x%Version /= y%Version) ) RETURN
+    ! ...Dimensions
+    IF ( (x%n_Frequencies /= y%n_Frequencies ) ) RETURN
+    ! ...Data
+    IF ( (x%Blackbody_Temperature .EqualTo. y%Blackbody_Temperature ) .AND. &
+         (x%Radius                .EqualTo. y%Radius                ) .AND. &
+         (x%Earth_Sun_Distance    .EqualTo. y%Earth_Sun_Distance    ) .AND. &
+         (x%f1                    .EqualTo. y%f1                    ) .AND. &
+         (x%f2                    .EqualTo. y%f2                    ) .AND. &
+         ALL(x%Frequency            .EqualTo. y%Frequency            ) .AND. &
+         ALL(x%Irradiance           .EqualTo. y%Irradiance           ) .AND. &
+         ALL(x%Blackbody_Irradiance .EqualTo. y%Blackbody_Irradiance ) ) &
+      is_equal = .TRUE.
+
+  END FUNCTION Solar_Equal
 
 END MODULE Solar_Define

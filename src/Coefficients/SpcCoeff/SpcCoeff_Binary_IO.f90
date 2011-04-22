@@ -2,12 +2,12 @@
 ! SpcCoeff_Binary_IO
 !
 ! Module containing routines to read and write Binary format
-! SpcCoeff files.
+! SpcCoeff data files.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 18-Mar-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 18-Mar-2002
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE SpcCoeff_Binary_IO
@@ -16,17 +16,24 @@ MODULE SpcCoeff_Binary_IO
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds         , ONLY: Long
+  USE Type_Kinds         , ONLY: Long, Double
   USE File_Utility       , ONLY: File_Open, File_Exists
-  USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
+  USE Message_Handler    , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE SpcCoeff_Define    , ONLY: SpcCoeff_type, &
-                                 Associated_SpcCoeff, &
-                                 Allocate_SpcCoeff, &
-                                 Destroy_SpcCoeff, &
-                                 CheckRelease_SpcCoeff, &
-                                 Info_SpcCoeff
-  USE AntCorr_Binary_IO  , ONLY: Read_AntCorr_Binary, Write_AntCorr_Binary
+  USE SpcCoeff_Define    , ONLY: SpcCoeff_type        , &
+                                 SpcCoeff_Associated  , &
+                                 SpcCoeff_Destroy     , &
+                                 SpcCoeff_Create      , &
+                                 SpcCoeff_ValidRelease, &
+                                 SpcCoeff_Info
+  USE ACCoeff_Define     , ONLY: ACCoeff_Associated
+  USE ACCoeff_Binary_IO  , ONLY: ACCoeff_Binary_ReadFile , &
+                                 ACCoeff_Binary_WriteFile, &
+                                 ACCoeff_Binary_IOVersion
+  USE NLTECoeff_Define   , ONLY: NLTECoeff_Associated
+  USE NLTECoeff_Binary_IO, ONLY: NLTECoeff_Binary_ReadFile , &
+                                 NLTECoeff_Binary_WriteFile, &
+                                 NLTECoeff_Binary_IOVersion
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -35,21 +42,22 @@ MODULE SpcCoeff_Binary_IO
   ! Visibilities
   ! ------------
   PRIVATE
-  PUBLIC :: Inquire_SpcCoeff_Binary
-  PUBLIC :: Write_SpcCoeff_Binary
-  PUBLIC :: Read_SpcCoeff_Binary
+  PUBLIC :: SpcCoeff_Binary_InquireFile
+  PUBLIC :: SpcCoeff_Binary_ReadFile
+  PUBLIC :: SpcCoeff_Binary_WriteFile
+  PUBLIC :: SpcCoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
-  ! Keyword set value
-  INTEGER, PRIVATE, PARAMETER :: SET = 1
-  ! Message character length
+  ! Default message length
   INTEGER, PARAMETER :: ML = 512
+  ! Ancillary data indicator
+  INTEGER, PARAMETER :: DATA_MISSING = 0
+  INTEGER, PARAMETER :: DATA_PRESENT = 1
 
 
 CONTAINS
@@ -67,55 +75,46 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Inquire_SpcCoeff_Binary
+!       SpcCoeff_Binary_InquireFile
 !
 ! PURPOSE:
 !       Function to inquire a Binary format SpcCoeff file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Inquire_SpcCoeff_Binary( Filename                         , &
-!                                               n_Channels      =n_Channels      , &
-!                                               Release         =Release         , &
-!                                               Version         =Version         , &
-!                                               Sensor_Id       =Sensor_Id       , &
-!                                               WMO_Satellite_Id=WMO_Satellite_Id, &
-!                                               WMO_Sensor_Id   =WMO_Sensor_Id   , &
-!                                               RCS_Id          =RCS_Id          , &
-!                                               Message_Log     =Message_Log       )
+!       Error_Status = SpcCoeff_Binary_InquireFile( &
+!                        Filename                           , &
+!                        n_Channels       = n_Channels      , &
+!                        Release          = Release         , &
+!                        Version          = Version         , &
+!                        Sensor_Id        = Sensor_Id       , &
+!                        WMO_Satellite_Id = WMO_Satellite_Id, &
+!                        WMO_Sensor_Id    = WMO_Sensor_Id     )
 !
-! INPUT ARGUMENTS:
-!       Filename:           Character string specifying the name of an SpcCoeff
-!                           format data file.
+! INPUTS:
+!       Filename:           Character string specifying the name of the binary
+!                           SpcCoeff data file to inquire.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:        Character string specifying a filename in which any
-!                           messages will be logged. If not specified, or if an
-!                           error occurs opening the log file, the default action
-!                           is to output messages to standard output.
+! OPTIONAL OUTPUTS:
+!       n_Channels:         Number of sensor channels.
 !                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       n_Channels:         The number of channels dimension of the 
-!                           SpcCoeff data.
+!       Release:            The data/file release number. Used to check
+!                           for data/software mismatch.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Release:            The coefficient file release number.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Version:            The coefficient file version number.
+!       Version:            The data/file version number. Used for
+!                           purposes only in identifying the dataset for
+!                           a particular release.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -139,17 +138,11 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
-!       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the Message_Handler module.
-!                           If == SUCCESS the Binary file inquiry was successful
+!       Error_Status:       The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the file inquire was successful
 !                              == FAILURE an unrecoverable error occurred.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
@@ -158,649 +151,661 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Inquire_SpcCoeff_Binary( Filename        , &  ! Input
-                                    n_Channels      , &  ! Optional Output
-                                    n_FOVs          , &  ! Optional Output
-                                    Release         , &  ! Optional Output
-                                    Version         , &  ! Optional Output
-                                    Sensor_Id       , &  ! Optional Output
-                                    WMO_Satellite_Id, &  ! Optional Output
-                                    WMO_Sensor_Id   , &  ! Optional Output
-                                    RCS_Id          , &  ! Revision control
-                                    Message_Log     ) &  ! Error messaging
-                                  RESULT ( Error_Status )
+  FUNCTION SpcCoeff_Binary_InquireFile( &
+    Filename        , &  ! Input
+    n_Channels      , &  ! Optional output  
+    Release         , &  ! Optional Output
+    Version         , &  ! Optional Output
+    Sensor_Id       , &  ! Optional Output
+    WMO_Satellite_Id, &  ! Optional Output
+    WMO_Sensor_Id   ) &  ! Optional Output
+  RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_FOVs
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release
     INTEGER     , OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id       
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
     INTEGER     , OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id   
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Inquire_SpcCoeff_Binary'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: IO_Status
-    INTEGER :: FileID
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_InquireFile(Binary)'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    INTEGER :: io_stat
+    INTEGER :: fid
     TYPE(SpcCoeff_type) :: SpcCoeff
+
  
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      Message = 'File '//TRIM(Filename)//' not found.'
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Check that the file exists
+    IF ( .NOT. File_Exists( Filename ) ) THEN
+      msg = 'File '//TRIM(Filename)//' not found.'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Open the file
-    Error_Status = Open_Binary_File( Filename,FileID,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening SpcCoeff Binary file '//TRIM(Filename)
+    err_stat = Open_Binary_File( Filename, fid )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Read the Release/Version information
-    READ( FileID,IOSTAT=IO_Status ) SpcCoeff%Release, SpcCoeff%Version
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff file Release/Version values from ",a,&
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    ! Read the release and version
+    READ( fid,IOSTAT=io_stat ) SpcCoeff%Release, SpcCoeff%Version
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading Release/Version. IOSTAT = ",i0)' ) io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
-    ! Read the data dimensions
-    READ( FileID,IOSTAT=IO_Status ) SpcCoeff%n_Channels, SpcCoeff%AC%n_FOVs
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff dimension values from ",a,&
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    ! Read the dimensions
+    READ( fid, IOSTAT=io_stat ) &
+      SpcCoeff%n_Channels
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading dimension values from ",a,". IOSTAT = ",i0)' ) &
+             TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-    ! Read the sensor id information
-    READ(FileID,IOSTAT=IO_Status) SpcCoeff%Sensor_Id       , &
-                                  SpcCoeff%Sensor_Type     , &
-                                  SpcCoeff%WMO_Satellite_Id, &
-                                  SpcCoeff%WMO_Sensor_Id    
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff sensor information from ",a,&
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+
+    ! Read the sensor ids
+    READ( fid, IOSTAT=io_stat ) &
+      SpcCoeff%Sensor_Id       , &
+      SpcCoeff%Sensor_Type     , &
+      SpcCoeff%WMO_Satellite_Id, &
+      SpcCoeff%WMO_Sensor_Id    
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg, '("Error reading sensor information from ",a,". IOSTAT = ",i0)' ) &
+             TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Close the file
-    CLOSE( FileID, IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    CLOSE( fid, IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
 
 
     ! Assign the return arguments
-    IF ( PRESENT(n_Channels      ) ) n_Channels      = SpcCoeff%n_Channels      
-    IF ( PRESENT(n_FOVs          ) ) n_FOVs          = SpcCoeff%AC%n_FOVs          
-    IF ( PRESENT(Release         ) ) Release         = SpcCoeff%Release         
-    IF ( PRESENT(Version         ) ) Version         = SpcCoeff%Version         
-    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id       = SpcCoeff%Sensor_Id       
-    IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id= SpcCoeff%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id   = SpcCoeff%WMO_Sensor_Id   
-
+    IF ( PRESENT(n_Channels      ) ) n_Channels       = SpcCoeff%n_Channels    
+    IF ( PRESENT(Release         ) ) Release          = SpcCoeff%Release
+    IF ( PRESENT(Version         ) ) Version          = SpcCoeff%Version
+    IF ( PRESENT(Sensor_Id       ) ) Sensor_Id        = SpcCoeff%Sensor_Id
+    IF ( PRESENT(WMO_Satellite_Id) ) WMO_Satellite_Id = SpcCoeff%WMO_Satellite_Id
+    IF ( PRESENT(WMO_Sensor_Id   ) ) WMO_Sensor_Id    = SpcCoeff%WMO_Sensor_Id   
+    
   CONTAINS
   
     SUBROUTINE Inquire_CleanUp()
-      CHARACTER(ML) :: Close_Message
       ! Close file if necessary
-      IF ( File_Open( Filename ) ) THEN
-        CLOSE( FileID, IOSTAT=IO_Status )
-        IF ( IO_Status /= 0 ) THEN
-          WRITE( Close_Message,'("; Error closing input file during error cleanup. IOSTAT=",i0)') &
-                               IO_Status
-          Message = TRIM(Message)//TRIM(Close_Message)
-        END IF
+      IF ( File_Open(fid) ) THEN
+        CLOSE( fid,IOSTAT=io_stat )
+        IF ( io_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup'
       END IF
       ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
+    
+  END FUNCTION SpcCoeff_Binary_InquireFile
 
-  END FUNCTION Inquire_SpcCoeff_Binary
 
-
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Read_SpcCoeff_Binary
+!       SpcCoeff_Binary_ReadFile
 !
 ! PURPOSE:
-!       Function to read Binary format SpcCoeff files.
+!       Function to read SpcCoeff object files in Binary format.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_SpcCoeff_Binary( Filename                           , &
-!                                            SpcCoeff                           , &
-!                                            Quiet            =Quiet            , &
-!                                            Process_ID       =Process_ID       , &
-!                                            Output_Process_ID=Output_Process_ID, &
-!                                            RCS_Id           =RCS_Id           , &
-!                                            Message_Log      =Message_Log        )
+!       Error_Status = SpcCoeff_Binary_ReadFile( &
+!                        Filename     , &
+!                        SpcCoeff     , &
+!                        Quiet = Quiet  )
 !
-! INPUT ARGUMENTS:
-!       Filename:           Character string specifying the name of the
-!                           input binary format SpcCoeff data file.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       Filename:       Character string specifying the name of a
+!                       SpcCoeff format data file to read.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
-!       SpcCoeff:           Structure to contain the spectral coefficient
-!                           data read from the file.
-!                           UNITS:      N/A
-!                           TYPE:       SpcCoeff_type
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
+! OUTPUTS:
+!       SpcCoeff:       SpcCoeff object containing the spectral
+!                       coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       SpcCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:              Set this argument to suppress Information messages
-!                           being printed to standard output (or the Message
-!                           log file if the Message_Log optional argument is
-!                           used.) By default, Information messages are printed.
-!                           If QUIET = 0, Information messages are OUTPUT.
-!                              QUIET = 1, Information messages are SUPPRESSED.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Process_ID:         Set this argument to the MPI process ID that this
-!                           function call is running under. This value is used
-!                           solely for controlling INFORMATIOn Message output.
-!                           If MPI is not being used, ignore this argument.
-!                           This argument is ignored if the Quiet argument is set.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Output_Process_ID:  Set this argument to the MPI process ID in which
-!                           all Information messages are to be output. If
-!                           the passed Process_ID value agrees with this value
-!                           the Information messages are output. 
-!                           This argument is ignored if the Quiet argument
-!                           is set.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:        Character string specifying a filename in which
-!                           any messages will be logged. If not specified,
-!                           or if an error occurs opening the log file, the
-!                           default action is to output messages to standard
-!                           output.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:             Character string containing the Revision Control
-!                           System Id field for the module.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: OPTIONAL, INTENT(OUT)
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       Error_Status:       The return value is an integer defining the error status.
-!                           The error codes are defined in the Message_Handler module.
-!                           If == SUCCESS the Binary file read was successful
-!                              == FAILURE an unrecoverable error occurred.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output SpcCoeff argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined on
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
-
-  FUNCTION Read_SpcCoeff_Binary( Filename         , &  ! Input
-                                 SpcCoeff         , &  ! Output
-                                 Quiet            , &  ! Optional input
-                                 Process_ID       , &  ! Optional input
-                                 Output_Process_ID, &  ! Optional input
-                                 RCS_Id           , &  ! Revision control
-                                 Message_Log      ) &  ! Error messaging
-                               RESULT ( Error_Status )
-    ! Arguments
-    CHARACTER(*)          , INTENT(IN)     :: Filename
-    TYPE(SpcCoeff_type)   , INTENT(IN OUT) :: SpcCoeff
-    INTEGER     , OPTIONAL, INTENT(IN)     :: Quiet
-    INTEGER     , OPTIONAL, INTENT(IN)     :: Process_ID
-    INTEGER     , OPTIONAL, INTENT(IN)     :: Output_Process_ID
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Read_SpcCoeff_Binary'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    CHARACTER(ML) :: Process_ID_Tag
-    LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: FileID
-    INTEGER(Long) :: n_Channels, n_FOVs
- 
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Output informational messages.....
-    Noisy = .TRUE.
-    ! ....unless....
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
-      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-    END IF
-
-    IF ( PRESENT( Process_ID ) ) THEN
-      WRITE( Process_ID_Tag,'(";  MPI Prcess ID: ",i0)' ) Process_ID
-    ELSE
-      Process_ID_Tag = ' '
-    END IF
-
-
-    ! Open the file
-    Error_Status = Open_Binary_File( Filename,FileID,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)//TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Read the release/version information
-    READ( FileID,IOSTAT=IO_Status ) SpcCoeff%Release, SpcCoeff%Version
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff file Release/Version values from ",a, &
-                      &". IOSTAT = ",i0,a)' ) TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-    ! ..and check it
-    Error_Status = CheckRelease_SpcCoeff( SpcCoeff,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'SpcCoeff Release check failed for '//TRIM(Filename)//TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Read the data dimensions
-    READ( FileID, IOSTAT=IO_Status ) n_Channels, n_FOVs
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff dimensions from ",a,". IOSTAT = ",i0,a)' ) &
-                     TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Allocate the SpcCoeff structure
-    Error_Status = Allocate_SpcCoeff( n_Channels,SpcCoeff,n_FOVs=n_FOVs,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error occurred allocating SpcCoeff structure.'//TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Read the sensor id information
-    READ( FileID,IOSTAT=IO_Status ) SpcCoeff%Sensor_Id       , &
-                                    SpcCoeff%Sensor_Type     , &
-                                    SpcCoeff%WMO_Satellite_Id, &
-                                    SpcCoeff%WMO_Sensor_Id    
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff sensor information from ",a,". IOSTAT = ",i0,a)' ) &
-                     TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-    
-    
-    ! Read the channel data
-    READ( FileID,IOSTAT=IO_Status ) SpcCoeff%Sensor_Channel            , &
-                                    SpcCoeff%Polarization              , &
-                                    SpcCoeff%Channel_Flag              , &
-                                    SpcCoeff%Frequency                 , &
-                                    SpcCoeff%Wavenumber                , &
-                                    SpcCoeff%Planck_C1                 , &
-                                    SpcCoeff%Planck_C2                 , &
-                                    SpcCoeff%Band_C1                   , &
-                                    SpcCoeff%Band_C2                   , &
-                                    SpcCoeff%Cosmic_Background_Radiance, &
-                                    SpcCoeff%Solar_Irradiance
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error reading SpcCoeff channel data from ",a,". IOSTAT = ",i0,a)' ) &
-                     TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-    
-    
-    ! Read the antenna correction data if necessary
-    IF ( SpcCoeff%AC_Present ) THEN
-      Error_Status = Read_AntCorr_Binary( Filename,SpcCoeff%AC, &
-                                          No_File_Close=SET, &
-                                          No_Allocate  =SET, &
-                                          Quiet        =SET, &
-                                          Message_Log  =Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error reading SpcCoeff antenna correction data from ",a,&
-                        &". IOSTAT = ",i0,a)' ) &
-                       TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-        CALL Read_CleanUp(); RETURN
-      END IF
-      ! ..Check that the AC data is for the same sensor
-      IF ( SpcCoeff%Sensor_Id           /= SpcCoeff%AC%Sensor_Id        .OR. &
-           SpcCoeff%WMO_Satellite_Id    /= SpcCoeff%AC%WMO_Satellite_Id .OR. &
-           SpcCoeff%WMO_Sensor_Id       /= SpcCoeff%AC%WMO_Sensor_Id    .OR. &
-           ANY( SpcCoeff%Sensor_Channel /= SpcCoeff%AC%Sensor_Channel )      ) THEN
-        Message = 'Antenna correction sensor information is inconsistent with SpcCoeff'//&
-                  TRIM(Process_ID_Tag)
-        CALL Read_CleanUp(); RETURN
-      END IF
-           
-    END IF
-
-
-    ! Close the file
-    CLOSE( FileID,IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0,a )' ) &
-                     TRIM(Filename), IO_Status, TRIM(Process_ID_Tag)
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Output an info message
-    IF ( Noisy ) THEN
-      CALL Info_SpcCoeff( SpcCoeff, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
-    END IF
-
-  CONTAINS
-  
-    SUBROUTINE Read_CleanUp()
-      CHARACTER(ML) :: Close_Message
-      ! Close file if necessary
-      IF ( File_Open( Filename ) ) THEN
-        CLOSE( FileID,IOSTAT=IO_Status )
-        IF ( IO_Status /= 0 ) THEN
-          WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
-                               TRIM(Filename), IO_Status
-          Message = TRIM(Message)//TRIM(Close_Message)
-        END IF
-      END IF
-      ! Destroy the structure
-      IF ( Associated_SpcCoeff( SpcCoeff ) ) THEN
-        Error_Status = Destroy_SpcCoeff( SpcCoeff, Message_Log=Message_Log )
-        IF ( Error_Status /= SUCCESS ) &
-          Message = TRIM(Message)//'; Error destroying SpcCoeff structure during error cleanup.'
-      END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Read_CleanUp
-    
-  END FUNCTION Read_SpcCoeff_Binary
-
-
-!------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Write_SpcCoeff_Binary
-!
-! PURPOSE:
-!       Function to write Binary format SpcCoeff files.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Write_SpcCoeff_Binary( Filename               , &
-!                                             SpcCoeff               , &
-!                                             Quiet      = Quiet     , &
-!                                             RCS_Id     = RCS_Id    , &
-!                                             Message_Log=Message_Log  )
-!
-! INPUT ARGUMENTS:
-!       Filename:     Character string specifying the name of an output
-!                     SpcCoeff format data file.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-!       SpcCoeff:     Structure containing the spectral coefficient data.
-!                     UNITS:      N/A
-!                     TYPE:       SpcCoeff_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:        Set this keyword to suppress information messages being
-!                     printed to standard output (or the Message log file if 
-!                     the Message_Log optional argument is used.) By default,
-!                     information messages are printed.
-!                     If QUIET = 0, information messages are OUTPUT.
-!                        QUIET = 1, information messages are SUPPRESSED.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the Binary file write was successful
-!                        == FAILURE - the input SpcCoeff structure contains
-!                                     unassociated pointer members, or
-!                                   - a unrecoverable write error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! SIDE EFFECTS:
-!       If the output file already exists, it is overwritten.
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS, the file read was successful
+!                          == FAILURE, an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Write_SpcCoeff_Binary( Filename   , &  ! Input
-                                  SpcCoeff   , &  ! Input
-                                  Quiet      , &  ! Optional input
-                                  RCS_Id     , &  ! Revision control
-                                  Message_Log) &  ! Error messaging
-                                RESULT( Error_Status )
+  FUNCTION SpcCoeff_Binary_ReadFile( &
+    Filename, &  ! Input
+    SpcCoeff, &  ! Output
+    Quiet   , &  ! Optional input
+    Debug   ) &  ! Optional input (Debug output control)
+  RESULT( err_stat )
     ! Arguments
-    CHARACTER(*)          , INTENT(IN)  :: Filename
-    TYPE(SpcCoeff_type)   , INTENT(IN)  :: SpcCoeff
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    CHARACTER(*),        INTENT(IN)  :: Filename
+    TYPE(SpcCoeff_type), INTENT(OUT) :: SpcCoeff
+    LOGICAL,   OPTIONAL, INTENT(IN)  :: Quiet
+    LOGICAL,   OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Write_SpcCoeff_Binary'
-    ! Local variables
-    CHARACTER(ML) :: Message
-    LOGICAL :: Noisy
-    INTEGER :: IO_Status
-    INTEGER :: FileID
- 
-
-    ! Set up
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    Noisy = .TRUE.
-    ! ....unless the QUIET keyword is set.
-    IF ( PRESENT( Quiet ) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
-    END IF
-
-    IF ( .NOT. Associated_SpcCoeff( SpcCoeff ) ) THEN
-      Message = 'Some or all INPUT SpcCoeff pointer members are NOT associated.'
-      CALL Write_Cleanup(); RETURN
-    END IF
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_ReadFile(Binary)'
+    ! Function variables
+    CHARACTER(ML) :: msg, io_msg
+    LOGICAL :: noisy
+    INTEGER :: io_stat
+    INTEGER :: fid
+    INTEGER(Long) :: ac_present
+    INTEGER(Long) :: nc_present
+    TYPE(SpcCoeff_type) :: dummy
     
-    Error_Status = CheckRelease_SpcCoeff( SpcCoeff,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'SpcCoeff Release check failed.'
-      CALL Write_Cleanup(); RETURN
+
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Override Quiet settings if debug set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug ) noisy = .TRUE.
     END IF
 
-    IF ( SpcCoeff%n_Channels < 1 ) THEN
-      Message = 'Channel dimension of SpcCoeff structure is < or = 0.'
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
+   
     ! Open the file
-    Error_Status = Open_Binary_File( Filename,FileID,For_Output=SET,Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      Message = 'Error opening '//TRIM(Filename)
-      CALL Write_Cleanup(); RETURN
+    IF ( File_Exists( Filename ) ) THEN
+      err_stat = Open_Binary_File( Filename, fid )
+      IF ( err_Stat /= SUCCESS ) THEN
+        msg = 'Error opening '//TRIM(Filename)
+        CALL Read_CleanUp(); RETURN
+      END IF
+    ELSE
+      msg = 'File '//TRIM(Filename)//' not found.'
+      CALL Read_CleanUp(); RETURN
     END IF
 
 
-    ! Write the release/version information
-    WRITE( FileID,IOSTAT=IO_Status ) SpcCoeff%Release, SpcCoeff%Version
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing SpcCoeff file Release/Version values to ",a, &
-                      &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-      CALL Write_Cleanup(); RETURN
+    ! Read and check the release and version
+    READ( fid, IOSTAT=io_stat ) &
+      dummy%Release, &
+      dummy%Version
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading Release/Version. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+    IF ( .NOT. SpcCoeff_ValidRelease( dummy ) ) THEN
+      msg = 'SpcCoeff Release check failed.'
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Write the data dimensions
-    WRITE( FileID,IOSTAT=IO_Status ) SpcCoeff%n_Channels, SpcCoeff%AC%n_FOVs
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing SpcCoeff dimensions to ",a,". IOSTAT = ",i0)' ) &
-                     TRIM(Filename), IO_Status
-      CALL Write_Cleanup(); RETURN
+    ! Read the spectral coefficient data
+    ! ...Read the dimensions
+    READ( fid, IOSTAT=io_stat ) dummy%n_Channels
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Allocate the object
+    CALL SpcCoeff_Create( SpcCoeff        , &
+                          dummy%n_Channels  )                  
+    IF ( .NOT. SpcCoeff_Associated( SpcCoeff ) ) THEN
+      msg = 'SpcCoeff object allocation failed.'
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Read the sensor info
+    READ( fid, IOSTAT=io_stat ) &
+      SpcCoeff%Sensor_Id       , &
+      SpcCoeff%Sensor_Type     , &
+      SpcCoeff%WMO_Satellite_Id, &
+      SpcCoeff%WMO_Sensor_Id   
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading sensor ids. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Read the channel data
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      SpcCoeff%Sensor_Channel            , &
+      SpcCoeff%Polarization              , &
+      SpcCoeff%Channel_Flag              , &
+      SpcCoeff%Frequency                 , &
+      SpcCoeff%Wavenumber                , &
+      SpcCoeff%Planck_C1                 , &
+      SpcCoeff%Planck_C2                 , &
+      SpcCoeff%Band_C1                   , &
+      SpcCoeff%Band_C2                   , &
+      SpcCoeff%Cosmic_Background_Radiance, &
+      SpcCoeff%Solar_Irradiance
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading channel data. '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Write the sensor id information
-    WRITE( FileID,IOSTAT=IO_Status ) SpcCoeff%Sensor_Id       , &
-                                     SpcCoeff%Sensor_Type     , &
-                                     SpcCoeff%WMO_Satellite_Id, &
-                                     SpcCoeff%WMO_Sensor_Id    
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing SpcCoeff sensor information to ",a,". IOSTAT = ",i0)' ) &
-                     TRIM(Filename), IO_Status
-      CALL Write_Cleanup(); RETURN
-    END IF
+    ! Explicitly assign the version number
+    SpcCoeff%Version = dummy%Version
     
     
-    ! Read the channel data
-    WRITE( FileID,IOSTAT=IO_Status ) SpcCoeff%Sensor_Channel            , &
-                                     SpcCoeff%Polarization              , &
-                                     SpcCoeff%Channel_Flag              , &
-                                     SpcCoeff%Frequency                 , &
-                                     SpcCoeff%Wavenumber                , &
-                                     SpcCoeff%Planck_C1                 , &
-                                     SpcCoeff%Planck_C2                 , &
-                                     SpcCoeff%Band_C1                   , &
-                                     SpcCoeff%Band_C2                   , &
-                                     SpcCoeff%Cosmic_Background_Radiance, &
-                                     SpcCoeff%Solar_Irradiance
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error writing SpcCoeff channel data to ",a,". IOSTAT = ",i0)' ) &
-                     TRIM(Filename), IO_Status
-      CALL Write_Cleanup(); RETURN
+    ! Read the antenna correction data if it's present
+    ! ...Read the data indicator
+    READ( fid, IOSTAT=io_stat ) ac_present
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading antenna correction data indicator. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
     END IF
-    
-    
-    ! Write the antenna correction data if necessary
-    IF ( SpcCoeff%AC_Present ) THEN
-      Error_Status = Write_AntCorr_Binary( Filename,SpcCoeff%AC, &
-                                           No_File_Close=SET, &
-                                           Quiet        =SET, &
-                                           Message_Log  =Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error writing SpcCoeff antenna correction data to ",a,&
-                        &". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
-        CALL Write_Cleanup(); RETURN
+    ! ...Read the antenna correction data
+    IF ( ac_present == DATA_PRESENT ) THEN
+      err_stat = ACCoeff_Binary_ReadFile( &
+                   Filename         , &
+                   SpcCoeff%AC      , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error reading antenna correction data. IOSTAT = ",i0)' ) io_stat
+        CALL Read_Cleanup(); RETURN
+      END IF
+      ! ..Check that the ACCoeff data is for the same sensor
+      IF ( SpcCoeff%Sensor_Id           /= SpcCoeff%AC%Sensor_Id        .OR. &
+           SpcCoeff%WMO_Satellite_Id    /= SpcCoeff%AC%WMO_Satellite_Id .OR. &
+           SpcCoeff%WMO_Sensor_Id       /= SpcCoeff%AC%WMO_Sensor_Id    .OR. &
+           ANY( SpcCoeff%Sensor_Channel /= SpcCoeff%AC%Sensor_Channel ) ) THEN
+        msg = 'Antenna correction sensor information is inconsistent with SpcCoeff'
+        CALL Read_CleanUp(); RETURN
       END IF
     END IF
-      
-
+    
+    
+    ! Read the NLTE correction data if it's present
+    ! ...Read the data indicator
+    READ( fid, IOSTAT=io_stat ) nc_present
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error reading NLTE correction data indicator. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Read the NLTE correction data
+    IF ( nc_present == DATA_PRESENT ) THEN
+      err_stat = NLTECoeff_Binary_ReadFile( &
+                   Filename         , &
+                   SpcCoeff%NC      , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error reading NLTE correction data. IOSTAT = ",i0)' ) io_stat
+        CALL Read_Cleanup(); RETURN
+      END IF
+      ! ..Check that the NLTECoeff data is for the same sensor
+      IF ( SpcCoeff%Sensor_Id           /= SpcCoeff%NC%Sensor_Id        .OR. &
+           SpcCoeff%WMO_Satellite_Id    /= SpcCoeff%NC%WMO_Satellite_Id .OR. &
+           SpcCoeff%WMO_Sensor_Id       /= SpcCoeff%NC%WMO_Sensor_Id    .OR. &
+           ANY( SpcCoeff%Sensor_Channel /= SpcCoeff%NC%Sensor_Channel ) ) THEN
+        msg = 'non-LTE correction sensor information is inconsistent with SpcCoeff'
+        CALL Read_CleanUp(); RETURN
+      END IF
+    END IF
+    
+    
     ! Close the file
-    CLOSE( FileID,IOSTAT=IO_Status )
-    IF ( IO_Status /= 0 ) THEN
-      WRITE( Message,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), IO_Status
+    CLOSE( fid,IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      CALL Read_Cleanup(); RETURN
+    END IF
+
+
+    ! Output an info message
+     IF ( noisy ) THEN
+       CALL SpcCoeff_Info( SpcCoeff, msg, NoComponents = .TRUE. )
+       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
+     END IF
+
+   CONTAINS
+   
+     SUBROUTINE Read_CleanUp()
+       IF ( File_Open(Filename) ) THEN
+         CLOSE( fid,IOSTAT=io_stat )
+         IF ( io_stat /= 0 ) &
+           msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+       END IF
+       CALL SpcCoeff_Destroy( SpcCoeff )
+       err_stat = FAILURE
+       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+     END SUBROUTINE Read_CleanUp
+
+  END FUNCTION SpcCoeff_Binary_ReadFile
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       SpcCoeff_Binary_WriteFile
+!
+! PURPOSE:
+!       Function to write SpcCoeff object files in Binary format.
+!
+! CALLING SEQUENCE:
+!       Error_Status = SpcCoeff_Binary_WriteFile( &
+!                        Filename     , &
+!                        SpcCoeff     , &
+!                        Quiet = Quiet  )
+!
+! INPUTS:
+!       Filename:       Character string specifying the name of a
+!                       SpcCoeff format data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       SpcCoeff:       SpcCoeff object containing the spectral
+!                       coefficient data.
+!                       UNITS:      N/A
+!                       TYPE:       SpcCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS, the file write was successful
+!                          == FAILURE, an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION SpcCoeff_Binary_WriteFile( &
+    Filename, &  ! Input
+    SpcCoeff, &  ! Output
+    Quiet   , &  ! Optional input
+    Debug   ) &  ! Optional input (Debug output control)
+  RESULT( err_stat )
+    ! Arguments
+    CHARACTER(*),        INTENT(IN) :: Filename
+    TYPE(SpcCoeff_type), INTENT(IN) :: SpcCoeff
+    LOGICAL,   OPTIONAL, INTENT(IN) :: Quiet
+    LOGICAL,   OPTIONAL, INTENT(IN) :: Debug
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SpcCoeff_WriteFile(Binary)'
+    CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    LOGICAL :: noisy
+    INTEGER :: io_stat
+    INTEGER :: fid
+    INTEGER :: ac_present
+    INTEGER :: nc_present
+    
+
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Check Quiet argument
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Override Quiet settings if debug set.
+    IF ( PRESENT(Debug) ) THEN
+      IF ( Debug ) noisy = .TRUE.
+    END IF
+    ! ...Check there is data to write
+    IF ( .NOT. SpcCoeff_Associated( SpcCoeff ) ) THEN
+      msg = 'SpcCoeff object is empty.'
+      CALL Write_Cleanup(); RETURN
+    END IF
+
+   
+    ! Open the file
+    err_stat = Open_Binary_File( Filename, fid, For_Output=.TRUE. )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error opening '//TRIM(Filename)
+      CALL Write_CleanUp(); RETURN
+    END IF
+
+
+    ! Write the release and version
+    WRITE( fid,IOSTAT=io_stat ) &
+      SpcCoeff%Release, &
+      SpcCoeff%Version
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing Release/Version. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the spectral coefficient data
+    ! ...Write the dimensions
+    WRITE( fid, IOSTAT=io_stat ) SpcCoeff%n_Channels
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Write the sensor info
+    WRITE( fid, IOSTAT=io_stat ) &
+      SpcCoeff%Sensor_Id       , &
+      SpcCoeff%Sensor_Type     , &
+      SpcCoeff%WMO_Satellite_Id, &
+      SpcCoeff%WMO_Sensor_Id   
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing sensor ids. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Write the channel data
+    WRITE( fid, IOSTAT=io_stat ) &
+      SpcCoeff%Sensor_Channel            , &
+      SpcCoeff%Polarization              , &
+      SpcCoeff%Channel_Flag              , &
+      SpcCoeff%Frequency                 , &
+      SpcCoeff%Wavenumber                , &
+      SpcCoeff%Planck_C1                 , &
+      SpcCoeff%Planck_C2                 , &
+      SpcCoeff%Band_C1                   , &
+      SpcCoeff%Band_C2                   , &
+      SpcCoeff%Cosmic_Background_Radiance, &
+      SpcCoeff%Solar_Irradiance             
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing channel data. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+
+
+    ! Write the antenna correction data if it's present
+    IF ( ACCoeff_Associated( SpcCoeff%AC ) ) THEN
+      ac_present = DATA_PRESENT
+    ELSE
+      ac_present = DATA_MISSING
+    END IF
+    ! ...Write the data indicator
+    WRITE( fid, IOSTAT=io_stat ) ac_present
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing antenna correction data indicator. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Write the antenna correction data
+    IF ( ac_present == DATA_PRESENT ) THEN
+      err_stat = ACCoeff_Binary_WriteFile( &
+                   Filename         , &
+                   SpcCoeff%AC      , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error writing antenna correction data. IOSTAT = ",i0)' ) io_stat
+        CALL Write_Cleanup(); RETURN
+      END IF
+      ! ..Check that the ACCoeff data is for the same sensor
+      IF ( SpcCoeff%Sensor_Id           /= SpcCoeff%AC%Sensor_Id        .OR. &
+           SpcCoeff%WMO_Satellite_Id    /= SpcCoeff%AC%WMO_Satellite_Id .OR. &
+           SpcCoeff%WMO_Sensor_Id       /= SpcCoeff%AC%WMO_Sensor_Id    .OR. &
+           ANY( SpcCoeff%Sensor_Channel /= SpcCoeff%AC%Sensor_Channel ) ) THEN
+        msg = 'Antenna correction sensor information is inconsistent with SpcCoeff'
+        CALL Write_CleanUp(); RETURN
+      END IF
+    END IF
+    
+    
+    ! Write the NLTE correction data if it's present
+    IF ( NLTECoeff_Associated( SpcCoeff%NC ) ) THEN
+      nc_present = DATA_PRESENT
+    ELSE
+      nc_present = DATA_MISSING
+    END IF
+    ! ...Write the data indicator
+    WRITE( fid, IOSTAT=io_stat ) nc_present
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error writing NLTE correction data indicator. IOSTAT = ",i0)' ) io_stat
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Write the NLTE correction data
+    IF ( nc_present == DATA_PRESENT ) THEN
+      err_stat = NLTECoeff_Binary_WriteFile( &
+                   Filename         , &
+                   SpcCoeff%NC      , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( io_stat /= 0 ) THEN
+        WRITE( msg,'("Error writing NLTE correction data. IOSTAT = ",i0)' ) io_stat
+        CALL Write_Cleanup(); RETURN
+      END IF
+      ! ..Check that the NLTECoeff data is for the same sensor
+      IF ( SpcCoeff%Sensor_Id           /= SpcCoeff%NC%Sensor_Id        .OR. &
+           SpcCoeff%WMO_Satellite_Id    /= SpcCoeff%NC%WMO_Satellite_Id .OR. &
+           SpcCoeff%WMO_Sensor_Id       /= SpcCoeff%NC%WMO_Sensor_Id    .OR. &
+           ANY( SpcCoeff%Sensor_Channel /= SpcCoeff%NC%Sensor_Channel ) ) THEN
+        msg = 'non-LTE correction sensor information is inconsistent with SpcCoeff'
+        CALL Write_CleanUp(); RETURN
+      END IF
+    END IF
+    
+    
+    ! Close the file
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    IF ( io_stat /= 0 ) THEN
+      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
       CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
-      CALL Info_SpcCoeff( SpcCoeff, Message )
-      CALL Display_Message( ROUTINE_NAME, &
-                            'FILE: '//TRIM(Filename)//'; '//TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+     IF ( noisy ) THEN
+       CALL SpcCoeff_Info( SpcCoeff, msg, NoComponents = .TRUE. )
+       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
+     END IF
+
+   CONTAINS
+   
+     SUBROUTINE Write_CleanUp()
+       IF ( File_Open(Filename) ) THEN
+         CLOSE( fid, STATUS=WRITE_ERROR_STATUS, IOSTAT=io_stat )
+         IF ( io_stat /= 0 ) &
+           msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+       END IF
+       err_stat = FAILURE
+       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+     END SUBROUTINE Write_CleanUp
+
+  END FUNCTION SpcCoeff_Binary_WriteFile
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       SpcCoeff_Binary_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the version information for the
+!       I/O module(s).
+!
+! CALLING SEQUENCE:
+!       CALL SpcCoeff_IOVersion( Id )
+!
+! OUTPUTS:
+!       Id:     Character string containing the version Id information for the
+!               structure I/O module(s). If the string length is sufficient,
+!               the version information for all the modules (this, and those
+!               for the derived type components) are concatenated. Otherwise
+!               only the version id for this module is returned.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE SpcCoeff_Binary_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+    INTEGER, PARAMETER :: LINEFEED = 10
+    INTEGER, PARAMETER :: SL = 256
+    CHARACTER(SL)   :: AC_Id
+    CHARACTER(SL)   :: NC_Id
+    CHARACTER(SL*3) :: IO_Id
+    CALL ACCoeff_Binary_IOVersion( AC_Id )
+    CALL NLTECoeff_Binary_IOVersion( NC_Id )
+    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+            '    '//TRIM(AC_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+            '    '//TRIM(NC_Id)
+    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
+      Id = IO_Id
+    ELSE
+      Id = MODULE_VERSION_ID
     END IF
-
-  CONTAINS
-  
-    SUBROUTINE Write_CleanUp()
-      CHARACTER(ML) :: Close_Message
-      ! Close file if it's open
-      IF ( File_Open( Filename ) ) THEN
-        CLOSE( FileID,IOSTAT=IO_Status )
-        IF ( IO_Status /= 0 ) THEN
-          WRITE( Close_Message,'("; Error closing ",a," during error cleanup. IOSTAT=",i0)') &
-                               TRIM(Filename), IO_Status
-          Message = TRIM(Message)//TRIM(Close_Message)
-        END IF
-      END IF
-      ! Set error status and print error message
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Write_CleanUp
-
-  END FUNCTION Write_SpcCoeff_Binary
+  END SUBROUTINE SpcCoeff_Binary_IOVersion
 
 END MODULE SpcCoeff_Binary_IO

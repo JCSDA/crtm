@@ -23,46 +23,46 @@ SRC_FILES = Type_Kinds.f90 \
             Binary_File_Utility.f90 \
             String_Utility.f90 \
             SignalFile_Utility.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
-            AntCorr_Define.f90 \
-            AntCorr_Binary_IO.f90 \
-            AntCorr_netCDF_IO.f90 \
-            SpcCoeff_Define.f90 \
             SensorInfo_Parameters.f90 \
+            SpcCoeff_Define.f90 \
+              ACCoeff_Define.f90 \
+              NLTECoeff_Define.f90 \
             SpcCoeff_Binary_IO.f90 \
-            SpcCoeff_netCDF_IO.f90
+              ACCoeff_Binary_IO.f90 \
+              NLTECoeff_Binary_IO.f90 \
+            SpcCoeff_netCDF_IO.f90 \
+              ACCoeff_netCDF_IO.f90 \
+              NLTECoeff_netCDF_IO.f90 \
+            SpcCoeff_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-NC_LIB = $(HOME)/local/netcdf
-INCLUDES = -I$(NC_LIB)/include
-LIBRARIES = -L$(NC_LIB)/lib -lnetcdf
+INCLUDES = -I$(HOME)/local/netcdf/include
+LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
-create_links:
+create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
+remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Script install target
-install_script:
+install::
 	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
 
 # Squeaky clean target
-realclean: remove_links clean
+realclean:: remove_links clean
 
 # Source dependency lists
 include make.dependencies
+
 
 # Define default rules
 include $(CRTM_SOURCE_ROOT)/make.rules

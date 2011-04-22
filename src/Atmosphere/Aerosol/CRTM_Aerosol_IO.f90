@@ -21,7 +21,6 @@ MODULE CRTM_Aerosol_IO
   USE File_Utility       , ONLY: File_Exists, File_Open
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE CRTM_Parameters    , ONLY: SET
   USE CRTM_Aerosol_Define, ONLY: CRTM_Aerosol_type, &
                                  CRTM_Aerosol_Associated, &
                                  CRTM_Aerosol_Destroy, &
@@ -501,7 +500,7 @@ CONTAINS
       END IF
     ELSE
       ! No, the file is not open
-      err_stat = Open_Binary_File( Filename, fid, For_Output=SET )
+      err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error opening '//TRIM(Filename)
         CALL Write_Cleanup(); RETURN

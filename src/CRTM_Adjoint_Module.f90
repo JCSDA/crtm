@@ -25,7 +25,10 @@ MODULE CRTM_Adjoint_Module
                                         MAX_N_ANGLES           , &
                                         MAX_N_AZIMUTH_FOURIER  , &
                                         MAX_SOURCE_ZENITH_ANGLE
-  USE CRTM_SpcCoeff,              ONLY: SC, VISIBLE_SENSOR
+  USE CRTM_SpcCoeff,              ONLY: SC, &
+                                        SpcCoeff_IsInfraredSensor , &
+                                        SpcCoeff_IsMicrowaveSensor, &
+                                        SpcCoeff_IsVisibleSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
                                         CRTM_Atmosphere_IsValid, &
@@ -88,7 +91,7 @@ MODULE CRTM_Adjoint_Module
                                         RTV_Associated, &
                                         RTV_Destroy   , &
                                         RTV_Create
-  USE CRTM_AntCorr,               ONLY: CRTM_Compute_AntCorr, &
+  USE CRTM_AntennaCorrection,     ONLY: CRTM_Compute_AntCorr, &
                                         CRTM_Compute_AntCorr_AD
   USE CRTM_MoleculeScatter,       ONLY: CRTM_Compute_MoleculeScatter, &
                                         CRTM_Compute_MoleculeScatter_AD
@@ -96,6 +99,19 @@ MODULE CRTM_Adjoint_Module
 
   USE CRTM_CloudCoeff,            ONLY: CRTM_CloudCoeff_IsLoaded
   USE CRTM_AerosolCoeff,          ONLY: CRTM_AerosolCoeff_IsLoaded
+
+  USE CRTM_NLTECorrection,        ONLY: NLTE_Predictor_type       , &
+                                        NLTE_Predictor_IsActive   , &
+                                        Compute_NLTE_Predictor    , &
+                                        Compute_NLTE_Predictor_AD , &
+                                        Compute_NLTE_Correction   , &
+                                        Compute_NLTE_Correction_AD
+  
+  USE ACCoeff_Define,             ONLY: ACCoeff_Associated
+  USE NLTECoeff_Define,           ONLY: NLTECoeff_Associated
+
+  USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
+                                        CRTM_Planck_Temperature_AD
 
   ! -----------------------
   ! Disable implicit typing
@@ -241,11 +257,6 @@ CONTAINS
 !         spectral dimensionality (the "L" dimension) as the RTSolution
 !         structures.
 !
-!       - The INTENT on the output RTSolution, Atmosphere_AD, and
-!         Surface_AD arguments are IN OUT rather than just OUT. This is
-!         necessary because the arguments should be defined upon input.
-!         To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -280,6 +291,7 @@ CONTAINS
     LOGICAL :: Check_Input
     LOGICAL :: User_Emissivity, User_Direct_Reflectivity
     LOGICAL :: User_AntCorr, Compute_AntCorr
+    LOGICAL :: Apply_NLTE_Correction
     LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
     INTEGER :: iFOV
     INTEGER :: n, n_Sensors,  SensorIndex
@@ -292,6 +304,8 @@ CONTAINS
     REAL(fp) :: Wavenumber
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
+    ! Local options structure for default values
+    TYPE(CRTM_Options_type) :: Default_Options
     ! Local atmosphere structure for extra layering
     TYPE(CRTM_Atmosphere_type) :: Atm, Atm_AD
     ! Component variables
@@ -306,6 +320,8 @@ CONTAINS
     TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
     TYPE(RTV_type) :: RTV  ! RTSolution
+    ! NLTE correction term predictors
+    TYPE(NLTE_Predictor_type)   :: NLTE_Predictor, NLTE_Predictor_AD
 
     ! ------
     ! SET UP
@@ -326,7 +342,7 @@ CONTAINS
       WRITE( Message,'("Output RTSolution structure arrays too small (",i0," and ",i0,&
              &") to hold results for the number of requested channels (",i0,")")') &
              SIZE(RTSolution,DIM=1), SIZE(RTSolution_AD,DIM=1), n_Channels
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
 
@@ -343,7 +359,7 @@ CONTAINS
          SIZE(RTSolution,   DIM=2) /= n_Profiles      ) THEN
       Error_Status = FAILURE
       Message = 'Inconsistent profile dimensionality for input arguments.'
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
     ! ...Check the profile dimensionality of the other optional arguments
@@ -353,7 +369,7 @@ CONTAINS
       IF ( SIZE(Options) /= n_Profiles ) THEN
         Error_Status = FAILURE
         Message = 'Inconsistent profile dimensionality for Options optional input argument.'
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
     END IF
@@ -366,7 +382,7 @@ CONTAINS
          (.NOT. CRTM_SfcOptics_Associated(SfcOptics_AD)) ) THEN
       Error_Status = FAILURE
       Message = 'Error allocating SfcOptics data structures'
-      CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
     END IF
     
@@ -389,7 +405,7 @@ CONTAINS
          Error_Status = FAILURE                                                                 
          WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
                 &"for the aerosol case profile #",i0)' ) m                                      
-         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )                      
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                      
          RETURN                                                                                 
       END IF
 
@@ -415,9 +431,10 @@ CONTAINS
 
       ! Check the optional Options structure argument
       ! ...Specify default actions
-      Check_Input     = .TRUE.
-      User_Emissivity = .FALSE.
-      User_AntCorr    = .FALSE.
+      Check_Input           = Default_Options%Check_Input
+      User_Emissivity       = Default_Options%Use_Emissivity
+      User_AntCorr          = Default_Options%Use_Antenna_Correction
+      Apply_NLTE_Correction = Default_Options%Apply_NLTE_Correction
       ! ...Check the Options argument
       IF (Options_Present) THEN
         ! Override input checker with option
@@ -431,7 +448,7 @@ CONTAINS
             WRITE( Message,'( "Input Options channel dimension (", i0, ") is less ", &
                    &"than the number of requested channels (",i0, ")" )' ) &
                    Options(m)%n_Channels, n_Channels
-            CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+            CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
           ! Check if the supplied direct reflectivity should be used
@@ -439,6 +456,8 @@ CONTAINS
         END IF
         ! Check if antenna correction should be attempted
         User_AntCorr = Options(m)%Use_Antenna_Correction
+        ! Set NLTE correction option
+        Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -493,7 +512,7 @@ CONTAINS
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error adding FWD extra layers to profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
       ! ...Check the total number of Atm layers
@@ -502,7 +521,7 @@ CONTAINS
         WRITE( Message,'("Added layers [",i0,"] cause total [",i0,"] to exceed the ",&
                &"maximum allowed [",i0,"] for profile #",i0)' ) &
                Atm%n_Added_Layers, Atm%n_Layers, MAX_N_LAYERS, m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
       ! ...Similarly extend a copy of the input adjoint atmosphere
@@ -520,7 +539,7 @@ CONTAINS
            AllocStatus_AD(1) /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error allocating AtmOptics data structures for profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
 
@@ -539,7 +558,9 @@ CONTAINS
 
 
         ! Check if antenna correction to be applied for current sensor
-        IF ( User_AntCorr .AND. SC(SensorIndex)%AC_Present .AND. iFOV /= 0 ) THEN
+        IF ( User_AntCorr                             .AND. &
+             ACCoeff_Associated( SC(SensorIndex)%AC ) .AND. &
+             iFOV /= 0 ) THEN
           Compute_AntCorr = .TRUE.
         ELSE
           Compute_AntCorr = .FALSE.
@@ -558,7 +579,7 @@ CONTAINS
           Error_Status=FAILURE
           WRITE( Message,'("Error allocating predictor structures for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
         ! ...Compute forward model predictors
@@ -573,7 +594,7 @@ CONTAINS
         ! Allocate the RTV structure if necessary
         IF( Atm%n_Clouds   > 0 .OR. &
             Atm%n_Aerosols > 0 .OR. &
-            SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR ) THEN
+            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
           CALL RTV_Create( RTV, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, Atm%n_Layers )
           IF ( .NOT. RTV_Associated(RTV) ) THEN
             Error_Status=FAILURE
@@ -582,6 +603,16 @@ CONTAINS
             CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
+        END IF
+
+
+        ! Compute NLTE correction predictors
+        IF ( Apply_NLTE_Correction ) THEN
+          CALL Compute_NLTE_Predictor( &
+                 SC(SensorIndex)%NC, &  ! Input 
+                 Atm               , &  ! Input 
+                 GeometryInfo      , &  ! Input 
+                 NLTE_Predictor      )  ! Output
         END IF
 
 
@@ -632,7 +663,7 @@ CONTAINS
              RTV%Solar_Flag_true = .TRUE.
           END IF
           ! ...Visible channel with solar radiation
-          IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
+          IF( SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) .AND. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .TRUE.
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
@@ -653,7 +684,7 @@ CONTAINS
                      TRIM(ChannelInfo(n)%Sensor_ID), &
                      ChannelInfo(n)%Sensor_Channel(l), &
                      m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           ELSE
@@ -673,7 +704,7 @@ CONTAINS
               WRITE( Message,'("Error computing CloudScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -690,7 +721,7 @@ CONTAINS
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -725,73 +756,185 @@ CONTAINS
           AtmOptics_AD%Single_Scatter_Albedo = ZERO
           IF ( AtmOptics%n_Legendre_Terms > 0 ) THEN
             AtmOptics_AD%Phase_Coefficient = ZERO
+            AtmOptics_AD%Asymmetry_Factor  = ZERO
             AtmOptics_AD%Delta_Truncation  = ZERO
           END IF
-          ! ...Fourier expansion over azimuth angle
-          Azi_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
+
+
+          
+          ! ###################################################
+          ! TEMPORARY FIX : SENSOR-DEPENDENT AZIMUTH ANGLE LOOP
+          ! ###################################################
+          Sensor_Dependent_RTSolution: &
+          IF ( SpcCoeff_IsInfraredSensor( SC(SensorIndex) ) .OR. &
+               SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
+            ! ------------------------------
+            ! INFRARED and MICROWAVE sensors
+            ! ------------------------------
 
             ! Set dependent component counters 
-            RTV%mth_Azi = mth_Azi
-            SfcOptics%mth_Azi = mth_Azi
+            RTV%mth_Azi = 0
+            SfcOptics%mth_Azi = 0
                       
             ! Solve the forward radiative transfer problem
-            Error_Status = CRTM_Compute_RTSolution( Atm             , &  ! Input
-                                                    Surface(m)      , &  ! Input
-                                                    AtmOptics       , &  ! Input
-                                                    SfcOptics       , &  ! Input
-                                                    GeometryInfo    , &  ! Input
-                                                    SensorIndex     , &  ! Input
-                                                    ChannelIndex    , &  ! Input
-                                                    RTSolution(ln,m), &  ! Output
-                                                    RTV               )  ! Internal variable output
+            Error_Status = CRTM_Compute_RTSolution( &
+                             Atm             , &  ! Input
+                             Surface(m)      , &  ! Input
+                             AtmOptics       , &  ! Input
+                             SfcOptics       , &  ! Input
+                             GeometryInfo    , &  ! Input
+                             SensorIndex     , &  ! Input
+                             ChannelIndex    , &  ! Input
+                             RTSolution(ln,m), &  ! Output
+                             RTV               )  ! Internal variable output
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'( "Error computing RTSolution for ", a, &
                      &", channel ", i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-
-
-            ! Compute antenna correction if required
-!            IF ( Compute_AntCorr .AND. mth_Azi == 0 ) THEN
+          
+            ! Compute non-LTE correction to radiance if required
+            IF ( Apply_NLTE_Correction .AND. NLTE_Predictor_IsActive(NLTE_Predictor) ) &
+              CALL Compute_NLTE_Correction( &
+                     SC(SensorIndex)%NC       , &  ! Input    
+                     ChannelIndex             , &  ! Input    
+                     NLTE_Predictor           , &  ! Input    
+                     RTSolution(ln,m)%Radiance  )  ! In/Output    
+          
+            ! Convert the radiance to brightness temperature
+            CALL CRTM_Planck_Temperature( &
+                   SensorIndex                            , & ! Input
+                   ChannelIndex                           , & ! Input
+                   RTSolution(ln,m)%Radiance              , & ! Input
+                   RTSolution(ln,m)%Brightness_Temperature  ) ! Output
+                   
+            ! Compute Antenna correction to brightness temperature if required
             IF ( Compute_AntCorr ) THEN
-              CALL CRTM_Compute_AntCorr( GeometryInfo    , &  ! Input
-                                         SensorIndex     , &  ! Input
-                                         ChannelIndex    , &  ! Input
-                                         RTSolution(ln,m)  )  ! Output
-              CALL CRTM_Compute_AntCorr_AD( GeometryInfo       , &  ! Input
-                                            SensorIndex        , &  ! Input
-                                            ChannelIndex       , &  ! Input
-                                            RTSolution_AD(ln,m)  )  ! Output
+              CALL CRTM_Compute_AntCorr( &
+                     GeometryInfo    , &  ! Input
+                     SensorIndex     , &  ! Input
+                     ChannelIndex    , &  ! Input
+                     RTSolution(ln,m)  )  ! Output
+              CALL CRTM_Compute_AntCorr_AD( &
+                     GeometryInfo       , &  ! Input
+                     SensorIndex        , &  ! Input
+                     ChannelIndex       , &  ! Input
+                     RTSolution_AD(ln,m)  )  ! Output
             END IF
 
+            ! Compute the Planck temperature adjoijnt
+            CALL CRTM_Planck_Temperature_AD( &
+                   SensorIndex                               , & ! Input
+                   ChannelIndex                              , & ! Input
+                   RTSolution(ln,m)%Radiance                 , & ! Input
+                   RTSolution_AD(ln,m)%Brightness_Temperature, & ! Input
+                   RTSolution_AD(ln,m)%Radiance                ) ! Output
+            RTSolution_AD(ln,m)%Brightness_Temperature = ZERO 
+
+            ! Compute non-LTE correction adjoint if required
+            IF ( Apply_NLTE_Correction .AND. NLTE_Predictor_IsActive(NLTE_Predictor) ) &
+              CALL Compute_NLTE_Correction_AD( &
+                     SC(SensorIndex)%NC          , &  ! Input    
+                     ChannelIndex                , &  ! Input            
+                     RTSolution_AD(ln,m)%Radiance, &  ! Input           
+                     NLTE_Predictor_AD             )  ! Output            
 
             ! The adjoint of the radiative transfer
-            Error_Status = CRTM_Compute_RTSolution_AD( Atm                , &  ! FWD Input
-                                                       Surface(m)         , &  ! FWD Input
-                                                       AtmOptics          , &  ! FWD Input
-                                                       SfcOptics          , &  ! FWD Input
-                                                       RTSolution(ln,m)   , &  ! FWD Input
-                                                       RTSolution_AD(ln,m), &  ! AD  Input
-                                                       GeometryInfo       , &  ! Input
-                                                       SensorIndex        , &  ! Input
-                                                       ChannelIndex       , &  ! Input
-                                                       Atm_AD             , &  ! AD Output
-                                                       Surface_AD(m)      , &  ! AD Output
-                                                       AtmOptics_AD       , &  ! AD Output
-                                                       SfcOptics_AD       , &  ! AD Output
-                                                       RTV                  )  ! Internal variable input
+            Error_Status = CRTM_Compute_RTSolution_AD( &
+                             Atm                , &  ! FWD Input
+                             Surface(m)         , &  ! FWD Input
+                             AtmOptics          , &  ! FWD Input
+                             SfcOptics          , &  ! FWD Input
+                             RTSolution(ln,m)   , &  ! FWD Input
+                             RTSolution_AD(ln,m), &  ! AD  Input
+                             GeometryInfo       , &  ! Input
+                             SensorIndex        , &  ! Input
+                             ChannelIndex       , &  ! Input
+                             Atm_AD             , &  ! AD Output
+                             Surface_AD(m)      , &  ! AD Output
+                             AtmOptics_AD       , &  ! AD Output
+                             SfcOptics_AD       , &  ! AD Output
+                             RTV                  )  ! Internal variable input
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'( "Error computing RTSolution_AD for ", a, &
                      &", channel ", i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-          END DO Azi_Fourier_Loop
 
-        
+                 
+          ELSE Sensor_Dependent_RTSolution
+            ! --------------
+            ! VISIBLE sensor
+            ! --------------
+            ! ...Fourier expansion over azimuth angle
+            Azimuth_Fourier_Loop: DO mth_Azi = 0, RTV%n_Azi
+
+              ! Set dependent component counters 
+              RTV%mth_Azi = mth_Azi
+              SfcOptics%mth_Azi = mth_Azi
+                        
+              ! Solve the forward radiative transfer problem
+              Error_Status = CRTM_Compute_RTSolution( &
+                               Atm             , &  ! Input
+                               Surface(m)      , &  ! Input
+                               AtmOptics       , &  ! Input
+                               SfcOptics       , &  ! Input
+                               GeometryInfo    , &  ! Input
+                               SensorIndex     , &  ! Input
+                               ChannelIndex    , &  ! Input
+                               RTSolution(ln,m), &  ! Output
+                               RTV               )  ! Internal variable output
+              IF ( Error_Status /= SUCCESS ) THEN
+                WRITE( Message,'( "Error computing RTSolution for ", a, &
+                       &", channel ", i0,", profile #",i0)' ) &
+                       TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
+                CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+                RETURN
+              END IF
+
+              ! The adjoint of the radiative transfer
+              Error_Status = CRTM_Compute_RTSolution_AD( &
+                               Atm                , &  ! FWD Input
+                               Surface(m)         , &  ! FWD Input
+                               AtmOptics          , &  ! FWD Input
+                               SfcOptics          , &  ! FWD Input
+                               RTSolution(ln,m)   , &  ! FWD Input
+                               RTSolution_AD(ln,m), &  ! AD  Input
+                               GeometryInfo       , &  ! Input
+                               SensorIndex        , &  ! Input
+                               ChannelIndex       , &  ! Input
+                               Atm_AD             , &  ! AD Output
+                               Surface_AD(m)      , &  ! AD Output
+                               AtmOptics_AD       , &  ! AD Output
+                               SfcOptics_AD       , &  ! AD Output
+                               RTV                  )  ! Internal variable input
+              IF ( Error_Status /= SUCCESS ) THEN
+                WRITE( Message,'( "Error computing RTSolution_AD for ", a, &
+                       &", channel ", i0,", profile #",i0)' ) &
+                       TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
+                CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+                RETURN
+              END IF
+            END DO Azimuth_Fourier_Loop
+
+            ! Still want to convert the final FORWARD radiance to brightness temperature
+            CALL CRTM_Planck_Temperature( &
+                   SensorIndex                            , & ! Input
+                   ChannelIndex                           , & ! Input
+                   RTSolution(ln,m)%Radiance              , & ! Input
+                   RTSolution(ln,m)%Brightness_Temperature  ) ! Output
+
+          END IF Sensor_Dependent_RTSolution
+          ! ###################################################
+          ! TEMPORARY FIX : SENSOR-DEPENDENT AZIMUTH ANGLE LOOP
+          ! ###################################################
+
+          
+          
           ! Compute the adjoint of the combined atmospheric optical properties
           CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOV )
 
@@ -809,7 +952,7 @@ CONTAINS
               WRITE( Message,'("Error computing AerosolScatter_AD for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -828,7 +971,7 @@ CONTAINS
               WRITE( Message,'("Error computing CloudScatter_AD for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
                      TRIM(ChannelInfo(n)%Sensor_ID), ChannelInfo(n)%Sensor_Channel(l), m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF
@@ -847,7 +990,7 @@ CONTAINS
                      TRIM(ChannelInfo(n)%Sensor_ID), &
                      ChannelInfo(n)%Sensor_Channel(l), &
                      m
-              CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
           END IF         
@@ -861,6 +1004,15 @@ CONTAINS
                                               Predictor_AD    , &  ! AD  Output
                                               AAV               )  ! Internal variable input
         END DO Channel_Loop
+
+
+        ! Adjoint of the NLTE correction predictor calculations
+        IF ( Apply_NLTE_Correction ) THEN
+          CALL Compute_NLTE_Predictor_AD( &
+                 NLTE_Predictor   , &  ! Input
+                 NLTE_Predictor_AD, &  ! Input
+                 Atm_AD             )  ! Output
+        END IF
 
 
         ! Adjoint of the predictor calculations
@@ -883,7 +1035,7 @@ CONTAINS
         IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_AD(1) /= SUCCESS ) THEN
           WRITE( Message,'("Error deallocating predictor structures for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
 
@@ -898,7 +1050,7 @@ CONTAINS
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error adding AD extra layers to profile #",i0)' ) m
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
       
@@ -910,7 +1062,7 @@ CONTAINS
       IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_AD(1) /= SUCCESS ) THEN
         Error_Status = FAILURE                                                              
         WRITE( Message,'("Error deallocating AtmOptics data structures for profile #",i0)' ) m  
-        CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN                                                                              
       END IF                                                                                
 

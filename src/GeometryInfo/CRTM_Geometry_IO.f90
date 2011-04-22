@@ -19,7 +19,6 @@ MODULE CRTM_Geometry_IO
   USE File_Utility        , ONLY: File_Open, File_Exists
   USE Message_Handler     , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility , ONLY: Open_Binary_File
-  USE CRTM_Parameters     , ONLY: SET
   USE CRTM_Geometry_Define, ONLY: CRTM_Geometry_type, &
                                   CRTM_Geometry_Destroy
   ! Disable implicit typing
@@ -35,6 +34,8 @@ MODULE CRTM_Geometry_IO
   PUBLIC :: CRTM_Geometry_WriteFile
   PUBLIC :: CRTM_Geometry_IOVersion
 
+  PUBLIC :: CRTM_Geometry_ReadRecord
+  PUBLIC :: CRTM_Geometry_WriteRecord
 
   ! -----------------
   ! Module parameters
@@ -297,7 +298,7 @@ CONTAINS
 
     ! Loop over all the profiles
     Profile_Loop: DO m = 1, n_Input_Profiles
-      err_stat = Read_Record( fid, Geometry(m) )
+      err_stat = CRTM_Geometry_ReadRecord( fid, Geometry(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading Geometry element (",i0,") from ",a)' ) &
                m, TRIM(Filename)
@@ -432,7 +433,7 @@ CONTAINS
 
 
     ! Open the file
-    err_stat = Open_Binary_File( Filename, fid, For_Output=SET )
+    err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error opening '//TRIM(Filename)
       CALL Write_Cleanup(); RETURN
@@ -450,7 +451,7 @@ CONTAINS
     
     ! Write the data
     Profile_Loop: DO m = 1, n_Output_Profiles
-      err_stat = Write_Record( fid, Geometry(m) )
+      err_stat = CRTM_Geometry_WriteRecord( fid, Geometry(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error writing Geometry element (",i0,") to ",a)' ) m, TRIM(Filename)
         CALL Write_Cleanup(); RETURN
@@ -517,24 +518,17 @@ CONTAINS
   END SUBROUTINE CRTM_Geometry_IOVersion
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Read_Record
+!       CRTM_Geometry_ReadRecord
 !
 ! PURPOSE:
 !       Utility function to read a single Geometry data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_Record( FileID, Geometry )
+!       Error_Status = CRTM_Geometry_ReadRecord( FileID, Geometry )
 !
 ! INPUTS:
 !       FileID:       Logical unit number from which to read data.
@@ -558,17 +552,17 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Read_Record( fid, geo ) RESULT( err_stat )
+  FUNCTION CRTM_Geometry_ReadRecord( fid, geo ) RESULT( err_stat )
     ! Arguments
     INTEGER,                  INTENT(IN)  :: fid
     TYPE(CRTM_Geometry_type), INTENT(OUT) :: geo
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Geometry_ReadFile(Record)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Geometry_ReadRecord'
     ! Function variables
     CHARACTER(ML)  :: msg
     INTEGER :: io_stat
@@ -608,19 +602,20 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Read_Record_Cleanup
 
-  END FUNCTION Read_Record
+  END FUNCTION CRTM_Geometry_ReadRecord
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Write_Record
+!       CRTM_Geometry_WriteRecord
 !
 ! PURPOSE:
 !       Function to write a single Geometry data record
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID, Geometry )
+!       Error_Status = CRTM_Geometry_WriteRecord( FileID, Geometry )
 !
 ! INPUTS:
 !       FileID:       Logical unit number to which data is written
@@ -643,17 +638,17 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
-!
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Write_Record( fid, geo ) RESULT( err_stat )
+  FUNCTION CRTM_Geometry_WriteRecord( fid, geo ) RESULT( err_stat )
     ! Arguments
     INTEGER,                  INTENT(IN)  :: fid
     TYPE(CRTM_Geometry_type), INTENT(IN)  :: geo
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Geometry_WriteFile(Record)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Geometry_WriteRecord'
     ! Function variables
     CHARACTER(ML)  :: msg
     INTEGER :: io_stat
@@ -692,6 +687,6 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Write_Record_Cleanup
     
-  END FUNCTION Write_Record
+  END FUNCTION CRTM_Geometry_WriteRecord
 
 END MODULE CRTM_Geometry_IO

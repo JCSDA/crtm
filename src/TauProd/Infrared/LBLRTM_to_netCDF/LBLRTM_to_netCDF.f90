@@ -52,13 +52,8 @@ PROGRAM LBLRTM_to_netCDF
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
 
-  ! Direction parameters. Note that the direction flag values
-  ! are also the index to the direction name array.
-  INTEGER, PARAMETER :: DOWNWELLING = 0
-  INTEGER, PARAMETER :: UPWELLING   = 1
-  CHARACTER(*), PARAMETER, DIMENSION(0:1) :: DIRECTION_NAME = (/ 'downwelling', &
-                                                                 'upwelling  ' /)
 
+  REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp
   ! ---------
   ! Variables
   ! ---------
@@ -71,14 +66,15 @@ PROGRAM LBLRTM_to_netCDF
   CHARACTER(256) :: Id_Tag
   INTEGER :: Error_Status
   INTEGER :: LBLRTM_EOF
-  INTEGER :: k, n
+  INTEGER :: i, k, n
   TYPE(LBLRTM_Fhdr_type)  :: LBLRTM_Fhdr
   TYPE(LBLRTM_Layer_type) :: LBLRTM_Layer
-  INTEGER :: Direction
+  INTEGER :: Direction, iDirection
   REAL(fp) :: f1
   REAL(fp) :: f2
   REAL(fp) :: df
-  INTEGER :: fIdx
+!  INTEGER :: fIdx
+  INTEGER :: n_freq
 
 
   ! Program header
@@ -102,6 +98,13 @@ PROGRAM LBLRTM_to_netCDF
     STOP
   END IF
   NC_Filename = TRIM(LBLRTM_Filename)//'.nc'
+
+  WRITE(*,'(/5x,"Calculation direction")')
+  DO i = 1, N_DIRECTIONS
+    WRITE(*,'(7x,i1,") ", a)') i-1, TRIM(DIRECTION_NAME(i))
+  END DO
+  WRITE(*,FMT='( 5x,"Enter choice: ")',ADVANCE='NO')
+  READ(*,*) iDirection
 
   ! Read in the global attributes
   WRITE( *,'(/5x, "Enter a TITLE global attribute string:")' )
@@ -148,45 +151,33 @@ PROGRAM LBLRTM_to_netCDF
   REWIND( LBLRTM_FileID )
 
 
-  ! Determine the direction value
-  ! -----------------------------
-  IF ( LBLRTM_Fhdr%Run_Flags%layr1 == LBLRTM_Fhdr%Run_Flags%nlayr ) THEN
-    Direction = UPWELLING
-  ELSE
-    Direction = DOWNWELLING
-  END IF
-  CALL Display_Message( PROGRAM_NAME, &
-                        'Detected calculation direction for '//&
-                        TRIM( LBLRTM_Filename )//' is '//&
-                        TRIM( DIRECTION_NAME( Direction ) ), &
-                        INFORMATION )
-
-
   ! Assign the frequency values
   ! ---------------------------
   f1 = REAL(LBLRTM_Fhdr%Begin_Frequency,    fp)
   f2 = REAL(LBLRTM_Fhdr%End_Frequency,      fp)
   df = REAL(LBLRTM_Fhdr%Frequency_Interval, fp)
 
+  n_freq = INT((f2-f1)/df + ONEpointFIVE) 
 
   ! Determine the frequency interval index
   ! --------------------------------------
-  fIdx = Compute_dF_Index( df )
+!  fIdx = Compute_dF_Index( df )
 
   ! Check the result
-  IF ( fIdx < 0 ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Frequency interval mismatch', &
-                          FAILURE )
-    STOP
-  END IF
+!  IF ( fIdx < 0 ) THEN
+!    CALL Display_Message( PROGRAM_NAME, &
+!                          'Frequency interval mismatch', &
+!                          FAILURE )
+!    STOP
+!  END IF
 
 
   ! Create the netCDF format file
   ! -----------------------------
   Error_Status = Create_LBLRTM_netCDF( NC_Filename             , &
-                                       N_FREQUENCIES(fIdx)     , &
-                                       Direction               , &
+!                                       N_FREQUENCIES(fIdx)     , &
+                                       n_freq                  , &
+                                       iDirection              , &
                                        f1                      , &
                                        f2                      , &
                                        df                      , &
@@ -226,11 +217,13 @@ PROGRAM LBLRTM_to_netCDF
 
     ! Write the layer data to the netCDF file
     n = LBLRTM_Layer%n_Points
-    IF ( n /= N_FREQUENCIES( fIdx ) ) THEN
+!    IF ( n /= N_FREQUENCIES( fIdx ) ) THEN
+    IF ( n /= n_freq ) THEN
       WRITE( Message, '( "Actual number of LBLRTM points, ", i5, &
                         &" is different from expected, ", i5, &
                         &" for layer #", i3, "." )' ) &
-                      n, N_FREQUENCIES( fIdx ), k
+!                      n, N_FREQUENCIES( fIdx ), k
+                      n, n_freq, k
       CALL Display_Message( PROGRAM_NAME, &
                             TRIM(Message), &
                             FAILURE )
@@ -238,7 +231,7 @@ PROGRAM LBLRTM_to_netCDF
     END IF
 
     Error_Status = Write_LBLRTM_netCDF( NC_Filename, &
-                                        Transmittance=REAL(LBLRTM_Layer%Spectrum(1:n,1),fp) )
+                                        Spectrum=REAL(LBLRTM_Layer%Spectrum(1:n,1),fp) )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message, '( "Error writing layer #", i0, " to file ", a )' ) &
                       k, TRIM(NC_Filename)
@@ -260,6 +253,10 @@ PROGRAM LBLRTM_to_netCDF
       STOP
     END IF
 
+    IF(iDirection == RADIANCE)THEN
+      EXIT Layer_Loop
+    ENDIF
+    
   END DO Layer_Loop
 
 

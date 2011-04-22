@@ -24,7 +24,13 @@ MODULE CRTM_RTSolution
                                        SECANT_DIFFUSIVITY, &
                                        SCATTERING_ALBEDO_THRESHOLD, &
                                        OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SpcCoeff,             ONLY: SC, INFRARED_SENSOR, SOLAR_FLAG, IsFlagSet_SpcCoeff
+  USE CRTM_SpcCoeff,             ONLY: SC, &
+                                       SpcCoeff_IsSolar            , &
+                                       SpcCoeff_IsZeeman           , &
+                                       SpcCoeff_IsMicrowaveSensor  , &
+                                       SpcCoeff_IsInfraredSensor   , &
+                                       SpcCoeff_IsVisibleSensor    , &
+                                       SpcCoeff_IsUltravioletSensor
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
@@ -46,13 +52,14 @@ MODULE CRTM_RTSolution
                                       CRTM_Compute_SfcOptics_AD
                                       
   
-  USE CRTM_RTSolution_Define, ONLY: CRTM_RTSolution_type      , &
-                                    OPERATOR(==)              , &
-                                    CRTM_RTSolution_Associated, &
-                                    CRTM_RTSolution_Destroy   , &
-                                    CRTM_RTSolution_Create
+  USE CRTM_RTSolution_Define  , ONLY: CRTM_RTSolution_type      , &
+                                      OPERATOR(==)              , &
+                                      CRTM_RTSolution_Associated, &
+                                      CRTM_RTSolution_Destroy   , &
+                                      CRTM_RTSolution_Create
   USE CRTM_Utility
   USE RTV_Define
+
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -208,15 +215,15 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_RTSolution( &
-    Atmosphere  , &  ! Input
-    Surface     , &  ! Input
-    AtmOptics   , &  ! Input
-    SfcOptics   , &  ! Input
-    GeometryInfo, &  ! Input
-    SensorIndex , &  ! Input
-    ChannelIndex, &  ! Input
-    RTSolution  , &  ! Output
-    RTV         ) &  ! Internal variable output
+    Atmosphere    , &  ! Input
+    Surface       , &  ! Input
+    AtmOptics     , &  ! Input
+    SfcOptics     , &  ! Input
+    GeometryInfo  , &  ! Input
+    SensorIndex   , &  ! Input
+    ChannelIndex  , &  ! Input
+    RTSolution    , &  ! Output
+    RTV         )   &  ! Internal variable output
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
@@ -241,7 +248,6 @@ CONTAINS
     REAL(fp) :: User_Emissivity, Direct_Reflectivity
     REAL(fp) :: Cosmic_Background_Radiance
     REAL(fp) :: Radiance
-    INTEGER  :: Sensor_Type
     LOGICAL  :: Is_Solar_Channel
 
     ! ------
@@ -266,8 +272,7 @@ CONTAINS
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Sensor_Type                = SC(SensorIndex)%Sensor_Type
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+    Is_Solar_Channel           = SpcCoeff_IsSolar( SC(SensorIndex), ChannelIndex=ChannelIndex )
     RTV%COS_SUN                = cos(GeometryInfo%Source_Zenith_Radian)
     RTV%Solar_Irradiance       = SC(SensorIndex)%Solar_Irradiance(ChannelIndex) * GeometryInfo%AU_ratio2
    
@@ -534,23 +539,11 @@ CONTAINS
  
     ! accumulate Fourier component
     RTSolution%Radiance = RTSolution%Radiance + Radiance*  &
-       cos( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
-
-    ! ------------------------------------------------
-    ! Compute the corresponding brightness temperature
-    ! ------------------------------------------------
-    IF( RTV%mth_Azi == 0 ) THEN
-    CALL CRTM_Planck_Temperature( &
-           SensorIndex,                      & ! Input
-           ChannelIndex,                     & ! Input
-           RTSolution%Radiance,              & ! Input
-           RTSolution%Brightness_Temperature ) ! Output
-    END IF
+       COS( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
 
   END FUNCTION CRTM_Compute_RTSolution
 
-
-
+                  
 !--------------------------------------------------------------------------------
 !
 ! NAME:
@@ -774,7 +767,7 @@ CONTAINS
     END IF
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+    Is_Solar_Channel           = SpcCoeff_IsSolar( SC(SensorIndex), ChannelIndex=ChannelIndex )
 
 
     ! ---------------------------------------------------
@@ -953,18 +946,6 @@ CONTAINS
     RTSolution_TL%Radiance = RTSolution_TL%Radiance + Radiance_TL*  &
        COS( RTV%mth_Azi*(GeometryInfo%Sensor_Azimuth_Radian-GeometryInfo%Source_Azimuth_Radian) )
 
-     
-    ! ---------------------------------------------------------------
-    ! Compute the corresponding tangent-linear brightness temperature
-    ! ---------------------------------------------------------------
-    IF( RTV%mth_Azi == 0 ) &
-      CALL CRTM_Planck_Temperature_TL( &
-             SensorIndex                        , & ! Input
-             ChannelIndex                       , & ! Input
-             RTSolution%Radiance                , & ! Input
-             RTSolution_TL%Radiance             , & ! Input
-             RTSolution_TL%Brightness_Temperature ) ! Output
-    
   END FUNCTION CRTM_Compute_RTSolution_TL
 
 
@@ -1180,24 +1161,12 @@ CONTAINS
     SfcOptics_AD%Index_Sat_Ang = SfcOptics%Index_Sat_Ang
     ! Required SpcCoeff components
     Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)
-    Is_Solar_Channel           = IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG)
+    Is_Solar_Channel           = SpcCoeff_IsSolar( SC(SensorIndex), ChannelIndex=ChannelIndex )
     ! Initialise local adjoint variables
     Planck_Surface_AD    = ZERO
     Planck_Atmosphere_AD = ZERO
     Radiance_AD = ZERO
 
-    ! ------------------------------------------
-    ! Compute the brightness temperature adjoint
-    ! ------------------------------------------
-    IF( RTV%mth_Azi == 0 ) THEN
-      CALL CRTM_Planck_Temperature_AD( &
-             SensorIndex                         , & ! Input
-             ChannelIndex                        , & ! Input
-             RTSolution%Radiance                 , & ! Input
-             RTSolution_AD%Brightness_Temperature, & ! Input
-             Radiance_AD                           ) ! Output
-      RTSolution_AD%Brightness_Temperature = ZERO 
-    END IF
 
     ! accumulate Fourier component
     Radiance_AD = Radiance_AD + RTSolution_AD%Radiance * &

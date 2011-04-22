@@ -24,7 +24,7 @@ MODULE CRTM_IR_Water_SfcOptics
   USE Type_Kinds,               ONLY: fp
   USE Message_Handler,          ONLY: SUCCESS, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, ONE, TWO, FOUR, PI, DEGREES_TO_RADIANS
-  USE CRTM_SpcCoeff,            ONLY: SC, SOLAR_FLAG, IsFlagSet_SpcCoeff
+  USE CRTM_SpcCoeff,            ONLY: SC, SpcCoeff_IsSolar
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_SfcOptics_Define,    ONLY: CRTM_SfcOptics_type
@@ -206,7 +206,8 @@ CONTAINS
 
 
     ! Compute the solar direct BRDF
-    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) )THEN
+    IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
+
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &
                                   GeometryInfo%Source_Azimuth_Radian    
@@ -382,7 +383,7 @@ CONTAINS
 
 
     ! Compute the tangent-linear solar direct BRDF
-    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) ) THEN
+    IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
     
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &  
@@ -559,7 +560,7 @@ CONTAINS
     END DO
 
     ! Solar direct BRDF
-    IF ( IsFlagSet_SpcCoeff(SC(SensorIndex)%Channel_Flag(ChannelIndex),SOLAR_FLAG) )THEN
+    IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
     
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
 

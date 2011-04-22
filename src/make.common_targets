@@ -15,8 +15,8 @@
 #       include make.common_targets
 #
 # CREATION HISTORY:
-#       Written by:     Paul van Delst, CIMSS/SSEC 30-Jun-2006
-#                       paul.vandelst@ssec.wisc.edu
+#       Written by:     Paul van Delst, 30-Jun-2006
+#                       paul.vandelst@noaa.gov
 #
 # $Id$
 #
@@ -37,11 +37,53 @@ all::
        esac
 
 
+# ---------------------------------
+# Link creation and removal targets
+# .................................
+# These are empty here and should
+# be extended in client makefiles
+# as needed.
+# ---------------------------------
+create_links::
+
+remove_links::
+
+
+# -----------------
+# Build the program
+# -----------------
+build:: create_links $(OBJ_FILES)
+	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
+
+
+# --------
+# Clean up
+# --------
+clean::
+	$(REMOVE) $(OBJ_FILES) *.mod *.MOD gmon.out
+
+# ...Squeaky clean
+realclean:: clean remove_links
+	$(REMOVE) $(EXE_FILE)
+
+# ...Alias
+real_clean:: realclean
+
+
+# ----------------------
+# Install the executable
+# ----------------------
+install::
+	@if [ -d $(HOME)/bin ]; then \
+	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
+	fi
+
+
+
 # ----------------------
 # Specific build targets
 # ----------------------
-# IBM AIX Compiler
-# ----------------
+# ...IBM AIX Compiler
 ibm_debug:
 	make -f $(MAKE_FILE) build $(AIX_FLAGS_DEBUG)
 
@@ -49,8 +91,7 @@ ibm:
 	make -f $(MAKE_FILE) build $(AIX_FLAGS_PROD)
 
 
-# HP-UX Compiler
-# --------------
+# ...HP-UX Compiler
 hp_debug:
 	make -f $(MAKE_FILE) build $(HPUX_FLAGS_DEBUG)
 
@@ -58,8 +99,7 @@ hp:
 	make -f $(MAKE_FILE) build $(HPUX_FLAGS_PROD)
 
 
-# SGI MIPSpro Compiler
-# --------------------
+# ...SGI MIPSpro Compiler
 sgi_debug:
 	make -f $(MAKE_FILE) build $(IRIX64_FLAGS_DEBUG)
 
@@ -67,8 +107,7 @@ sgi:
 	make -f $(MAKE_FILE) build $(IRIX64_FLAGS_PROD)
 
 
-# SunOS Compiler
-# --------------
+# ...SunOS Compiler
 sun_debug:
 	make -f $(MAKE_FILE) build $(SUNOS_FLAGS_DEBUG)
 
@@ -76,8 +115,7 @@ sun:
 	make -f $(MAKE_FILE) build $(SUNOS_FLAGS_PROD)
 
 
-# Linux compilers
-# ---------------
+# ...various linux compilers
 gfortran_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_DEBUG)
 
@@ -118,31 +156,4 @@ absoft_debug:
 
 absoft:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_ABSOFT_PROD)
-
-
-# -----------------
-# Build the program
-# -----------------
-build: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
-
-
-# --------
-# Clean up
-# --------
-clean::
-	$(REMOVE) $(OBJ_FILES) *.mod *.MOD gmon.out
-
-realclean:: clean remove_links
-
-real_clean:: clean remove_links
-
-
-# ----------------------
-# Install the executable
-# ----------------------
-install:
-	@if [ -d $(HOME)/bin ]; then \
-	  $(MOVE) $(EXE_FILE) $(HOME)/bin; \
-	fi
 

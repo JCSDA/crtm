@@ -259,9 +259,7 @@ CONTAINS
 
     ! Open the file
     ! -------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID, &
-                                     Message_Log=Message_Log)
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening ODPS Binary file '//TRIM(Filename)
       CALL Inquire_Cleanup(); RETURN
@@ -542,9 +540,7 @@ CONTAINS
 
     ! Open the ODPS file
     ! ------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID  , &
-                                     Message_Log=Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM(Filename)
       Error_Status = FAILURE
@@ -941,10 +937,7 @@ CONTAINS
 
     ! Open the ODPS data file
     ! -----------------------
-    Error_Status = Open_Binary_File( Filename, &
-                                     FileID,   &
-                                     For_Output =SET, &
-                                     Message_Log=Message_Log )
+    Error_Status = Open_Binary_File( Filename, FileID )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM( Filename )
       Error_Status = FAILURE
