@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Dec-2006
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 08-Dec-2006
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE IASI_Define
@@ -45,7 +45,7 @@ MODULE IASI_Define
   PUBLIC :: IASI_MaxX
   PUBLIC :: IASI_X
   PUBLIC :: IASI_F
-  PUBLIC :: IASI_GFT
+  PUBLIC :: IASI_ApodFunction
   PUBLIC :: IASI_nPts
   PUBLIC :: IASI_Channels
   PUBLIC :: IASI_DefineVersion
@@ -56,8 +56,6 @@ MODULE IASI_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  ! Keyword set value
-  INTEGER,  PARAMETER :: SET = 1
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO      = 0.0_fp
   REAL(fp), PARAMETER :: POINT5    = 0.5_fp
@@ -190,8 +188,8 @@ CONTAINS
 !
 ! INPUT ARGUMENTS:
 !       band:      IASI band number (1, 2, or 3).
-!                  If iBand < 1, then 1 is used.
-!                     iBand > 3, then 3 is used.
+!                  If band < 1, then 1 is used.
+!                     band > 3, then 3 is used.
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
 !                  DIMENSION:  SCALAR
@@ -234,8 +232,11 @@ CONTAINS
     INTEGER :: ib, i, nHalf
 
     ib = MAX(MIN(band,N_IASI_BANDS),1)
+    ! Get the number of positive delays
     nHalf = n/2
+    ! Compute maximum optical delay
     maxX = NOMINAL_MAXX(ib)
+    ! Fill the grid array
     X(nHalf:n) = (/(REAL(i,fp),i=0,nHalf)/)/REAL(nHalf,fp)
     X(1:nHalf-1) = -X(n-1:nHalf+1:-1)
     X = X*maxX
@@ -246,19 +247,19 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       IASI_GFT
+!       IASI_ApodFunction
 !
 ! PURPOSE:
 !       Pure function to compute the IASI apodisation function for a given 
 !       optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       gft = IASI_GFT(band,x)
+!       afn = IASI_ApodFunction(band, x)
 !
 ! INPUT ARGUMENTS:
 !       band:      IASI band number (1, 2, or 3).
-!                  If iBand < 1, then 1 is used.
-!                     iBand > 3, then 3 is used.
+!                  If band < 1, then 1 is used.
+!                     band > 3, then 3 is used.
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
 !                  DIMENSION:  Scalar
@@ -271,29 +272,31 @@ CONTAINS
 !                  ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       gft:       IASI apodisation function.
+!       afn:       IASI apodisation function.
 !                  UNITS:      N/A
 !                  TYPE:       REAL(fp)
 !                  DIMENSION:  Same as input x argument.
 !
 ! COMMENTS:
-!                  ln(2)
-!       sigma = -----------; where 0.25 = GFT HWHM
-!                PI . 0.25
+!       The IASI apodisation function is a truncated Gaussian:
 !
-!                                  2
-!                (        [   x   ] )
-!       gft = EXP( -ln(2).[-------] )
-!                (        [ sigma ] )
+!                    ln(2)
+!         sigma = -----------; where 0.25 = Gaussian HWHM
+!                  PI . 0.25
+!
+!                                    2
+!                  (        [   x   ] )
+!         afn = EXP( -ln(2).[-------] )   for  |x| <= nominal MaxX
+!                  (        [ sigma ] )
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_GFT(band,x) RESULT(gft)
+  PURE FUNCTION IASI_ApodFunction(band, x) RESULT(afn)
     ! Arguments
     INTEGER,  INTENT(IN) :: band
     REAL(fp), INTENT(IN) :: x(:)
     ! Function result
-    REAL(fp) :: gft(SIZE(x))
+    REAL(fp) :: afn(SIZE(x))
     ! Local variables
     INTEGER  :: ib
     REAL(fp) :: sigma
@@ -301,11 +304,11 @@ CONTAINS
     ib = MAX(MIN(band,N_IASI_BANDS),1)
     sigma = LN2/(PI*GFT_HWHM)
     WHERE ( ABS(x) <= NOMINAL_MAXX(ib) )
-      gft = EXP(-LN2*(x/sigma)**2)
+      afn = EXP(-LN2*(x/sigma)**2)
     ELSEWHERE
-      gft = ZERO
+      afn = ZERO
     END WHERE
-  END FUNCTION IASI_GFT
+  END FUNCTION IASI_ApodFunction
   
 
 !--------------------------------------------------------------------------------
@@ -318,10 +321,10 @@ CONTAINS
 !       Pure function to compute the number of spectral points in an IASI band.
 !
 ! CALLING SEQUENCE:
-!       n = IASI_nPts(Band)
+!       n = IASI_nPts(band)
 !
 ! INPUT ARGUMENTS:
-!       Band:      IASI band number (1, 2, or 3).
+!       band:      IASI band number (1, 2, or 3).
 !                  If Band < 1, then 1 is used.
 !                     Band > 3, then 3 is used.
 !                  UNITS:      N/A
@@ -351,11 +354,11 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_nPts(iBand) RESULT(n)
-    INTEGER, INTENT(IN) :: iBand
+  PURE FUNCTION IASI_nPts(band) RESULT(n)
+    INTEGER, INTENT(IN) :: band
     INTEGER :: n
     INTEGER :: ib
-    ib = MAX(MIN(iBand,N_IASI_BANDS),1)
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
     n = INT((IASI_BAND_F2(ib)-IASI_BAND_F1(ib))/IASI_D_FREQUENCY(ib) + ONEPOINT5)
   END FUNCTION IASI_nPts
 
@@ -370,12 +373,12 @@ CONTAINS
 !       Pure function to compute the resampled frequency grid for an IASI band.
 !
 ! CALLING SEQUENCE:
-!       f = IASI_F(Band)
+!       f = IASI_F(band)
 !
 ! INPUT ARGUMENTS:
-!       Band:      IASI band number (1, 2, or 3).
-!                  If Band < 1, then 1 is used.
-!                     Band > 3, then 3 is used.
+!       band:      IASI band number (1, 2, or 3).
+!                  If band < 1, then 1 is used.
+!                     band > 3, then 3 is used.
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
 !                  DIMENSION:  SCALAR
@@ -406,13 +409,12 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_F(iBand) RESULT(f)
-    INTEGER, INTENT(IN) :: iBand
-    REAL(fp) :: f(IASI_nPts(iBand))
-    INTEGER :: i, ib, n
-    ib = MAX(MIN(iBand,N_IASI_BANDS),1)
-    n = IASI_nPts(ib)
-    DO i = 1, n
+  PURE FUNCTION IASI_F(band) RESULT(f)
+    INTEGER, INTENT(IN) :: band
+    REAL(fp) :: f(IASI_nPts(band))
+    INTEGER :: i, ib   
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
+    DO i = 1, IASI_nPts(ib)
       f(i) = IASI_BAND_F1(ib) + (IASI_D_FREQUENCY(ib)*REAL(i-1,fp))
     END DO
   END FUNCTION IASI_F
@@ -428,12 +430,12 @@ CONTAINS
 !       Pure function to compute the channel numbers for an IASI band.
 !
 ! CALLING SEQUENCE:
-!       ch = IASI_Channels(Band)
+!       ch = IASI_Channels(band)
 !
 ! INPUT ARGUMENTS:
-!       Band:      IASI band number (1, 2, or 3).
-!                  If Band < 1, then 1 is used.
-!                     Band > 3, then 3 is used.
+!       band:      IASI band number (1, 2, or 3).
+!                  If band < 1, then 1 is used.
+!                     band > 3, then 3 is used.
 !                  UNITS:      N/A
 !                  TYPE:       INTEGER
 !                  DIMENSION:  SCALAR
@@ -451,16 +453,16 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION IASI_Channels(iBand) RESULT(c)
-    INTEGER, INTENT(IN) :: iBand
-    INTEGER :: c(IASI_nPts(iBand))
+  PURE FUNCTION IASI_Channels(band) RESULT(ch)
+    INTEGER, INTENT(IN) :: band
+    INTEGER :: ch(IASI_nPts(band))
     INTEGER :: i, ib, n
-    ib = MAX(MIN(iBand,N_IASI_BANDS),1)
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
     n = 0
     DO i = 1, ib-1
       n = n + IASI_nPts(i)
     END DO
-    c = (/(i,i=1,IASI_nPts(ib))/) + n
+    ch = (/(i,i=1,IASI_nPts(ib))/) + n
   END FUNCTION IASI_Channels
 
 
