@@ -18,6 +18,11 @@ MODULE CrIS_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Fundamental_Constants, ONLY: PI, LN2
+  USE FFT_Spectral_Utility , ONLY: HAMMING         , &
+                                   BLACKMANHARRIS_3, &
+                                   BLACKMANHARRIS_4, &
+                                   ApodFunction
+
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -41,6 +46,10 @@ MODULE CrIS_Define
   PUBLIC :: CRIS_BAND_END_CHANNEL
   PUBLIC :: N_CRIS_CHANNELS_PER_BAND
   PUBLIC :: MAX_N_CRIS_BAND_CHANNELS
+  ! ...Inherited public parameters
+  PUBLIC :: HAMMING
+  PUBLIC :: BLACKMANHARRIS_3
+  PUBLIC :: BLACKMANHARRIS_4
   ! Public module procedures
   PUBLIC :: CrIS_MaxX
   PUBLIC :: CrIS_X
@@ -152,7 +161,7 @@ CONTAINS
   PURE FUNCTION CrIS_MaxX(band, nominal) RESULT(maxX)
     ! Arguments
     INTEGER,           INTENT(IN) :: band
-    INTEGER, OPTIONAL, INTENT(IN) :: nominal
+    LOGICAL, OPTIONAL, INTENT(IN) :: nominal
     ! Function result
     REAL(fp) :: maxX
     ! Variables
@@ -250,7 +259,7 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CrIS_GFT
+!       CrIS_ApodFunction
 !
 ! PURPOSE:
 !       Pure function to compute the CrIS apodisation function for a given 
@@ -277,11 +286,11 @@ CONTAINS
 ! OPTIONAL INPUTS:
 !       apodType:  Set this argument to the defined parameter values to    
 !                  select the type of apodisation function.                
-!                     == HAMMING_APOD     for Hamming apodisation [DEFAULT]
-!                     == BLACKMAN3_APOD   for Blackman 3 term apodisation
-!                     == BLACKMAN4_APOD   for Blackman 4 term apodisation
+!                     == HAMMING          for Hamming apodisation [DEFAULT]
+!                     == BLACKMANHARRIS_3 for Blackman-Harris 3-term apodisation
+!                     == BLACKMANHARRIS_4 for Blackman-Harris 4-term apodisation
 !                  If not specified, or any other value is supplied, then
-!                  the computed apodisation uses HAMMING_APOD.
+!                  the computed apodisation uses HAMMING.
 !                  UNITS:      N/A                                         
 !                  TYPE:       INTEGER                                     
 !                  DIMENSION:  Scalar                                      
@@ -302,9 +311,9 @@ CONTAINS
 !       satisfies retrieval models and also allows apodized radiances to
 !       be returned to their unapodized values.
 !       
-!       Blackman's apodization function, it produces one of the highest
-!       lobe suppression and can be considered among the top performers in
-!       commonly used in FTIR apodation filters.
+!       The Blackman-Harris apodizations produce high lobe suppression functions
+!       and can be considered among the top performers in commonly used FTIR
+!       apodisation filters.
 !:sdoc-:
 !--------------------------------------------------------------------------------
   PURE FUNCTION CrIS_ApodFunction(band, x, apodType) RESULT(afn)
@@ -324,13 +333,14 @@ CONTAINS
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
     xnorm = x/CRIS_RESAMPLE_MAXX(ib)
     ! ...Set apodisation type
-    atype = HAMMING_APOD
+    atype = -1 ! Force default
     IF ( PRESENT(apodType) ) atype = apodType
 
 
     ! Compute apodisation function
     SELECT CASE(atype)
-      CASE(BLACKMAN3_APOD)
+    
+      CASE(BLACKMANHARRIS_3)
         a0 = 0.42323_fp
         a1 = 0.49755_fp
         a2 = 0.07922_fp
@@ -341,7 +351,7 @@ CONTAINS
           afn = ZERO
         END WHERE
        
-      CASE(BLACKMAN4_APOD)
+      CASE(BLACKMANHARRIS_4)
         a0 = 0.35875_fp
         a1 = 0.48829_fp
         a2 = 0.14128_fp
