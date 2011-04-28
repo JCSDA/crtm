@@ -9,7 +9,7 @@
 \author{Paul van Delst\footnote{paul.vandelst@noaa.gov}\\JCSDA/EMC/IMSG\\[0.25in]
         David N. Groff\footnote{david.groff@noaa.gov}\\JCSDA/EMC/IMSG.}
 \date{April, 2011}
-\docnumber{??}
+\docnumber{1}
 
 %-------------------------------------------------------------------------------
 %                            Ze document begins...
@@ -17,50 +17,78 @@
 \begin{document}
 \maketitle
 
-\draftwatermark
+%\draftwatermark
 
-\section{Introduction}
-This document describes the radiometric impact of implementing FASTEM4 on CRTM simulations.
-
-\section{Radiometric Impact of FASTEM4 Implementation in the CRTM}
-The radiometric impact of implementing FASTEM4 for any particular CRTM simulation depends on the channel central frequency, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a climatological tropical atmosphere we performed CRTM simulations using FASTEM4 and FASTEM1 for AMSUA NOAA-19, MHS NOAA-19, SSMIS F16 and AMSRE AQUA to assess how the magnitude of the radiometric impact depends on these inputs.  
+\section{Radiometric Impact of Implementing FASTEM-4 into the CRTM}
+The radiometric impact of implementing FASTEM4 for any particular CRTM simulation depends on the channel central frequency, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a standard tropical atmosphere we performed CRTM simulations using FASTEM4 and the MWSSEM that was used in CRTM release 2.0.1 for NOAA-19 AMSUA, NOAA-19 MHS, F16 SSMIS and Aqua AMSRE to assess how the magnitude of the radiometric impact depends on these inputs.  CRTM simulations for release 2.0.1 were based on the 'Low Frequency' model for channel frequencies less than 20 GHz and FASTEM1 for channel frequencies greater than 20 GHz. 
 
 \subsection{Dependance on Channel Frequency}
-The channel central frequency determines the sensitivity to the surface and accounts for the most significant variability in the impact on CRTM simulations.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on NOAA-19 AMSUA simulations can vary from channel to channel by more than 5K.  With the exception of AMSRE Aqua channels 1-4 the CRTM simulations using FASTEM4 are colder for all the surface conditions we considered.  For AMSRE channels 1-4 the CRTM simulations using FASTEM4 can be 5K larger as shown in figure \ref{fig:AMSRE_Wind_Speed_Impact}.  Note that for AMSRE channels 1-6 the low frequency emissivity model was previously being used.
+The channel central frequency determines the sensitivity to the surface and accounts for the most significant variability in the impact on CRTM simulations.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on simulations for AMSUA NOAA-19 can vary from channel to channel by more than 5K.  With the exception of AMSRE Aqua channels 1-4 the CRTM simulations using FASTEM4 are colder for all the surface conditions we considered.  For AMSRE channels 1-4 the CRTM simulations using FASTEM4 can be 5K larger as shown in figure \ref{fig:AMSRE_Wind_Speed_Impact}.  Note that for AMSRE channels 1-6 the low frequency emissivity model was used.
 
 \begin{figure}[htp]
   \centering
-  \includegraphics{graphics/AMSUA_Wind_Speed_BT.eps}
+  \includegraphics[scale=0.75]{graphics/AMSUA_Wind_Speed_BT.eps}
   \caption{The radiometric impact of implementing FASTEM4 on AMSUA NOAA-19 simulations as a function of wind speed.}
   \label{fig:AMSUA_Wind_Speed_Impact}
 \end{figure}
 
+\newpage
+
 \begin{figure}[htp]
   \centering
-  \includegraphics{graphics/AMSRE_Wind_Speed_BT.eps}
+  \includegraphics[scale=0.75]{graphics/AMSRE_Wind_Speed_BT.eps}
   \caption{The radiometric impact of implementing FASTEM4 on AMSRE Aqua simulations as a function of wind speed.}
   \label{fig:AMSRE_Wind_Speed_Impact}
 \end{figure}
 
+%\newpage
+
 \subsection{Dependence on Wind Speed}
-The impact on CRTM simulations for microwave channels sensitive to the surface is most dependant on wind speed.  Figure \ref{fig:AMSUA_Wind_Speed_Impact} shows that the magnitude of the impact at wind speeds approaching 15 m/s are on the order of 2K larger than at wind speeds less than 4 m/s.  This result is corroborated by Figure \ref{fig:AMSUA_Background_Impact} which shows scatter plots of impact as brightness temperature differences for AMSUA metop-a using global NCEP background data from February 2, 2009 and August 1, 2009 as input.  
+The impact on CRTM simulations for microwave channels sensitive to the surface is most dependant on wind speed.  Figure \ref{fig:AMSUA_Wind_Speed_Impact} shows that the magnitude of the impact at wind speeds approaching 15 m/s are on the order of 2K larger than at wind speeds less than 4 m/s.  This result is corroborated by Figure \ref{fig:AMSUA_Background_Impact} which shows scatter plots of impact as brightness temperature differences for AMSUA MetOP-A using global NCEP background data from February 2, 2009 and August 1, 2009 as input.  The scatter plots for both days illustrate that the impact on MetOP-A AMSUA simulations increases with wind speed.
 
 \begin{figure}[htp]
   \centering
-  \includegraphics{graphics/AMSUA_Metop-a_Background.eps}
-  \caption{The radiometric impact as a function of wind speed using global NCEP background data from February 2, 2009 and August 1, 2009 as input .}
-  \label{fig:AMSUA_Wind_Speed_Impact}
+  \includegraphics[scale=0.75]{graphics/emissD_windS_f.eps}
+  \caption{The radiometric impact on MetOP-A AMSUA simulations as a function of wind speed using global NCEP background data from February 2, 2009 and August 1, 2009 as input .}
+  \label{fig:AMSUA_Background_Impact}
 \end{figure}
+
+\newpage
 
 \subsection{Dependence on Salinity}
 For AMSUA and MHS surface channels the impact decreases with increasing salinity as shown in figures \ref{fig:AMSUA_Salinity_Impact} and \ref{fig:MHS_Salinity_Impact}.  
 
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=0.75]{graphics/AMSUA_Salinity_BT.eps}
+  \caption{The radiometric impact of implementing FASTEM4 on AMSUA NOAA-19 simulations as a function of salinity.}
+  \label{fig:AMSUA_Salinity_Impact}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=0.75]{graphics/MHS_Salinity_BT.eps}
+  \caption{The radiometric impact of implementing FASTEM4 on MHS NOAA-19 simulations as a function of salinity.}
+  \label{fig:MHS_Salinity_Impact}
+\end{figure}
+
+\newpage
+
 \subsection{Dependence on the Angle Between the Sensor Azimuth and Wind Direction} 
-The impact can vary significantly as a function of the angle between the sensor azimuth and wind direction.  The impact increases with the perpendicularity of the sensor azimuth to the wind direction.  When the sensor azimuths are perpedicular to the CRTM default wind direction of 0 degrees (or North) the magnitude of the brightness temperature differences are nearly 1K larger than those at sensor azimuths parallel or opposite to the wind direction as shown in figure \ref{fig:AMSUA_Sensor_Azimuth_Impact}.  
- 
+The impact can vary significantly as a function of the angle between the sensor azimuth and wind direction.  The impact increases with the perpendicularity of the sensor azimuth to the wind direction.  When the sensor azimuths are perpedicular to the CRTM default wind direction (North) the magnitude of the brightness temperature differences are nearly 1K larger than those at sensor azimuths parallel or opposite to the wind direction as shown in figure \ref{fig:AMSUA_Sensor_Azimuth_Impact}.  
+
+\begin{figure}[htp]
+  \centering
+  \includegraphics[scale=0.75]{graphics/AMSUA_Sensor_Azimuth_BT.eps}
+  \caption{The radiometric impact of implementing FASTEM4 as a function of the angle between the wind direction and sensor azimuth.}
+  \label{fig:AMSUA_Sensor_Azimuth_Impact}
+\end{figure} 
 
 % The references section
 %=======================
+%\clearpage
+%\bibliographystyle{plainnat}
+%\bibliography{bibliography}
 %\begin{thebibliography}{99}
 %  \bibitem{ref:tag1} reference1
 %  \bibitem{ref:tag2} reference2
