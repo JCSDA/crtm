@@ -5,7 +5,7 @@
 %\includeonly{}
 
 % Title info
-\title{Implementation of FASTEM4 in the CRTM}
+\title{Implementation of FASTEM-4 in the CRTM}
 \author{Paul van Delst\footnote{paul.vandelst@noaa.gov}\\JCSDA/EMC/IMSG\\[0.25in]
         David N. Groff\footnote{david.groff@noaa.gov}\\JCSDA/EMC/IMSG.}
 \date{April, 2011}
@@ -20,15 +20,15 @@
 %\draftwatermark
 
 \section{Radiometric Impact of Implementing FASTEM-4 into the CRTM}
-The radiometric impact of implementing FASTEM4 for any particular CRTM simulation depends on the channel central frequency, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a standard tropical atmosphere we performed CRTM simulations using FASTEM4 and the MWSSEM that was used in CRTM release 2.0.1 for NOAA-19 AMSUA, NOAA-19 MHS, F16 SSMIS and Aqua AMSRE to assess how the magnitude of the radiometric impact depends on these inputs.  CRTM simulations for release 2.0.1 were based on the 'Low Frequency' model for channel frequencies less than 20 GHz and FASTEM1 for channel frequencies greater than 20 GHz. 
+The radiometric impact of implementing FASTEM-4 for any particular CRTM simulation depends on the channel central frequency, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a standard tropical atmosphere we performed CRTM simulations using FASTEM-4 and the MWSSEM that was used in CRTM release 2.0.2 for NOAA-19 AMSUA, NOAA-19 MHS, F16 SSMIS and Aqua AMSRE to assess how the magnitude of the radiometric impact depends on these inputs.  CRTM simulations for release 2.0.2 were based on the 'Low Frequency' model for channel frequencies less than 20 GHz and FASTEM1 for channel frequencies greater than 20 GHz. 
 
 \subsection{Dependance on Channel Frequency}
-The channel central frequency determines the sensitivity to the surface and accounts for the most significant variability in the impact on CRTM simulations.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on simulations for AMSUA NOAA-19 can vary from channel to channel by more than 5K.  With the exception of AMSRE Aqua channels 1-4 the CRTM simulations using FASTEM4 are colder for all the surface conditions we considered.  For AMSRE channels 1-4 the CRTM simulations using FASTEM4 can be 5K larger as shown in figure \ref{fig:AMSRE_Wind_Speed_Impact}.  Note that for AMSRE channels 1-6 the low frequency emissivity model was used.
+The channel central frequency determines the sensitivity to the surface and accounts for the most significant variability in the impact on CRTM simulations.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on simulations for AMSUA NOAA-19 can vary from channel to channel by more than 5K.  With the exception of AMSRE Aqua channels 1-4 the CRTM simulations using FASTEM-4 are colder for all the surface conditions we considered.  For AMSRE channels 1-4 the CRTM simulations using FASTEM-4 can be 5K larger as shown in figure \ref{fig:AMSRE_Wind_Speed_Impact}.  Note that for AMSRE channels 1-6 the low frequency emissivity model was used.
 
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/AMSUA_Wind_Speed_BT.eps}
-  \caption{The radiometric impact of implementing FASTEM4 on AMSUA NOAA-19 simulations as a function of wind speed.}
+  \caption{The radiometric impact of implementing FASTEM-4 on AMSUA NOAA-19 simulations as a function of wind speed.}
   \label{fig:AMSUA_Wind_Speed_Impact}
 \end{figure}
 
@@ -37,7 +37,7 @@ The channel central frequency determines the sensitivity to the surface and acco
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/AMSRE_Wind_Speed_BT.eps}
-  \caption{The radiometric impact of implementing FASTEM4 on AMSRE Aqua simulations as a function of wind speed.}
+  \caption{The radiometric impact of implementing FASTEM-4 on AMSRE Aqua simulations as a function of wind speed.}
   \label{fig:AMSRE_Wind_Speed_Impact}
 \end{figure}
 
@@ -61,14 +61,14 @@ For AMSUA and MHS surface channels the impact decreases with increasing salinity
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/AMSUA_Salinity_BT.eps}
-  \caption{The radiometric impact of implementing FASTEM4 on AMSUA NOAA-19 simulations as a function of salinity.}
+  \caption{The radiometric impact of implementing FASTEM-4 on AMSUA NOAA-19 simulations as a function of salinity.}
   \label{fig:AMSUA_Salinity_Impact}
 \end{figure}
 
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/MHS_Salinity_BT.eps}
-  \caption{The radiometric impact of implementing FASTEM4 on MHS NOAA-19 simulations as a function of salinity.}
+  \caption{The radiometric impact of implementing FASTEM-4 on MHS NOAA-19 simulations as a function of salinity.}
   \label{fig:MHS_Salinity_Impact}
 \end{figure}
 
@@ -80,7 +80,7 @@ The impact can vary significantly as a function of the angle between the sensor 
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/AMSUA_Sensor_Azimuth_BT.eps}
-  \caption{The radiometric impact of implementing FASTEM4 as a function of the angle between the wind direction and sensor azimuth.}
+  \caption{The radiometric impact of implementing FASTEM-4 as a function of the angle between the wind direction and sensor azimuth.}
   \label{fig:AMSUA_Sensor_Azimuth_Impact}
 \end{figure} 
 
