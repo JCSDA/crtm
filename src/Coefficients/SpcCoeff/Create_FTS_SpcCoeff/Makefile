@@ -20,39 +20,43 @@ SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
             Search_Utility.f90 \
+            String_Utility.f90 \
             Linear_Interpolation.f90 \
             Spectral_Units_Conversion.f90 \
-            AntCorr_Define.f90 \
-            AntCorr_netCDF_IO.f90 \
+            SensorInfo_Parameters.f90 \
+            SensorInfo_Define.f90 \
+            SensorInfo_LinkedList.f90 \
+            SensorInfo_IO.f90 \
             SpcCoeff_Define.f90 \
+              ACCoeff_Define.f90 \
+              NLTECoeff_Define.f90 \
             SpcCoeff_Parameters.f90 \
             SpcCoeff_netCDF_IO.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
-            IASI_Define.f90
+            FFT_Spectral_Utility.f90 \
+            IASI_Define.f90 \
+            CrIS_Define.f90 \
+            Solar_Define.f90 \
+            Solar_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+NCDF_DIR = $(HOME)/local/netcdf
+FFT_DIR = $(HOME)/local/FFT/pfft
+INCLUDES = -I$(NCDF_DIR)/include -I$(FFT_DIR)/include 
+LIBRARIES = -L$(NCDF_DIR)/lib -lnetcdf -L$(FFT_DIR)/lib -lfft
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Source dependency lists
 include make.dependencies

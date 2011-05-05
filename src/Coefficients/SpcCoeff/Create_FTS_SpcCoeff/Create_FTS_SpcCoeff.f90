@@ -23,19 +23,15 @@ PROGRAM Create_FTS_SpcCoeff
                                        Display_Message, Program_Message
   USE Fundamental_Constants    , ONLY: C_1, C_2
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz
+  USE SensorInfo_Define
+  USE SensorInfo_LinkedList
+  USE SensorInfo_IO
   USE SpcCoeff_Parameters
-  USE SpcCoeff_Define          , ONLY: SPCCOEFF_INFRARED => INFRARED_SENSOR, &
-                                       UNPOLARIZED, &
-                                       SOLAR_FLAG, &
-                                       SpcCoeff_type, &
-                                       SetFlag_SpcCoeff, &
-                                       ClearFlag_SpcCoeff, &
-                                       Allocate_SpcCoeff, &
-                                       Destroy_SpcCoeff
-  USE SpcCoeff_netCDF_IO       , ONLY: Write_SpcCoeff_netCDF
-
+  USE SpcCoeff_Define
+  USE SpcCoeff_netCDF_IO
+  ! The FTS instrument definition modules
   USE IASI_Define
-  
+  USE CrIS_Define
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -44,136 +40,374 @@ PROGRAM Create_FTS_SpcCoeff
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_FTS_SpcCoeff'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
-  ! Keyword set flag
-  INTEGER, PARAMETER :: SET = 1
+  ! String lengths
+  INTEGER, PARAMETER :: SL = 256
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  ! SensorInfo file
+  CHARACTER(*), PARAMETER :: SENSORINFO_FILE = 'SensorInfo'
+  ! FTS sensor definitions
+  INTEGER, PARAMETER :: IASI_ID = 1
+  INTEGER, PARAMETER :: CRIS_ID = 2
+  INTEGER, PARAMETER :: N_SENSORS = 2
+  INTEGER, PARAMETER :: N_BANDS   = 3
+  CHARACTER(*), PARAMETER :: SENSOR_NAME(N_SENSORS)   = (/ 'iasi', 'cris' /)
+  CHARACTER(*), PARAMETER :: PLATFORM_NAME(N_SENSORS) = (/ 'metop-a', 'npp    ' /)
   
-  ! TEMPORARY STUFF FOR IASI
-  integer, parameter :: n_sensors=3
-  character(*), parameter :: sensor_id(n_sensors) = &
-  (/'iasiB1_metop-a','iasiB2_metop-a','iasiB3_metop-a'/) 
-  integer, parameter :: band_id(n_sensors) = (/1,2,3/)
-
 
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER(256) :: Message
-  CHARACTER(256) :: SensorInfo_Filename
-  CHARACTER(256) :: SpcCoeff_Filename
-  INTEGER :: Error_Status
-  INTEGER :: Allocate_Status
-  INTEGER :: IO_Status
+  CHARACTER(SL) :: msg
+  CHARACTER(SL) :: filename
+  CHARACTER(SL) :: sensor_id
+  INTEGER :: err_stat
   INTEGER :: n
-  INTEGER :: SpcCoeff_File_Version
-  CHARACTER( 256) :: Title
-  TYPE(SpcCoeff_type)        :: SpcCoeff
+  INTEGER :: band
+  INTEGER :: version
+  TYPE(SensorInfo_type)      :: sinfo
+  TYPE(SensorInfo_List_type) :: sinfo_list
+  TYPE(SpcCoeff_type)        :: spccoeff
+  REAL(fp) :: maxX
 
 
   ! Program header
-  ! --------------
-  CALL Program_Message(PROGRAM_NAME, &
-                       'Program to create the infrared SpcCoeff '//&
-                       'files for FTS sensors.', &
-                       '$Revision$' )
+  CALL Program_Message( PROGRAM_NAME, &
+                        'Program to create the infrared SpcCoeff '//&
+                        'files for infrared FTS sensors.', &
+                        '$Revision$' )
 
-  ! Get user inputs
-  ! ---------------
-  ! The SpcCoeff version
-  WRITE( *,FMT='(/5x,"Default SpcCoeff file version is: ",i0, &
-               &".  Enter value: ")', &
-           ADVANCE='NO' ) SpcCoeff%Version
-  READ( *,* ) SpcCoeff_File_Version
-  IF ( SpcCoeff_File_Version < SpcCoeff%Version ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid version number specified. Using default.', &
-                          INFORMATION )
-    SpcCoeff_File_Version = SpcCoeff%Version
+  ! Read the SensorInfo file
+  err_stat = Read_SensorInfo( SENSORINFO_FILE,sinfo_list,Quiet=1 )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error reading SensorInfo file '//SENSORINFO_FILE
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
 
 
-  ! Begin the main sensor loop
-  ! ---------------------------
-  Sensor_Loop: DO n = 1, n_Sensors
+  ! Get the SpcCoeff version from user
+  WRITE( *,FMT='(/5x,"Default SpcCoeff file version is: ",i0,". Enter value: ")', &
+           ADVANCE='NO' ) spccoeff%Version
+  READ( *,* ) version
+  IF ( version < spccoeff%Version ) THEN
+    msg = 'Invalid version number specified. Using default.'
+    CALL Display_Message( PROGRAM_NAME, msg, INFORMATION )
+    version = spccoeff%Version
+  END IF
 
 
-    ! TEMPORARY STUFF FOR IASI
-    ! Allocate the SpcCoeff structure
-    ! -------------------------------
-    Error_Status = Allocate_SpcCoeff( IASI_nPts(band_id(n)), &
-                                      SpcCoeff )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error allocating SpcCoeff data structure.', &
-                            FAILURE )
-      STOP
-    END IF
+  ! Begin the main sensor/band loops
+  Sensor_Loop: DO n = 1, N_SENSORS
+    Band_Loop: DO band = 1, N_BANDS
 
-    ! Assign various data components
-    ! ------------------------------
-    SpcCoeff%Version          = SpcCoeff_File_Version
-    SpcCoeff%Sensor_Id        = sensor_id(n)
-    SpcCoeff%Sensor_Type      = SPCCOEFF_INFRARED
-    SpcCoeff%WMO_Satellite_ID = 4
-    SpcCoeff%WMO_Sensor_ID    = 221
-    SpcCoeff%Sensor_Channel   = IASI_Channels(band_id(n))
-    SpcCoeff%Polarization     = UNPOLARIZED
-
-    ! Set the frequencies
-    SpcCoeff%Wavenumber = IASI_F(band_id(n))
-    SpcCoeff%Frequency  = Inverse_cm_to_GHz( SpcCoeff%Wavenumber )
-    
-    ! Compute the Planck coefficients
-    SpcCoeff%Planck_C1 = C_1_SCALE_FACTOR * C_1 * ( SpcCoeff%Wavenumber**3 )
-    SpcCoeff%Planck_C2 = C_2_SCALE_FACTOR * C_2 *   SpcCoeff%Wavenumber
-    
-    ! Set the band correction coefficients
-    SpcCoeff%Band_C1 = ZERO
-    SpcCoeff%Band_C2 = ONE
-    
-    ! Fill the cosmic background field
-    SpcCoeff%Cosmic_Background_Radiance = ZERO
-
-    ! Set the solar fields
-    SpcCoeff%Solar_Irradiance = ZERO
-    CALL ClearFlag_SpcCoeff(SpcCoeff%Channel_Flag,SOLAR_FLAG)
+      ! Construct the sensor id
+      WRITE( sensor_id,'(a,"B",i0,"_",a)' ) TRIM(SENSOR_NAME(n)), band, TRIM(PLATFORM_NAME(n))
+      
+      
+      ! Get the SensorInfo data
+      err_stat = GetFrom_SensorInfo_List( sinfo_list, sensor_id, sinfo )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error retrieving SensorInfo for '//TRIM(sensor_id)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      
+      
+      ! Allocate the SpcCoeff structure
+      CALL SpcCoeff_Create( spccoeff, sinfo%n_Channels )
+      IF ( .NOT. SpcCoeff_Associated( spccoeff ) ) THEN
+        msg = 'Error allocating SpcCoeff for '//TRIM(sensor_id)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
 
 
-    ! Write the SpcCoeff data file
-    ! ----------------------------
-    SpcCoeff_Filename = TRIM(sensor_id(n))//'.SpcCoeff.nc'
-    
-    Error_Status = Write_SpcCoeff_netCDF( TRIM(SpcCoeff_Filename), &
-                                          SpcCoeff, &
-                                          Title = 'Spectral coefficients for '//&
-                                                  TRIM(sensor_id(n)), &
-                                          History = PROGRAM_RCS_ID, &
-                                          Comment = 'Placeholder file: '//&
-                                                    'no band correction and no solar')
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error writing netCDF SpcCoeff data file '//&
-                            TRIM(SpcCoeff_Filename), &
-                            FAILURE )
-      STOP
-    END IF
+      ! Call sensor specific procedures
+      SELECT CASE(TRIM(SENSOR_NAME(n)))
+        CASE('iasi')
+          ! ...Assign IASI-specific components
+          spccoeff%Wavenumber = IASI_F(band)
+          maxX = IASI_RESAMPLE_MAXX(band)
+        CASE('cris')
+          ! ...Assign CrIS-specific components
+          spccoeff%Wavenumber = CrIS_F(band,include_guard_channels=.FALSE.)
+          maxX = CRIS_RESAMPLE_MAXX(band)
+        CASE DEFAULT
+          msg = 'Unrecognised sensor name: '//TRIM(SENSOR_NAME(n))
+          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END SELECT
 
 
-    ! Destroy the current sensor data structures
-    ! ------------------------------------------
-    Error_Status = Destroy_SpcCoeff( SpcCoeff )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying SpcCoeff data structure for '//&
-                            TRIM(sensor_id(n))//' processing.', &
-                            FAILURE )
-      STOP
-    END IF
+      ! Assign sensor-independent components
+      SpcCoeff%Version          = version
+      spccoeff%Sensor_ID        = TRIM(sensor_id)
+      spccoeff%WMO_Satellite_ID = sinfo%WMO_Satellite_ID
+      spccoeff%WMO_Sensor_ID    = sinfo%WMO_Sensor_ID   
+      spccoeff%Sensor_Channel   = sinfo%Sensor_Channel
+      spccoeff%Sensor_Type      = sinfo%Sensor_Type
+      spccoeff%Polarization     = UNPOLARIZED
+      spccoeff%Frequency        = Inverse_cm_to_GHz( spccoeff%Wavenumber )
+      ! ...Compute Planck coefficients
+      spccoeff%Planck_C1 = C_1_SCALE_FACTOR * C_1 * ( spccoeff%Wavenumber**3 )
+      spccoeff%Planck_C2 = C_2_SCALE_FACTOR * C_2 *   spccoeff%Wavenumber
+      ! ...Default band correction coefficients
+      spccoeff%Band_C1 = ZERO
+      spccoeff%Band_C2 = ONE
+      ! ...Fill the cosmic background field
+      spccoeff%Cosmic_Background_Radiance = ZERO
+      ! ...Set the solar fields
+      spccoeff%Solar_Irradiance = ZERO
+      CALL SpcCoeff_ClearSolar( spccoeff )
 
+call compute_fts_solar()
+
+      ! Write the SpcCoeff data file
+      filename = TRIM(sensor_id)//'.SpcCoeff.nc'
+      err_stat = SpcCoeff_netCDF_WriteFile( &
+                   filename, &
+                   spccoeff, &
+                   Title = 'Spectral coefficients for '//TRIM(sensor_id), &
+                   History = PROGRAM_VERSION_ID, &
+                   Comment = 'No band correction and no solar')
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error writing netCDF SpcCoeff data file '//TRIM(filename)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+
+
+      ! Clean up
+      CALL SpcCoeff_Destroy( spccoeff )
+      err_stat = Destroy_SensorInfo( sinfo )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error destroying SensorInfo data structure for '//TRIM(sensor_id)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+
+    END DO Band_Loop      
   END DO Sensor_loop
 
+
+  ! Destroy the SensorInfo linked list
+  err_stat = Destroy_SensorInfo_List( sinfo_list )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error destroying SensorInfo_List.'
+    CALL Display_Message( PROGRAM_NAME, msg, WARNING )
+  END IF
+
+
+CONTAINS
+
+
+  SUBROUTINE Compute_FTS_Solar()
+    USE Solar_Define
+    USE Solar_IO
+    USE FFT_Spectral_Utility
+    
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_FTS_Solar'
+    ! ...Solar irradiance input file
+    CHARACTER(*), PARAMETER :: SOLAR_FILE = 'solar.nc'
+    ! The spectral bandwidth, 0-f(Nyquist), definitions
+    ! ...The bandwidth is determined by laser frequencies around 6500cm-1.
+    !    Assuming a sampling frequency of twice that and a frequency
+    !    interval, df, of 0.001cm-1, this translates into about 13008500
+    !    points in an interferogram. The closest small prime factors for
+    !    this number is
+    !      n_ifg = 2^12 x 3^3 x 5^3 = 13824000
+    !    The number of spectral points is thus
+    !      n_spc = 6912001
+    !    which, for a df of 0.001cm^-1 gives a Nyquist frequency of
+    !      f(Nyquist) = 6912cm^-1
+    REAL(fp), PARAMETER :: MASTER_F1 = ZERO
+    REAL(fp), PARAMETER :: MASTER_F2 = 8000.0_fp !6400.0_fp !6912.0_fp
+    REAL(fp), PARAMETER :: F_NYQUIST = MASTER_F2
+    ! ...Rolloff filter width
+    REAL(fp), PARAMETER :: DEFAULT_FILTER_WIDTH = 20.0_fp
+    ! Literal constants
+    REAL(fp), PARAMETER :: ZERO = 0.0_fp
+    REAL(fp), PARAMETER :: ONE  = 1.0_fp
+    REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp
+
+    ! Local variables
+    INTEGER :: i
+    INTEGER :: err_stat, alloc_stat
+    TYPE(Solar_type) :: solar
+    REAL(fp) :: bf, ef, df
+    REAL(fp) :: f1, f2
+    REAL(fp) :: filter_width
+    INTEGER :: n_filter
+    INTEGER :: is1, is2
+    INTEGER :: n_spc, n_ifg
+    INTEGER :: it1, it2
+    INTEGER :: n_tspc, n_tifg
+    INTEGER :: if1, if2
+    INTEGER :: ib1, ib2
+    INTEGER :: ic1, ic2
+    INTEGER :: n_cspc
+    REAL(fp)   , ALLOCATABLE :: ffilter(:), bfilter(:)  ! For the cosine filter
+    REAL(fp)   , ALLOCATABLE :: irf(:)     ! The instrument response function
+    REAL(fp)   , ALLOCATABLE :: f(:)       ! I/P to SPC->IFG FFT
+    REAL(fp)   , ALLOCATABLE :: spc(:)     ! I/P to SPC->IFG FFT
+    REAL(fp)   , ALLOCATABLE :: x(:)       ! O/P from SPC->IFG FFT; I/P to IFG->SPC FFT
+    COMPLEX(fp), ALLOCATABLE :: ifg(:)     ! O/P from SPC->IFG FFT; I/P to IFG->SPC FFT
+    REAL(fp)   , ALLOCATABLE :: cf(:)      ! O/P from IFG->SPC FFT
+    COMPLEX(fp), ALLOCATABLE :: cspc(:)    ! O/P from IFG->SPC FFT
+    
+    
+    ! Read solar data
+    err_stat = Solar_ReadFile( SOLAR_FILE, solar )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error destroying SensorInfo_List.'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+    
+    ! Determine where the solar spectrum slots
+    ! into the 0-f(Nyquist) spectrum
+    bf = solar%f1
+    ef = solar%f2
+    df = ComputeMeanDelta(solar%Frequency)
+    WRITE(*,'(/5x,"nF = ",i0,&
+             &/5x,"bf = ",f12.6," cm^-1",&
+             &/5x,"ef = ",f12.6," cm^-1",&
+             &/5x,"df = ",es13.6," cm^-1")') &
+             solar%n_Frequencies, bf, ef, df
+    is1 = ComputeIndex(bf, df)
+    is2 = ComputeIndex(ef, df)
+    WRITE(*,'(/5x,"Index positions of solar SPC: ",i0,",",i0)') is1, is2
+
+    ! Compute all the spectral length information
+    ! ...Compute the rolloff filter info
+    n_filter     = ComputeNPoints(DEFAULT_FILTER_WIDTH, df)
+    filter_width = REAL(n_filter-1,fp) * df
+    WRITE(*,'(/5x,"Rollof filter width: ",es13.6," cm^-1",/)') filter_width
+    ! ...Compute the number of spectral and interferogram  points 
+    n_spc = ComputeNPoints(F_NYQUIST,df)
+    n_ifg = ComputeNIFG(n_spc)
+    WRITE(*,'( 5x,"No. of SPC points                        : ",i0,&
+             &/5x,"No. of IFG points for SPC->IFG           : ",i0)') n_spc, n_ifg
+
+
+    ! Allocate all the arrays
+    ALLOCATE( ffilter(n_filter), &
+              bfilter(n_filter), &
+              irf(n_ifg)   , &  ! The instrument response function (IRF) in IFG space.
+              f(n_spc)     , &  ! Input  to   SPC->IFG FFT
+              spc(n_spc)   , &  ! Input  to   SPC->IFG FFT
+              x(n_ifg)     , &  ! Output from SPC->IFG FFT; Input  to   IFG->SPC FFT
+              ifg(n_ifg)   , &  ! Output from SPC->IFG FFT; Input  to   IFG->SPC FFT
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0) THEN
+      msg = 'Error allocating arrays'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Compute the 0-f(Nyquist) frequency grid
+    f1 = MASTER_F1
+    f2 = f1 + REAL(n_spc-1,fp)*df
+    f = (/ (REAL(i,fp),i=0,n_spc-1) /) / REAL(n_spc-1,fp)
+    f = f*(f2-f1) + f1
+
+
+    ! Determine the IFG truncation points
+    ! ...Compute the optical delay grid
+    x = computeX(f)
+    ! ...Get the truncation points
+    it1 = MINLOC(x, DIM=1, MASK=(x > -maxX))
+    it2 = MAXLOC(x, DIM=1, MASK=(x <= maxX))
+    ! ...The number of truncated IFG and SPC points
+    n_tifg = it2-it1+1
+    n_tspc = ComputeNSPC(n_tifg)
+    WRITE(*,'( 5x,"IFG sampling width                       : ",f18.15," cm",&
+             &/5x,"-X,+X truncation delays                  : ",f18.15,", ",f18.15," cm",&
+             &/5x,"No. of truncated IFG points for IFG->SPC : ",i0,&
+             &/5x,"No. of output SPC points                 : ",i0)') &
+             ComputeMeanDelta(x), x(it1), x(it2), n_tifg, n_tspc
+
+
+    ! Allocate the result arrays
+    ALLOCATE( cf(n_tspc)  , &  ! Output from IFG->SPC FFT 
+              cspc(n_tspc), &  ! Output from IFG->SPC FFT
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating result arrays'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Compute the rolloff filters
+    ! ...The front end
+    if1 = is1; if2 = is1 + n_filter - 1
+    err_stat = CosFilter( f(if1:if2), ffilter, FilterWidth=filter_width )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error computing cosine rolloff filter'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...The back end
+    ib1 = is2-n_filter+1; ib2 = is2
+    bfilter = ffilter(n_filter:1:-1)
+
+
+    ! Compute the FTS specific quantities
+    SELECT CASE(TRIM(SENSOR_NAME(n)))
+      CASE('iasi') 
+        irf = IASI_ApodFunction(band,x)
+        ! Determine the actual channel numbers to keep
+        ic1 = INT((IASI_BAND_F1(band) - f1)/IASI_D_FREQUENCY(band) + ONEpointFIVE)
+        ic2 = INT((IASI_BAND_F2(band) - f1)/IASI_D_FREQUENCY(band) + ONEpointFIVE)
+      CASE('cris')
+        irf = CrIS_ApodFunction(band,x)
+        ! Determine the actual channel numbers to keep (including guard channels)
+        ic1 = INT((CRIS_BAND_GF1(band) - f1)/CRIS_D_FREQUENCY(band) + ONEpointFIVE)
+        ic2 = INT((CRIS_BAND_GF2(band) - f1)/CRIS_D_FREQUENCY(band) + ONEpointFIVE)
+      CASE DEFAULT
+        msg = 'Unrecognised sensor name: '//TRIM(SENSOR_NAME(n))
+        CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END SELECT
+    n_cspc = ic2-ic1+1
+    WRITE( *,'(5x,"No. of output ",a," band ",i0," points",9x,": ",i0,/)') TRIM(SENSOR_NAME(n)), band, n_cspc
+
+
+    ! Perform the spectral reduction
+    ! ...Initialize arrays
+    spc = ZERO
+    ifg = CMPLX(ZERO,ZERO,fp)
+    ! ...Slot data into spectrum array
+    spc(is1:is2) = solar%Irradiance
+    ! ...Apply rollof filter to spectrum
+    spc(if1:if2) = spc(if1:if2) * ffilter  ! Front-end
+    spc(ib1:ib2) = spc(ib1:ib2) * bfilter  ! Back-end
+    ! ...FFT filtered input spectrum to an interferogram
+    err_stat = SPCtoIFG(f, spc, x, ifg  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'SPC->IFG FFT failed'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...Apply apodisation function to IFG
+    ifg = ifg * irf
+    ! ...FFT truncated interferogram to a spectrum
+    err_stat = IFGtoSPC(x(it1:it2), ifg(it1:it2), cf, cspc )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'IFG->SPC FFT failed'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+    ! ...Copy results to SpcCoeff structures
+    SELECT CASE(TRIM(SENSOR_NAME(n)))
+      CASE('iasi') 
+        spccoeff%Solar_Irradiance = REAL(cspc(ic1:ic2),fp)
+      CASE('cris')
+        spccoeff%Solar_Irradiance = CrIS_Remove_Guard_Channels(band,REAL(cspc(ic1:ic2),fp))
+    END SELECT
+
+
+    ! Deallocate all the arrays
+    DEALLOCATE( ffilter, bfilter, irf, f, spc, x, ifg, cf, cspc, &
+                STAT = alloc_stat )
+    IF ( alloc_stat /= 0) THEN
+      msg = 'Error deallocating arrays'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
+    END IF
+
+  END SUBROUTINE Compute_FTS_Solar
 END PROGRAM Create_FTS_SpcCoeff
