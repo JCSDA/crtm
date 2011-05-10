@@ -128,11 +128,11 @@ PROGRAM Create_FTS_SpcCoeff
         CASE('iasi')
           ! ...Assign IASI-specific components
           spccoeff%Wavenumber = IASI_F(band)
-          maxX = IASI_RESAMPLE_MAXX(band)
+          maxX = IASI_MaxX(band)
         CASE('cris')
           ! ...Assign CrIS-specific components
           spccoeff%Wavenumber = CrIS_F(band,include_guard_channels=.FALSE.)
-          maxX = CRIS_RESAMPLE_MAXX(band)
+          maxX = CrIS_MaxX(band)
         CASE DEFAULT
           msg = 'Unrecognised sensor name: '//TRIM(SENSOR_NAME(n))
           CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
@@ -354,13 +354,13 @@ CONTAINS
       CASE('iasi') 
         irf = IASI_ApodFunction(band,x)
         ! Determine the actual channel numbers to keep
-        ic1 = INT((IASI_BAND_F1(band) - f1)/IASI_D_FREQUENCY(band) + ONEpointFIVE)
-        ic2 = INT((IASI_BAND_F2(band) - f1)/IASI_D_FREQUENCY(band) + ONEpointFIVE)
+        ic1 = INT((IASI_BeginF(band) - f1)/IASI_dF(band) + ONEpointFIVE)
+        ic2 = INT((IASI_EndF(  band) - f1)/IASI_dF(band) + ONEpointFIVE)
       CASE('cris')
         irf = CrIS_ApodFunction(band,x)
         ! Determine the actual channel numbers to keep (including guard channels)
-        ic1 = INT((CRIS_BAND_GF1(band) - f1)/CRIS_D_FREQUENCY(band) + ONEpointFIVE)
-        ic2 = INT((CRIS_BAND_GF2(band) - f1)/CRIS_D_FREQUENCY(band) + ONEpointFIVE)
+        ic1 = INT((CrIS_BeginF(band,include_guard_channels=.TRUE.) - f1)/CrIS_dF(band) + ONEpointFIVE)
+        ic2 = INT((CrIS_EndF(  band,include_guard_channels=.TRUE.) - f1)/CrIS_dF(band) + ONEpointFIVE)
       CASE DEFAULT
         msg = 'Unrecognised sensor name: '//TRIM(SENSOR_NAME(n))
         CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); STOP
