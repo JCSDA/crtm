@@ -35,17 +35,13 @@ MODULE CrIS_Define
   PUBLIC :: N_CRIS_FFT
   PUBLIC :: CRIS_MIN_FREQUENCY
   PUBLIC :: CRIS_MAX_FREQUENCY
-  PUBLIC :: CRIS_D_FREQUENCY
-  PUBLIC :: CRIS_RESAMPLE_MAXX
   PUBLIC :: N_CRIS_BANDS
   PUBLIC :: N_CRIS_CHANNELS
-  PUBLIC :: CRIS_BAND_F1
-  PUBLIC :: CRIS_BAND_F2
   PUBLIC :: CRIS_BAND
-  PUBLIC :: CRIS_BAND_BEGIN_CHANNEL
-  PUBLIC :: CRIS_BAND_END_CHANNEL
   PUBLIC :: N_CRIS_CHANNELS_PER_BAND
   PUBLIC :: MAX_N_CRIS_BAND_CHANNELS
+  PUBLIC :: N_CRIS_GCHANNELS_PER_BAND
+  PUBLIC :: MAX_N_CRIS_BAND_GCHANNELS
   ! ...Inherited public parameters
   PUBLIC :: HAMMING
   PUBLIC :: BLACKMANHARRIS_3
@@ -55,9 +51,20 @@ MODULE CrIS_Define
   PUBLIC :: CrIS_X
   PUBLIC :: CrIS_F
   PUBLIC :: CrIS_ApodFunction
+  PUBLIC :: CrIS_BeginF
+  PUBLIC :: CrIS_EndF
+  PUBLIC :: CrIS_dF
+  PUBLIC :: CrIS_BeginChannel
+  PUBLIC :: CrIS_EndChannel
   PUBLIC :: CrIS_nPts
   PUBLIC :: CrIS_Channels
+  PUBLIC :: CrIS_Remove_Guard_Channels
   PUBLIC :: CrIS_DefineVersion
+  
+  INTERFACE CrIS_Remove_Guard_Channels  
+    MODULE PROCEDURE integer_rgc
+    MODULE PROCEDURE real_rgc
+  END INTERFACE CrIS_Remove_Guard_Channels
   
   
   ! -----------------
@@ -65,6 +72,8 @@ MODULE CrIS_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO      = 0.0_fp
   REAL(fp), PARAMETER :: POINT5    = 0.5_fp
@@ -76,44 +85,59 @@ MODULE CrIS_Define
   REAL(fp), PARAMETER :: M2CM      = HUNDRED
 
 
-  ! Band parameters
-  INTEGER,  PARAMETER :: N_CRIS_BANDS    = 3
-  INTEGER,  PARAMETER :: N_CRIS_CHANNELS = 1305
-  ! ...Band frequencies
-  REAL(fp), PARAMETER :: CRIS_BAND_F1(N_CRIS_BANDS) = (/  650.00_fp, 1210.00_fp, 2155.0_fp /)
-  REAL(fp), PARAMETER :: CRIS_BAND_F2(N_CRIS_BANDS) = (/ 1095.00_fp, 1750.00_fp, 2550.0_fp /)
-  ! ...The channel numbering for each band
-  INTEGER, PARAMETER :: CRIS_BAND_BEGIN_CHANNEL( N_CRIS_BANDS) = (/   1,  714, 1147 /)
-  INTEGER, PARAMETER :: CRIS_BAND_END_CHANNEL(   N_CRIS_BANDS) = (/ 713, 1146, 1305 /)
-  INTEGER, PARAMETER :: N_CRIS_CHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 713,  433,  159 /)
-  INTEGER, PARAMETER :: MAX_N_CRIS_BAND_CHANNELS = 713
-  ! ...Band names
-  CHARACTER(*), PARAMETER :: CRIS_BAND(N_CRIS_BANDS) = (/ 'B1','B2','B3'/)
-
-  
   ! Instrument parameters
+  ! ...Number of bands
+  INTEGER, PARAMETER :: N_CRIS_BANDS = 3
   ! ...Laser wavelength (m)
   REAL(fp), PARAMETER :: LASER_WAVELENGTH_IN_M = 1.550e-06_fp
   REAL(fp), PARAMETER :: LASER_WAVELENGTH      = LASER_WAVELENGTH_IN_M * M2CM
   ! ...Laser frequency (m^-1)
   REAL(fp), PARAMETER :: LASER_FREQUENCY   = ONE/LASER_WAVELENGTH_IN_M
-  REAL(fp), PARAMETER :: NYQUIST_FREQUENCY = LASER_FREQUENCY/TWO
+  ! ...Sampling and Nyquist frequencies
+  REAL(fp), PARAMETER :: SAMPLING_FREQUENCY = LASER_FREQUENCY*TWO  ! Every zero crossing of laser signal
+  REAL(fp), PARAMETER :: NYQUIST_FREQUENCY  = SAMPLING_FREQUENCY/TWO
   ! ...Field angle (rad)
   REAL(fp), PARAMETER :: FIELD_ANGLE = 0.0168_fp
   ! ...Number of double-sided FFT points
   INTEGER,  PARAMETER :: N_CRIS_FFT(N_CRIS_BANDS) =(/ 20736, 10560, 5200 /)
   ! ...Nominal maximum optical path delay for N_CRIS_FFT (m)
   REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_M(N_CRIS_BANDS) = &
-                         (/ 8.0340659e-03_fp, &
-                            4.0914224e-03_fp, &
-                            2.0147156e-03_fp /) 
+                         (/ 8.03520e-03_fp, &
+                            4.09200e-03_fp, &
+                            2.01500e-03_fp /) 
   REAL(fp), PARAMETER :: NOMINAL_MAXX(N_CRIS_BANDS) = NOMINAL_MAXX_IN_M * M2CM
 
+  ! Band parameters
+  ! ...Band names
+  CHARACTER(*), PARAMETER :: CRIS_BAND(N_CRIS_BANDS) = (/ 'B1','B2','B3'/)
+  ! ...Frequencies
+  REAL(fp), PARAMETER :: BAND_F1(N_CRIS_BANDS) = (/  650.00_fp, 1210.00_fp, 2155.0_fp /)
+  REAL(fp), PARAMETER :: BAND_F2(N_CRIS_BANDS) = (/ 1095.00_fp, 1750.00_fp, 2550.0_fp /)
+  ! ...Channel numbering
+  INTEGER, PARAMETER :: BEGIN_CHANNEL( N_CRIS_BANDS) = (/   1,  714, 1147 /)
+  INTEGER, PARAMETER :: END_CHANNEL(   N_CRIS_BANDS) = (/ 713, 1146, 1305 /)
+  INTEGER, PARAMETER :: N_CRIS_CHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 713,  433,  159 /)
+  INTEGER, PARAMETER :: MAX_N_CRIS_BAND_CHANNELS = 713
+  INTEGER, PARAMETER :: N_CRIS_CHANNELS = 713 + 433 + 159
+  ! ...Guard channel count
+  INTEGER, PARAMETER :: N_CRIS_GUARD_CHANNELS(2, N_CRIS_BANDS) = &
+    RESHAPE((/ 76, 75, 48, 47, 21, 20 /), (/ 2, N_CRIS_BANDS /))
+  ! ...Frequencies with guard channels
+  REAL(fp), PARAMETER :: BAND_GF1(N_CRIS_BANDS) = (/  602.500_fp, 1150.000_fp, 2102.500_fp /)
+  REAL(fp), PARAMETER :: BAND_GF2(N_CRIS_BANDS) = (/ 1141.875_fp, 1808.750_fp, 2600.000_fp /)
+  ! ...Channel numbering including guard channels
+  INTEGER, PARAMETER :: BEGIN_GCHANNEL( N_CRIS_BANDS) = (/   1,  865, 1393 /)
+  INTEGER, PARAMETER :: END_GCHANNEL(   N_CRIS_BANDS) = (/ 864, 1392, 1592 /)
+  INTEGER, PARAMETER :: N_CRIS_GCHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 864,  528,  200 /)
+  INTEGER, PARAMETER :: MAX_N_CRIS_BAND_GCHANNELS = 864
+  INTEGER, PARAMETER :: N_CRIS_GCHANNELS = 864 + 528 + 200
+
+  
   ! Parameters for the resampled frequency grid
   REAL(fp), PARAMETER :: CRIS_MIN_FREQUENCY = 650.0_fp
   REAL(fp), PARAMETER :: CRIS_MAX_FREQUENCY = 2550.0_fp
-  REAL(fp), PARAMETER :: CRIS_D_FREQUENCY(N_CRIS_BANDS)   = (/ 0.625_fp, 1.25_fp, 2.5_fp /)
-  REAL(fp), PARAMETER :: CRIS_RESAMPLE_MAXX(N_CRIS_BANDS) = (/ 0.8_fp  , 0.4_fp , 0.2_fp /)
+  REAL(fp), PARAMETER :: D_FREQUENCY(N_CRIS_BANDS) = (/ 0.625_fp, 1.25_fp, 2.5_fp /)
+  REAL(fp), PARAMETER :: RESAMPLED_MAXX(N_CRIS_BANDS)   = (/ 0.8_fp  , 0.4_fp , 0.2_fp /)
   
   
 CONTAINS
@@ -131,7 +155,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       maxX = CrIS_MaxX(band, nominal=nominal)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       band:     CrIS band number (1, 2, or 3).
 !                 If Band < 1, then 1 is used.
 !                    Band > 3, then 3 is used.
@@ -140,12 +164,12 @@ CONTAINS
 !                 DIMENSION:  SCALAR
 !                 ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       nominal:  Set this argument to return the nominal value of the CRIS
-!                 max. OPD rather than the computed one.
-!                 If == .FALSE., the computed value of maxX is returned,
-!                                maxX = 0.5 * n_FFT *. laser_wavelength * COS(field_angle)
-!                    == .TRUE.,  the nominal defined fixed value is returned
+!                 max. OPD rather than the resampled max. OPD..
+!                 If == .FALSE., the resampled value returned,
+!                    == .TRUE.,  the nominal value is returned
+!                 If not specified, the resampled value of maxX is returned.
 !                 UNITS:      N/A
 !                 TYPE:       LOGICAL
 !                 DIMENSION:  Scalar
@@ -166,18 +190,18 @@ CONTAINS
     REAL(fp) :: maxX
     ! Variables
     INTEGER  :: ib
-    LOGICAL  :: computed
+    LOGICAL  :: resampled
 
     ! Setup
     ! ...Check band
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
     ! ...Check nominal argument
-    computed = .TRUE.
-    IF ( PRESENT(nominal) ) computed = .NOT. nominal
+    resampled = .TRUE.
+    IF ( PRESENT(nominal) ) resampled = .NOT. nominal
 
     ! Determine optical path delay
-    IF ( computed ) THEN
-      maxX = REAL((N_CRIS_FFT(ib)/2),fp)*(LASER_WAVELENGTH/TWO)*COS(FIELD_ANGLE)
+    IF ( resampled ) THEN
+      maxX = RESAMPLED_MAXX(ib)
     ELSE
       maxX = NOMINAL_MAXX(ib)
     END IF
@@ -195,9 +219,9 @@ CONTAINS
 !       Pure function to compute the CrIS double-sided optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       x = CrIS_X(band, n)
+!       x = CrIS_X(band, n, nominal=nominal)
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       band:      CrIS band number (1, 2, or 3).
 !                  If band < 1, then 1 is used.
 !                     band > 3, then 3 is used.
@@ -212,11 +236,22 @@ CONTAINS
 !                  DIMENSION:  Scalar
 !                  ATTRIBUTES: INTENT(IN)
 !
+! OPTIONAL INPUTS:
+!       nominal:  Set this argument to use the nominal value of the CRIS
+!                 max. OPD rather than the resampled max. OPD..
+!                 If == .FALSE., the resampled value is used. [DEFAULT]
+!                    == .TRUE.,  the nominal value is used.
+!                 If not specified, the resampled value of maxX is used.
+!                 UNITS:      N/A
+!                 TYPE:       LOGICAL
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 ! FUNCTION RESULT:
-!       x:         CrIS double-sided optical delay grid.
-!                  UNITS:      Centimetres (cm)
-!                  TYPE:       REAL(fp)
-!                  DIMENSION:  Rank-1 (n)
+!       x:        CrIS double-sided optical delay grid.
+!                 UNITS:      Centimetres (cm)
+!                 TYPE:       REAL(fp)
+!                 DIMENSION:  Rank-1 (n)
 !
 ! COMMENTS:
 !       The output array looks like,
@@ -232,10 +267,11 @@ CONTAINS
 !                           dx
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CRIS_X(band,n) RESULT(X)
+  PURE FUNCTION CRIS_X(band,n,nominal) RESULT(X)
     ! Arguments
-    INTEGER, INTENT(IN) :: band
-    INTEGER, INTENT(IN) :: n
+    INTEGER,           INTENT(IN) :: band
+    INTEGER,           INTENT(IN) :: n
+    LOGICAL, OPTIONAL, INTENT(IN) :: nominal
     ! Function result
     REAL(fp) :: X(n)
     ! Local variables
@@ -247,7 +283,7 @@ CONTAINS
     ! Get the number of positive delays
     nHalf = n/2
     ! Compute maximum optical delay
-    maxX = CRIS_RESAMPLE_MAXX(ib) 
+    maxX = CrIS_MaxX(ib, nominal=nominal)
     ! Fill the grid array
     X(nHalf:n) = (/(REAL(i,fp),i=0,nHalf)/)/REAL(nHalf,fp)
     X(1:nHalf-1) = -X(n-1:nHalf+1:-1)
@@ -266,7 +302,7 @@ CONTAINS
 !       optical delay grid.
 !
 ! CALLING SEQUENCE:
-!       afn = CrIS_ApodFunction(band, x, apodType = apodType)
+!       afn = CrIS_ApodFunction(band, x, apodType=apodType, nominal=nominal)
 !
 ! INPUTS:
 !       band:      CrIS band number (1, 2, or 3).
@@ -296,6 +332,16 @@ CONTAINS
 !                  DIMENSION:  Scalar                                      
 !                  ATTRIBUTES: INTENT(IN), OPTIONAL                        
 !                    
+!       nominal:   Set this argument to use the nominal value of the CRIS
+!                  max. OPD rather than the resampled max. OPD..
+!                  If == .FALSE., the resampled value is used. [DEFAULT]
+!                     == .TRUE.,  the nominal value is used.
+!                  If not specified, the resampled value of maxX is used.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 ! FUNCTION RESULT:
 !       afn:       CrIS apodisation function.
 !                  UNITS:      N/A
@@ -316,22 +362,25 @@ CONTAINS
 !       apodisation filters.
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CrIS_ApodFunction(band, x, apodType) RESULT(afn)
+  PURE FUNCTION CrIS_ApodFunction(band, x, apodType, nominal) RESULT(afn)
     ! Arguments
     INTEGER,           INTENT(IN) :: band
     REAL(fp),          INTENT(IN) :: x(:)
     INTEGER, OPTIONAL, INTENT(IN) :: apodType
+    LOGICAL, OPTIONAL, INTENT(IN) :: nominal
     ! Function result
     REAL(fp) :: afn(SIZE(x))
     ! Local variables
     INTEGER :: atype
     REAL(fp) :: a0, a1, a2, a3
+    REAL(fp) :: maxX
     REAL(fp) :: xnorm(SIZE(x))
     INTEGER :: ib
     
     ! Setup
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
-    xnorm = x/CRIS_RESAMPLE_MAXX(ib)
+    maxX = CrIS_MaxX(ib, nominal=nominal)
+    xnorm = x/maxX
     ! ...Set apodisation type
     atype = -1 ! Force default
     IF ( PRESENT(apodType) ) atype = apodType
@@ -344,7 +393,7 @@ CONTAINS
         a0 = 0.42323_fp
         a1 = 0.49755_fp
         a2 = 0.07922_fp
-        WHERE ( ABS(x) <= CRIS_RESAMPLE_MAXX(ib) )
+        WHERE ( ABS(x) <= maxX )
           afn = a0 + a1*COS(PI*xnorm) + &
                      a2*COS(TWO*PI*xnorm)
         ELSE WHERE
@@ -356,7 +405,7 @@ CONTAINS
         a1 = 0.48829_fp
         a2 = 0.14128_fp
         a3 = 0.01168_fp
-        WHERE ( ABS(x) <= CRIS_RESAMPLE_MAXX(ib) )
+        WHERE ( ABS(x) <= maxX )
           afn = a0 + a1*COS(PI*xnorm)     + &
                      a2*COS(TWO*PI*xnorm) + &
                      a3*COS(THREE*PI*xnorm)
@@ -368,7 +417,7 @@ CONTAINS
       CASE DEFAULT
         a0 = 0.54_fp
         a1 = 0.46_fp
-        WHERE ( ABS(x) <= CRIS_RESAMPLE_MAXX(ib) )
+        WHERE ( ABS(x) <= maxX )
           afn = a0 + a1*COS(PI*xnorm)
         ELSE WHERE
           afn = ZERO
@@ -389,41 +438,56 @@ CONTAINS
 !       Pure function to compute the number of spectral points in an CrIS band.
 !
 ! CALLING SEQUENCE:
-!       n = CrIS_nPts(band)
+!       n = CrIS_nPts(band, include_guard_channels)
 !
-! INPUT ARGUMENTS:
-!        band:    CrIS band number (1, 2, or 3).
-!                 If band < 1, then 1 is used.
-!                    band > 3, then 3 is used.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  SCALAR
-!                 ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       band:                    CrIS band number (1, 2, or 3).
+!                                If band < 1, then 1 is used.
+!                                   band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are used.
+!                                   == .TRUE.  guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n:        Number of spectral points for the specified CrIS band.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  Scalar
-!
-! COMMENTS:
-!       From the CrIS ATBD 25 May 2001 Table 2, the CRIS band
-!       definitions are,
-!
-!         Band   Range (cm-¹)    Range (µm)  
-!         -----------------------------------
-!          1     650  to 1095    15.4 to 9.1
-!          2     1210 to 1750    8.3  to 5.7   
-!          3     2155 to 2550    4.6  to 3.9   
+!       n:                       Number of spectral points for the specified
+!                                CrIS band.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  Scalar
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CrIS_nPts(band) RESULT(n)
+  PURE FUNCTION CrIS_nPts(band, include_guard_channels) RESULT(n)
+    ! Arguments
     INTEGER, INTENT(IN) :: band
+    LOGICAL, INTENT(IN) :: include_guard_channels
+    ! Function result
     INTEGER :: n
+    ! Local variables
     INTEGER :: ib
+    REAL(fp) :: f1, f2, df
+
+    ! Setup
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
-    n = INT((CRIS_BAND_F2(ib)-CRIS_BAND_F1(ib))/CRIS_D_FREQUENCY(ib) + ONEPOINT5)
+    
+    ! Select frequencies and interval
+    f1 = CrIS_BeginF(ib, include_guard_channels=include_guard_channels)
+    f2 = CrIS_EndF(  ib, include_guard_channels=include_guard_channels)
+    df = CrIS_dF(ib)
+    
+    ! Compute the points
+    n = INT((f2-f1)/df + ONEPOINT5)
+    
   END FUNCTION CrIS_nPts
 
 
@@ -437,46 +501,57 @@ CONTAINS
 !       Pure function to compute the resampled frequency grid for an CrIS band.
 !
 ! CALLING SEQUENCE:
-!       f = CrIS_F(band)
+!       f = CrIS_F(band, include_guard_channels)
 !
-! INPUT ARGUMENTS:
-!       band:     CRIS band number (1, 2, or 3).
-!                 If band < 1, then 1 is used.
-!                    band > 3, then 3 is used.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  SCALAR
-!                 ATTRIBUTES: INTENT(IN)
+! INPUTS:
+!       band:                    CRIS band number (1, 2, or 3).
+!                                If band < 1, then 1 is used.
+!                                   band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are used.
+!                                   == .TRUE.  guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       f:        The spectral frequency grid for the specified CRIS band.
-!                 UNITS:      Inverse centimetres (cm^-1)
-!                 TYPE:       REAL(fp)
-!                 DIMENSION:  Rank-1
-!
-! COMMENTS:
-!       From the CrIS ATBD 25 May 2001 Table 2, the CRIS band
-!       definitions are,
-!
-!         Band   Range (cm-¹)    Range (µm)  
-!         -----------------------------------
-!          1     650  to 1095    15.4 to 9.1
-!          2     1210 to 1750    8.3  to 5.7   
-!          3     2155 to 2550    4.6  to 3.9   
-!
-!       The function, CrIS_nPts(), can be used to compute the number of spectral
-!       points in each band.
+!       f:                       The spectral frequency grid for the specified
+!                                band.
+!                                UNITS:      Inverse centimetres (cm^-1)
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Rank-1
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CrIS_F(band) RESULT(f)
+  PURE FUNCTION CrIS_F(band, include_guard_channels) RESULT(f)
+    ! Arguments
     INTEGER, INTENT(IN) :: band
-    REAL(fp) :: f(CRIS_nPts(band))
-    INTEGER :: i, ib   
+    LOGICAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    REAL(fp) :: f(CRIS_nPts(band, include_guard_channels))
+    ! Local variables
+    INTEGER :: i, ib
+    REAL(fp) :: f1, df
+    
+    ! Setup
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
-    DO i = 1, CrIS_nPts(ib)
-      f(i) = CRIS_BAND_F1(ib) + (CRIS_D_FREQUENCY(ib)*REAL(i-1,fp))
+    
+    ! Select begin frequency and interval
+    f1 = CrIS_BeginF(ib, include_guard_channels=include_guard_channels)
+    df = CrIS_dF(ib)
+
+    ! Compute frequencies
+    DO i = 1, CrIS_nPts(ib,include_guard_channels)
+      f(i) = f1 + (df*REAL(i-1,fp))
     END DO
+    
   END FUNCTION CrIS_F
   
   
@@ -490,40 +565,464 @@ CONTAINS
 !       Pure function to compute the channel numbers for an CrIS band.
 !
 ! CALLING SEQUENCE:
-!       ch = CrIS_Channels(band)
+!       ch = CrIS_Channels(band, include_guard_channels)
 !
-! INPUT ARGUMENTS:
-!       band:     CRIS band number (1, 2, or 3).
-!                 If band < 1, then 1 is used.
-!                    band > 3, then 3 is used.
+! INPUTS:
+!       band:                    CRIS band number (1, 2, or 3).
+!                                If band < 1, then 1 is used.
+!                                   band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are used.
+!                                   == .TRUE.  guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       ch:                      The channel numbers for the specified CrIS band.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  Rank-1
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_Channels(band, include_guard_channels) RESULT(ch)
+    ! Arguments
+    INTEGER, INTENT(IN) :: band
+    LOGICAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    INTEGER :: ch(CrIS_nPts(band, include_guard_channels))
+    ! Local variables
+    INTEGER :: i, ib, ic1, ic2
+
+    ! Setup
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    
+    ! Select channel bounds
+    ic1 = CrIS_BeginChannel(ib, include_guard_channels=include_guard_channels)
+    ic2 = CrIS_EndChannel(ib, include_guard_channels=include_guard_channels)
+    
+    ! Construct channel array
+    ch = (/(i, i=ic1,ic2)/)
+    
+  END FUNCTION CrIS_Channels
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_Remove_Guard_Channels
+!
+! PURPOSE:
+!       Function to remove the guard channels from input for a CrIS band.
+!
+! CALLING SEQUENCE:
+!       output_vector = CrIS_Remove_Guard_Channels(band, input_vector)
+!
+! INPUTS:
+!       band:            CrIS band number (1, 2, or 3).
+!                        If band < 1, then 1 is used.
+!                           band > 3, then 3 is used.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  SCALAR
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       input_vector:    CrIS band-length vector for which the guard
+!                        channel data is to be removed.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER or REAL(fp)
+!                        DIMENSION:  Rank-1
+!                        ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       output_vector:   Same data as input_vector but with the guard
+!                        channels removed.
+!                        Value set to all -1 if error occurs
+!                        UNITS:      Variable
+!                        TYPE:       Same as input_vector
+!                        DIMENSION:  Rank-1
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  FUNCTION integer_rgc(band, input_vector) RESULT(output_vector)
+    ! Arguments
+    INTEGER, INTENT(IN) :: band
+    INTEGER, INTENT(IN) :: input_vector(:)
+    ! Function result
+    INTEGER :: output_vector(CRIS_nPts(band, include_guard_channels=.FALSE.))
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CrIS_Remove_Guard_Channels(INTEGER)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: ib, n
+    INTEGER :: i1, i2
+    
+    ! Setup
+    output_vector = -1
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Test input
+    n = SIZE(input_vector)
+    IF ( n /= N_CRIS_GCHANNELS_PER_BAND(ib) ) THEN
+      WRITE( msg,'("Input vector size (",i0,") inconsistent for CrIS band ",i0)') n, ib
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
+    END IF
+    
+    ! Pick out the data
+    i1 = N_CRIS_GUARD_CHANNELS(1, ib) + 1
+    i2 = n - N_CRIS_GUARD_CHANNELS(2, ib)
+    output_vector = input_vector(i1:i2)
+    
+  END FUNCTION integer_rgc
+  
+  FUNCTION real_rgc(band, input_vector) RESULT(output_vector)
+    ! Arguments
+    INTEGER , INTENT(IN) :: band
+    REAL(fp), INTENT(IN) :: input_vector(:)
+    ! Function result
+    REAL(fp) :: output_vector(CRIS_nPts(band, include_guard_channels=.FALSE.))
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CrIS_Remove_Guard_Channels(REAL)'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: ib, n
+    INTEGER :: i1, i2
+    
+    ! Setup
+    output_vector = -1.0_fp
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Test input
+    n = SIZE(input_vector)
+    IF ( n /= N_CRIS_GCHANNELS_PER_BAND(ib) ) THEN
+      WRITE( msg,'("Input vector size (",i0,") inconsistent for CrIS band ",i0)') n, ib
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
+    END IF
+    
+    ! Pick out the data
+    i1 = N_CRIS_GUARD_CHANNELS(1, ib) + 1
+    i2 = n - N_CRIS_GUARD_CHANNELS(2, ib)
+    output_vector = input_vector(i1:i2)
+    
+  END FUNCTION real_rgc
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_BeginF
+!
+! PURPOSE:
+!       Pure function to return the CRIS band begin frequency.
+!
+! CALLING SEQUENCE:
+!       f1 = CrIS_BeginF(band, include_guard_channels=include_guard_channels)
+!
+! INPUTS:
+!       band:                    CrIS band number (1, 2, or 3).
+!                                If Band < 1, then 1 is used.
+!                                   Band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are included. [DEFAULT]
+!                                   == .TRUE.  guard channels are included.
+!                                If not specified, no guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       f1:                      Begin frequency for the CrIS band.
+!                                UNITS:      Inverse centimetres (cm^-1)
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_BeginF(band, include_guard_channels) RESULT(f1)
+    ! Arguments
+    INTEGER,           INTENT(IN) :: band
+    LOGICAL, OPTIONAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    REAL(fp) :: f1
+    ! Variables
+    INTEGER  :: ib
+    LOGICAL  :: no_guard_channels
+
+    ! Setup
+    ! ...Check band
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Check optional argument
+    no_guard_channels = .TRUE.
+    IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
+
+    ! Retrieve the begin frequency
+    IF ( no_guard_channels ) THEN
+      f1 = BAND_F1(ib)
+    ELSE
+      f1 = BAND_GF1(ib)
+    END IF
+    
+  END FUNCTION CrIS_BeginF
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_EndF
+!
+! PURPOSE:
+!       Pure function to return the CRIS band end frequency.
+!
+! CALLING SEQUENCE:
+!       f2 = CrIS_EndF(band, include_guard_channels=include_guard_channels)
+!
+! INPUTS:
+!       band:                    CrIS band number (1, 2, or 3).
+!                                If Band < 1, then 1 is used.
+!                                   Band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are included. [DEFAULT]
+!                                   == .TRUE.  guard channels are included.
+!                                If not specified, no guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       f2:                      End frequency for the CrIS band.
+!                                UNITS:      Inverse centimetres (cm^-1)
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_EndF(band, include_guard_channels) RESULT(f2)
+    ! Arguments
+    INTEGER,           INTENT(IN) :: band
+    LOGICAL, OPTIONAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    REAL(fp) :: f2
+    ! Variables
+    INTEGER  :: ib
+    LOGICAL  :: no_guard_channels
+
+    ! Setup
+    ! ...Check band
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Check optional argument
+    no_guard_channels = .TRUE.
+    IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
+
+    ! Retrieve the begin frequency
+    IF ( no_guard_channels ) THEN
+      f2 = BAND_F2(ib)
+    ELSE
+      f2 = BAND_GF2(ib)
+    END IF
+    
+  END FUNCTION CrIS_EndF
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_dF
+!
+! PURPOSE:
+!       Pure function to return the CrIS band frequency interval.
+!
+! CALLING SEQUENCE:
+!       df = CrIS_dF(band)
+!
+! INPUTS:
+!       band:     CrIS band number (1, 2, or 3).
+!                 If Band < 1, then 1 is used.
+!                    Band > 3, then 3 is used.
 !                 UNITS:      N/A
 !                 TYPE:       INTEGER
 !                 DIMENSION:  SCALAR
 !                 ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       ch:       The channel numbers for the specified CrIS band.
-!                 UNITS:      N/A
-!                 TYPE:       INTEGER
-!                 DIMENSION:  Rank-1
-!
-! COMMENTS:
-!       The function, CrIS_nPts(), can be used to compute the number of spectral
-!       channels in each band.
-!
+!       df:       Frequency interval for the CrIS band.
+!                 UNITS:      Inverse centimetres (cm^-1)
+!                 TYPE:       REAL(fp)
+!                 DIMENSION:  Scalar
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CrIS_Channels(band) RESULT(ch)
+  PURE FUNCTION CrIS_dF(band) RESULT(df)
+    ! Arguments
     INTEGER, INTENT(IN) :: band
-    INTEGER :: ch(CrIS_nPts(band))
-    INTEGER :: i, ib, n
+    ! Function result
+    REAL(fp) :: df
+    ! Variables
+    INTEGER  :: ib
+
+    ! Setup
+    ! ...Check band
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
-    n = 0
-    DO i = 1, ib-1
-      n = n + CrIS_nPts(i)
-    END DO
-    ch = (/(i,i=1,CrIS_nPts(ib))/) + n
-  END FUNCTION CrIS_Channels
+
+    ! Retrieve the frequency interval
+    df = D_FREQUENCY(ib)
+    
+  END FUNCTION CrIS_dF
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_BeginChannel
+!
+! PURPOSE:
+!       Pure function to return the CRIS band begin channel number.
+!
+! CALLING SEQUENCE:
+!       ch1 = CrIS_BeginChannel(band, include_guard_channels=include_guard_channels)
+!
+! INPUTS:
+!       band:                    CrIS band number (1, 2, or 3).
+!                                If Band < 1, then 1 is used.
+!                                   Band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are included. [DEFAULT]
+!                                   == .TRUE.  guard channels are included.
+!                                If not specified, no guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       ch1:                     Begin channel number for the CrIS band.
+!                                UNITS:      N/A
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_BeginChannel(band, include_guard_channels) RESULT(ch1)
+    ! Arguments
+    INTEGER,           INTENT(IN) :: band
+    LOGICAL, OPTIONAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    INTEGER :: ch1
+    ! Variables
+    INTEGER  :: ib
+    LOGICAL  :: no_guard_channels
+
+    ! Setup
+    ! ...Check band
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Check optional argument
+    no_guard_channels = .TRUE.
+    IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
+
+    ! Retrieve the begin frequency
+    IF ( no_guard_channels ) THEN
+      ch1 = BEGIN_CHANNEL(ib)
+    ELSE
+      ch1 = BEGIN_GCHANNEL(ib)
+    END IF
+    
+  END FUNCTION CrIS_BeginChannel
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_EndChannel
+!
+! PURPOSE:
+!       Pure function to return the CRIS band end channel number.
+!
+! CALLING SEQUENCE:
+!       ch2 = CrIS_EndChannel(band, include_guard_channels=include_guard_channels)
+!
+! INPUTS:
+!       band:                    CrIS band number (1, 2, or 3).
+!                                If Band < 1, then 1 is used.
+!                                   Band > 3, then 3 is used.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  SCALAR
+!                                ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       include_guard_channels:  Set this logical switch to include the guard
+!                                channels on either side of the band.
+!                                If == .FALSE. no guard channels are included. [DEFAULT]
+!                                   == .TRUE.  guard channels are included.
+!                                If not specified, no guard channels are used.
+!                                UNITS:      N/A
+!                                TYPE:       Logical
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       ch2:                     End channel number for the CrIS band.
+!                                UNITS:      N/A
+!                                TYPE:       REAL(fp)
+!                                DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_EndChannel(band, include_guard_channels) RESULT(ch2)
+    ! Arguments
+    INTEGER,           INTENT(IN) :: band
+    LOGICAL, OPTIONAL, INTENT(IN) :: include_guard_channels
+    ! Function result
+    INTEGER :: ch2
+    ! Variables
+    INTEGER  :: ib
+    LOGICAL  :: no_guard_channels
+
+    ! Setup
+    ! ...Check band
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    ! ...Check optional argument
+    no_guard_channels = .TRUE.
+    IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
+
+    ! Retrieve the end frequency
+    IF ( no_guard_channels ) THEN
+      ch2 = END_CHANNEL(ib)
+    ELSE
+      ch2 = END_GCHANNEL(ib)
+    END IF
+    
+  END FUNCTION CrIS_EndChannel
 
 
 !--------------------------------------------------------------------------------
