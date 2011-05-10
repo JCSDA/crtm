@@ -32,21 +32,13 @@ MODULE CrIS_Define
   ! Everything is default private
   PRIVATE
   ! Public parameters
-  PUBLIC :: N_CRIS_FFT
-  PUBLIC :: CRIS_MIN_FREQUENCY
-  PUBLIC :: CRIS_MAX_FREQUENCY
   PUBLIC :: N_CRIS_BANDS
-  PUBLIC :: N_CRIS_CHANNELS
-  PUBLIC :: CRIS_BAND
-  PUBLIC :: N_CRIS_CHANNELS_PER_BAND
-  PUBLIC :: MAX_N_CRIS_BAND_CHANNELS
-  PUBLIC :: N_CRIS_GCHANNELS_PER_BAND
-  PUBLIC :: MAX_N_CRIS_BAND_GCHANNELS
   ! ...Inherited public parameters
   PUBLIC :: HAMMING
   PUBLIC :: BLACKMANHARRIS_3
   PUBLIC :: BLACKMANHARRIS_4
   ! Public module procedures
+  PUBLIC :: CrIS_nFFT
   PUBLIC :: CrIS_MaxX
   PUBLIC :: CrIS_X
   PUBLIC :: CrIS_F
@@ -99,7 +91,7 @@ MODULE CrIS_Define
   ! ...Field angle (rad)
   REAL(fp), PARAMETER :: FIELD_ANGLE = 0.0168_fp
   ! ...Number of double-sided FFT points
-  INTEGER,  PARAMETER :: N_CRIS_FFT(N_CRIS_BANDS) =(/ 20736, 10560, 5200 /)
+  INTEGER,  PARAMETER :: N_FFT(N_CRIS_BANDS) =(/ 20736, 10560, 5200 /)
   ! ...Nominal maximum optical path delay for N_CRIS_FFT (m)
   REAL(fp), PARAMETER :: NOMINAL_MAXX_IN_M(N_CRIS_BANDS) = &
                          (/ 8.03520e-03_fp, &
@@ -141,6 +133,54 @@ MODULE CrIS_Define
   
   
 CONTAINS
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_nFFT
+!
+! PURPOSE:
+!       Pure function to return the number of double-sided FFT points
+!       for a CrIS instrument band.
+!
+! CALLING SEQUENCE:
+!       n = CrIS_nFFT(band)
+!
+! INPUTS:
+!       band:     CrIS band number (1, 2, or 3).
+!                 If band < 1, then 1 is used.
+!                    band > 3, then 3 is used.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  SCALAR
+!                 ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       n:        Number of double-sided FFT points for the specified
+!                 CrIS band.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_nFFT(band) RESULT(n)
+    ! Arguments
+    INTEGER, INTENT(IN) :: band
+    ! Function result
+    INTEGER :: n
+    ! Local variables
+    INTEGER :: ib
+
+    ! Setup
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+    
+    ! Select the number of points
+    n = N_FFT(ib)
+    
+  END FUNCTION CrIS_nFFT
 
 
 !--------------------------------------------------------------------------------
@@ -267,7 +307,7 @@ CONTAINS
 !                           dx
 !:sdoc-:
 !--------------------------------------------------------------------------------
-  PURE FUNCTION CRIS_X(band,n,nominal) RESULT(X)
+  PURE FUNCTION CRIS_X(band, n, nominal) RESULT(X)
     ! Arguments
     INTEGER,           INTENT(IN) :: band
     INTEGER,           INTENT(IN) :: n
@@ -949,7 +989,7 @@ CONTAINS
     no_guard_channels = .TRUE.
     IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
 
-    ! Retrieve the begin frequency
+    ! Retrieve the begin channel number
     IF ( no_guard_channels ) THEN
       ch1 = BEGIN_CHANNEL(ib)
     ELSE
@@ -1015,7 +1055,7 @@ CONTAINS
     no_guard_channels = .TRUE.
     IF ( PRESENT(include_guard_channels) ) no_guard_channels = .NOT. include_guard_channels
 
-    ! Retrieve the end frequency
+    ! Retrieve the end channel number
     IF ( no_guard_channels ) THEN
       ch2 = END_CHANNEL(ib)
     ELSE
