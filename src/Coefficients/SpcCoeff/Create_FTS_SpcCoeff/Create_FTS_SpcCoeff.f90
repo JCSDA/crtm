@@ -160,7 +160,10 @@ PROGRAM Create_FTS_SpcCoeff
       spccoeff%Solar_Irradiance = ZERO
       CALL SpcCoeff_ClearSolar( spccoeff )
 
-call compute_fts_solar()
+
+      ! Perform the solar computation
+      CALL Compute_FTS_Solar()
+      
 
       ! Write the SpcCoeff data file
       filename = TRIM(sensor_id)//'.SpcCoeff.nc'
@@ -169,7 +172,7 @@ call compute_fts_solar()
                    spccoeff, &
                    Title = 'Spectral coefficients for '//TRIM(sensor_id), &
                    History = PROGRAM_VERSION_ID, &
-                   Comment = 'No band correction and no solar')
+                   Comment = 'No band correction.')
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error writing netCDF SpcCoeff data file '//TRIM(filename)
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
@@ -209,18 +212,14 @@ CONTAINS
     ! ...Solar irradiance input file
     CHARACTER(*), PARAMETER :: SOLAR_FILE = 'solar.nc'
     ! The spectral bandwidth, 0-f(Nyquist), definitions
-    ! ...The bandwidth is determined by laser frequencies around 6500cm-1.
+    ! ...The bandwidth is determined a laser laser frequency of 8000cm-1.
     !    Assuming a sampling frequency of twice that and a frequency
-    !    interval, df, of 0.001cm-1, this translates into about 13008500
-    !    points in an interferogram. The closest small prime factors for
-    !    this number is
-    !      n_ifg = 2^12 x 3^3 x 5^3 = 13824000
-    !    The number of spectral points is thus
-    !      n_spc = 6912001
-    !    which, for a df of 0.001cm^-1 gives a Nyquist frequency of
-    !      f(Nyquist) = 6912cm^-1
+    !    interval, df, of 0.001cm-1, this translates into 8000001 spectral
+    !    points and 16000000 points in a double-sided interferogram. The
+    !    prime factors for this number is
+    !      n_ifg = 2^10 x 5^6 = 16000000
     REAL(fp), PARAMETER :: MASTER_F1 = ZERO
-    REAL(fp), PARAMETER :: MASTER_F2 = 8000.0_fp !6400.0_fp !6912.0_fp
+    REAL(fp), PARAMETER :: MASTER_F2 = 8000.0_fp
     REAL(fp), PARAMETER :: F_NYQUIST = MASTER_F2
     ! ...Rolloff filter width
     REAL(fp), PARAMETER :: DEFAULT_FILTER_WIDTH = 20.0_fp
