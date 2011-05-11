@@ -48,7 +48,7 @@ MODULE SensorInfo_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
@@ -78,10 +78,9 @@ CONTAINS
 !       SensorInfo linked list.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Read_SensorInfo( Filename,               &  ! Input
-!                                       SensorInfo_List,        &  ! Output
-!                                       Quiet      =Quiet,      &  ! Optional input
-!                                       Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Read_SensorInfo( Filename,         &  ! Input
+!                                       SensorInfo_List,  &  ! Output
+!                                       Quiet      =Quiet )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       Filename:        Character string specifying the name of an ASCII
@@ -111,15 +110,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:     Character string specifying a Filename in which any
-!                        Messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output Messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
@@ -138,14 +128,12 @@ CONTAINS
 
   FUNCTION Read_SensorInfo( Filename,        &  ! Input
                             SensorInfo_List, &  ! Output
-                            Quiet,           &  ! Optional input
-                            Message_Log )    &  ! Error messaging
-                          RESULT ( Error_Status )
+                            Quiet          ) &  ! Optional input
+                          RESULT( Error_Status )
     ! Arguments
     CHARACTER(*)              , INTENT(IN)     :: Filename
     TYPE(SensorInfo_List_type), INTENT(IN OUT) :: SensorInfo_List
     INTEGER     ,     OPTIONAL, INTENT(IN)     :: Quiet
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
@@ -156,7 +144,7 @@ CONTAINS
     LOGICAL :: Noisy
     INTEGER :: IO_Status
     INTEGER :: FileID
-    INTEGER :: n_Channels, l
+    INTEGER :: l
     INTEGER :: n_Sensors
     TYPE(SensorInfo_type) :: SensorInfo, dummy
 
@@ -170,8 +158,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'File '//TRIM(Filename)//' not found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -186,16 +173,14 @@ CONTAINS
     ! Create a new SensorInfo linked list
     ! -----------------------------------
     Error_Status = Destroy_SensorInfo_List( SensorInfo_List, &
-                                            Quiet      =Quiet, &
-                                            Message_Log=Message_Log )
+                                            Quiet      =Quiet )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error destroying SensorInfo_List.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
-    SensorInfo_List = New_SensorInfo_List( Message_Log=Message_Log )
+    SensorInfo_List = New_SensorInfo_List()
 
 
     ! Open the SensorInfo file
@@ -205,8 +190,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error obtaining file unit number.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
     OPEN( FileID, FILE   = TRIM(ADJUSTL(Filename)), &
@@ -219,8 +203,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error opening '//TRIM(Filename), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -238,8 +221,7 @@ CONTAINS
                         IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF
@@ -279,8 +261,7 @@ CONTAINS
                         n_Sensors, IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF
@@ -313,8 +294,7 @@ CONTAINS
                         n_Sensors, IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF 
@@ -323,14 +303,12 @@ CONTAINS
       ! Allocate the SensorInfo structure pointer components
       ! ----------------------------------------------------
       Error_Status = Allocate_SensorInfo( dummy%n_Channels, &
-                                          SensorInfo, &
-                                          Message_Log=Message_Log )
+                                          SensorInfo )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( ROUTINE_NAME, &
                               'Error allocating SensorInfo structure for '//&
                               TRIM(dummy%Sensor_Id), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF
@@ -354,8 +332,7 @@ CONTAINS
                        SensorInfo%n_Channels
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              INFORMATION, &
-                              Message_Log=Message_Log )
+                              INFORMATION )
       END IF
 
 
@@ -375,8 +352,7 @@ CONTAINS
                          l, IO_Status
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
+                                Error_Status )
           CLOSE( FileID )
           RETURN
         END IF
@@ -388,15 +364,13 @@ CONTAINS
       ! ------------------------------------------------
       Error_Status = AddTo_SensorInfo_List( SensorInfo, &
                                             SensorInfo_List, &
-                                            Node_Number=n_Sensors, &
-                                            Message_Log=Message_Log )
+                                            Node_Number=n_Sensors )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               'Error adding '//&
                               TRIM(SensorInfo%Sensor_Id)//' to SensorInfo list.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF
@@ -404,16 +378,14 @@ CONTAINS
 
       ! Destroy the SensorInfo structure for the next read
       ! --------------------------------------------------
-      Error_Status = Destroy_SensorInfo( SensorInfo, &
-                                         Message_Log=Message_Log )
+      Error_Status = Destroy_SensorInfo( SensorInfo )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error destroying SensorInfo structures at sensor # ",i0)' ) &
                        n_Sensors
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID )
         RETURN
       END IF
@@ -428,8 +400,7 @@ CONTAINS
                       TRIM(Filename), n_Sensors
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+                            INFORMATION )
     END IF
 
 
@@ -443,8 +414,7 @@ CONTAINS
                       TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
     END IF
 
   END FUNCTION Read_SensorInfo
@@ -460,10 +430,9 @@ CONTAINS
 !       ASCII format SensorInfo file.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Write_SensorInfo( Filename,               &  ! Input
-!                                        SensorInfo_List,        &  ! Input
-!                                        Quiet      =Quiet,      &  ! Optional input
-!                                        Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Write_SensorInfo( Filename,         &  ! Input
+!                                        SensorInfo_List,  &  ! Input
+!                                        Quiet      =Quiet )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       Filename:        Character string specifying the name of an output
@@ -492,15 +461,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:     Character string specifying a Filename in which any
-!                        Messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output Messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
@@ -524,14 +484,12 @@ CONTAINS
 
   FUNCTION Write_SensorInfo( Filename,        &  ! Input
                              SensorInfo_List, &  ! Input
-                             Quiet,           &  ! Optional input
-                             Message_Log )    &  ! Error messaging
-                           RESULT ( Error_Status )
+                             Quiet          ) &  ! Optional input
+                           RESULT( Error_Status )
     ! Arguments
     CHARACTER(*)              , INTENT(IN) :: Filename
     TYPE(SensorInfo_List_type), INTENT(IN) :: SensorInfo_List
     INTEGER     ,     OPTIONAL, INTENT(IN) :: Quiet
-    CHARACTER(*),     OPTIONAL, INTENT(IN) :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
@@ -553,8 +511,7 @@ CONTAINS
     IF ( File_Exists( TRIM(Filename) ) ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'File '//TRIM(Filename)//' will be overwritten.', &
-                            WARNING, &
-                            Message_Log=Message_Log )
+                            WARNING )
     END IF
 
     ! Output informational Messages....
@@ -572,8 +529,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error obtaining file unit number.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
     OPEN( FileID, FILE   = Filename, &
@@ -586,8 +542,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Error opening '//TRIM(Filename), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -599,8 +554,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'SensorInfo list is empty', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       CLOSE( FileID, STATUS='DELETE' )
       RETURN
     END IF
@@ -613,15 +567,13 @@ CONTAINS
       ! Get the current sensor data from the list
       Error_Status = GetFrom_SensorInfo_List( SensorInfo_List, &
                                               n, &
-                                              SensorInfo, &
-                                              Message_Log=Message_Log )
+                                              SensorInfo )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error retrieving SensorInfo data for sensor # ",i0)' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID, STATUS='DELETE' )
         RETURN
       END IF
@@ -642,8 +594,7 @@ CONTAINS
                         &". IOSTAT = ",i0)' ) n, IO_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID, STATUS='DELETE' )
         RETURN
       END IF
@@ -655,8 +606,7 @@ CONTAINS
                         TRIM(SensorInfo%Sensor_Id), SensorInfo%n_Channels
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              INFORMATION, &
-                              Message_Log=Message_Log )
+                              INFORMATION )
       END IF
 
       ! Write the ChannelInfo data
@@ -672,24 +622,21 @@ CONTAINS
                           TRIM(SensorInfo%Sensor_Id), l, IO_Status
           CALL Display_Message( ROUTINE_NAME, &
                                 TRIM(Message), &
-                                Error_Status, &
-                                Message_Log=Message_Log )
+                                Error_Status )
           CLOSE( FileID, STATUS='DELETE' )
           RETURN
         END IF
       END DO ChannelInfo_Write_loop
 
       ! Destroy the SensorInfo structure for the next node
-      Error_Status = Destroy_SensorInfo( SensorInfo, &
-                                         Message_Log=Message_Log )
+      Error_Status = Destroy_SensorInfo( SensorInfo )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error destroying SensorInfo structure at sensor # ",i0)' ) &
                         n_Sensors
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         CLOSE( FileID, STATUS='DELETE' )
         RETURN
       END IF
@@ -704,8 +651,7 @@ CONTAINS
                       TRIM(Filename), n_Sensors
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+                            INFORMATION )
     END IF
 
 
@@ -719,8 +665,7 @@ CONTAINS
                      TRIM(Filename), IO_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
     END IF
 
   END FUNCTION Write_SensorInfo

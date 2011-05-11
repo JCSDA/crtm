@@ -70,13 +70,14 @@ MODULE SensorInfo_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! String lengths
+  INTEGER, PARAMETER :: ML  = 256
   INTEGER, PARAMETER :: SL  = 20
   INTEGER, PARAMETER :: SL2 = 12
   ! Default values
@@ -216,9 +217,7 @@ CONTAINS
 !       data structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_SensorInfo( SensorInfo             , &  ! Output
-!                                          RCS_Id     =RCS_Id     , &  ! Revision control
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Destroy_SensorInfo( SensorInfo )
 !
 ! OUTPUT ARGUMENTS:
 !       SensorInfo:   Re-initialized SensorInfo structure.
@@ -226,24 +225,6 @@ CONTAINS
 !                     TYPE:       SensorInfo_type
 !                     DIMENSION:  Scalar or Rank-1
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -267,28 +248,23 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Destroy_Scalar( SensorInfo , &  ! Output
-                           No_Clear   , &  ! Optional input
-                           RCS_Id     , &  ! Revision control
-                           Message_Log) &  ! Error messaging
+                           No_Clear   ) &  ! Optional input
                          RESULT( Error_Status )
     ! Arguments
     TYPE(SensorInfo_type) , INTENT(IN OUT) :: SensorInfo
     INTEGER     , OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_SensorInfo'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     LOGICAL :: Clear
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Reset the dimension indicators
     SensorInfo%n_Channels = 0
@@ -318,8 +294,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -333,8 +308,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
     
@@ -342,28 +316,23 @@ CONTAINS
 
 
   FUNCTION Destroy_Rank1( SensorInfo , &  ! Output
-                          No_Clear   , &  ! Optional input
-                          RCS_Id     , &  ! Revision control
-                          Message_Log) &  ! Error messaging
+                          No_Clear   ) &  ! Optional input
                         RESULT( Error_Status )
     ! Arguments
     TYPE(SensorInfo_type) , INTENT(IN OUT) :: SensorInfo(:)
     INTEGER     , OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_SensorInfo(rank1)'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Scalar_Status
     INTEGER :: n
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
 
     ! Perform the reinitialisation
@@ -372,8 +341,7 @@ CONTAINS
 
       ! Call the scalar function
       Scalar_Status = Destroy_Scalar( SensorInfo(n), &
-                                      No_Clear   =No_Clear, &
-                                      Message_Log=Message_Log )
+                                      No_Clear = No_Clear )
 
       ! Check the result, but do not halt so deallocation
       ! continues even if an error is encountered.
@@ -382,8 +350,7 @@ CONTAINS
         WRITE( Message,'("Error destroying SensorInfo structure array element ",i0)' ) n
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
       END IF
     END DO
 
@@ -400,10 +367,8 @@ CONTAINS
 !       data structure.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_SensorInfo( n_Channels             , &  ! Input
-!                                           SensorInfo             , &  ! Output
-!                                           RCS_Id     =RCS_Id     , &  ! Revision control
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Allocate_SensorInfo( n_Channels, &  ! Input
+!                                           SensorInfo  )  ! Output
 !
 !
 ! INPUT ARGUMENTS:
@@ -420,24 +385,6 @@ CONTAINS
 !                     TYPE:       SensorInfo_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
@@ -462,35 +409,29 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Allocate_SensorInfo( n_Channels , &  ! Input            
-                                SensorInfo , &  ! Output           
-                                RCS_Id     , &  ! Revision control 
-                                Message_Log) &  ! Error messaging  
+                                SensorInfo ) &  ! Output           
                               RESULT( Error_Status )
     ! Arguments
     INTEGER               , INTENT(IN)     :: n_Channels
     TYPE(SensorInfo_type) , INTENT(IN OUT) :: SensorInfo
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_SensorInfo'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Check dimensions
     IF (n_Channels < 1) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input SensorInfo dimensions must all be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
     
@@ -498,14 +439,12 @@ CONTAINS
     ! If they are, deallocate them but leave scalars.
     IF ( Associated_SensorInfo( SensorInfo, ANY_Test=SET ) ) THEN
       Error_Status = Destroy_SensorInfo( SensorInfo, &               
-                                         No_Clear=SET, &            
-                                         Message_Log=Message_Log )
+                                         No_Clear=SET )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
         CALL Display_Message( ROUTINE_NAME, &
                               'Error deallocating SensorInfo prior to allocation.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
         RETURN
       END IF
     END IF
@@ -523,8 +462,7 @@ CONTAINS
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -550,8 +488,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -567,10 +504,8 @@ CONTAINS
 !       Function to copy valid SensorInfo structures.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_SensorInfo( SensorInfo_in          , &  ! Input
-!                                         SensorInfo_out         , &  ! Output
-!                                         RCS_Id     =RCS_Id     , &  ! Revision control
-!                                         Message_Log=Message_Log  )  ! Error messaging
+!       Error_Status = Assign_SensorInfo( SensorInfo_in , &  ! Input
+!                                         SensorInfo_out  )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       SensorInfo_in:   SensorInfo structure which is to be copied.
@@ -585,24 +520,6 @@ CONTAINS
 !                        TYPE:       SensorInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        Messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output Messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
@@ -621,15 +538,11 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Assign_SensorInfo( SensorInfo_in , &  ! Input
-                              SensorInfo_out, &  ! Output
-                              RCS_Id        , &  ! Revision control
-                              Message_Log   ) &  ! Error messaging
+                              SensorInfo_out) &  ! Output
                             RESULT( Error_Status )
     ! Arguments
     TYPE(SensorInfo_type) , INTENT(IN)     :: SensorInfo_in
     TYPE(SensorInfo_type) , INTENT(IN OUT) :: SensorInfo_out
-    CHARACTER(*), OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -638,15 +551,13 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. Associated_SensorInfo( SensorInfo_in ) ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Some or all INPUT SensorInfo_in pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
     
@@ -654,13 +565,11 @@ CONTAINS
     ! Allocate data arrays
     ! --------------------
     Error_Status = Allocate_SensorInfo( SensorInfo_in%n_Channels, &
-                                        SensorInfo_out, &
-                                        Message_Log=Message_Log )
+                                        SensorInfo_out )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error allocating output structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 

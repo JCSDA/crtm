@@ -42,12 +42,23 @@ MODULE SensorInfo_LinkedList
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
+  ! ---------
+  ! Overloads
+  ! ---------
+  INTERFACE GetFrom_SensorInfo_List
+    MODULE PROCEDURE GetFrom_by_Node_Number
+    MODULE PROCEDURE GetFrom_by_Sensor_Id
+  END INTERFACE GetFrom_SensorInfo_List
+  
+  
   ! ------------------------
   ! Derived type definitions
   ! ------------------------
@@ -249,27 +260,7 @@ CONTAINS
 !       Function to return an initialised SensorInfo linked list.
 !
 ! CALLING SEQUENCE:
-!       SensorInfo_List = New_SensorInfo_List( RCS_Id     =RCS_Id,     &  ! Revision control
-!                                              Message_Log=Message_Log )  ! Error messaging
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       Character
-!                         DIMENSION:  Scalar, LEN = *
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:           Character string containing the Revision Control
-!                         System Id field for the module.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER
-!                         DIMENSION:  Scalar, LEN = *
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
+!       SensorInfo_List = New_SensorInfo_List()
 !
 ! FUNCTION RESULT:
 !       SensorInfo_List:  The initialised (but empty) SensorInfo linked list.
@@ -279,33 +270,20 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION New_SensorInfo_List( RCS_Id,       &  ! Revision control
-                                Message_Log ) &  ! Error messaging
-                              RESULT ( SensorInfo_List )
-    ! Arguments
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+  FUNCTION New_SensorInfo_List() RESULT( SensorInfo_List )
     ! Function result
     TYPE(SensorInfo_List_type) :: SensorInfo_List
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'New_SensorInfo_List'
     ! Local variables
-    CHARACTER(256) :: Message
+    CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
 
 
     ! Set up
-    ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-    
-
-    ! Set the number of sensors(nodes) to zero
-    ! ----------------------------------------
+    ! ...Set the number of sensors(nodes) to zero
     SensorInfo_List%n_Nodes = 0
-
-    
-    ! Nullify the First pointer...just in case 
-    ! ----------------------------------------
+    ! ...Nullify the First pointer...just in case 
     NULLIFY( SensorInfo_List%First )
 
 
@@ -318,8 +296,7 @@ CONTAINS
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            FAILURE, &
-                            Message_Log=Message_Log )
+                            FAILURE )
       RETURN
     END IF
 
@@ -341,10 +318,8 @@ CONTAINS
 !       Function to destroy a SensorInfo linked list.
 !
 ! CALLING SEQUENCE:
-!       Error_status = Destroy_SensorInfo_List( SensorInfo_List,        &  ! Output
-!                                               Quiet      =Quiet,      &  ! Optional input
-!                                               RCS_Id     =RCS_Id,     &  ! Revision control
-!                                               Message_Log=Message_Log )  ! Error messaging
+!       Error_status = Destroy_SensorInfo_List( SensorInfo_List, &  ! Output
+!                                               Quiet=Quie       )  ! Optional input
 !
 !
 ! OUTPUT ARGUMENTS:
@@ -366,24 +341,6 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       Character
-!                         DIMENSION:  Scalar, LEN = *
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:           Character string containing the Revision Control
-!                         System Id field for the module.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER
-!                         DIMENSION:  Scalar, LEN = *
-!                         ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!
 ! FUNCTION RESULT:
 !       Error_Status:     The return value is an integer defining the error status.
 !                         The error codes are defined in the Message_Handler module.
@@ -402,21 +359,17 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION Destroy_SensorInfo_List( SensorInfo_List, &  ! Output
-                                    Quiet,           &  ! Optional input
-                                    RCS_Id,          &  ! Revision control
-                                    Message_Log )    &  ! Error messaging
-                                  RESULT ( Error_Status )
+                                    Quiet          ) &  ! Optional input
+                                  RESULT( Error_Status )
     ! Arguments
     TYPE(SensorInfo_List_type), INTENT(IN OUT) :: SensorInfo_List
     INTEGER     ,     OPTIONAL, INTENT(IN)     :: Quiet
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_SensorInfo_List'
     ! Local variables
-    CHARACTER(256) :: Message 
+    CHARACTER(ML) :: Message 
     LOGICAL :: Noisy
     INTEGER :: Allocate_Status
     INTEGER :: n_Nodes
@@ -425,7 +378,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
     
     ! Output informational messages....
     Noisy = .TRUE.
@@ -604,15 +556,13 @@ CONTAINS
       ! X == NULL pointer
       ! N == NEXT pointer
       ! P == PREVIOUS pointer
-      Error_Status = Destroy_SensorInfo( Current%SensorInfo, &
-                                         Message_Log=Message_Log )
+      Error_Status = Destroy_SensorInfo( Current%SensorInfo )
       IF ( Error_Status /= SUCCESS ) THEN
         WRITE( Message,'("Error destroying SensorInfo object at node # ",i0)' ) &
                         n_Nodes
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
       END IF
 
       ! Deallocate the current node
@@ -649,8 +599,7 @@ CONTAINS
                         n_Nodes, Allocate_Status
         CALL Display_Message( ROUTINE_NAME, &
                               TRIM(Message), &
-                              Error_Status, &
-                              Message_Log=Message_Log )
+                              Error_Status )
       END IF
 
     END DO Traverse_List_Loop
@@ -669,8 +618,7 @@ CONTAINS
                      Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
     END IF
 
 
@@ -685,8 +633,7 @@ CONTAINS
       WRITE( Message,'("Number of nodes deallocated: ",i0)' ) n_Nodes
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            INFORMATION, &
-                            Message_Log=Message_Log )
+                            INFORMATION )
     END IF
 
   END FUNCTION Destroy_SensorInfo_List
@@ -703,9 +650,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = AddTo_SensorInfo_List( SensorInfo,               &  ! Input
 !                                             SensorInfo_List,          &  ! In/Output
-!                                             Node_Number = Node_Number,&  ! Optional input
-!                                             RCS_Id      = RCS_Id,     &  ! Revision control
-!                                             Message_Log=Message_Log )  ! Error messaging
+!                                             Node_Number = Node_Number )  ! Optional input
 !
 ! INPUT ARGUMENTS:
 !       SensorInfo:      SensorInfo structure to be added to the linked list.
@@ -732,24 +677,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      None
-!                        TYPE:       Character
-!                        DIMENSION:  Scalar, LEN = *
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER
-!                        DIMENSION:  Scalar, LEN = *
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
@@ -768,22 +695,18 @@ CONTAINS
 
   FUNCTION AddTo_SensorInfo_List( SensorInfo,      &  ! Input
                                   SensorInfo_List, &  ! In/Output
-                                  Node_Number,     &  ! Optional input
-                                  RCS_Id,          &  ! Revision control
-                                  Message_Log )    &  ! Error messaging
+                                  Node_Number    ) &  ! Optional input
                                 RESULT ( Error_Status )
     ! Arguments
     TYPE(SensorInfo_type)     , INTENT(IN)     :: SensorInfo
     TYPE(SensorInfo_List_type), INTENT(IN OUT) :: SensorInfo_List
     INTEGER     ,     OPTIONAL, INTENT(IN)     :: Node_Number
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AddTo_SensorInfo_List'
     ! Local variables
-    CHARACTER(256) :: Message 
+    CHARACTER(ML) :: Message 
     LOGICAL :: Insert_Node
     INTEGER :: Allocate_Status
     INTEGER :: n_Nodes
@@ -793,7 +716,6 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
 
     ! Nullify local pointers
     NULLIFY( Previous, Current )
@@ -803,8 +725,7 @@ CONTAINS
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Input SensorInfo_List has not been initialised.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -817,8 +738,7 @@ CONTAINS
       ELSE
         CALL Display_Message( ROUTINE_NAME, &
                               'Invalid node number specified. Adding new node to end of list.', &
-                              WARNING, &
-                              Message_Log=Message_Log )
+                              WARNING )
       END IF
     END IF
 
@@ -925,20 +845,17 @@ CONTAINS
                       Allocate_Status
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
     ! Copy over the SensorInfo structure to the new node
     Error_Status = Assign_SensorInfo( SensorInfo, &
-                                      Previous%Next%SensorInfo, &
-                                      Message_Log=Message_Log )
+                                      Previous%Next%SensorInfo )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME,    &
                             'Error copying SensorInfo structure into new list node.', &
-                            Error_Status,    &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -994,11 +911,9 @@ CONTAINS
 !       Function to GET a SensorInfo node FROM a SensorInfo linked list.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = GetFrom_SensorInfo_List( SensorInfo_List,          &  ! Input
-!                                               Node_Number,              &  ! Input
-!                                               SensorInfo,               &  ! Output
-!                                               RCS_Id      = RCS_Id,     &  ! Revision control
-!                                               Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = GetFrom_SensorInfo_List( SensorInfo_List,&  ! Input
+!                                               Node_Number,    &  ! Input
+!                                               SensorInfo,     )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       SensorInfo_List: SensorInfo linked list from which the SensorInfo
@@ -1021,25 +936,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      None
-!                        TYPE:       Character
-!                        DIMENSION:  Scalar, LEN = *
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER
-!                        DIMENSION:  Scalar, LEN = *
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1057,43 +953,35 @@ CONTAINS
 !
 !------------------------------------------------------------------------------
 
-  FUNCTION GetFrom_SensorInfo_List( SensorInfo_List, &  ! Input
-                                    Node_Number,     &  ! Input
-                                    SensorInfo,      &  ! Output
-                                    RCS_Id,          &  ! Revision control
-                                    Message_Log )    &  ! Error messaging
-                                  RESULT ( Error_Status )
+  FUNCTION GetFrom_by_Node_Number( &
+    SensorInfo_List, &  ! Input
+    Node_Number    , &  ! Input
+    SensorInfo     ) &  ! Output
+  RESULT( Error_Status )
     ! Arguments
     TYPE(SensorInfo_List_type), INTENT(IN)     :: SensorInfo_List
     INTEGER                   , INTENT(IN)     :: Node_Number
     TYPE(SensorInfo_type)     , INTENT(IN OUT) :: SensorInfo
-    CHARACTER(*),     OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),     OPTIONAL, INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'GetFrom_SensorInfo_List'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'GetFrom_SensorInfo_List(Node_Number)'
     ! Local variables
-    CHARACTER(256) :: Message 
+    CHARACTER(ML) :: Message 
     TYPE(SensorInfo_Node_type), POINTER :: Node_Pointer
 
 
     ! Set up
-    ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Nullify local pointers
-    NULLIFY( Node_Pointer )
-
-    ! Check node number
+    ! ...Nullify local pointers
+    Node_Pointer => NULL()
+    ! ...Check node number
     IF ( Node_Number < 1 .OR. &
          Node_Number > SensorInfo_List%n_Nodes ) THEN
       Error_Status = FAILURE
       CALL Display_Message( ROUTINE_NAME, &
                             'Invalid node number specified.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -1109,8 +997,7 @@ CONTAINS
                       Node_Number
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       RETURN
     END IF
 
@@ -1118,15 +1005,13 @@ CONTAINS
     ! Copy out the SensorInfo data from the node
     ! ------------------------------------------
     Error_Status = Assign_SensorInfo( Node_Pointer%SensorInfo, &
-                                      SensorInfo, &
-                                      Message_Log=Message_Log )
+                                      SensorInfo )
     IF ( Error_Status /= SUCCESS ) THEN
       WRITE( Message,'("Error copying SensorInfo data from requested node #, ",i0,".")' ) &
                       Node_Number
       CALL Display_Message( ROUTINE_NAME, &
                             TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            Error_Status )
       ! Don't want RETURN here so that the
       ! Node_Pointer can still be nullified
     END IF
@@ -1136,7 +1021,90 @@ CONTAINS
     ! -------------------------
     NULLIFY( Node_Pointer )
 
-  END FUNCTION GetFrom_SensorInfo_List
+  END FUNCTION GetFrom_by_Node_Number
+
+
+
+  FUNCTION GetFrom_by_Sensor_Id( &
+    SensorInfo_List, &  ! Input
+    Sensor_Id      , &  ! Input
+    SensorInfo     ) &  ! Output
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(SensorInfo_List_type), INTENT(IN)     :: SensorInfo_List
+    CHARACTER(*)              , INTENT(IN)     :: Sensor_Id
+    TYPE(SensorInfo_type)     , INTENT(IN OUT) :: SensorInfo
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'GetFrom_SensorInfo_List(Sensor_Id)'
+    ! Local variables
+    CHARACTER(ML) :: msg 
+    TYPE(SensorInfo_Node_type), POINTER :: current
+    INTEGER :: n_nodes
+    INTEGER :: destroy_stat
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Reinit the output
+    err_stat = Destroy_SensorInfo(SensorInfo)
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error destroying SensorInfo output argument'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
+    ! ...Check the list
+    IF ( List_Is_Empty( SensorInfo_List ) ) THEN
+      msg = 'List is empty!'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    ! ...Initialise local counters and pointers
+    current => NULL()
+    n_nodes = 0
+
+
+    ! Traverse list
+    ! ...Initialise pointer to first node
+    current => SensorInfo_List%First%Next
+    ! ...Loop over nodes
+    List_Loop: DO
+    
+      ! At end of list before required node
+      IF ( .NOT. ASSOCIATED( current ) ) THEN
+        msg = 'At end of list before required Sensor_Id found!'
+        err_stat = FAILURE
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+        EXIT List_Loop
+      END IF
+      
+      ! Increment node counter
+      n_nodes = n_nodes + 1
+
+      ! Is the current SensorInfo the one required?
+      IF ( TRIM(current%SensorInfo%Sensor_Id) == TRIM(Sensor_Id) ) THEN
+      
+        ! Copy out the SensorInfo data from the node
+        err_stat = Assign_SensorInfo( current%SensorInfo, SensorInfo )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error copying SensorInfo data from node #",i0)' ) n_nodes
+          CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+        END IF
+        EXIT List_Loop
+      END IF
+
+      ! Go to next node
+      current => current%Next
+
+    END DO List_Loop
+
+
+    ! Clean up
+    current => NULL()
+    IF ( err_stat /= SUCCESS ) destroy_stat = Destroy_SensorInfo( SensorInfo )
+
+  END FUNCTION GetFrom_by_Sensor_Id
 
 
 !------------------------------------------------------------------------------
