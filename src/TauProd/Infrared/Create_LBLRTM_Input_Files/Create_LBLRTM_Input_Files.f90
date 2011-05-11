@@ -142,10 +142,10 @@ PROGRAM Create_LBLRTM_Input_Files
   CHARACTER( 80 ) :: pn_fmt
 
   INTEGER :: Error_Status
-
-  CHARACTER( 256 )        :: AtmProfile_fileNAME
-  INTEGER                 :: AtmProfile_fileID
-  TYPE( AtmProfile_type ) :: AtmProfile
+  INTEGER :: n_Profiles
+  
+  CHARACTER( 256 ) :: AtmProfile_fileNAME
+  TYPE( AtmProfile_type ), ALLOCATABLE :: AtmProfile(:)
 
   CHARACTER( 256 ) :: Profile_Set_ID_Tag
 
@@ -191,11 +191,28 @@ PROGRAM Create_LBLRTM_Input_Files
   ! -------------
   ! Read the file
   ! -------------
-
+  ! ...Inquire the profile dimension
+  Error_Status = Inquire_AtmProfile_netCDF( AtmProfile_fileNAME, &
+                                            n_Profiles = n_Profiles )
+  IF ( Error_Status /= SUCCESS ) THEN
+    CALL display_message( PROGRAM_NAME, &
+                          'Error inquiring AtmProfile file '//&
+                          TRIM( AtmProfile_fileNAME ), &
+                          FAILURE )
+    STOP
+  END IF
+  ! ...Alocate the structure
+  ALLOCATE( AtmProfile(n_Profiles), STAT=Error_Status )
+  IF ( Error_Status /= 0 ) THEN
+    CALL display_message( PROGRAM_NAME, &
+                          'Error allocating AtmProfile array', &
+                          FAILURE )
+    STOP
+  END IF
+  ! ...Read the data
   Error_Status = Read_AtmProfile_netCDF( TRIM( AtmProfile_fileNAME ), &
                                          AtmProfile, &
-                                         ID_Tag = Profile_Set_ID_Tag )
-
+                                         Profile_Set_Id = Profile_Set_ID_Tag )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL display_message( PROGRAM_NAME, &
                           'Error reading AtmProfile file '//&
@@ -209,8 +226,8 @@ PROGRAM Create_LBLRTM_Input_Files
   !#            -- FIND THE ABSORBER INDICES FOR H2O and O3 ONLY --             #
   !#----------------------------------------------------------------------------#
 
-  n = COUNT( AtmProfile%Absorber_ID == H2O_ID .OR. &
-             AtmProfile%Absorber_ID ==  O3_ID      )
+  n = COUNT( AtmProfile(1)%Absorber_ID == H2O_ID .OR. &
+             AtmProfile(1)%Absorber_ID ==  O3_ID      )
 
   IF ( n /= 2 ) THEN
     CALL display_message( PROGRAM_NAME, &
@@ -219,9 +236,9 @@ PROGRAM Create_LBLRTM_Input_Files
     STOP
   END IF
 
-  j_idx = PACK( (/ ( j, j = 1, AtmProfile%n_Absorbers ) /), &
-                ( AtmProfile%Absorber_ID == H2O_ID .OR. &
-                  AtmProfile%Absorber_ID ==  O3_ID      ) )
+  j_idx = PACK( (/ ( j, j = 1, AtmProfile(1)%n_Absorbers ) /), &
+                ( AtmProfile(1)%Absorber_ID == H2O_ID .OR. &
+                  AtmProfile(1)%Absorber_ID ==  O3_ID      ) )
 
 
 
@@ -231,9 +248,28 @@ PROGRAM Create_LBLRTM_Input_Files
 
   WRITE( *, * )
 
-  m_profile_loop: DO m = 1, AtmProfile%n_Profiles
+  m_profile_loop: DO m = 1, n_Profiles
 
      WRITE( *, '( 5x, "Processing profile #", i3, "...." )' ) m
+
+
+    !#--------------------------------------------------------------------------#
+    !#            -- FIND THE ABSORBER INDICES FOR H2O and O3 ONLY --           #
+    !#--------------------------------------------------------------------------#
+
+    n = COUNT( AtmProfile(m)%Absorber_ID == H2O_ID .OR. &
+               AtmProfile(m)%Absorber_ID ==  O3_ID      )
+
+    IF ( n /= 2 ) THEN
+      CALL display_message( PROGRAM_NAME, &
+                            'No H2O and O3 in absorber set.', &
+                            FAILURE )
+      STOP
+    END IF
+
+    j_idx = PACK( (/ ( j, j = 1, AtmProfile(m)%n_Absorbers ) /), &
+                  ( AtmProfile(m)%Absorber_ID == H2O_ID .OR. &
+                    AtmProfile(m)%Absorber_ID ==  O3_ID      ) )
 
 
 
@@ -260,11 +296,11 @@ PROGRAM Create_LBLRTM_Input_Files
     ! Create the TAPE5 file
     ! ---------------------
 
-    Error_Status = Create_LBLRTM_TAPE5( AtmProfile%Level_Pressure( :, m ), &
-                                        AtmProfile%Level_Temperature( :, m ), &
-                                        AtmProfile%Level_Absorber( :, j_idx, m ), &
-                                        AtmProfile%Absorber_Units_LBLRTM( j_idx ), &
-                                        AtmProfile%Absorber_ID( j_idx ), &
+    Error_Status = Create_LBLRTM_TAPE5( AtmProfile(m)%Level_Pressure, &
+                                        AtmProfile(m)%Level_Temperature, &
+                                        AtmProfile(m)%Level_Absorber( :, j_idx ), &
+                                        AtmProfile(m)%Absorber_Units_LBL( j_idx ), &
+                                        AtmProfile(m)%Absorber_ID( j_idx ), &
                                         ZERO,         &    ! Surface altitude
                                         ONE, ONE+ONE, &    ! Dummy frequencies
                                         Climatology_model = US_STD_ATM, &
@@ -293,56 +329,11 @@ PROGRAM Create_LBLRTM_Input_Files
   !#----------------------------------------------------------------------------#
 
   Error_Status = Destroy_AtmProfile( AtmProfile )
-
   IF ( Error_Status /= SUCCESS ) THEN
     CALL display_message( PROGRAM_NAME, &
                           'Error destroying AtmProfile structure.', &
                           WARNING )
   END IF
-
+  DEALLOCATE( AtmProfile )
+  
 END PROGRAM Create_LBLRTM_Input_Files
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Create_LBLRTM_Input_Files.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
-!
-! $Date: 2006/06/30 16:47:16 $
-!
-! $Revision: 1.7 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Create_LBLRTM_Input_Files.f90,v $
-! Revision 1.7  2006/06/30 16:47:16  dgroff
-! Changed "Error_Handler" references to "Message_Handler"
-!
-! Revision 1.6  2005/07/29 22:01:27  paulv
-! - Upgraded to Fortran95
-!
-! Revision 1.5  2003/12/01 18:07:57  paulv
-! - Cosmetic change. Altered inline comment for optional argument "Placeholder"
-!   in the Create_LBLRTM_TAPE5() call.
-!
-! Revision 1.4  2003/07/18 18:30:24  paulv
-! - Changed code to use new AtmProfile_netCDF_IO module. The entire database
-!   is now read/written rather than a profile at a time.
-!
-! Revision 1.3  2002/09/10 21:33:46  paulv
-! - Only writing H2O and O3 profile data to TAPE5 files. Default climatology
-!   is the US Std Atm.
-!
-! Revision 1.2  2002/07/17 17:26:51  paulv
-! - Added some info output.
-!
-! Revision 1.1  2002/07/17 17:16:46  paulv
-! Initial checkin. Code replaces Create_Profile_Input_Files.f90.
-!
-!
-!
-!
-!
