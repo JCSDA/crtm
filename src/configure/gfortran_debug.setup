@@ -13,14 +13,16 @@ F_COMMON_FLAGS="-pg"
 export FC_FLAGS="\
  -c \
  -fbounds-check \
+ -fimplicit-none \
  -fconvert=big-endian \
- -ffpe-trap=overflow,zero \
+ -ffpe-trap=overflow,zero,invalid \
  -ffree-form \
  -fno-second-underscore \
  -frecord-marker=4 \
  -ggdb \
  -static \
  -Wall \
+ -std=f2003 \
  ${F_COMMON_FLAGS}"
 
 export FL_FLAGS="\

@@ -14,7 +14,9 @@ MAKE_FILE = Makefile
 EXE_FILE = Numeric_Inquiry
 
 # Source files to link
-SRC_FILES = Type_Kinds.f90
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Message_Handler.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -24,14 +26,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Source dependency lists
 include make.dependencies

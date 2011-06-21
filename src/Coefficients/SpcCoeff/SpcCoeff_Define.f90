@@ -19,6 +19,10 @@ MODULE SpcCoeff_Define
   USE Type_Kinds,            ONLY: Long, Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Subset_Define        , ONLY: Subset_type      , &
+                                   Subset_Associated, &
+                                   Subset_GetValue  , &
+                                   Subset_Generate
   USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                                    INVALID_WMO_SENSOR_ID   , &
                                    N_SENSOR_TYPES          , &
@@ -45,15 +49,18 @@ MODULE SpcCoeff_Define
                                    RC_POLARIZATION         , &
                                    LC_POLARIZATION         , &
                                    POLARIZATION_TYPE_NAME
-  USE ACCoeff_Define       , ONLY: ACCoeff_type         , &
-                                   OPERATOR(==)         , &
-                                   ACCoeff_Associated   , &
-                                   ACCoeff_Destroy      , &
-                                   ACCoeff_Create       , &
-                                   ACCoeff_Inspect      , &
-                                   ACCoeff_ValidRelease , &
-                                   ACCoeff_Info         , &
-                                   ACCoeff_DefineVersion
+  USE ACCoeff_Define       , ONLY: ACCoeff_type          , &
+                                   OPERATOR(==)          , &
+                                   ACCoeff_Associated    , &
+                                   ACCoeff_Destroy       , &
+                                   ACCoeff_Create        , &
+                                   ACCoeff_Inspect       , &
+                                   ACCoeff_ValidRelease  , &
+                                   ACCoeff_Info          , &
+                                   ACCoeff_DefineVersion , &
+                                   ACCoeff_Subset        , &
+                                   ACCoeff_Concat        , &
+                                   ACCoeff_ChannelReindex
   USE NLTECoeff_Define     , ONLY: NLTECoeff_type          , &
                                    OPERATOR(==)            , &
                                    NLTECoeff_Associated    , &
@@ -62,7 +69,10 @@ MODULE SpcCoeff_Define
                                    NLTECoeff_Inspect       , &
                                    NLTECoeff_ValidRelease  , &
                                    NLTECoeff_Info          , &
-                                   NLTECoeff_DefineVersion
+                                   NLTECoeff_DefineVersion , &
+                                   NLTECoeff_Subset        , &
+                                   NLTECoeff_Concat        , &
+                                   NLTECoeff_ChannelReindex
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -84,6 +94,8 @@ MODULE SpcCoeff_Define
   PUBLIC :: SpcCoeff_ValidRelease
   PUBLIC :: SpcCoeff_Info
   PUBLIC :: SpcCoeff_DefineVersion
+  PUBLIC :: SpcCoeff_Subset
+  PUBLIC :: SpcCoeff_Concat
   ! ...Channel flag specific procedures
   PUBLIC :: SpcCoeff_ClearAllFlags
   PUBLIC :: SpcCoeff_IsSolar , SpcCoeff_SetSolar , SpcCoeff_ClearSolar
@@ -134,8 +146,6 @@ MODULE SpcCoeff_Define
   INTEGER, PARAMETER :: SPCCOEFF_RELEASE = 8  ! This determines structure and file formats.
   INTEGER, PARAMETER :: SPCCOEFF_VERSION = 1  ! This is just the data version.
   ! The bit positions for the various channel flags
-  INTEGER, PARAMETER :: BEGIN_FLAG_POSITION = 0
-  INTEGER, PARAMETER :: END_FLAG_POSITION   = BIT_SIZE(0_Long)
   INTEGER, PARAMETER :: SOLAR_FLAG  = 0
   INTEGER, PARAMETER :: ZEEMAN_FLAG = 1
   
@@ -625,6 +635,237 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
+!       SpcCoeff_Subset
+!
+! PURPOSE:
+!       Subroutine to return a channel subset of the input SpcCoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL SpcCoeff_Subset( SpcCoeff, Subset, SC_Subset )
+!
+! OBJECTS:
+!       SpcCoeff:     SpcCoeff object which is to be subsetted.
+!                     UNITS:      N/A
+!                     TYPE:       SpcCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!       Subset:       Subset object containing the list of indices
+!                     corresponding the channels to be extracted.
+!                     UNITS:      N/A
+!                     TYPE:       Subset_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       SC_Subset:    SpcCoeff object containing the requested channel subset
+!                     of the input SpcCoeff data.
+!                     UNITS:      N/A
+!                     TYPE:       SpcCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE SpcCoeff_Subset( &
+    SpcCoeff      , &  ! Input
+    Sensor_Channel, &  ! Input
+    SC_Subset       )  ! Output
+    ! Arguments
+    TYPE(SpcCoeff_type), INTENT(IN)  :: SpcCoeff
+    INTEGER            , INTENT(IN)  :: Sensor_Channel(:)
+    TYPE(SpcCoeff_type), INTENT(OUT) :: SC_Subset
+    ! Local variables
+    TYPE(Subset_type) :: subset
+    INTEGER :: n_subset_channels
+    INTEGER, ALLOCATABLE :: idx(:)
+    
+    ! Check input is valid
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
+    
+    ! Generate the subset list
+    CALL Subset_Generate( &
+           subset, &
+           SpcCoeff%Sensor_Channel, &
+           Sensor_Channel )
+    IF ( .NOT. Subset_Associated( subset ) ) RETURN
+    
+    
+    ! Allocate the output subset SpcCoeff object
+    CALL Subset_GetValue( subset, n_Values = n_subset_channels, Index = idx )
+    CALL SpcCoeff_Create( SC_Subset, n_subset_channels )
+    IF ( .NOT. SpcCoeff_Associated(SC_Subset) ) RETURN
+
+
+    ! Extract out the subset channels
+    ! ...First assign some scalars
+    SC_Subset%Version          = SpcCoeff%Version
+    SC_Subset%Sensor_Id        = SpcCoeff%Sensor_Id       
+    SC_Subset%Sensor_Type      = SpcCoeff%Sensor_Type     
+    SC_Subset%WMO_Satellite_ID = SpcCoeff%WMO_Satellite_ID
+    SC_Subset%WMO_Sensor_ID    = SpcCoeff%WMO_Sensor_ID   
+    ! ...and now extract the subset
+    SC_Subset%Sensor_Channel             = SpcCoeff%Sensor_Channel(idx)
+    SC_Subset%Polarization               = SpcCoeff%Polarization(idx)
+    SC_Subset%Channel_Flag               = SpcCoeff%Channel_Flag(idx)
+    SC_Subset%Frequency                  = SpcCoeff%Frequency(idx)
+    SC_Subset%Wavenumber                 = SpcCoeff%Wavenumber(idx)
+    SC_Subset%Planck_C1                  = SpcCoeff%Planck_C1(idx)
+    SC_Subset%Planck_C2                  = SpcCoeff%Planck_C2(idx)
+    SC_Subset%Band_C1                    = SpcCoeff%Band_C1(idx)
+    SC_Subset%Band_C2                    = SpcCoeff%Band_C2(idx)
+    SC_Subset%Cosmic_Background_Radiance = SpcCoeff%Cosmic_Background_Radiance(idx)
+    SC_Subset%Solar_Irradiance           = SpcCoeff%Solar_Irradiance(idx)
+
+
+    ! Operate on the components
+    ! ...Antenna correction coefficients
+    IF ( ACCoeff_Associated( SpcCoeff%AC ) ) &
+      CALL ACCoeff_Subset( SpcCoeff%AC, Sensor_Channel, SC_Subset%AC )
+    ! ...NLTE correction coefficients
+    IF ( NLTECoeff_Associated( SpcCoeff%NC ) ) &
+      CALL NLTECoeff_Subset( SpcCoeff%NC, Sensor_Channel, SC_Subset%NC )
+
+  END SUBROUTINE SpcCoeff_Subset
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       SpcCoeff_Concat
+!
+! PURPOSE:
+!       Subroutine to concatenate multiple SpcCoeff objects along the channel
+!       dimension into a single SpcCoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL SpcCoeff_Concat( SpcCoeff, SC_Array, Sensor_Id=Sensor_Id )
+!
+! OBJECTS:
+!       SpcCoeff:     SpcCoeff object containing the concatenated result.
+!                     UNITS:      N/A
+!                     TYPE:       SpcCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       SC_Array:     Array of SpcCoeff objects to be concatenated.
+!                     UNITS:      N/A
+!                     TYPE:       SpcCoeff_type
+!                     DIMENSION:  Rank-1
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Sensor_Id:    Sensor id character to string to use for the concatenated
+!                     result. If not specified, the sensor id of the first valid
+!                     element of SC_Array is used.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE SpcCoeff_Concat( &
+    SpcCoeff , &  ! Output
+    SC_Array , &  ! Input
+    Sensor_Id  )  ! Optional input
+    ! Arguments
+    TYPE(SpcCoeff_type)   , INTENT(OUT) :: SpcCoeff
+    TYPE(SpcCoeff_type)   , INTENT(IN)  :: SC_Array(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id
+    ! Local variables
+    INTEGER, ALLOCATABLE :: valid_index(:)
+    INTEGER :: i, j, n_sc, n_valid, n_channels
+    INTEGER :: ch1, ch2
+    
+    ! Set up
+    ! ...Check input is valid
+    n_sc = SIZE(SC_Array)
+    IF ( n_sc < 1 ) RETURN          ! Zero-sized array
+    ! ...Count valid input
+    n_valid = COUNT(SpcCoeff_Associated(SC_Array))
+    IF ( n_valid == 0 ) RETURN      ! All elements unallocated
+    ! ...Index the valid input
+    ALLOCATE( valid_index(n_valid) )
+    valid_index = PACK( (/(i,i=1,n_sc)/), MASK=SpcCoeff_Associated(SC_Array) )
+    ! ...Check non-channel dimensions and ids
+    DO j = 1, n_valid
+      i = valid_index(j)
+      IF ( SC_Array(i)%Sensor_Type      /= SC_Array(valid_index(1))%Sensor_Type      .OR. & 
+           SC_Array(i)%WMO_Satellite_ID /= SC_Array(valid_index(1))%WMO_Satellite_ID .OR. &
+           SC_Array(i)%WMO_Sensor_ID    /= SC_Array(valid_index(1))%WMO_Sensor_ID         ) THEN
+        RETURN
+      END IF
+    END DO
+
+
+    ! Sum channel dimensions
+    n_channels = SUM(SC_Array%n_Channels)
+    
+    
+    ! Allocate the output concatenated SpcCoeff object
+    CALL SpcCoeff_Create( SpcCoeff, n_channels )
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
+
+
+    ! Concatenate the channel data
+    ! ...First assign the non-channel dependent data
+    SpcCoeff%Version = SC_Array(valid_index(1))%Version
+    IF ( PRESENT(Sensor_Id) ) THEN
+      SpcCoeff%Sensor_Id = ADJUSTL(Sensor_Id)
+    ELSE
+      SpcCoeff%Sensor_Id = SC_Array(valid_index(1))%Sensor_Id
+    END IF
+    SpcCoeff%Sensor_Type      = SC_Array(valid_index(1))%Sensor_Type     
+    SpcCoeff%WMO_Satellite_ID = SC_Array(valid_index(1))%WMO_Satellite_ID
+    SpcCoeff%WMO_Sensor_ID    = SC_Array(valid_index(1))%WMO_Sensor_ID   
+    ! ...and now concatenate the channel data
+    ch1 = 1
+    DO j = 1, n_valid
+      i = valid_index(j)
+      
+      ch2 = ch1 + SC_Array(i)%n_Channels - 1
+      
+      SpcCoeff%Sensor_Channel(ch1:ch2)             = SC_Array(i)%Sensor_Channel            
+      SpcCoeff%Polarization(ch1:ch2)               = SC_Array(i)%Polarization 
+      SpcCoeff%Channel_Flag(ch1:ch2)               = SC_Array(i)%Channel_Flag 
+      SpcCoeff%Frequency(ch1:ch2)                  = SC_Array(i)%Frequency    
+      SpcCoeff%Wavenumber(ch1:ch2)                 = SC_Array(i)%Wavenumber   
+      SpcCoeff%Planck_C1(ch1:ch2)                  = SC_Array(i)%Planck_C1    
+      SpcCoeff%Planck_C2(ch1:ch2)                  = SC_Array(i)%Planck_C2    
+      SpcCoeff%Band_C1(ch1:ch2)                    = SC_Array(i)%Band_C1      
+      SpcCoeff%Band_C2(ch1:ch2)                    = SC_Array(i)%Band_C2      
+      SpcCoeff%Cosmic_Background_Radiance(ch1:ch2) = SC_Array(i)%Cosmic_Background_Radiance
+      SpcCoeff%Solar_Irradiance(ch1:ch2)           = SC_Array(i)%Solar_Irradiance          
+      
+      ch1 = ch2 + 1
+    END DO
+
+
+    ! Operate on the components
+    ! ...Antenna correction coefficients
+    CALL ACCoeff_Concat( SpcCoeff%AC, SC_Array%AC, Sensor_Id = Sensor_Id )
+    CALL ACCoeff_ChannelReindex( SpcCoeff%AC, SpcCoeff%Sensor_Channel )
+    ! ...NLTE correction coefficients
+    CALL NLTECoeff_Concat( SpcCoeff%NC, SC_Array%NC, Sensor_Id = Sensor_Id )
+    CALL NLTECoeff_ChannelReindex( SpcCoeff%NC, SpcCoeff%Sensor_Channel )
+
+
+    ! Cleanup
+    DEALLOCATE( valid_index )
+
+  END SUBROUTINE SpcCoeff_Concat
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
 !       SpcCoeff_ClearAllFlags
 !
 ! PURPOSE:
@@ -657,7 +898,8 @@ CONTAINS
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
     INTEGER :: n
-    DO n = BEGIN_FLAG_POSITION, END_FLAG_POSITION
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
+    DO n = 0, BIT_SIZE(0_Long)
       CALL SpcCoeff_ClearFlag( SpcCoeff, n, ChannelIndex=ChannelIndex )
     END DO
   END SUBROUTINE SpcCoeff_ClearAllFlags
@@ -717,6 +959,8 @@ CONTAINS
     TYPE(SpcCoeff_type), INTENT(IN) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN) :: ChannelIndex
     LOGICAL :: Is_Set
+    Is_Set = .FALSE.
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     Is_Set = SpcCoeff_IsFlagSet(SpcCoeff, SOLAR_FLAG, ChannelIndex=ChannelIndex)
   END FUNCTION SpcCoeff_IsSolar
   
@@ -766,6 +1010,8 @@ CONTAINS
     TYPE(SpcCoeff_type), INTENT(IN) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN) :: ChannelIndex
     LOGICAL :: Is_Set
+    Is_Set = .FALSE.
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     Is_Set = SpcCoeff_IsFlagSet(SpcCoeff, ZEEMAN_FLAG, ChannelIndex=ChannelIndex)
   END FUNCTION SpcCoeff_IsZeeman
   
@@ -805,6 +1051,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE SpcCoeff_SetSolar( SpcCoeff, ChannelIndex )
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     CALL SpcCoeff_SetFlag(SpcCoeff, SOLAR_FLAG, ChannelIndex=ChannelIndex)
   END SUBROUTINE SpcCoeff_SetSolar
   
@@ -844,6 +1091,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE SpcCoeff_SetZeeman( SpcCoeff, ChannelIndex )
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     CALL SpcCoeff_SetFlag(SpcCoeff, ZEEMAN_FLAG, ChannelIndex=ChannelIndex)
   END SUBROUTINE SpcCoeff_SetZeeman
   
@@ -884,6 +1132,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE SpcCoeff_ClearSolar( SpcCoeff, ChannelIndex )
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     CALL SpcCoeff_ClearFlag( SpcCoeff, SOLAR_FLAG, ChannelIndex=ChannelIndex )
   END SUBROUTINE SpcCoeff_ClearSolar
   
@@ -924,8 +1173,10 @@ CONTAINS
   ELEMENTAL SUBROUTINE SpcCoeff_ClearZeeman( SpcCoeff, ChannelIndex )
     TYPE(SpcCoeff_type), INTENT(IN OUT) :: SpcCoeff
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. SpcCoeff_Associated(SpcCoeff) ) RETURN
     CALL SpcCoeff_ClearFlag( SpcCoeff, ZEEMAN_FLAG, ChannelIndex=ChannelIndex )
   END SUBROUTINE SpcCoeff_ClearZeeman
+  
   
 
 

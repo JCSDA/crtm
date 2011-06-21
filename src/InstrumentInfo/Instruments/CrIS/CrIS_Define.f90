@@ -18,11 +18,6 @@ MODULE CrIS_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE Fundamental_Constants, ONLY: PI, LN2
-  USE FFT_Spectral_Utility , ONLY: HAMMING         , &
-                                   BLACKMANHARRIS_3, &
-                                   BLACKMANHARRIS_4, &
-                                   ApodFunction
-
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -32,11 +27,11 @@ MODULE CrIS_Define
   ! Everything is default private
   PRIVATE
   ! Public parameters
+  PUBLIC :: CRIS_HAMMING
+  PUBLIC :: CRIS_BLACKMANHARRIS_3
+  PUBLIC :: CRIS_BLACKMANHARRIS_4
   PUBLIC :: N_CRIS_BANDS
-  ! ...Inherited public parameters
-  PUBLIC :: HAMMING
-  PUBLIC :: BLACKMANHARRIS_3
-  PUBLIC :: BLACKMANHARRIS_4
+  PUBLIC :: N_CRIS_CHANNELS
   ! Public module procedures
   PUBLIC :: CrIS_nFFT
   PUBLIC :: CrIS_MaxX
@@ -51,6 +46,7 @@ MODULE CrIS_Define
   PUBLIC :: CrIS_nPts
   PUBLIC :: CrIS_Channels
   PUBLIC :: CrIS_Remove_Guard_Channels
+  PUBLIC :: CrIS_BandName
   PUBLIC :: CrIS_DefineVersion
   
   INTERFACE CrIS_Remove_Guard_Channels  
@@ -76,10 +72,15 @@ MODULE CrIS_Define
   REAL(fp), PARAMETER :: HUNDRED   = 100.0_fp
   REAL(fp), PARAMETER :: M2CM      = HUNDRED
 
+  ! Apodisation function types
+  INTEGER, PARAMETER :: CRIS_HAMMING          = 1
+  INTEGER, PARAMETER :: CRIS_BLACKMANHARRIS_3 = 2
+  INTEGER, PARAMETER :: CRIS_BLACKMANHARRIS_4 = 3
 
   ! Instrument parameters
-  ! ...Number of bands
+  ! ...Number of bands and channels
   INTEGER, PARAMETER :: N_CRIS_BANDS = 3
+  INTEGER, PARAMETER :: N_CRIS_CHANNELS = 1305
   ! ...Laser wavelength (m)
   REAL(fp), PARAMETER :: LASER_WAVELENGTH_IN_M = 1.550e-06_fp
   REAL(fp), PARAMETER :: LASER_WAVELENGTH      = LASER_WAVELENGTH_IN_M * M2CM
@@ -101,18 +102,17 @@ MODULE CrIS_Define
 
   ! Band parameters
   ! ...Band names
-  CHARACTER(*), PARAMETER :: CRIS_BAND(N_CRIS_BANDS) = (/ 'B1','B2','B3'/)
+  CHARACTER(*), PARAMETER :: BAND_NAME(N_CRIS_BANDS) = (/ 'B1','B2','B3'/)
   ! ...Frequencies
   REAL(fp), PARAMETER :: BAND_F1(N_CRIS_BANDS) = (/  650.00_fp, 1210.00_fp, 2155.0_fp /)
   REAL(fp), PARAMETER :: BAND_F2(N_CRIS_BANDS) = (/ 1095.00_fp, 1750.00_fp, 2550.0_fp /)
   ! ...Channel numbering
   INTEGER, PARAMETER :: BEGIN_CHANNEL( N_CRIS_BANDS) = (/   1,  714, 1147 /)
   INTEGER, PARAMETER :: END_CHANNEL(   N_CRIS_BANDS) = (/ 713, 1146, 1305 /)
-  INTEGER, PARAMETER :: N_CRIS_CHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 713,  433,  159 /)
-  INTEGER, PARAMETER :: MAX_N_CRIS_BAND_CHANNELS = 713
-  INTEGER, PARAMETER :: N_CRIS_CHANNELS = 713 + 433 + 159
+  INTEGER, PARAMETER :: N_CHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 713,  433,  159 /)
+  INTEGER, PARAMETER :: MAX_N_BAND_CHANNELS = 713
   ! ...Guard channel count
-  INTEGER, PARAMETER :: N_CRIS_GUARD_CHANNELS(2, N_CRIS_BANDS) = &
+  INTEGER, PARAMETER :: N_GUARD_CHANNELS(2, N_CRIS_BANDS) = &
     RESHAPE((/ 76, 75, 48, 47, 21, 20 /), (/ 2, N_CRIS_BANDS /))
   ! ...Frequencies with guard channels
   REAL(fp), PARAMETER :: BAND_GF1(N_CRIS_BANDS) = (/  602.500_fp, 1150.000_fp, 2102.500_fp /)
@@ -120,14 +120,13 @@ MODULE CrIS_Define
   ! ...Channel numbering including guard channels
   INTEGER, PARAMETER :: BEGIN_GCHANNEL( N_CRIS_BANDS) = (/   1,  865, 1393 /)
   INTEGER, PARAMETER :: END_GCHANNEL(   N_CRIS_BANDS) = (/ 864, 1392, 1592 /)
-  INTEGER, PARAMETER :: N_CRIS_GCHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 864,  528,  200 /)
-  INTEGER, PARAMETER :: MAX_N_CRIS_BAND_GCHANNELS = 864
-  INTEGER, PARAMETER :: N_CRIS_GCHANNELS = 864 + 528 + 200
+  INTEGER, PARAMETER :: N_GCHANNELS_PER_BAND(N_CRIS_BANDS) = (/ 864,  528,  200 /)
+  INTEGER, PARAMETER :: MAX_N_BAND_GCHANNELS = 864
 
   
   ! Parameters for the resampled frequency grid
-  REAL(fp), PARAMETER :: CRIS_MIN_FREQUENCY = 650.0_fp
-  REAL(fp), PARAMETER :: CRIS_MAX_FREQUENCY = 2550.0_fp
+  REAL(fp), PARAMETER :: MIN_FREQUENCY = 650.0_fp
+  REAL(fp), PARAMETER :: MAX_FREQUENCY = 2550.0_fp
   REAL(fp), PARAMETER :: D_FREQUENCY(N_CRIS_BANDS) = (/ 0.625_fp, 1.25_fp, 2.5_fp /)
   REAL(fp), PARAMETER :: RESAMPLED_MAXX(N_CRIS_BANDS)   = (/ 0.8_fp  , 0.4_fp , 0.2_fp /)
   
@@ -429,7 +428,7 @@ CONTAINS
     ! Compute apodisation function
     SELECT CASE(atype)
     
-      CASE(BLACKMANHARRIS_3)
+      CASE(CRIS_BLACKMANHARRIS_3)
         a0 = 0.42323_fp
         a1 = 0.49755_fp
         a2 = 0.07922_fp
@@ -440,7 +439,7 @@ CONTAINS
           afn = ZERO
         END WHERE
        
-      CASE(BLACKMANHARRIS_4)
+      CASE(CRIS_BLACKMANHARRIS_4)
         a0 = 0.35875_fp
         a1 = 0.48829_fp
         a2 = 0.14128_fp
@@ -711,14 +710,14 @@ CONTAINS
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
     ! ...Test input
     n = SIZE(input_vector)
-    IF ( n /= N_CRIS_GCHANNELS_PER_BAND(ib) ) THEN
+    IF ( n /= N_GCHANNELS_PER_BAND(ib) ) THEN
       WRITE( msg,'("Input vector size (",i0,") inconsistent for CrIS band ",i0)') n, ib
       CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
     END IF
     
     ! Pick out the data
-    i1 = N_CRIS_GUARD_CHANNELS(1, ib) + 1
-    i2 = n - N_CRIS_GUARD_CHANNELS(2, ib)
+    i1 = N_GUARD_CHANNELS(1, ib) + 1
+    i2 = n - N_GUARD_CHANNELS(2, ib)
     output_vector = input_vector(i1:i2)
     
   END FUNCTION integer_rgc
@@ -741,14 +740,14 @@ CONTAINS
     ib = MAX(MIN(band,N_CRIS_BANDS),1)
     ! ...Test input
     n = SIZE(input_vector)
-    IF ( n /= N_CRIS_GCHANNELS_PER_BAND(ib) ) THEN
+    IF ( n /= N_GCHANNELS_PER_BAND(ib) ) THEN
       WRITE( msg,'("Input vector size (",i0,") inconsistent for CrIS band ",i0)') n, ib
       CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
     END IF
     
     ! Pick out the data
-    i1 = N_CRIS_GUARD_CHANNELS(1, ib) + 1
-    i2 = n - N_CRIS_GUARD_CHANNELS(2, ib)
+    i1 = N_GUARD_CHANNELS(1, ib) + 1
+    i2 = n - N_GUARD_CHANNELS(2, ib)
     output_vector = input_vector(i1:i2)
     
   END FUNCTION real_rgc
@@ -1063,6 +1062,51 @@ CONTAINS
     END IF
     
   END FUNCTION CrIS_EndChannel
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CrIS_BandName
+!
+! PURPOSE:
+!       Pure function to return the CrIS band name string.
+!
+! CALLING SEQUENCE:
+!       name = CrIS_BandName(band)
+!
+! INPUTS:
+!       band:     CrIS band number (1, 2, or 3).
+!                 If Band < 1, then 1 is used.
+!                    Band > 3, then 3 is used.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  SCALAR
+!                 ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:     String containing the CrIS band name.
+!                 UNITS:      N/A
+!                 TYPE:       CHARACTER(*)
+!                 DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION CrIS_BandName(band) RESULT(name)
+    ! Arguments
+    INTEGER, INTENT(IN) :: band
+    ! Function result
+    CHARACTER(LEN(BAND_NAME(1))) :: name
+    ! Variables
+    INTEGER  :: ib
+
+    ! Setup
+    ib = MAX(MIN(band,N_CRIS_BANDS),1)
+
+    ! Retrieve the band name
+    name = BAND_NAME(ib)
+    
+  END FUNCTION CrIS_BandName
 
 
 !--------------------------------------------------------------------------------

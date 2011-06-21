@@ -5,8 +5,8 @@
 ! associated descriptors.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 12-Jun-2000
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Type_Kinds

@@ -18,6 +18,10 @@ MODULE ACCoeff_Define
   USE Type_Kinds,            ONLY: Long, Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Subset_Define        , ONLY: Subset_type      , &
+                                   Subset_Associated, &
+                                   Subset_GetValue  , &
+                                   Subset_Generate
   USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                                    INVALID_WMO_SENSOR_ID   
   ! Disable implicit typing
@@ -41,6 +45,9 @@ MODULE ACCoeff_Define
   PUBLIC :: ACCoeff_ValidRelease
   PUBLIC :: ACCoeff_Info
   PUBLIC :: ACCoeff_DefineVersion
+  PUBLIC :: ACCoeff_Subset
+  PUBLIC :: ACCoeff_Concat
+  PUBLIC :: ACCoeff_ChannelReindex
 
 
   ! ---------------------
@@ -460,6 +467,296 @@ CONTAINS
     CHARACTER(*), INTENT(OUT) :: Id
     Id = MODULE_VERSION_ID
   END SUBROUTINE ACCoeff_DefineVersion
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ACCoeff_Subset
+!
+! PURPOSE:
+!       Subroutine to return a channel subset of the input ACCoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL ACCoeff_Subset( ACCoeff, Subset, AC_Subset )
+!
+! OBJECTS:
+!       ACCoeff:      ACCoeff object which is to be subsetted.
+!                     UNITS:      N/A
+!                     TYPE:       ACCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!       Subset:       Subset object containing the list of indices
+!                     corresponding the channels to be extracted.
+!                     UNITS:      N/A
+!                     TYPE:       Subset_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       AC_Subset:    ACCoeff object containing the requested channel subset
+!                     of the input ACCoeff data.
+!                     UNITS:      N/A
+!                     TYPE:       ACCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ACCoeff_Subset( &
+    ACCoeff       , &  ! Input
+    Sensor_Channel, &  ! Input
+    AC_Subset       )  ! Output
+    ! Arguments
+    TYPE(ACCoeff_type), INTENT(IN)  :: ACCoeff
+    INTEGER           , INTENT(IN)  :: Sensor_Channel(:)
+    TYPE(ACCoeff_type), INTENT(OUT) :: AC_Subset
+    ! Local variables
+    TYPE(Subset_type) :: subset
+    INTEGER :: n_subset_channels
+    INTEGER, ALLOCATABLE :: idx(:)
+    
+    ! Check input is valid
+    IF ( .NOT. ACCoeff_Associated(ACCoeff) ) RETURN
+    
+    
+    ! Generate the subset list
+    CALL Subset_Generate( &
+           subset, &
+           ACCoeff%Sensor_Channel, &
+           Sensor_Channel )
+    IF ( .NOT. Subset_Associated( subset ) ) RETURN
+    
+    
+    ! Allocate the output subset ACCoeff object
+    CALL Subset_GetValue( subset, n_Values = n_subset_channels, Index = idx )
+    CALL ACCoeff_Create( AC_Subset, ACCoeff%n_FOVs, n_subset_channels )
+    IF ( .NOT. ACCoeff_Associated(AC_Subset) ) RETURN
+
+
+    ! Extract out the subset channels
+    ! ...First assign some scalars
+    AC_Subset%Version          = ACCoeff%Version
+    AC_Subset%Sensor_Id        = ACCoeff%Sensor_Id       
+    AC_Subset%WMO_Satellite_ID = ACCoeff%WMO_Satellite_ID
+    AC_Subset%WMO_Sensor_ID    = ACCoeff%WMO_Sensor_ID   
+    ! ...and now extract the subset
+    AC_Subset%Sensor_Channel = ACCoeff%Sensor_Channel(idx)
+    AC_Subset%A_earth        = ACCoeff%A_earth(:,idx)
+    AC_Subset%A_space        = ACCoeff%A_space(:,idx)
+    AC_Subset%A_platform     = ACCoeff%A_platform(:,idx)
+
+  END SUBROUTINE ACCoeff_Subset
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ACCoeff_Concat
+!
+! PURPOSE:
+!       Subroutine to concatenate multiple ACCoeff objects along the channel
+!       dimension into a single ACCoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL ACCoeff_Concat( ACCoeff, AC_Array, Sensor_Id=Sensor_Id )
+!
+! OBJECTS:
+!       ACCoeff:      ACCoeff object containing the concatenated result.
+!                     UNITS:      N/A
+!                     TYPE:       ACCoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       AC_Array:     Array of ACCoeff objects to be concatenated.
+!                     UNITS:      N/A
+!                     TYPE:       ACCoeff_type
+!                     DIMENSION:  Rank-1
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Sensor_Id:    Sensor id character to string to use for the concatenated
+!                     result. If not specified, the sensor id of the first valid
+!                     element of AC_Array is used.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ACCoeff_Concat( &
+    ACCoeff  , &  ! Output
+    AC_Array , &  ! Input
+    Sensor_Id  )  ! Optional input
+    ! Arguments
+    TYPE(ACCoeff_type)    , INTENT(OUT) :: ACCoeff
+    TYPE(ACCoeff_type)    , INTENT(IN)  :: AC_Array(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id
+    ! Local variables
+    INTEGER, ALLOCATABLE :: valid_index(:)
+    INTEGER :: i, j, n_ac, n_valid, n_channels
+    INTEGER :: ch1, ch2
+    
+    ! Set up
+    ! ...Check input is valid
+    n_ac = SIZE(AC_Array)
+    IF ( n_ac < 1 ) RETURN
+    ! ...Count valid input
+    n_valid = COUNT(ACCoeff_Associated(AC_Array))
+    IF ( n_valid == 0 ) RETURN
+    ! ...Index the valid input
+    ALLOCATE( valid_index(n_valid) )
+    valid_index = PACK( (/(i,i=1,n_ac)/), MASK=ACCoeff_Associated(AC_Array) )
+    ! ...Check non-channel dimensions and ids
+    DO j = 1, n_valid
+      i = valid_index(j)
+      IF ( AC_Array(i)%n_FOVs           /= AC_Array(valid_index(1))%n_FOVs           .OR. &
+           AC_Array(i)%WMO_Satellite_ID /= AC_Array(valid_index(1))%WMO_Satellite_ID .OR. &
+           AC_Array(i)%WMO_Sensor_ID    /= AC_Array(valid_index(1))%WMO_Sensor_ID         ) THEN
+        RETURN
+      END IF
+    END DO
+
+
+    ! Sum channel dimensions
+    n_channels = SUM(AC_Array(valid_index)%n_Channels)
+    
+
+    ! Allocate the output concatenated ACCoeff object
+    CALL ACCoeff_Create( &
+           ACCoeff, &
+           AC_Array(valid_index(1))%n_FOVs, &
+           n_channels )
+    IF ( .NOT. ACCoeff_Associated(ACCoeff) ) RETURN
+
+
+    ! Concatenate the channel data
+    ! ...First assign the non-channel dependent data
+    ACCoeff%Version = AC_Array(valid_index(1))%Version
+    IF ( PRESENT(Sensor_Id) ) THEN
+      ACCoeff%Sensor_Id = ADJUSTL(Sensor_Id)
+    ELSE
+      ACCoeff%Sensor_Id = AC_Array(valid_index(1))%Sensor_Id
+    END IF
+    ACCoeff%WMO_Satellite_ID = AC_Array(valid_index(1))%WMO_Satellite_ID
+    ACCoeff%WMO_Sensor_ID    = AC_Array(valid_index(1))%WMO_Sensor_ID   
+    ! ...and now concatenate the channel data
+    ch1 = 1
+    DO j = 1, n_valid
+      i = valid_index(j)
+      
+      ch2 = ch1 + AC_Array(i)%n_Channels - 1
+      
+      ACCoeff%Sensor_Channel(ch1:ch2) = AC_Array(i)%Sensor_Channel
+      ACCoeff%A_earth(:,ch1:ch2)      = AC_Array(i)%A_earth
+      ACCoeff%A_space(:,ch1:ch2)      = AC_Array(i)%A_space
+      ACCoeff%A_platform(:,ch1:ch2)   = AC_Array(i)%A_platform
+      
+      ch1 = ch2 + 1
+    END DO
+
+
+    ! Cleanup
+    DEALLOCATE( valid_index )
+
+  END SUBROUTINE ACCoeff_Concat
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ACCoeff_ChannelReindex
+!
+! PURPOSE:
+!       Subroutine to re-index an ACCoeff object for a different complete
+!       channel set.
+!
+! CALLING SEQUENCE:
+!       CALL ACCoeff_ChannelReindex( ACCoeff, Sensor_Channels )
+!
+! OBJECTS:
+!       ACCoeff:        ACCoeff object to have its channel information reindexed.
+!                       UNITS:      N/A
+!                       TYPE:       ACCoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!       Sensor_Channel: Array of channel numbers for which the ACCoeff object 
+!                       is to be re-indexed against.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ACCoeff_ChannelReindex( &
+    ACCoeff       , &  ! In/output
+    Sensor_Channel  )  ! Input
+    ! Arguments
+    TYPE(ACCoeff_type), INTENT(IN OUT) :: ACCoeff
+    INTEGER           , INTENT(IN)     :: Sensor_Channel(:)
+    ! Local variables
+    TYPE(ACCoeff_type) :: ac_copy
+    INTEGER :: i, i_orig
+    INTEGER :: n_channels
+    
+    ! Setup
+    IF ( .NOT. ACCoeff_Associated(ACCoeff) ) RETURN
+    n_channels = SIZE(Sensor_Channel)
+    IF ( n_channels < 1 ) RETURN
+    
+    
+    ! Copy the input structure
+    ac_copy = ACCoeff
+    
+    
+    ! Allocate the reindexed ACCoeff object
+    CALL ACCoeff_Create( &
+           ACCoeff       , &
+           ac_copy%n_FOVs, &
+           n_channels      )
+    IF ( .NOT. ACCoeff_Associated(ACCoeff) ) RETURN
+    
+    
+    ! Fill the new structure
+    ! ...Copy over the non-channel related information
+    ACCoeff%Version              = ac_copy%Version
+    ACCoeff%Sensor_Id            = ac_copy%Sensor_Id
+    ACCoeff%WMO_Satellite_ID     = ac_copy%WMO_Satellite_ID
+    ACCoeff%WMO_Sensor_ID        = ac_copy%WMO_Sensor_ID   
+    ! ...Copy over the all-channel related information
+    ACCoeff%Sensor_Channel = Sensor_Channel
+    
+    
+    ! Perform the channel reindexing
+    i_orig = 1
+    DO i = 1, n_channels
+      IF ( ACCoeff%Sensor_Channel(i) == ac_copy%Sensor_Channel(i_orig) ) THEN
+        ACCoeff%A_earth(:,i)    = ac_copy%A_earth(:,i_orig)
+        ACCoeff%A_space(:,i)    = ac_copy%A_space(:,i_orig)
+        ACCoeff%A_platform(:,i) = ac_copy%A_platform(:,i_orig)
+        i_orig = i_orig + 1
+      END IF
+    END DO
+
+    
+    ! Clean up
+    CALL ACCoeff_Destroy(ac_copy)
+    
+  END SUBROUTINE ACCoeff_ChannelReindex
+
 
 
 !##################################################################################

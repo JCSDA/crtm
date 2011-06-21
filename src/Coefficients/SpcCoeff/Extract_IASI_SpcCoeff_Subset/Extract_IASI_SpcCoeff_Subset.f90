@@ -14,8 +14,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Nov-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 25-Nov-2002
+!                       paul.vandelst@noaa.gov
 !
 
 PROGRAM Extract_IASI_SpcCoeff_Subset
@@ -28,22 +28,26 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                    Display_Message, Program_Message
   USE List_File_Utility    , ONLY: Integer_List_File_type, &
-                                   Read_List_File, Get_List_Size, Get_List_Entry
+                                   Read_List_File, &
+                                   Get_List_Size, &
+                                   Get_List_Entry
   USE SpcCoeff_Define      , ONLY: SpcCoeff_type, &
-                                   Allocate_SpcCoeff, &
-                                   Destroy_SpcCoeff
-  USE SpcCoeff_netCDF_IO   , ONLY: Inquire_SpcCoeff_netCDF, &
-                                   Read_SpcCoeff_netCDF, &
-                                   Write_SpcCoeff_netCDF
-  USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
-                                   Destroy_Channel_Subset
+                                   SpcCoeff_Associated, &
+                                   SpcCoeff_Create, &
+                                   SpcCoeff_Destroy
+  USE SpcCoeff_netCDF_IO   , ONLY: SpcCoeff_netCDF_InquireFile, &
+                                   SpcCoeff_netCDF_ReadFile, &
+                                   SpcCoeff_netCDF_WriteFile
+  USE Subset_Define        , ONLY: Subset_type, &
+                                   Subset_Associated, &
+                                   Subset_Destroy
   USE IASI_Define          , ONLY: N_IASI_CHANNELS, &
                                    N_IASI_BANDS, &
-                                   IASI_BAND
+                                   IASI_BandName
   USE IASI_Subset,           ONLY: N_IASI_SUBSET_300, IASI_SUBSET_300, IASI_SUBSET_300_COMMENT, &
                                    N_IASI_SUBSET_316, IASI_SUBSET_316, IASI_SUBSET_316_COMMENT, &
                                    N_IASI_SUBSET_616, IASI_SUBSET_616, IASI_SUBSET_616_COMMENT, &
-                                   Index_IASI_Subset
+                                   IASI_Subset_Index
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -52,11 +56,11 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_SpcCoeff_Subset'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
-  INTEGER,      PARAMETER :: N_VALID_SETS = 5
-  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = &
+  INTEGER,      PARAMETER :: N_VALID_SUBSETS = 5
+  CHARACTER(*), PARAMETER :: VALID_SUBSET_NAME(N_VALID_SUBSETS) = &
     (/ 'EUMETSAT 300 channel set                ', &
        'NESDIS 316 channel set                  ', &
        'Combined EUMETSAT/NESDIS 616 channel set', &
@@ -85,7 +89,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   INTEGER, ALLOCATABLE :: Subset_List(:)
   TYPE(Integer_List_File_type) :: User_Subset_List
   TYPE(SpcCoeff_type)          :: In_SpcCoeff,  Out_SpcCoeff
-  TYPE(Channel_Subset_type)    :: Subset
+  TYPE(Subset_type)            :: Subset
 
   ! Program header
   ! --------------
@@ -102,8 +106,8 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
     ! Prompt user to select a subset set 
     WRITE( *,'(/5x,"Select an IASI channel subset")' )
-    DO i = 1, N_VALID_SETS
-      WRITE( *,'(10x,i1,") ",a)' ) i, VALID_SET_NAME(i)
+    DO i = 1, N_VALID_SUBSETS
+      WRITE( *,'(10x,i1,") ",a)' ) i, VALID_SUBSET_NAME(i)
     END DO
     WRITE( *,FMT='(5x,"Enter choice: ")',ADVANCE='NO' )
     READ( *,FMT='(i5)',IOSTAT=IO_Status ) Set
@@ -117,7 +121,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
     END IF
     
     ! Check the input
-    IF ( Set < 1 .OR. Set > N_VALID_SETS ) THEN
+    IF ( Set < 1 .OR. Set > N_VALID_SUBSETS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Invalid selection', &
                             FAILURE )
@@ -302,12 +306,11 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
   ! Allocate the output SpcCoeff structure
   ! --------------------------------------
-  Error_Status = Allocate_SpcCoeff( n_Subset_Channels, &
-                                    Out_SpcCoeff )
-  IF ( Error_Status /= SUCCESS ) THEN
+  CALL SpcCoeff_Create( Out_SpcCoeff, n_Subset_Channels )
+  IF ( .NOT. SpcCoeff_Associated( Out_SpcCoeff ) ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error allocating output SpcCoeff data structure.', &
-                          Error_Status )
+                          FAILURE )
     STOP
   END IF
   
@@ -331,29 +334,29 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
     ! -----------------------------
     ! Determine the subset channel indices
     ! for the current band
-    Error_Status = Index_IASI_Subset( l, Subset_List, Subset )
+    Error_Status = IASI_Subset_Index( l, Subset_List, Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error extracting subset channel indices for band '//&
-                            TRIM(IASI_BAND(l)), &
+                            TRIM(IASI_BandName(l)), &
                             Error_Status )
       STOP
     END IF
 
     ! Output the number of channels to extract
     WRITE( *,'(/10x,"There are ",i0," channels to be extracted from band ",a,":")' ) &
-             Subset%n_Channels, TRIM(IASI_BAND(l))
+             Subset%n_Values, TRIM(IASI_BandName(l))
 
 
     ! Read the input SpcCoeff file if required
     ! ----------------------------------------
-    Non_Zero_n_Channels: IF ( Subset%n_Channels > 0 ) THEN
+    Non_Zero_n_Channels: IF ( Subset%n_Values > 0 ) THEN
 
       ! Output the list of channel numbers to extract
-      WRITE( *,'(10x,10i5)' ) Subset%Channel_Number
+      WRITE( *,'(10x,10i5)' ) Subset%Number
 
       ! Define the filename
-      In_Filename = 'iasi'//TRIM(IASI_BAND(l))//'_metop-a.SpcCoeff.nc'
+      In_Filename = 'iasi'//TRIM(IASI_BandName(l))//'_metop-a.SpcCoeff.nc'
 
 
       ! Get the file release/version info and
@@ -365,17 +368,17 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
         First_Band = .FALSE.
 
         ! Inquire the SpcCoeff data file
-        Error_Status = Inquire_SpcCoeff_netCDF( TRIM(In_Filename), &
-                                                Release         =Out_SpcCoeff%Release, &
-                                                Version         =Out_SpcCoeff%Version, &
-                                                WMO_Satellite_Id=Out_SpcCoeff%WMO_Satellite_Id, &
-                                                WMO_Sensor_Id   =Out_SpcCoeff%WMO_Sensor_Id   , &
-                                                History         =History, &
-                                                Comment         =Comment )
+        Error_Status = SpcCoeff_netCDF_InquireFile( In_Filename, &
+                                                    Release         =Out_SpcCoeff%Release, &
+                                                    Version         =Out_SpcCoeff%Version, &
+                                                    WMO_Satellite_Id=Out_SpcCoeff%WMO_Satellite_Id, &
+                                                    WMO_Sensor_Id   =Out_SpcCoeff%WMO_Sensor_Id   , &
+                                                    History         =History, &
+                                                    Comment         =Comment )
         IF ( Error_Status /= SUCCESS ) THEN
           CALL Display_Message( PROGRAM_NAME, &
                                 'Error inquiring the input netCDF SpcCoeff file '//&
-                                TRIM( In_Filename ), &
+                                TRIM(In_Filename), &
                                 Error_Status )
           STOP
         END IF
@@ -387,8 +390,8 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
       ! Get the Version info for all bands and compare
       ! ------------------------------------------------
-      Error_Status = Inquire_SpcCoeff_netCDF( TRIM(In_Filename), &
-                                              Version=Version )
+      Error_Status = SpcCoeff_netCDF_InquireFile( In_Filename, &
+                                                  Version=Version )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Error inquiring the input netCDF SpcCoeff file '//&
@@ -413,8 +416,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
       ! Read the data
       ! -------------
-      Error_Status = Read_SpcCoeff_netCDF( In_Filename, &
-                                           In_SpcCoeff )
+      Error_Status = SpcCoeff_netCDF_ReadFile( In_Filename, In_SpcCoeff )
       IF ( Error_Status /= SUCCESS ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Error reading netCDF IASI SpcCoeff file '//&
@@ -426,31 +428,31 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
       ! Copy the required channel's data
       ! --------------------------------
-      l2 = l1 + Subset%n_Channels - 1
+      l2 = l1 + Subset%n_Values - 1
       Out_SpcCoeff%Sensor_Type                       = In_SpcCoeff%Sensor_Type
-      Out_SpcCoeff%Sensor_Channel(l1:l2)             = In_SpcCoeff%Sensor_Channel(Subset%Channel_Index)
-      Out_SpcCoeff%Polarization(l1:l2)               = In_SpcCoeff%Polarization(Subset%Channel_Index)
-      Out_SpcCoeff%Channel_Flag(l1:l2)               = In_SpcCoeff%Channel_Flag(Subset%Channel_Index)
-      Out_SpcCoeff%Frequency(l1:l2)                  = In_SpcCoeff%Frequency(Subset%Channel_Index)
-      Out_SpcCoeff%Wavenumber(l1:l2)                 = In_SpcCoeff%Wavenumber(Subset%Channel_Index)
-      Out_SpcCoeff%Planck_C1(l1:l2)                  = In_SpcCoeff%Planck_C1(Subset%Channel_Index)
-      Out_SpcCoeff%Planck_C2(l1:l2)                  = In_SpcCoeff%Planck_C2(Subset%Channel_Index)
-      Out_SpcCoeff%Band_C1(l1:l2)                    = In_SpcCoeff%Band_C1(Subset%Channel_Index)
-      Out_SpcCoeff%Band_C2(l1:l2)                    = In_SpcCoeff%Band_C2(Subset%Channel_Index)
-      Out_SpcCoeff%Cosmic_Background_Radiance(l1:l2) = In_SpcCoeff%Cosmic_Background_Radiance(Subset%Channel_Index)
-      Out_SpcCoeff%Solar_Irradiance(l1:l2)           = In_SpcCoeff%Solar_Irradiance(Subset%Channel_Index)
+      Out_SpcCoeff%Sensor_Channel(l1:l2)             = In_SpcCoeff%Sensor_Channel(Subset%Index)
+      Out_SpcCoeff%Polarization(l1:l2)               = In_SpcCoeff%Polarization(Subset%Index)
+      Out_SpcCoeff%Channel_Flag(l1:l2)               = In_SpcCoeff%Channel_Flag(Subset%Index)
+      Out_SpcCoeff%Frequency(l1:l2)                  = In_SpcCoeff%Frequency(Subset%Index)
+      Out_SpcCoeff%Wavenumber(l1:l2)                 = In_SpcCoeff%Wavenumber(Subset%Index)
+      Out_SpcCoeff%Planck_C1(l1:l2)                  = In_SpcCoeff%Planck_C1(Subset%Index)
+      Out_SpcCoeff%Planck_C2(l1:l2)                  = In_SpcCoeff%Planck_C2(Subset%Index)
+      Out_SpcCoeff%Band_C1(l1:l2)                    = In_SpcCoeff%Band_C1(Subset%Index)
+      Out_SpcCoeff%Band_C2(l1:l2)                    = In_SpcCoeff%Band_C2(Subset%Index)
+      Out_SpcCoeff%Cosmic_Background_Radiance(l1:l2) = In_SpcCoeff%Cosmic_Background_Radiance(Subset%Index)
+      Out_SpcCoeff%Solar_Irradiance(l1:l2)           = In_SpcCoeff%Solar_Irradiance(Subset%Index)
       l1 = l2 + 1
 
 
       ! Destropy the input SpcCoeff structure
       ! for the next band read
       ! -------------------------------------
-      Error_Status = Destroy_SpcCoeff( In_SpcCoeff )
-      IF ( Error_Status /= SUCCESS ) THEN
+      CALL SpcCoeff_Destroy( In_SpcCoeff )
+      IF ( SpcCoeff_Associated( In_SpcCoeff ) ) THEN
         CALL Display_Message( PROGRAM_NAME, &
                               'Error destroying SpcCoeff structure for input from '//&
                               TRIM( In_Filename ), &
-                              Error_Status )
+                              FAILURE )
         STOP
       END IF
 
@@ -459,12 +461,12 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
     ! Destroy the IASI_Subset structure
     ! ---------------------------------
-    Error_Status = Destroy_Channel_Subset( Subset )
-    IF ( Error_Status /= SUCCESS ) THEN
+    CALL Subset_Destroy( Subset )
+    IF ( Subset_Associated( Subset ) ) THEN
       CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying IASI Subset structure for input from '//&
+                            'Error destroying Subset structure for input from '//&
                             TRIM( In_Filename ), &
-                            Error_Status )
+                            FAILURE )
       STOP
     END IF
 
@@ -478,15 +480,15 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
   ! Write the data
   WRITE( *,'(/10x,"Creating the output file...")' )
-  Error_Status = Write_SpcCoeff_netCDF( TRIM(Out_Filename), &
-                                        Out_SpcCoeff, &
-                                        Title         = 'Spectral coefficients for '//&
-                                                        TRIM(Sensor_ID), &
-                                        History       = PROGRAM_RCS_ID//'; '//&
-                                                        TRIM(History), &
-                                        Comment       = 'Data extracted from the individual '//&
-                                                        'IASI band SpcCoeff datafiles.; '//&
-                                                        TRIM(Comment) )
+  Error_Status = SpcCoeff_netCDF_WriteFile( Out_Filename, &
+                                            Out_SpcCoeff, &
+                                            Title         = 'Spectral coefficients for '//&
+                                                            TRIM(Sensor_ID), &
+                                            History       = PROGRAM_VERSION_ID//'; '//&
+                                                            TRIM(History), &
+                                            Comment       = 'Data extracted from the individual '//&
+                                                            'IASI band SpcCoeff datafiles.; '//&
+                                                            TRIM(Comment) )
   IF ( Error_Status /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'Error writing the IASI SpcCoeff file '//&
@@ -498,13 +500,6 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
 
   ! Destroy the output SpcCoeff structure
   ! -------------------------------------
-  Error_Status = Destroy_SpcCoeff( Out_SpcCoeff )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Error_Status = WARNING
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying SpcCoeff structure for output to '//&
-                          TRIM(Out_Filename), &
-                          Error_Status )
-  END IF
+  CALL SpcCoeff_Destroy( Out_SpcCoeff )
 
 END PROGRAM Extract_IASI_SpcCoeff_Subset

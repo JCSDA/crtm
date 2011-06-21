@@ -39,7 +39,7 @@ MODULE Spectral_Units_Conversion
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
-  REAL(fp), PARAMETER :: TOLERANCE = EPSILON(ZERO)
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
 
 
 CONTAINS
@@ -115,7 +115,7 @@ CONTAINS
     REAL(fp), INTENT(IN) :: Frequency
     REAL(fp)             :: Wavenumber
     REAL(fp), PARAMETER  :: SCALE_FACTOR = 1.0e+07_fp
-    IF ( Frequency < TOLERANCE ) THEN
+    IF ( Frequency < EPSILON(ONE) ) THEN
       Wavenumber = ZERO
       RETURN
     END IF
@@ -186,7 +186,7 @@ CONTAINS
     REAL(fp), INTENT(IN) :: Wavenumber
     REAL(fp)             :: Frequency
     REAL(fp), PARAMETER  :: SCALE_FACTOR = 1.0e-07_fp
-    IF ( Wavenumber < TOLERANCE ) THEN
+    IF ( Wavenumber < EPSILON(ONE) ) THEN
       Frequency = ZERO
       RETURN
     END IF
@@ -249,7 +249,7 @@ CONTAINS
     REAL(fp), INTENT(IN) :: Wavelength
     REAL(fp)             :: Wavenumber
     REAL(fp), PARAMETER  :: SCALE_FACTOR = 1.0e+04_fp
-    IF ( Wavelength < TOLERANCE ) THEN
+    IF ( Wavelength < EPSILON(ONE) ) THEN
       Wavenumber = ZERO
       RETURN
     END IF
@@ -311,7 +311,7 @@ CONTAINS
     REAL(fp), INTENT(IN) :: Wavenumber
     REAL(fp)             :: Wavelength
     REAL(fp), PARAMETER  :: SCALE_FACTOR = 1.0e+04_fp
-    IF ( Wavenumber < TOLERANCE ) THEN
+    IF ( Wavenumber < EPSILON(ONE) ) THEN
       Wavelength = ZERO
       RETURN
     END IF

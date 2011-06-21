@@ -15,17 +15,15 @@ MODULE IASI_Subset
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Sort_Utility         , ONLY: InsertionSort
-  USE IASI_Define          , ONLY: N_IASI_BANDS, &
-                                   N_IASI_CHANNELS, &
-                                   N_IASI_CHANNELS_PER_BAND, &
-                                   IASI_BAND_BEGIN_CHANNEL, &
-                                   IASI_BAND_END_CHANNEL
-  USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
-                                   Destroy_Channel_Subset, &
-                                   Allocate_Channel_Subset, &
-                                   Assign_Channel_Subset
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
+  USE Sort_Utility   , ONLY: InsertionSort
+  USE IASI_Define    , ONLY: N_IASI_BANDS, N_IASI_CHANNELS, &
+                             IASI_BeginChannel, &
+                             IASI_EndChannel
+  USE Subset_Define  , ONLY: Subset_type, &
+                             Subset_Associated, &
+                             Subset_Destroy, &
+                             Subset_Create
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -47,8 +45,9 @@ MODULE IASI_Subset
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  INTEGER, PARAMETER :: ML = 256
 
   ! The EUMETSAT IASI subset 300 channel list
   CHARACTER(*), PARAMETER :: IASI_SUBSET_300_COMMENT = 'EUMETSAT IASI 300 channel SUBSET'
@@ -162,7 +161,7 @@ CONTAINS
 !       Subset:          The IASI Subset structure containing the indexed
 !                        subset channels for the specified IASI module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Channel_Subset_type)
+!                        TYPE:       TYPE(Subset_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -170,16 +169,10 @@ CONTAINS
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the channel subsetting was successful
-!                           == FAILURE - errors were detected with the input data, or
-!                                      - the structure allocation failed..
+!                           == FAILURE an error occurred.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output Subset argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
@@ -188,101 +181,92 @@ CONTAINS
     Band       , &  ! Input
     Subset_List, &  ! Input
     Subset     ) &  ! Output
-  RESULT( Error_Status )
+  RESULT( err_stat )
     ! Arguments
-    INTEGER                  , INTENT(IN)     :: Band
-    INTEGER                  , INTENT(IN)     :: Subset_List(:)
-    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
+    INTEGER          , INTENT(IN)  :: Band
+    INTEGER          , INTENT(IN)  :: Subset_List(:)
+    TYPE(Subset_type), INTENT(OUT) :: Subset
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IASI_Subset_Index'
     ! Local variables
-    INTEGER :: Sorted_List(SIZE(Subset_List))
-    INTEGER :: n_Subset_Channels
-    INTEGER :: l, l1, l2
-    INTEGER :: l_Subset, l_Extract
-    INTEGER :: n_Channels
-    INTEGER :: Channel
+    CHARACTER(ML) :: msg
+    INTEGER :: sorted_list(SIZE(Subset_List))
+    INTEGER :: n_band_channels
+    INTEGER :: n_subset_channels
+    INTEGER :: l, ch1, ch2
+    INTEGER :: ch_subset, ch_extract
+    INTEGER :: n_channels
+    INTEGER :: channel
 
     ! Set up
-    Error_Status = SUCCESS
+    err_stat = SUCCESS
     ! ...Check the band
     IF ( Band < 1 .OR. Band > N_IASI_BANDS ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid IASI band.', &
-                            Error_Status )
+      msg = 'Invalid band.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       RETURN
     END IF
     ! ...No channel list data?
-    n_Subset_Channels = SIZE(Subset_List)
-    IF ( n_Subset_Channels < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Subset_List contains no data.', &
-                            Error_Status )
-      RETURN
+    n_subset_channels = SIZE(Subset_List)
+    IF ( n_subset_channels < 1 ) THEN
+      msg = 'Input Subset_List contains no data.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     ! ...Any weird channel numbers?
     IF ( ANY( Subset_List < 1 .OR. Subset_List > N_IASI_CHANNELS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid channel in Subset_List input.', &
-                            Error_Status )
-      RETURN
+      msg = 'Invalid channel in Subset_List input.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
 
     ! Sort the subset list
-    Sorted_List = Subset_List
-    CALL InsertionSort( Sorted_List )
+    sorted_list = Subset_List
+    CALL InsertionSort( sorted_list )
     
     
-    ! Set the module limits
-    l1 = IASI_BAND_BEGIN_CHANNEL( Band )
-    l2 = IASI_BAND_END_CHANNEL( Band )
+    ! Set the band limits
+    ch1 = IASI_BeginChannel( Band )
+    ch2 = IASI_EndChannel( Band )
+    n_band_channels = ch2 - ch1 + 1
 
 
     ! Count the channels to subset
-    n_Channels = COUNT( Sorted_List >= l1 .AND. Sorted_List <= l2 )
-    IF ( n_Channels == 0 ) RETURN
+    n_channels = COUNT( sorted_list >= ch1 .and. sorted_list <= ch2 )
+    IF ( n_channels == 0 ) RETURN
 
 
     ! Allocate the IASI Subset structure
-    Error_Status = Allocate_Channel_Subset( n_Channels, Subset )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating Subset structure.', &
-                            Error_Status )
-      RETURN
+    CALL Subset_Create( Subset, n_Channels )
+    IF ( .NOT. Subset_Associated( Subset ) ) THEN
+      msg = 'Error allocating Subset structure.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
 
     ! Define the start points for the channel search
     ! ...Determine the starting index in the SUBSET channel list array
-    l_Subset = MINLOC( Sorted_List - l1, &
-                       MASK = ( (Sorted_List - l1) >= 0 ), &
-                       DIM  = 1 )
-    ! ...Set the starting index in the MODULE channel list array. This is always 1.
-    l_Extract = 1
+    ch_subset = MINLOC( sorted_list - ch1, &
+                        MASK = ( (sorted_list - ch1) >= 0 ), &
+                        DIM  = 1 )
+    ! ...Set the starting index in the BAND channel list array. This is always 1.
+    ch_extract = 1
 
 
     ! Loop over the number of channels in the current band
-    Channel_Loop: DO l = 1, N_IASI_CHANNELS_PER_BAND( Band )
-      ! Determine the current channel number
-      Channel = IASI_BAND_BEGIN_CHANNEL( Band ) + l - 1
-      ! Is the current channel in the subset?
-      IF ( Channel == Sorted_List( l_Subset ) ) THEN
-        ! Save the channel index and number
-        Subset%Channel_Index(  l_Extract ) = l
-        Subset%Channel_Number( l_Extract ) = Channel
-        ! Increment the subset and extract indices
-        l_Extract = l_Extract + 1
-        l_Subset  = l_Subset  + 1
-        ! If subset index is greater than n_Subset_Channels
-        ! then we've just found the last subset channel
-        IF ( l_Subset > n_Subset_Channels ) EXIT Channel_Loop
+    Channel_Loop: DO l = 1, n_band_channels
+      channel = ch1 + l - 1                                   ! Determine the current channel number
+      IF ( channel == sorted_list( ch_subset ) ) THEN         ! Is the current channel in the subset?
+        Subset%Index(  ch_extract ) = l                         ! Save the channel index...
+        Subset%Number( ch_extract ) = channel                   ! ...and number
+        ch_extract = ch_extract + 1                             ! Increment the extract...
+        ch_subset  = ch_subset  + 1                             ! ...and subset indices
+        IF ( ch_subset > n_subset_channels ) EXIT Channel_Loop  ! Exit loop if last channel found
       END IF
     END DO Channel_Loop
 

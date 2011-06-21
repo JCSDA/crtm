@@ -382,6 +382,7 @@ CONTAINS
       ChannelInfo(n)%Channel_Index = (/(l, l=1,SC(n)%n_Channels)/)
       ! ...Fill the rest of the ChannelInfo structure
       ChannelInfo(n)%Sensor_ID        = SC(n)%Sensor_Id
+      ChannelInfo(n)%Sensor_Type      = SC(n)%Sensor_Type
       ChannelInfo(n)%WMO_Satellite_ID = SC(n)%WMO_Satellite_ID
       ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
       ChannelInfo(n)%Sensor_Channel   = SC(n)%Sensor_Channel

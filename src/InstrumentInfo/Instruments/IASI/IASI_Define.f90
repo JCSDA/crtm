@@ -28,6 +28,7 @@ MODULE IASI_Define
   PRIVATE
   ! Parameters
   PUBLIC :: N_IASI_BANDS
+  PUBLIC :: N_IASI_CHANNELS
   ! Procedures
   PUBLIC :: IASI_nFFT
   PUBLIC :: IASI_MaxX
@@ -41,6 +42,7 @@ MODULE IASI_Define
   PUBLIC :: IASI_EndChannel
   PUBLIC :: IASI_nPts
   PUBLIC :: IASI_Channels
+  PUBLIC :: IASI_BandName
   PUBLIC :: IASI_DefineVersion
   
   
@@ -60,8 +62,9 @@ MODULE IASI_Define
   
 
   ! Instrument parameters
-  ! ...Number of bands
-  INTEGER, PARAMETER :: N_IASI_BANDS = 3
+  ! ...Number of bands and channels
+  INTEGER, PARAMETER :: N_IASI_BANDS    = 3
+  INTEGER, PARAMETER :: N_IASI_CHANNELS = 8461
   ! ...Gaussian function FWHM (cm^-1)
   REAL(fp), PARAMETER :: GFT_FWHM = POINT5
   REAL(fp), PARAMETER :: GFT_HWHM = GFT_FWHM/TWO
@@ -84,21 +87,20 @@ MODULE IASI_Define
 
   ! Band parameters
   ! ...Band names
-  CHARACTER(*), PARAMETER :: IASI_BAND(N_IASI_BANDS) = (/ 'B1','B2','B3'/)
+  CHARACTER(*), PARAMETER :: BAND_NAME(N_IASI_BANDS) = (/ 'B1','B2','B3'/)
   ! ...Frequencies
   REAL(fp), PARAMETER :: BAND_F1(N_IASI_BANDS) = (/  645.00_fp, 1210.00_fp, 2000.0_fp /)
   REAL(fp), PARAMETER :: BAND_F2(N_IASI_BANDS) = (/ 1209.75_fp, 1999.75_fp, 2760.0_fp /)
   ! ...Channel numbering
   INTEGER, PARAMETER :: BEGIN_CHANNEL( N_IASI_BANDS) = (/    1, 2261, 5421 /)
   INTEGER, PARAMETER :: END_CHANNEL(   N_IASI_BANDS) = (/ 2260, 5420, 8461 /)
-  INTEGER, PARAMETER :: N_IASI_CHANNELS_PER_BAND(N_IASI_BANDS) = (/ 2260, 3160, 3041 /)
-  INTEGER, PARAMETER :: MAX_N_IASI_BAND_CHANNELS = 3160
-  INTEGER, PARAMETER :: N_IASI_CHANNELS = 2260 + 3160 + 3041
+  INTEGER, PARAMETER :: N_CHANNELS_PER_BAND(N_IASI_BANDS) = (/ 2260, 3160, 3041 /)
+  INTEGER, PARAMETER :: MAX_N_BAND_CHANNELS = 3160
 
   
   ! Parameters for the resampled frequency grid
-  REAL(fp), PARAMETER :: IASI_MIN_FREQUENCY = 645.0_fp
-  REAL(fp), PARAMETER :: IASI_MAX_FREQUENCY = 2760.0_fp
+  REAL(fp), PARAMETER :: MIN_FREQUENCY = 645.0_fp
+  REAL(fp), PARAMETER :: MAX_FREQUENCY = 2760.0_fp
   REAL(fp), PARAMETER :: D_FREQUENCY(N_IASI_BANDS)    = 0.25_fp
   REAL(fp), PARAMETER :: RESAMPLED_MAXX(N_IASI_BANDS) = TWO
 
@@ -748,6 +750,51 @@ CONTAINS
     ch2 = END_CHANNEL(ib)
     
   END FUNCTION IASI_EndChannel
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       IASI_BandName
+!
+! PURPOSE:
+!       Pure function to return the IASI band name string.
+!
+! CALLING SEQUENCE:
+!       name = IASI_BandName(band)
+!
+! INPUTS:
+!       band:     IASI band number (1, 2, or 3).
+!                 If Band < 1, then 1 is used.
+!                    Band > 3, then 3 is used.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  SCALAR
+!                 ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:     String containing the IASI band name.
+!                 UNITS:      N/A
+!                 TYPE:       CHARACTER(*)
+!                 DIMENSION:  Scalar
+!:sdoc-:
+!--------------------------------------------------------------------------------
+  PURE FUNCTION IASI_BandName(band) RESULT(name)
+    ! Arguments
+    INTEGER, INTENT(IN) :: band
+    ! Function result
+    CHARACTER(LEN(BAND_NAME(1))) :: name
+    ! Variables
+    INTEGER  :: ib
+
+    ! Setup
+    ib = MAX(MIN(band,N_IASI_BANDS),1)
+
+    ! Retrieve the band name
+    name = BAND_NAME(ib)
+    
+  END FUNCTION IASI_BandName
 
 
 !--------------------------------------------------------------------------------

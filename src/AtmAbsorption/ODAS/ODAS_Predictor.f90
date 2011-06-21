@@ -23,6 +23,7 @@ MODULE ODAS_Predictor
   USE CRTM_Parameters         , ONLY: ZERO                       , &
                                       POINT_25, POINT_5, POINT_75, &
                                       ONE, TWO, THREE, TEN       , &
+                                      MINIMUM_ABSORBER_AMOUNT    , &
                                       TOA_PRESSURE               , &
                                       RECIPROCAL_GRAVITY         , &
                                       MAX_N_LAYERS 
@@ -105,13 +106,6 @@ MODULE ODAS_Predictor
   ! reconstructing the gas absorption coefficients
   ! ----------------------------------------------
   INTEGER, PUBLIC, PARAMETER :: MAX_N_ORDERS = 10
-
-  ! The minimum absorber amount allowed based upon
-  ! the smallest representable numbers.
-  ! This value is equivalent to TINY(ONE)**0.25
-  ! ----------------------------------------------
-  REAL(fp), PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
-
 
   ! -------------------------------------------------
   ! Structure definition to hold integrated predictor

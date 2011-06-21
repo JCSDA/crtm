@@ -112,21 +112,23 @@ AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
 	          "FC_FLAGS= -c \
                              -qcheck \
                              -qdbg \
+                             -qundef \
                              -qextchk \
-                             -qfloat=nomaf:rndsngl:nans \
-                             -qflttrap=ov:zero:inv:en \
-                             -qinitauto \
-                             -qfree \
+                             -qflttrap=overflow:zerodivide:invalid:nanq:enable \
+                             -qinitauto=FF \
+                             -qfree=f90 \
                              -qhalt=W \
                              -qlanglvl=2003pure \
+                             -qxlf2003=nooldnaninf \
                              -qmaxmem=-1 \
                              -qsuffix=f=f90:cpp=F90 \
-                              ${INCLUDES} \
-                              ${AIX_COMMON_FLAGS_DEBUG}" \
-	           "FL_FLAGS= ${AIX_COMMON_FLAGS_DEBUG} \
-                              ${LIBRARIES} \
-                              -o" \
-                   "ENDIAN=Big_Endian"
+			     -qsuppress=1518-319 \
+                             ${INCLUDES} \
+                             ${AIX_COMMON_FLAGS_DEBUG}" \
+	          "FL_FLAGS= ${AIX_COMMON_FLAGS_DEBUG} \
+                             ${LIBRARIES} \
+                             -o" \
+                  "ENDIAN=Big_Endian"
 
 # Compiler settings for PRODUCTION builds
 AIX_COMMON_FLAGS_PROD = -O3
@@ -134,11 +136,14 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "FL=${NAME_AIX}" \
                  "FC_FLAGS= -c \
                             -qdbg \
+                            -qundef \
                             -qarch=auto \
-                            -qfree \
+                            -qfree=f90 \
                             -qhalt=W \
                             -qlanglvl=2003pure \
+                            -qxlf2003=nooldnaninf \
                             -qsuffix=f=f90:cpp=F90 \
+		            -qsuppress=1518-319 \
                             -qstrict \
                             -NS32768 \
                             ${INCLUDES} \
@@ -150,8 +155,7 @@ AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "ENDIAN=Big_Endian"
 
 # Here set the DEFAULT AIX compiler flags
-#AIX_FLAGS = $(AIX_FLAGS_DEBUG)
-AIX_FLAGS = $(AIX_FLAGS_PROD)
+AIX_FLAGS = $(AIX_FLAGS_DEBUG)
 
 
 
@@ -271,14 +275,17 @@ LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
 	                     "FL=${NAME_GFORTRAN}" \
 	                     "FC_FLAGS= -c \
                                         -fbounds-check \
+                                        -fimplicit-none \
                                         -fconvert=big-endian \
-                                        -ffpe-trap=overflow,zero \
+                                        -ffpe-trap=overflow,zero,invalid \
                                         -ffree-form \
                                         -fno-second-underscore \
                                         -frecord-marker=4 \
+                                        -fbacktrace \
                                         -ggdb \
 	                                -static \
                                         -Wall \
+                                        -std=f2003 \
                                         ${INCLUDES} \
                                         ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
 	                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
@@ -292,6 +299,7 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
 	                    "FL=${NAME_GFORTRAN}" \
 	                    "FC_FLAGS= -c \
                                        -O3 \
+                                       -fimplicit-none \
                                        -fconvert=big-endian \
                                        -ffast-math \
                                        -ffree-form \
@@ -301,6 +309,7 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
                                        -ggdb \
 	                               -static \
                                        -Wall \
+                                       -std=f2003 \
                                        ${INCLUDES} \
                                        ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
 	                    "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \

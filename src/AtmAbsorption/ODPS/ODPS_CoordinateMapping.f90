@@ -22,10 +22,9 @@ MODULE ODPS_CoordinateMapping
   USE ODPS_Define,               ONLY: ODPS_type
   USE ODPS_Predictor_Define,     ONLY: PAFV_type
   USE Profile_Utility_Parameters,ONLY: G0, EPS, R_DRYAIR
-  USE CRTM_Parameters,           ONLY: ZERO, ONE, TWO,     &
-                                       EARTH_RADIUS,       &
-                                       DEGREES_TO_RADIANS, &
-                                       TOLERANCE
+  USE CRTM_Parameters,           ONLY: ZERO, ONE, TWO, &
+                                       EARTH_RADIUS,   &
+                                       DEGREES_TO_RADIANS
    
   ! Disable implicit typing
   IMPLICIT NONE
@@ -173,6 +172,7 @@ CONTAINS
     
     ! Local variables
     INTEGER  :: idx(1)
+    REAL(fp) :: tolerance
     REAL(fp) :: SineAng
     REAL(fp) :: ODPS_sfc_fraction, Z_Offset, s 
     REAL(fp) :: Z(0:TC%n_Layers)  ! Heights of pressure levels
@@ -184,6 +184,9 @@ CONTAINS
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers)
     INTEGER  :: j, jj, k, n_ODPS_Layers, n_User_Layers, ODPS_sfc_idx
+
+    ! Define numerical precision tolerance.
+    tolerance = EPSILON(ONE)
 
     n_ODPS_Layers = TC%n_Layers
     n_User_Layers = Atm%n_layers
@@ -262,7 +265,7 @@ CONTAINS
 
         DO k=1, n_ODPS_Layers
 
-          IF (Absorber(k,j) <= TOLERANCE ) Absorber(k,j) = TOLERANCE
+          IF (Absorber(k,j) <= tolerance ) Absorber(k,j) = tolerance
           IF (Absorber(k,j) < TC%Min_Absorber(k,j) ) Absorber(k,j) = TC%Min_Absorber(k,j)
           IF (Absorber(k,j) > TC%Max_Absorber(k,j) ) Absorber(k,j) = TC%Max_Absorber(k,j)
 
@@ -392,9 +395,13 @@ CONTAINS
 
     ! Local variables
     INTEGER  :: idx(1)
+    REAL(fp) :: tolerance
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
+
+    ! Define numerical precision tolerance.
+    tolerance = EPSILON(ONE)
 
     n_ODPS_Layers = TC%n_Layers
 
@@ -423,7 +430,7 @@ CONTAINS
         END DO                                                                             
 
         DO k=1, n_ODPS_Layers
-          IF(PAFV%Absorber(k,j) <= TOLERANCE ) Absorber_TL(k,j) = ZERO
+          IF(PAFV%Absorber(k,j) <= tolerance ) Absorber_TL(k,j) = ZERO
  
         END DO
       ELSE ! when the profile is missing, use the referece profile 
@@ -509,10 +516,14 @@ CONTAINS
 
     ! Local variables
     INTEGER  :: idx(1)
+    REAL(fp) :: tolerance
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
     INTEGER  :: j, jj, k, n_ODPS_Layers
  
+    ! Define numerical precision tolerance.
+    tolerance = EPSILON(ONE)
+
     !-----------------------------------------------------------
     ! Initialization of forward model part
     !-----------------------------------------------------------
@@ -529,7 +540,7 @@ CONTAINS
       IF(idx_map(j) > 0)THEN
        
         DO k=1, n_ODPS_Layers
-          IF(PAFV%Absorber(k,j) <= TOLERANCE ) Absorber_AD(k,j) = ZERO
+          IF(PAFV%Absorber(k,j) <= tolerance ) Absorber_AD(k,j) = ZERO
         END DO
  
         DO k = n_ODPS_Layers, 1, -1                                                            

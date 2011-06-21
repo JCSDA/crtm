@@ -52,8 +52,8 @@ MODULE Profile_Utility_Parameters
   REAL(fp), PUBLIC, PARAMETER :: TWO       = 2.0_fp
   REAL(fp), PUBLIC, PARAMETER :: HUNDRED   = 100.0_fp
 
-  ! Precision
-  REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON(ONE)
+  ! Precision... ~EPSILON(ONE) for double precision.
+  REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = 2.0e-16_fp
 
   ! Conversion factors
   REAL(fp), PUBLIC, PARAMETER :: CELSIUS_TO_KELVIN = T0

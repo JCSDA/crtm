@@ -22,6 +22,10 @@ MODULE NLTECoeff_Define
   USE Type_Kinds,            ONLY: Long, Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Subset_Define        , ONLY: Subset_type      , &
+                                   Subset_Associated, &
+                                   Subset_GetValue  , &
+                                   Subset_Generate
   USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
                                    INVALID_WMO_SENSOR_ID   
   ! Disable implicit typing
@@ -45,6 +49,9 @@ MODULE NLTECoeff_Define
   PUBLIC :: NLTECoeff_ValidRelease
   PUBLIC :: NLTECoeff_Info
   PUBLIC :: NLTECoeff_DefineVersion
+  PUBLIC :: NLTECoeff_Subset
+  PUBLIC :: NLTECoeff_Concat
+  PUBLIC :: NLTECoeff_ChannelReindex
 
 
   ! ---------------------
@@ -367,6 +374,8 @@ CONTAINS
     WRITE(*,'(3x,"Sensor_Id        :",1x,a )') TRIM(NLTECoeff%Sensor_Id)
     WRITE(*,'(3x,"WMO_Satellite_ID :",1x,i0)') NLTECoeff%WMO_Satellite_ID 
     WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') NLTECoeff%WMO_Sensor_ID
+    WRITE(*,'(3x,"Sensor_Channel   :")')
+    WRITE(*,'(10(1x,i5,:))') NLTECoeff%Sensor_Channel
     ! Pressure arrays
     WRITE(*,'(3x,"Upper_Plevel :")')
     WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Upper_Plevel
@@ -565,6 +574,359 @@ CONTAINS
   END SUBROUTINE NLTECoeff_DefineVersion
 
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       NLTECoeff_Subset
+!
+! PURPOSE:
+!       Subroutine to return a channel subset of the input NLTECoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL NLTECoeff_Subset( NLTECoeff, Subset, NC_Subset )
+!
+! OBJECTS:
+!       NLTECoeff:      NLTECoeff object which is to be subsetted.
+!                     UNITS:      N/A
+!                     TYPE:       NLTECoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!       Subset:       Subset object containing the list of indices
+!                     corresponding the channels to be extracted.
+!                     UNITS:      N/A
+!                     TYPE:       Subset_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       NC_Subset:    NLTECoeff object containing the requested channel subset
+!                     of the input NLTECoeff data.
+!                     UNITS:      N/A
+!                     TYPE:       NLTECoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE NLTECoeff_Subset( &
+    NLTECoeff     , &  ! Input
+    Sensor_Channel, &  ! Input
+    NC_Subset       )  ! Output
+    ! Arguments
+    TYPE(NLTECoeff_type), INTENT(IN)  :: NLTECoeff
+    INTEGER             , INTENT(IN)  :: Sensor_Channel(:)
+    TYPE(NLTECoeff_type), INTENT(OUT) :: NC_Subset
+    ! Local variables
+    TYPE(Subset_type) :: subset, nlte_subset
+    INTEGER :: n_subset_channels, n_nlte_subset_channels
+    INTEGER, ALLOCATABLE :: idx(:), nlte_idx(:)
+    
+    ! Check input is valid
+    IF ( .NOT. NLTECoeff_Associated(NLTECoeff) ) RETURN
+    
+    
+    ! Generate the channel subset list
+    CALL Subset_Generate( &
+           subset, &
+           NLTECoeff%Sensor_Channel, &
+           Sensor_Channel )
+    IF ( .NOT. Subset_Associated( subset ) ) RETURN
+    ! ...Generate the NLTE channel subset list
+    ! ...(which is itself a subset of the sensor channel list)
+    CALL Subset_Generate( &
+           nlte_subset, &
+           NLTECoeff%NLTE_Channel, &
+           Sensor_Channel )
+    IF ( .NOT. Subset_Associated( nlte_subset ) ) RETURN
+
+
+    ! Allocate the output subset NLTECoeff object
+    CALL Subset_GetValue( subset     , n_Values = n_subset_channels     , Index = idx )
+    CALL Subset_GetValue( nlte_subset, n_Values = n_nlte_subset_channels, Index = nlte_idx )
+    CALL NLTECoeff_Create( &
+           NC_Subset                , &
+           NLTECoeff%n_Predictors   , &
+           NLTECoeff%n_Sensor_Angles, &
+           NLTECoeff%n_Solar_Angles , &
+           n_nlte_subset_channels   , &
+           n_subset_channels          )
+    IF ( .NOT. NLTECoeff_Associated(NC_Subset) ) RETURN
+
+
+    ! Extract out the subset channels
+    ! ...First assign the non-channel dependent data
+    NC_Subset%Version              = NLTECoeff%Version
+    NC_Subset%Sensor_Id            = NLTECoeff%Sensor_Id       
+    NC_Subset%WMO_Satellite_ID     = NLTECoeff%WMO_Satellite_ID
+    NC_Subset%WMO_Sensor_ID        = NLTECoeff%WMO_Sensor_ID   
+    NC_Subset%Upper_Plevel         = NLTECoeff%Upper_Plevel        
+    NC_Subset%Lower_Plevel         = NLTECoeff%Lower_Plevel        
+    NC_Subset%Min_Tm               = NLTECoeff%Min_Tm              
+    NC_Subset%Max_Tm               = NLTECoeff%Max_Tm              
+    NC_Subset%Mean_Tm              = NLTECoeff%Mean_Tm             
+    NC_Subset%Secant_Sensor_Zenith = NLTECoeff%Secant_Sensor_Zenith
+    NC_Subset%Secant_Solar_Zenith  = NLTECoeff%Secant_Solar_Zenith 
+    ! ...and now extract the subset
+    NC_Subset%Sensor_Channel  = NLTECoeff%Sensor_Channel(idx)
+    NC_Subset%NLTE_Channel    = NLTECoeff%NLTE_Channel(nlte_idx)
+    NC_Subset%Is_NLTE_Channel = NLTECoeff%Is_NLTE_Channel(idx)
+    NC_Subset%C_Index         = NLTECoeff%C_Index(idx)
+    NC_Subset%C               = NLTECoeff%C(:,:,:,nlte_idx)
+    ! ...Reindex the correction coefficient index array
+    CALL NLTECoeff_Reindex( NC_Subset )
+
+  END SUBROUTINE NLTECoeff_Subset
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       NLTECoeff_Concat
+!
+! PURPOSE:
+!       Subroutine to concatenate multiple NLTECoeff objects along the channel
+!       dimension into a single NLTECoeff object.
+!
+! CALLING SEQUENCE:
+!       CALL NLTECoeff_Concat( NLTECoeff, NC_Array, Sensor_Id=Sensor_Id )
+!
+! OBJECTS:
+!       NLTECoeff:    NLTECoeff object containing the concatenated result.
+!                     UNITS:      N/A
+!                     TYPE:       NLTECoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       NC_Array:     Array of NLTECoeff objects to be concatenated.
+!                     UNITS:      N/A
+!                     TYPE:       NLTECoeff_type
+!                     DIMENSION:  Rank-1
+!                     ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Sensor_Id:    Sensor id character to string to use for the concatenated
+!                     result. If not specified, the sensor id of the first valid
+!                     element of NC_Array is used.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER(*)
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE NLTECoeff_Concat( &
+    NLTECoeff, &  ! Output
+    NC_Array , &  ! Input
+    Sensor_Id  )  ! Optional input
+    ! Arguments
+    TYPE(NLTECoeff_type)  , INTENT(OUT) :: NLTECoeff
+    TYPE(NLTECoeff_type)  , INTENT(IN)  :: NC_Array(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Sensor_Id
+    ! Local variables
+    INTEGER, ALLOCATABLE :: valid_index(:)
+    INTEGER :: i, j, n_nc, n_valid, n_channels, n_nlte_channels
+    INTEGER :: ch1, ch2, nlte_ch1, nlte_ch2
+
+    ! Set up
+    ! ...Check input is valid
+    n_nc = SIZE(NC_Array)
+    IF ( n_nc < 1 ) RETURN
+    ! ...Count valid input
+    n_valid = COUNT(NLTECoeff_Associated(NC_Array))
+    IF ( n_valid == 0 ) RETURN
+    ! ...Index the valid input
+    ALLOCATE( valid_index(n_valid) )
+    valid_index = PACK( (/(i,i=1,n_nc)/), MASK=NLTECoeff_Associated(NC_Array) )
+    ! ...Check non-channel dimensions and ids
+    DO j = 1, n_valid
+      i = valid_index(j)
+      IF ( NC_Array(i)%n_Predictors     /= NC_Array(valid_index(1))%n_Predictors     .OR. &
+           NC_Array(i)%n_Sensor_Angles  /= NC_Array(valid_index(1))%n_Sensor_Angles  .OR. &
+           NC_Array(i)%n_Solar_Angles   /= NC_Array(valid_index(1))%n_Solar_Angles   .OR. &
+           NC_Array(i)%WMO_Satellite_ID /= NC_Array(valid_index(1))%WMO_Satellite_ID .OR. &
+           NC_Array(i)%WMO_Sensor_ID    /= NC_Array(valid_index(1))%WMO_Sensor_ID         ) THEN
+        RETURN
+      END IF
+    END DO
+    
+    
+    ! Sum channel dimensions
+    n_nlte_channels = SUM(NC_Array(valid_index)%n_NLTE_Channels)
+    n_channels      = SUM(NC_Array(valid_index)%n_Channels)
+    
+
+    ! Allocate the output concatenated NLTECoeff object
+    CALL NLTECoeff_Create( &
+           NLTECoeff                  , &
+           NC_Array(valid_index(1))%n_Predictors   , &
+           NC_Array(valid_index(1))%n_Sensor_Angles, &
+           NC_Array(valid_index(1))%n_Solar_Angles , &
+           n_nlte_channels            , &
+           n_channels                   )
+    IF ( .NOT. NLTECoeff_Associated(NLTECoeff) ) RETURN
+    
+
+    ! Concatenate the channel data
+    ! ...First assign the non-channel dependent data
+    NLTECoeff%Version = NC_Array(valid_index(1))%Version
+    IF ( PRESENT(Sensor_Id) ) THEN
+      NLTECoeff%Sensor_Id = ADJUSTL(Sensor_Id)
+    ELSE
+      NLTECoeff%Sensor_Id = NC_Array(valid_index(1))%Sensor_Id
+    END IF
+    NLTECoeff%WMO_Satellite_ID     = NC_Array(valid_index(1))%WMO_Satellite_ID
+    NLTECoeff%WMO_Sensor_ID        = NC_Array(valid_index(1))%WMO_Sensor_ID   
+    NLTECoeff%Upper_Plevel         = NC_Array(valid_index(1))%Upper_Plevel        
+    NLTECoeff%Lower_Plevel         = NC_Array(valid_index(1))%Lower_Plevel        
+    NLTECoeff%Min_Tm               = NC_Array(valid_index(1))%Min_Tm              
+    NLTECoeff%Max_Tm               = NC_Array(valid_index(1))%Max_Tm              
+    NLTECoeff%Mean_Tm              = NC_Array(valid_index(1))%Mean_Tm             
+    NLTECoeff%Secant_Sensor_Zenith = NC_Array(valid_index(1))%Secant_Sensor_Zenith
+    NLTECoeff%Secant_Solar_Zenith  = NC_Array(valid_index(1))%Secant_Solar_Zenith 
+    ! ...and now concatenate the channel data
+    ch1      = 1
+    nlte_ch1 = 1
+    DO j = 1, n_valid
+      i = valid_index(j)
+      
+      nlte_ch2 = nlte_ch1 + NC_Array(i)%n_NLTE_Channels - 1
+      ch2      = ch1      + NC_Array(i)%n_Channels      - 1
+      
+      NLTECoeff%Sensor_Channel(ch1:ch2)         = NC_Array(i)%Sensor_Channel
+      NLTECoeff%NLTE_Channel(nlte_ch1:nlte_ch2) = NC_Array(i)%NLTE_Channel
+      NLTECoeff%Is_NLTE_Channel(ch1:ch2)        = NC_Array(i)%Is_NLTE_Channel
+      NLTECoeff%C_Index(ch1:ch2)                = NC_Array(i)%C_Index
+      NLTECoeff%C(:,:,:,nlte_ch1:nlte_ch2)      = NC_Array(i)%C
+      
+      nlte_ch1 = nlte_ch2 + 1
+      ch1      = ch2      + 1
+    END DO
+    ! ...Reindex the correction coefficient index array
+    CALL NLTECoeff_Reindex( NLTECoeff )
+
+
+    ! Cleanup
+    DEALLOCATE( valid_index )
+    
+  END SUBROUTINE NLTECoeff_Concat
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       NLTECoeff_ChannelReindex
+!
+! PURPOSE:
+!       Subroutine to re-index an NLTECoeff object for a different complete
+!       channel set.
+!
+! CALLING SEQUENCE:
+!       CALL NLTECoeff_ChannelReindex( NLTECoeff, Sensor_Channels )
+!
+! OBJECTS:
+!       NLTECoeff:      NLTECoeff object to have its channel information reindexed.
+!                       UNITS:      N/A
+!                       TYPE:       NLTECoeff_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!       Sensor_Channel: Array of channel numbers for which the NLTECoeff object 
+!                       is to be re-indexed against.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN)
+!
+! COMMENTS:
+!       If there is a mismatch between the channel sets, e.g. total number of
+!       sensor channels is less than the number of NLTE channels, or if ANY of
+!       the NLTE channels are NOT in the sensor channel list, no reindexing is
+!       performed and the input structure is returned with no changes.
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE NLTECoeff_ChannelReindex( NLTECoeff, Sensor_Channel )
+    ! Arguments
+    TYPE(NLTECoeff_type), INTENT(IN OUT) :: NLTECoeff
+    INTEGER             , INTENT(IN)     :: Sensor_Channel(:)
+    ! Local variables
+    TYPE(NLTECoeff_type) :: nc_copy
+    INTEGER :: i, i_nlte
+    INTEGER :: n_channels, n_nlte_channels
+    
+    ! Setup
+    IF ( .NOT. NLTECoeff_Associated(NLTECoeff) ) RETURN
+    n_channels = SIZE(Sensor_Channel)
+    IF ( n_channels < 1 ) RETURN
+    IF ( n_channels < NLTECoeff%n_NLTE_Channels ) RETURN
+    
+    
+    ! Copy the input structure
+    nc_copy = NLTECoeff
+    
+    
+    ! Allocate the reindexed NLTECoeff object
+    CALL NLTECoeff_Create( &
+           NLTECoeff              , &
+           nc_copy%n_Predictors   , &
+           nc_copy%n_Sensor_Angles, &
+           nc_copy%n_Solar_Angles , &
+           nc_copy%n_NLTE_Channels, &
+           n_channels               )
+    IF ( .NOT. NLTECoeff_Associated(NLTECoeff) ) RETURN
+    
+    
+    ! Fill the new structure
+    ! ...Copy over the non-channel related information
+    NLTECoeff%Version              = nc_copy%Version
+    NLTECoeff%Sensor_Id            = nc_copy%Sensor_Id
+    NLTECoeff%WMO_Satellite_ID     = nc_copy%WMO_Satellite_ID
+    NLTECoeff%WMO_Sensor_ID        = nc_copy%WMO_Sensor_ID   
+    NLTECoeff%Upper_Plevel         = nc_copy%Upper_Plevel        
+    NLTECoeff%Lower_Plevel         = nc_copy%Lower_Plevel        
+    NLTECoeff%Min_Tm               = nc_copy%Min_Tm              
+    NLTECoeff%Max_Tm               = nc_copy%Max_Tm              
+    NLTECoeff%Mean_Tm              = nc_copy%Mean_Tm             
+    NLTECoeff%Secant_Sensor_Zenith = nc_copy%Secant_Sensor_Zenith
+    NLTECoeff%Secant_Solar_Zenith  = nc_copy%Secant_Solar_Zenith 
+    ! ...Copy over the NLTE channel related information
+    NLTECoeff%NLTE_Channel = nc_copy%NLTE_Channel
+    NLTECoeff%C            = nc_copy%C
+    ! ...Copy over the all-channel related information
+    NLTECoeff%Sensor_Channel = Sensor_Channel
+
+    
+    ! Perform the channel reindexing
+    i_nlte = 1
+    Reindex_Loop: DO i = 1, n_channels
+      IF ( NLTECoeff%Sensor_Channel(i) == NLTECoeff%NLTE_Channel(i_nlte) ) THEN
+        NLTECoeff%Is_NLTE_Channel(i) = .TRUE.
+        NLTECoeff%C_Index(i)         = i_nlte
+        i_nlte = i_nlte + 1
+        IF (i_nlte > NLTECoeff%n_NLTE_Channels) EXIT Reindex_Loop
+      END IF
+    END DO Reindex_Loop
+    ! ...Unless ALL the NLTE channel were reindexed, restore the original structure
+    n_nlte_channels = i_nlte - 1
+    IF ( n_nlte_channels /= NLTECoeff%n_NLTE_Channels ) NLTECoeff = nc_copy
+
+    
+    ! Clean up
+    CALL NLTECoeff_Destroy(nc_copy)
+    
+  END SUBROUTINE NLTECoeff_ChannelReindex
+
+
 
 !##################################################################################
 !##################################################################################
@@ -648,5 +1010,40 @@ CONTAINS
       is_equal = .TRUE.
 
   END FUNCTION NLTECoeff_Equal
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       NLTECoeff_Reindex
+!
+! PURPOSE:
+!       Subroutine to reindex the C_Index component of an NLTECoeff object after,
+!       for example, subsetting or concatenation.
+!
+! CALLING SEQUENCE:
+!       CALL NLTECoeff_Reindex( NLTECoeff )
+!
+! OBJECTS:
+!       NLTECoeff:    NLTECoeff object which is to have its C_Index
+!                     component reindexed.
+!                     UNITS:      N/A
+!                     TYPE:       NLTECoeff_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE NLTECoeff_Reindex( NLTECoeff )
+    TYPE(NLTECoeff_type), INTENT(IN OUT) :: NLTECoeff
+    INTEGER :: i, j
+    j = 1
+    DO i = 1, NLTECoeff%n_Channels
+      IF ( NLTECoeff%C_Index(i) > 0 ) THEN
+        NLTECoeff%C_Index(i) = j
+        j = j + 1
+      END IF
+    END DO
+  END SUBROUTINE NLTECoeff_Reindex
 
 END MODULE NLTECoeff_Define

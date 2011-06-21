@@ -89,7 +89,7 @@ PROGRAM Create_Solar
   INTEGER     , PARAMETER :: N_DF = 3
   REAL(fp)    , PARAMETER :: DF(N_DF) = (/  0.001_fp, 0.0025_fp,     0.1_fp /)
   REAL(fp)    , PARAMETER :: F1(N_DF) = (/  500.0_fp,  500.0_fp,   500.0_fp /)
-  REAL(fp)    , PARAMETER :: F2(N_DF) = (/ 3500.0_fp, 3500.0_fp, 25000.0_fp /)
+  REAL(fp)    , PARAMETER :: F2(N_DF) = (/ 3500.0_fp, 3500.0_fp, 25900.0_fp /)
   CHARACTER(*), PARAMETER :: CF(N_DF) = (/ 'IR only', 'IR only',  'IR+VIS ' /)
 
 

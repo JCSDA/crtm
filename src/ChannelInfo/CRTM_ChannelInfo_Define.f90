@@ -17,10 +17,14 @@ MODULE CRTM_ChannelInfo_Define
   ! -----------------
   ! Module use
   USE Type_Kinds
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
-  USE CRTM_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
-                             INVALID_WMO_SENSOR_ID   , &
-                             SET, STRLEN
+  USE Message_Handler      , ONLY: SUCCESS, &
+                                   FAILURE, &
+                                   INFORMATION, &
+                                   Display_Message
+  USE CRTM_Parameters      , ONLY: STRLEN
+  USE SensorInfo_Parameters, ONLY: INVALID_SENSOR, &
+                                   INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -74,6 +78,7 @@ MODULE CRTM_ChannelInfo_Define
     INTEGER :: n_Channels = 0  ! L dimension
     ! Scalar data
     CHARACTER(STRLEN) :: Sensor_ID        = ''
+    INTEGER           :: Sensor_Type      = INVALID_SENSOR
     INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     INTEGER           :: Sensor_Index     = 0
@@ -256,6 +261,7 @@ CONTAINS
     WRITE(*,'(1x,"ChannelInfo OBJECT")')
     WRITE(*,'(3x,"n_Channels       :",1x,i0)') ChannelInfo%n_Channels
     WRITE(*,'(3x,"Sensor Id        :",1x,a )') TRIM(ChannelInfo%Sensor_ID)
+    WRITE(*,'(3x,"Sensor_Type      :",1x,i0)') ChannelInfo%Sensor_Type
     WRITE(*,'(3x,"WMO_Satellite_ID :",1x,i0)') ChannelInfo%WMO_Satellite_ID
     WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') ChannelInfo%WMO_Sensor_ID   
     WRITE(*,'(3x,"Sensor_Index     :",1x,i0)') ChannelInfo%Sensor_Index    
@@ -398,6 +404,7 @@ CONTAINS
     IF ( x%n_Channels /= y%n_Channels ) RETURN
     ! ...Data
     IF ( (x%Sensor_ID        == y%Sensor_ID       ) .AND. &
+         (x%Sensor_Type      == y%Sensor_Type     ) .AND. &
          (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
          (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
          (x%Sensor_Index     == y%Sensor_Index    ) .AND. &

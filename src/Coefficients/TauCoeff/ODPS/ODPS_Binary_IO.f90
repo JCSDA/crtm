@@ -937,7 +937,7 @@ CONTAINS
 
     ! Open the ODPS data file
     ! -----------------------
-    Error_Status = Open_Binary_File( Filename, FileID )
+    Error_Status = Open_Binary_File( Filename, FileID, For_Output=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error opening '//TRIM( Filename )
       Error_Status = FAILURE

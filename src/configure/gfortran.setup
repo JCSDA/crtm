@@ -13,6 +13,7 @@ F_COMMON_FLAGS=""
 export FC_FLAGS="\
  -c \
  -O3 \
+ -fimplicit-none \
  -fconvert=big-endian \
  -ffast-math \
  -ffree-form \
@@ -22,6 +23,7 @@ export FC_FLAGS="\
  -ggdb \
  -static \
  -Wall \
+ -std=f2003 \
  ${F_COMMON_FLAGS}"
 
 export FL_FLAGS="\

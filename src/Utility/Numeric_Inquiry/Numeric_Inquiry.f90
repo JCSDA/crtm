@@ -4,7 +4,8 @@ PROGRAM Numeric_Inquiry
   ! Module usage
   ! ------------
 
-  USE Type_Kinds
+  USE Type_Kinds     , ONLY: Single, Double
+  USE Message_Handler, ONLY: Program_Message
 
 
   ! -----------------------
@@ -18,23 +19,21 @@ PROGRAM Numeric_Inquiry
   ! Parameters
   ! ----------
 
-  CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Numeric_Inquiry'
-  CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Numeric_Inquiry.f90,v 1.3 2004/08/31 19:25:54 paulv Exp $'
-  CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
-  '**********************************************************'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Numeric_Inquiry'
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
+  '$Id$'
 
-  REAL( Single ), PARAMETER :: SP_ONE = 1.0_Single
-  REAL( Double ), PARAMETER :: DP_ONE = 1.0_Double
+  REAL(Single), PARAMETER :: SP_ONE = 1.0_Single
+  REAL(Double), PARAMETER :: DP_ONE = 1.0_Double
 
   INTEGER, PARAMETER :: N_TEST_NUMBERS = 5
-  REAL( Single ), PARAMETER, DIMENSION( N_TEST_NUMBERS ) :: SP_TEST_NUMBER = &
+  REAL(Single), PARAMETER :: SP_TEST_NUMBER(N_TEST_NUMBERS) = &
     (/ 1.234567890123456e-16_Single, &
        1.234567890123456e-01_Single, &
        1.234567890123456e+01_Single, &
        1.234567890123456e+16_Single, &
        0.01_Single /)
-  REAL( Double ), PARAMETER, DIMENSION( N_TEST_NUMBERS ) :: DP_TEST_NUMBER = &
+  REAL(Double), PARAMETER :: DP_TEST_NUMBER(N_TEST_NUMBERS) = &
     (/ 1.234567890123456e-16_Double, &
        1.234567890123456e-01_Double, &
        1.234567890123456e+01_Double, &
@@ -47,93 +46,70 @@ PROGRAM Numeric_Inquiry
   ! ------------
 
   TYPE :: SP_NI_type
-    REAL( Single ) :: Number
-    INTEGER        :: Digits
-    REAL( Single ) :: Epsilon
-    REAL( Single ) :: Huge
-    INTEGER        :: MaxExponent
-    INTEGER        :: MinExponent
-    INTEGER        :: Precision
-    INTEGER        :: Radix
-    INTEGER        :: Range
-    REAL( Single ) :: Tiny
-    INTEGER        :: Exponent
-    REAL( Single ) :: Fraction
-    REAL( Single ) :: mNearest
-    REAL( Single ) :: pNearest
-    REAL( Single ) :: RRSpacing
-    REAL( Single ) :: Scale_x_0
-    REAL( Single ) :: Set_Exponent_x_0
-    REAL( Single ) :: Spacing
-    REAL( Single ) :: Epsilon_on_Spacing
-    REAL( Single ) :: Epsilon_Delta
+    REAL(Single) :: Number
+    INTEGER      :: Digits
+    REAL(Single) :: Epsilon
+    REAL(Single) :: Huge
+    INTEGER      :: MaxExponent
+    INTEGER      :: MinExponent
+    INTEGER      :: Precision
+    INTEGER      :: Radix
+    INTEGER      :: Range
+    REAL(Single) :: Tiny
+    INTEGER      :: Exponent
+    REAL(Single) :: Fraction
+    REAL(Single) :: mNearest
+    REAL(Single) :: pNearest
+    REAL(Single) :: RRSpacing
+    REAL(Single) :: Scale_x_0
+    REAL(Single) :: Set_Exponent_x_0
+    REAL(Single) :: Spacing
+    REAL(Single) :: Epsilon_on_Spacing
+    REAL(Single) :: Epsilon_Delta
   END TYPE SP_NI_type
 
   TYPE :: DP_NI_type
-    REAL( Double ) :: Number
-    INTEGER        :: Digits
-    REAL( Double ) :: Epsilon
-    REAL( Double ) :: Huge
-    INTEGER        :: MaxExponent
-    INTEGER        :: MinExponent
-    INTEGER        :: Precision
-    INTEGER        :: Radix
-    INTEGER        :: Range
-    REAL( Double ) :: Tiny
-    INTEGER        :: Exponent
-    REAL( Double ) :: Fraction
-    REAL( Double ) :: mNearest
-    REAL( Double ) :: pNearest
-    REAL( Double ) :: RRSpacing
-    REAL( Double ) :: Scale_x_0
-    REAL( Double ) :: Set_Exponent_x_0
-    REAL( Double ) :: Spacing
-    REAL( Double ) :: Epsilon_on_Spacing
-    REAL( Double ) :: Epsilon_Delta
+    REAL(Double) :: Number
+    INTEGER      :: Digits
+    REAL(Double) :: Epsilon
+    REAL(Double) :: Huge
+    INTEGER      :: MaxExponent
+    INTEGER      :: MinExponent
+    INTEGER      :: Precision
+    INTEGER      :: Radix
+    INTEGER      :: Range
+    REAL(Double) :: Tiny
+    INTEGER      :: Exponent
+    REAL(Double) :: Fraction
+    REAL(Double) :: mNearest
+    REAL(Double) :: pNearest
+    REAL(Double) :: RRSpacing
+    REAL(Double) :: Scale_x_0
+    REAL(Double) :: Set_Exponent_x_0
+    REAL(Double) :: Spacing
+    REAL(Double) :: Epsilon_on_Spacing
+    REAL(Double) :: Epsilon_Delta
   END TYPE DP_NI_type
 
 
   ! ---------
   ! Variables
   ! ---------
-
-  INTEGER         :: pn_pos
-  CHARACTER( 80 ) :: pn_fmt
-
   INTEGER :: i
-
-  TYPE( SP_NI_type ), DIMENSION( N_TEST_NUMBERS ) :: SP_NI
-  TYPE( DP_NI_type ), DIMENSION( N_TEST_NUMBERS ) :: DP_NI
-
+  TYPE(SP_NI_type) :: SP_NI(N_TEST_NUMBERS)
+  TYPE(DP_NI_type) :: DP_NI(N_TEST_NUMBERS)
 
 
-  !#----------------------------------------------------------------------------#
-  !#                       -- OUTPUT DESCRIPTIVE HEADER --                      #
-  !#----------------------------------------------------------------------------#
-
-  pn_pos = ( LEN( PROGRAM_HEADER ) / 2 ) - &
-           ( LEN( PROGRAM_NAME ) / 2 )
-  pn_pos = MAX( pn_pos, 0 ) + 5
-  WRITE( pn_fmt, '( "( ",i2,"x, a )" )' ) pn_pos
-
-  WRITE( *, '(/5x, a )' ) PROGRAM_HEADER
-  WRITE( *, FMT = TRIM( pn_fmt ) ) PROGRAM_NAME
-  WRITE( *, '(/5x, " Program to display numeric inquiry intrinsic results.")' )
-  WRITE( *, '(/5x, " $Revision: 1.3 $")' )
-  WRITE( *, '( 5x, a, / )' ) PROGRAM_HEADER
+  ! Program header
+  CALL Program_Message( PROGRAM_NAME, &
+                        'Program to display numeric inquiry intrinsic results.', &
+                        '$Revision$' )
 
 
-
-  !#----------------------------------------------------------------------------#
-  !#                      -- OUTPUT DATA FOR Single TYPE --                     #
-  !#----------------------------------------------------------------------------#
-
+  ! Output data for single type
   WRITE( *, '( /5x, "Single kind type : ", i5 )' ) Single
-
   DO i = 1, N_TEST_NUMBERS
-
     SP_NI(i)%Number = SP_TEST_NUMBER(i)
-
     SP_NI(i)%Digits             = DIGITS(       SP_NI(i)%Number )
     SP_NI(i)%Epsilon            = EPSILON(      SP_NI(i)%Number )
     SP_NI(i)%Huge               = HUGE(         SP_NI(i)%Number )
@@ -153,7 +129,6 @@ PROGRAM Numeric_Inquiry
     SP_NI(i)%Spacing            = SPACING(      SP_NI(i)%Number )
     SP_NI(i)%Epsilon_on_Spacing = SP_NI(i)%Epsilon / SP_NI(i)%Spacing
     SP_NI(i)%Epsilon_Delta      = SP_NI(i)%Epsilon * REAL(SP_NI(i)%Radix,Single)**(SP_NI(i)%Exponent-1)
-
   END DO
 
   WRITE( *, '( /2x, "Number            = ", 10(1x,es20.13) )' ) SP_NI%Number
@@ -182,16 +157,10 @@ PROGRAM Numeric_Inquiry
 
 
 
-  !#----------------------------------------------------------------------------#
-  !#                      -- OUTPUT DATA FOR Double TYPE --                     #
-  !#----------------------------------------------------------------------------#
-
+  ! Output data for double type
   WRITE( *, '(//5x, "Double kind type : ", i5 )' ) Double
-
   DO i = 1, N_TEST_NUMBERS
-
     DP_NI(i)%Number = DP_TEST_NUMBER(i)
-
     DP_NI(i)%Digits             = DIGITS(       DP_NI(i)%Number )
     DP_NI(i)%Epsilon            = EPSILON(      DP_NI(i)%Number )
     DP_NI(i)%Huge               = HUGE(         DP_NI(i)%Number )
@@ -211,9 +180,7 @@ PROGRAM Numeric_Inquiry
     DP_NI(i)%Spacing            = SPACING(      DP_NI(i)%Number )
     DP_NI(i)%Epsilon_on_Spacing = DP_NI(i)%Epsilon / DP_NI(i)%Spacing
     DP_NI(i)%Epsilon_Delta      = DP_NI(i)%Epsilon * REAL(DP_NI(i)%Radix,Double)**(DP_NI(i)%Exponent-1)
-
   END DO
-
   WRITE( *, '( /2x, "Number            = ", 10(1x,es27.20) )' ) DP_NI%Number
   WRITE( *, '(  2x, "--------------------", 10(a)         )' ) RESHAPE( (/'----------------------------'/), &
                                                                         (/ N_TEST_NUMBERS /), &
@@ -245,11 +212,11 @@ END PROGRAM Numeric_Inquiry
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Numeric_Inquiry.f90,v 1.3 2004/08/31 19:25:54 paulv Exp $
+! $Id$
 !
 ! $Date: 2004/08/31 19:25:54 $
 !
-! $Revision: 1.3 $
+! $Revision$
 !
 ! $Name:  $
 !

@@ -73,6 +73,8 @@ def isflagset(config)
     TYPE(#{config[:structname]}_type), INTENT(IN) :: #{config[:structname]}
     INTEGER,   OPTIONAL, INTENT(IN) :: ChannelIndex
     LOGICAL :: Is_Set
+    Is_Set = .FALSE.
+    IF ( .NOT. #{config[:structname]}_Associated(#{config[:structname]}) ) RETURN
     Is_Set = #{config[:structname]}_IsFlagSet(#{config[:structname]}, #{f[:name].upcase}_FLAG, ChannelIndex=ChannelIndex)
   END FUNCTION #{config[:structname]}_Is#{f[:name].capitalize}
   
@@ -123,6 +125,7 @@ def setflag(config)
   ELEMENTAL SUBROUTINE #{config[:structname]}_Set#{f[:name].capitalize}( #{config[:structname]}, ChannelIndex )
     TYPE(#{config[:structname]}_type), INTENT(IN OUT) :: #{config[:structname]}
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. #{config[:structname]}_Associated(#{config[:structname]}) ) RETURN
     CALL #{config[:structname]}_SetFlag(#{config[:structname]}, #{f[:name].upcase}_FLAG, ChannelIndex=ChannelIndex)
   END SUBROUTINE #{config[:structname]}_Set#{f[:name].capitalize}
   
@@ -174,6 +177,7 @@ def clearflag(config)
   ELEMENTAL SUBROUTINE #{config[:structname]}_Clear#{f[:name].capitalize}( #{config[:structname]}, ChannelIndex )
     TYPE(#{config[:structname]}_type), INTENT(IN OUT) :: #{config[:structname]}
     INTEGER,   OPTIONAL, INTENT(IN)     :: ChannelIndex
+    IF ( .NOT. #{config[:structname]}_Associated(#{config[:structname]}) ) RETURN
     CALL #{config[:structname]}_ClearFlag( #{config[:structname]}, #{f[:name].upcase}_FLAG, ChannelIndex=ChannelIndex )
   END SUBROUTINE #{config[:structname]}_Clear#{f[:name].capitalize}
   

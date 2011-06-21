@@ -80,12 +80,6 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: ONEpointFIVE  =  1.5_fp
                                                                                                         
 
-  ! -----------------------------
-  ! Numerical precision/tolerance
-  ! -----------------------------
-  REAL(fp), PUBLIC, PARAMETER :: TOLERANCE = EPSILON( ONE )
-
-
   ! --------------------
   ! PI-related constants
   ! --------------------
@@ -139,7 +133,7 @@ MODULE CRTM_Parameters
   ! the smallest representable numbers.
   ! This value is equivalent to TINY(ONE)**0.25
   ! ----------------------------------------------
-  REAL(fp), PUBLIC, PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
+  REAL(fp), PUBLIC, PARAMETER :: MINIMUM_ABSORBER_AMOUNT = 1.0e-076_fp   ! TEN**(-RANGE(ONE)/4)
 
   ! ---------------------------------------
   ! Numerical limits for the gas absorption

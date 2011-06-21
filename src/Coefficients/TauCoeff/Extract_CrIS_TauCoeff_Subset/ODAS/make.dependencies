@@ -1,0 +1,19 @@
+Type_Kinds.o : Type_Kinds.f90 
+Subset_Define.o : Subset_Define.f90 Message_Handler.o 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
+ODAS_netCDF_IO.o : ODAS_netCDF_IO.f90 Type_Kinds.o Message_Handler.o ODAS_Define.o netCDF_Utility.o 
+ODAS_Define.o : ODAS_Define.f90 Type_Kinds.o Message_Handler.o Compare_Float_Numbers.o Sort_Utility.o CRTM_Parameters.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Utility.o : netCDF_Utility.f90 Type_Kinds.o Message_Handler.o netCDF_Dimension_Utility.o netCDF_Variable_Utility.o netCDF_Attribute_Utility.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Type_Kinds.o Message_Handler.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Type_Kinds.o Message_Handler.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+List_File_Utility.o : List_File_Utility.f90 Type_Kinds.o File_Utility.o Message_Handler.o 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Extract_CrIS_TauCoeff_Subset.o : Extract_CrIS_TauCoeff_Subset.f90 Message_Handler.o List_File_Utility.o ODAS_Define.o ODAS_netCDF_IO.o Subset_Define.o CrIS_Define.o CrIS_Subset.o 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+CrIS_Subset.o : CrIS_Subset.f90 Message_Handler.o Sort_Utility.o CrIS_Define.o Subset_Define.o 
+CrIS_Define.o : CrIS_Define.f90 Type_Kinds.o Message_Handler.o Fundamental_Constants.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 

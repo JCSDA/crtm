@@ -17,6 +17,8 @@ MODULE ODPS_Predictor
 
   USE Type_Kinds,               ONLY : fp, single
   USE Message_Handler
+  USE CRTM_Parameters      ,    ONLY : MINIMUM_ABSORBER_AMOUNT, &
+                                       RECIPROCAL_GRAVITY
   USE ODPS_Predictor_Define,    ONLY : Predictor_type,    &
                                        PAFV_type,         &
                                        Destroy_Predictor, &
@@ -209,17 +211,6 @@ MODULE ODPS_Predictor
   REAL( fp ), PARAMETER :: ONE_POINT_25  = 1.25_fp
   REAL( fp ), PARAMETER :: ONE_POINT_75  = 1.75_fp
 
-  !-----------------------------------------------------
-  ! Parameters used in the OPTRAN predictor calculation
-  !-----------------------------------------------------
-  ! Reciprocal gravity (scaled by 100 for use with pressure
-  ! in hPa) used in computing integrated absorber amounts
-  REAL(fp), PARAMETER :: RECIPROCAL_GRAVITY = ONE / 980.665_fp
-  ! The minimum absorber amount allowed based upon
-  ! the smallest representable numbers.
-  ! This value is equivalent to TINY(ONE)**0.25
-  ! ----------------------------------------------
-  REAL(fp), PARAMETER :: MINIMUM_ABSORBER_AMOUNT = TEN**(-RANGE(ONE)/4)
 
   TYPE :: ODPS_APVariables_type
     PRIVATE 

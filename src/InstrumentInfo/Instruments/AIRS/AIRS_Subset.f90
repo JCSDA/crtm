@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Nov-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 25-Nov-2002
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE AIRS_Subset
@@ -15,17 +15,15 @@ MODULE AIRS_Subset
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Sort_Utility         , ONLY: InsertionSort
-  USE AIRS_Define          , ONLY: N_AIRS_MODULES, &
-                                   N_AIRS_CHANNELS, &
-                                   N_AIRS_CHANNELS_PER_MODULE, &
-                                   AIRS_MODULE_BEGIN_CHANNEL, &
-                                   AIRS_MODULE_END_CHANNEL
-  USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
-                                   Destroy_Channel_Subset, &
-                                   Allocate_Channel_Subset, &
-                                   Assign_Channel_Subset
+  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
+  USE Sort_Utility   , ONLY: InsertionSort
+  USE AIRS_Define    , ONLY: N_AIRS_BANDS, N_AIRS_CHANNELS, &
+                             AIRS_BeginChannel, &
+                             AIRS_EndChannel
+  USE Subset_Define  , ONLY: Subset_type, &
+                             Subset_Associated, &
+                             Subset_Destroy, &
+                             Subset_Create
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -39,14 +37,16 @@ MODULE AIRS_Subset
   PUBLIC :: AIRS_SUBSET_281_COMMENT, N_AIRS_SUBSET_281, AIRS_SUBSET_281
   PUBLIC :: AIRS_SUBSET_324_COMMENT, N_AIRS_SUBSET_324, AIRS_SUBSET_324
   ! Procedures
-  PUBLIC :: Index_AIRS_Subset
+  PUBLIC :: AIRS_Subset_Index
+  PUBLIC :: AIRS_SubsetVersion
 
 
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  INTEGER, PARAMETER :: ML = 256
 
   ! The AIRS subset 281 channel list
   CHARACTER(*), PARAMETER :: AIRS_SUBSET_281_COMMENT = 'AIRS 281 channel SUBSET'
@@ -119,211 +119,178 @@ CONTAINS
 !################################################################################
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
-!       Index_AIRS_Subset
+!       AIRS_Subset_Index
 ! 
 ! PURPOSE:
-!       Function to index AIRS channels for requested modules.
+!       Function to index AIRS channels for requested bands.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Index_AIRS_Subset( Module_Number,          &  ! Input
-!                                         Subset_List,            &  ! Input
-!                                         Subset,                 &  ! Output
-!                                         RCS_Id     =RCS_Id,     &  ! Optional output
-!                                         Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = AIRS_Subset_Index( Band       , &  ! Input
+!                                         Subset_List, &  ! Input
+!                                         Subset       )  ! Output
 !
-! INPUT ARGUMENTS:
-!       Module_Numbers:  The AIRS detector module number from which to subset 
-!                        channels.
+! INPUTS:
+!       Bands:           The AIRS band from which to subset channels.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Subset_List:     The list of AIRS channels to subset. This can be a 
-!                        user defined channel list, or the standard 281 or 324
+!                        user defined channel list, or the standard 300 or 316
 !                        channel subset lists parameterised in the arrays
-!                        AIRS_SUBSET_281 and AIRS_SUBSET_324.
+!                        AIRS_SUBSET_300 and AIRS_SUBSET_316.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Rank-1
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Subset:          The AIRS Subset structure containing the indexed
 !                        subset channels for the specified AIRS module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Channel_Subset_type)
+!                        TYPE:       TYPE(Subset_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:    The return value is an integer defining the error status.
 !                        The error codes are defined in the Message_Handler module.
 !                        If == SUCCESS the channel subsetting was successful
-!                           == FAILURE - errors were detected with the input data, or
-!                                      - the structure allocation failed..
+!                           == FAILURE an error occurred.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on the output Subset argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Index_AIRS_Subset( Module_Number, &  ! Input
-                              Subset_List  , &  ! Input
-                              Subset       , &  ! Output
-                              RCS_Id       , &  ! Revision control
-                              Message_Log  ) &  ! Error mssaging
-                            RESULT( Error_Status )
+  FUNCTION AIRS_Subset_Index( &
+    Band       , &  ! Input
+    Subset_List, &  ! Input
+    Subset     ) &  ! Output
+  RESULT( err_stat )
     ! Arguments
-    INTEGER                  , INTENT(IN)     :: Module_Number
-    INTEGER                  , INTENT(IN)     :: Subset_List(:)
-    TYPE(Channel_Subset_type), INTENT(IN OUT) :: Subset
-    CHARACTER(*),    OPTIONAL, INTENT(OUT)    :: RCS_Id
-    CHARACTER(*),    OPTIONAL, INTENT(IN)     :: Message_Log
+    INTEGER          , INTENT(IN)  :: Band
+    INTEGER          , INTENT(IN)  :: Subset_List(:)
+    TYPE(Subset_type), INTENT(OUT) :: Subset
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Index_AIRS_Subset'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AIRS_Subset_Index'
     ! Local variables
-    INTEGER :: Sorted_List(SIZE(Subset_List))
-    INTEGER :: n_Subset_Channels
-    INTEGER :: l, l1, l2
-    INTEGER :: l_Subset, l_Extract
-    INTEGER :: n_Channels
-    INTEGER :: Channel
+    CHARACTER(ML) :: msg
+    INTEGER :: sorted_list(SIZE(Subset_List))
+    INTEGER :: n_band_channels
+    INTEGER :: n_subset_channels
+    INTEGER :: l, ch1, ch2
+    INTEGER :: ch_subset, ch_extract
+    INTEGER :: n_channels
+    INTEGER :: channel
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check the module number
-    IF ( Module_Number < 1 .OR. Module_Number > N_AIRS_MODULES ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid AIRS module number.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+    err_stat = SUCCESS
+    ! ...Check the band
+    IF ( Band < 1 .OR. Band > N_AIRS_BANDS ) THEN
+      msg = 'Invalid band.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       RETURN
     END IF
-
-    ! No channel list data?
-    n_Subset_Channels = SIZE(Subset_List)
-    IF ( n_Subset_Channels < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Subset_List contains no data.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    ! ...No channel list data?
+    n_subset_channels = SIZE(Subset_List)
+    IF ( n_subset_channels < 1 ) THEN
+      msg = 'Input Subset_List contains no data.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-
-    ! Any weird channel numbers?
+    ! ...Any weird channel numbers?
     IF ( ANY( Subset_List < 1 .OR. Subset_List > N_AIRS_CHANNELS ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid channel in Subset_List input.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      msg = 'Invalid channel in Subset_List input.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
 
     ! Sort the subset list
-    ! --------------------
-    Sorted_List = Subset_List
-    CALL InsertionSort( Sorted_List )
+    sorted_list = Subset_List
+    CALL InsertionSort( sorted_list )
     
     
-    ! Set the module limits
-    ! ---------------------
-    l1 = AIRS_MODULE_BEGIN_CHANNEL( Module_Number )
-    l2 = AIRS_MODULE_END_CHANNEL( Module_Number )
+    ! Set the band limits
+    ch1 = AIRS_BeginChannel( Band )
+    ch2 = AIRS_EndChannel( Band )
+    n_band_channels = ch2 - ch1 + 1
 
 
     ! Count the channels to subset
-    ! ----------------------------
-    n_Channels = COUNT( Sorted_List >= l1 .AND. Sorted_List <= l2 )
-    IF ( n_Channels == 0 ) RETURN
+    n_channels = COUNT( sorted_list >= ch1 .and. sorted_list <= ch2 )
+    IF ( n_channels == 0 ) RETURN
 
 
     ! Allocate the AIRS Subset structure
-    ! ----------------------------------
-    Error_Status = Allocate_Channel_Subset( n_Channels, &
-                                            Subset, &
-                                            Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating Subset structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+    CALL Subset_Create( Subset, n_Channels )
+    IF ( .NOT. Subset_Associated( Subset ) ) THEN
+      msg = 'Error allocating Subset structure.'
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
 
     ! Define the start points for the channel search
-    ! ----------------------------------------------
-    ! Determine the starting index in the SUBSET channel list array
-    l_Subset = MINLOC( Sorted_List - l1, &
-                       MASK=( (Sorted_List - l1) >= 0 ), &
-                       DIM =1 )
-
-    ! Set the starting index in the MODULE channel list array.
-    ! This is always 1.
-    l_Extract = 1
+    ! ...Determine the starting index in the SUBSET channel list array
+    ch_subset = MINLOC( sorted_list - ch1, &
+                        MASK = ( (sorted_list - ch1) >= 0 ), &
+                        DIM  = 1 )
+    ! ...Set the starting index in the BAND channel list array. This is always 1.
+    ch_extract = 1
 
 
-    ! Loop over the number of channels in the current module
-    ! ------------------------------------------------------
-    Channel_Loop: DO l = 1, N_AIRS_CHANNELS_PER_MODULE( Module_Number )
-
-      ! Determine the current channel number
-      Channel = AIRS_MODULE_BEGIN_CHANNEL( Module_Number ) + l - 1
-
-      ! Is the current channel in the subset?
-      IF ( Channel == Sorted_List( l_Subset ) ) THEN
-
-        ! Save the channel index and number
-        Subset%Channel_Index(  l_Extract ) = l
-        Subset%Channel_Number( l_Extract ) = Channel
-
-        ! Increment the subset and extract indices
-        l_Extract = l_Extract + 1
-        l_Subset  = l_Subset  + 1
-
-        ! If subset index is greater than n_Subset_Channels
-        ! then we've just found the last subset channel
-        IF ( l_Subset > n_Subset_Channels ) EXIT Channel_Loop
-
+    ! Loop over the number of channels in the current band
+    Channel_Loop: DO l = 1, n_band_channels
+      channel = ch1 + l - 1                                   ! Determine the current channel number
+      IF ( channel == sorted_list( ch_subset ) ) THEN         ! Is the current channel in the subset?
+        Subset%Index(  ch_extract ) = l                         ! Save the channel index...
+        Subset%Number( ch_extract ) = channel                   ! ...and number
+        ch_extract = ch_extract + 1                             ! Increment the extract...
+        ch_subset  = ch_subset  + 1                             ! ...and subset indices
+        IF ( ch_subset > n_subset_channels ) EXIT Channel_Loop  ! Exit loop if last channel found
       END IF
-
     END DO Channel_Loop
 
-  END FUNCTION Index_AIRS_Subset
+  END FUNCTION AIRS_Subset_Index
+
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       AIRS_SubsetVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL AIRS_SubsetVersion( Id )
+!
+! OUTPUTS:
+!       Id:   Character string containing the version Id information
+!             for the module.
+!             UNITS:      N/A
+!             TYPE:       CHARACTER(*)
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE AIRS_SubsetVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE AIRS_SubsetVersion
 
 END MODULE AIRS_Subset

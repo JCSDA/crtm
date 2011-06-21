@@ -108,31 +108,52 @@ MODULE CRTM_Fastem4
   !   Liu, Q. et al. (1998) Monte Carlo simulations of the
   !     microwave emissivity of the sea surface.
   !     JGR, Volume 103, No.C11, Pages 24983-24989
-!  REAL(fp), PARAMETER :: FC1 = 7.751e-06_fp ! FWD model
-!  REAL(fp), PARAMETER :: FC2 = 3.231_fp     ! FWD model
+  REAL(fp), PARAMETER :: FC1 = 7.75e-06_fp ! FWD model
+  REAL(fp), PARAMETER :: FC2 = 3.231_fp     ! FWD model
 !  REAL(fp), PARAMETER :: FC3 = FC1*FC2      ! TL model
 !  REAL(fp), PARAMETER :: FC4 = FC2-ONE      ! TL model
   !   English, S., and T. Hewison, (1998) A fast generic
   !     millimeter-wave emissivity model,
   !     Proceedings of SPIE, 3503, pp288-300
-  REAL(fp), PARAMETER :: FC1 = 1.95E-05_fp  ! FWD model
-  REAL(fp), PARAMETER :: FC2 = 2.55_fp      ! FWD model
+!  REAL(fp), PARAMETER :: FC1 = 1.95E-05_fp  ! FWD model
+!  REAL(fp), PARAMETER :: FC2 = 2.55_fp      ! FWD model
   REAL(fp), PARAMETER :: FC3 = FC1*FC2      ! TL model
   REAL(fp), PARAMETER :: FC4 = FC2-ONE      ! TL model
 
-
+  ! minimum and maximum frequency
+  REAL( fp ), PUBLIC, PARAMETER ::  min_f = 1.4_fp
+  REAL( fp ), PUBLIC, PARAMETER ::  max_f = 200.0_fp
+  ! minimum and maximum wind speed
+  REAL( fp ), PUBLIC, PARAMETER ::  min_wind = 0.3_fp
+  REAL( fp ), PUBLIC, PARAMETER ::  max_wind = 35.0_fp
+  
   ! Fitting coefficients
-  ! ...for the small and large-scale correction, Nov. 15,2009 azimuth
-  REAL(fp), PARAMETER :: Lcoef(36) = (/ & 
-    -2.748114E-02_fp, 4.492694E-04_fp,-9.032870E-07_fp, 3.634301E-02_fp,-5.522355E-04_fp, &
-     1.047926E-06_fp,-1.106594E-02_fp, 1.491033E-04_fp,-2.683134E-07_fp, 1.896311E-03_fp, &
-     1.501236E-05_fp,-7.632568E-08_fp, 1.166231E-05_fp, 2.759462E-07_fp,-1.615886E-09_fp, &
-    -1.094748E-03_fp,-2.604274E-05_fp, 1.115938E-07_fp,-2.556949E-02_fp,-6.744277E-05_fp, &
-     9.892297E-07_fp, 2.998525E-02_fp, 1.677300E-04_fp,-1.551966E-06_fp,-6.619821E-03_fp, &
-    -5.414996E-05_fp, 4.390623E-07_fp, 7.539377E-04_fp,-3.393878E-05_fp, 1.007074E-07_fp, &
-     1.166231E-05_fp, 2.759462E-07_fp,-1.615886E-09_fp, 4.762508E-05_fp, 2.290840E-05_fp, &
-    -6.543931E-08_fp /)  
+!  ! ...for the small and large-scale correction, Nov. 15,2009 azimuth
+!  REAL(fp), PARAMETER :: Lcoef(36) = (/ & 
+!    -2.748114E-02_fp, 4.492694E-04_fp,-9.032870E-07_fp, 3.634301E-02_fp,-5.522355E-04_fp, &
+!     1.047926E-06_fp,-1.106594E-02_fp, 1.491033E-04_fp,-2.683134E-07_fp, 1.896311E-03_fp, &
+!     1.501236E-05_fp,-7.632568E-08_fp, 1.166231E-05_fp, 2.759462E-07_fp,-1.615886E-09_fp, &
+!    -1.094748E-03_fp,-2.604274E-05_fp, 1.115938E-07_fp,-2.556949E-02_fp,-6.744277E-05_fp, &
+!     9.892297E-07_fp, 2.998525E-02_fp, 1.677300E-04_fp,-1.551966E-06_fp,-6.619821E-03_fp, &
+!    -5.414996E-05_fp, 4.390623E-07_fp, 7.539377E-04_fp,-3.393878E-05_fp, 1.007074E-07_fp, &
+!     1.166231E-05_fp, 2.759462E-07_fp,-1.615886E-09_fp, 4.762508E-05_fp, 2.290840E-05_fp, &
+!    -6.543931E-08_fp /)  
 
+  ! fitting coefficients for the large-scale correction   select 1
+  REAL(fp),  PUBLIC, PARAMETER :: Lcoef(36) = (/ &
+  -9.197134E-02_fp, 8.310678E-04_fp,-6.065411E-07_fp, 1.350073E-01_fp,-1.032096E-03_fp, &
+   4.259935E-07_fp,-4.373322E-02_fp, 2.545863E-04_fp, 9.835554E-08_fp,-1.199751E-03_fp, &
+   1.360423E-05_fp,-2.088404E-08_fp,-2.201640E-05_fp, 1.951581E-07_fp,-2.599185E-10_fp, &
+   4.477322E-04_fp,-2.986217E-05_fp, 9.406466E-08_fp,-7.103127E-02_fp,-4.713113E-05_fp, &
+   1.754742E-06_fp, 9.720859E-02_fp, 1.374668E-04_fp,-2.591771E-06_fp,-2.687455E-02_fp, &
+  -3.677779E-05_fp, 7.548377E-07_fp,-3.049506E-03_fp,-5.412826E-05_fp, 2.285387E-07_fp, &
+  -2.201640E-05_fp, 1.951581E-07_fp,-2.599185E-10_fp, 2.297488E-03_fp, 3.787032E-05_fp, &
+  -1.553581E-07_fp /) 
+
+  ! fitting coefficients for the small-scale correction
+  REAL(fp),  PUBLIC, PARAMETER :: Scoef(8) = (/ &   
+    -5.0208480E-06_fp,   2.3297951E-08_fp,   4.6625726E-08_fp,  -1.9765665E-09_fp, &
+    -7.0469823E-04_fp,   7.5061193E-04_fp,   9.8103876E-04_fp,   1.5489504E-04_fp /)
 
   ! --------------------------------------
   ! Structure definition to hold internal
@@ -167,6 +188,13 @@ MODULE CRTM_Fastem4
     ! Large scale correction reflectivities
     REAL(fp) :: Rv_Large = ZERO
     REAL(fp) :: Rh_Large = ZERO
+    
+    ! Small scale correction reflectivities
+    REAL(fp) :: scor = ZERO
+    REAL(fp) :: small_corr = ONE
+    REAL(fp) :: freq_S
+    REAL(fp) :: windspeed
+
     ! Final reflectivities
     REAL(fp) :: Rv = ZERO
     REAL(fp) :: Rh = ZERO
@@ -312,7 +340,6 @@ CONTAINS
     REAL(fp), OPTIONAL, INTENT(IN)  :: Azimuth_Angle
     REAL(fp), OPTIONAL, INTENT(IN)  :: Transmittance
 
-
     ! Setup
     ! ...Save forward input variables for TL and AD calculations
     iVar%Frequency    = Frequency   
@@ -322,7 +349,6 @@ CONTAINS
     iVar%Wind_Speed   = Wind_Speed
     ! ...Save derived variables
     iVar%cos_z = COS(Zenith_Angle*DEGREES_TO_RADIANS)
-    
     
     ! Permittivity calculation
     CALL Ocean_Permittivity( Temperature, Salinity, Frequency, &
@@ -350,14 +376,15 @@ CONTAINS
     CALL Large_Scale_Correction( Wind_Speed, iVar%cos_z, Frequency, &
                                  iVar%Rv_Large, iVar%Rh_Large )
     
+    ! Small scale correction calculation, Var%small_corr
+    CALL Small_Scale_Correction( Wind_Speed, Frequency, iVar )
 
     ! Compute the first two Stokes components of the emissivity
-    iVar%Rv = iVar%Rv_Fresnel-iVar%Rv_Large
-    iVar%Rh = iVar%Rh_Fresnel-iVar%Rh_Large
+    iVar%Rv = iVar%Rv_Fresnel*iVar%small_corr -iVar%Rv_Large
+    iVar%Rh = iVar%Rh_Fresnel*iVar%small_corr -iVar%Rh_Large
     Emissivity(Iv_IDX) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rv - iVar%Foam_Cover*iVar%Rv_Foam
     Emissivity(Ih_IDX) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rh - iVar%Foam_Cover*iVar%Rh_Foam
-
- 
+    
     ! Azimuthal component calculation
     iVar%Azimuth_Angle_Valid = .FALSE.
     iVar%e_Azimuth = ZERO
@@ -371,7 +398,6 @@ CONTAINS
         iVar%Azimuth_Angle       = Azimuth_Angle
       END IF
     END IF
-
 
     ! Anisotropic downward radiation correction calculation
     iVar%Transmittance_Valid = .FALSE.
@@ -522,7 +548,7 @@ CONTAINS
     REAL(fp) :: Foam_Cover_TL
     REAL(fp) :: e_Azimuth_TL(N_STOKES)
     COMPLEX(fp) :: Permittivity_TL
-
+    REAL(fp) :: small_corr_TL
 
     ! Check internal structure
     IF ( .NOT. iVar%Is_Valid ) THEN
@@ -558,18 +584,19 @@ CONTAINS
     CALL Large_Scale_Correction_TL( iVar%Wind_Speed, iVar%cos_z, iVar%Frequency, Wind_Speed_TL, &
                                     Rv_Large_TL, Rh_Large_TL )    
 
-
+    ! Small Scale Correction Calculation 
+    CALL Small_Scale_Correction_TL( Wind_Speed_TL, iVar, small_corr_TL )  
+      
     ! Compute the first two Stokes components of the tangent-linear emissivity
-    Rv_TL = Rv_Fresnel_TL - Rv_Large_TL
+    Rv_TL = Rv_Fresnel_TL*iVar%small_corr + iVar%Rv_Fresnel*small_corr_TL - Rv_Large_TL
     Emissivity_TL(Iv_IDX) = (iVar%Foam_Cover-ONE)*Rv_TL + &
                             (iVar%Rv-iVar%Rv_Foam)*Foam_Cover_TL - &
                             iVar%Foam_Cover*Rv_Foam_TL
-    Rh_TL = Rh_Fresnel_TL - Rh_Large_TL
+    Rh_TL = Rh_Fresnel_TL*iVar%small_corr + iVar%Rh_Fresnel*small_corr_TL - Rh_Large_TL
     Emissivity_TL(Ih_IDX) = (iVar%Foam_Cover-ONE)*Rh_TL + &
                             (iVar%Rh-iVar%Rh_Foam)*Foam_Cover_TL - &
                             iVar%Foam_Cover*Rh_Foam_TL
      
-    
     ! Azimuthal component calculation
     IF ( PRESENT(Azimuth_Angle_TL) .AND. iVar%Azimuth_Angle_Valid ) THEN
       CALL Compute_Azimuth_Emissivity_TL( &
@@ -725,7 +752,7 @@ CONTAINS
     REAL(fp) :: Foam_Cover_AD
     REAL(fp) :: e_Azimuth_AD(N_STOKES)
     COMPLEX(fp) :: Permittivity_AD
-    
+    REAL(fp) :: small_corr_AD
 
     ! Check internal structure
     IF ( .NOT. iVar%Is_Valid ) THEN
@@ -785,7 +812,8 @@ CONTAINS
     Rh_AD         = (iVar%Foam_Cover-ONE) *Emissivity_AD(Ih_IDX)
     Emissivity_AD(Ih_IDX) = ZERO
     Rh_Large_AD   = -Rh_AD
-    Rh_Fresnel_AD =  Rh_AD
+    small_corr_AD = iVar%Rh_Fresnel*Rh_AD
+    Rh_Fresnel_AD =  Rh_AD*iVar%small_corr
     Rh_AD = ZERO
 
     Rv_Foam_AD    = -iVar%Foam_Cover      *Emissivity_AD(Iv_IDX)
@@ -793,16 +821,22 @@ CONTAINS
     Rv_AD         = (iVar%Foam_Cover-ONE) *Emissivity_AD(Iv_IDX)
     Emissivity_AD(Iv_IDX) = ZERO
     Rv_Large_AD   = -Rv_AD
-    Rv_Fresnel_AD =  Rv_AD
+    small_corr_AD = small_corr_AD + iVar%Rv_Fresnel*Rv_AD    
+    Rv_Fresnel_AD =  Rv_AD*iVar%small_corr
     Rv_AD = ZERO
 
 
+    ! Small scale Correction Calculation AD
+    CALL Small_Scale_Correction_AD( small_corr_AD, iVar, Wind_Speed_AD )
+
+    
     ! Large Scale Correction Calculation
     CALL Large_Scale_Correction_AD( iVar%Wind_Speed, iVar%cos_z, iVar%Frequency, &
                                     Rv_Large_AD, Rh_Large_AD, &
                                     Wind_Speed_AD )
 
 
+ 
     ! Foam coverage calculation
     CALL Foam_Coverage_AD( iVar%Wind_Speed, &
                            Foam_Cover_AD, &
@@ -987,14 +1021,99 @@ CONTAINS
     Rh = ONE + FR_COEFF(9)*Fh
     
     ! Added frequency dependence derived from Stogry model
-!!    Foam_ref = 0.4_fp * exp(-0.05_fp*Frequency )
-!!    Rv = Rv * Foam_ref
-!!    Rh = Rh * Foam_ref
-    Foam_ref = 2.0_fp * (Frequency + f0)/( TWO*Frequency + f0 )
+    Foam_ref = 0.4_fp * exp(-0.05_fp*Frequency )
     Rv = Rv * Foam_ref
-    Rh = Rh * Foam_ref  
+    Rh = Rh * Foam_ref
+!!    Foam_ref = 2.0_fp * (Frequency + f0)/( TWO*Frequency + f0 )
+!!    Rv = Rv * Foam_ref
+!!    Rh = Rh * Foam_ref  
+    
+
 
   END SUBROUTINE Foam_Reflectivity  
+  
+  ! ============================================
+  ! Reflectivity small scale correction routines
+  ! ============================================
+  !
+  SUBROUTINE Small_Scale_Correction( Wind_Speed, f, iVar )
+    ! Arguments
+    REAL(fp), INTENT(IN)  :: Wind_Speed   ! Wind speed
+    REAL(fp), INTENT(IN)  :: f       ! Frequency
+    TYPE(iVar_type),    INTENT(INOUT) :: iVar    ! iVar%small_corr is small correction factor.
+    
+  ! Apply small-scale correction      
+  ! --------------------------------
+    iVar%windspeed = Wind_Speed  
+    IF( iVar%windspeed < min_wind ) iVar%windspeed = min_wind
+    IF( iVar%windspeed > max_wind ) iVar%windspeed = max_wind
+    iVar%freq_S = f
+    IF( iVar%freq_S < min_f ) iVar%freq_S = min_f
+    IF( iVar%freq_S > max_f ) iVar%freq_S = max_f  
+    
+    iVar%scor = Scoef(1) *iVar%windspeed*iVar%freq_S +Scoef(2) *iVar%windspeed*iVar%freq_S**2 &
+           + Scoef(3) *iVar%windspeed**2* iVar%freq_S +Scoef(4) *iVar%windspeed**2* iVar%freq_S**2 &
+           + Scoef(5) *iVar%windspeed**2 /iVar%freq_S +Scoef(6) *iVar%windspeed**2 /iVar%freq_S**2 &
+           + Scoef(7) *iVar%windspeed + Scoef(8) *iVar%windspeed**2
+      
+    iVar%small_corr = exp(-iVar%scor*iVar%cos_z*iVar%cos_z )
+
+    RETURN
+  END SUBROUTINE Small_Scale_Correction
+!
+  ! ============================================
+  ! Reflectivity small scale correction routines TL
+  ! ============================================
+  !
+  SUBROUTINE Small_Scale_Correction_TL( Wind_Speed_TL, iVar, small_corr_TL )
+    ! Arguments
+    TYPE(iVar_type),    INTENT(IN) :: iVar
+    REAL(fp),    INTENT(IN) :: Wind_Speed_TL
+    REAL(fp),    INTENT(OUT) :: small_corr_TL     ! small_corr_TL is small correction factor TL.
+    ! Local variables
+    REAL(fp) :: scor_TL, windspeed_TL
+    
+ ! Small-scale correction TL   
+  ! --------------------------------
+    windspeed_TL = Wind_Speed_TL
+    IF( iVar%windspeed < min_wind ) windspeed_TL = ZERO
+    IF( iVar%windspeed > max_wind ) windspeed_TL = ZERO
+    scor_TL = ( Scoef(1)*iVar%freq_S +Scoef(2)*iVar%freq_S**2 &
+            +TWO*Scoef(3) *iVar%windspeed*iVar%freq_S +TWO*Scoef(4)*iVar%windspeed* iVar%freq_S**2 &
+            +TWO*Scoef(5) *iVar%windspeed /iVar%freq_S +TWO*Scoef(6) *iVar%windspeed/iVar%freq_S**2 &
+            +Scoef(7) + TWO*Scoef(8) *iVar%windspeed  )*windspeed_TL
+
+    small_corr_TL = -scor_TL*iVar%cos_z*iVar%cos_z* iVar%small_corr
+
+    RETURN
+  END SUBROUTINE Small_Scale_Correction_TL
+!
+!
+  ! ============================================
+  ! Reflectivity small scale correction routines TL
+  ! ============================================
+  !
+  SUBROUTINE Small_Scale_Correction_AD( small_corr_AD, iVar, Wind_Speed_AD )
+    ! Arguments
+    TYPE(iVar_type),    INTENT(IN) :: iVar
+    REAL(fp),    INTENT(INOUT) :: small_corr_AD
+    REAL(fp),    INTENT(OUT) :: Wind_Speed_AD
+    ! Local variables
+    REAL(fp) :: scor_AD, windspeed_AD
+    
+ ! Small-scale correction AD
+    scor_AD = -small_corr_AD*iVar%cos_z*iVar%cos_z* iVar%small_corr   
+    windspeed_AD = ( Scoef(1)*iVar%freq_S +Scoef(2)*iVar%freq_S**2 &
+            +TWO*Scoef(3) *iVar%windspeed*iVar%freq_S +TWO*Scoef(4)*iVar%windspeed* iVar%freq_S**2 &
+            +TWO*Scoef(5) *iVar%windspeed/iVar%freq_S +TWO*Scoef(6) *iVar%windspeed/iVar%freq_S**2 &
+            +Scoef(7) + TWO*Scoef(8) *iVar%windspeed  )*scor_AD
+    IF( iVar%windspeed < min_wind ) windspeed_AD = ZERO
+    IF( iVar%windspeed > max_wind ) windspeed_AD = ZERO    
+    Wind_Speed_AD = windspeed_AD
+    small_corr_AD = ZERO
+    RETURN
+  END SUBROUTINE Small_Scale_Correction_AD
+!
 !
 END MODULE CRTM_Fastem4
 !
