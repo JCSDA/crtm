@@ -6,7 +6,7 @@
 #
 #  PURPOSE:
 #       Shell script file to link in the Master SensorInfo file, SensorInfo, from
-#       the SensorInfo subdirectory in a working copy of the CRTM source code
+#       the SensorInfo subdirectory in a working copy of the CRTM fixfile
 #       repository.
 #
 #  CALLING SEQUENCE:
@@ -15,8 +15,10 @@
 #  ENVIRONMENT VARIABLES:
 #       The following environment variables must be defined to use this script.
 #
-#       CRTM_SOURCE_ROOT:  The directory location of a working copy of the
-#                          CRTM source code repository.
+#       CRTM_FIXFILE_ROOT:  The directory location of a working copy of the
+#                           CRTM fixed file repository -- where all the 
+#                           files that do not change (i.e. are "fixed") are
+#                           kept.
 #                           
 #
 
@@ -85,15 +87,15 @@ esac
 
 # Check that the mandatory envar is defined
 # -----------------------------------------
-if [ -z "${CRTM_SOURCE_ROOT}" ]; then
-  error_message " CRTM_SOURCE_ROOT envar is not defined."
+if [ -z "${CRTM_FIXFILE_ROOT}" ]; then
+  error_message " CRTM_FIXFILE_ROOT envar is not defined."
   exit 1
 fi
 
 
 # Check that the file to be linked exists
 # ---------------------------------------
-SENSORINFO_DIR="${CRTM_SOURCE_ROOT}/InstrumentInfo/SensorInfo"
+SENSORINFO_DIR="${CRTM_FIXFILE_ROOT}/SensorInfo"
 SENSORINFO_FILE=SensorInfo
 if [ ! -f ${SENSORINFO_DIR}/${SENSORINFO_FILE} ]; then
   error_message " Master SensorInfo file, ${SENSORINFO_FILE}, not found in ${SENSORINFO_DIR}"
