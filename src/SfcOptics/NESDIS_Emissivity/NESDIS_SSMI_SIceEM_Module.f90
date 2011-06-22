@@ -296,9 +296,9 @@ subroutine NESDIS_SSMI_SIceEM(frequency,                                        
 
   if (Depth .gt. 10.0_fp_kind) Depth = 10.0_fp_kind
 
-  call NESDIS_LandEM(SSMI_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,Depth,esh1,esv1)
+  call NESDIS_LandEM(SSMI_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,Depth,esh1,esv1)
 
-  call NESDIS_LandEM(Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,Depth,esh2,esv2)
+  call NESDIS_LandEM(Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,Depth,esh2,esv2)
 
   desh = esh1 - esh2
 

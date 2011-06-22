@@ -210,6 +210,9 @@ CONTAINS
                            Surface%Vegetation_Fraction,   & ! Input
                            Surface%Soil_Temperature,      & ! Input, K
                            Surface%Land_Temperature,      & ! Input, K
+                           Surface%Lai,                   & ! Input, Leaf Area Index
+                           Surface%Soil_Type,             & ! Input, Soil Type (1 -  9)
+                           Surface%Vegetation_Type,       & ! Input, Vegetation Type (1 - 13)
                            ZERO,                          & ! Input, Snow depth, mm
                            SfcOptics%Emissivity(i,2),     & ! Output, H component
                            SfcOptics%Emissivity(i,1)      ) ! Output, V component

@@ -483,9 +483,9 @@ ENDIF
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,10.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,0.0_fp_kind,9,13,10.0_fp_kind,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,10.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,0.0_fp_kind,9,13,10.0_fp_kind,esh2,esv2)
 
   desh = esh1 - esh2
 

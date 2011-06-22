@@ -488,9 +488,9 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,2.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,2.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh2,esv2)
 
   desh = esh1 - esh2
 
@@ -1815,13 +1815,13 @@ subroutine AMSU_ALandEM_Snow(theta,frequency,snow_depth,ts,snow_type,em_vector)
 
   snow_type = -999
 
-  call NESDIS_LandEM(theta, frequency,0.0_fp_kind,0.0_fp_kind,ts,ts,snow_depth,esh0,esv0)
+  call NESDIS_LandEM(theta, frequency,0.0_fp_kind,0.0_fp_kind,ts,ts,0.0_fp_kind,9,13,snow_depth,esh0,esv0)
 
   theta0 = theta
   do ich = 1, nw_ind
      freq =freq_3w(ich)
      theta = theta0
-     call NESDIS_LandEM(theta, freq,0.0_fp_kind,0.0_fp_kind,ts,ts,snow_depth,esh,esv)
+     call NESDIS_LandEM(theta, freq,0.0_fp_kind,0.0_fp_kind,ts,ts,0.0_fp_kind,9,13,snow_depth,esh,esv)
      esv_3w(ich) = esv
      esh_3w(ich) = esh
   end do

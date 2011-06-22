@@ -336,6 +336,9 @@ CONTAINS
                                 NOT_USED(1),                             & ! Input, Vegetation_Fraction
                                 Surface%Snow_Temperature,                & ! Input, K
                                 Surface%Snow_Temperature,                & ! Input, K
+                                Surface%Lai,                             & ! Input, Leaf Area Index
+                                Surface%Soil_Type,                       & ! Input, Soil Type (1 -  9)
+                                Surface%Vegetation_Type,                 & ! Input, Vegetation Type (1 - 13)
                                 Surface%Snow_Depth,                      & ! Input, mm
                                 SfcOptics%Emissivity(i,2),               & ! Output, H component
                                 SfcOptics%Emissivity(i,1)                ) ! Output, V component
