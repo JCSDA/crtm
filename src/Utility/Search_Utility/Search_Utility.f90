@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 06-Oct-2006
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 06-Oct-2006
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Search_Utility
@@ -15,7 +15,7 @@ MODULE Search_Utility
   ! Environment set up
   ! ------------------
   ! Modules used
-  USE Type_Kinds,      ONLY: fp=>fp_kind
+  USE Type_Kinds,      ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -32,9 +32,8 @@ MODULE Search_Utility
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id field
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Search_Utility.f90,v 1.1 2006/10/09 14:27:23 wd20pd Exp $'
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
 
 
 CONTAINS
