@@ -87,7 +87,7 @@ NESDIS_AMSRE_SICEEM_Module.o : NESDIS_AMSRE_SICEEM_Module.f90 NESDIS_LandEM_Modu
 NESDIS_AMSRE_SNOWEM_Module.o : NESDIS_AMSRE_SNOWEM_Module.f90 NESDIS_SnowEM_Parameters.o NESDIS_LandEM_Module.o Type_Kinds.o 
 NESDIS_AMSU_SICEEM_Module.o : NESDIS_AMSU_SICEEM_Module.f90 NESDIS_LandEM_Module.o Type_Kinds.o 
 NESDIS_AMSU_SnowEM_Module.o : NESDIS_AMSU_SnowEM_Module.f90 NESDIS_SnowEM_Parameters.o NESDIS_LandEM_Module.o Type_Kinds.o 
-NESDIS_LandEM_Module.o : NESDIS_LandEM_Module.f90 NESDIS_SnowEM_Parameters.o Type_Kinds.o 
+NESDIS_LandEM_Module.o : NESDIS_LandEM_Module.f90 NESDIS_SnowEM_Parameters.o Fundamental_Constants.o Type_Kinds.o 
 NESDIS_MHS_SICEEM_Module.o : NESDIS_MHS_SICEEM_Module.f90 NESDIS_LandEM_Module.o Type_Kinds.o 
 NESDIS_MHS_SnowEM_Module.o : NESDIS_MHS_SnowEM_Module.f90 NESDIS_LandEM_Module.o Type_Kinds.o 
 NESDIS_OCEANEM_Module.o : NESDIS_OCEANEM_Module.f90 Type_Kinds.o 
