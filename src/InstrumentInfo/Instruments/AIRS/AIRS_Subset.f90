@@ -16,14 +16,12 @@ MODULE AIRS_Subset
   ! -----------------
   ! Module usage
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE Sort_Utility   , ONLY: InsertionSort
   USE AIRS_Define    , ONLY: N_AIRS_BANDS, N_AIRS_CHANNELS, &
                              AIRS_BeginChannel, &
                              AIRS_EndChannel
   USE Subset_Define  , ONLY: Subset_type, &
                              Subset_Associated, &
-                             Subset_Destroy, &
-                             Subset_Create
+                             Subset_Generate
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -36,6 +34,7 @@ MODULE AIRS_Subset
   ! Parameters
   PUBLIC :: AIRS_SUBSET_281_COMMENT, N_AIRS_SUBSET_281, AIRS_SUBSET_281
   PUBLIC :: AIRS_SUBSET_324_COMMENT, N_AIRS_SUBSET_324, AIRS_SUBSET_324
+  PUBLIC :: N_AIRS_VALID_SUBSETS, AIRS_VALID_SUBSET_NAME
   ! Procedures
   PUBLIC :: AIRS_Subset_Index
   PUBLIC :: AIRS_SubsetVersion
@@ -105,6 +104,15 @@ MODULE AIRS_Subset
      2113, 2114, 2115, 2116, 2117, 2118, 2119, 2120, 2121, 2122, 2123, 2128, 2134, &
      2141, 2145, 2149, 2153, 2164, 2189, 2197, 2209, 2226, 2234, 2280, 2318, 2321, &
      2325, 2328, 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370, 2371, 2377 /)
+
+
+  ! The list of supported channel subsets
+  INTEGER,      PARAMETER :: N_AIRS_VALID_SUBSETS = 4
+  CHARACTER(*), PARAMETER :: AIRS_VALID_SUBSET_NAME(N_AIRS_VALID_SUBSETS) = &
+    (/ '281 channel set', &
+       '324 channel set', &
+       'All channels   ', &
+       'User specified ' /)
 
 
 CONTAINS
@@ -183,13 +191,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AIRS_Subset_Index'
     ! Local variables
     CHARACTER(ML) :: msg
-    INTEGER :: sorted_list(SIZE(Subset_List))
-    INTEGER :: n_band_channels
     INTEGER :: n_subset_channels
-    INTEGER :: l, ch1, ch2
-    INTEGER :: ch_subset, ch_extract
-    INTEGER :: n_channels
-    INTEGER :: channel
+    INTEGER :: ch1, ch2, i
 
     ! Set up
     err_stat = SUCCESS
@@ -215,56 +218,22 @@ CONTAINS
     END IF
 
 
-    ! Sort the subset list
-    sorted_list = Subset_List
-    CALL InsertionSort( sorted_list )
-    
-    
     ! Set the band limits
     ch1 = AIRS_BeginChannel( Band )
     ch2 = AIRS_EndChannel( Band )
-    n_band_channels = ch2 - ch1 + 1
 
 
-    ! Count the channels to subset
-    n_channels = COUNT( sorted_list >= ch1 .and. sorted_list <= ch2 )
-    IF ( n_channels == 0 ) RETURN
-
-
-    ! Allocate the AIRS Subset structure
-    CALL Subset_Create( Subset, n_Channels )
+    ! Generate the subset
+    CALL Subset_Generate( Subset, (/(i,i=ch1,ch2)/), Subset_List )
     IF ( .NOT. Subset_Associated( Subset ) ) THEN
-      msg = 'Error allocating Subset structure.'
+      msg = 'Error generating Subset structure.'
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
-
-    ! Define the start points for the channel search
-    ! ...Determine the starting index in the SUBSET channel list array
-    ch_subset = MINLOC( sorted_list - ch1, &
-                        MASK = ( (sorted_list - ch1) >= 0 ), &
-                        DIM  = 1 )
-    ! ...Set the starting index in the BAND channel list array. This is always 1.
-    ch_extract = 1
-
-
-    ! Loop over the number of channels in the current band
-    Channel_Loop: DO l = 1, n_band_channels
-      channel = ch1 + l - 1                                   ! Determine the current channel number
-      IF ( channel == sorted_list( ch_subset ) ) THEN         ! Is the current channel in the subset?
-        Subset%Index(  ch_extract ) = l                         ! Save the channel index...
-        Subset%Number( ch_extract ) = channel                   ! ...and number
-        ch_extract = ch_extract + 1                             ! Increment the extract...
-        ch_subset  = ch_subset  + 1                             ! ...and subset indices
-        IF ( ch_subset > n_subset_channels ) EXIT Channel_Loop  ! Exit loop if last channel found
-      END IF
-    END DO Channel_Loop
-
   END FUNCTION AIRS_Subset_Index
 
-
-
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !

@@ -12,8 +12,10 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 # Shell scripts to install
 SRC_DIR = $(CRTM_SCRIPTS_ROOT)/shell/Utility
 
-SRC_FILES = linkfiles.sh \
-            unlinkfiles \
+SRC_FILES = crtm_env.sh \
+            endian_wrapper.sh \
+            linkfiles.sh \
+            unlinkfiles.sh \
             Link_SensorInfo \
             Link_Solar \
             Link_SRF \

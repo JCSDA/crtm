@@ -69,7 +69,7 @@ ARCHIVER_FLAGS = crvs
 # Define scripts used in makefiles
 # ...Scripts to link and unlink files
 LINK_SCRIPT = linkfiles.sh
-UNLINK_SCRIPT = unlinkfiles
+UNLINK_SCRIPT = unlinkfiles.sh
 
 
 # CRTM library build definitions

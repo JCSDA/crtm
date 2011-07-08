@@ -16,7 +16,6 @@ MODULE CrIS_Subset
   ! -----------------
   ! Module usage
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE Sort_Utility   , ONLY: InsertionSort
   USE CrIS_Define    , ONLY: N_CRIS_BANDS, N_CRIS_CHANNELS, &
                              CrIS_BeginChannel, &
                              CrIS_EndChannel
@@ -165,7 +164,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CrIS_Subset_Index'
     ! Local variables
     CHARACTER(ML) :: msg
-    INTEGER :: n_band_channels
     INTEGER :: n_subset_channels
     INTEGER :: i, ch1, ch2
 
@@ -196,7 +194,6 @@ CONTAINS
     ! Set the band limits
     ch1 = CrIS_BeginChannel( Band )
     ch2 = CrIS_EndChannel( Band )
-    n_band_channels = ch2 - ch1 + 1
 
 
     ! Generate the subset
@@ -208,7 +205,6 @@ CONTAINS
     END IF
 
   END FUNCTION CrIS_Subset_Index
-
 
 
 !--------------------------------------------------------------------------------

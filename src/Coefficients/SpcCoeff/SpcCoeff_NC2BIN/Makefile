@@ -23,6 +23,8 @@ SRC_FILES = Type_Kinds.f90 \
             Binary_File_Utility.f90 \
             String_Utility.f90 \
             SignalFile_Utility.f90 \
+            Sort_Utility.f90 \
+            Subset_Define.f90 \
             SensorInfo_Parameters.f90 \
             SpcCoeff_Define.f90 \
               ACCoeff_Define.f90 \

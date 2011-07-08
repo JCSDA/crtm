@@ -23,15 +23,35 @@ PROGRAM Create_FTS_SpcCoeff
                                        Display_Message, Program_Message
   USE Fundamental_Constants    , ONLY: C_1, C_2
   USE Spectral_Units_Conversion, ONLY: Inverse_cm_to_GHz
-  USE SensorInfo_Define
-  USE SensorInfo_LinkedList
-  USE SensorInfo_IO
-  USE SpcCoeff_Parameters
-  USE SpcCoeff_Define
-  USE SpcCoeff_netCDF_IO
+  USE SensorInfo_Define        , ONLY: UNPOLARIZED       , &
+                                       SensorInfo_type   , &
+                                       Destroy_SensorInfo
+  USE SensorInfo_LinkedList    , ONLY: SensorInfo_List_type   , &
+                                       GetFrom_SensorInfo_List, &
+                                       Destroy_SensorInfo_List
+  USE SensorInfo_IO            , ONLY: Read_SensorInfo
+  USE SpcCoeff_Parameters      , ONLY: C_1_SCALE_FACTOR, &
+                                       C_2_SCALE_FACTOR
+  USE SpcCoeff_Define          , ONLY: SpcCoeff_type      , &
+                                       SpcCoeff_Associated, &
+                                       SpcCoeff_Create    , &
+                                       SpcCoeff_Destroy   , &
+                                       SpcCoeff_SetSolar
+  USE SpcCoeff_netCDF_IO       , ONLY: SpcCoeff_netCDF_WriteFile
   ! The FTS instrument definition modules
-  USE IASI_Define
-  USE CrIS_Define
+  USE IASI_Define, ONLY: IASI_F     , &
+                         IASI_maxX  , &
+                         IASI_BeginF, &
+                         IASI_EndF  , &
+                         IASI_dF    , &
+                         IASI_ApodFunction
+  USE CrIS_Define, ONLY: CrIS_F     , &
+                         CrIS_maxX  , &
+                         CrIS_BeginF, &
+                         CrIS_EndF  , &
+                         CrIS_dF    , &
+                         CrIS_ApodFunction, &
+                         CrIS_Remove_Guard_Channels
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -140,7 +160,7 @@ PROGRAM Create_FTS_SpcCoeff
 
 
       ! Assign sensor-independent components
-      SpcCoeff%Version          = version
+      spcCoeff%Version          = version
       spccoeff%Sensor_ID        = TRIM(sensor_id)
       spccoeff%WMO_Satellite_ID = sinfo%WMO_Satellite_ID
       spccoeff%WMO_Sensor_ID    = sinfo%WMO_Sensor_ID   
@@ -157,13 +177,9 @@ PROGRAM Create_FTS_SpcCoeff
       ! ...Fill the cosmic background field
       spccoeff%Cosmic_Background_Radiance = ZERO
       ! ...Set the solar fields
-      spccoeff%Solar_Irradiance = ZERO
-      CALL SpcCoeff_ClearSolar( spccoeff )
-
-
-      ! Perform the solar computation
       CALL Compute_FTS_Solar()
-      
+      CALL SpcCoeff_SetSolar( spccoeff )
+
 
       ! Write the SpcCoeff data file
       filename = TRIM(sensor_id)//'.SpcCoeff.nc'

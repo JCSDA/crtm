@@ -4,6 +4,7 @@
 
 usage()
 {
+  echo
   echo " Usage: run_SpcCoeff_NC2BIN.sh -l|b[fh]"
   echo
   echo "   Convert any netCDF format SpcCoeff files in the current"
@@ -20,19 +21,24 @@ usage()
   echo
   echo "    h       Print this message and exit"
   echo
-  echo "   Note the endian-ness option is only setup for the following"
-  echo "   compilers that allow for run-time conversion via environment"
-  echo "   variables:"
-  echo "     - AIX xlf"
-  echo "     - Linux gfortran"
-  echo "     - Linux ifort (Intel)"
-  echo "     - Linux g95"
+  echo "   Note the endian-ness option is only setup for those compilers"
+  echo "   that allow for run-time conversion via environment variables."
+  echo "   Check the 'endian_wrapper.sh' script help for a listing, i.e."
+  echo
+  echo "     $ endian_wrapper.sh -h"
   echo
 }
 
 
+error_message()
+{
+  SCRIPT_NAME="`basename $0`"
+  MESSAGE=$1
+  echo; echo "  ${SCRIPT_NAME}(ERROR): ${MESSAGE}"; echo
+}
+
+
 # Define defaults
-SCRIPT_NAME="`basename $0`"
 ENDIAN_TYPE="NONE"
 OVERWRITE="NO"
 REMOVE="rm -f"
@@ -48,19 +54,16 @@ while getopts :hlbf OPTVAL; do
 
   # Parse the valid options here
   case ${OPTVAL} in
-    l)  ENDIAN_TYPE="little";;
-    b)  ENDIAN_TYPE="big";;
+    l)  ENDIAN_TYPE="little"; ENDIAN_ARG="l";;
+    b)  ENDIAN_TYPE="big"; ENDIAN_ARG="b";;
     f)  OVERWRITE="YES";;
-    h)  usage
-        exit 0;;
-    :|\?) OPTVAL=${OPTARG}
-          break;;
+    h)  usage; exit 0;;
+    \?) OPTVAL=${OPTARG}; break;;
   esac
-
 done
 
 # Remove the options processed
-shift `expr ${OPTIND} - 1`
+shift $((OPTIND - 1))
 
 # Now output invalidities based on OPTVAL
 # Need to do this as getopts does not handle
@@ -71,40 +74,29 @@ case ${OPTVAL} in
   # If OPTVAL contains nothing, then all options
   # have been successfully parsed
   \?) if [ $# -ne 0 ]; then
-        ( echo "${SCRIPT_NAME}: Invalid argument(s) $*" ; echo ; usage ) | more
-        exit 2
+        usage
+        error_message "Invalid argument(s) $*"
+        exit 1
       fi;;
 
   # Invalid option
-  ?) ( echo "${SCRIPT_NAME}: Invalid option '-${OPTARG}'" ; usage ) | more
-     exit 2;;
-
+  ?) usage
+     error_message "Invalid option '-${OPTARG}'"
+     exit 1;;
 esac
 
 
-# Check endian type for run time options
-# ...Save the current envar options
-XLFRTEOPTS_SAVE=${XLFRTEOPTS}
-GFORTRAN_CONVERT_UNIT_SAVE=${GFORTRAN_CONVERT_UNIT}
-F_UFMTENDIAN_SAVE=${F_UFMTENDIAN}
-G95_ENDIAN_SAVE=${G95_ENDIAN}
-# ...Set the non-switchable envars
-case ${ENDIAN_TYPE} in
-  "little") export XLFRTEOPTS="ufmt_littleendian=-100";;
-  "big") export XLFRTEOPTS="";;
-  *) ( echo "${SCRIPT_NAME}: Must specify and endian type, -l or -b" ; echo ; usage ) | more
-     exit 2;;
-esac
-# ...Switchable envars
-export GFORTRAN_CONVERT_UNIT="${ENDIAN_TYPE}_endian"
-export F_UFMTENDIAN="${ENDIAN_TYPE}"
-export G95_ENDIAN="${ENDIAN_TYPE}"
+# Check that an endian type was specifed
+if [ ${ENDIAN_TYPE} = "NONE" ]; then
+  usage
+  error_message "Must specify an endian type, -l or -b"
+  exit 2
+fi
 
 
 # Assign processing parameters
 EXE_FILE="SpcCoeff_NC2BIN"
 LOG_FILE="${EXE_FILE}.${ENDIAN_TYPE}_endian.log"
-
 
 
 # Process netCDF SpcCoeff files
@@ -124,14 +116,14 @@ for NC_FILE in `ls *.SpcCoeff.nc`; do
   if [ -f ${SIGNAL_FILE} ]; then
     ${REMOVE} ${SIGNAL_FILE}
     if [ $? -ne 0 ]; then
-      echo "   ERROR deleting signal file ${SIGNAL_FILE}. Skipping to next file..."
+      error_message "Error deleting signal file ${SIGNAL_FILE}. Skipping to next file..."
       continue
     fi
   fi
   
   # Convert the file
   echo " Converting ${NC_FILE} to ${ENDIAN_TYPE} endian binary format file ${BIN_FILE}..."
-  ${EXE_FILE} <<-NoMoreInput >> ${LOG_FILE}
+  endian_wrapper.sh -${ENDIAN_ARG} ${EXE_FILE} <<-NoMoreInput >> ${LOG_FILE}
 	${NC_FILE}
 	${BIN_FILE}
 	NoMoreInput
@@ -140,14 +132,7 @@ for NC_FILE in `ls *.SpcCoeff.nc`; do
   if [ -f ${SIGNAL_FILE} ]; then
     ${REMOVE} ${SIGNAL_FILE} > /dev/null
   else
-    echo "   ERROR creating output file ${BIN_FILE}."
+    error_message "Error creating output file ${BIN_FILE}."
   fi
 
 done
-
-
-# Restore the run-time option environment variables
-export XLFRTEOPTS="${XLFRTEOPTS_SAVE}"
-export GFORTRAN_CONVERT_UNIT="${GFORTRAN_CONVERT_UNIT_SAVE}"
-export F_UFMTENDIAN="${F_UFMTENDIAN_SAVE}"
-export G95_ENDIAN="${G95_ENDIAN_SAVE}"

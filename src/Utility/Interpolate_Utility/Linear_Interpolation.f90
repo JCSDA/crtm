@@ -169,7 +169,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Linear_Interpolate(scalar)'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER :: nPoints
     INTEGER :: i
 
@@ -242,7 +241,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Linear_Interpolate(rank-1)'
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER :: nPoints, nIntPoints
     INTEGER,  DIMENSION(SIZE(x_int)) :: i
 

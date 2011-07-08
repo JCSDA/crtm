@@ -42,7 +42,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   !USE ODPS_netCDF_IO
   
   USE Subset_Define,         ONLY: Subset_type, &
-                                   Subset_Destroy
+                                   Subset_Destroy, &
+                                   Subset_GetValue
   USE CrIS_Define,           ONLY: N_CRIS_BANDS, &
                                    N_CRIS_CHANNELS, &
                                    CrIS_BandName
@@ -100,7 +101,6 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   
   ! ********ODPS will be added **********
   INTEGER :: Algorithm
-  
   INTEGER :: n_Orders
   INTEGER :: n_Predictors     
   INTEGER :: n_Absorbers
@@ -116,6 +116,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   INTEGER :: j, l, a, b, l1, l2
   INTEGER :: n_Subset_Channels
   INTEGER :: lcounter
+  INTEGER :: n_values
+  INTEGER, ALLOCATABLE :: index(:), number(:)
   INTEGER, ALLOCATABLE :: Subset_List(:)
   TYPE(Integer_List_File_type) :: User_Subset_List
   TYPE(ODAS_type) :: In_TauCoeff, Out_TauCoeff
@@ -328,6 +330,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                             Error_Status )
       STOP
     END IF
+    CALL Subset_GetValue( Subset, n_Values = n_values, Index = index )
+    
     
     ! Set the band filename to be read
     In_Filename = 'cris'//TRIM(CrIS_BandName(b))//'_npp.TauCoeff.nc'
@@ -345,17 +349,17 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                             Error_Status )                                 
       STOP                                                                 
     END IF 
-     
-    First_Channel_Loop: DO l = 1, Subset%n_Values
+
+    First_Channel_Loop: DO l = 1, n_values
       
       n_Channel_Coeffs = 0
     
       First_Absorber_Loop: DO j = 1, n_Absorbers
     
-        IF ( In_TauCoeff%Order(j,Subset%Index(l)) == -9 ) THEN
+        IF ( In_TauCoeff%Order(j,index(l)) == -9 ) THEN
           Poly_Order = 0
         ELSE 
-          Poly_Order = In_TauCoeff%Order(j,Subset%Index(l))
+          Poly_Order = In_TauCoeff%Order(j,index(l))
         END IF
         
         n_Channel_Coeffs = n_Channel_Coeffs + (n_Predictors+1)*(Poly_Order+1)
@@ -367,6 +371,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
     END DO First_Channel_Loop
   
   END DO First_Band_Loop
+
   
   ! Allocate the output structure
   Error_Status = Allocate_ODAS( n_Predictors      , &
@@ -389,7 +394,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   Out_TauCoeff%WMO_Sensor_ID    = WMO_Sensor_ID
   
   ! Assign the Sensor Channel field
-  Out_TauCoeff%Sensor_Channel = CRIS_SUBSET_374  
+  Out_TauCoeff%Sensor_Channel = Subset_List
   
   ! --------------------------------------------
   ! Fill the band and channel independent arrays
@@ -433,17 +438,18 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                             Error_Status )
       STOP
     END IF
+    CALL Subset_GetValue( Subset, n_Values = n_values, Index = index, Number = number )
 
     ! Output the number of channels to extract
     WRITE( *,'(/10x,"There are ",i0," channels to be extracted from band ",a,":")' ) &
-             Subset%n_Values, TRIM(CrIS_BandName(b))
+             n_values, TRIM(CrIS_BandName(b))
 
     ! Read the input TauCoeff file if required
     ! ----------------------------------------
-    Non_Zero_n_Channels: IF ( Subset%n_Values > 0 ) THEN
+    Non_Zero_n_Channels: IF ( n_values > 0 ) THEN
     
       ! Output the list of channel numbers to extract
-      WRITE( *,'(10x,10i5)' ) Subset%Number
+      WRITE( *,'(10x,10i5)' ) number
 
       ! Define the filename
       In_Filename = 'cris'//TRIM(CrIS_BandName(b))//'_npp.TauCoeff.nc'
@@ -464,61 +470,61 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                                                                                                            
       ! Copy the required channel's data                                                                   
       ! --------------------------------                                                                   
-      l2 = l1 + Subset%n_Values - 1                                                                        
-      Out_TauCoeff%Order(:,l1:l2)       = In_TauCoeff%Order(:,Subset%Index)                                
-      Out_TauCoeff%Pre_Index(:,:,l1:l2) = In_TauCoeff%Pre_Index(:,:,Subset%Index)                          
-      Second_Channel_Loop: DO l = 1, Subset%n_Values                                                       
+      l2 = l1 + n_values - 1                                                                        
+      Out_TauCoeff%Order(:,l1:l2)       = In_TauCoeff%Order(:,index)                                
+      Out_TauCoeff%Pre_Index(:,:,l1:l2) = In_TauCoeff%Pre_Index(:,:,index)                          
+      Second_Channel_Loop: DO l = 1, n_values                                                       
                                                                                                            
         lcounter = lcounter + 1                                                                            
                                                                                                            
-        IF ( ALL(In_TauCoeff%Pos_Index(:,Subset%Index(l)) > 0) ) THEN                                      
+        IF ( ALL(In_TauCoeff%Pos_Index(:,index(l)) > 0) ) THEN                                      
           Out_TauCoeff%Pos_Index(1,lcounter) = Pos_Index1                                                  
           Out_TauCoeff%Pos_Index(2,lcounter) = Pos_Index1 + &                                              
-            ( In_TauCoeff%Pos_Index(2,Subset%Index(l)) - In_TauCoeff%Pos_Index(1,Subset%Index(l)) )        
+            ( In_TauCoeff%Pos_Index(2,index(l)) - In_TauCoeff%Pos_Index(1,index(l)) )        
           Out_TauCoeff%Pos_Index(3,lcounter) = Pos_Index1 + &                                              
-            ( In_TauCoeff%Pos_Index(3,Subset%Index(l)) - In_TauCoeff%Pos_Index(1,Subset%Index(l)) )        
+            ( In_TauCoeff%Pos_Index(3,index(l)) - In_TauCoeff%Pos_Index(1,index(l)) )        
         END IF                                                                                             
                                                                                                            
-        IF (  In_TauCoeff%Pos_Index(3,Subset%Index(l)) == -9 .AND. &                                       
-              ALL(In_TauCoeff%Pos_Index(1:2,Subset%Index(l)) > 0) ) THEN                                   
+        IF (  In_TauCoeff%Pos_Index(3,index(l)) == -9 .AND. &                                       
+              ALL(In_TauCoeff%Pos_Index(1:2,index(l)) > 0) ) THEN                                   
           Out_TauCoeff%Pos_Index(3,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(1,lcounter) = Pos_Index1                                                  
           Out_TauCoeff%Pos_Index(2,lcounter) = Pos_Index1 + &                                              
-            ( In_TauCoeff%Pos_Index(2,Subset%Index(l)) - In_TauCoeff%Pos_Index(1,Subset%Index(l)) )        
+            ( In_TauCoeff%Pos_Index(2,index(l)) - In_TauCoeff%Pos_Index(1,index(l)) )        
         END IF                                                                                             
                                                                                                            
-        IF ( In_TauCoeff%Pos_Index(2,Subset%Index(l)) == -9 .AND. &                                        
-             ALL(In_TauCoeff%Pos_Index(1:3:2,Subset%Index(l)) > 0) ) THEN                                  
+        IF ( In_TauCoeff%Pos_Index(2,index(l)) == -9 .AND. &                                        
+             ALL(In_TauCoeff%Pos_Index(1:3:2,index(l)) > 0) ) THEN                                  
           Out_TauCoeff%Pos_Index(2,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(1,lcounter) = Pos_Index1                                                  
           Out_TauCoeff%Pos_Index(3,lcounter) = Pos_Index1 + &                                              
-            ( In_TauCoeff%Pos_Index(3,Subset%Index(l)) - In_TauCoeff%Pos_Index(1,Subset%Index(l)) )        
+            ( In_TauCoeff%Pos_Index(3,index(l)) - In_TauCoeff%Pos_Index(1,index(l)) )        
         END IF                                                                                             
                                                                                                            
-        IF ( In_TauCoeff%Pos_Index(1,Subset%Index(l)) == -9 .AND. &                                        
-             ALL(In_TauCoeff%Pos_Index(2:3,Subset%Index(l)) > 0) ) THEN                                    
+        IF ( In_TauCoeff%Pos_Index(1,index(l)) == -9 .AND. &                                        
+             ALL(In_TauCoeff%Pos_Index(2:3,index(l)) > 0) ) THEN                                    
           Out_TauCoeff%Pos_Index(1,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(2,lcounter) = Pos_Index1                                                  
           Out_TauCoeff%Pos_Index(3,lcounter) = Pos_Index1 + &                                              
-            ( In_TauCoeff%Pos_Index(3,Subset%Index(l)) - In_TauCoeff%Pos_Index(2,Subset%Index(l)) )        
+            ( In_TauCoeff%Pos_Index(3,index(l)) - In_TauCoeff%Pos_Index(2,index(l)) )        
         END IF                                                                                             
                                                                                                            
-        IF ( In_TauCoeff%Pos_Index(1,Subset%Index(l)) > 0 .AND. &                                          
-             ALL(In_TauCoeff%Pos_Index(2:3,Subset%Index(l)) == -9) ) THEN                                  
+        IF ( In_TauCoeff%Pos_Index(1,index(l)) > 0 .AND. &                                          
+             ALL(In_TauCoeff%Pos_Index(2:3,index(l)) == -9) ) THEN                                  
           Out_TauCoeff%Pos_Index(2,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(3,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(1,lcounter) = Pos_Index1                                                  
         END IF                                                                                             
 
-        IF ( In_TauCoeff%Pos_Index(2,Subset%Index(l)) > 0 .AND. &                                          
-             ALL(In_TauCoeff%Pos_Index(1:3:2,Subset%Index(l)) == -9) ) THEN                                
+        IF ( In_TauCoeff%Pos_Index(2,index(l)) > 0 .AND. &                                          
+             ALL(In_TauCoeff%Pos_Index(1:3:2,index(l)) == -9) ) THEN                                
           Out_TauCoeff%Pos_Index(1,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(3,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(2,lcounter) = Pos_Index1                                                  
         END IF                                                                                             
                                                                                                            
-        IF ( In_TauCoeff%Pos_Index(3,Subset%Index(l)) > 0 .AND. &                                          
-             ALL(In_TauCoeff%Pos_Index(1:2,Subset%Index(l)) == -9) ) THEN                                  
+        IF ( In_TauCoeff%Pos_Index(3,index(l)) > 0 .AND. &                                          
+             ALL(In_TauCoeff%Pos_Index(1:2,index(l)) == -9) ) THEN                                  
           Out_TauCoeff%Pos_Index(1,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(2,lcounter) = -9                                                          
           Out_TauCoeff%Pos_Index(3,lcounter) = Pos_Index1                                                  
@@ -526,11 +532,11 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
 
         Pos_Index1 = MAXVAL(Out_TauCoeff%Pos_Index(:,lcounter)) + 1                                        
 
-        C1_Input_Index = MINVAL(In_TauCoeff%Pos_Index(:,Subset%Index(l)), &                                
-                                mask=In_TauCoeff%Pos_Index(:,Subset%Index(l)) .GT. 0)                      
-        IF ( In_TauCoeff%n_Channels > Subset%Index(l) ) THEN                                               
-          C2_Input_Index = MINVAL(In_TauCoeff%Pos_Index(:,Subset%Index(l)+1), &                            
-                                  mask=In_TauCoeff%Pos_Index(:,Subset%Index(l)+1) .GT. 0) - 1              
+        C1_Input_Index = MINVAL(In_TauCoeff%Pos_Index(:,index(l)), &                                
+                                mask=In_TauCoeff%Pos_Index(:,index(l)) .GT. 0)                      
+        IF ( In_TauCoeff%n_Channels > index(l) ) THEN                                               
+          C2_Input_Index = MINVAL(In_TauCoeff%Pos_Index(:,index(l)+1), &                            
+                                  mask=In_TauCoeff%Pos_Index(:,index(l)+1) .GT. 0) - 1              
         ELSE                                                                                               
           C2_Input_Index = SIZE(In_TauCoeff%C)                                                             
         END IF                                                                                             
@@ -573,7 +579,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   Error_Status = Write_ODAS_netCDF( Out_Filename , &
                                     Out_TauCoeff , &
                                     Title          = TRIM(Title) , &                                    
-                                    History        = TRIM(History) , &
+                                    History        = PROGRAM_VERSION_ID//&
+                                                     TRIM(History) , &
                                     Comment        = TRIM(Subset_Comment)//&
                                                      '; '//TRIM(Comment) , &
                                     Profile_Set_Id = TRIM(Profile_Set_Id) )

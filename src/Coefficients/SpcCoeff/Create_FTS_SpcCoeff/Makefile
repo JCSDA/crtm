@@ -22,7 +22,9 @@ SRC_FILES = Type_Kinds.f90 \
             Search_Utility.f90 \
             String_Utility.f90 \
             Linear_Interpolation.f90 \
+            Sort_Utility.f90 \
             Spectral_Units_Conversion.f90 \
+            Subset_Define.f90 \
             SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \

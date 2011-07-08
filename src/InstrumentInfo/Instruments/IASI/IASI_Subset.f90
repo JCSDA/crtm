@@ -16,14 +16,12 @@ MODULE IASI_Subset
   ! -----------------
   ! Module usage
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE Sort_Utility   , ONLY: InsertionSort
   USE IASI_Define    , ONLY: N_IASI_BANDS, N_IASI_CHANNELS, &
                              IASI_BeginChannel, &
                              IASI_EndChannel
   USE Subset_Define  , ONLY: Subset_type, &
                              Subset_Associated, &
-                             Subset_Destroy, &
-                             Subset_Create
+                             Subset_Generate
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -37,6 +35,7 @@ MODULE IASI_Subset
   PUBLIC :: IASI_SUBSET_300_COMMENT, N_IASI_SUBSET_300, IASI_SUBSET_300
   PUBLIC :: IASI_SUBSET_316_COMMENT, N_IASI_SUBSET_316, IASI_SUBSET_316
   PUBLIC :: IASI_SUBSET_616_COMMENT, N_IASI_SUBSET_616, IASI_SUBSET_616
+  PUBLIC :: N_IASI_VALID_SUBSETS, IASI_VALID_SUBSET_NAME
   ! Procedures
   PUBLIC :: IASI_Subset_Index
   PUBLIC :: IASI_SubsetVersion
@@ -116,6 +115,16 @@ MODULE IASI_Subset
     RESHAPE((/ IASI_SUBSET_300, IASI_SUBSET_316 /), SHAPE=SHAPE(IASI_SUBSET_616))
 
 
+  ! The list of supported channel subsets
+  INTEGER,      PARAMETER :: N_IASI_VALID_SUBSETS = 5
+  CHARACTER(*), PARAMETER :: IASI_VALID_SUBSET_NAME(N_IASI_VALID_SUBSETS) = &
+    (/ 'EUMETSAT 300 channel set                ', &
+       'NESDIS 316 channel set                  ', &
+       'Combined EUMETSAT/NESDIS 616 channel set', &
+       'All channels                            ', &
+       'User specified                          ' /)
+
+
 CONTAINS
 
 
@@ -192,13 +201,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IASI_Subset_Index'
     ! Local variables
     CHARACTER(ML) :: msg
-    INTEGER :: sorted_list(SIZE(Subset_List))
-    INTEGER :: n_band_channels
     INTEGER :: n_subset_channels
-    INTEGER :: l, ch1, ch2
-    INTEGER :: ch_subset, ch_extract
-    INTEGER :: n_channels
-    INTEGER :: channel
+    INTEGER :: ch1, ch2, i
 
     ! Set up
     err_stat = SUCCESS
@@ -224,56 +228,22 @@ CONTAINS
     END IF
 
 
-    ! Sort the subset list
-    sorted_list = Subset_List
-    CALL InsertionSort( sorted_list )
-    
-    
     ! Set the band limits
     ch1 = IASI_BeginChannel( Band )
     ch2 = IASI_EndChannel( Band )
-    n_band_channels = ch2 - ch1 + 1
 
 
-    ! Count the channels to subset
-    n_channels = COUNT( sorted_list >= ch1 .and. sorted_list <= ch2 )
-    IF ( n_channels == 0 ) RETURN
-
-
-    ! Allocate the IASI Subset structure
-    CALL Subset_Create( Subset, n_Channels )
+    ! Generate the subset
+    CALL Subset_Generate( Subset, (/(i,i=ch1,ch2)/), Subset_List )
     IF ( .NOT. Subset_Associated( Subset ) ) THEN
-      msg = 'Error allocating Subset structure.'
+      msg = 'Error generating Subset structure.'
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
-
-    ! Define the start points for the channel search
-    ! ...Determine the starting index in the SUBSET channel list array
-    ch_subset = MINLOC( sorted_list - ch1, &
-                        MASK = ( (sorted_list - ch1) >= 0 ), &
-                        DIM  = 1 )
-    ! ...Set the starting index in the BAND channel list array. This is always 1.
-    ch_extract = 1
-
-
-    ! Loop over the number of channels in the current band
-    Channel_Loop: DO l = 1, n_band_channels
-      channel = ch1 + l - 1                                   ! Determine the current channel number
-      IF ( channel == sorted_list( ch_subset ) ) THEN         ! Is the current channel in the subset?
-        Subset%Index(  ch_extract ) = l                         ! Save the channel index...
-        Subset%Number( ch_extract ) = channel                   ! ...and number
-        ch_extract = ch_extract + 1                             ! Increment the extract...
-        ch_subset  = ch_subset  + 1                             ! ...and subset indices
-        IF ( ch_subset > n_subset_channels ) EXIT Channel_Loop  ! Exit loop if last channel found
-      END IF
-    END DO Channel_Loop
-
   END FUNCTION IASI_Subset_Index
 
-
-
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !

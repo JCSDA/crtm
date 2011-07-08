@@ -31,7 +31,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                                    Read_ODPS_netCDF, &
                                    Write_ODPS_netCDF
   USE Subset_Define,         ONLY: Subset_type, &
-                                   Subset_Destroy
+                                   Subset_Destroy, &
+                                   Subset_GetValue
   USE CRIS_Define,           ONLY: N_CRIS_BANDS, &
                                    N_CRIS_CHANNELS, &
                                    CrIS_BandName
@@ -45,8 +46,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_CrIS_TauCoeff_Subset'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
+  '$Id$'
   
   INTEGER,      PARAMETER :: N_VALID_SETS = 3
   CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = &
@@ -95,6 +96,8 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   INTEGER :: lch, ls, js, n_Out_Coeffs, j0, np, jp, k
   INTEGER :: n_Subset_Coeffs, n_total_Pred
   INTEGER :: n_orders, n_Subset_OCoeffs, n_Out_OCoeffs, los
+  INTEGER :: n_values
+  INTEGER, ALLOCATABLE :: idx(:), nmbr(:)
   INTEGER, ALLOCATABLE :: Subset_List(:)
   TYPE(Integer_List_File_type) :: User_Subset_List
   TYPE(ODPS_type) :: In_ODPS, Out_ODPS, Out_ODPS_f
@@ -106,7 +109,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                        'coefficient data from the individual band netCDF '//&
                        'ODPS files and write them to a separate netCDF '//&
                        'datafile.', &
-                       '$Revision: 5277 $' )
+                       '$Revision$' )
 
   ! Select a subset set
   ! -------------------
@@ -254,7 +257,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
       END DO
 
       ! Create the sensor id
-      WRITE( Sensor_ID,'("CRIS",i0,"USER_npp")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("cris",i0,"_npp")' ) n_Subset_Channels
 
   END SELECT
 
@@ -288,18 +291,20 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                             Error_Status )
       STOP
     END IF
+    CALL Subset_GetValue( Subset, n_Values = n_values, Index = idx, Number = nmbr )
+
 
     ! Output the number of channels to extract
     WRITE( *,'(/10x,"There are ",i0," channels to be extracted from band ",a,":")' ) &
-             Subset%n_Values, TRIM(CrIS_BandName(l))
+             n_values, TRIM(CrIS_BandName(l))
 
 
     ! Read the input ODPS file if required
     ! ----------------------------------------
-    Non_Zero_n_Channels: IF ( Subset%n_Values > 0 ) THEN
+    Non_Zero_n_Channels: IF ( n_values > 0 ) THEN
 
       ! Output the list of channel numbers to extract
-      WRITE( *,'(10x,10i5)' ) Subset%Number
+      WRITE( *,'(10x,10i5)' ) nmbr
 
       ! Define the filename
       In_Filename = 'cris'//TRIM(CrIS_BandName(l))//'_npp.TauCoeff.nc'
@@ -655,17 +660,17 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
 
       ! Copy the required channel's data for particular components
       ! --------------------------------
-      l2 = l1 + Subset%n_Values - 1
-      Out_ODPS%Sensor_Channel(l1:l2) = In_ODPS%Sensor_Channel(Subset%Index)
+      l2 = l1 + n_values - 1
+      Out_ODPS%Sensor_Channel(l1:l2) = In_ODPS%Sensor_Channel(idx)
 
-      DO lch = 1, Subset%n_Values 
+      DO lch = 1, n_values 
         ls = ls + 1
         DO j = 1, Out_ODPS%n_Components
         
-         np = In_ODPS%n_Predictors(j,Subset%Index(lch))
+         np = In_ODPS%n_Predictors(j,idx(lch))
          Out_ODPS%n_Predictors(j, ls) = np 
         
-         j0 = In_ODPS%Pos_Index(j,Subset%Index(lch))
+         j0 = In_ODPS%Pos_Index(j,idx(lch))
 
          js = n_Out_Coeffs
          IF ( np > 0 ) THEN
@@ -689,15 +694,15 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
       END DO  
       
       IF ( OPTRAN ) THEN
-        Out_ODPS%OSignificance(l1:l2) = In_ODPS%OSignificance(Subset%Index)
-        Out_ODPS%Order(l1:l2)         = In_ODPS%Order(Subset%Index)
-        Out_ODPS%OP_Index(:,l1:l2)    = In_ODPS%OP_Index(:, Subset%Index)
+        Out_ODPS%OSignificance(l1:l2) = In_ODPS%OSignificance(idx)
+        Out_ODPS%Order(l1:l2)         = In_ODPS%Order(idx)
+        Out_ODPS%OP_Index(:,l1:l2)    = In_ODPS%OP_Index(:, idx)
         
-        DO lch = 1, Subset%n_Values
+        DO lch = 1, n_values
           los = los + 1 
-          np       = In_ODPS%OP_Index(0, Subset%Index(lch))    
-          n_orders = In_ODPS%Order(Subset%Index(lch))          
-          j0 = In_ODPS%OPos_Index(Subset%Index(lch))
+          np       = In_ODPS%OP_Index(0, idx(lch))    
+          n_orders = In_ODPS%Order(idx(lch))          
+          j0 = In_ODPS%OPos_Index(idx(lch))
           
           Out_ODPS%OPos_Index(los) = n_Out_OCoeffs + 1 
 
@@ -820,7 +825,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                                         Out_ODPS_f    , &
                                         Title         = 'Optical depth coefficients for '//&
                                                         TRIM(Sensor_ID), &
-                                        History       = PROGRAM_RCS_ID//'; '//&
+                                        History       = PROGRAM_VERSION_ID//'; '//&
                                                         TRIM(History), &
                                         Comment       = 'Data extracted from the individual '//&
                                                         'CRIS band ODPS datafiles.; '//&

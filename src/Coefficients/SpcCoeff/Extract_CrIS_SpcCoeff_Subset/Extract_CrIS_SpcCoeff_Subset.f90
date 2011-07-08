@@ -2,19 +2,19 @@
 ! Extract_CrIS_SpcCoeff_Subset
 !
 ! Program to extract CrIS channel subsets from the individual
-! CrIS band netCDF format SpcCoeff data files.
+! CrIS band binary (i.e. sequential unformatted) SpcCoeff data files.
 !
 !
 ! FILES ACCESSED:
-!       Input: - netCDF format individual CrIS band SpcCoeff datafiles.
+!       Input: - binary format individual CrIS band SpcCoeff datafiles.
 !              - For user specified channel subsetting, a list file containing
 !                the required CrIS channels to subset.
 !
-!       Output: netCDF format CrIS channel SUBSET SpcCoeff datafile.
+!       Output: binary format CrIS channel SUBSET SpcCoeff datafile.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, 25-Nov-2002
+!       Written by:     Paul van Delst, 02-Jun-2011
 !                       paul.vandelst@noaa.gov
 !
 
