@@ -18,7 +18,7 @@ MODULE AerosolCoeff_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds               , ONLY: Long, Double
+  USE Type_Kinds               , ONLY: fp, Long, Double
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers    , ONLY: OPERATOR(.EqualTo.)
   USE Spectral_Units_Conversion, ONLY: micron_to_inverse_cm
@@ -572,7 +572,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE AerosolCoeff_Frequency( AerosolCoeff )
     TYPE(AerosolCoeff_type), INTENT(IN OUT) :: AerosolCoeff
     IF ( .NOT. AerosolCoeff_Associated( AerosolCoeff ) ) RETURN
-    AerosolCoeff%Frequency = micron_to_inverse_cm( AerosolCoeff%Wavelength )
+    AerosolCoeff%Frequency = micron_to_inverse_cm( REAL(AerosolCoeff%Wavelength,fp) )
   END SUBROUTINE AerosolCoeff_Frequency
   
   
