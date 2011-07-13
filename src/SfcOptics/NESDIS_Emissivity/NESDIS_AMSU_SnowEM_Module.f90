@@ -1,125 +1,46 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_AMSU_SnowEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave snow emissivity model
+! NESDIS_AMSU_SnowEM_Module
 !
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+! Module containing the AMSU microwave snow emissivity model
 !
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+! References:
+!       Yan,B., F.Weng, and K.Okamoto, 2004, A microwave snow emissivity model,
+!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
+!         24-27 February, 2004, Rome, Italy.
 !
-! CATEGORY:
-!       Surface : MW Surface Snow Emissivity from AMSU
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!
-!       USE NESDIS_AMSU_SnowEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types
-!
-!       NESDIS_LandEM_Module:Module containing the microwave land emissivity model
-!
-!       NESDIS_SnowEM_Parameters: Module containing the microwave snow emissivity spectra
-!
-! CONTAINS:
-!
-! PUBLIC SUNPROGRAMS:
-!
-!       NESDIS_AMSU_SNOWEM        : Subroutine to calculate the microwave snow emissivity from AMSU
-!
-!
-! PRIVATE SUBPROGRAMS:
-!
-!       AMSU_ABTs          : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB and Ts
-!
-!       AMSU_ATs           : Subroutine to calculate the microwave snow emissivity from AMSU-A TB and Ts
-!
-!       AMSU_AB            : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB
-!
-!       AMSU_amsua         : Subroutine to calculate the microwave snow emissivity from AMSU-A TB
-!
-!       AMSU_BTs           : Subroutine to calculate the microwave snow emissivity from AMSU-B TB and Ts
-!
-!       AMSU_amsub         : Subroutine to calculate the microwave snow emissivity from AMSU-B TB
-!
-!       AMSU_ALandEM_Snow  : Subroutine to calculate the microwave snow emissivity from Ts and Snow Depth
-!
-!       em_initialization  : Subroutine to initialization snow emissivity
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (03-June-2005)
+!       Written by:     Banghua Yan, 03-Jun-2005, banghua.yan@noaa.gov
+!                       Fuzhong Weng, fuzhong.weng@noaa.gov
 !
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_AMSU_SnowEM_Module
 
 
-
-
-
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
+  USE Type_Kinds, ONLY: fp, Double
   USE NESDIS_LandEM_Module
-
   USE NESDIS_SnowEM_Parameters
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
-
   PRIVATE
+  PUBLIC :: NESDIS_AMSU_SNOWEM
 
 
-
-  PUBLIC  :: NESDIS_AMSU_SNOWEM
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS
@@ -160,7 +81,7 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -168,20 +89,20 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         User_Angle               The local angle value in degree user defines.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !
 !         Tba                      BRIGHTNESS TEMPERATURES AT FOUR AMSU-A WINDOW CHANNELS
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION   4*1 SCALAR
 !
 !                        WHICH ARE
@@ -192,7 +113,7 @@ CONTAINS
 !
 !         Tbb                      BRIGHTNESS TEMPERATURES AT TWO AMSU-B WINDOW CHANNELS
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION   2*1 SCALAR
 !
 !                         WHICH ARE
@@ -203,13 +124,13 @@ CONTAINS
 !
 !         Ts = Land_Temperature:        The land surface temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
 !         Snow_Depth:              The snow depth.
 !                                  UNITS:      mm
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 ! **** IMPORTANT NOTES ****
@@ -225,14 +146,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -326,10 +247,6 @@ CONTAINS
 !
 !------------------------------------------------------------------------------------------------------------
 
-
-
-
-
 subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  ! INPUT
                                User_Angle,                                  &  ! INPUT
                                frequency,                                   &  ! INPUT
@@ -340,38 +257,31 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
                                Emissivity_H,                                &  ! OUPUT
                                Emissivity_V)                                   ! OUTPUT
 
+  integer,PARAMETER ::  AMSU_ABTs_ALG    = 1
 
-  use type_kinds, only: ip_kind, fp_kind
+  integer,PARAMETER ::  AMSU_ATs_ALG     = 2
 
-  implicit none
+  integer,PARAMETER ::  AMSU_AB_ALG      = 3
 
+  integer,PARAMETER ::  AMSU_amsua_ALG   = 4
 
+  integer,PARAMETER ::  AMSU_BTs_ALG     = 5
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_ABTs_ALG    = 1
+  integer,PARAMETER ::  AMSU_amsub_ALG   = 6
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_ATs_ALG     = 2
+  integer,PARAMETER ::  AMSU_ALandEM_Snow_ALG  = 7
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_AB_ALG      = 3
+  integer, parameter  :: nch = 10, nwcha = 4, nwchb = 2, nwch = 5,nalg = 7
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_amsua_ALG   = 4
+  integer :: snow_type,input_type,i,np,k
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_BTs_ALG     = 5
+  real(fp)    :: Satellite_Angle,User_Angle,frequency,Ts,Snow_Depth
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_amsub_ALG   = 6
+  real(fp)    :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
 
-  INTEGER(ip_kind),PARAMETER ::  AMSU_ALandEM_Snow_ALG  = 7
+  real(fp)    :: tb(nwch),tba(nwcha),tbb(nwchb)
 
-  integer(ip_kind), parameter  :: nch = 10, nwcha = 4, nwchb = 2, nwch = 5,nalg = 7
-
-  integer(ip_kind) :: snow_type,input_type,i,np,k
-
-  real(fp_kind)    :: Satellite_Angle,User_Angle,frequency,Ts,Snow_Depth
-
-  real(fp_kind)    :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
-
-  real(fp_kind)    :: tb(nwch),tba(nwcha),tbb(nwchb)
-
-  real(fp_kind), intent(out) :: Emissivity_H,Emissivity_V
+  real(fp), intent(out) :: Emissivity_H,Emissivity_V
 
   logical :: INDATA(nalg)
 
@@ -400,7 +310,7 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
 ! Check available data
 
-  if((Ts <= 150.0_fp_kind) .or. (Ts >= 290.0_fp_kind) ) then
+  if((Ts <= 150.0_fp) .or. (Ts >= 290.0_fp) ) then
 
      INDATA(1:2) = .false.;   INDATA(5)  = .false.;  INDATA(7) = .false.
 
@@ -408,7 +318,7 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   do i=1,nwcha
 
-     if((tba(i) <= 100.0_fp_kind) .or. (tba(i) >= 290.0_fp_kind) ) then
+     if((tba(i) <= 100.0_fp) .or. (tba(i) >= 290.0_fp) ) then
 
         INDATA(1:4)   = .false.
 
@@ -420,7 +330,7 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   do i=1,nwchb
 
-     if((tbb(i) <= 100.0_fp_kind) .or. (tbb(i) >= 290.0_fp_kind) ) then
+     if((tbb(i) <= 100.0_fp) .or. (tbb(i) >= 290.0_fp) ) then
 
         INDATA(1)  = .false.;  INDATA(3) = .false.;  INDATA(5:6)  = .false.
 
@@ -430,9 +340,9 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   end do
 
-  if((Snow_Depth < 0.0_fp_kind) .or. (Snow_Depth >= 3000.0_fp_kind)) INDATA(7) = .false.
+  if((Snow_Depth < 0.0_fp) .or. (Snow_Depth >= 3000.0_fp)) INDATA(7) = .false.
 
-  if((frequency >= 80._fp_kind) .and. (INDATA(5))) then
+  if((frequency >= 80._fp) .and. (INDATA(5))) then
 
      INDATA(2:3) = .false.
 
@@ -488,15 +398,15 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,2.0_fp,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,2.0_fp,esh2,esv2)
 
   desh = esh1 - esh2
 
   desv = esv1 - esv2
 
-  dem = ( desh + desv ) * 0.5_fp_kind
+  dem = ( desh + desv ) * 0.5_fp
 ! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
@@ -505,9 +415,9 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   if (Emissivity_V > one)         Emissivity_V = one
 
-  if (Emissivity_H < 0.3_fp_kind) Emissivity_H = 0.3_fp_kind
+  if (Emissivity_H < 0.3_fp) Emissivity_H = 0.3_fp
 
-  if (Emissivity_V < 0.3_fp_kind) Emissivity_V = 0.3_fp_kind
+  if (Emissivity_V < 0.3_fp) Emissivity_V = 0.3_fp
 
 
   return
@@ -560,15 +470,11 @@ subroutine em_initialization(frequency,em_vector)
 !
 !----------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  USE NESDIS_SnowEM_Parameters
-  implicit none
-
   integer ::  nch,ncand
   Parameter(nch = 10,ncand=16)
-  real(fp_kind)    :: frequency,em_vector(*),freq(nch)
-  real(fp_kind)    :: em(ncand,nch)
-  real(fp_kind)    :: kratio, bconst,emissivity
+  real(fp)    :: frequency,em_vector(*),freq(nch)
+  real(fp)    :: em(ncand,nch)
+  real(fp)    :: kratio, bconst,emissivity
   integer :: ich
 
 ! Sixteen candidate snow emissivity spectra
@@ -615,7 +521,7 @@ subroutine em_initialization(frequency,em_vector)
      bconst = em(4,1) - kratio*freq(1)
      emissivity =  kratio*frequency + bconst
      if(emissivity >  one)         emissivity = one
-     if(emissivity <= 0.8_fp_kind) emissivity = 0.8_fp_kind
+     if(emissivity <= 0.8_fp) emissivity = 0.8_fp
   end if
 
 
@@ -676,15 +582,12 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
 !
 !----------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  implicit none
-
   integer,parameter:: ncand = 16,nch =10
   integer:: ich,ichmin,ichmax,i,k,snow_type
-  real(fp_kind)   :: dem,demmin0
-  real(fp_kind)   :: em(ncand,nch)
-  real(fp_kind)   :: frequency,freq(nch),emissivity,discriminator(*),emis(nch)
-  real(fp_kind)   :: cor_factor,adjust_check,kratio, bconst
+  real(fp)   :: dem,demmin0
+  real(fp)   :: em(ncand,nch)
+  real(fp)   :: frequency,freq(nch),emissivity,discriminator(*),emis(nch)
+  real(fp)   :: cor_factor,adjust_check,kratio, bconst
 
 ! Sixteen candidate snow emissivity spectra
 
@@ -713,22 +616,22 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
 ! Adjust unreasonable discriminator
   if (discriminator(4) > discriminator(2))    &
        discriminator(4) = discriminator(2) +(discriminator(5) - discriminator(2))*  &
-       (150.0_fp_kind - 89.0_fp_kind)/(150.0_fp_kind - 31.4_fp_kind)
-  if ( (discriminator(3) /= -999.9_fp_kind) .and.       &
-       ( ((discriminator(3)-0.01_fp_kind) > discriminator(2)) .or.     &
-       ((discriminator(3)-0.01_fp_kind) < discriminator(4)))    )    &
+       (150.0_fp - 89.0_fp)/(150.0_fp - 31.4_fp)
+  if ( (discriminator(3) /= -999.9_fp) .and.       &
+       ( ((discriminator(3)-0.01_fp) > discriminator(2)) .or.     &
+       ((discriminator(3)-0.01_fp) < discriminator(4)))    )    &
        discriminator(3) = discriminator(2) +  &
-       (discriminator(4) - discriminator(2))*(89.0_fp_kind - 50.3_fp_kind) &
-       / (89.0_fp_kind - 31.4_fp_kind)
+       (discriminator(4) - discriminator(2))*(89.0_fp - 50.3_fp) &
+       / (89.0_fp - 31.4_fp)
 
 ! Find a snow emissivity spectrum
   if(snow_type .eq. -999) then
-     demmin0 = 10.0_fp_kind
+     demmin0 = 10.0_fp
      do k = 1, ncand
         dem = zero
         ichmin = 1
         ichmax = 3
-        if(discriminator(1) == -999.9_fp_kind) then
+        if(discriminator(1) == -999.9_fp) then
            ichmin = 2
            ichmax = 2
         end if
@@ -750,38 +653,38 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
   do ich = 1, nch
      emis(ich) = em(snow_type,ich) + cor_factor
      if(emis(ich) .gt. one)         emis(ich) = one
-     if(emis(ich) .lt. 0.3_fp_kind) emis(ich) = 0.3_fp_kind
+     if(emis(ich) .lt. 0.3_fp) emis(ich) = 0.3_fp
   end do
 
 ! Emisivity data quality control
   adjust_check = zero
   do ich = 5, 9
      if (ich .le. 7) then
-        if (discriminator(ich - 4) .ne. -999.9_fp_kind) &
+        if (discriminator(ich - 4) .ne. -999.9_fp) &
              adjust_check = adjust_check + abs(emis(ich) - discriminator(ich - 4))
      else
-        if (discriminator(ich - 4) .ne. -999.9_fp_kind)  &
+        if (discriminator(ich - 4) .ne. -999.9_fp)  &
              adjust_check = adjust_check + abs(emis(ich+1) - discriminator(ich - 4))
      end if
   end do
 
-  if (adjust_check >= 0.04_fp_kind) then
-     if (discriminator(1) /= -999.9_fp_kind) then
+  if (adjust_check >= 0.04_fp) then
+     if (discriminator(1) /= -999.9_fp) then
         if (discriminator(1) < emis(4)) then
            emis(5) = emis(4) + &
-                (31.4_fp_kind - 23.8_fp_kind) * &
-                (discriminator(2) - emis(4))/(31.4_fp_kind - 18.7_fp_kind)
+                (31.4_fp - 23.8_fp) * &
+                (discriminator(2) - emis(4))/(31.4_fp - 18.7_fp)
         else
            emis(5) = discriminator(1)
         end if
      end if
      emis(6) = discriminator(2)
-     if (discriminator(3) /= -999.9_fp_kind) then
+     if (discriminator(3) /= -999.9_fp) then
         emis(7) = discriminator(3)
      else
 !       In case of missing the emissivity discriminator at 50.3 GHz
-        emis(7) = emis(6) + (89.0_fp_kind - 50.3_fp_kind) * &
-             (discriminator(4) - emis(6))/(89.0_fp_kind - 31.4_fp_kind)
+        emis(7) = emis(6) + (89.0_fp - 50.3_fp) * &
+             (discriminator(4) - emis(6))/(89.0_fp - 31.4_fp)
      end if
      emis(8) = emis(7)
      emis(9) = discriminator(4)
@@ -805,7 +708,7 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      bconst = emis(1) - kratio*freq(1)
      emissivity =  kratio*frequency + bconst
      if(emissivity > one)          emissivity = one
-     if(emissivity <= 0.8_fp_kind) emissivity = 0.8_fp_kind
+     if(emissivity <= 0.8_fp) emissivity = 0.8_fp
   end if
 
 ! Assume emissivity = constant at frequencies >= 150 GHz
@@ -865,20 +768,17 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
 !
 !----------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  implicit none
-
   integer,parameter:: ncand = 16,nch =10,nthresh=38
   integer,parameter:: nind=6,ncoe=8,nLIcoe=6,nHIcoe=12
   integer:: i,j,k,num,npass,snow_type,md0,md1,nmodel(ncand-1)
-  real(fp_kind)   :: frequency,tb150,LI,HI,DS1,DS2,DS3
-  real(fp_kind)   :: em(ncand,nch), em_vector(*)
-  real(fp_kind)   :: tb(*),freq(nch),DTB(nind-1),DI(nind-1),       &
+  real(fp)   :: frequency,tb150,LI,HI,DS1,DS2,DS3
+  real(fp)   :: em(ncand,nch), em_vector(*)
+  real(fp)   :: tb(*),freq(nch),DTB(nind-1),DI(nind-1),       &
        DI_coe(nind-1,0:ncoe-1),threshold(nthresh,nind),       &
        index_in(nind),threshold0(nind)
-  real(fp_kind)   :: LI_coe(0:nLIcoe-1),HI_coe(0:nHIcoe-1)
-  real(fp_kind)   :: ts,emissivity
-  real(fp_kind)   :: discriminator(5)
+  real(fp)   :: LI_coe(0:nLIcoe-1),HI_coe(0:nHIcoe-1)
+  real(fp)   :: ts,emissivity
+  real(fp)   :: discriminator(5)
   logical:: pick_status,tindex(nind)
   save      threshold,DI_coe,LI_coe, HI_coe,nmodel
 
@@ -886,156 +786,156 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
 
 ! Fitting coefficients for five discriminators
   data (DI_coe(1,k),k=0,ncoe-1)/ &
-       3.285557e-002_fp_kind,  2.677179e-005_fp_kind,  &
-       4.553101e-003_fp_kind,  5.639352e-005_fp_kind,  &
-       -1.825188e-004_fp_kind,  1.636145e-004_fp_kind,  &
-       1.680881e-005_fp_kind, -1.708405e-004_fp_kind/
+       3.285557e-002_fp,  2.677179e-005_fp,  &
+       4.553101e-003_fp,  5.639352e-005_fp,  &
+       -1.825188e-004_fp,  1.636145e-004_fp,  &
+       1.680881e-005_fp, -1.708405e-004_fp/
   data (DI_coe(2,k),k=0,ncoe-1)/ &
-       -4.275539e-002_fp_kind, -2.541453e-005_fp_kind,  &
-       4.154796e-004_fp_kind,  1.703443e-004_fp_kind,  &
-       4.350142e-003_fp_kind,  2.452873e-004_fp_kind,  &
-       -4.748506e-003_fp_kind,  2.293836e-004_fp_kind/
+       -4.275539e-002_fp, -2.541453e-005_fp,  &
+       4.154796e-004_fp,  1.703443e-004_fp,  &
+       4.350142e-003_fp,  2.452873e-004_fp,  &
+       -4.748506e-003_fp,  2.293836e-004_fp/
   data (DI_coe(3,k),k=0,ncoe-1)/ &
-       -1.870173e-001_fp_kind, -1.061678e-004_fp_kind,  &
-      2.364055e-004_fp_kind, -2.834876e-005_fp_kind,  &
-      4.899651e-003_fp_kind, -3.418847e-004_fp_kind,  &
-      -2.312224e-004_fp_kind,  9.498600e-004_fp_kind/
+       -1.870173e-001_fp, -1.061678e-004_fp,  &
+      2.364055e-004_fp, -2.834876e-005_fp,  &
+      4.899651e-003_fp, -3.418847e-004_fp,  &
+      -2.312224e-004_fp,  9.498600e-004_fp/
   data (DI_coe(4,k),k=0,ncoe-1)/ &
-       -2.076519e-001_fp_kind,  8.475901e-004_fp_kind,  &
-       -2.072679e-003_fp_kind, -2.064717e-003_fp_kind,  &
-       2.600452e-003_fp_kind,  2.503923e-003_fp_kind,  &
-       5.179711e-004_fp_kind,  4.667157e-005_fp_kind/
+       -2.076519e-001_fp,  8.475901e-004_fp,  &
+       -2.072679e-003_fp, -2.064717e-003_fp,  &
+       2.600452e-003_fp,  2.503923e-003_fp,  &
+       5.179711e-004_fp,  4.667157e-005_fp/
   data (DI_coe(5,k),k=0,ncoe-1)/ &
-       -1.442609e-001_fp_kind, -8.075003e-005_fp_kind,  &
-       -1.790933e-004_fp_kind, -1.986887e-004_fp_kind,  &
-       5.495115e-004_fp_kind, -5.871732e-004_fp_kind,  &
-       4.517280e-003_fp_kind,  7.204695e-004_fp_kind/
+       -1.442609e-001_fp, -8.075003e-005_fp,  &
+       -1.790933e-004_fp, -1.986887e-004_fp,  &
+       5.495115e-004_fp, -5.871732e-004_fp,  &
+       4.517280e-003_fp,  7.204695e-004_fp/
 
 ! Fitting coefficients for emissivity index at 31.4 GHz
   data  LI_coe/ &
-       7.963632e-001_fp_kind,  7.215580e-003_fp_kind,  &
-       -2.015921e-005_fp_kind, -1.508286e-003_fp_kind,  &
-       1.731405e-005_fp_kind, -4.105358e-003_fp_kind/
+       7.963632e-001_fp,  7.215580e-003_fp,  &
+       -2.015921e-005_fp, -1.508286e-003_fp,  &
+       1.731405e-005_fp, -4.105358e-003_fp/
 
 ! Fitting coefficients for emissivity index at 150 GHz
   data  HI_coe/ &
-       1.012160e+000_fp_kind,  6.100397e-003_fp_kind, &
-       -1.774347e-005_fp_kind, -4.028211e-003_fp_kind, &
-       1.224470e-005_fp_kind,  2.345612e-003_fp_kind, &
-       -5.376814e-006_fp_kind, -2.795332e-003_fp_kind, &
-       8.072756e-006_fp_kind,  3.529615e-003_fp_kind, &
-       1.955293e-006_fp_kind, -4.942230e-003_fp_kind/
+       1.012160e+000_fp,  6.100397e-003_fp, &
+       -1.774347e-005_fp, -4.028211e-003_fp, &
+       1.224470e-005_fp,  2.345612e-003_fp, &
+       -5.376814e-006_fp, -2.795332e-003_fp, &
+       8.072756e-006_fp,  3.529615e-003_fp, &
+       1.955293e-006_fp, -4.942230e-003_fp/
 
 ! Six thresholds for sixteen candidate snow types
 ! Note: some snow type contains several possible
 !      selections for six thresholds
 
 !1 Wet Snow
-  data (threshold(1,k),k=1,6)/0.88_fp_kind,0.86_fp_kind,-999.9_fp_kind,&
-       0.01_fp_kind,0.01_fp_kind,200._fp_kind/
-  data (threshold(2,k),k=1,6)/0.88_fp_kind,0.85_fp_kind,-999.9_fp_kind,&
-       0.06_fp_kind,0.10_fp_kind,200._fp_kind/
-  data (threshold(3,k),k=1,6)/0.88_fp_kind,0.83_fp_kind,-0.02_fp_kind,&
-       0.12_fp_kind,0.16_fp_kind,204._fp_kind/
-  data (threshold(4,k),k=1,6)/0.90_fp_kind,0.89_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(5,k),k=1,6)/0.92_fp_kind,0.85_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(1,k),k=1,6)/0.88_fp,0.86_fp,-999.9_fp,&
+       0.01_fp,0.01_fp,200._fp/
+  data (threshold(2,k),k=1,6)/0.88_fp,0.85_fp,-999.9_fp,&
+       0.06_fp,0.10_fp,200._fp/
+  data (threshold(3,k),k=1,6)/0.88_fp,0.83_fp,-0.02_fp,&
+       0.12_fp,0.16_fp,204._fp/
+  data (threshold(4,k),k=1,6)/0.90_fp,0.89_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
+  data (threshold(5,k),k=1,6)/0.92_fp,0.85_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !2 Grass_after_Snow
-  data (threshold(6,k),k=1,6)/0.84_fp_kind,0.83_fp_kind,-999.9_fp_kind,&
-       0.08_fp_kind,0.10_fp_kind,195._fp_kind/
-  data (threshold(7,k),k=1,6)/0.85_fp_kind,0.85_fp_kind,-999.9_fp_kind,&
-       0.10_fp_kind,-999.9_fp_kind,190._fp_kind/
-  data (threshold(8,k),k=1,6)/0.86_fp_kind,0.81_fp_kind,-999.9_fp_kind,&
-       0.12_fp_kind,-999.9_fp_kind,200._fp_kind/
-  data (threshold(9,k),k=1,6)/0.86_fp_kind,0.81_fp_kind,0.0_fp_kind,&
-       0.12_fp_kind,-999.9_fp_kind,189._fp_kind/
-  data (threshold(10,k),k=1,6)/0.90_fp_kind,0.81_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,195._fp_kind/
+  data (threshold(6,k),k=1,6)/0.84_fp,0.83_fp,-999.9_fp,&
+       0.08_fp,0.10_fp,195._fp/
+  data (threshold(7,k),k=1,6)/0.85_fp,0.85_fp,-999.9_fp,&
+       0.10_fp,-999.9_fp,190._fp/
+  data (threshold(8,k),k=1,6)/0.86_fp,0.81_fp,-999.9_fp,&
+       0.12_fp,-999.9_fp,200._fp/
+  data (threshold(9,k),k=1,6)/0.86_fp,0.81_fp,0.0_fp,&
+       0.12_fp,-999.9_fp,189._fp/
+  data (threshold(10,k),k=1,6)/0.90_fp,0.81_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,195._fp/
 
 !3 RS_Snow (A)
-  data (threshold(11,k),k=1,6)/0.80_fp_kind,0.76_fp_kind,-999.9_fp_kind,&
-       0.05_fp_kind,-999.9_fp_kind,185._fp_kind/
-  data (threshold(12,k),k=1,6)/0.82_fp_kind,0.78_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,0.25_fp_kind,180._fp_kind/
-  data (threshold(13,k),k=1,6)/0.90_fp_kind,0.76_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,180._fp_kind/
+  data (threshold(11,k),k=1,6)/0.80_fp,0.76_fp,-999.9_fp,&
+       0.05_fp,-999.9_fp,185._fp/
+  data (threshold(12,k),k=1,6)/0.82_fp,0.78_fp,-999.9_fp,&
+       -999.9_fp,0.25_fp,180._fp/
+  data (threshold(13,k),k=1,6)/0.90_fp,0.76_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,180._fp/
 
 !4 Powder  Snow
-  data (threshold(14,k),k=1,6)/0.89_fp_kind,0.73_fp_kind,-999.9_fp_kind,&
-       0.20_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(15,k),k=1,6)/0.89_fp_kind,0.75_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(16,k),k=1,6)/0.93_fp_kind,0.72_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(14,k),k=1,6)/0.89_fp,0.73_fp,-999.9_fp,&
+       0.20_fp,-999.9_fp,-999.9_fp/
+  data (threshold(15,k),k=1,6)/0.89_fp,0.75_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
+  data (threshold(16,k),k=1,6)/0.93_fp,0.72_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !5 RS_Snow (B)
-  data (threshold(17,k),k=1,6)/0.82_fp_kind,0.70_fp_kind,-999.9_fp_kind,&
-       0.20_fp_kind,-999.9_fp_kind,160._fp_kind/
-  data (threshold(18,k),k=1,6)/0.83_fp_kind,0.70_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,160._fp_kind/
+  data (threshold(17,k),k=1,6)/0.82_fp,0.70_fp,-999.9_fp,&
+       0.20_fp,-999.9_fp,160._fp/
+  data (threshold(18,k),k=1,6)/0.83_fp,0.70_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,160._fp/
 
 !6 RS_Snow (C)
-  data (threshold(19,k),k=1,6)/0.75_fp_kind,0.76_fp_kind,-999.9_fp_kind,&
-       0.08_fp_kind,-999.9_fp_kind,172._fp_kind/
-  data (threshold(20,k),k=1,6)/0.77_fp_kind,0.72_fp_kind,-999.9_fp_kind,&
-       0.12_fp_kind,0.15_fp_kind,175._fp_kind/
-  data (threshold(21,k),k=1,6)/0.78_fp_kind,0.74_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,0.20_fp_kind,172._fp_kind/
-  data (threshold(22,k),k=1,6)/0.80_fp_kind,0.77_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,170._fp_kind/
-  data (threshold(23,k),k=1,6)/0.82_fp_kind,-999.9_fp_kind,-999.9_fp_kind,&
-       0.15_fp_kind,0.22_fp_kind,170._fp_kind/
-  data (threshold(24,k),k=1,6)/0.82_fp_kind,0.73_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,170._fp_kind/
+  data (threshold(19,k),k=1,6)/0.75_fp,0.76_fp,-999.9_fp,&
+       0.08_fp,-999.9_fp,172._fp/
+  data (threshold(20,k),k=1,6)/0.77_fp,0.72_fp,-999.9_fp,&
+       0.12_fp,0.15_fp,175._fp/
+  data (threshold(21,k),k=1,6)/0.78_fp,0.74_fp,-999.9_fp,&
+       -999.9_fp,0.20_fp,172._fp/
+  data (threshold(22,k),k=1,6)/0.80_fp,0.77_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,170._fp/
+  data (threshold(23,k),k=1,6)/0.82_fp,-999.9_fp,-999.9_fp,&
+       0.15_fp,0.22_fp,170._fp/
+  data (threshold(24,k),k=1,6)/0.82_fp,0.73_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,170._fp/
 
 !7 RS_Snow (D)
-  data (threshold(25,k),k=1,6)/0.75_fp_kind,0.70_fp_kind,-999.9_fp_kind,&
-       0.15_fp_kind,0.25_fp_kind,167._fp_kind/
-  data (threshold(26,k),k=1,6)/0.77_fp_kind,0.76_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(27,k),k=1,6)/0.80_fp_kind,0.72_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(28,k),k=1,6)/0.77_fp_kind,0.73_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(25,k),k=1,6)/0.75_fp,0.70_fp,-999.9_fp,&
+       0.15_fp,0.25_fp,167._fp/
+  data (threshold(26,k),k=1,6)/0.77_fp,0.76_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
+  data (threshold(27,k),k=1,6)/0.80_fp,0.72_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
+  data (threshold(28,k),k=1,6)/0.77_fp,0.73_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
-  data (threshold(29,k),k=1,6)/0.81_fp_kind,0.71_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
-  data (threshold(30,k),k=1,6)/0.82_fp_kind,0.69_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(29,k),k=1,6)/0.81_fp,0.71_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
+  data (threshold(30,k),k=1,6)/0.82_fp,0.69_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !8 Thin Crust Snow
-  data (threshold(31,k),k=1,6)/0.88_fp_kind,0.58_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(31,k),k=1,6)/0.88_fp,0.58_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !9 RS_Snow (E)
-  data (threshold(32,k),k=1,6)/0.73_fp_kind,0.67_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(32,k),k=1,6)/0.73_fp,0.67_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !10 Bottom Crust Snow (A)
-  data (threshold(33,k),k=1,6)/0.83_fp_kind,0.66_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(33,k),k=1,6)/0.83_fp,0.66_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !11 Shallow Snow
-  data (threshold(34,k),k=1,6)/0.82_fp_kind,0.60_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(34,k),k=1,6)/0.82_fp,0.60_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !12 Deep Snow
-  data (threshold(35,k),k=1,6)/0.77_fp_kind,0.60_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(35,k),k=1,6)/0.77_fp,0.60_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !13 Crust Snow
-  data (threshold(36,k),k=1,6)/0.77_fp_kind,0.7_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(36,k),k=1,6)/0.77_fp,0.7_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !14 Medium Snow
-  data (threshold(37,k),k=1,6)/-999.9_fp_kind,0.55_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(37,k),k=1,6)/-999.9_fp,0.55_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !15 Bottom Crust Snow(B)
-  data (threshold(38,k),k=1,6)/0.74_fp_kind,-999.9_fp_kind,-999.9_fp_kind,&
-       -999.9_fp_kind,-999.9_fp_kind,-999.9_fp_kind/
+  data (threshold(38,k),k=1,6)/0.74_fp,-999.9_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/
 
 !16 Thick Crust Snow
 ! lowest priority: No constraints
@@ -1125,11 +1025,11 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
         CALL six_indices(nind,index_in,threshold0,tindex)
 
 ! Corrections
-        if((i == 5)  .and. (index_in(2) >  0.75_fp_kind)) tindex(2) = .false.
-        if((i == 5)  .and. (index_in(4) >  0.20_fp_kind)                        &
-             .and. (index_in(1) >  0.88_fp_kind)) tindex(1) = .false.
-        if((i == 10) .and. (index_in(1) <= 0.83_fp_kind)) tindex(1) = .true.
-        if((i == 13) .and. (index_in(2) <  0.52_fp_kind)) tindex(2) = .true.
+        if((i == 5)  .and. (index_in(2) >  0.75_fp)) tindex(2) = .false.
+        if((i == 5)  .and. (index_in(4) >  0.20_fp)                        &
+             .and. (index_in(1) >  0.88_fp)) tindex(1) = .false.
+        if((i == 10) .and. (index_in(1) <= 0.83_fp)) tindex(1) = .true.
+        if((i == 13) .and. (index_in(2) <  0.52_fp)) tindex(2) = .true.
         do k = 1, nind
            if(.not.tindex(k)) exit
            npass = npass + 1
@@ -1197,16 +1097,13 @@ subroutine six_indices(nind,index_in,threshold,tindex)
 !
 !----------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  implicit none
-
   integer ::  i,nind
-  real(fp_kind)    ::  index_in(*),threshold(*)
+  real(fp)    ::  index_in(*),threshold(*)
   logical ::  tindex(*)
 
   do i=1,nind
      tindex(i) = .false.
-     if (threshold(i) .eq. -999.9_fp_kind) then
+     if (threshold(i) .eq. -999.9_fp) then
         tindex(i) = .true.
      else
         if ( (i .le. 2) .or. (i .gt. (nind-1)) ) then
@@ -1264,53 +1161,51 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
 !   machine:  ibm rs/6000 sp
 !
 !----------------------------------------------------------------------------------------------------------!
-  use type_kinds, only: fp_kind
-  implicit none
 
   integer,parameter:: nch =10,nwch = 5,ncoe = 10
-  real(fp_kind)    :: tb(*),frequency
-  real(fp_kind)    :: em_vector(*),emissivity,discriminator(nwch)
+  real(fp)    :: tb(*),frequency
+  real(fp)    :: em_vector(*),emissivity,discriminator(nwch)
   integer :: i,snow_type,k,ich,nvalid_ch
-  real(fp_kind)  :: coe(nwch*(ncoe+1))
+  real(fp)  :: coe(nwch*(ncoe+1))
 
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=1,7)/&
-       -1.326040e+000_fp_kind,  2.475904e-002_fp_kind, &
-       -5.741361e-005_fp_kind, -1.889650e-002_fp_kind, &
-       6.177911e-005_fp_kind,  1.451121e-002_fp_kind, &
-       -4.925512e-005_fp_kind/
+       -1.326040e+000_fp,  2.475904e-002_fp, &
+       -5.741361e-005_fp, -1.889650e-002_fp, &
+       6.177911e-005_fp,  1.451121e-002_fp, &
+       -4.925512e-005_fp/
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=12,18)/ &
-       -1.250541e+000_fp_kind,  1.911161e-002_fp_kind, &
-       -5.460238e-005_fp_kind, -1.266388e-002_fp_kind, &
-       5.745064e-005_fp_kind,  1.313985e-002_fp_kind, &
-       -4.574811e-005_fp_kind/
+       -1.250541e+000_fp,  1.911161e-002_fp, &
+       -5.460238e-005_fp, -1.266388e-002_fp, &
+       5.745064e-005_fp,  1.313985e-002_fp, &
+       -4.574811e-005_fp/
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=23,29)/  &
-       -1.246754e+000_fp_kind,  2.368658e-002_fp_kind, &
-       -8.061774e-005_fp_kind, -3.206323e-002_fp_kind, &
-       1.148107e-004_fp_kind,  2.688353e-002_fp_kind, &
-       -7.358356e-005_fp_kind/
+       -1.246754e+000_fp,  2.368658e-002_fp, &
+       -8.061774e-005_fp, -3.206323e-002_fp, &
+       1.148107e-004_fp,  2.688353e-002_fp, &
+       -7.358356e-005_fp/
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
   data (coe(k),k=34,42)/ &
-       -1.278780e+000_fp_kind,  1.625141e-002_fp_kind, &
-       -4.764536e-005_fp_kind, -1.475181e-002_fp_kind, &
-       5.107766e-005_fp_kind,  1.083021e-002_fp_kind, &
-       -4.154825e-005_fp_kind,  7.703879e-003_fp_kind, &
-       -6.351148e-006_fp_kind/
+       -1.278780e+000_fp,  1.625141e-002_fp, &
+       -4.764536e-005_fp, -1.475181e-002_fp, &
+       5.107766e-005_fp,  1.083021e-002_fp, &
+       -4.154825e-005_fp,  7.703879e-003_fp, &
+       -6.351148e-006_fp/
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb5
   data (coe(k),k=45,55)/&
-     -1.691077e+000_fp_kind,  3.352403e-002_fp_kind, &
-     -7.310338e-005_fp_kind, -4.396138e-002_fp_kind, &
-     1.028994e-004_fp_kind,  2.301014e-002_fp_kind, &
-     -7.070810e-005_fp_kind,  1.270231e-002_fp_kind, &
-     -2.139023e-005_fp_kind, -2.257991e-003_fp_kind, &
-     1.269419e-005_fp_kind/
+     -1.691077e+000_fp,  3.352403e-002_fp, &
+     -7.310338e-005_fp, -4.396138e-002_fp, &
+     1.028994e-004_fp,  2.301014e-002_fp, &
+     -7.070810e-005_fp,  1.270231e-002_fp, &
+     -2.139023e-005_fp, -2.257991e-003_fp, &
+     1.269419e-005_fp/
 
   save coe
 
@@ -1379,50 +1274,47 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
 !
 !-----------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  implicit none
-
   integer,parameter:: nch =10,nwch = 5,ncoe = 9
-  real(fp_kind)    :: tba(*)
-  real(fp_kind)    :: em_vector(*),emissivity,ts,frequency,discriminator(nwch)
+  real(fp)    :: tba(*)
+  real(fp)    :: em_vector(*),emissivity,ts,frequency,discriminator(nwch)
   integer :: snow_type,i,k,ich,nvalid_ch
-  real(fp_kind)  :: coe(nch*(ncoe+1))
+  real(fp)  :: coe(nch*(ncoe+1))
 
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1, Tb2 and Ts
   data (coe(k),k=1,6)/ &
-       8.210105e-001_fp_kind,  1.216432e-002_fp_kind,  &
-       -2.113875e-005_fp_kind, -6.416648e-003_fp_kind,  &
-       1.809047e-005_fp_kind, -4.206605e-003_fp_kind/
+       8.210105e-001_fp,  1.216432e-002_fp,  &
+       -2.113875e-005_fp, -6.416648e-003_fp,  &
+       1.809047e-005_fp, -4.206605e-003_fp/
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1, Tb2 and Ts
   data (coe(k),k=11,16)/ &
-       7.963632e-001_fp_kind,  7.215580e-003_fp_kind,  &
-       -2.015921e-005_fp_kind, -1.508286e-003_fp_kind,  &
-       1.731405e-005_fp_kind, -4.105358e-003_fp_kind/
+       7.963632e-001_fp,  7.215580e-003_fp,  &
+       -2.015921e-005_fp, -1.508286e-003_fp,  &
+       1.731405e-005_fp, -4.105358e-003_fp/
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1, Tb2, Tb3 and Ts
   data (coe(k),k=21,28)/ &
-       1.724160e+000_fp_kind,  5.556665e-003_fp_kind, &
-       -2.915872e-005_fp_kind, -1.146713e-002_fp_kind, &
-       4.724243e-005_fp_kind,  3.851791e-003_fp_kind, &
-       -5.581535e-008_fp_kind, -5.413451e-003_fp_kind/
+       1.724160e+000_fp,  5.556665e-003_fp, &
+       -2.915872e-005_fp, -1.146713e-002_fp, &
+       4.724243e-005_fp,  3.851791e-003_fp, &
+       -5.581535e-008_fp, -5.413451e-003_fp/
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4 and Ts
   data (coe(k),k=31,40)/ &
-       9.962065e-001_fp_kind,  1.584161e-004_fp_kind, &
-       -3.988934e-006_fp_kind,  3.427638e-003_fp_kind, &
-       -5.084836e-006_fp_kind, -6.178904e-004_fp_kind, &
-       1.115315e-006_fp_kind,  9.440962e-004_fp_kind, &
-       9.711384e-006_fp_kind, -4.259102e-003_fp_kind/
+       9.962065e-001_fp,  1.584161e-004_fp, &
+       -3.988934e-006_fp,  3.427638e-003_fp, &
+       -5.084836e-006_fp, -6.178904e-004_fp, &
+       1.115315e-006_fp,  9.440962e-004_fp, &
+       9.711384e-006_fp, -4.259102e-003_fp/
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4 and Ts
   data (coe(k),k=41,50)/ &
-       -5.244422e-002_fp_kind,  2.025879e-002_fp_kind,  &
-       -3.739231e-005_fp_kind, -2.922355e-002_fp_kind, &
-       5.810726e-005_fp_kind,  1.376275e-002_fp_kind, &
-       -3.757061e-005_fp_kind,  6.434187e-003_fp_kind, &
-       6.190403e-007_fp_kind, -2.944785e-003_fp_kind/
+       -5.244422e-002_fp,  2.025879e-002_fp,  &
+       -3.739231e-005_fp, -2.922355e-002_fp, &
+       5.810726e-005_fp,  1.376275e-002_fp, &
+       -3.757061e-005_fp,  6.434187e-003_fp, &
+       6.190403e-007_fp, -2.944785e-003_fp/
 
   save coe
 
@@ -1491,45 +1383,42 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
 !
 !--------------------------------------------------------------------------------------------------------!
 
-  use type_kinds, only: fp_kind
-  implicit none
-
   integer,parameter:: nch =10,nwch = 5,ncoe = 8
-  real(fp_kind)    :: tba(*)
-  real(fp_kind)    :: em_vector(*),emissivity,frequency,discriminator(nwch)
+  real(fp)    :: tba(*)
+  real(fp)    :: em_vector(*),emissivity,frequency,discriminator(nwch)
   integer :: snow_type,i,k,ich,nvalid_ch
-  real(fp_kind)  :: coe(50)
+  real(fp)  :: coe(50)
 
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=1,7)/ &
-       -1.326040e+000_fp_kind,  2.475904e-002_fp_kind, -5.741361e-005_fp_kind, &
-       -1.889650e-002_fp_kind,  6.177911e-005_fp_kind,  1.451121e-002_fp_kind, &
-       -4.925512e-005_fp_kind/
+       -1.326040e+000_fp,  2.475904e-002_fp, -5.741361e-005_fp, &
+       -1.889650e-002_fp,  6.177911e-005_fp,  1.451121e-002_fp, &
+       -4.925512e-005_fp/
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=11,17)/ &
-       -1.250541e+000_fp_kind,  1.911161e-002_fp_kind, -5.460238e-005_fp_kind, &
-       -1.266388e-002_fp_kind,  5.745064e-005_fp_kind,  1.313985e-002_fp_kind, &
-       -4.574811e-005_fp_kind/
+       -1.250541e+000_fp,  1.911161e-002_fp, -5.460238e-005_fp, &
+       -1.266388e-002_fp,  5.745064e-005_fp,  1.313985e-002_fp, &
+       -4.574811e-005_fp/
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
   data (coe(k),k=21,27)/ &
-       -1.246754e+000_fp_kind,  2.368658e-002_fp_kind, -8.061774e-005_fp_kind, &
-       -3.206323e-002_fp_kind,  1.148107e-004_fp_kind,  2.688353e-002_fp_kind, &
-       -7.358356e-005_fp_kind/
+       -1.246754e+000_fp,  2.368658e-002_fp, -8.061774e-005_fp, &
+       -3.206323e-002_fp,  1.148107e-004_fp,  2.688353e-002_fp, &
+       -7.358356e-005_fp/
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
   data (coe(k),k=31,39)/ &
-       -1.278780e+000_fp_kind, 1.625141e-002_fp_kind, -4.764536e-005_fp_kind, &
-       -1.475181e-002_fp_kind, 5.107766e-005_fp_kind,  1.083021e-002_fp_kind, &
-       -4.154825e-005_fp_kind,  7.703879e-003_fp_kind, -6.351148e-006_fp_kind/
+       -1.278780e+000_fp, 1.625141e-002_fp, -4.764536e-005_fp, &
+       -1.475181e-002_fp, 5.107766e-005_fp,  1.083021e-002_fp, &
+       -4.154825e-005_fp,  7.703879e-003_fp, -6.351148e-006_fp/
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4
   data (coe(k),k=41,49)/ &
-       -1.624857e+000_fp_kind, 3.138243e-002_fp_kind, -6.757028e-005_fp_kind, &
-       -4.178496e-002_fp_kind, 9.691893e-005_fp_kind,  2.165964e-002_fp_kind, &
-       -6.702349e-005_fp_kind, 1.111658e-002_fp_kind, -1.050708e-005_fp_kind/
+       -1.624857e+000_fp, 3.138243e-002_fp, -6.757028e-005_fp, &
+       -4.178496e-002_fp, 9.691893e-005_fp,  2.165964e-002_fp, &
+       -6.702349e-005_fp, 1.111658e-002_fp, -1.050708e-005_fp/
 
   save coe
 
@@ -1547,15 +1436,15 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
 
 ! Quality Control
   if(discriminator(4) .gt. discriminator(2))   &
-       discriminator(4) = discriminator(2) + (150.0_fp_kind - 89.0_fp_kind)*  &
+       discriminator(4) = discriminator(2) + (150.0_fp - 89.0_fp)*  &
        (discriminator(5) - discriminator(2))/ &
-       (150.0_fp_kind - 31.4_fp_kind)
+       (150.0_fp - 31.4_fp)
 
 ! Quality control at 50.3 GHz
   if((discriminator(3) .gt. discriminator(2)) .or.  &
        (discriminator(3) .lt. discriminator(4)))      &
-       discriminator(3) = discriminator(2) + (89.0_fp_kind - 50.3_fp_kind)*   &
-       (discriminator(4) - discriminator(2))/(89.0_fp_kind - 31.4_fp_kind)
+       discriminator(3) = discriminator(2) + (89.0_fp - 50.3_fp)*   &
+       (discriminator(4) - discriminator(2))/(89.0_fp - 31.4_fp)
 
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
 
@@ -1607,25 +1496,23 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
 !   machine:  ibm rs/6000 sp
 !
 !-------------------------------------------------------------------------------------------------------!
-  use type_kinds, only: fp_kind
-  implicit none
 
   integer,parameter:: nch =10,nwch = 3,ncoe = 5
-  real(fp_kind)    :: tbb(*)
-  real(fp_kind)    :: em_vector(*),emissivity,ts,frequency,ed0(nwch),discriminator(5)
+  real(fp)    :: tbb(*)
+  real(fp)    :: em_vector(*),emissivity,ts,frequency,ed0(nwch),discriminator(5)
   integer :: snow_type,i,k,ich,nvalid_ch
-  real(fp_kind)  :: coe(nch*(ncoe+1))
+  real(fp)  :: coe(nch*(ncoe+1))
 
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=1,6)/ 3.110967e-001_fp_kind,  1.100175e-002_fp_kind, -1.677626e-005_fp_kind,    &
-       -4.020427e-003_fp_kind,  9.242240e-006_fp_kind, -2.363207e-003_fp_kind/
+  data (coe(k),k=1,6)/ 3.110967e-001_fp,  1.100175e-002_fp, -1.677626e-005_fp,    &
+       -4.020427e-003_fp,  9.242240e-006_fp, -2.363207e-003_fp/
 ! Fitting Coefficients at 89 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=11,16)/  1.148098e+000_fp_kind,  1.452926e-003_fp_kind,  1.037081e-005_fp_kind, &
-       1.340696e-003_fp_kind, -5.185640e-006_fp_kind, -4.546382e-003_fp_kind /
+  data (coe(k),k=11,16)/  1.148098e+000_fp,  1.452926e-003_fp,  1.037081e-005_fp, &
+       1.340696e-003_fp, -5.185640e-006_fp, -4.546382e-003_fp /
 ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=21,26)/ 1.165323e+000_fp_kind, -1.030435e-003_fp_kind,  4.828009e-006_fp_kind,  &
-       4.851731e-003_fp_kind, -2.588049e-006_fp_kind, -4.990193e-003_fp_kind/
+  data (coe(k),k=21,26)/ 1.165323e+000_fp, -1.030435e-003_fp,  4.828009e-006_fp,  &
+       4.851731e-003_fp, -2.588049e-006_fp, -4.990193e-003_fp/
   save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
@@ -1641,14 +1528,14 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
 
 ! Quality control
   if(ed0(2) .gt. ed0(1))     &
-       ed0(2) = ed0(1) + (150.0_fp_kind - 89.0_fp_kind)*(ed0(3) - ed0(1)) / &
-       (150.0_fp_kind - 31.4_fp_kind)
+       ed0(2) = ed0(1) + (150.0_fp - 89.0_fp)*(ed0(3) - ed0(1)) / &
+       (150.0_fp - 31.4_fp)
 
 ! Match the format of the input variable
 ! Missing value at 23.8 GHz
-  discriminator(1) = -999.9_fp_kind;  discriminator(2) = ed0(1)
+  discriminator(1) = -999.9_fp;  discriminator(2) = ed0(1)
 ! Missing value at 50.3 GHz
-  discriminator(3) = -999.9_fp_kind; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
+  discriminator(3) = -999.9_fp; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
 
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
 
@@ -1699,25 +1586,23 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
 !   machine:  ibm rs/6000 sp
 !
 !-------------------------------------------------------------------------------------------------------!
-  use type_kinds, only: fp_kind
-  implicit none
 
   integer,parameter:: nch =10,nwch = 3,ncoe = 4
-  real(fp_kind)    :: tbb(*)
-  real(fp_kind)    :: em_vector(*),emissivity,frequency,ed0(nwch),discriminator(5)
+  real(fp)    :: tbb(*)
+  real(fp)    :: em_vector(*),emissivity,frequency,ed0(nwch),discriminator(5)
   integer :: snow_type,i,k,ich,nvalid_ch
-  real(fp_kind)  :: coe(50)
+  real(fp)  :: coe(50)
 
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5
-  data (coe(k),k=1,5)/-4.015636e-001_fp_kind,9.297894e-003_fp_kind, -1.305068e-005_fp_kind, &
-       3.717131e-004_fp_kind, -4.364877e-006_fp_kind/
+  data (coe(k),k=1,5)/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
+       3.717131e-004_fp, -4.364877e-006_fp/
 ! Fitting Coefficients at 89 GHz: Using Tb4, Tb5
-  data (coe(k),k=11,15)/-2.229547e-001_fp_kind, -1.828402e-003_fp_kind,1.754807e-005_fp_kind, &
-       9.793681e-003_fp_kind, -3.137189e-005_fp_kind/
+  data (coe(k),k=11,15)/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
+       9.793681e-003_fp, -3.137189e-005_fp/
 ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
-  data (coe(k),k=21,25)/-3.395416e-001_fp_kind,-4.632656e-003_fp_kind,1.270735e-005_fp_kind, &
-       1.413038e-002_fp_kind,-3.133239e-005_fp_kind/
+  data (coe(k),k=21,25)/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
+       1.413038e-002_fp,-3.133239e-005_fp/
   save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
@@ -1732,14 +1617,14 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
 
 ! Quality Control
   if(ed0(2) .gt. ed0(1))     &
-       ed0(2) = ed0(1) + (150.0_fp_kind - 89.0_fp_kind) * &
-       (ed0(3) - ed0(1))/(150.0_fp_kind - 31.4_fp_kind)
+       ed0(2) = ed0(1) + (150.0_fp - 89.0_fp) * &
+       (ed0(3) - ed0(1))/(150.0_fp - 31.4_fp)
 
 ! Match the format of the input variable
 ! Missing value at 23.8 GHz
-  discriminator(1) = -999.9_fp_kind; discriminator(2) = ed0(1)
+  discriminator(1) = -999.9_fp; discriminator(2) = ed0(1)
 ! Missing value at 50.3 GHz
-  discriminator(3) = -999.9_fp_kind; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
+  discriminator(3) = -999.9_fp; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
 
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
 
@@ -1796,32 +1681,26 @@ subroutine AMSU_ALandEM_Snow(theta,frequency,snow_depth,ts,snow_type,em_vector)
 !
 !------------------------------------------------------------------------------------------------------------
 
-  USE NESDIS_LandEM_Module, only: NESDIS_LandEM
-
-  use type_kinds, only: fp_kind
-
-  implicit none
-
   integer :: nw_ind
   parameter(nw_ind=3)
-  real(fp_kind) theta, frequency, freq,snow_depth, ts, em_vector(2)
-  real(fp_kind) esv,esh,esh0,esv0,theta0
+  real(fp) theta, frequency, freq,snow_depth, ts, em_vector(2)
+  real(fp) esv,esh,esh0,esv0,theta0
   integer snow_type,ich
-  real(fp_kind)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
+  real(fp)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
   complex  eair
-  data   freq_3w/31.4_fp_kind,89.0_fp_kind,150.0_fp_kind/
+  data   freq_3w/31.4_fp,89.0_fp,150.0_fp/
 
   eair = cmplx(one,-zero)
 
   snow_type = -999
 
-  call NESDIS_LandEM(theta, frequency,0.0_fp_kind,0.0_fp_kind,ts,ts,0.0_fp_kind,9,13,snow_depth,esh0,esv0)
+  call NESDIS_LandEM(theta, frequency,0.0_fp,0.0_fp,ts,ts,0.0_fp,9,13,snow_depth,esh0,esv0)
 
   theta0 = theta
   do ich = 1, nw_ind
      freq =freq_3w(ich)
      theta = theta0
-     call NESDIS_LandEM(theta, freq,0.0_fp_kind,0.0_fp_kind,ts,ts,0.0_fp_kind,9,13,snow_depth,esh,esv)
+     call NESDIS_LandEM(theta, freq,0.0_fp,0.0_fp,ts,ts,0.0_fp,9,13,snow_depth,esh,esv)
      esv_3w(ich) = esv
      esh_3w(ich) = esh
   end do
@@ -1879,23 +1758,19 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 !
 !------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: fp_kind,Double
-
-  implicit none
-
   integer,parameter:: nch=10,nw_3=3
 
   integer,parameter:: ncoe=6
 
-  real(fp_kind),parameter  :: earthrad = 6374._fp_kind, satheight = 833.4_fp_kind
+  real(fp),parameter  :: earthrad = 6374._fp, satheight = 833.4_fp
 
   integer         :: snow_type,ich,k
 
-  real(fp_kind)    :: theta,frequency,depth,ts,esv_3w(*),esh_3w(*)
+  real(fp)    :: theta,frequency,depth,ts,esv_3w(*),esh_3w(*)
 
-  real(fp_kind)    :: discriminator(5),emmod(nw_3),dem(nw_3)
+  real(fp)    :: discriminator(5),emmod(nw_3),dem(nw_3)
 
-  real(fp_kind)    :: emissivity,em_vector(2)
+  real(fp)    :: emissivity,em_vector(2)
 
   real(Double)  :: dem_coe(nw_3,0:ncoe-1),sinthetas,costhetas,deg2rad
 
@@ -1922,7 +1797,7 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 
 !
 
-  deg2rad = 3.14159_fp_kind*pi/180.0_fp_kind
+  deg2rad = 3.14159_fp*pi/180.0_fp
 
   sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
 
@@ -1956,13 +1831,13 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 
 ! Missing value at 23.8 GHz
 
-  discriminator(1) = -999.9_fp_kind
+  discriminator(1) = -999.9_fp
 
   discriminator(2) = emmod(1)
 
 ! Missing value at 50.3 GHz
 
-  discriminator(3) = -999.9_fp_kind
+  discriminator(3) = -999.9_fp
 
   discriminator(4) = emmod(2)
 

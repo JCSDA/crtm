@@ -1,85 +1,39 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_SEAICE_PHYEM_MODULE
 !
-! PURPOSE:
-!       Module containing the NESDIS microwave seaice emissivity model
+! NESDIS_SEAICE_PHYEM_MODULE
 !
-! CATEGORY:
-!       Surface : Physically_based MW Surface SEAICE Emissivity over new sea ice conditions
+! Module containing the NESDIS microwave seaice emissivity physical model
 !
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-! CONTAINS:
-!       NESDIS_SIce_Phy_EM        : Subroutine to calculate the microwave sea ice emissivity
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (06-13-2005)
+!       Written by:     Banghua Yan, 13-Jun-2005, banghua.yan@noaa.gov
+!                       Fuzhong Weng, fuzhong.weng@noaa.gov
 !
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
-
 
 MODULE NESDIS_SEAICE_PHYEM_MODULE
 
 
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
-
-  ! -----------------------
+  USE Type_Kinds, ONLY: fp
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
-
-
   PRIVATE
+  PUBLIC :: NESDIS_SIce_Phy_EM
 
-  PUBLIC  :: NESDIS_SIce_Phy_EM
+
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS
@@ -119,7 +73,7 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -127,17 +81,17 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         Ts_ice                   Sea ice temperature
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !        Salinity                  Sea water salinity (1/thousand)
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -145,7 +99,7 @@ CONTAINS
 !
 !         theta                    viewing zenith angle
 !                                  UNITS:  radian
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -155,14 +109,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 ! CALLS:
 !
@@ -196,43 +150,43 @@ CONTAINS
 !------------------------------------------------------------------------------------------------------------
 
 
-     real(fp_kind) ::  Angle,theta, Ts_ice, Salinity
-     real(fp_kind) ::  Frequency, Emissivity_H, Emissivity_V, slam, f1,epsx, epsy, pi
-     integer(ip_kind) :: ITYPE
-     COMPLEX( fp_kind ) :: eair, eice
-     COMPLEX( fp_kind ) :: cos_theta_i,cos_theta_t,sin_theta_i,sin_theta_t
-     COMPLEX( fp_kind ) :: rv_ice, rh_ice
+     real(fp) ::  Angle,theta, Ts_ice, Salinity
+     real(fp) ::  Frequency, Emissivity_H, Emissivity_V, slam, f1,epsx, epsy, pi
+     integer :: ITYPE
+     COMPLEX(fp) :: eair, eice
+     COMPLEX(fp) :: cos_theta_i,cos_theta_t,sin_theta_i,sin_theta_t
+     COMPLEX(fp) :: rv_ice, rh_ice
 
 
-      pi = acos(-1.0_fp_kind)
+      pi = acos(-1.0_fp)
 
-      theta = Angle*pi/180.0_fp_kind
+      theta = Angle*pi/180.0_fp
 
-      slam = 300.0_fp_kind/Frequency
+      slam = 300.0_fp/Frequency
 
-      f1=Frequency*1.0e+9_fp_kind
+      f1=Frequency*1.0e+9_fp
 
-      eair = cmplx(1.0_fp_kind, 0.0_fp_kind, fp_kind)
+      eair = cmplx(1.0_fp, 0.0_fp, fp)
 
       ITYPE = 2
 
       call  permitivity(ITYPE,Ts_ice, Salinity, f1, epsx, epsy)
 
-      eice = cmplx(epsx, -epsy, fp_kind)
+      eice = cmplx(epsx, -epsy, fp)
 
-      sin_theta_i = sin(cmplx(theta,0.0_fp_kind, fp_kind))
+      sin_theta_i = sin(cmplx(theta,0.0_fp, fp))
 
-      cos_theta_i = sqrt(1.0_fp_kind - sin_theta_i*sin_theta_i)
+      cos_theta_i = sqrt(1.0_fp - sin_theta_i*sin_theta_i)
 
       sin_theta_t = sin_theta_i*sqrt(eair)/sqrt(eice)
 
-      cos_theta_t = sqrt(1.0_fp_kind - sin_theta_t*sin_theta_t)
+      cos_theta_t = sqrt(1.0_fp - sin_theta_t*sin_theta_t)
 
       call reflection_coefficient(eair, eice, cos_theta_i, cos_theta_t, rv_ice, rh_ice)
 
-      Emissivity_V = 1.0_fp_kind  - abs(rv_ice)*abs(rv_ice)
+      Emissivity_V = 1.0_fp  - abs(rv_ice)*abs(rv_ice)
 
-      Emissivity_H = 1.0_fp_kind  - abs(rh_ice)*abs(rh_ice)
+      Emissivity_H = 1.0_fp  - abs(rh_ice)*abs(rh_ice)
 
      return
 
@@ -275,29 +229,28 @@ CONTAINS
 !       Code generated: Fuzhong Weng
 !       Added brine component: Banghua Yan (09/09/2003)
 !------------------------------------------------------------------------------
-     use type_kinds, only: ip_kind, fp_kind
-     implicit none
-     real(fp_kind) ::  eo, esw, eswo, a, tswo, tsw, b, sswo, c,d, fi, ssw
-     real(fp_kind) ::  temp,t, t2, t3, s2, s3, epsp, epspp
-     real(fp_kind) ::  ESWI, EW0, TPTW, FH, X, Y, TPTWFQ
-     real(fp_kind) ::  e_real, e_img
 
-     real(fp_kind) ::  s,t4,t5,sigma
-     real(fp_kind) ::  ebo,eb,sb,nb,eb_real,eb_imag
-     real(fp_kind) ::   den_ice,den_sice,den_brine
+     real(fp) ::  eo, esw, eswo, a, tswo, tsw, b, sswo, c,d, fi, ssw
+     real(fp) ::  temp,t, t2, t3, s2, s3, epsp, epspp
+     real(fp) ::  ESWI, EW0, TPTW, FH, X, Y, TPTWFQ
+     real(fp) ::  e_real, e_img
 
-     real(fp_kind) ::   vss, cc, den_ss
+     real(fp) ::  s,t4,t5,sigma
+     real(fp) ::  ebo,eb,sb,nb,eb_real,eb_imag
+     real(fp) ::   den_ice,den_sice,den_brine
 
-     real(fp_kind) ::   f,pi,vb,sigmao,vi
+     real(fp) ::   vss, cc, den_ss
 
-     integer(ip_kind) :: itype
+     real(fp) ::   f,pi,vb,sigmao,vi
 
-     COMPLEX( fp_kind ) :: ebrine,eice,eair,esice,xx
+     integer :: itype
 
-     pi=acos(-1.0_fp_kind)
-     ESWI=4.9_fp_kind
-     t=temp-273.15_fp_kind
-     if (t.le.-65.0_fp_kind) t = -65.0_fp_kind
+     COMPLEX(fp) :: ebrine,eice,eair,esice,xx
+
+     pi=acos(-1.0_fp)
+     ESWI=4.9_fp
+     t=temp-273.15_fp
+     if (t.le.-65.0_fp) t = -65.0_fp
      t2=t*t
      t3=t2*t
      t4=t3*t
@@ -335,8 +288,8 @@ CONTAINS
 
 Case (2) ! sea ice
 
-      eice = cmplx(3.15_fp_kind, -0.001_fp_kind,fp_kind)
-      eair = cmplx(1.0_fp_kind, 0.0_fp_kind,fp_kind)
+      eice = cmplx(3.15_fp, -0.001_fp,fp)
+      eair = cmplx(1.0_fp, 0.0_fp,fp)
 
 ! brine volume fraction: vb
 
@@ -388,7 +341,7 @@ Case (2) ! sea ice
       eb_real = ESWI + (eb - ESWI)/ (1.0 + (f*tsw)**2.)
       epspp = tsw * f * (eb - ESWI) / (1.0 + (tsw * f)**2.)
       eb_imag = epspp + sigma/(2.0 * pi * eo * f)
-      ebrine=cmplx(eb_real,-eb_imag,fp_kind)
+      ebrine=cmplx(eb_real,-eb_imag,fp)
 
 ! density of sea ice
 
@@ -404,7 +357,7 @@ Case (2) ! sea ice
 
     xx = vb*sqrt(ebrine)+vi*sqrt(eice)+(1.0-vi-vb)*sqrt(eair)
     esice = xx*xx
-    e_real = real(esice,fp_kind)
+    e_real = real(esice,fp)
     e_img =  -aimag(esice)
     cc = 0.387
     den_ss = 1.5
@@ -453,9 +406,9 @@ end subroutine permitivity
 !
 !-----------------------------------------------------------------------------------------------
 
-    COMPLEX( fp_kind ) :: rh, rv,cos_theta_i,cos_theta_t
+    COMPLEX(fp) :: rh, rv,cos_theta_i,cos_theta_t
 
-    COMPLEX( fp_kind ) :: em1, em2, m1, m2
+    COMPLEX(fp) :: em1, em2, m1, m2
 
     m1 = sqrt(em1)
 
@@ -471,40 +424,3 @@ end subroutine permitivity
 
 
 END MODULE NESDIS_SEAICE_PHYEM_MODULE
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: NESDIS_SEAICE_PHYEM_MODULE.f90,v 1.4 2006/04/20 23:16:05 paulv Exp $
-!
-! $Date: 2006/04/20 23:16:05 $
-!
-! $Revision: 1.4 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: NESDIS_SEAICE_PHYEM_MODULE.f90,v $
-! Revision 1.4  2006/04/20 23:16:05  paulv
-! - Many changes. cvs diff outputs every line, so no detailed log here.
-!
-! Revision 1.3  2005/10/13 20:38:51  paulv
-! - Changed all complex variable definitions from
-!     COMPLEX
-!   to
-!     COMPLEX( fp_kind )
-! - Added kind type suffixes to some literal constant definitions.
-! - Replaced all complex-specific intrinsic functions with generics.
-! - Fixed bug in permitivity [sic] routine where the sigma variable was
-!   undefined on first use. Changed
-!     sigma = sigma*c
-!   to
-!     sigma = sigmao*c
-!
-!
-!
-!
-

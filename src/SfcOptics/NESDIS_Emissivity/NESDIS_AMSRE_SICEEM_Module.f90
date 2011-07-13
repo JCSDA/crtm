@@ -1,279 +1,221 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_AMSRE_SICEEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave sea ice  emissivity model
+! NESDIS_AMSRE_SICEEM_Module
 !
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+! Module containing the AMSR-E microwave sea ice emissivity model
 !
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+! References:
+!       Yan,B., F.Weng and K.Okamoto,2004: "A microwave snow emissivity model",
+!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
+!         24-27 February, 2004, Rome, Italy.
 !
-! CATEGORY:
-!       Surface : NW Surface Sea Ice Emissivity from AMSRE
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE NESDIS_AMSRE_SICEEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-!       NESDIS_LandEM_Module:Module containing the microwave land emissivity model
-!
-! CONTAINS:
-!
-!   PUBLIC SUBPROGRAM:
-!
-!       NESDIS_AMSRE_SSICEEM : Subroutine to calculate sea ice emissivity from AMSRE
-!
-!   PRIVATE SUBPROGRAM:
-!
-!       AMSRE_Ice_TB   : Subroutine to calculate the sea ice microwave emissivity from AMSRE TB
-!
-!       AMSRE_Ice_TBTS : Subroutine to calculate the sea ice microwave emissivity from AMSRE TB & TS
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!       Written by:     Banghua Yan, 28-May-2005
+!                       banghua.yan@noaa.gov
+!                       Fuzhong Weng
+!                       fuzhong.weng@noaa.gov
 !
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_AMSRE_SICEEM_Module
 
 
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
+  USE Type_Kinds, ONLY: fp
   USE NESDIS_LandEM_Module
-
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
-  INTEGER(ip_kind), PUBLIC, PARAMETER                          :: N_FREQ= 7
+  
+  ! ------------
+  ! Visibilities
+  ! ------------
+  PRIVATE
+  PUBLIC :: NESDIS_AMSRE_SSICEEM
 
-  REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION (N_FREQ)    ::                                &
-  FREQUENCY_AMSREALG = (/ 6.925_fp_kind, 10.65_fp_kind, 18.7_fp_kind,23.8_fp_kind,          &
-                        36.5_fp_kind, 89.0_fp_kind,157._fp_kind/)
+
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+
+
+  INTEGER, PUBLIC, PARAMETER                          :: N_FREQ= 7
+
+  REAL(fp), PUBLIC, PARAMETER, DIMENSION (N_FREQ)    ::                                &
+  FREQUENCY_AMSREALG = (/ 6.925_fp, 10.65_fp, 18.7_fp,23.8_fp,          &
+                        36.5_fp, 89.0_fp,157._fp/)
 
 !Define 13 weighted sea ice emissivity spectra
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_A_EMISS=(/0.93_fp_kind, 0.94_fp_kind, 0.96_fp_kind, 0.97_fp_kind, 0.97_fp_kind,    &
-                  0.94_fp_kind, 0.93_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_A_EMISS=(/0.93_fp, 0.94_fp, 0.96_fp, 0.97_fp, 0.97_fp,    &
+                  0.94_fp, 0.93_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_B_EMISS=(/0.86_fp_kind, 0.87_fp_kind, 0.90_fp_kind, 0.91_fp_kind, 0.90_fp_kind,    &
-                  0.90_fp_kind, 0.89_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_B_EMISS=(/0.86_fp, 0.87_fp, 0.90_fp, 0.91_fp, 0.90_fp,    &
+                  0.90_fp, 0.89_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- MIXED_NEWICE_SNOW_EMISS=(/0.88_fp_kind, 0.88_fp_kind, 0.89_fp_kind, 0.88_fp_kind,         &
-                           0.87_fp_kind, 0.84_fp_kind, 0.82_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ MIXED_NEWICE_SNOW_EMISS=(/0.88_fp, 0.88_fp, 0.89_fp, 0.88_fp,         &
+                           0.87_fp, 0.84_fp, 0.82_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- NARE_NEWICE_EMISS=(/0.80_fp_kind, 0.81_fp_kind, 0.81_fp_kind, 0.81_fp_kind, 0.80_fp_kind, &
-                     0.79_fp_kind, 0.79_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ NARE_NEWICE_EMISS=(/0.80_fp, 0.81_fp, 0.81_fp, 0.81_fp, 0.80_fp, &
+                     0.79_fp, 0.79_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- BROKEN_ICE_EMISS=(/0.75_fp_kind, 0.78_fp_kind, 0.80_fp_kind, 0.81_fp_kind, 0.80_fp_kind,  &
-                    0.77_fp_kind, 0.74_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ BROKEN_ICE_EMISS=(/0.75_fp, 0.78_fp, 0.80_fp, 0.81_fp, 0.80_fp,  &
+                    0.77_fp, 0.74_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FIRST_YEAR_ICE_EMISS=(/0.93_fp_kind, 0.93_fp_kind, 0.92_fp_kind, 0.92_fp_kind,            &
-                        0.89_fp_kind, 0.78_fp_kind, 0.69_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FIRST_YEAR_ICE_EMISS=(/0.93_fp, 0.93_fp, 0.92_fp, 0.92_fp,            &
+                        0.89_fp, 0.78_fp, 0.69_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- COMPOSITE_PACK_ICE_EMISS=(/0.89_fp_kind, 0.88_fp_kind, 0.87_fp_kind, 0.85_fp_kind,        &
-                            0.82_fp_kind, 0.69_fp_kind, 0.59_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ COMPOSITE_PACK_ICE_EMISS=(/0.89_fp, 0.88_fp, 0.87_fp, 0.85_fp,        &
+                            0.82_fp, 0.69_fp, 0.59_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_C_EMISS  =(/0.92_fp_kind, 0.90_fp_kind, 0.83_fp_kind, 0.78_fp_kind, 0.73_fp_kind,  &
-                    0.62_fp_kind, 0.58_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_C_EMISS  =(/0.92_fp, 0.90_fp, 0.83_fp, 0.78_fp, 0.73_fp,  &
+                    0.62_fp, 0.58_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FAST_ICE_EMISS  =(/0.85_fp_kind, 0.85_fp_kind, 0.84_fp_kind, 0.81_fp_kind, 0.78_fp_kind,  &
-                    0.63_fp_kind, 0.56_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FAST_ICE_EMISS  =(/0.85_fp, 0.85_fp, 0.84_fp, 0.81_fp, 0.78_fp,  &
+                    0.63_fp, 0.56_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_D_EMISS  =(/0.76_fp_kind, 0.76_fp_kind, 0.76_fp_kind, 0.76_fp_kind, 0.74_fp_kind,  &
-                    0.65_fp_kind, 0.60_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_D_EMISS  =(/0.76_fp, 0.76_fp, 0.76_fp, 0.76_fp, 0.74_fp,  &
+                    0.65_fp, 0.60_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_E_EMISS  =(/0.63_fp_kind, 0.65_fp_kind, 0.67_fp_kind, 0.68_fp_kind, 0.70_fp_kind,  &
-                    0.74_fp_kind, 0.75_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_E_EMISS  =(/0.63_fp, 0.65_fp, 0.67_fp, 0.68_fp, 0.70_fp,  &
+                    0.74_fp, 0.75_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_F_EMISS  =(/0.54_fp_kind, 0.60_fp_kind, 0.64_fp_kind, 0.67_fp_kind, 0.70_fp_kind,  &
-                    0.71_fp_kind, 0.72_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_F_EMISS  =(/0.54_fp, 0.60_fp, 0.64_fp, 0.67_fp, 0.70_fp,  &
+                    0.71_fp, 0.72_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- GREASE_ICE_EMISS=(/0.49_fp_kind, 0.51_fp_kind, 0.53_fp_kind, 0.55_fp_kind, 0.58_fp_kind,  &
-                    0.65_fp_kind, 0.67_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ GREASE_ICE_EMISS=(/0.49_fp, 0.51_fp, 0.53_fp, 0.55_fp, 0.58_fp,  &
+                    0.65_fp, 0.67_fp/)
 
 
 
 !Define 13  sea ice V-POL emissivity spectra
 
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_A_EV=(/ 0.96_fp_kind, 0.97_fp_kind, 0.99_fp_kind, 0.99_fp_kind, 0.99_fp_kind,      &
-                0.98_fp_kind, 0.97_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_A_EV=(/ 0.96_fp, 0.97_fp, 0.99_fp, 0.99_fp, 0.99_fp,      &
+                0.98_fp, 0.97_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_B_EV=(/0.95_fp_kind, 0.96_fp_kind, 0.99_fp_kind, 0.98_fp_kind, 0.97_fp_kind,       &
-               0.94_fp_kind, 0.93_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_B_EV=(/0.95_fp, 0.96_fp, 0.99_fp, 0.98_fp, 0.97_fp,       &
+               0.94_fp, 0.93_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- MIXED_NEWICE_SNOW_EV=(/0.96_fp_kind, 0.96_fp_kind, 0.95_fp_kind, 0.94_fp_kind,            &
-                        0.93_fp_kind, 0.88_fp_kind, 0.86_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ MIXED_NEWICE_SNOW_EV=(/0.96_fp, 0.96_fp, 0.95_fp, 0.94_fp,            &
+                        0.93_fp, 0.88_fp, 0.86_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- NARE_NEWICE_EV=(/0.88_fp_kind, 0.89_fp_kind, 0.91_fp_kind, 0.91_fp_kind, 0.91_fp_kind,    &
-                  0.88_fp_kind, 0.88_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ NARE_NEWICE_EV=(/0.88_fp, 0.89_fp, 0.91_fp, 0.91_fp, 0.91_fp,    &
+                  0.88_fp, 0.88_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- BROKEN_ICE_EV=(/0.85_fp_kind, 0.87_fp_kind, 0.91_fp_kind, 0.91_fp_kind, 0.91_fp_kind,     &
-                 0.87_fp_kind, 0.84_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ BROKEN_ICE_EV=(/0.85_fp, 0.87_fp, 0.91_fp, 0.91_fp, 0.91_fp,     &
+                 0.87_fp, 0.84_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FIRST_YEAR_ICE_EV=(/0.98_fp_kind, 0.98_fp_kind, 0.98_fp_kind, 0.97_fp_kind, 0.95_fp_kind, &
-                     0.84_fp_kind, 0.75_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FIRST_YEAR_ICE_EV=(/0.98_fp, 0.98_fp, 0.98_fp, 0.97_fp, 0.95_fp, &
+                     0.84_fp, 0.75_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- COMPOSITE_PACK_ICE_EV=(/0.98_fp_kind, 0.97_fp_kind, 0.95_fp_kind, 0.93_fp_kind,           &
-                         0.89_fp_kind, 0.72_fp_kind, 0.62_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ COMPOSITE_PACK_ICE_EV=(/0.98_fp, 0.97_fp, 0.95_fp, 0.93_fp,           &
+                         0.89_fp, 0.72_fp, 0.62_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_C_EV  =(/0.99_fp_kind, 0.96_fp_kind, 0.90_fp_kind, 0.86_fp_kind, 0.75_fp_kind,     &
-                 0.66_fp_kind, 0.62_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_C_EV  =(/0.99_fp, 0.96_fp, 0.90_fp, 0.86_fp, 0.75_fp,     &
+                 0.66_fp, 0.62_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FAST_ICE_EV  =(/0.95_fp_kind, 0.95_fp_kind, 0.94_fp_kind, 0.91_fp_kind, 0.85_fp_kind,     &
-                 0.69_fp_kind, 0.62_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FAST_ICE_EV  =(/0.95_fp, 0.95_fp, 0.94_fp, 0.91_fp, 0.85_fp,     &
+                 0.69_fp, 0.62_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_D_EV  =(/0.87_fp_kind, 0.87_fp_kind, 0.88_fp_kind, 0.88_fp_kind, 0.88_fp_kind,     &
-                 0.77_fp_kind, 0.72_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_D_EV  =(/0.87_fp, 0.87_fp, 0.88_fp, 0.88_fp, 0.88_fp,     &
+                 0.77_fp, 0.72_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_E_EV  =(/0.77_fp_kind, 0.78_fp_kind, 0.81_fp_kind, 0.82_fp_kind, 0.84_fp_kind,     &
-                 0.86_fp_kind, 0.88_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_E_EV  =(/0.77_fp, 0.78_fp, 0.81_fp, 0.82_fp, 0.84_fp,     &
+                 0.86_fp, 0.88_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_F_EV  =(/0.71_fp_kind, 0.73_fp_kind, 0.77_fp_kind, 0.78_fp_kind, 0.81_fp_kind,     &
-                 0.86_fp_kind, 0.87_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_F_EV  =(/0.71_fp, 0.73_fp, 0.77_fp, 0.78_fp, 0.81_fp,     &
+                 0.86_fp, 0.87_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- GREASE_ICE_EV=(/0.66_fp_kind, 0.67_fp_kind, 0.70_fp_kind, 0.72_fp_kind, 0.76_fp_kind,     &
-                 0.82_fp_kind, 0.84_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ GREASE_ICE_EV=(/0.66_fp, 0.67_fp, 0.70_fp, 0.72_fp, 0.76_fp,     &
+                 0.82_fp, 0.84_fp/)
 
 
 !Define 13  sea ice H-POL emissivity spectra
 
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_A_EH=(/ 0.88_fp_kind,  0.92_fp_kind,  0.94_fp_kind,  0.94_fp_kind,  0.95_fp_kind,  &
-                0.92_fp_kind,  0.91_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_A_EH=(/ 0.88_fp,  0.92_fp,  0.94_fp,  0.94_fp,  0.95_fp,  &
+                0.92_fp,  0.91_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_B_EH=(/0.81_fp_kind,  0.82_fp_kind,  0.85_fp_kind,  0.86_fp_kind,  0.87_fp_kind,   &
-               0.88_fp_kind,  0.87_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_B_EH=(/0.81_fp,  0.82_fp,  0.85_fp,  0.86_fp,  0.87_fp,   &
+               0.88_fp,  0.87_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- MIXED_NEWICE_SNOW_EH=(/0.83_fp_kind,  0.84_fp_kind,  0.86_fp_kind,  0.85_fp_kind,         &
-                        0.84_fp_kind,  0.82_fp_kind,  0.80_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ MIXED_NEWICE_SNOW_EH=(/0.83_fp,  0.84_fp,  0.86_fp,  0.85_fp,         &
+                        0.84_fp,  0.82_fp,  0.80_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- NARE_NEWICE_EH=(/0.74_fp_kind,  0.75_fp_kind,  0.76_fp_kind,  0.76_fp_kind,               &
-                  0.77_fp_kind,  0.73_fp_kind,  0.73_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ NARE_NEWICE_EH=(/0.74_fp,  0.75_fp,  0.76_fp,  0.76_fp,               &
+                  0.77_fp,  0.73_fp,  0.73_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- BROKEN_ICE_EH=(/0.71_fp_kind,  0.73_fp_kind,  0.76_fp_kind,  0.77_fp_kind,                &
-                 0.80_fp_kind,  0.72_fp_kind,  0.69_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ BROKEN_ICE_EH=(/0.71_fp,  0.73_fp,  0.76_fp,  0.77_fp,                &
+                 0.80_fp,  0.72_fp,  0.69_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FIRST_YEAR_ICE_EH=(/0.91_fp_kind,  0.90_fp_kind,  0.89_fp_kind,  0.88_fp_kind,            &
-                     0.86_fp_kind,  0.76_fp_kind,  0.67_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FIRST_YEAR_ICE_EH=(/0.91_fp,  0.90_fp,  0.89_fp,  0.88_fp,            &
+                     0.86_fp,  0.76_fp,  0.67_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- COMPOSITE_PACK_ICE_EH=(/0.85_fp_kind,  0.84_fp_kind,  0.83_fp_kind,  0.82_fp_kind,        &
-                         0.79_fp_kind,  0.67_fp_kind,  0.57_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ COMPOSITE_PACK_ICE_EH=(/0.85_fp,  0.84_fp,  0.83_fp,  0.82_fp,        &
+                         0.79_fp,  0.67_fp,  0.57_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_C_EH  =(/0.90_fp_kind,  0.87_fp_kind,  0.81_fp_kind,  0.78_fp_kind,                &
-                 0.69_fp_kind,  0.60_fp_kind,  0.56_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_C_EH  =(/0.90_fp,  0.87_fp,  0.81_fp,  0.78_fp,                &
+                 0.69_fp,  0.60_fp,  0.56_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- FAST_ICE_EH  =(/0.80_fp_kind,  0.80_fp_kind,  0.78_fp_kind,  0.76_fp_kind,                &
-                 0.72_fp_kind,  0.60_fp_kind,  0.53_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ FAST_ICE_EH  =(/0.80_fp,  0.80_fp,  0.78_fp,  0.76_fp,                &
+                 0.72_fp,  0.60_fp,  0.53_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_D_EH  =(/0.71_fp_kind,  0.71_fp_kind,  0.70_fp_kind,  0.70_fp_kind,                &
-                 0.70_fp_kind,  0.59_fp_kind,  0.54_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_D_EH  =(/0.71_fp,  0.71_fp,  0.70_fp,  0.70_fp,                &
+                 0.70_fp,  0.59_fp,  0.54_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_E_EH  =(/0.55_fp_kind,  0.59_fp_kind,  0.60_fp_kind,  0.61_fp_kind,                &
-                 0.62_fp_kind,  0.67_fp_kind,  0.69_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_E_EH  =(/0.55_fp,  0.59_fp,  0.60_fp,  0.61_fp,                &
+                 0.62_fp,  0.67_fp,  0.69_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- RS_ICE_F_EH  =(/0.48_fp_kind,  0.51_fp_kind,  0.56_fp_kind,  0.57_fp_kind,                &
-                 0.60_fp_kind,  0.64_fp_kind,  0.65_fp_kind/)
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ RS_ICE_F_EH  =(/0.48_fp,  0.51_fp,  0.56_fp,  0.57_fp,                &
+                 0.60_fp,  0.64_fp,  0.65_fp/)
 
- REAL(fp_kind), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
- GREASE_ICE_EH=(/0.42_fp_kind,  0.42_fp_kind,  0.43_fp_kind,  0.45_fp_kind,                &
-                 0.49_fp_kind,  0.54_fp_kind,  0.56_fp_kind/)
-
-
-  ! ------------
-  ! Visibilities
-  ! ------------
-
-
-  PRIVATE
-
-
-
-  PUBLIC  :: NESDIS_AMSRE_SSICEEM
+ REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
+ GREASE_ICE_EH=(/0.42_fp,  0.42_fp,  0.43_fp,  0.45_fp,                &
+                 0.49_fp,  0.54_fp,  0.56_fp/)
 
 
 
@@ -314,14 +256,14 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         User_Angle               The angle value user defines (in degree).
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         TV[1:6]                  AMSRE V-POL Brightness temperatures at six frequencies.
@@ -344,12 +286,12 @@ CONTAINS
 !
 !         Ts                       The surface temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Tice                     The sea ice temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -359,14 +301,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -376,7 +318,7 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !
@@ -433,44 +375,38 @@ CONTAINS
                                  Emissivity_V)                                         ! OUTPUT
 
 
-use type_kinds,only: ip_kind, fp_kind
+real(fp),parameter    :: Satellite_Angle = 55.0
 
-use NESDIS_LandEM_Module
+integer,parameter :: nch = 6
 
-implicit none
+real(fp) :: Ts,Tice,frequency,User_Angle,em_vector(2),tv(nch),th(nch)
 
-real(fp_kind),parameter    :: Satellite_Angle = 55.0
+real(fp) :: esh1,esv1,esh2,esv2,desh,desv,dem
 
-integer(ip_kind),parameter :: nch = 6
+real(fp), intent (out) :: Emissivity_V,Emissivity_H
 
-real(fp_kind) :: Ts,Tice,frequency,User_Angle,em_vector(2),tv(nch),th(nch)
-
-real(fp_kind) :: esh1,esv1,esh2,esv2,desh,desv,dem
-
-real(fp_kind), intent (out) :: Emissivity_V,Emissivity_H
-
-integer(ip_kind)           :: ich
+integer           :: ich
 
 !  Initialization
 
-   Emissivity_H = 0.82_fp_kind
+   Emissivity_H = 0.82_fp
 
-   Emissivity_V = 0.85_fp_kind
+   Emissivity_V = 0.85_fp
 
 
 do ich =1, nch
 
-   if ( tv(ich) .le. 100.0_fp_kind .or. tv(ich) .ge. 330.0_fp_kind) return
+   if ( tv(ich) .le. 100.0_fp .or. tv(ich) .ge. 330.0_fp) return
 
-   if ( th(ich) .le. 50.0_fp_kind .or. th(ich) .ge. 330.0_fp_kind) return
+   if ( th(ich) .le. 50.0_fp .or. th(ich) .ge. 330.0_fp) return
 
 enddo
 
 ! EMISSIVITY AT SATELLITE'S MEASUREMENT ANGLE
 
-if (Tice .le. 100.0_fp_kind .or. Tice .ge. 277.0_fp_kind) Tice = Ts
+if (Tice .le. 100.0_fp .or. Tice .ge. 277.0_fp) Tice = Ts
 
-IF( Ts .le. 100.0_fp_kind .or. Ts .ge. 300.0_fp_kind) THEN
+IF( Ts .le. 100.0_fp .or. Ts .ge. 300.0_fp) THEN
 
    call AMSRE_Ice_TB(frequency,Satellite_Angle,tv,th,em_vector)
 
@@ -483,15 +419,15 @@ ENDIF
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,0.0_fp_kind,9,13,10.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Tice,0.0_fp,9,13,10.0_fp,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tice,0.0_fp_kind,9,13,10.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,frequency,0.0_fp,0.0_fp,Ts,Tice,0.0_fp,9,13,10.0_fp,esh2,esv2)
 
   desh = esh1 - esh2
 
   desv = esv1 - esv2
 
-  dem = ( desh + desv ) * 0.5_fp_kind
+  dem = ( desh + desv ) * 0.5_fp
 ! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
@@ -500,9 +436,9 @@ ENDIF
 
   if (Emissivity_V > one)         Emissivity_V = one
 
-  if (Emissivity_H < 0.3_fp_kind) Emissivity_H = 0.3_fp_kind
+  if (Emissivity_H < 0.3_fp) Emissivity_H = 0.3_fp
 
-  if (Emissivity_V < 0.3_fp_kind) Emissivity_V = 0.3_fp_kind
+  if (Emissivity_V < 0.3_fp) Emissivity_V = 0.3_fp
 
 
  end subroutine NESDIS_AMSRE_SSICEEM
@@ -565,19 +501,15 @@ ENDIF
 !
 !*********************************************************************************************
 
-  use type_kinds,only: ip_kind, fp_kind
-  implicit none
+  integer,parameter :: nch = N_FREQ, ncoe = 6
 
+  real(fp) :: frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
 
-  integer(ip_kind),parameter :: nch = N_FREQ, ncoe = 6
+  real(fp) :: ev(nch),eh(nch)
 
-  real(fp_kind) :: frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
+  real(fp)  :: coev(nch*10),coeh(nch*10)
 
-  real(fp_kind) :: ev(nch),eh(nch)
-
-  real(fp_kind)  :: coev(nch*10),coeh(nch*10)
-
-  integer(ip_kind) :: ich,i,k,ntype
+  integer :: ich,i,k,ntype
 
 
  data (coev(k),k=1,7)   /7.991290e-002, 4.331683e-003 ,1.084224e-003,-5.157090e-004,-2.933915e-003, 1.851350e-003,-3.274052e-004/
@@ -599,8 +531,8 @@ ENDIF
 
  freq = FREQUENCY_AMSREALG
 
-  ev = 0.9_fp_kind
-  eh = 0.9_fp_kind
+  ev = 0.9_fp
+  eh = 0.9_fp
 
 DO ich = 1, nch-1
 
@@ -728,16 +660,13 @@ ENDDO
 !
 !*********************************************************************************************
 
- use type_kinds,only: ip_kind, fp_kind
- implicit none
 
+  integer,parameter :: nch = N_FREQ, ncoe = 7
+  real(fp)     :: ts,tskin,tice,ff,frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
+  real(fp)     :: ev(nch),eh(nch),scale_factor
+  real(fp)     :: coev(nch*10),coeh(nch*10)
 
-  integer(ip_kind),parameter :: nch = N_FREQ, ncoe = 7
-  real(fp_kind)     :: ts,tskin,tice,ff,frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
-  real(fp_kind)     :: ev(nch),eh(nch),scale_factor
-  real(fp_kind)     :: coev(nch*10),coeh(nch*10)
-
-  integer(ip_kind) :: ich,i,k,ntype
+  integer :: ich,i,k,ntype
 
 
  data (coev(k),k=1,8)  / 9.264870e-001, 3.820813e-003, 9.820721e-005,-9.743999e-005, 1.016058e-004,&
@@ -769,8 +698,8 @@ ENDDO
 ! Initialization
 
   freq = FREQUENCY_AMSREALG
-  ev = 0.9_fp_kind
-  eh = 0.9_fp_kind
+  ev = 0.9_fp
+  eh = 0.9_fp
 
 DO ich = 1, nch-1
 
@@ -788,7 +717,7 @@ DO ich = 1, nch-1
 
    ff = freq(ich)
 
-   ts = tice + (tskin - tice)*(ff-6.925_fp_kind)/(89.0_fp_kind-6.925_fp_kind)
+   ts = tice + (tskin - tice)*(ff-6.925_fp)/(89.0_fp-6.925_fp)
 
 
    ev(ich) = ev(ich) + coev((ich-1)*10 + ncoe + 1)*ts
@@ -810,9 +739,9 @@ ENDDO
 ! part of ocean water
 ! ev_6<ev(36)<ev(89)
 
-  if ( (ev(1) .lt. ev(5)) .and. (ev(5) .lt. ev(6)) .and. (ev(6) .gt. 0.92_fp_kind) ) then
+  if ( (ev(1) .lt. ev(5)) .and. (ev(5) .lt. ev(6)) .and. (ev(6) .gt. 0.92_fp) ) then
 
-      scale_factor = 0.92_fp_kind /ev(6)
+      scale_factor = 0.92_fp /ev(6)
 
       do ich=1,nch-1
          ev(ich) = ev(ich)*scale_factor
@@ -925,17 +854,12 @@ subroutine siceemiss_extrapolate(ev,eh,theta,ntype)
 !
 !*********************************************************************************************
 
-
-use type_kinds,only: ip_kind, fp_kind
-implicit none
-
-
-integer(ip_kind),parameter:: nch = N_FREQ,nt=13
-real(fp_kind)  :: ev(*), eh(*)
-real(fp_kind)  :: ew_tab(nt,nch),ev_tab(nt,nch),eh_tab(nt,nch),freq(nch)
-real(fp_kind)  :: emiss(nch-1),theta,angle,cons,sins
-real(fp_kind)  :: delt0,delt_l,delt_h,delt_all,dmin
-integer(ip_kind) :: ich,ip,ntype
+integer,parameter:: nch = N_FREQ,nt=13
+real(fp)  :: ev(*), eh(*)
+real(fp)  :: ew_tab(nt,nch),ev_tab(nt,nch),eh_tab(nt,nch),freq(nch)
+real(fp)  :: emiss(nch-1),theta,angle,cons,sins
+real(fp)  :: delt0,delt_l,delt_h,delt_all,dmin
+integer :: ich,ip,ntype
 
 ! GET EMISSIVITY/FREQUENCY LOOKUP TABLE DATA
 
@@ -1022,7 +946,7 @@ integer(ip_kind) :: ich,ip,ntype
 
 !
 
-angle = theta*3.14159_fp_kind/180.0_fp_kind
+angle = theta*3.14159_fp/180.0_fp
 
 cons = cos(angle)*cos(angle)
 
@@ -1038,21 +962,21 @@ enddo
 
 ! INitialization
 
-delt_l   = 0.0_fp_kind
+delt_l   = 0.0_fp
 
-delt_h   = 0.0_fp_kind
+delt_h   = 0.0_fp
 
-dmin = 0.05_fp_kind
+dmin = 0.05_fp
 
-delt0 = 10.0_fp_kind
+delt0 = 10.0_fp
 
 ! Initialization of ntype
 
   ntype = 2
 
-  if (emiss(5)+0.01_fp_kind .le. emiss(6)) ntype = 11
+  if (emiss(5)+0.01_fp .le. emiss(6)) ntype = 11
 
-  if (emiss(5)-0.01_fp_kind .gt. emiss(6)) ntype =  7
+  if (emiss(5)-0.01_fp .gt. emiss(6)) ntype =  7
 
 do ip = 1,nt
 
@@ -1060,7 +984,7 @@ do ip = 1,nt
 
     delt_h = abs(emiss(6)-ew_tab(ip,6))
 
-    delt_all = 0.0_fp_kind
+    delt_all = 0.0_fp
 
     do ich=1,nch-1
 
@@ -1089,11 +1013,11 @@ eh(nch) = eh(nch-1) - (eh_tab(ntype,nch-1) - eh_tab(ntype,nch))
 
      if (ev(ich) .gt. one) ev(ich) = one
 
-     if (ev(ich) .lt. 0.3_fp_kind) ev(ich) = 0.3_fp_kind
+     if (ev(ich) .lt. 0.3_fp) ev(ich) = 0.3_fp
 
-     if (eh(ich) .gt. 0.98_fp_kind) eh(ich) = 0.98_fp_kind
+     if (eh(ich) .gt. 0.98_fp) eh(ich) = 0.98_fp
 
-     if (eh(ich) .lt. 0.3_fp_kind) eh(ich) = 0.30_fp_kind
+     if (eh(ich) .lt. 0.3_fp) eh(ich) = 0.30_fp
 
   enddo
 

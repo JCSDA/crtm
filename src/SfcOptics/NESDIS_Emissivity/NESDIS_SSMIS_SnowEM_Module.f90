@@ -1,93 +1,55 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_SSMIS_SnowEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave snow emissivity model
+! NESDIS_SSMIS_SnowEM_Module
 !
-! REFERENCES:
-!       (1) Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
-!       (2) Banghua Yan, Fuzhong Weng, and Huan Meng,2008:"Retrieval of Snow Surface Microwave
-!       Emissivity from Advanced Microwave Sounding Unit (AMSU),J. Geophys. Res., 113, D19206,
-!       doi:10.1029/2007JD009559
+! Module containing the SSMIS microwave snow emissivity model
 !
-! CATEGORY:
-!       Surface : MW Surface Snow Emissivity from SSMIS
+! References:
+!       Yan,B., F.Weng, and K.Okamoto, 2004, A microwave snow emissivity model,
+!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
+!         24-27 February, 2004, Rome, Italy.
 !
-! LANGUAGE:
-!       Fortran-95
+!       Yan,B., F.Weng, and H.Meng, 2008, Retrieval of Snow Surface Microwave
+!         Emissivity from Advanced Microwave Sounding Unit (AMSU),
+!         J. Geophys. Res., 113, D19206, doi:10.1029/2007JD009559
 !
-! CALLING SEQUENCE:
-!       USE NESDIS_SSMIS_SnowEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-!       NESDIS_LandEM_Module:Module containing the microwave land emissivity model
-!
-! CONTAINS:
-!
-!   PUBLIC SUBPROGRAM:
-!       NESDIS_SSMIS_SnowEM_Module : Subroutine to call SSMIS_SnowEM_CORE
-!
-!   PRIVATE SUBPROGRAM:
-!
-!       SSMIS_SnowEM_TBTS : Subroutine to calculate the microwave emissivity over snow conditions using Tb & TS
-!       SSMIS_SnowEM_TB  : Subroutine to calculate the microwave emissivity over snow conditions using Tb
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, Perot Inc., Banghua.Yan@noaa.gov (22-April-2008)
+!       Written by:     Banghua Yan, 22-Apr-2008, banghua.yan@noaa.gov
+!                       Fuzhong Weng, fuzhong.weng@noaa.gov
 !
 !
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!       release to CRTM : 10-31-2008
-!
-!  Copyright (C) 2008 Fuzhong Weng and Banghua Yan
-!--------------------------------------------------------------------------------
+
+MODULE NESDIS_SSMIS_SnowEM_Module
 
 
-   MODULE NESDIS_SSMIS_SnowEM_Module
-
-   USE Type_Kinds
-
-   USE NESDIS_LandEM_Module
-
-    ! -----------------------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
+  ! Module use
+  USE Type_Kinds, ONLY: fp
+  USE NESDIS_LandEM_Module
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
-
   PRIVATE
+  PUBLIC :: NESDIS_SSMIS_SnowEM
 
 
-
-  PUBLIC  :: NESDIS_SSMIS_SnowEM
-
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS
+
+
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -125,7 +87,7 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -133,13 +95,13 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !
 !         Tb                      BRIGHTNESS TEMPERATURES AT EIGHT SSMIS WINDOW CHANNELS
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION   7*1 SCALAR
 !
 !                 tb[1] :  at 19.35 GHz  v-polarization
@@ -153,13 +115,13 @@ CONTAINS
 !
 !         Ts                       Snow surface temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
 !         Depth:                   The snow  depth
 !                                  UNITS:      mm
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 
 ! OUTPUT ARGUMENTS:
@@ -168,14 +130,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -219,27 +181,21 @@ CONTAINS
                                Emissivity_H,                                      & ! OUTPUT
                                Emissivity_V)                                        ! OUTPUT
 
-  use type_kinds, only: ip_kind, fp_kind
+  integer, parameter:: nch = 8, NALGONE = 1, NALGTWO = 2
 
-  USE NESDIS_LandEM_Module
+  real(fp), parameter :: SSMIS_Angle= 53.0_fp
 
-  implicit none
+  REAL(fp), PARAMETER ::  ev_default = 0.9_fp
 
-  integer(ip_kind), parameter:: nch = 8, NALGONE = 1, NALGTWO = 2
+  REAL(fp), PARAMETER ::  eh_default = 0.88_fp
 
-  real(fp_kind), parameter :: SSMIS_Angle= 53.0_fp_kind
+  integer  :: NALG_TYPE, ich
 
-  REAL(fp_kind), PARAMETER ::  ev_default = 0.9_fp_kind
+  real(fp), intent(in)     :: Depth,Angle,frequency,Ts,tb(nch)
 
-  REAL(fp_kind), PARAMETER ::  eh_default = 0.88_fp_kind
+  real(fp)     :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
 
-  integer(ip_kind)  :: NALG_TYPE, ich
-
-  real(fp_kind), intent(in)     :: Depth,Angle,frequency,Ts,tb(nch)
-
-  real(fp_kind)     :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
-
-  real(fp_kind), intent(out) :: Emissivity_H, Emissivity_V
+  real(fp), intent(out) :: Emissivity_H, Emissivity_V
 
   real(fp) :: local_depth
   
@@ -250,11 +206,11 @@ CONTAINS
 
   NALG_TYPE = NALGONE
 
-  if ( (Ts <= 140.0_fp_kind) .or. (Ts >= 330.0_fp_kind) ) NALG_TYPE = NALGTWO
+  if ( (Ts <= 140.0_fp) .or. (Ts >= 330.0_fp) ) NALG_TYPE = NALGTWO
 
   do ich = 1, nch
 
-     if ( (tb(ich) .le. 50.0_fp_kind) .or. (tb(ich) .ge. 330.0_fp_kind) )  RETURN
+     if ( (tb(ich) .le. 50.0_fp) .or. (tb(ich) .ge. 330.0_fp) )  RETURN
 
   enddo
 
@@ -278,19 +234,19 @@ CONTAINS
 
   ! Get the emissivity angle dependence
 
-  if (local_depth .lt. 0.1_fp_kind) local_depth = 0.1_fp_kind
+  if (local_depth .lt. 0.1_fp) local_depth = 0.1_fp
 
-  if (local_depth .gt. 10.0_fp_kind) local_depth = 10.0_fp_kind
+  if (local_depth .gt. 10.0_fp) local_depth = 10.0_fp
 
-  call NESDIS_LandEM(SSMIS_Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,local_depth,esh1,esv1)
+  call NESDIS_LandEM(SSMIS_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,local_depth,esh1,esv1)
 
-  call NESDIS_LandEM(Angle,frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,local_depth,esh2,esv2)
+  call NESDIS_LandEM(Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,local_depth,esh2,esv2)
 
   desh = esh1 - esh2
 
   desv = esv1 - esv2
 
-  dem = ( desh + desv ) * 0.5_fp_kind
+  dem = ( desh + desv ) * 0.5_fp
 
 ! Emissivity at User's Angle
 
@@ -298,13 +254,13 @@ CONTAINS
 
 ! Quality Control
 
-  if(Emissivity_H .gt. 1.0_fp_kind) Emissivity_H = 1.0_fp_kind
+  if(Emissivity_H .gt. 1.0_fp) Emissivity_H = 1.0_fp
 
-  if(Emissivity_H .lt. 0.3_fp_kind) Emissivity_H = 0.3_fp_kind
+  if(Emissivity_H .lt. 0.3_fp) Emissivity_H = 0.3_fp
 
-  if(Emissivity_V .gt. 1.0_fp_kind) Emissivity_V = 1.0_fp_kind
+  if(Emissivity_V .gt. 1.0_fp) Emissivity_V = 1.0_fp
 
-  if(Emissivity_V .lt. 0.3_fp_kind) Emissivity_V = 0.3_fp_kind
+  if(Emissivity_V .lt. 0.3_fp) Emissivity_V = 0.3_fp
 
   if(Emissivity_V .lt. Emissivity_H) Emissivity_V = Emissivity_H
 
@@ -368,35 +324,31 @@ CONTAINS
 !
 !------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: ip_kind, fp_kind
+  integer,parameter :: nch = 8, nchl = 5, ncoe = 10, ncoel = 7
 
-  implicit none
+  integer,parameter :: nchv = 4, nchh = 4
 
-  integer(ip_kind),parameter :: nch = 8, nchl = 5, ncoe = 10, ncoel = 7
+  integer :: ich, jch, k, nchx
 
-  integer(ip_kind),parameter :: nchv = 4, nchh = 4
+  real(fp), parameter, dimension(nch) ::   &
 
-  integer(ip_kind) :: ich, jch, k, nchx
+      freq=(/19.35_fp,19.35_fp,22.235_fp,37.0_fp,37.0_fp,  &
 
-  real(fp_kind), parameter, dimension(nch) ::   &
+             91.655_fp, 91.655_fp, 150._fp/)
 
-      freq=(/19.35_fp_kind,19.35_fp_kind,22.235_fp_kind,37.0_fp_kind,37.0_fp_kind,  &
+  real(fp), parameter, dimension(nchv) ::  &
 
-             91.655_fp_kind, 91.655_fp_kind, 150._fp_kind/)
+       freqv=(/19.35_fp,22.235_fp,37.0_fp,91.655_fp/)
 
-  real(fp_kind), parameter, dimension(nchv) ::  &
+  real(fp), parameter, dimension(nchh) :: &
 
-       freqv=(/19.35_fp_kind,22.235_fp_kind,37.0_fp_kind,91.655_fp_kind/)
+       freqh=(/19.35_fp,37.0_fp,91.655_fp,150._fp/)
 
-  real(fp_kind), parameter, dimension(nchh) :: &
+  real(fp) ev(nchv),eh(nchh)
 
-       freqh=(/19.35_fp_kind,37.0_fp_kind,91.655_fp_kind,150._fp_kind/)
+  real(fp) frequency,Ts,tb(*),em_vector(*),em(nch)
 
-  real(fp_kind) ev(nchv),eh(nchh)
-
-  real(fp_kind) frequency,Ts,tb(*),em_vector(*),em(nch)
-
-  real(fp_kind) coel(nchl,ncoel) , coe(nch,ncoe)
+  real(fp) coel(nchl,ncoel) , coe(nch,ncoe)
 
   !snow
 
@@ -436,9 +388,9 @@ CONTAINS
 
    ! Initialization
 
-  em_vector(1) = 0.7_fp_kind
+  em_vector(1) = 0.7_fp
 
-  em_vector(2) = 0.8_fp_kind
+  em_vector(2) = 0.8_fp
 
    !*** Get intial emissivity for each frequency
 
@@ -575,34 +527,30 @@ CONTAINS
 !
 !------------------------------------------------------------------------------------------------------------
 
-  use type_kinds, only: ip_kind, fp_kind
+  integer,parameter :: nch = 8, nchl = 5, ncoe = 9, ncoel = 6
 
-  implicit none
+  integer,parameter :: nchv = 4, nchh = 4
 
-  integer(ip_kind),parameter :: nch = 8, nchl = 5, ncoe = 9, ncoel = 6
+  integer :: ich, jch, k, nchx
 
-  integer(ip_kind),parameter :: nchv = 4, nchh = 4
+  real(fp), parameter, dimension(nch) ::   &
 
-  integer(ip_kind) :: ich, jch, k, nchx
+      freq=(/19.35_fp,19.35_fp,22.235_fp,37.0_fp,37.0_fp,  &
 
-  real(fp_kind), parameter, dimension(nch) ::   &
+             91.655_fp, 91.655_fp, 150._fp/)
 
-      freq=(/19.35_fp_kind,19.35_fp_kind,22.235_fp_kind,37.0_fp_kind,37.0_fp_kind,  &
+  real(fp), parameter, dimension(nchv) ::  &
 
-             91.655_fp_kind, 91.655_fp_kind, 150._fp_kind/)
+       freqv=(/19.35_fp,22.235_fp,37.0_fp,91.655_fp/)
 
-  real(fp_kind), parameter, dimension(nchv) ::  &
+  real(fp), parameter, dimension(nchh) :: &
+       freqh=(/19.35_fp,37.0_fp,91.655_fp,150._fp/)
 
-       freqv=(/19.35_fp_kind,22.235_fp_kind,37.0_fp_kind,91.655_fp_kind/)
+  real(fp) ev(nchv),eh(nchh)
 
-  real(fp_kind), parameter, dimension(nchh) :: &
-       freqh=(/19.35_fp_kind,37.0_fp_kind,91.655_fp_kind,150._fp_kind/)
+  real(fp) frequency,tb(*),em_vector(*),em(nch)
 
-  real(fp_kind) ev(nchv),eh(nchh)
-
-  real(fp_kind) frequency,tb(*),em_vector(*),em(nch)
-
-  real(fp_kind) coel(nchl,ncoel) , coe(nch,ncoe)
+  real(fp) coel(nchl,ncoel) , coe(nch,ncoe)
 
   !snow
 
@@ -641,9 +589,9 @@ CONTAINS
 
    ! Initialization
 
-  em_vector(1) = 0.7_fp_kind
+  em_vector(1) = 0.7_fp
 
-  em_vector(2) = 0.8_fp_kind
+  em_vector(2) = 0.8_fp
 
    !*** Get intial emissivity for each frequency
 
@@ -731,4 +679,4 @@ CONTAINS
   end subroutine  SSMIS_SnowEM_TB
 
 
-   END MODULE NESDIS_SSMIS_SnowEM_Module
+END MODULE NESDIS_SSMIS_SnowEM_Module

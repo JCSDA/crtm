@@ -1,114 +1,49 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_AMSRE_SNOWEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave snow emissivity model from AMSRE
+! NESDIS_AMSRE_SNOWEM_Module
 !
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th
+! Module containing the AMSR-E microwave snow emissivity model
 !
-!       Specialist Meeting on Microwave Radiometry and Remote Sension Applications,
-!
-!       24-27 February, 2004, Rome, Italy.
-!
-! CATEGORY:
-!       Surface : MW Surface Snow  Emissivity from AMSRE
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE NESDIS_AMSRE_SNOWEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-!       NESDIS_LandEM_Module:Module containing the microwave land emissivity model
-!
-!       NESDIS_SnowEM_Parameters: Module containing the microwave snow emissivity spectra
-!
-! CONTAINS:
-!
-!   PUBLIC SUBPROGRAM:
-!
-!       NESDIS_AMSRE_SNOW : Subroutine to calculate snow emissivity from AMSRE
-!
-!   PRIVATE SUBPROGRAM:
-!
-!       AMSRE_SNOW_TB   : Subroutine to calculate the snow microwave emissivity from AMSRE TB
-!
-!       AMSRE_SNOW_TBTS : Subroutine to calculate the snow microwave emissivity from AMSRE TB & TS
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
+! References:
+!       Yan,B., F.Weng and K.Okamoto,2004: "A microwave snow emissivity model",
+!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
+!         24-27 February, 2004, Rome, Italy.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (26-May-2005)
+!       Written by:     Banghua Yan, 26-May-2005, banghua.yan@noaa.gov
+!                       Fuzhong Weng, fuzhong.weng@noaa.gov
 !
+!       Modified by:    Banghua Yan, 10-Sep-2005
+!                       Quanhua Liu, quanhua.liu@noaa.gov
+!                       Yong Han, yong.han@noaa.gov
 !
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!      Fixed bugs :     Banghua Yan, QuanLiu and Yong Han  (10-September-2005)
-!
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_AMSRE_SNOWEM_Module
 
 
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
+  USE Type_Kinds, ONLY: fp
   USE NESDIS_LandEM_Module
-
   USE NESDIS_SnowEM_Parameters
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
-
   PRIVATE
+  PUBLIC :: NESDIS_AMSRE_SNOW
 
 
-
-  PUBLIC  :: NESDIS_AMSRE_SNOW
-
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS
@@ -148,14 +83,14 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         User_Angle               The angle value user defines (in degree).
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         TV[1:6]                  AMSRE V-POL Brightness temperatures at six frequencies.
@@ -178,12 +113,12 @@ CONTAINS
 !
 !         Ts                       The surface temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Tsnow                    The snow temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -193,14 +128,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -210,7 +145,7 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !
@@ -262,41 +197,34 @@ CONTAINS
                               Emissivity_H,                           & ! OUTPUT
                               Emissivity_V)                             ! OUTPUT
 
-
-use type_kinds, only: ip_kind, fp_kind
-
-use NESDIS_LandEM_Module
-
-implicit none
-
-real(fp_kind),parameter    :: Satellite_Angle = 55.0_fp_kind
-integer(ip_kind),parameter :: nch = 6
-integer(ip_kind)           :: ich
-real(fp_kind)              :: Ts,Tsnow,Frequency,User_Angle,em_vector(2),tv(nch),th(nch)
-real(fp_kind)              :: esh1,esv1,esh2,esv2,desh,desv,dem
-real(fp_kind), intent(out) :: Emissivity_V,Emissivity_H
+real(fp),parameter    :: Satellite_Angle = 55.0_fp
+integer,parameter :: nch = 6
+integer           :: ich
+real(fp)              :: Ts,Tsnow,Frequency,User_Angle,em_vector(2),tv(nch),th(nch)
+real(fp)              :: esh1,esv1,esh2,esv2,desh,desv,dem
+real(fp), intent(out) :: Emissivity_V,Emissivity_H
 
 !  Initialization
 
-   Emissivity_H = 0.82_fp_kind
+   Emissivity_H = 0.82_fp
 
-   Emissivity_V = 0.85_fp_kind
+   Emissivity_V = 0.85_fp
 
 
 do ich =1, nch
 
-   if ( tv(ich) .le. 100.0_fp_kind .or. tv(ich) .ge. 330.0_fp_kind) return
+   if ( tv(ich) .le. 100.0_fp .or. tv(ich) .ge. 330.0_fp) return
 
-   if ( th(ich) .le. 50.0_fp_kind .or. th(ich) .ge. 330.0_fp_kind) return
+   if ( th(ich) .le. 50.0_fp .or. th(ich) .ge. 330.0_fp) return
 
 enddo
 
 
 ! EMISSIVITY AT SATELLITE'S MEASUREMENT ANGLE
 
-if (Tsnow .le. 100.0_fp_kind .or. Tsnow .ge. 280.0_fp_kind) Tsnow = Ts
+if (Tsnow .le. 100.0_fp .or. Tsnow .ge. 280.0_fp) Tsnow = Ts
 
-IF( Ts .le. 100.0_fp_kind .or. Ts .ge. 280.0_fp_kind) THEN
+IF( Ts .le. 100.0_fp .or. Ts .ge. 280.0_fp) THEN
 
    call AMSRE_Snow_TB(Frequency,Satellite_Angle,tv,th,em_vector)
 
@@ -311,15 +239,15 @@ ENDIF
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,Frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tsnow,0.0_fp_kind,9,13,10.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,Frequency,0.0_fp,0.0_fp,Ts,Tsnow,0.0_fp,9,13,10.0_fp,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,Frequency,0.0_fp_kind,0.0_fp_kind,Ts,Tsnow,0.0_fp_kind,9,13,10.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,Frequency,0.0_fp,0.0_fp,Ts,Tsnow,0.0_fp,9,13,10.0_fp,esh2,esv2)
 
   desh = esh1 - esh2
 
   desv = esv1 - esv2
 
-  dem = ( desh + desv ) * 0.5_fp_kind
+  dem = ( desh + desv ) * 0.5_fp
 
 ! Emissivity at User's Angle
 
@@ -329,9 +257,9 @@ ENDIF
 
   if (Emissivity_V > one)         Emissivity_V = one
 
-  if (Emissivity_H < 0.3_fp_kind) Emissivity_H = 0.3_fp_kind
+  if (Emissivity_H < 0.3_fp) Emissivity_H = 0.3_fp
 
-  if (Emissivity_V < 0.3_fp_kind) Emissivity_V = 0.3_fp_kind
+  if (Emissivity_V < 0.3_fp) Emissivity_V = 0.3_fp
 
 
  end subroutine NESDIS_AMSRE_SNOW
@@ -399,14 +327,10 @@ ENDIF
 !
 !*********************************************************************************************
 
-  use type_kinds, only: ip_kind, fp_kind
-  implicit none
-
-
-  integer(ip_kind), parameter :: nch = 7, ncoe = 6
-  real(fp_kind)   :: frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
-  real(fp_kind)   :: ev(nch),eh(nch)
-  real(fp_kind)   :: coev(nch*10),coeh(nch*10),coefv(nch*10),coefh(nch*10)
+  integer, parameter :: nch = 7, ncoe = 6
+  real(fp)   :: frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
+  real(fp)   :: ev(nch),eh(nch)
+  real(fp)   :: coev(nch*10),coeh(nch*10),coefv(nch*10),coefh(nch*10)
 
   integer :: ich,i,k,ntype
 
@@ -611,15 +535,11 @@ endif
 !
 !*********************************************************************************************
 
- use type_kinds, only: ip_kind, fp_kind
- implicit none
-
-
- integer(ip_kind), parameter :: nch = 7, ncoe = 7
- real(fp_kind)       :: ts,tskin,tsnow,ff,frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
- real(fp_kind)       :: scale_factor,ev(nch),eh(nch)
- real(fp_kind)       :: coev(nch*10),coeh(nch*10),coefv(nch*10),coefh(nch*10)
- integer(ip_kind)    :: ich,i,k,ntype
+ integer, parameter :: nch = 7, ncoe = 7
+ real(fp)       :: ts,tskin,tsnow,ff,frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
+ real(fp)       :: scale_factor,ev(nch),eh(nch)
+ real(fp)       :: coev(nch*10),coeh(nch*10),coefv(nch*10),coefh(nch*10)
+ integer    :: ich,i,k,ntype
  logical :: flat_spectra
 
 
@@ -870,16 +790,12 @@ subroutine snowemiss_extrapolate(ev,eh,theta,ntype)
 !
 !*********************************************************************************************
 
-
-use type_kinds, only: ip_kind, fp_kind
-implicit none
-
-integer(ip_kind), parameter :: nch = 7,nt=16
-real(fp_kind)     :: ev(*), eh(*)
-real(fp_kind)     :: ew_tab(nt,nch),ev_tab(nt,nch),eh_tab(nt,nch),freq(nch)
-real(fp_kind)     :: emiss(nch-1),theta,angle,cons,sins
-real(fp_kind)     :: delt0,delt_l,delt_h,delt_all,dmin
-integer(ip_kind)  :: ich,ip,ntype
+integer, parameter :: nch = 7,nt=16
+real(fp)     :: ev(*), eh(*)
+real(fp)     :: ew_tab(nt,nch),ev_tab(nt,nch),eh_tab(nt,nch),freq(nch)
+real(fp)     :: emiss(nch-1),theta,angle,cons,sins
+real(fp)     :: delt0,delt_l,delt_h,delt_all,dmin
+integer  :: ich,ip,ntype
 
 ! Sixteen candidate snow emissivity spectra
 

@@ -1,96 +1,48 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_MHS_SICEEM_Module
 !
-! PURPOSE:
-!       Module containing the microwave sea ice  emissivity model
+! NESDIS_MHS_SICEEM_Module
 !
-! REFERENCES:
-!   (1) Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+! Module containing the MHS microwave sea ice emissivity model
 !
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+! References:
+!       Yan,B., F.Weng and K.Okamoto,2004: "A microwave snow emissivity model",
+!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
+!         24-27 February, 2004, Rome, Italy.
 !
-!   (2) Yan, B., F. Weng, H. Meng, N. Grody, 2007: Retrieval of Snow Surface Microwave Emissivity from
+!       Yan,B., F.Weng, H.Meng, and N.Grody, 2007: "Retrieval of Snow Surface Microwave
+!         Emissivity from Advanced Microwave Sounding Unit (AMSU),
+!         submitted to J.G.R.
 !
-!       Advanced Microwave Sounding Unit (AMSU), submitted to J. G. R.
-!
-! CATEGORY:
-!       Surface : MW Surface Sea Ice Emissivity from MHS
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE NESDIS_MHS_SICEEM_Module
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds of variable types.
-!
-!       NESDIS_LandEM_Module:Module containing the microwave land emissivity model
-!
-! CONTAINS:
-!
-!   PUBLIC SUBPROGRAM:
-!
-!       NESDIS_ICEEM_MHS : Subroutine to calculate sea ice emissivity from MHS and Ts
-!
-!   PRIVATE SUBPROGRAM:
-!
-!     MHS_Ts_EM        : Subroutine to calculate sea ice emissivity from MHS and Ts
-!
-!     MHS_EM           : Subroutine to calculate sea ice emissivity from MHS
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Banghua Yan, Banghua.Yan@noaa.gov (05-OCT-2007)
-!                       (released to EMC on 18-OCT-2007)
+!       Written by:     Banghua Yan, 05-Oct-2007, banghua.yan@noaa.gov
 !
-!  Copyright (C) 2007 Fuzhong Weng and Banghua Yan
-!
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_MHS_SICEEM_Module
 
 
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-
+  USE Type_Kinds, ONLY: fp, Double
   USE NESDIS_LandEM_Module
-
-
-  ! -----------------------
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
-
+  
   ! ------------
   ! Visibilities
   ! ------------
-
-
   PRIVATE
+  PUBLIC :: NESDIS_ICEEM_MHS
 
 
-
-  PUBLIC  :: NESDIS_ICEEM_MHS
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS
@@ -131,7 +83,7 @@ CONTAINS
 !         Frequency                Frequency User defines
 !                                  This is the "I" dimension
 !                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -139,19 +91,19 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         User_Angle               The local angle value in degree user defines.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Rank-1, (I)
 !
 !         Tbb                      BRIGHTNESS TEMPERATURES AT TWO MHS WINDOW CHANNELS
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION   2*1 SCALAR
 !
 !                         WHICH ARE
@@ -162,7 +114,7 @@ CONTAINS
 !
 !         Ts = Sea Ice Temperature:        The sea ice surface temperature.
 !                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -172,14 +124,14 @@ CONTAINS
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !         Emissivity_V:            The surface emissivity at a vertical polarization.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
 !                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp_kind )
+!                                  TYPE:       REAL( fp )
 !                                  DIMENSION:  Scalar
 !
 !
@@ -223,35 +175,29 @@ subroutine   NESDIS_ICEEM_MHS(Satellite_Angle,                                  
                               Emissivity_V)                                                    ! OUTPUT
 
 
-  use type_kinds,only: fp_kind,ip_kind
-
-  use NESDIS_LandEM_Module
-
-  implicit none
-
-  INTEGER(ip_kind),PARAMETER ::  MHS_Ts_ALG  = 1, MHS_ALG  = 2, PHY_ALG = 3
-  Integer(ip_kind), parameter::  nwchb = 2
-  integer(ip_kind) :: input_type,i
-  real(fp_kind)    :: Satellite_Angle,User_Angle,frequency,Ts
-  real(fp_kind)    :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
-  real(fp_kind)    :: tbb(nwchb)
-  real(fp_kind), intent(out) :: Emissivity_H,Emissivity_V
+  integer,PARAMETER ::  MHS_Ts_ALG  = 1, MHS_ALG  = 2, PHY_ALG = 3
+  integer, parameter::  nwchb = 2
+  integer :: input_type,i
+  real(fp)    :: Satellite_Angle,User_Angle,frequency,Ts
+  real(fp)    :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
+  real(fp)    :: tbb(nwchb)
+  real(fp), intent(out) :: Emissivity_H,Emissivity_V
 
 
 !  Initialization
 
-  em_vector(1) = 0.82_fp_kind
+  em_vector(1) = 0.82_fp
 
-  em_vector(2) = 0.85_fp_kind
+  em_vector(2) = 0.85_fp
 
   input_type = MHS_Ts_ALG
 
   do i=1,nwchb
-     if((tbb(i) <= 100.0_fp_kind) .or. (tbb(i) >= 320.0_fp_kind) ) then
+     if((tbb(i) <= 100.0_fp) .or. (tbb(i) >= 320.0_fp) ) then
          input_type =  PHY_ALG
          exit
      end if
-     if ((Ts <= 150.0_fp_kind) .or. (Ts >= 330.0_fp_kind) ) input_type = MHS_ALG
+     if ((Ts <= 150.0_fp) .or. (Ts >= 330.0_fp) ) input_type = MHS_ALG
   end do
 
 
@@ -269,24 +215,24 @@ subroutine   NESDIS_ICEEM_MHS(Satellite_Angle,                                  
 
   CASE (PHY_ALG)
 
-     em_vector(1) = 0.82_fp_kind
+     em_vector(1) = 0.82_fp
 
-     em_vector(2) = 0.85_fp_kind
+     em_vector(2) = 0.85_fp
 
   END SELECT GET_option
 
 
 ! Get the emissivity angle dependence
 
-  call NESDIS_LandEM(Satellite_Angle,Frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh1,esv1)
+  call NESDIS_LandEM(Satellite_Angle,Frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,2.0_fp,esh1,esv1)
 
-  call NESDIS_LandEM(User_Angle,Frequency,0.0_fp_kind,0.0_fp_kind,Ts,Ts,0.0_fp_kind,9,13,2.0_fp_kind,esh2,esv2)
+  call NESDIS_LandEM(User_Angle,Frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,2.0_fp,esh2,esv2)
 
   desh = esh1 - esh2
 
   desv = esv1 - esv2
 
-  dem = ( desh + desv ) * 0.5_fp_kind
+  dem = ( desh + desv ) * 0.5_fp
 
 ! Emissivity at User's Angle
 
@@ -296,9 +242,9 @@ subroutine   NESDIS_ICEEM_MHS(Satellite_Angle,                                  
 
   if (Emissivity_V > one)         Emissivity_V = one
 
-  if (Emissivity_H < 0.3_fp_kind) Emissivity_H = 0.3_fp_kind
+  if (Emissivity_H < 0.3_fp) Emissivity_H = 0.3_fp
 
-  if (Emissivity_V < 0.3_fp_kind) Emissivity_V = 0.3_fp_kind
+  if (Emissivity_V < 0.3_fp) Emissivity_V = 0.3_fp
 
 
 end subroutine NESDIS_ICEEM_MHS
@@ -342,12 +288,10 @@ subroutine MHS_Ts_EM(angle,frequency,tb,ts,em_vector)
 !
 !-----------------------------------------------------------------------------------------------
 
-   use type_kinds, only: ip_kind, fp_kind, Double
-   implicit none
-   integer(ip_kind), parameter :: nchanw = 2, ncoe= 5
-   integer(ip_kind) :: ich,jch,k
-   real(fp_kind)    :: ts,angle,frequency,emissivity
-   real(fp_kind)    :: freq(nchanw),tb(nchanw),em_vector(2)
+   integer, parameter :: nchanw = 2, ncoe= 5
+   integer :: ich,jch,k
+   real(fp)    :: ts,angle,frequency,emissivity
+   real(fp)    :: freq(nchanw),tb(nchanw),em_vector(2)
    real(Double)     :: coe(nchanw,ncoe),emiss(nchanw)
 
    data (coe(1,k),k=1,ncoe)/7.980265e-001,  5.158272e-003, -4.294968e-004,  &
@@ -357,9 +301,9 @@ subroutine MHS_Ts_EM(angle,frequency,tb,ts,em_vector)
    save coe
 
    !Initialization
-    emiss(1:nchanw) = 0.0_fp_kind
-    freq(1) = 89.0_fp_kind
-    freq(2) =  157.0_fp_kind
+    emiss(1:nchanw) = 0.0_fp
+    freq(1) = 89.0_fp
+    freq(2) =  157.0_fp
 
    ! estimate emissivity spectrum
    do ich = 1, nchanw
@@ -432,12 +376,10 @@ subroutine MHS_EM(angle,frequency,tb,em_vector)
 !
 !-----------------------------------------------------------------------------------------------
 
-   use type_kinds, only: ip_kind, fp_kind, Double
-   implicit none
-   integer(ip_kind), parameter :: nchanw = 2, ncoe= 4
-   integer(ip_kind) :: ich,jch,k
-   real(fp_kind)    :: angle,frequency,emissivity
-   real(fp_kind)    :: freq(nchanw),tb(nchanw),em_vector(2)
+   integer, parameter :: nchanw = 2, ncoe= 4
+   integer :: ich,jch,k
+   real(fp)    :: angle,frequency,emissivity
+   real(fp)    :: freq(nchanw),tb(nchanw),em_vector(2)
    real(Double)     :: coe(nchanw,ncoe),emiss(nchanw)
 
    !n18
@@ -447,9 +389,9 @@ subroutine MHS_EM(angle,frequency,tb,em_vector)
    save coe
 
    !Initialization
-    emiss(1:nchanw) = 0.0_fp_kind
-    freq(1) = 89.0_fp_kind
-    freq(2) =  157.0_fp_kind
+    emiss(1:nchanw) = 0.0_fp
+    freq(1) = 89.0_fp
+    freq(2) =  157.0_fp
    ! estimate emissivity spectrum
    do ich = 1, nchanw
       emiss(ich) = coe(ich,1)
