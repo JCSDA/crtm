@@ -356,14 +356,14 @@ CONTAINS
          ENDIF
          SGN = ONE
          IF ( AAD(1,1).LT.AAD(2,2) )  SGN = - ONE
-         EVALD(1) = 0.5D0*( AAD(1,1) + AAD(2,2) + SGN*DSQRT(DISCRI) )
-         EVALD(2) = 0.5D0*( AAD(1,1) + AAD(2,2) - SGN*DSQRT(DISCRI) )
+         EVALD(1) = 0.5D0*( AAD(1,1) + AAD(2,2) + SGN*SQRT(DISCRI) )
+         EVALD(2) = 0.5D0*( AAD(1,1) + AAD(2,2) - SGN*SQRT(DISCRI) )
          EVECD(1,1) = ONE
          EVECD(2,2) = ONE
          IF ( AAD(1,1).EQ.AAD(2,2) .AND. &
                (AAD(2,1).EQ.ZERO.OR.AAD(1,2).EQ.ZERO) ) THEN
-            RNORM = DABS(AAD(1,1))+DABS(AAD(1,2))+ &
-                      DABS(AAD(2,1))+DABS(AAD(2,2))
+            RNORM = ABS(AAD(1,1))+ABS(AAD(1,2))+ &
+                      ABS(AAD(2,1))+ABS(AAD(2,2))
             W = TOL * RNORM
             EVECD(2,1) = AAD(2,1) / W
             EVECD(1,2) = - AAD(1,2) / W
@@ -393,7 +393,7 @@ CONTAINS
          DO 70  J = KKK, 1, -1
             ROW = ZERO
             DO 40 I = 1, K
-               IF ( I.NE.J ) ROW = ROW + DABS( AAD(J,I) )
+               IF ( I.NE.J ) ROW = ROW + ABS( AAD(J,I) )
 40          CONTINUE
             IF ( ROW.EQ.ZERO ) THEN
                WKD(K) = J
@@ -419,7 +419,7 @@ CONTAINS
          DO 120 J = LLL, K
             COL = ZERO
             DO 90 I = L, K
-               IF ( I.NE.J ) COL = COL + DABS( AAD(I,J) )
+               IF ( I.NE.J ) COL = COL + ABS( AAD(I,J) )
 90          CONTINUE
             IF ( COL.EQ.ZERO ) THEN
                WKD(L) = J
@@ -450,8 +450,8 @@ CONTAINS
             ROW = ZERO
             DO 150 J = L, K
                IF ( J.NE.I ) THEN
-                  COL = COL + DABS( AAD(J,I) )
-                  ROW = ROW + DABS( AAD(I,J) )
+                  COL = COL + ABS( AAD(J,I) )
+                  ROW = ROW + ABS( AAD(I,J) )
                END IF
 150         CONTINUE
             F = ONE
@@ -491,14 +491,14 @@ CONTAINS
          SCALE    = ZERO
 !                                                        ** SCALE COLUMN
          DO 210 I = N, K
-            SCALE = SCALE + DABS(AAD(I,N-1))
+            SCALE = SCALE + ABS(AAD(I,N-1))
 210      CONTINUE
          IF ( SCALE.NE.ZERO ) THEN
             DO 220 I = K, N, -1
                WKD(I+M) = AAD(I,N-1) / SCALE
                H = H + WKD(I+M)**2
 220         CONTINUE
-            G = - SIGN( DSQRT(H), WKD(N+M) )
+            G = - SIGN( SQRT(H), WKD(N+M) )
             H = H - WKD(N+M) * G
             WKD(N+M) = WKD(N+M) - G
 !                                                 ** FORM (I-(U*UT)/H)*A
@@ -554,7 +554,7 @@ CONTAINS
       N = 1
       DO 370 I = 1, M
          DO 360 J = N, M
-            RNORM = RNORM + DABS(AAD(I,J))
+            RNORM = RNORM + ABS(AAD(I,J))
 360      CONTINUE
          N = I
          IF ( I.LT.L .OR. I.GT.K ) EVALD(I) = AAD(I,I)
@@ -571,9 +571,9 @@ CONTAINS
       DO 400 I = L, N
          LB = N+L - I
          IF ( LB.EQ.L ) GO TO 410
-         S = DABS( AAD(LB-1,LB-1) ) + DABS( AAD(LB,LB) )
+         S = ABS( AAD(LB-1,LB-1) ) + ABS( AAD(LB,LB) )
          IF ( S.EQ.ZERO ) S = RNORM
-         IF ( DABS(AAD(LB,LB-1)) .LE. TOL*S ) GO TO 410
+         IF ( ABS(AAD(LB,LB-1)) .LE. TOL*S ) GO TO 410
 400   CONTINUE
 
 410   X = AAD(N,N)
@@ -591,7 +591,7 @@ CONTAINS
 !                                        ** TWO EIGENVALUES FOUND
          P = (Y-X) * C2
          Q = P**2 + W
-         Z = DSQRT( DABS(Q) )
+         Z = SQRT( ABS(Q) )
          AAD(N,N) = X + T
          X = AAD(N,N)
          AAD(N1,N1) = Y + T
@@ -641,7 +641,7 @@ CONTAINS
          DO 450 I = L, N
             AAD(I,I) = AAD(I,I) - X
 450      CONTINUE
-         S = DABS(AAD(N,N1)) + DABS(AAD(N1,N2))
+         S = ABS(AAD(N,N1)) + ABS(AAD(N1,N2))
          X = C3 * S
          Y = X
          W = - C1 * S**2
@@ -658,13 +658,13 @@ CONTAINS
          P = ( R * S - W ) / AAD(I+1,I) + AAD(I,I+1)
          Q = AAD(I+1,I+1) - Z - R - S
          R = AAD(I+2,I+1)
-         S = DABS(P) + DABS(Q) + DABS(R)
+         S = ABS(P) + ABS(Q) + ABS(R)
          P = P / S
          Q = Q / S
          R = R / S
          IF ( I.EQ.LB ) GO TO 470
-         UU = DABS( AAD(I,I-1) ) * ( DABS(Q) + DABS(R) )
-         VV = DABS(P)*(DABS(AAD(I-1,I-1))+DABS(Z)+DABS(AAD(I+1,I+1)))
+         UU = ABS( AAD(I,I-1) ) * ( ABS(Q) + ABS(R) )
+         VV = ABS(P)*(ABS(AAD(I-1,I-1))+ABS(Z)+ABS(AAD(I+1,I+1)))
          IF ( UU .LE. TOL*VV ) GO TO 470
 460   CONTINUE
 
@@ -680,19 +680,19 @@ CONTAINS
       DO 520 KA = I, N1
          NOTLAS = KA.NE.N1
          IF ( KA.EQ.I ) THEN
-            S = SIGN( DSQRT( P*P + Q*Q + R*R ), P )
+            S = SIGN( SQRT( P*P + Q*Q + R*R ), P )
             IF ( LB.NE.I ) AAD(KA,KA-1) = - AAD(KA,KA-1)
          ELSE
             P = AAD(KA,KA-1)
             Q = AAD(KA+1,KA-1)
             R = ZERO
             IF ( NOTLAS ) R = AAD(KA+2,KA-1)
-            X = DABS(P) + DABS(Q) + DABS(R)
+            X = ABS(P) + ABS(Q) + ABS(R)
             IF ( X.EQ.ZERO ) GO TO 520
             P = P / X
             Q = Q / X
             R = R / X
-            S = SIGN( DSQRT( P*P + Q*Q + R*R ), P )
+            S = SIGN( SQRT( P*P + Q*Q + R*R ), P )
             AAD(KA,KA-1) = - S * X
          END IF
          P = P + S
