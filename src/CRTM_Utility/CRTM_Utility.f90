@@ -1,114 +1,79 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       CRTM_Utility 
 !
-! PURPOSE:
-!       Module containing the CRTM numerical utility routines.
+! CRTM_Utility 
 !
-! CATEGORY:
-!       CRTM : Numerical Utility 
+! Module containing CRTM numerical utility routines.
 !
-! LANGUAGE:
-!       Fortran-95
+! NOTE: This utility is specifically for use with RTSolution codes.
+!       Adapted from package of MOM 1991, ASYMTX adapted from DISORT.
 !
-! CALLING SEQUENCE:
-!       USE CRTM_Utility 
-!
-! MODULES:
-!       Type_Kinds:                 Module containing data type kind definitions.
-!
-!       Message_Handler:            Module to define simple error codes and
-!                                   handle error conditions
-!                                   USEs: FILE_UTILITY module
-!
-!       CRTM_Parameters:            Module of parameter definitions for the CRTM.
-!                                   USEs: TYPE_KINDS module
-!
-! CONTAINS:
-!       PUBLIC subprograms
-!       ------------------
-!         matinv:                   Function to inverse a general matrix. 
-!
-!         DOUBLE_GAUSS_QUADRATURE:  Function to compute double Gaussian weights
-!                                   cosine of angles. 
-!
-!         Legendre:                 Function to compute Legendre function. 
-!
-!       PRIVATE subprograms
-!       -------------------
-!
-!         *** USERS ADD INFO HERE FOR ANY PRIVATE SUBPROGRAMS ***
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None
-!
-! COMMON BLOCKS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None known.
-!
-! RESTRICTIONS:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Quanhua Liu,    QSS at JCSDA;    Quanhua.Liu@noaa.gov
-!                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!       Written by:     Quanhua Liu,    Quanhua.Liu@noaa.gov
+!                       Yong Han,       Yong.Han@noaa.gov
+!                       Paul van Delst, paul.vandelst@noaa.g
 !                       08-Jun-2004
 !
-!  Copyright (C) 2004 Yong Han, Quanhua Liu, Paul van Delst
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE CRTM_UTILITY 
 
-  ! ----------------------------------------------------------------- !
-  ! This utility is specified for RT solution.                        !
-  !   Deleveloper:                                                    !
-  !   Adapted from package of MOM 1991, ASYMTX adapted from DISORT    ! 
-  ! ----------------------------------------------------------------- !
-  USE Type_Kinds 
-  USE CRTM_Parameters
-  USE Message_Handler
 
+  ! -----------------
+  ! Environment setup
+  ! -----------------
+  ! Module use
+  USE Type_Kinds     , ONLY: fp
+  USE Message_Handler, ONLY: Display_Message, SUCCESS, FAILURE, WARNING
+  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO, &
+                             POINT_25, POINT_5, &
+                             PI
+  ! Disable implicit typing
   IMPLICIT NONE
   
+  
+  ! ------------
+  ! Visibilities
+  ! ------------
   PRIVATE
-  public :: matinv
-  public :: DOUBLE_GAUSS_QUADRATURE
-  public :: Legendre
-  public :: Legendre_M
-  public :: ASYMTX,ASYMTX_TL,ASYMTX_AD
-  ! test
-  public :: ASYMTX2_AD
+  PUBLIC :: matinv
+  PUBLIC :: DOUBLE_GAUSS_QUADRATURE
+  PUBLIC :: Legendre
+  PUBLIC :: Legendre_M
+  PUBLIC :: ASYMTX,ASYMTX_TL,ASYMTX_AD
+  PUBLIC :: ASYMTX2_AD
 
+
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
   INTERFACE Legendre 
     MODULE PROCEDURE Legendre_scalar
     MODULE PROCEDURE Legendre_rank1
   END INTERFACE 
-! 
+
+
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module 
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = & 
+  '$Id$'
   ! Numerical small threshold value in Eigensystem
   REAL(fp), PARAMETER :: EIGEN_THRESHOLD = 1.0e-20_fp
 
+
 CONTAINS
-!
-!
+
+
   SUBROUTINE DOUBLE_GAUSS_QUADRATURE(NUM, ABSCISSAS, WEIGHTS)
     ! Generates the abscissas and weights for an even 2*NUM point
     ! Gauss-Legendre quadrature.  Only the NUM positive points are returned.
     IMPLICIT NONE
     INTEGER, INTENT(IN) ::  NUM
-    REAL( fp_kind), DIMENSION(:) ::   ABSCISSAS, WEIGHTS
+    REAL( fp), DIMENSION(:) ::   ABSCISSAS, WEIGHTS
     INTEGER  N, K, I, J, L
-    REAL( fp_kind ) ::   X, XP, PL, PL1, PL2, DPL
-    ! REAL( fp_kind ), PARAMETER :: TINY1=3.0E-14_fp_kind
-    REAL( fp_kind ) :: TINY1
+    REAL(fp) ::   X, XP, PL, PL1, PL2, DPL
+    ! REAL(fp), PARAMETER :: TINY1=3.0E-14_fp
+    REAL(fp) :: TINY1
     PARAMETER(TINY1=3.0D-14)
     N = NUM
     K = (N+1)/2
@@ -143,15 +108,17 @@ CONTAINS
     ! Invert matrix by Gauss method
     ! --------------------------------------------------------------------
     IMPLICIT NONE
-    REAL( fp_kind ), intent(in),dimension(:,:) :: a
+    REAL(fp), intent(in),dimension(:,:) :: a
     INTEGER, INTENT( OUT ) :: Error_Status
 
     INTEGER:: n
-    REAL( fp_kind ), dimension(size(a,1),size(a,2)) :: b
-    REAL(fp_kind ), dimension(size(a,1),size(a,2)) :: matinv 
-    REAL( fp_kind ), dimension(size(a,1)) :: temp 
+    REAL(fp), dimension(size(a,1),size(a,2)) :: b
+    REAL(fp ), dimension(size(a,1),size(a,2)) :: matinv 
+    REAL(fp), dimension(size(a,1)) :: temp 
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'matinv'
     ! - - - Local Variables - - -
-    REAL( fp_kind ) :: c, d
+    REAL(fp) :: c, d
     INTEGER :: i, j, k, m, imax(1), ipvt(size(a,1))
     ! - - - - - - - - - - - - - -
     Error_Status = SUCCESS     
@@ -165,9 +132,9 @@ CONTAINS
       imax = MAXLOC(ABS(b(k:n,k)))
       m = k-1+imax(1)
     ! sigular matrix check
-      IF ( ABS(b(m,k)).LE.(1.E-40_fp_kind) ) THEN
-        print *,'  sigular matrix '
+      IF ( ABS(b(m,k)).LE.(1.E-40_fp) ) THEN
         Error_Status = FAILURE
+        CALL Display_Message( ROUTINE_NAME, 'Singular matrix', Error_Status )                                          
         RETURN
       END IF    
     ! get the row beneath the current row if the current row will
@@ -196,15 +163,15 @@ CONTAINS
     !  calculating Legendre polynomial using recurrence relationship
     IMPLICIT NONE
     INTEGER, INTENT(in) :: MOA
-    REAL( fp_kind ), intent(in) :: ANG
-    REAL( fp_kind ), intent(out), dimension(0:MOA):: PL
+    REAL(fp), intent(in) :: ANG
+    REAL(fp), intent(out), dimension(0:MOA):: PL
     INTEGER :: j
     PL(0)=ONE
     PL(1)=ANG
     IF ( MOA.GE.2 ) THEN
       DO J = 1, MOA -1
-        PL(J+1)=REAL(2*J+1,fp_kind)/REAL(J+1,fp_kind)*ANG*PL(J) &
-          -REAL(J,fp_kind)/REAL(J+1,fp_kind)*PL(J-1)
+        PL(J+1)=REAL(2*J+1,fp)/REAL(J+1,fp)*ANG*PL(J) &
+          -REAL(J,fp)/REAL(J+1,fp)*PL(J-1)
       END DO
     END IF
     RETURN
@@ -215,9 +182,9 @@ CONTAINS
      !  calculating Legendre polynomial using recurrence relationship
      IMPLICIT NONE
      INTEGER, intent(in):: MOA,NU
-     REAL( fp_kind ), INTENT(in), dimension(NU):: ANG
-     REAL( fp_kind ), INTENT(out),dimension(0:MOA,NU):: PL
-     REAL( fp_kind ) :: TE
+     REAL(fp), INTENT(in), dimension(NU):: ANG
+     REAL(fp), INTENT(out),dimension(0:MOA,NU):: PL
+     REAL(fp) :: TE
      INTEGER :: i,j
      DO i = 1,NU
        TE=ANG(i)
@@ -225,8 +192,8 @@ CONTAINS
        PL(1,i)=TE
        IF(MOA.GE.2) THEN
          DO J = 1, MOA-1
-           PL(J+1,i)=REAL(2*J+1, fp_kind)/REAL(J+1, fp_kind)*TE*PL(J,i) &
-           -REAL(J, fp_kind)/REAL(J+1, fp_kind)*PL(J-1,i)
+           PL(J+1,i)=REAL(2*J+1, fp)/REAL(J+1, fp)*TE*PL(J,i) &
+           -REAL(J, fp)/REAL(J+1, fp)*PL(J-1,i)
          END DO
        END IF
      END DO
@@ -236,22 +203,22 @@ CONTAINS
 !
    SUBROUTINE Legendre_M(MF,N,U,PL)
      IMPLICIT NONE
-     REAL( fp_kind ), INTENT(IN) :: U
+     REAL(fp), INTENT(IN) :: U
      INTEGER, INTENT(IN) :: N,MF
-     REAL( fp_kind ), DIMENSION(0:N) :: PL 
-     REAL( fp_kind ) :: f
+     REAL(fp), DIMENSION(0:N) :: PL 
+     REAL(fp) :: f
      INTEGER:: J
      IF ( MF.GT.N ) THEN
-       PL = 0.0_fp_kind
+       PL = 0.0_fp
      ELSE
        IF ( MF .EQ. 0 ) THEN
-         f = 1.0_fp_kind
-         PL(0) = 1.0_fp_kind
+         f = 1.0_fp
+         PL(0) = 1.0_fp
        ELSE
          f=sqrt(gamma2(2*MF))/gamma2(MF)/(2**MF)
-         PL(MF)=f*sqrt((1.0_fp_kind-U*U)**MF)
+         PL(MF)=f*sqrt((1.0_fp-U*U)**MF)
        END IF
-       IF ( N.GT.MF )  PL(MF+1)=U*sqrt(2*MF+1.0_fp_kind)*PL(MF)
+       IF ( N.GT.MF )  PL(MF+1)=U*sqrt(2*MF+1.0_fp)*PL(MF)
        IF( N.gt.(MF+1) ) THEN
          DO J=MF+1,N-1
            PL(J+1)=(FLOAT(2*J+1)*U*PL(J) &
@@ -267,13 +234,13 @@ CONTAINS
      IMPLICIT NONE
      INTEGER, INTENT(IN) :: N
      INTEGER :: i
-     REAL( fp_kind ) :: gamma2
+     REAL(fp) :: gamma2
        
      IF ( N.lt.0 ) THEN
-       print *,' wrong input in gamma function ',N
-       gamma2 = 1.0_fp_kind
+       CALL Display_Message('gamma2','Invalid input', WARNING)
+       gamma2 = 1.0_fp
      ELSE
-       gamma2=1.0_fp_kind
+       gamma2=1.0_fp
        IF( N.gt.0 ) THEN
          DO i = 1 , N
          gamma2=gamma2*float(i)
