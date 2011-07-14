@@ -328,7 +328,7 @@ CONTAINS
       INTEGER :: I, J, L, K, KKK, LLL,N, N1, N2, IN, LB, KA, II
 !      DOUBLE PRECISION  TOL, DISCRI, SGN, RNORM, W, F, G, H, P, Q, R
       REAL(fp) :: TOL, DISCRI, SGN, RNORM, W, F, G, H, P, Q, R
-      DOUBLE PRECISION  REPL, COL, ROW, SCALE, T, X, Z, S, Y, UU, VV
+      REAL(fp) :: REPL, COL, ROW, SCALE, T, X, Z, S, Y, UU, VV
 !
       IER = 0
       BAD_STATUS = .FALSE.
