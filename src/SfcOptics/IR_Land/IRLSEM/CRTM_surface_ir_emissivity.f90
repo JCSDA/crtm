@@ -1,85 +1,51 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       surface_ir_emissivity 
 !
-! PURPOSE:
-!       Module to compute the surface IR emissivity properties required for determining
-!       the surface contribution to the radiative transfer.
+! CRTM_surface_ir_emissivity 
 !
-! CATEGORY:
-!       CRTM : Surface Optical Properties
+! Module to compute the surface IR emissivity properties required for determining
+! the surface contribution to the radiative transfer.
 !
-! LANGUAGE:
-!       Fortran 90
-!
-! CALLING SEQUENCE:
-!       USE CRTM_surface_ir_emissivity
-!
-! MODULES:
-!       Type_Kinds:                Module containing definitions for kinds
-!                                  of variable types.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Quanhua Liu,    QSS Group, Inc at Joint Center for Satellite 
-!                                       Data Assimilation;  Quanhua.Liu@noaa.gov 
-!                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!       Written by:     Quanhua Liu,    Quanhua.Liu@noaa.gov 
+!                       Yong Han,       Yong.Han@noaa.gov
+!                       Paul van Delst, paul.vandelst@noaa.gov
 !                       20-Dec-2004
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE CRTM_surface_ir_emissivity
 
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
- 
-  USE Type_Kinds
-
- 
-  ! -----------------------
+  USE Type_Kinds, ONLY: fp
   ! Disable implicit typing
-  ! -----------------------
- 
   IMPLICIT NONE
- 
+
  
   ! ------------
   ! Visibilities
   ! ------------
- 
-  ! -- Everything private by default
   PRIVATE
+  PUBLIC :: surface_ir_emissivity
 
-   PUBLIC :: surface_ir_emissivity
 
-! ----------------------------------------------------------------------------------------
-! User may use the subroutine by
-!    call surface_ir_emissivity(wavelength,emissivity,surface_type)
-!    if surface is specified.
-!    or
-!    call surface_ir_emissivity(wavelength,emissivity,alat,alon)
-!    if user want to use the location to determine the surface type. 
-! ----------------------------------------------------------------------------------------
-
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
   INTERFACE surface_ir_emissivity 
     MODULE PROCEDURE surface_ir_emissivity_byLo
     MODULE PROCEDURE surface_ir_emissivity_byType
-  END INTERFACE ! surface_ir_emissivity 
+  END INTERFACE surface_ir_emissivity 
 
+  
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+  
+  
 CONTAINS
 !
       SUBROUTINE surface_ir_emissivity_byType(wavelength,  & ! INPUT, wavelength in micrometer
@@ -98,14 +64,14 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
 !
       INTEGER, INTENT( IN ) :: surface_type
-      REAL( fp_kind ), INTENT( IN ) :: wavelength
-      REAL( fp_kind ), INTENT( OUT ) :: emissivity
+      REAL(fp), INTENT( IN ) :: wavelength
+      REAL(fp), INTENT( OUT ) :: emissivity
 
      ! --------------------------------------------------  !
      !       internal variables                            !
      ! --------------------------------------------------  !
 
-      REAL( fp_kind ) :: Reflection
+      REAL(fp) :: Reflection
 !
       CALL IRVIS_surface_model(surface_type,wavelength,Reflection)
       emissivity = 1.0 - Reflection
@@ -120,15 +86,15 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
 !
       INTEGER :: surface_type
-      REAL( fp_kind ), INTENT( IN ) :: alat, alon
-      REAL( fp_kind ), INTENT( IN ) :: wavelength
-      REAL( fp_kind ), INTENT( OUT ) :: emissivity
+      REAL(fp), INTENT( IN ) :: alat, alon
+      REAL(fp), INTENT( IN ) :: wavelength
+      REAL(fp), INTENT( OUT ) :: emissivity
 
      ! --------------------------------------------------  !
      !       internal variables                            !
      ! --------------------------------------------------  !
 
-      REAL( fp_kind ) :: surface_cover
+      REAL(fp) :: surface_cover
 
         CALL read_topography(alat, alon, surface_type, surface_cover)
 !
@@ -143,8 +109,8 @@ CONTAINS
 ! -------------------------------------------------------------------
 !
       USE File_Utility
-      REAL( fp_kind ), INTENT( IN ) :: alat, alon
-      REAL( fp_kind ) :: alon1,scover 
+      REAL(fp), INTENT( IN ) :: alat, alon
+      REAL(fp) :: alon1,scover 
       INTEGER, PARAMETER :: Nlat = 1080, NLon = 2160
       INTEGER i,j,k,stype,init_topo,index_lat,index_lon,FileID
       INTEGER(KIND=1), DIMENSION( NLon, Nlat) :: Surface_Type
@@ -171,13 +137,13 @@ CONTAINS
         init_topo=1
      ENDIF 
 !
-      if(alon .gt. 180.0_fp_kind) then
-      alon1 = alon - 360.0_fp_kind
+      if(alon .gt. 180.0_fp) then
+      alon1 = alon - 360.0_fp
       else
       alon1=alon
       endif
-      index_lat=(90.0_fp_kind - alat)*6+1
-      index_lon=(180_fp_kind + alon1)*6+1
+      index_lat=(90.0_fp - alat)*6+1
+      index_lon=(180_fp + alon1)*6+1
       if(index_lat.gt.Nlat) index_lat=Nlat
       if(index_lon.gt.Nlon) index_lon=Nlon
       stype = Surface_Type(index_lon, index_lat)
@@ -205,18 +171,18 @@ END MODULE CRTM_surface_ir_emissivity
   ! ------------------------------------------------------------------------------------
    USE Type_Kinds 
   INTEGER, INTENT( IN ) :: stype
-  REAL( fp_kind ), INTENT( IN ) :: wavelen
-  REAL( fp_kind ), INTENT( OUT ) :: Reflection 
+  REAL(fp), INTENT( IN ) :: wavelen
+  REAL(fp), INTENT( OUT ) :: Reflection 
  
  !    internal variables
   INTEGER, PARAMETER :: Ntype = 24                 ! number of surface types
   INTEGER, PARAMETER :: Mspec = 74                 ! number of wavelengths
   INTEGER :: i, j
-  REAL( fp_kind ), SAVE, DIMENSION(Ntype,Mspec) :: surref  ! surface reflectances
+  REAL(fp), SAVE, DIMENSION(Ntype,Mspec) :: surref  ! surface reflectances
  !
  !  VISIBLE IR Spectral Coefficients
 !
-   REAL( fp_kind ), PARAMETER, DIMENSION(Mspec) :: wavelength = (/ &
+   REAL(fp), PARAMETER, DIMENSION(Mspec) :: wavelength = (/ &
        0.200, 0.225, 0.250, 0.275, 0.300, 0.325, 0.350, 0.375, &
        0.400, 0.425, 0.450, 0.475, 0.500, 0.525, 0.550, 0.575, &
        0.600, 0.625, 0.650, 0.675, 0.700, 0.725, 0.750, 0.775, &
