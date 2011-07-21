@@ -141,7 +141,7 @@ PRO Read_modis_Raw_SRF, $
   ; Only keep the unique values  
   idx = UNIQ(f, SORT(f))
   f = f[idx]
-  detector_r = r[detector_loc]
+  detector_r = r[idx]
 
   ; Assign data to return argument
   n_points = N_ELEMENTS(f)
