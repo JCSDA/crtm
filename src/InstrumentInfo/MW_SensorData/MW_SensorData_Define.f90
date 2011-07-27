@@ -134,7 +134,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 55
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 57
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -150,7 +150,8 @@ MODULE MW_SensorData_Define
     'ssmi_f08            ','ssmi_f10            ','ssmi_f11            ','mwri_fy3a           ',&
     'mwri_fy3b           ','mwhs_fy3a           ','mwhs_fy3b           ','mwts_fy3a           ',&
     'mwts_fy3b           ','tmi_trmm            ','gmi_gpm             '                       ,&
-    'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           '/)
+    'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
+    'madras_meghat       ','saphir_meghat       '/)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -172,7 +173,8 @@ MODULE MW_SensorData_Define
      INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWTS
      282, INVALID_WMO_SATELLITE_ID, &                       ! TRMM TMI; GPM GMI
      285, 286, &                                            ! DMSP-17,18
-     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID /)  ! DMSP-19,20
+     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! DMSP-19,20
+     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID /)  ! Megha-Tropiques MADRAS; SAPHIR
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -190,7 +192,8 @@ MODULE MW_SensorData_Define
      INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID,&  ! Fengyun 3A to 3B MWTS
      365, INVALID_WMO_SENSOR_ID, &                   ! TRMM TMI; GPM GMI
      908, 908, &                                     ! DMSP-17,18 SSMIS
-     908, 908 /)                                     ! DMSP-19,20 SSMIS
+     908, 908, &                                     ! DMSP-19,20 SSMIS
+     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID /) ! Megha-Tropiques MADRAS; SAPHIR
 
 
   !#----------------------------------------------------------------------------#
@@ -215,6 +218,8 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_MWTS_CHANNELS    =  4
   INTEGER, PARAMETER :: N_TMI_CHANNELS     =  9
   INTEGER, PARAMETER :: N_GMI_CHANNELS     = 13
+  INTEGER, PARAMETER :: N_MADRAS_CHANNELS  =  9
+  INTEGER, PARAMETER :: N_SAPHIR_CHANNELS  =  6
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -241,7 +246,8 @@ MODULE MW_SensorData_Define
        N_MWTS_CHANNELS,  N_MWTS_CHANNELS, &                              ! Fengyun 3A to 3B MWTS
        N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
-       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS /)                             ! DMSP-19,20 SSMIS
+       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-19,20 SSMIS
+       N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS/)                             ! Megha-Tropiques MADRAS; SAPHIR
 
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
@@ -261,6 +267,8 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MWTS_SENSOR_CHANNEL(N_MWTS_CHANNELS)      =(/(i,i=1,N_MWTS_CHANNELS   )/)
   INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/(i,i=1,N_TMI_CHANNELS    )/)
   INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/(i,i=1,N_GMI_CHANNELS    )/)
+  INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS )    =(/(i,i=1,N_MADRAS_CHANNELS )/)
+  INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS )    =(/(i,i=1,N_SAPHIR_CHANNELS )/)
 
 
   !#----------------------------------------------------------------------------#
@@ -298,6 +306,8 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MWTS_N_SIDEBANDS(N_MWTS_CHANNELS) = 1
   INTEGER, PARAMETER :: TMI_N_SIDEBANDS(N_TMI_CHANNELS) = 1
   INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS) = 1
+  INTEGER, PARAMETER :: MADRAS_N_SIDEBANDS(N_MADRAS_CHANNELS) = 1
+  INTEGER, PARAMETER :: SAPHIR_N_SIDEBANDS(N_SAPHIR_CHANNELS) = 1
 
 
   !#----------------------------------------------------------------------------#
@@ -1407,6 +1417,48 @@ MODULE MW_SensorData_Define
                 0.0150_fp, 0.1737_fp, ZERO, ZERO /), & ! ch4
              (/ 2, MAX_N_SIDEBANDS, N_MWTS_CHANNELS /) )
 
+  ! Megha-Tropiques MADRAS
+  ! -----------------------------------------------------------------
+  ! These were taken from http://meghatropiques.ipsl.polytechnique.fr/instruments.html
+  ! MADRAS table 
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: MADRAS_MEGHAT_F0( N_MADRAS_CHANNELS ) = &
+    (/ 18.7_fp,  18.7_fp,  23.8_fp, &
+       36.5_fp,  36.5_fp,  89.0_fp, &
+       89.0_fp, 157.0_fp, 157.0_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MADRAS_MEGHAT_IF_BAND( 2, MAX_N_SIDEBANDS, N_MADRAS_CHANNELS ) = &
+    RESHAPE( (/ 0.00_fp, 0.10_fp, ZERO, ZERO, &    ! ch1
+                0.00_fp, 0.10_fp, ZERO, ZERO, &    ! ch2
+                0.00_fp, 0.20_fp, ZERO, ZERO, &    ! ch3
+                0.00_fp, 0.50_fp, ZERO, ZERO, &    ! ch4
+                0.00_fp, 0.50_fp, ZERO, ZERO, &    ! ch5
+                0.00_fp, 1.35_fp, ZERO, ZERO, &    ! ch6
+                0.00_fp, 1.35_fp, ZERO, ZERO, &    ! ch7
+                0.00_fp, 1.35_fp, ZERO, ZERO, &    ! ch8
+                0.00_fp, 1.35_fp, ZERO, ZERO /), & ! ch5
+             (/ 2, MAX_N_SIDEBANDS, N_MADRAS_CHANNELS /) )
+
+  ! Megha-Tropiques SAPHIR
+  ! -----------------------------------------------------------------
+  ! These were taken from http://meghatropiques.ipsl.polytechnique.fr/dmdocuments/Aires_Pres_mt.pdf
+  ! SAPHIR table from page 32 (1st Mission/Project Meeting Toulouse October 18, 2007)
+  ! and http://www.wmo.int/pages/prog/sat/Instruments_and_missions/SAPHIR.html
+  ! Central frequencies in GHz.
+  REAL(fp), PARAMETER :: SAPHIR_MEGHAT_F0( N_SAPHIR_CHANNELS ) = &
+    (/ 183.310_fp,  183.310_fp, 183.310_fp, &
+       183.310_fp,  183.310_fp, 183.310_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: SAPHIR_MEGHAT_IF_BAND( 2, MAX_N_SIDEBANDS, N_SAPHIR_CHANNELS ) = &
+    RESHAPE( (/ 0.00_fp, 0.40_fp, ZERO, ZERO, &    ! ch1
+                0.75_fp, 1.45_fp, ZERO, ZERO, &    ! ch2
+                2.30_fp, 3.30_fp, ZERO, ZERO, &    ! ch3
+                3.50_fp, 4.90_fp, ZERO, ZERO, &    ! ch4
+                5.60_fp, 8.00_fp, ZERO, ZERO, &    ! ch5
+                9.00_fp, 13.0_fp, ZERO, ZERO /), & ! ch6
+             (/ 2, MAX_N_SIDEBANDS, N_SAPHIR_CHANNELS /) )
 
   !#----------------------------------------------------------------------------#
   !                           Sensor polariztion data
@@ -1678,6 +1730,28 @@ MODULE MW_SensorData_Define
      VL_MIXED_POLARIZATION, &  ! MWTS ch3
      HL_MIXED_POLARIZATION /)  ! MWTS ch4
      
+  ! Megha-Tropiques MADRAS
+  ! -------
+  INTEGER, PARAMETER :: MADRAS_POLARIZATION( N_MADRAS_CHANNELS ) = &
+  (/ VL_POLARIZATION, &  ! MADRAS ch1
+     HL_POLARIZATION, &  ! MADRAS ch2
+     VL_POLARIZATION, &  ! MADRAS ch3
+     VL_POLARIZATION, &  ! MADRAS ch4
+     HL_POLARIZATION, &  ! MADRAS ch5
+     VL_POLARIZATION, &  ! MADRAS ch6
+     HL_POLARIZATION, &  ! MADRAS ch7
+     VL_POLARIZATION, &  ! MADRAS ch8
+     HL_POLARIZATION /)  ! MADRAS ch9
+
+  ! Megha-Tropiques SAPHIR
+  ! -------
+  INTEGER, PARAMETER :: SAPHIR_POLARIZATION( N_SAPHIR_CHANNELS ) = &
+  (/ VL_MIXED_POLARIZATION, &  ! SAPHIR ch1
+     VL_MIXED_POLARIZATION, &  ! SAPHIR ch2
+     VL_MIXED_POLARIZATION, &  ! SAPHIR ch3
+     VL_MIXED_POLARIZATION, &  ! SAPHIR ch4
+     VL_MIXED_POLARIZATION, &  ! SAPHIR ch5
+     VL_MIXED_POLARIZATION /)  ! SAPHIR ch6
      
 CONTAINS
 
@@ -2170,8 +2244,8 @@ CONTAINS
     INTEGER :: i_Upper, i_Lower
     REAL(fp) :: df, f1, f
 
-
     ! Set up
+    Error_Status = SUCCESS
     ! ...Check sensor id is valid
     n = COUNT(VALID_SENSOR_ID == Sensor_Id)
     IF ( n == 0 ) THEN
@@ -2198,7 +2272,6 @@ CONTAINS
     MW_SensorData%WMO_Satellite_ID = VALID_WMO_SATELLITE_ID( idx(1) )
     MW_SensorData%WMO_Sensor_ID    = VALID_WMO_SENSOR_ID( idx(1) )
     MW_SensorData%Zeeman = NO_ZEEMAN
-    
     
     ! Load the structure with the relevant sensor's data
     Load_Data: SELECT CASE ( TRIM(MW_SensorData%Sensor_ID) )
@@ -2485,6 +2558,20 @@ CONTAINS
         MW_SensorData%n_Sidebands       = MWTS_N_SIDEBANDS
         MW_SensorData%IF_Band           = MWTS_FY3B_IF_BAND
 
+      CASE ('madras_meghat')
+        MW_SensorData%Sensor_Channel    = MADRAS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MADRAS_MEGHAT_F0
+        MW_SensorData%Polarization      = MADRAS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MADRAS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MADRAS_MEGHAT_IF_BAND
+ 
+      CASE ('saphir_meghat')
+        MW_SensorData%Sensor_Channel    = SAPHIR_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = SAPHIR_MEGHAT_F0
+        MW_SensorData%Polarization      = SAPHIR_POLARIZATION
+        MW_SensorData%n_Sidebands       = SAPHIR_N_SIDEBANDS
+        MW_SensorData%IF_Band           = SAPHIR_MEGHAT_IF_BAND
+
       ! No match! Should never get here!
       CASE DEFAULT
         Message = 'No sensor ID match!!'
@@ -2626,9 +2713,8 @@ CONTAINS
 
       ! The response is assumed unity
       MW_SensorData%Response(:,l) = ONE
-
     END DO Channel_Response_Loop
-
+ 
   CONTAINS
   
     SUBROUTINE Load_Cleanup()
