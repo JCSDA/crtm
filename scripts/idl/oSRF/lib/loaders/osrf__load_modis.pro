@@ -294,7 +294,11 @@ PRO oSRF::Load_modis, $
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
   
-  Sensor_Id = 'modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+  IF ( Channel LT 20 OR Cheannel EQ 26 ) THEN BEGIN
+    Sensor_Id = 'modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+  ENDIF ELSE BEGIN
+    Sensor_Id = 'v.modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+  ENDELSE
   
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
