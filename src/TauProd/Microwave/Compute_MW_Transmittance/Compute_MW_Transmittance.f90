@@ -392,14 +392,13 @@ PROGRAM Compute_MW_Transmittance
 
     ! Load the current microwave sensor data
     ! --------------------------------------
-    Error_Status = Load_MW_SensorData( MW_SensorData, &
-                                       Sensor_ID=SensorInfo%Sensor_ID, &
-                                       RCS_Id   =MW_SensorData_RCS_ID )
+    Error_Status = MW_SensorData_Load( MW_SensorData, &
+                                       SensorInfo%Sensor_ID )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error loading MW sensor data for '//&
                             TRIM(SensorInfo%Satellite_Name)//' '//&
-                            TRIM(SensorInfo%Sensor_Name), &
+                            TRIM(SensorInfo%Sensor_ID), &
                             Error_Status )
       STOP
     END IF
@@ -672,8 +671,7 @@ PROGRAM Compute_MW_Transmittance
                                                      ' transmittances for '//&
                                                      TRIM(SensorInfo%Satellite_Name), &
                                              History = PROGRAM_RCS_ID//'; '//&
-                                                       TRIM(MWLBL_Transmittance_RCS_Id)//'; '//&
-                                                       TRIM(MW_SensorData_RCS_Id), &
+                                                       TRIM(MWLBL_Transmittance_RCS_Id),  &
                                              Comment = TRIM(Comment) )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
@@ -707,15 +705,15 @@ PROGRAM Compute_MW_Transmittance
       STOP
     END IF
     ! Destroy the current microwave sensor data structure
-    Error_Status = Destroy_MW_SensorData( MW_SensorData )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying MW_SensorData structure for '//&
-                            TRIM(SensorInfo%Satellite_Name)//' '//&
-                            TRIM(SensorInfo%Sensor_Name), &
-                            Error_Status )
-      STOP
-    END IF
+    CALL MW_SensorData_Destroy( MW_SensorData )
+!    IF ( Error_Status /= SUCCESS ) THEN
+!      CALL Display_Message( PROGRAM_NAME, &
+!                            'Error destroying MW_SensorData structure for '//&
+!                            TRIM(SensorInfo%Satellite_Name)//' '//&
+!                            TRIM(SensorInfo%Sensor_Name), &
+!                            Error_Status )
+!      STOP
+!    END IF
     ! Destroy the SensorInfo structure
     Error_Status = Destroy_SensorInfo( SensorInfo )
     IF ( Error_Status /= SUCCESS ) THEN
