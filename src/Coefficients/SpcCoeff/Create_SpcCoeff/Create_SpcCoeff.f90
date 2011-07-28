@@ -85,7 +85,7 @@ PROGRAM Create_SpcCoeff
   ! ---------
   CHARACTER(256) :: msg
   CHARACTER(256) :: osrf_filename
-  CHARACTER(256) :: solar_filename
+  CHARACTER(256) :: solar_filename = ''
   CHARACTER(256) :: spccoeff_filename
   CHARACTER(20)  :: sensor_id
   CHARACTER(2000) :: comment               = ''
@@ -184,10 +184,10 @@ PROGRAM Create_SpcCoeff
         msg = 'Error loading MW sensor data for '//TRIM(sensor_id)
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
-      SpcCoeff%Polarization(l) = mw_sensordata%Polarization(l)
+      SpcCoeff%Polarization = mw_sensordata%Polarization
       CALL MW_SensorData_DefineVersion( MW_SensorData_History )
       MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
-
+       
     CASE( INFRARED_SENSOR )
       SpcCoeff%Polarization = UNPOLARIZED
       CALL SpcCoeff_SetSolar( SpcCoeff )
