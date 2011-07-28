@@ -22,11 +22,9 @@ SRC_FILES = Type_Kinds.f90 \
             Planck_Functions.f90 \
             Spectral_Units_Conversion.f90 \
             Fundamental_Constants.f90 \
-            ODPS_Define.f90 \
             PtrArr_Define.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
-            AntCorr_Define.f90 \
             SensorInfo_Parameters.f90 \
             SensorInfo_Define.f90 \
             SensorInfo_LinkedList.f90 \
@@ -37,7 +35,6 @@ SRC_FILES = Type_Kinds.f90 \
             Linear_Interpolation.f90 \
             Interpolate_Utility.f90 \
             Integrate_Utility.f90 \
-            SpcCoeff_Define.f90 \
             MW_SensorData_Define.f90 \
             oSRF_Define.f90 \
             oSRF_File_Define.f90 
@@ -54,14 +51,14 @@ LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
+create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
+remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Squeaky clean target
-realclean: clean remove_links
+realclean:: clean remove_links
 
 # Source dependency lists
 include make.dependencies

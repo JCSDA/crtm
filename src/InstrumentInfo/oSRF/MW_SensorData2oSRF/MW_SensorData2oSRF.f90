@@ -21,20 +21,19 @@ PROGRAM MW_SensorData2oSRF
   USE Message_Handler            
   USE CRTM_Parameters           
   USE MW_SensorData_Define,      ONLY: MW_SensorData_type,      &
-                                       Allocate_MW_SensorData,  &
-                                       Load_MW_SensorData,      &
-                                       Destroy_MW_SensorData 
+                                       MW_SensorData_Load,      &
+                                       MW_SensorData_Destroy,   & 
+                                       MW_SensorData_DefineVersion
   USE oSRF_File_Define,          ONLY: oSRF_File_type,          &
                                        oSRF_File_Create,        &
                                        oSRF_File_Write,         &
                                        oSRF_File_Destroy
-  USE oSRF_Define,               ONLY: oSRF_SetFlag,                    &
+  USE oSRF_Define,               ONLY: oSRF_SetFrequencyGHz,            &
                                        oSRF_Polychromatic_Coefficients, &
                                        oSRF_Planck_Coefficients,        &
                                        oSRF_Central_Frequency,          &
                                        oSRF_Integrate,                  &
-                                       oSRF_Create,                     &
-                                       FREQUENCY_UNITS_FLAG
+                                       oSRF_Create 
                                        
   USE SensorInfo_IO,             ONLY: Read_SensorInfo
   USE SensorInfo_LinkedList,     ONLY: SensorInfo_List_type,    &
@@ -58,7 +57,7 @@ PROGRAM MW_SensorData2oSRF
   TYPE( SensorInfo_type ) :: SensorInfo
   INTEGER, ALLOCATABLE :: n_BPoints(:)
   CHARACTER(256)  :: msg
-  CHARACTER(2000) :: History
+  CHARACTER(2000) :: History=''
   CHARACTER(256)  :: SensorInfo_Filename
   INTEGER :: n_Frequencies
   INTEGER :: n_Sensors
@@ -141,15 +140,17 @@ PROGRAM MW_SensorData2oSRF
         
     
     ! Fill the MW_SensorData structure
-    Error_Status = Load_MW_SensorData( MW_SensorData,                  &
-                                       n_Frequencies=n_Frequencies,    &
-                                       Sensor_Id=SensorInfo%Sensor_Id, &
-                                       RCS_ID = History                )
+    Error_Status = MW_SensorData_Load( MW_SensorData,                  &
+                                       SensorInfo%Sensor_Id, &
+                                       n_Frequencies=n_Frequencies      )
     IF ( Error_Status /= SUCCESS ) THEN
       msg = 'Error loading MW_SensorData'
       CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
       STOP
     END IF
+
+    CALL MW_SensorData_DefineVersion( History )
+    History = '; '//TRIM(History)
 
 
     ! Create an instance of oSRF_File
@@ -161,7 +162,7 @@ PROGRAM MW_SensorData2oSRF
     oSRF_File%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
     oSRF_File%Sensor_Type      = MICROWAVE_SENSOR
     oSRF_File%Title            = TRIM(SensorInfo%Sensor_Id)//' Boxcar Spectral Response Functions'
-    oSRF_File%History          = PROGRAM_VERSION_ID//'; '//TRIM(History)
+    oSRF_File%History          = PROGRAM_VERSION_ID//History
     oSRF_File%Comment          = 'The SRF for this sensor is computed from central frequencies and ' // &
                                  'intermediate frequencies assuming a boxcar response across the passband-width. ' // &
                                  'Each channel contains 256 points.' 
@@ -254,7 +255,7 @@ PROGRAM MW_SensorData2oSRF
       END DO
       
       ! Set the frequency units bit flag to indicate units of GHz
-      CALL oSRF_SetFlag(oSRF_File%oSRF(l), FREQUENCY_UNITS_FLAG)
+      CALL oSRF_SetFrequencyGHz(oSRF_File%oSRF(l))
 
       ! Fill the integrated and summation fields
       Error_Status = oSRF_Integrate( oSRF_File%oSRF(l) ) ! In/Output
@@ -308,7 +309,7 @@ PROGRAM MW_SensorData2oSRF
 
     ! Clean up  
     CALL oSRF_File_Destroy(oSRF_File)
-    Error_Status = Destroy_MW_SensorData( MW_SensorData ) 
+    CALL MW_SensorData_Destroy( MW_SensorData ) 
     
   END DO Sensor_Loop
         
