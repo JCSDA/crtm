@@ -249,7 +249,7 @@ END
 ;-
 
 PRO oSRF::Load_modis, $
-  Sensor_Id        , $ ; Input
+  Input_File_Id        , $ ; Input
   Platform         , $ ; Input
   detector_number  , $ ; Input
   Channel          , $ ; Input
@@ -274,7 +274,7 @@ PRO oSRF::Load_modis, $
 
   ; Construct file name
   ch = STRING(Channel,FORMAT='(i2.2)')
-  filename = Path+PATH_SEP()+Sensor_Id+'-'+ch+'.inp'
+  filename = Path+PATH_SEP()+Input_File_Id+'-'+ch+'.inp'
   ; ...Check it exists
   fInfo = FILE_INFO(filename)
   IF ( NOT fInfo.EXISTS ) THEN $
@@ -293,13 +293,15 @@ PRO oSRF::Load_modis, $
     /All
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
-
+  
+  Sensor_Id = 'modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+  
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
     self->Set_Property, $
       band, $
       Debug=Debug, $
-      Sensor_Id = Sensor_Id, $
+      Sensor_Id = Sensor_Id, $      
       Channel   = Channel, $
       Frequency = frequency[i], $
       Response  = response[i]
