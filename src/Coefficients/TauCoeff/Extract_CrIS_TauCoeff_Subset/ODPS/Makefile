@@ -52,14 +52,11 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 # Source link creation and removal
 create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
-	@$(LINK_SCRIPT) $(CRTM_FIXFILE_ROOT) $(COEFF_FILES)
+	@$(LINK_SCRIPT) -d ODPS $(CRTM_FIXFILE_ROOT) $(COEFF_FILES)
 
 remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
 	@$(UNLINK_SCRIPT) $(COEFF_FILES)
-
-# Squeaky clean target
-realclean:: clean remove_links
 
 # Source dependency lists
 include make.dependencies
