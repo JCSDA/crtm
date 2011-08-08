@@ -46,6 +46,7 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
                                 N_CRIS_BANDS, &
                                 CrIS_BandName
   USE CrIS_Subset       , ONLY: CRIS_SUBSET_374_COMMENT, N_CRIS_SUBSET_374, CRIS_SUBSET_374, &
+                                CRIS_SUBSET_399_COMMENT, N_CRIS_SUBSET_399, CRIS_SUBSET_399, &
                                 N_CRIS_VALID_SUBSETS, CRIS_VALID_SUBSET_NAME, &
                                 CrIS_Subset_Index
   ! Disable implicit typing
@@ -127,8 +128,22 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
       sensor_id   = 'cris374_npp'
 
 
+    ! The 399 channel subset
+    CASE (2)
+      ! ...Allocate list array
+      n_subset_channels = N_CRIS_SUBSET_399
+      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat )!, ERRMSG=alloc_msg )
+      IF ( alloc_stat /= 0 ) THEN
+        err_msg = 'Error allocating Subset_List array - '!//TRIM(alloc_msg)
+        CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
+      END IF
+      ! ...Fill values
+      subset_list = CRIS_SUBSET_399
+      sensor_id   = 'cris399_npp'
+
+
     ! All the channels
-    CASE(2)
+    CASE(3)
       ! ...Allocate list array
       n_subset_channels = N_CRIS_CHANNELS
       ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat)!, ERRMSG=alloc_msg )
@@ -142,7 +157,7 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
 
 
     ! A user specified channel subset
-    CASE (3)
+    CASE (4)
       ! ...Get the list of channels required
       WRITE( *, FMT='(/5x,"Enter an CrIS channel subset list filename : ")', ADVANCE='NO' )
       READ( *,FMT='(a)' ) list_filename
