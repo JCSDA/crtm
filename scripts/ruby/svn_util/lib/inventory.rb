@@ -100,6 +100,30 @@ module Svn_Util
     end
     
     
+    # Symlink manipulation methods
+    # ----------------------------
+    def links
+      @current.select {|f| File.ftype(f) == "link"}
+    end
+
+    def readlinks
+      links.collect {|f| File.readlink(f)}
+    end
+    
+    def linkto
+      h = {}
+      links.collect {|f| h[f] = File.readlink(f)}
+      h
+    end
+
+    
+    # File manipulation methods
+    # -------------------------
+    def files
+      @current.select {|f| File.ftype(f) == "file"}
+    end
+
+
     # Working copy rsync methods
     # --------------------------
     def rsync_dirs(from, to)
