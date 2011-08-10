@@ -435,7 +435,7 @@ CONTAINS
         WHERE ( ABS(x) <= maxX )
           afn = a0 + a1*COS(PI*xnorm) + &
                      a2*COS(TWO*PI*xnorm)
-        ELSE WHERE
+        ELSEWHERE
           afn = ZERO
         END WHERE
        
@@ -448,7 +448,7 @@ CONTAINS
           afn = a0 + a1*COS(PI*xnorm)     + &
                      a2*COS(TWO*PI*xnorm) + &
                      a3*COS(THREE*PI*xnorm)
-        ELSE WHERE
+        ELSEWHERE
           afn = ZERO
         END WHERE
      
@@ -458,7 +458,7 @@ CONTAINS
         a1 = 0.46_fp
         WHERE ( ABS(x) <= maxX )
           afn = a0 + a1*COS(PI*xnorm)
-        ELSE WHERE
+        ELSEWHERE
           afn = ZERO
         END WHERE
       
