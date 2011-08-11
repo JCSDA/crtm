@@ -25,8 +25,7 @@
 # Written by:: Paul van Delst, 10-Aug-2011 (paul.vandelst@noaa.gov)
 #
 
-require 'getoptlong'
-require 'rdoc'
+require 'optparse'
 require 'fileutils'
 require 'svn'
 require 'inventory'
@@ -51,36 +50,36 @@ def set_crtm_environment
 end
 
 
-# Define options
+# Command line option processing
+options = {}
 # ...Specify defaults
-commit = true
-# ...Specify accepted options
-options=GetoptLong.new(
-  [ "--help",      "-h", GetoptLong::NO_ARGUMENT ],
-  [ "--no-commit", "-n", GetoptLong::NO_ARGUMENT ] )
-# ...Parse the command line options
-begin
-  options.each do |opt, arg|
-    case opt
-      when "--help"
-        RDoc::usage
-        exit 0
-      when "--no-commit"
-        commit = false
-      end
+options[:commit] = true
+# ...Specify the options
+opts = OptionParser.new do |opts|
+  opts.banner = "Usage: create_release_tag.rb [options] tag_wcpath release_wcpath"
+
+  opts.on("-n", "--no-commit", "create release, but do not commit to the repository") do |n|
+    options[:commit] = n
   end
-rescue StandardError => error_message
-  puts("\nERROR: #{error_message}\n")
-  RDoc::usage
-  exit 1
+  
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts opts
+    exit(0)
+  end
+end
+# ...Parse the options
+begin
+  opts.parse! ARGV
+rescue OptionParser::ParseError => error_message
+  puts("ERROR --> #{error_message}")
+  puts(opts)
+  exit(1)
 end
 
 
 # Begin error handling
 begin
-
-
-  # Check the arguments
+  # ...Check the arguments
   raise "Must specify existing TAG working copy directory, and RELEASE directory to create." if ARGV.length < 2
   tag_wcpath = ARGV[0]
   release_wcpath = ARGV[1]
@@ -115,7 +114,7 @@ end
     end
   end
   
-  svn.commit(release_wcpath,:message => "Committing release #{release_wcpath}") if commit
+  svn.commit(release_wcpath,:message => "Committing release #{release_wcpath}") if options[:commit]
 
 
 # Inform user why script barfed
