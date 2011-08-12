@@ -130,9 +130,9 @@ PRO oSRF::Apply_Response_Threshold, $
     ENDIF
 
     ; Add truncated SRFs to the end of the list
-    frequency.Add, f[inner_low_idx:inner_high_idx]
-    response.Add,  r[inner_low_idx:inner_high_idx]
-    n_points[n] = inner_high_idx - inner_low_idx + 1L
+    frequency.Add, f[outer_low_idx:outer_high_idx]
+    response.Add,  r[outer_low_idx:outer_high_idx]
+    n_points[n] = outer_high_idx - outer_low_idx + 1L
     
 
   ENDFOR  ; Band loop
