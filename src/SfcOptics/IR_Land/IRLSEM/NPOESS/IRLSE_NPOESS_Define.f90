@@ -544,7 +544,7 @@ CONTAINS
       IF ( SIZE(Surface_Type_Name) == self%n_Surface_Types ) THEN
         self%Surface_Type_Name = Surface_Type_Name
       ELSE
-        self_NPOESS%Surface_Type_Name = ''
+        self%Surface_Type_Name = ''
       END IF
     END IF
    
@@ -673,8 +673,6 @@ CONTAINS
     CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Type_Name(:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Reflectance(:,:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Reflectance(:)
-    ! Local variables
-    INTEGER :: n
     
     IF ( .NOT. IRLSE_NPOESS_Associated(self) ) RETURN
    
