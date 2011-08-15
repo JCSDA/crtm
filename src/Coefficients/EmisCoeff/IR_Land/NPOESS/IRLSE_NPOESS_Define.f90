@@ -60,7 +60,7 @@ MODULE IRLSE_NPOESS_Define
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
-  INTEGER,  PARAMETER :: SL =  20 ! Surface type name string length
+  INTEGER,  PARAMETER :: SL =  80 ! Surface type name string length
   ! Current valid release and version
   INTEGER, PARAMETER :: IRLSE_NPOESS_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: IRLSE_NPOESS_VERSION = 1  ! This is just the default data version.
