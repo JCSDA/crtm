@@ -70,7 +70,6 @@ MODULE IRLSE_NPOESS_Define
   ! IRLSE_NPOESS data type definitions
   ! ----------------------------------
   TYPE :: IRLSE_NPOESS_type
-    PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Release and version information
@@ -81,10 +80,10 @@ MODULE IRLSE_NPOESS_Define
     INTEGER(Long) :: n_Frequencies   = 0  ! L dim.
     INTEGER(Long) :: n_Surface_Types = 0  ! N dim.
     ! Dimensional vectors
-    REAL(Double),  ALLOCATABLE :: Frequency(:)         ! Lx1
-    CHARACTER(SL), ALLOCATABLE :: Surface_Type_Name(:) ! Nx1
+    REAL(Double),  ALLOCATABLE :: Frequency(:)      ! Lx1
+    CHARACTER(SL), ALLOCATABLE :: Surface_Type(:)   ! Nx1
     ! Reflectance LUT data
-    REAL(Double),  ALLOCATABLE :: Reflectance(:,:)     ! LxN
+    REAL(Double),  ALLOCATABLE :: Reflectance(:,:)  ! LxN
   END TYPE IRLSE_NPOESS_type
 
 
@@ -230,7 +229,7 @@ CONTAINS
    
     ! Perform the allocation
     ALLOCATE( self%Frequency( n_Frequencies ), &
-              self%Surface_Type_Name( n_Surface_Types ), &
+              self%Surface_Type( n_Surface_Types ), &
               self%Reflectance( n_Frequencies, n_Surface_Types ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -241,9 +240,9 @@ CONTAINS
     self%n_Frequencies   = n_Frequencies  
     self%n_Surface_Types = n_Surface_Types
     ! ...Arrays
-    self%Frequency         = ZERO
-    self%Surface_Type_Name = ''
-    self%Reflectance       = ZERO
+    self%Frequency    = ZERO
+    self%Surface_Type = ''
+    self%Reflectance  = ZERO
 
     ! Set allocation indicator
     self%Is_Allocated = .TRUE.
@@ -286,12 +285,12 @@ CONTAINS
     ! Dimension arrays
     WRITE(*,'(3x,"Frequency :")')
     WRITE(*,'(5(1x,es13.6,:))') self%Frequency
-    WRITE(*,'(3x,"Surface_Type_Name :")')
-    WRITE(*,'(4(a,:))') self%Surface_Type_Name
+    WRITE(*,'(3x,"Surface_Type :")')
+    WRITE(*,'(4(a,:))') self%Surface_Type
     ! Reflectance array
     WRITE(*,'(3x,"Reflectance :")')
     DO n = 1, self%n_Surface_Types
-      WRITE(*,'(5x,a)') self%Surface_Type_Name(n)
+      WRITE(*,'(5x,a)') self%Surface_Type(n)
       WRITE(*,'(5(1x,es13.6,:))') self%Reflectance(:,n)
     END DO
   END SUBROUTINE IRLSE_NPOESS_Inspect
@@ -463,10 +462,10 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRLSE_NPOESS_SetValue( IRLSE_NPOESS, &
-!                                   Version           = Version          , &
-!                                   Frequency         = Frequency        , &
-!                                   Surface_Type_Name = Surface_Type_Name, &
-!                                   Reflectance       = Reflectance        )
+!                                   Version      = Version     , &
+!                                   Frequency    = Frequency   , &
+!                                   Surface_Type = Surface_Type, &
+!                                   Reflectance  = Reflectance   )
 !
 ! OBJECTS:
 !       IRLSE_NPOESS:       Valid, allocated IRLSE_NPOESS object for which
@@ -494,7 +493,7 @@ CONTAINS
 !                           DIMENSION:  Rank-1 (L)
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Surface_Type_Name:  Character array to which the Surface_Type_Name component
+!       Surface_Type:       Character array to which the Surface_Type component
 !                           of the IRLSE_NPOESS object is to be set. The size of the
 !                           input must match the allocated size of the component,
 !                           otherwise all the component values are set to a blank string.
@@ -516,16 +515,16 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRLSE_NPOESS_SetValue( &
-    self             , &  ! Input
-    Version          , &  ! Optional input
-    Frequency        , &  ! Optional input
-    Surface_Type_Name, &  ! Optional input
-    Reflectance        )  ! Optional input
+    self        , &  ! Input
+    Version     , &  ! Optional input
+    Frequency   , &  ! Optional input
+    Surface_Type, &  ! Optional input
+    Reflectance   )  ! Optional input
     ! Arguments
     TYPE(IRLSE_NPOESS_type), INTENT(IN OUT) :: self
     INTEGER     ,  OPTIONAL, INTENT(IN)     :: Version
     REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Frequency(:)
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Surface_Type_Name(:)
+    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Surface_Type(:)
     REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Reflectance(:,:)
    
     IF ( .NOT. IRLSE_NPOESS_Associated(self) ) RETURN
@@ -540,11 +539,11 @@ CONTAINS
       END IF
     END IF
    
-    IF ( PRESENT(Surface_Type_Name) ) THEN
-      IF ( SIZE(Surface_Type_Name) == self%n_Surface_Types ) THEN
-        self%Surface_Type_Name = Surface_Type_Name
+    IF ( PRESENT(Surface_Type) ) THEN
+      IF ( SIZE(Surface_Type) == self%n_Surface_Types ) THEN
+        self%Surface_Type = Surface_Type
       ELSE
-        self%Surface_Type_Name = ''
+        self%Surface_Type = ''
       END IF
     END IF
    
@@ -571,14 +570,14 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRLSE_NPOESS_GetValue( IRLSE_NPOESS, &
-!                                   Surface_Type_Name_ToGet  = Surface_Type_Name_ToGet, &
-!                                   Version                  = Version                , &
-!                                   n_Frequencies            = n_Frequencies          , &
-!                                   n_Surface_Types          = n_Surface_Types        , &
-!                                   Frequency                = Frequency              , &
-!                                   Surface_Type_Name        = Surface_Type_Name      , &
-!                                   Reflectance              = Reflectance            , &
-!                                   Surface_Reflectance      = Surface_Reflectance      )
+!                                   Surface_Type_ToGet  = Surface_Type_ToGet , &
+!                                   Version             = Version            , &
+!                                   n_Frequencies       = n_Frequencies      , &
+!                                   n_Surface_Types     = n_Surface_Types    , &
+!                                   Frequency           = Frequency          , &
+!                                   Surface_Type        = Surface_Type       , &
+!                                   Reflectance         = Reflectance        , &
+!                                   Surface_Reflectance = Surface_Reflectance  )
 !
 ! OBJECTS:
 !       IRLSE_NPOESS:            Valid, allocated IRLSE_NPOESS object from which
@@ -589,7 +588,7 @@ CONTAINS
 !                                ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       Surface_Type_Name_ToGet: Character string containing a valid surface type
+!       Surface_Type_ToGet:      Character string containing a valid surface type
 !                                name in the IRLSE_NPOESS object.
 !                                NOTE: - This argument is used in conjuction with
 !                                        the Surface_Reflectance dummy output
@@ -618,7 +617,7 @@ CONTAINS
 !                                DIMENSION:  Rank-1 (L)
 !                                ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
-!       Surface_Type_Name:       Character array to which the Surface_Type_Name component
+!       Surface_Type:            Character array to which the Surface_Type component
 !                                of the IRLSE_NPOESS object will be assigned. The actual
 !                                argument must be declared as allocatable.
 !                                UNITS:      N/A
@@ -639,11 +638,11 @@ CONTAINS
 !                                assigned. The actual argument must be declared as
 !                                allocatable.
 !                                NOTE: - This argument is used in conjuction with
-!                                        the Surface_Type_Name_ToGet dummy input
+!                                        the Surface_Type_ToGet dummy input
 !                                        argument to retrieve the reflectance of a
 !                                        particular surface type.
 !                                      - This argument is ignored if the optional
-!                                        Surface_Type_Name_ToGet argument is not
+!                                        Surface_Type_ToGet argument is not
 !                                        also provided.
 !                                UNITS:      N/A
 !                                TYPE:       REAL(fp)
@@ -654,23 +653,23 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRLSE_NPOESS_GetValue( &
-    self                   , &  ! Input
-    Surface_Type_Name_ToGet, &  ! Optional input
-    Version                , &  ! Optional output
-    n_Frequencies          , &  ! Optional output
-    n_Surface_Types        , &  ! Optional output
-    Frequency              , &  ! Optional output
-    Surface_Type_Name      , &  ! Optional output
-    Reflectance            , &  ! Optional output
-    Surface_Reflectance      )  ! Optional output
+    self               , &  ! Input
+    Surface_Type_ToGet , &  ! Optional input
+    Version            , &  ! Optional output
+    n_Frequencies      , &  ! Optional output
+    n_Surface_Types    , &  ! Optional output
+    Frequency          , &  ! Optional output
+    Surface_Type       , &  ! Optional output
+    Reflectance        , &  ! Optional output
+    Surface_Reflectance  )  ! Optional output
     ! Arguments
     TYPE(IRLSE_NPOESS_type),             INTENT(IN OUT) :: self
-    CHARACTER(*),              OPTIONAL, INTENT(IN)     :: Surface_Type_Name_ToGet
+    CHARACTER(*),              OPTIONAL, INTENT(IN)     :: Surface_Type_ToGet
     INTEGER     ,              OPTIONAL, INTENT(OUT)    :: Version
     INTEGER     ,              OPTIONAL, INTENT(OUT)    :: n_Frequencies
     INTEGER     ,              OPTIONAL, INTENT(OUT)    :: n_Surface_Types
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Frequency(:)
-    CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Type_Name(:)
+    CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Type(:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Reflectance(:,:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Reflectance(:)
     
@@ -685,9 +684,9 @@ CONTAINS
       Frequency = self%Frequency
     END IF
 
-    IF ( PRESENT(Surface_Type_Name) ) THEN
-      ALLOCATE(Surface_Type_Name(self%n_Surface_Types))
-      Surface_Type_Name = self%Surface_Type_Name
+    IF ( PRESENT(Surface_Type) ) THEN
+      ALLOCATE(Surface_Type(self%n_Surface_Types))
+      Surface_Type = self%Surface_Type
     END IF
 
     IF ( PRESENT(Reflectance) ) THEN
@@ -695,7 +694,7 @@ CONTAINS
       Reflectance = self%Reflectance
     END IF
     
-    IF ( PRESENT(Surface_Type_Name_ToGet) .AND. PRESENT(Surface_Reflectance) ) THEN
+    IF ( PRESENT(Surface_Type_ToGet) .AND. PRESENT(Surface_Reflectance) ) THEN
       ! Match surface type and assign
     END IF
 
@@ -762,9 +761,9 @@ CONTAINS
     IF ( (x%n_Frequencies   /= y%n_Frequencies   ) .OR. &
          (x%n_Surface_Types /= y%n_Surface_Types ) ) RETURN
     ! ...Arrays
-    IF ( ALL(x%Frequency         .EqualTo. y%Frequency         ) .AND. &
-         ALL(x%Surface_Type_Name     ==    y%Surface_Type_Name ) .AND. &
-         ALL(x%Reflectance       .EqualTo. y%Reflectance       ) ) &
+    IF ( ALL(x%Frequency    .EqualTo. y%Frequency    ) .AND. &
+         ALL(x%Surface_Type     ==    y%Surface_Type ) .AND. &
+         ALL(x%Reflectance  .EqualTo. y%Reflectance  ) ) &
       is_equal = .TRUE.
 
   END FUNCTION IRLSE_NPOESS_Equal
