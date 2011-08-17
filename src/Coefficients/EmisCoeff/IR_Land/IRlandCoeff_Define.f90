@@ -37,6 +37,20 @@ MODULE IRlandCoeff_Define
                                    LSEcategory_InquireFile  , &
                                    LSEcategory_ReadFile     , &
                                    LSEcategory_WriteFile
+  USE LSEatlas_Define      , ONLY: LSEatlas_type         , &
+                                   OPERATOR(==)          , &      
+                                   LSEatlas_Associated   , & 
+                                   LSEatlas_Destroy      , & 
+                                   LSEatlas_Create       , & 
+                                   LSEatlas_Inspect      , & 
+                                   LSEatlas_ValidRelease , & 
+                                   LSEatlas_Info         , & 
+                                   LSEatlas_DefineVersion, & 
+                                   LSEatlas_SetValue     , &
+                                   LSEatlas_GetValue     , &
+                                   LSEatlas_InquireFile  , &
+                                   LSEatlas_ReadFile     , &
+                                   LSEatlas_WriteFile
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -63,9 +77,8 @@ MODULE IRlandCoeff_Define
   PUBLIC :: IRlandCoeff_InquireFile
   PUBLIC :: IRlandCoeff_ReadFile
   PUBLIC :: IRlandCoeff_WriteFile
-  ! ...Inherited datatypes
+  ! ...Inherited datatypes and procedures
   PUBLIC :: LSEcategory_type
-  ! ...Inherited procedures
   PUBLIC :: LSEcategory_Associated   
   PUBLIC :: LSEcategory_Destroy      
   PUBLIC :: LSEcategory_Create       
@@ -78,6 +91,19 @@ MODULE IRlandCoeff_Define
   PUBLIC :: LSEcategory_InquireFile
   PUBLIC :: LSEcategory_ReadFile
   PUBLIC :: LSEcategory_WriteFile
+  PUBLIC :: LSEatlas_type
+  PUBLIC :: LSEatlas_Associated   
+  PUBLIC :: LSEatlas_Destroy      
+  PUBLIC :: LSEatlas_Create       
+  PUBLIC :: LSEatlas_Inspect      
+  PUBLIC :: LSEatlas_ValidRelease 
+  PUBLIC :: LSEatlas_Info         
+  PUBLIC :: LSEatlas_DefineVersion
+  PUBLIC :: LSEatlas_SetValue     
+  PUBLIC :: LSEatlas_GetValue     
+  PUBLIC :: LSEatlas_InquireFile  
+  PUBLIC :: LSEatlas_ReadFile     
+  PUBLIC :: LSEatlas_WriteFile
 
 
   ! ---------------------
@@ -104,6 +130,7 @@ MODULE IRlandCoeff_Define
   INTEGER, PARAMETER :: DATA_MISSING = 0
   INTEGER, PARAMETER :: DATA_PRESENT = 1
 
+
   ! ----------------------------------
   ! IRlandCoeff data type definitions
   ! ----------------------------------
@@ -116,6 +143,7 @@ MODULE IRlandCoeff_Define
     INTEGER(Long) :: Version = IRLANDCOEFF_VERSION
     ! Derived type components
     TYPE(LSEcategory_type) :: NPOESS
+    TYPE(LSEatlas_type)    :: HSR
   END TYPE IRlandCoeff_type
 
 
@@ -260,6 +288,7 @@ CONTAINS
     WRITE(*,'(3x,"Release.Version  :",1x,i0,".",i0)') self%Release, self%Version
     ! Derived types
     IF ( LSEcategory_Associated( self%NPOESS ) ) CALL LSEcategory_Inspect( self%NPOESS )
+    IF ( LSEatlas_Associated( self%HSR ) ) CALL LSEatlas_Inspect( self%HSR )
   END SUBROUTINE IRlandCoeff_Inspect
 
 
@@ -423,7 +452,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRlandCoeff_SetValue( IRlandCoeff, &
-!                                  NPOESS = NPOESS )
+!                                  NPOESS = NPOESS, &
+!                                  HSR    = HSR     )
 !
 ! OBJECTS:
 !       IRlandCoeff:  Valid, allocated IRlandCoeff object for which
@@ -441,17 +471,27 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       HSR:          Object containing the UW land surface emissivity 
+!                     atlas dataset.
+!                     UNITS:      N/A
+!                     TYPE:       LSEatlas_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRlandCoeff_SetValue( &
     self  , &  ! Input
-    NPOESS  )  ! Optional input
+    NPOESS, &  ! Input
+    HSR     )  ! Optional input
     ! Arguments
-    TYPE(IRlandCoeff_type)           , INTENT(IN OUT) :: self
+    TYPE(IRlandCoeff_type)          , INTENT(IN OUT) :: self
     TYPE(LSEcategory_type), OPTIONAL, INTENT(IN)     :: NPOESS
+    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(IN)     :: HSR
 
     IF ( PRESENT(NPOESS) ) self%NPOESS = NPOESS
+    IF ( PRESENT(HSR   ) ) self%HSR    = HSR
 
   END SUBROUTINE IRlandCoeff_SetValue
  
@@ -467,7 +507,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRlandCoeff_GetValue( IRlandCoeff, &
-!                                  NPOESS = NPOESS )
+!                                  NPOESS = NPOESS, &
+!                                  HSR    = HSR     )
 !
 ! OBJECTS:
 !       IRlandCoeff:  Valid IRlandCoeff object from which values are
@@ -485,17 +526,27 @@ CONTAINS
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!       HSR:          Object containing the UW land surface emissivity 
+!                     atlas dataset.
+!                     UNITS:      N/A
+!                     TYPE:       LSEatlas_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRlandCoeff_GetValue( &
     self  , &  ! Input
-    NPOESS  )  ! Optional output
+    NPOESS, &  ! Optional output
+    HSR     )  ! Optional output
     ! Arguments
     TYPE(IRlandCoeff_type)          , INTENT(IN)  :: self
     TYPE(LSEcategory_type), OPTIONAL, INTENT(OUT) :: NPOESS
+    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(OUT) :: HSR
    
     IF ( PRESENT(NPOESS) ) NPOESS = self%NPOESS
+    IF ( PRESENT(HSR   ) ) HSR    = self%HSR
 
   END SUBROUTINE IRlandCoeff_GetValue
  
@@ -726,6 +777,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER(Long) :: npoess_present
+    INTEGER(Long) :: hsr_present
     TYPE(IRlandCoeff_type) :: dummy
     
 
@@ -793,7 +845,7 @@ CONTAINS
     ! ...Read the data indicator
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) npoess_present
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading antenna correction data indicator - '//TRIM(io_msg)
+      msg = 'Error reading NPOESS data indicator - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Read the data
@@ -806,6 +858,28 @@ CONTAINS
                    Debug    = Debug    )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading NPOESS data'
+        CALL Read_Cleanup(); RETURN
+      END IF
+    END IF
+    
+    
+    ! Read the HSR data if it's present
+    ! ...Read the data indicator
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) hsr_present
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading HSR data indicator - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Read the data
+    IF ( hsr_present == DATA_PRESENT ) THEN
+      err_stat = LSEatlas_ReadFile( &
+                   IRlandCoeff%HSR  , &
+                   Filename         , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error reading HSR data'
         CALL Read_Cleanup(); RETURN
       END IF
     END IF
@@ -922,7 +996,8 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    INTEGER :: npoess_present
+    INTEGER(Long) :: npoess_present
+    INTEGER(Long) :: hsr_present
     
 
     ! Setup
@@ -994,6 +1069,33 @@ CONTAINS
                    Debug    = Debug    )
       IF ( io_stat /= 0 ) THEN
         msg = 'Error writing NPOESS data = '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
+    END IF
+    
+    
+    ! Write the HSR data if it's present
+    IF ( LSEatlas_Associated( IRlandCoeff%HSR ) ) THEN
+      hsr_present = DATA_PRESENT
+    ELSE
+      hsr_present = DATA_MISSING
+    END IF
+    ! ...Write the data indicator
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) hsr_present
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing HSR data indicator - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+    ! ...Write the actual data
+    IF ( hsr_present == DATA_PRESENT ) THEN
+      err_stat = LSEatlas_WriteFile( &
+                   IRlandCoeff%hsr  , &
+                   Filename         , &
+                   No_Close = .TRUE., &
+                   Quiet    = Quiet , &
+                   Debug    = Debug   )
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error writing hsr data = '//TRIM(io_msg)
         CALL Write_Cleanup(); RETURN
       END IF
     END IF
@@ -1084,6 +1186,10 @@ CONTAINS
     IF ( LSEcategory_Associated( x%NPOESS ) .NEQV. LSEcategory_Associated( y%NPOESS ) ) RETURN
     IF ( LSEcategory_Associated( x%NPOESS ) .AND.  LSEcategory_Associated( y%NPOESS ) ) THEN
       IF ( .NOT. (x%NPOESS == y%NPOESS) ) RETURN
+    END IF
+    IF ( LSEatlas_Associated( x%HSR ) .NEQV. LSEatlas_Associated( y%HSR ) ) RETURN
+    IF ( LSEatlas_Associated( x%HSR ) .AND.  LSEatlas_Associated( y%HSR ) ) THEN
+      IF ( .NOT. (x%HSR == y%HSR) ) RETURN
     END IF
     
     is_equal = .TRUE.
