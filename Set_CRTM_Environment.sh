@@ -5,6 +5,8 @@
 #
 # This script should be *sourced* in the root directory of the
 # aforementioned trunk, branch, or tag working copy.
+#
+# $Id$
 
 
 # Set current directory as new CRTM root.
