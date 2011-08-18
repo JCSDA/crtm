@@ -62,17 +62,19 @@ MODULE LSEcategory_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
+  ! Datatype information
+  CHARACTER(*), PARAMETER :: LSECATEGORY_NAME = 'LSEcategory'
+  ! Release and version
+  INTEGER, PARAMETER :: LSECATEGORY_RELEASE = 1  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: LSECATEGORY_VERSION = 1  ! This is just the default data version.
+  ! Close status for write errors
+  CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
-  INTEGER,  PARAMETER :: SL =  80 ! Surface type name string length
-  ! Current valid release and version
-  INTEGER, PARAMETER :: LSECATEGORY_RELEASE = 1  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: LSECATEGORY_VERSION = 1  ! This is just the default data version.
-  ! Close status for write errors
-  CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+  INTEGER,  PARAMETER :: SL =  80 ! String length
 
 
   ! ----------------------------------
@@ -82,6 +84,8 @@ MODULE LSEcategory_Define
     PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
+    ! Datatype information
+    CHARACTER(SL) :: Datatype_Name = LSECATEGORY_NAME
     ! Release and version information
     INTEGER(Long) :: Release = LSECATEGORY_RELEASE
     INTEGER(Long) :: Version = LSECATEGORY_VERSION
@@ -767,7 +771,7 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-! FUNCTION RESULT:
+ FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
 !                           status. The error codes are defined in the
 !                           Message_Handler module.
@@ -828,8 +832,19 @@ CONTAINS
     END IF
 
 
+    ! Read the datatype name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEcategory%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
     ! Read the release and version
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) LSEcategory%Release, LSEcategory%Version
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEcategory%Release, &
+      LSEcategory%Version
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Release/Version - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -1023,6 +1038,19 @@ CONTAINS
       END IF
     END IF
 
+
+    ! Read and check the datatype name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      dummy%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
+    IF ( TRIM(dummy%Datatype_Name) /= LSECATEGORY_NAME ) THEN
+      msg = LSECATEGORY_NAME//' datatype name check failed.'
+      CALL Read_Cleanup(); RETURN
+    END IF
+    
 
     ! Read and check the release and version
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1261,6 +1289,15 @@ CONTAINS
       END IF
     END IF
 
+
+    ! Write the datatype name
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEcategory%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing Datatype_Name - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+    
 
     ! Write the release and version
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &

@@ -62,16 +62,19 @@ MODULE LSEatlas_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
-  ! Literal constants
-  REAL(fp), PARAMETER :: ZERO = 0.0_fp
-  REAL(fp), PARAMETER :: ONE  = 1.0_fp
-  ! String lengths
-  INTEGER,  PARAMETER :: ML = 256 ! Message length
+  ! Datatype information
+  CHARACTER(*), PARAMETER :: LSEATLAS_NAME = 'LSEatlas'
   ! Current valid release and version
   INTEGER, PARAMETER :: LSEATLAS_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: LSEATLAS_VERSION = 1  ! This is just the default data version.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
+  ! Literal constants
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  ! String lengths
+  INTEGER,  PARAMETER :: ML = 256 ! Message length
+  INTEGER,  PARAMETER :: SL =  80 ! String length
 
 
   ! ----------------------------------
@@ -81,6 +84,8 @@ MODULE LSEatlas_Define
     PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
+    ! Datatype information
+    CHARACTER(SL) :: Datatype_Name = LSEATLAS_NAME
     ! Release and version information
     INTEGER(Long) :: Release = LSEATLAS_RELEASE
     INTEGER(Long) :: Version = LSEATLAS_VERSION
@@ -876,8 +881,19 @@ CONTAINS
     END IF
 
 
+    ! Read the datatype name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEatlas%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
+
     ! Read the release and version
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) LSEatlas%Release, LSEatlas%Version
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEatlas%Release, &
+      LSEatlas%Version
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Release/Version - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -1073,6 +1089,19 @@ CONTAINS
       END IF
     END IF
 
+
+    ! Read and check the datatype name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      dummy%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
+    IF ( TRIM(dummy%Datatype_Name) /= LSEATLAS_NAME ) THEN
+      msg = LSEATLAS_NAME//' datatype name check failed.'
+      CALL Read_Cleanup(); RETURN
+    END IF
+    
 
     ! Read and check the release and version
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1308,6 +1337,15 @@ CONTAINS
       END IF
     END IF
 
+
+    ! Write the datatype name
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEatlas%Datatype_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing Datatype_Name - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+    
 
     ! Write the release and version
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
