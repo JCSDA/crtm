@@ -30,6 +30,8 @@ MODULE LSEcategory_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! Parameters
+  PUBLIC :: LSECATEGORY_DATATYPE
   ! Datatypes
   PUBLIC :: LSEcategory_type
   ! Operators
@@ -41,6 +43,7 @@ MODULE LSEcategory_Define
   PUBLIC :: LSEcategory_Inspect
   PUBLIC :: LSEcategory_ValidRelease
   PUBLIC :: LSEcategory_Info
+  PUBLIC :: LSEcategory_Name
   PUBLIC :: LSEcategory_DefineVersion
   PUBLIC :: LSEcategory_SetValue
   PUBLIC :: LSEcategory_GetValue
@@ -63,7 +66,7 @@ MODULE LSEcategory_Define
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Datatype information
-  CHARACTER(*), PARAMETER :: LSECATEGORY_NAME = 'LSEcategory'
+  CHARACTER(*), PARAMETER :: LSECATEGORY_DATATYPE = 'LSEcategory'
   ! Release and version
   INTEGER, PARAMETER :: LSECATEGORY_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: LSECATEGORY_VERSION = 1  ! This is just the default data version.
@@ -80,12 +83,13 @@ MODULE LSEcategory_Define
   ! ----------------------------------
   ! LSEcategory data type definitions
   ! ----------------------------------
+  !:tdoc+:
   TYPE :: LSEcategory_type
     PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Datatype information
-    CHARACTER(SL) :: Datatype_Name = LSECATEGORY_NAME
+    CHARACTER(SL) :: Datatype_Name = LSECATEGORY_DATATYPE
     ! Release and version information
     INTEGER(Long) :: Release = LSECATEGORY_RELEASE
     INTEGER(Long) :: Version = LSECATEGORY_VERSION
@@ -99,6 +103,7 @@ MODULE LSEcategory_Define
     ! Reflectance LUT data
     REAL(Double),  ALLOCATABLE :: Reflectance(:,:)  ! LxN
   END TYPE LSEcategory_type
+  !:tdoc-:
 
 
 CONTAINS
@@ -194,12 +199,12 @@ CONTAINS
 !       Elemental subroutine to create an instance of an LSEcategory object.
 !
 ! CALLING SEQUENCE:
-!       CALL LSEcategory_Create( LSEcategory   , &
-!                                 n_Frequencies  , &     
-!                                 n_Surface_Types  )         
+!       CALL LSEcategory_Create( LSEcategory    , &
+!                                n_Frequencies  , &     
+!                                n_Surface_Types  )         
 !
 ! OBJECTS:
-!       LSEcategory:       LSEcategory object structure.
+!       LSEcategory:        LSEcategory object structure.
 !                           UNITS:      N/A
 !                           TYPE:       LSEcategory_type
 !                           DIMENSION:  Scalar or any rank
@@ -231,8 +236,8 @@ CONTAINS
     n_Surface_Types  )  ! Input
     ! Arguments
     TYPE(LSEcategory_type), INTENT(OUT) :: self
-    INTEGER                , INTENT(IN)  :: n_Frequencies          
-    INTEGER                , INTENT(IN)  :: n_Surface_Types             
+    INTEGER               , INTENT(IN)  :: n_Frequencies          
+    INTEGER               , INTENT(IN)  :: n_Surface_Types             
     ! Local variables
     INTEGER :: alloc_stat
 
@@ -439,6 +444,46 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
+!       LSEcategory_Name
+!
+! PURPOSE:
+!       Function to return the datatype name of an LSEcategory object.
+!
+! CALLING SEQUENCE:
+!       datatype_name = LSEcategory_Name( LSEcategory )         
+!
+! OBJECTS:
+!       LSEcategory:  LSEcategory object structure.
+!                     UNITS:      N/A
+!                     TYPE:       LSEcategory_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:       The return value is a the character string containing
+!                     the datatype name of the structure.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER
+!                     DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION LSEcategory_Name( self ) RESULT( datatype_name )
+    ! Arguments
+    TYPE(LSEcategory_type), INTENT(OUT) :: self
+    ! Function result
+    CHARACTER(LEN(self%Datatype_Name)) :: datatype_name
+    
+    datatype_name = self%Datatype_Name
+
+  END FUNCTION LSEcategory_Name
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
 !       LSEcategory_DefineVersion
 !
 ! PURPOSE:
@@ -476,13 +521,13 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL LSEcategory_SetValue( LSEcategory, &
-!                                   Version      = Version     , &
-!                                   Frequency    = Frequency   , &
-!                                   Surface_Type = Surface_Type, &
-!                                   Reflectance  = Reflectance   )
+!                                  Version      = Version     , &
+!                                  Frequency    = Frequency   , &
+!                                  Surface_Type = Surface_Type, &
+!                                  Reflectance  = Reflectance   )
 !
 ! OBJECTS:
-!       LSEcategory:       Valid, allocated LSEcategory object for which
+!       LSEcategory:        Valid, allocated LSEcategory object for which
 !                           values are to be set.
 !                           UNITS:      N/A
 !                           TYPE:       LSEcategory_type
@@ -536,10 +581,10 @@ CONTAINS
     Reflectance   )  ! Optional input
     ! Arguments
     TYPE(LSEcategory_type), INTENT(IN OUT) :: self
-    INTEGER     ,  OPTIONAL, INTENT(IN)     :: Version
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Frequency(:)
-    CHARACTER(*),  OPTIONAL, INTENT(IN)     :: Surface_Type(:)
-    REAL(fp)    ,  OPTIONAL, INTENT(IN)     :: Reflectance(:,:)
+    INTEGER     , OPTIONAL, INTENT(IN)     :: Version
+    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Frequency(:)
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Surface_Type(:)
+    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Reflectance(:,:)
    
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
 
@@ -599,7 +644,7 @@ CONTAINS
 !                                UNITS:      N/A
 !                                TYPE:       LSEcategory_type
 !                                DIMENSION:  Scalar
-!                                ATTRIBUTES: INTENT(IN OUT)
+!                                ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
 !       Surface_Type_ToGet:      Character string containing a valid surface type
@@ -677,15 +722,15 @@ CONTAINS
     Reflectance        , &  ! Optional output
     Surface_Reflectance  )  ! Optional output
     ! Arguments
-    TYPE(LSEcategory_type),              INTENT(IN OUT) :: self
-    CHARACTER(*),              OPTIONAL, INTENT(IN)     :: Surface_Type_ToGet
-    INTEGER     ,              OPTIONAL, INTENT(OUT)    :: Version
-    INTEGER     ,              OPTIONAL, INTENT(OUT)    :: n_Frequencies
-    INTEGER     ,              OPTIONAL, INTENT(OUT)    :: n_Surface_Types
-    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Frequency(:)
-    CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Type(:)
-    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Reflectance(:,:)
-    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Surface_Reflectance(:)
+    TYPE(LSEcategory_type),              INTENT(IN)  :: self
+    CHARACTER(*),              OPTIONAL, INTENT(IN)  :: Surface_Type_ToGet
+    INTEGER     ,              OPTIONAL, INTENT(OUT) :: Version
+    INTEGER     ,              OPTIONAL, INTENT(OUT) :: n_Frequencies
+    INTEGER     ,              OPTIONAL, INTENT(OUT) :: n_Surface_Types
+    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Frequency(:)
+    CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Type(:)
+    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Reflectance(:,:)
+    REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Reflectance(:)
     
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
    
@@ -832,11 +877,14 @@ CONTAINS
     END IF
 
 
-    ! Read the datatype name
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      LSEcategory%Datatype_Name
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+    ! Read and check the datatype name
+    err_stat = Read_Datatype( fid, LSEcategory%Datatype_name )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading Datatype_Name'
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    IF ( TRIM(LSEcategory%Datatype_Name) /= LSECATEGORY_DATATYPE ) THEN
+      msg = LSECATEGORY_DATATYPE//' datatype name check failed.'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -847,6 +895,10 @@ CONTAINS
       LSEcategory%Version
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Release/Version - '//TRIM(io_msg)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    IF ( .NOT. LSEcategory_ValidRelease( LSEcategory ) ) THEN
+      msg = 'LSEcategory Release check failed.'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -1040,14 +1092,13 @@ CONTAINS
 
 
     ! Read and check the datatype name
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      dummy%Datatype_Name
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+    err_stat = Read_Datatype( fid, dummy%Datatype_name )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading Datatype_Name'
       CALL Read_Cleanup(); RETURN
     END IF
-    IF ( TRIM(dummy%Datatype_Name) /= LSECATEGORY_NAME ) THEN
-      msg = LSECATEGORY_NAME//' datatype name check failed.'
+    IF ( TRIM(dummy%Datatype_Name) /= LSECATEGORY_DATATYPE ) THEN
+      msg = LSECATEGORY_DATATYPE//' datatype name check failed.'
       CALL Read_Cleanup(); RETURN
     END IF
     
@@ -1076,7 +1127,7 @@ CONTAINS
     END IF
     ! ...Allocate the object
     CALL LSEcategory_Create( &
-           LSEcategory         , &
+           LSEcategory          , &
            dummy%n_Frequencies  , &        
            dummy%n_Surface_Types  )                  
     IF ( .NOT. LSEcategory_Associated( LSEcategory ) ) THEN
@@ -1292,6 +1343,12 @@ CONTAINS
 
     ! Write the datatype name
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LEN(LSEcategory%Datatype_Name)
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing Datatype_Name length - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       LSEcategory%Datatype_Name
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing Datatype_Name - '//TRIM(io_msg)
@@ -1454,4 +1511,44 @@ CONTAINS
 
   END FUNCTION LSEcategory_Equal
 
+
+  ! Function to read the datatype name from file
+
+  FUNCTION Read_Datatype( fid, datatype_name ) RESULT( err_stat )
+    ! Arguments
+    INTEGER     , INTENT(IN)  :: fid
+    CHARACTER(*), INTENT(OUT) :: datatype_name
+    ! Function result
+    INTEGER :: err_stat    
+    ! Local variables
+    CHARACTER(1), ALLOCATABLE :: dummy(:)
+    INTEGER :: i, strlen
+    INTEGER :: io_stat
+    INTEGER :: alloc_stat
+
+    ! Set up
+    err_stat = FAILURE
+    datatype_name = ''
+
+    ! Get the string length
+    READ( fid, IOSTAT=io_stat ) strlen
+    IF ( io_stat /= 0 ) RETURN
+    
+    ! Allocate dummy string array
+    ALLOCATE( dummy(strlen), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Read the string into the dummy array
+    READ( fid, IOSTAT=io_stat ) dummy
+    IF ( io_stat /= 0 ) RETURN
+
+    ! Transfer array into string
+    DO i = 1, MIN(strlen,LEN(datatype_name))
+      datatype_name(i:i) = dummy(i)
+    END DO
+
+    ! Done
+    err_stat = SUCCESS
+  END FUNCTION Read_Datatype
+  
 END MODULE LSEcategory_Define

@@ -21,12 +21,14 @@ PROGRAM Create_NPOESS_LSEcategory
                                        Display_Message, Program_Message
   USE Spectral_Units_Conversion, ONLY: micron_to_inverse_cm
   USE LSEcategory_Define       , ONLY: LSEcategory_type      , &
+                                       OPERATOR(==)          , &
                                        LSEcategory_Associated, &
                                        LSEcategory_Create    , &
                                        LSEcategory_Destroy   , &
                                        LSEcategory_GetValue  , &
                                        LSEcategory_SetValue  , &
-                                       LSEcategory_WriteFile
+                                       LSEcategory_WriteFile , &
+                                       LSEcategory_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -62,7 +64,7 @@ PROGRAM Create_NPOESS_LSEcategory
   CHARACTER(256) :: msg
   INTEGER :: err_stat
   REAL(dp), ALLOCATABLE :: frequency(:)
-  TYPE(LSEcategory_type) :: npoess
+  TYPE(LSEcategory_type) :: npoess, npoess_copy
   
   
   ! Program header
@@ -115,8 +117,28 @@ PROGRAM Create_NPOESS_LSEcategory
   END IF
 
 
+  ! Read data from file
+  err_stat = LSEcategory_ReadFile( &
+               npoess_copy, &
+               'NPOESS.LSEcategory.bin' )
+  IF ( err_stat /= SUCCESS ) THEN
+    msg = 'Error reading NPOESS data from file.'
+    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+  END IF
+
+
+  ! Check that structures are equal
+  IF ( npoess == npoess_copy ) THEN
+    msg = 'Structure read from file is the same!'
+  ELSE
+    msg = 'Structure read from file is different!'
+  END IF
+  CALL Display_Message( PROGRAM_NAME, msg, INFORMATION )
+  
+  
   ! Clean up
   CALL LSEcategory_Destroy( npoess )
+  CALL LSEcategory_Destroy( npoess_copy )
   
 CONTAINS
 
