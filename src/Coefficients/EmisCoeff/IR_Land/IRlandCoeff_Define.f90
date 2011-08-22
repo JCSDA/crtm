@@ -20,10 +20,9 @@ MODULE IRlandCoeff_Define
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   USE File_Utility         , ONLY: File_Open, File_Exists
-  USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
-                                   WriteGAtts_Binary_File, &
-                                   ReadGAtts_Binary_File
-  USE LSEcategory_Define   , ONLY: LSEcategory_type         , &
+  USE Binary_File_Utility  , ONLY: Open_Binary_File
+  USE LSEcategory_Define   , ONLY: LSECATEGORY_DATATYPE     , &
+                                   LSEcategory_type         , &
                                    OPERATOR(==)             , &      
                                    LSEcategory_Associated   , & 
                                    LSEcategory_Destroy      , & 
@@ -31,13 +30,15 @@ MODULE IRlandCoeff_Define
                                    LSEcategory_Inspect      , & 
                                    LSEcategory_ValidRelease , & 
                                    LSEcategory_Info         , & 
+                                   LSEcategory_Name         , & 
                                    LSEcategory_DefineVersion, & 
                                    LSEcategory_SetValue     , &
                                    LSEcategory_GetValue     , &
                                    LSEcategory_InquireFile  , &
                                    LSEcategory_ReadFile     , &
                                    LSEcategory_WriteFile
-  USE LSEatlas_Define      , ONLY: LSEatlas_type         , &
+  USE LSEatlas_Define      , ONLY: LSEATLAS_DATATYPE     , &
+                                   LSEatlas_type         , &
                                    OPERATOR(==)          , &      
                                    LSEatlas_Associated   , & 
                                    LSEatlas_Destroy      , & 
@@ -45,6 +46,7 @@ MODULE IRlandCoeff_Define
                                    LSEatlas_Inspect      , & 
                                    LSEatlas_ValidRelease , & 
                                    LSEatlas_Info         , & 
+                                   LSEatlas_Name         , & 
                                    LSEatlas_DefineVersion, & 
                                    LSEatlas_SetValue     , &
                                    LSEatlas_GetValue     , &
@@ -75,9 +77,8 @@ MODULE IRlandCoeff_Define
   PUBLIC :: IRlandCoeff_SetValue
   PUBLIC :: IRlandCoeff_GetValue
   PUBLIC :: IRlandCoeff_InquireFile
-  PUBLIC :: IRlandCoeff_ReadFile
-  PUBLIC :: IRlandCoeff_WriteFile
   ! ...Inherited datatypes and procedures
+  PUBLIC :: LSECATEGORY_DATATYPE
   PUBLIC :: LSEcategory_type
   PUBLIC :: LSEcategory_Associated   
   PUBLIC :: LSEcategory_Destroy      
@@ -85,12 +86,15 @@ MODULE IRlandCoeff_Define
   PUBLIC :: LSEcategory_Inspect      
   PUBLIC :: LSEcategory_ValidRelease 
   PUBLIC :: LSEcategory_Info         
+  PUBLIC :: LSEcategory_Name       
   PUBLIC :: LSEcategory_DefineVersion
   PUBLIC :: LSEcategory_SetValue
   PUBLIC :: LSEcategory_GetValue
   PUBLIC :: LSEcategory_InquireFile
   PUBLIC :: LSEcategory_ReadFile
   PUBLIC :: LSEcategory_WriteFile
+  ! ...
+  PUBLIC :: LSEATLAS_DATATYPE
   PUBLIC :: LSEatlas_type
   PUBLIC :: LSEatlas_Associated   
   PUBLIC :: LSEatlas_Destroy      
@@ -98,6 +102,7 @@ MODULE IRlandCoeff_Define
   PUBLIC :: LSEatlas_Inspect      
   PUBLIC :: LSEatlas_ValidRelease 
   PUBLIC :: LSEatlas_Info         
+  PUBLIC :: LSEatlas_Name         
   PUBLIC :: LSEatlas_DefineVersion
   PUBLIC :: LSEatlas_SetValue     
   PUBLIC :: LSEatlas_GetValue     
@@ -134,6 +139,7 @@ MODULE IRlandCoeff_Define
   ! ----------------------------------
   ! IRlandCoeff data type definitions
   ! ----------------------------------
+  !:tdoc+:
   TYPE :: IRlandCoeff_type
     PRIVATE
     ! Allocation indicator
@@ -142,9 +148,10 @@ MODULE IRlandCoeff_Define
     INTEGER(Long) :: Release = IRLANDCOEFF_RELEASE
     INTEGER(Long) :: Version = IRLANDCOEFF_VERSION
     ! Derived type components
-    TYPE(LSEcategory_type) :: NPOESS
-    TYPE(LSEatlas_type)    :: HSR
+    TYPE(LSEcategory_type) :: LSEcategory
+    TYPE(LSEatlas_type)    :: LSEatlas
   END TYPE IRlandCoeff_type
+  !:tdoc-:
 
 
 CONTAINS
@@ -287,8 +294,8 @@ CONTAINS
     ! Release/version info
     WRITE(*,'(3x,"Release.Version  :",1x,i0,".",i0)') self%Release, self%Version
     ! Derived types
-    IF ( LSEcategory_Associated( self%NPOESS ) ) CALL LSEcategory_Inspect( self%NPOESS )
-    IF ( LSEatlas_Associated( self%HSR ) ) CALL LSEatlas_Inspect( self%HSR )
+    IF ( LSEcategory_Associated( self%LSEcategory ) ) CALL LSEcategory_Inspect( self%LSEcategory )
+    IF ( LSEatlas_Associated( self%LSEatlas ) ) CALL LSEatlas_Inspect( self%LSEatlas )
   END SUBROUTINE IRlandCoeff_Inspect
 
 
@@ -452,8 +459,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRlandCoeff_SetValue( IRlandCoeff, &
-!                                  NPOESS = NPOESS, &
-!                                  HSR    = HSR     )
+!                                  LSEcategory = LSEcategory, &
+!                                  LSEatlas    = LSEatlas     )
 !
 ! OBJECTS:
 !       IRlandCoeff:  Valid, allocated IRlandCoeff object for which
@@ -464,15 +471,15 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       NPOESS:       Object containing the NPOESS land surface emissivity 
-!                     category dataset.
+!       LSEcategory:  Object containing an LSEcategory land surface
+!                     emissivity/refelctivity dataset.
 !                     UNITS:      N/A
 !                     TYPE:       LSEcategory_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       HSR:          Object containing the UW land surface emissivity 
-!                     atlas dataset.
+!       LSEatlas:     Object containing an LSEatlas land surface
+!                     emissivity/refelctivity dataset.
 !                     UNITS:      N/A
 !                     TYPE:       LSEatlas_type
 !                     DIMENSION:  Scalar
@@ -482,16 +489,16 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRlandCoeff_SetValue( &
-    self  , &  ! Input
-    NPOESS, &  ! Input
-    HSR     )  ! Optional input
+    self       , &  ! Input
+    LSEcategory, &  ! Input
+    LSEatlas     )  ! Optional input
     ! Arguments
     TYPE(IRlandCoeff_type)          , INTENT(IN OUT) :: self
-    TYPE(LSEcategory_type), OPTIONAL, INTENT(IN)     :: NPOESS
-    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(IN)     :: HSR
+    TYPE(LSEcategory_type), OPTIONAL, INTENT(IN)     :: LSEcategory
+    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(IN)     :: LSEatlas   
 
-    IF ( PRESENT(NPOESS) ) self%NPOESS = NPOESS
-    IF ( PRESENT(HSR   ) ) self%HSR    = HSR
+    IF ( PRESENT(LSEcategory) ) self%LSEcategory = LSEcategory
+    IF ( PRESENT(LSEatlas   ) ) self%LSEatlas    = LSEatlas   
 
   END SUBROUTINE IRlandCoeff_SetValue
  
@@ -507,8 +514,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL IRlandCoeff_GetValue( IRlandCoeff, &
-!                                  NPOESS = NPOESS, &
-!                                  HSR    = HSR     )
+!                                  LSEcategory = LSEcategory, &
+!                                  LSEatlas    = LSEatlas     )
 !
 ! OBJECTS:
 !       IRlandCoeff:  Valid IRlandCoeff object from which values are
@@ -519,15 +526,15 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUTS:
-!       NPOESS:       Object containing the NPOESS land surface emissivity 
-!                     category dataset.
+!       LSEcategory:  Object containing an LSEcategory land surface
+!                     emissivity/reflectivity dataset.
 !                     UNITS:      N/A
 !                     TYPE:       LSEcategory_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       HSR:          Object containing the UW land surface emissivity 
-!                     atlas dataset.
+!       LSEatlas:     Object containing an LSEatlas land surface
+!                     emissivity/reflectivity dataset.
 !                     UNITS:      N/A
 !                     TYPE:       LSEatlas_type
 !                     DIMENSION:  Scalar
@@ -537,16 +544,16 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE IRlandCoeff_GetValue( &
-    self  , &  ! Input
-    NPOESS, &  ! Optional output
-    HSR     )  ! Optional output
+    self       , &  ! Input
+    LSEcategory, &  ! Optional output
+    LSEatlas     )  ! Optional output
     ! Arguments
     TYPE(IRlandCoeff_type)          , INTENT(IN)  :: self
-    TYPE(LSEcategory_type), OPTIONAL, INTENT(OUT) :: NPOESS
-    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(OUT) :: HSR
+    TYPE(LSEcategory_type), OPTIONAL, INTENT(OUT) :: LSEcategory
+    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(OUT) :: LSEatlas   
    
-    IF ( PRESENT(NPOESS) ) NPOESS = self%NPOESS
-    IF ( PRESENT(HSR   ) ) HSR    = self%HSR
+    IF ( PRESENT(LSEcategory) ) LSEcategory = self%LSEcategory
+    IF ( PRESENT(LSEatlas   ) ) LSEatlas    = self%LSEatlas   
 
   END SUBROUTINE IRlandCoeff_GetValue
  
@@ -558,13 +565,11 @@ CONTAINS
 !       IRlandCoeff_InquireFile
 !
 ! PURPOSE:
-!       Function to inquire a IRlandCoeff object container file.
+!       Function to inquire a IRlandCoeff component file to determine its
+!       dataset type.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = IRlandCoeff_InquireFile( &
-!                        Filename         , &
-!                        Release = Release, &
-!                        Version = Version  )
+!       Error_Status = IRlandCoeff_InquireFile( Filename, Datatype_Name )
 !
 ! INPUTS:
 !       Filename:           Character string specifying the name of the
@@ -574,21 +579,13 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL OUTPUTS:
-!       Release:            The data/file release number. Used to check
-!                           for data/software mismatch.
+! OUTPUTS:
+!       Datatype_Name:      Character string containing the name of the
+!                           dataset type.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Version:            The data/file version number. Used for
-!                           purposes only in identifying the dataset for
-!                           a particular release.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!                           ATTRIBUTES: INTENT(OUT)
 !
 ! FUNCTION RESULT:
 !       Error_Status:       The return value is an integer defining the error
@@ -604,20 +601,12 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION IRlandCoeff_InquireFile( &
-    Filename, &  ! Input
-    Release , &  ! Optional output
-    Version , &  ! Optional output
-    Title   , &  ! Optional output
-    History , &  ! Optional output
-    Comment ) &  ! Optional output
+    Filename     , &  ! Input
+    Datatype_Name) &  ! Output
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    CHARACTER(*), INTENT(IN)  :: Filename
+    CHARACTER(*), INTENT(OUT) :: Datatype_Name
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -627,7 +616,6 @@ CONTAINS
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     INTEGER :: fid
-    TYPE(IRlandCoeff_type) :: IRlandCoeff
 
  
     ! Setup
@@ -647,22 +635,10 @@ CONTAINS
     END IF
 
 
-    ! Read the release and version
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) IRlandCoeff%Release, IRlandCoeff%Version
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Release/Version - '//TRIM(io_msg)
-      CALL Inquire_Cleanup(); RETURN
-    END IF
-
-
-    ! Read the global attributes
-    err_stat = ReadGAtts_Binary_File( &
-                 fid, &
-                 Title   = Title  , &
-                 History = History, &
-                 Comment = Comment  )
+    ! Read the datatype name
+    err_stat = Read_Datatype( fid, Datatype_Name )
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error reading global attributes'
+      msg = 'Error reading Datatype_Name'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -674,11 +650,6 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-
-    ! Assign the return arguments
-    IF ( PRESENT(Release) ) Release = IRlandCoeff%Release
-    IF ( PRESENT(Version) ) Version = IRlandCoeff%Version
-    
   CONTAINS
   
     SUBROUTINE Inquire_CleanUp()
@@ -694,440 +665,6 @@ CONTAINS
     END SUBROUTINE Inquire_CleanUp
     
   END FUNCTION IRlandCoeff_InquireFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       IRlandCoeff_ReadFile
-!
-! PURPOSE:
-!       Function to read IRlandCoeff object container files.
-!
-! CALLING SEQUENCE:
-!       Error_Status = IRlandCoeff_ReadFile( &
-!                        IRlandCoeff  , &
-!                        Filename     , &
-!                        Quiet = Quiet  )
-!
-! OBJECTS:
-!       IRlandCoeff:    Object containing the data read from file.
-!                       UNITS:      N/A
-!                       TYPE:       IRlandCoeff_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! INPUTS:
-!       Filename:       Character string specifying the name of the
-!                       data file to read.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUTS:
-!       Quiet:          Set this logical argument to suppress INFORMATION
-!                       messages being printed to stdout
-!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
-!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
-!                       If not specified, default is .FALSE.
-!                       UNITS:      N/A
-!                       TYPE:       LOGICAL
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS, the file read was successful
-!                          == FAILURE, an unrecoverable error occurred.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-!:sdoc-:
-!------------------------------------------------------------------------------
-
-  FUNCTION IRlandCoeff_ReadFile( &
-    IRlandCoeff, &  ! Output
-    Filename   , &  ! Input
-    Quiet      , &  ! Optional input
-    Title      , &  ! Optional output
-    History    , &  ! Optional output
-    Comment    , &  ! Optional output
-    Debug      ) &  ! Optional input (Debug output control)
-  RESULT( err_stat )
-    ! Arguments
-    TYPE(IRlandCoeff_type), INTENT(OUT) :: IRlandCoeff
-    CHARACTER(*),           INTENT(IN)  :: Filename
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Debug
-    ! Function result
-    INTEGER :: err_stat
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IRlandCoeff_ReadFile'
-    ! Function variables
-    CHARACTER(ML) :: msg
-    CHARACTER(ML) :: io_msg
-    LOGICAL :: noisy
-    INTEGER :: io_stat
-    INTEGER :: fid
-    INTEGER(Long) :: npoess_present
-    INTEGER(Long) :: hsr_present
-    TYPE(IRlandCoeff_type) :: dummy
-    
-
-    ! Setup
-    err_stat = SUCCESS
-    ! ...Check Quiet argument
-    noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
-    ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) noisy = .TRUE.
-    END IF
-
-   
-    ! Open the file
-    IF ( File_Exists( Filename ) ) THEN
-      err_stat = Open_Binary_File( Filename, fid )
-      IF ( err_Stat /= SUCCESS ) THEN
-        msg = 'Error opening '//TRIM(Filename)
-        CALL Read_CleanUp(); RETURN
-      END IF
-    ELSE
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_CleanUp(); RETURN
-    END IF
-
-
-    ! Read and check the release and version
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      dummy%Release, &
-      dummy%Version
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Release/Version - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
-    IF ( .NOT. IRlandCoeff_ValidRelease( dummy ) ) THEN
-      msg = 'IRlandCoeff Release check failed.'
-      CALL Read_Cleanup(); RETURN
-    END IF
-
-
-    ! Create the return object
-    CALL IRlandCoeff_Create( IRlandCoeff )                  
-    IF ( .NOT. IRlandCoeff_Associated( IRlandCoeff ) ) THEN
-      msg = 'IRlandCoeff object creation failed.'
-      CALL Read_Cleanup(); RETURN
-    END IF
-    ! ...Explicitly assign the version number
-    IRlandCoeff%Version = dummy%Version
-    
-    
-    ! Read the global attributes
-    err_stat = ReadGAtts_Binary_File( &
-                 fid, &
-                 Title   = Title  , &
-                 History = History, &
-                 Comment = Comment  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error reading global attributes'
-      CALL Read_Cleanup(); RETURN
-    END IF
-
-
-    ! Read the NPOESS data if it's present
-    ! ...Read the data indicator
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) npoess_present
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading NPOESS data indicator - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
-    ! ...Read the data
-    IF ( npoess_present == DATA_PRESENT ) THEN
-      err_stat = LSEcategory_ReadFile( &
-                   IRlandCoeff%NPOESS, &
-                   Filename          , &
-                   No_Close = .TRUE. , &
-                   Quiet    = Quiet  , &
-                   Debug    = Debug    )
-      IF ( err_stat /= SUCCESS ) THEN
-        msg = 'Error reading NPOESS data'
-        CALL Read_Cleanup(); RETURN
-      END IF
-    END IF
-    
-    
-    ! Read the HSR data if it's present
-    ! ...Read the data indicator
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) hsr_present
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading HSR data indicator - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
-    ! ...Read the data
-    IF ( hsr_present == DATA_PRESENT ) THEN
-      err_stat = LSEatlas_ReadFile( &
-                   IRlandCoeff%HSR  , &
-                   Filename         , &
-                   No_Close = .TRUE., &
-                   Quiet    = Quiet , &
-                   Debug    = Debug   )
-      IF ( err_stat /= SUCCESS ) THEN
-        msg = 'Error reading HSR data'
-        CALL Read_Cleanup(); RETURN
-      END IF
-    END IF
-    
-    
-    ! Close the file
-    CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
-
-
-    ! Output an info message
-     IF ( noisy ) THEN
-       CALL IRlandCoeff_Info( IRlandCoeff, msg )
-       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
-     END IF
-
-   CONTAINS
-   
-     SUBROUTINE Read_CleanUp()
-       IF ( File_Open(Filename) ) THEN
-         CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
-         IF ( io_stat /= 0 ) &
-           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
-       END IF
-       CALL IRlandCoeff_Destroy( IRlandCoeff )
-       err_stat = FAILURE
-       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
-     END SUBROUTINE Read_CleanUp
-
-  END FUNCTION IRlandCoeff_ReadFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       IRlandCoeff_WriteFile
-!
-! PURPOSE:
-!       Function to write IRlandCoeff object container files.
-!
-! CALLING SEQUENCE:
-!       Error_Status = IRlandCoeff_WriteFile( &
-!                        IRlandCoeff  , &
-!                        Filename     , &
-!                        Quiet = Quiet  )
-!
-! OBJECTS:
-!       IRlandCoeff:    Object containing the data to write to file.
-!                       UNITS:      N/A
-!                       TYPE:       IRlandCoeff_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-! INPUTS:
-!       Filename:       Character string specifying the name of the
-!                       data file to write.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUTS:
-!       Quiet:          Set this logical argument to suppress INFORMATION
-!                       messages being printed to stdout
-!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
-!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
-!                       If not specified, default is .FALSE.
-!                       UNITS:      N/A
-!                       TYPE:       LOGICAL
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS, the file write was successful
-!                          == FAILURE, an unrecoverable error occurred.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-!:sdoc-:
-!------------------------------------------------------------------------------
-
-  FUNCTION IRlandCoeff_WriteFile( &
-    IRlandCoeff, &  ! Output
-    Filename   , &  ! Input
-    Quiet      , &  ! Optional input
-    Title      , &  ! Optional input
-    History    , &  ! Optional input
-    Comment    , &  ! Optional input
-    Debug      ) &  ! Optional input (Debug output control)
-  RESULT( err_stat )
-    ! Arguments
-    TYPE(IRlandCoeff_type), INTENT(IN) :: IRlandCoeff
-    CHARACTER(*),           INTENT(IN) :: Filename
-    LOGICAL,      OPTIONAL, INTENT(IN) :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
-    LOGICAL,      OPTIONAL, INTENT(IN) :: Debug
-    ! Function result
-    INTEGER :: err_stat
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'IRlandCoeff_WriteFile'
-    CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
-    ! Function variables
-    CHARACTER(ML) :: msg
-    CHARACTER(ML) :: io_msg
-    LOGICAL :: noisy
-    INTEGER :: io_stat
-    INTEGER :: fid
-    INTEGER(Long) :: npoess_present
-    INTEGER(Long) :: hsr_present
-    
-
-    ! Setup
-    err_stat = SUCCESS
-    ! ...Check Quiet argument
-    noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
-    ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) noisy = .TRUE.
-    END IF
-    ! ...Check there is data to write
-    IF ( .NOT. IRlandCoeff_Associated( IRlandCoeff ) ) THEN
-      msg = 'IRlandCoeff object is empty.'
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-   
-    ! Open the file
-    err_stat = Open_Binary_File( Filename, fid, For_Output=.TRUE. )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error opening '//TRIM(Filename)
-      CALL Write_CleanUp(); RETURN
-    END IF
-
-
-    ! Write the release and version
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      IRlandCoeff%Release, &
-      IRlandCoeff%Version
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing Release/Version - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Write the global attributes
-    err_stat = WriteGAtts_Binary_File( &
-                 fid, &
-                 Write_Module = MODULE_VERSION_ID, &
-                 Title        = Title  , &
-                 History      = History, &
-                 Comment      = Comment  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error writing global attributes'
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Write the NPOESS data if it's present
-    IF ( LSEcategory_Associated( IRlandCoeff%NPOESS ) ) THEN
-      npoess_present = DATA_PRESENT
-    ELSE
-      npoess_present = DATA_MISSING
-    END IF
-    ! ...Write the data indicator
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) npoess_present
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing NPOESS data indicator - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
-    ! ...Write the actual data
-    IF ( npoess_present == DATA_PRESENT ) THEN
-      err_stat = LSEcategory_WriteFile( &
-                   IRlandCoeff%NPOESS, &
-                   Filename          , &
-                   No_Close = .TRUE. , &
-                   Quiet    = Quiet  , &
-                   Debug    = Debug    )
-      IF ( io_stat /= 0 ) THEN
-        msg = 'Error writing NPOESS data = '//TRIM(io_msg)
-        CALL Write_Cleanup(); RETURN
-      END IF
-    END IF
-    
-    
-    ! Write the HSR data if it's present
-    IF ( LSEatlas_Associated( IRlandCoeff%HSR ) ) THEN
-      hsr_present = DATA_PRESENT
-    ELSE
-      hsr_present = DATA_MISSING
-    END IF
-    ! ...Write the data indicator
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) hsr_present
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing HSR data indicator - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
-    ! ...Write the actual data
-    IF ( hsr_present == DATA_PRESENT ) THEN
-      err_stat = LSEatlas_WriteFile( &
-                   IRlandCoeff%hsr  , &
-                   Filename         , &
-                   No_Close = .TRUE., &
-                   Quiet    = Quiet , &
-                   Debug    = Debug   )
-      IF ( io_stat /= 0 ) THEN
-        msg = 'Error writing hsr data = '//TRIM(io_msg)
-        CALL Write_Cleanup(); RETURN
-      END IF
-    END IF
-    
-    
-    ! Close the file
-    CLOSE( fid, STATUS='KEEP', IOSTAT=io_stat, IOMSG=io_msg )
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
-
-
-    ! Output an info message
-     IF ( noisy ) THEN
-       CALL IRlandCoeff_Info( IRlandCoeff, msg )
-       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
-     END IF
-
-   CONTAINS
-   
-     SUBROUTINE Write_CleanUp()
-       IF ( File_Open(Filename) ) THEN
-         CLOSE( fid, STATUS=WRITE_ERROR_STATUS, IOSTAT=io_stat, IOMSG=io_msg )
-         IF ( io_stat /= 0 ) &
-           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
-       END IF
-       err_stat = FAILURE
-       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
-     END SUBROUTINE Write_CleanUp
-
-  END FUNCTION IRlandCoeff_WriteFile
 
 
 !##################################################################################
@@ -1183,17 +720,57 @@ CONTAINS
     IF ( (x%Release /= y%Release) .OR. &
          (x%Version /= y%Version) ) RETURN
     ! ...Structures
-    IF ( LSEcategory_Associated( x%NPOESS ) .NEQV. LSEcategory_Associated( y%NPOESS ) ) RETURN
-    IF ( LSEcategory_Associated( x%NPOESS ) .AND.  LSEcategory_Associated( y%NPOESS ) ) THEN
-      IF ( .NOT. (x%NPOESS == y%NPOESS) ) RETURN
+    IF ( LSEcategory_Associated( x%LSEcategory ) .NEQV. LSEcategory_Associated( y%LSEcategory ) ) RETURN
+    IF ( LSEcategory_Associated( x%LSEcategory ) .AND.  LSEcategory_Associated( y%LSEcategory ) ) THEN
+      IF ( .NOT. (x%LSEcategory == y%LSEcategory) ) RETURN
     END IF
-    IF ( LSEatlas_Associated( x%HSR ) .NEQV. LSEatlas_Associated( y%HSR ) ) RETURN
-    IF ( LSEatlas_Associated( x%HSR ) .AND.  LSEatlas_Associated( y%HSR ) ) THEN
-      IF ( .NOT. (x%HSR == y%HSR) ) RETURN
+    IF ( LSEatlas_Associated( x%LSEatlas ) .NEQV. LSEatlas_Associated( y%LSEatlas ) ) RETURN
+    IF ( LSEatlas_Associated( x%LSEatlas ) .AND.  LSEatlas_Associated( y%LSEatlas ) ) THEN
+      IF ( .NOT. (x%LSEatlas == y%LSEatlas) ) RETURN
     END IF
     
     is_equal = .TRUE.
     
   END FUNCTION IRlandCoeff_Equal
 
+
+  ! Function to read the datatype name from file
+
+  FUNCTION Read_Datatype( fid, datatype_name ) RESULT( err_stat )
+    ! Arguments
+    INTEGER     , INTENT(IN)  :: fid
+    CHARACTER(*), INTENT(OUT) :: datatype_name
+    ! Function result
+    INTEGER :: err_stat    
+    ! Local variables
+    CHARACTER(1), ALLOCATABLE :: dummy(:)
+    INTEGER :: i, strlen
+    INTEGER :: io_stat
+    INTEGER :: alloc_stat
+
+    ! Set up
+    err_stat = FAILURE
+    datatype_name = ''
+
+    ! Get the string length
+    READ( fid, IOSTAT=io_stat ) strlen
+    IF ( io_stat /= 0 ) RETURN
+    
+    ! Allocate dummy string array
+    ALLOCATE( dummy(strlen), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Read the string into the dummy array
+    READ( fid, IOSTAT=io_stat ) dummy
+    IF ( io_stat /= 0 ) RETURN
+
+    ! Transfer array into string
+    DO i = 1, MIN(strlen,LEN(datatype_name))
+      datatype_name(i:i) = dummy(i)
+    END DO
+
+    ! Done
+    err_stat = SUCCESS
+  END FUNCTION Read_Datatype
+  
 END MODULE IRlandCoeff_Define

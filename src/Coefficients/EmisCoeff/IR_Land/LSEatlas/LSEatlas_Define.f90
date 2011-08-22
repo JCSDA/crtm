@@ -30,6 +30,8 @@ MODULE LSEatlas_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! Parameters
+  PUBLIC :: LSEATLAS_DATATYPE
   ! Datatypes
   PUBLIC :: LSEatlas_type
   ! Operators
@@ -41,6 +43,7 @@ MODULE LSEatlas_Define
   PUBLIC :: LSEatlas_Inspect
   PUBLIC :: LSEatlas_ValidRelease
   PUBLIC :: LSEatlas_Info
+  PUBLIC :: LSEatlas_Name
   PUBLIC :: LSEatlas_DefineVersion
   PUBLIC :: LSEatlas_SetValue
   PUBLIC :: LSEatlas_GetValue
@@ -63,7 +66,7 @@ MODULE LSEatlas_Define
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Datatype information
-  CHARACTER(*), PARAMETER :: LSEATLAS_NAME = 'LSEatlas'
+  CHARACTER(*), PARAMETER :: LSEATLAS_DATATYPE = 'LSEatlas'
   ! Current valid release and version
   INTEGER, PARAMETER :: LSEATLAS_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: LSEATLAS_VERSION = 1  ! This is just the default data version.
@@ -80,12 +83,13 @@ MODULE LSEatlas_Define
   ! ----------------------------------
   ! LSEatlas data type definitions
   ! ----------------------------------
+  !:tdoc+:
   TYPE :: LSEatlas_type
     PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Datatype information
-    CHARACTER(SL) :: Datatype_Name = LSEATLAS_NAME
+    CHARACTER(SL) :: Datatype_Name = LSEATLAS_DATATYPE
     ! Release and version information
     INTEGER(Long) :: Release = LSEATLAS_RELEASE
     INTEGER(Long) :: Version = LSEATLAS_VERSION
@@ -100,6 +104,7 @@ MODULE LSEatlas_Define
     ! Emissivity LUT data
     REAL(Double),  ALLOCATABLE :: Emissivity(:,:,:)  ! IxJxK
   END TYPE LSEatlas_type
+  !:tdoc-:
 
 
 CONTAINS
@@ -136,10 +141,10 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Status:     The return value is a logical value indicating the
-!                   status of the NLTE members.
-!                    .TRUE.  - if ANY of the LSEatlas allocatable members
+!                   status of the members.
+!                    .TRUE.  - if ANY of the allocatable members
 !                              are in use.
-!                    .FALSE. - if ALL of the LSEatlas allocatable members
+!                    .FALSE. - if ALL of the allocatable members
 !                              are not in use.
 !                   UNITS:      N/A
 !                   TYPE:       LOGICAL
@@ -457,6 +462,46 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
+!       LSEatlas_Name
+!
+! PURPOSE:
+!       Function to return the datatype name of an LSEatlas object.
+!
+! CALLING SEQUENCE:
+!       datatype_name = LSEatlas_Name( LSEatlas )         
+!
+! OBJECTS:
+!       LSEatlas:     LSEatlas object structure.
+!                     UNITS:      N/A
+!                     TYPE:       LSEatlas_type
+!                     DIMENSION:  Scalar
+!                     ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Status:       The return value is a the character string containing
+!                     the datatype name of the structure.
+!                     UNITS:      N/A
+!                     TYPE:       CHARACTER
+!                     DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION LSEatlas_Name( self ) RESULT( datatype_name )
+    ! Arguments
+    TYPE(LSEatlas_type), INTENT(OUT) :: self
+    ! Function result
+    CHARACTER(LEN(self%Datatype_Name)) :: datatype_name
+    
+    datatype_name = self%Datatype_Name
+
+  END FUNCTION LSEatlas_Name
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
 !       LSEatlas_DefineVersion
 !
 ! PURPOSE:
@@ -714,15 +759,15 @@ CONTAINS
     Longitude    , &  ! Optional output
     Emissivity     )  ! Optional output
     ! Arguments
-    TYPE(LSEatlas_type),             INTENT(IN OUT) :: self
-    INTEGER ,              OPTIONAL, INTENT(OUT)    :: Version
-    INTEGER ,              OPTIONAL, INTENT(OUT)    :: n_Frequencies
-    INTEGER ,              OPTIONAL, INTENT(OUT)    :: n_Latitudes  
-    INTEGER ,              OPTIONAL, INTENT(OUT)    :: n_Longitudes 
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Frequency(:)    
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Latitude(:)     
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Longitude(:)    
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT)    :: Emissivity(:,:,:) 
+    TYPE(LSEatlas_type),             INTENT(IN)  :: self
+    INTEGER ,              OPTIONAL, INTENT(OUT) :: Version
+    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Frequencies
+    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Latitudes  
+    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Longitudes 
+    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Frequency(:)    
+    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Latitude(:)     
+    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Longitude(:)    
+    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Emissivity(:,:,:) 
     
     IF ( .NOT. LSEatlas_Associated(self) ) RETURN
    
@@ -881,11 +926,14 @@ CONTAINS
     END IF
 
 
-    ! Read the datatype name
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      LSEatlas%Datatype_Name
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+    ! Read and check the datatype name
+    err_stat = Read_Datatype( fid, LSEatlas%Datatype_name )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading Datatype_Name'
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    IF ( TRIM(LSEatlas%Datatype_Name) /= LSEATLAS_DATATYPE ) THEN
+      msg = LSEATLAS_DATATYPE//' datatype name check failed.'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -896,6 +944,10 @@ CONTAINS
       LSEatlas%Version
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Release/Version - '//TRIM(io_msg)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    IF ( .NOT. LSEatlas_ValidRelease( LSEatlas ) ) THEN
+      msg = 'LSEatlas Release check failed.'
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -1091,14 +1143,13 @@ CONTAINS
 
 
     ! Read and check the datatype name
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      dummy%Datatype_Name
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading Datatype_Name - '//TRIM(io_msg)
+    err_stat = Read_Datatype( fid, dummy%Datatype_name )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading Datatype_Name'
       CALL Read_Cleanup(); RETURN
     END IF
-    IF ( TRIM(dummy%Datatype_Name) /= LSEATLAS_NAME ) THEN
-      msg = LSEATLAS_NAME//' datatype name check failed.'
+    IF ( TRIM(dummy%Datatype_Name) /= LSEATLAS_DATATYPE ) THEN
+      msg = LSEATLAS_DATATYPE//' datatype name check failed.'
       CALL Read_Cleanup(); RETURN
     END IF
     
@@ -1340,6 +1391,12 @@ CONTAINS
 
     ! Write the datatype name
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LEN(LSEatlas%Datatype_Name)
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing Datatype_Name length - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       LSEatlas%Datatype_Name
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing Datatype_Name - '//TRIM(io_msg)
@@ -1499,5 +1556,43 @@ CONTAINS
       is_equal = .TRUE.
 
   END FUNCTION LSEatlas_Equal
+  
+  
+  FUNCTION Read_Datatype( fid, datatype_name ) RESULT( err_stat )
+    ! Arguments
+    INTEGER     , INTENT(IN)  :: fid
+    CHARACTER(*), INTENT(OUT) :: datatype_name
+    ! Function result
+    INTEGER :: err_stat
+    ! Local variables
+    CHARACTER(1), ALLOCATABLE :: dummy(:)
+    INTEGER :: i, strlen
+    INTEGER :: io_stat
+    INTEGER :: alloc_stat
 
+    ! Set up
+    err_stat = FAILURE
+    datatype_name = ''
+
+    ! Get the string length
+    READ( fid, IOSTAT=io_stat ) strlen
+    IF ( io_stat /= 0 ) RETURN
+    
+    ! Allocate dummy string array
+    ALLOCATE( dummy(strlen), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Read the string into the dummy array
+    READ( fid, IOSTAT=io_stat ) dummy
+    IF ( io_stat /= 0 ) RETURN
+
+    ! Transfer array into string
+    DO i = 1, MIN(strlen,LEN(datatype_name))
+      datatype_name(i:i) = dummy(i)
+    END DO
+
+    ! Done
+    err_stat = SUCCESS
+  END FUNCTION Read_Datatype
+  
 END MODULE LSEatlas_Define
