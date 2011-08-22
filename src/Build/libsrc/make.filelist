@@ -24,6 +24,9 @@ NOCPP_FILES = \
   CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
   AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
   EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
+  IRlandCoeff_Define.f90 \
+    LSEcategory_Define.f90 \
+    LSEatlas_Define.f90 \
   NESDIS_AMSRE_SICEEM_Module.f90 \
   NESDIS_AMSRE_SNOWEM_Module.f90 \
   NESDIS_AMSU_SICEEM_Module.f90 \
@@ -46,6 +49,7 @@ NOCPP_FILES = \
   CRTM_AerosolCoeff.f90 \
   CRTM_CloudCoeff.f90 \
   CRTM_EmisCoeff.f90 \
+  CRTM_IRlandCoeff.f90 \
   CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 \
   CRTM_Atmosphere_IO.f90 CRTM_Cloud_IO.f90 CRTM_Aerosol_IO.f90 \
   CRTM_Surface_Define.f90 CRTM_SensorData_Define.f90 \

@@ -25,6 +25,8 @@ MODULE CRTM_LifeCycle
   USE CRTM_CloudCoeff        , ONLY: CRTM_CloudCoeff_Load, &
                                      CRTM_CloudCoeff_Destroy
   USE CRTM_EmisCoeff
+  USE CRTM_IRlandCoeff       , ONLY: CRTM_IRlandCoeff_Load, &
+                                     CRTM_IRlandCoeff_Destroy
   USE CRTM_ChannelInfo_Define, ONLY: CRTM_ChannelInfo_type, &
                                      CRTM_ChannelInfo_Associated, &
                                      CRTM_ChannelInfo_Destroy, &
@@ -211,6 +213,7 @@ CONTAINS
     CloudCoeff_File  , &  ! Optional input
     AerosolCoeff_File, &  ! Optional input
     EmisCoeff_File   , &  ! Optional input
+    IRlandCoeff_File , &  ! Optional input
     File_Path        , &  ! Optional input
     Load_CloudCoeff  , &  ! Optional input
     Load_AerosolCoeff, &  ! Optional input
@@ -221,15 +224,16 @@ CONTAINS
     ! Arguments
     CHARACTER(*)               , INTENT(IN)  :: Sensor_ID(:)
     TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Process_ID
-    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Output_Process_ID
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File            
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File          
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File             
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File              
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path                  
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff            
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff          
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet                      
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Process_ID                 
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Output_Process_ID          
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -239,6 +243,7 @@ CONTAINS
     CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_AerosolCoeff_File
     CHARACTER(SL) :: Default_EmisCoeff_File
+    CHARACTER(SL) :: Default_IRlandCoeff_File
     INTEGER :: l, n, n_Sensors
     LOGICAL :: Local_Load_CloudCoeff
     LOGICAL :: Local_Load_AerosolCoeff
@@ -282,15 +287,18 @@ CONTAINS
     Default_CloudCoeff_File   = 'CloudCoeff.bin'
     Default_AerosolCoeff_File = 'AerosolCoeff.bin'
     Default_EmisCoeff_File    = 'EmisCoeff.bin'
+    Default_IRlandCoeff_File  = 'NPOESS.LSEcategory.bin'
     ! ...Were other filenames specified?
     IF ( PRESENT(CloudCoeff_File  ) ) Default_CloudCoeff_File   = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(AerosolCoeff_File) ) Default_AerosolCoeff_File = TRIM(ADJUSTL(AerosolCoeff_File))
     IF ( PRESENT(EmisCoeff_File   ) ) Default_EmisCoeff_File    = TRIM(ADJUSTL(EmisCoeff_File))
+    IF ( PRESENT(IRlandCoeff_File ) ) Default_IRlandCoeff_File  = TRIM(ADJUSTL(IRlandCoeff_File))
     ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
       Default_CloudCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
       Default_AerosolCoeff_File = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
       Default_EmisCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_EmisCoeff_File)
+      Default_IRlandCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRlandCoeff_File)
     END IF
 
 
@@ -351,6 +359,17 @@ CONTAINS
 
 
     ! Load the emissivity model coefficients
+    ! ...IR land
+    err_stat = CRTM_IRlandCoeff_Load( &
+                 Default_IRlandCoeff_File, &
+                 Quiet             = Quiet            , &
+                 Process_ID        = Process_ID       , &
+                 Output_Process_ID = Output_Process_ID  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error loading IRlandCoeff data from '//TRIM(Default_IRlandCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+      RETURN
+    END IF
     ! ...IR Water
     err_stat = CRTM_Load_EmisCoeff( &
                  Default_EmisCoeff_File, &
@@ -482,40 +501,46 @@ CONTAINS
 
 
     ! Destroy the shared data structure
+    Destroy_Status = CRTM_IRlandCoeff_Destroy( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      msg = 'Error deallocating shared IRlandCoeff data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+    END IF
+    
     Destroy_Status = CRTM_Destroy_EmisCoeff( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared EmisCoeff data structure'//TRIM(pid_msg), &
-                            err_stat )
+      msg = 'Error deallocating shared EmisCoeff data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
+
     Destroy_Status = CRTM_AerosolCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared AerosolCoeff data structure'//TRIM(pid_msg), &
-                            err_stat )
+      msg = 'Error deallocating shared AerosolCoeff data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
+
     Destroy_Status = CRTM_CloudCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared CloudCoeff data structure'//TRIM(pid_msg), &
-                            err_stat )
+      msg = 'Error deallocating shared CloudCoeff data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
+
     Destroy_Status = CRTM_Destroy_TauCoeff( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared TauCoeff data structure(s)'//TRIM(pid_msg), &
-                            err_stat )
+      msg = 'Error deallocating shared TauCoeff data structure(s)'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
+
     Destroy_Status = CRTM_SpcCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error deallocating shared SpcCoeff data structure(s)'//TRIM(pid_msg), &
-                            err_stat )
+      msg = 'Error deallocating shared SpcCoeff data structure(s)'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
   END FUNCTION CRTM_Destroy
