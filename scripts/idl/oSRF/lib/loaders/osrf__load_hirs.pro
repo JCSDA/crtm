@@ -91,21 +91,21 @@ PRO Read_hirs_Raw_SRF, $
   data_count = n_lines
   
   ; Extract the data from the string array
-  wavenumber = DBLARR(n_lines)
-  response   = DBLARR(n_lines)
+  f = DBLARR(n_lines)
+  r   = DBLARR(n_lines)
   FOR i = 0L, data_count-1L DO BEGIN
     elements = STRSPLIT(data[i], /EXTRACT)
-    wavenumber[i] = DOUBLE(wavenumber[IDX_WAVENUMBER])
-    response[i] = DOUBLE(response[IDX_RESPONSE])
+    f[i] = DOUBLE(elements[IDX_WAVENUMBER])
+    r[i] = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
   
   ; Only keep the unique values and sort
-  idx = UNIQ(wavenumber, SORT(wavenumber))
-  wavenumber = wavenumber[idx]
-  response   = response[idx]
+  idx = UNIQ(f, SORT(f))
+  f = f[idx]
+  r = r[idx]
   
   ; Assign data to return argument
-  n_points = N_ELEMENTS(wavenumber)
+  n_points = N_ELEMENTS(f)
   frequency.Add, f, /NO_COPY  
   response.Add , r, /NO_COPY  
 
