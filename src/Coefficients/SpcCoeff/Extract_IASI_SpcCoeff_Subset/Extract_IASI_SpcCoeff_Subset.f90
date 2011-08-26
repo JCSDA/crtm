@@ -42,7 +42,9 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   USE Subset_Define     , ONLY: Subset_type, &
                                 Subset_Associated, &
                                 Subset_Destroy
-  USE IASI_Define       , ONLY: N_IASI_CHANNELS, &
+  USE IASI_Define       , ONLY: N_IASI_PLATFORMS, &
+                                IASI_PLATFORM_NAME, &
+                                N_IASI_CHANNELS, &
                                 N_IASI_BANDS, &
                                 IASI_BandName
   USE IASI_Subset,        ONLY: N_IASI_SUBSET_300, IASI_SUBSET_300, IASI_SUBSET_300_COMMENT, &
@@ -60,7 +62,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_SpcCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
-
+  ! String length
   INTEGER, PARAMETER :: SL = 256
 
 
@@ -72,7 +74,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   INTEGER :: alloc_stat ;  CHARACTER(SL) :: alloc_msg
   CHARACTER(SL) :: list_filename, in_filename, out_filename
   CHARACTER(20) :: sensor_id
-  INTEGER :: i, set
+  INTEGER :: i, set, platform
   INTEGER :: n_subset_channels
   INTEGER, ALLOCATABLE :: subset_list(:)
   TYPE(Integer_List_File_type) :: user_subset_list
@@ -88,8 +90,32 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
                         '$Revision$' )
 
 
+  ! Select a platform
+  Select_Platform_Loop: DO
+    ! ...Prompt user to select a platform
+    WRITE( *,'(/5x,"Select an IASI platform")' )
+    DO i = 1, N_IASI_PLATFORMS
+      WRITE( *,'(10x,i1,") ",a)' ) i, IASI_PLATFORM_NAME(i)
+    END DO
+    WRITE( *,FMT='(5x,"Enter choice: ")',ADVANCE='NO' )
+    READ( *,FMT='(i5)',IOSTAT=io_stat, IOMSG=io_msg ) platform
+    ! ...Check for I/O errors
+    IF ( io_stat /= 0 ) THEN
+      err_msg = 'Invalid input - '//TRIM(io_msg)
+      CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
+    END IF
+    ! ...Check the input
+    IF ( platform < 1 .OR. platform > N_IASI_PLATFORMS ) THEN
+      err_msg = 'Invalid selection'
+      CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
+    ELSE
+      EXIT Select_Platform_Loop
+    END IF
+  END DO Select_Platform_Loop
+
+
   ! Select a subset set
-  Select_Loop: DO
+  Select_Subset_Loop: DO
     ! ...Prompt user to select a subset set 
     WRITE( *,'(/5x,"Select an IASI channel subset")' )
     DO i = 1, N_IASI_VALID_SUBSETS
@@ -107,9 +133,9 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       err_msg = 'Invalid selection'
       CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
     ELSE
-      EXIT Select_Loop
+      EXIT Select_Subset_Loop
     END IF
-  END DO Select_Loop
+  END DO Select_Subset_Loop
 
 
   ! Get the required channels list
@@ -126,7 +152,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       END IF
       ! ...Fill values
       subset_list = IASI_SUBSET_300
-      sensor_id   = 'iasi300_metop-a'
+      sensor_id   = 'iasi300_'//TRIM(IASI_PLATFORM_NAME(platform))
 
 
     ! The 316 channel subset
@@ -140,7 +166,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       END IF
       ! ...Fill values
       subset_list = IASI_SUBSET_316
-      sensor_id   = 'iasi316_metop-a'
+      sensor_id   = 'iasi316_'//TRIM(IASI_PLATFORM_NAME(platform))
 
 
     ! The 616 channel subset
@@ -154,7 +180,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       END IF
       ! ...Fill values
       subset_list = IASI_SUBSET_616
-      sensor_id   = 'iasi616_metop-a'
+      sensor_id   = 'iasi616_'//TRIM(IASI_PLATFORM_NAME(platform))
 
 
     ! All the channels
@@ -168,7 +194,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       END IF
       ! ...Fill values
       Subset_List = (/(i,i=1,N_IASI_CHANNELS)/)
-      Sensor_ID   = 'iasi_metop-a'
+      Sensor_ID   = 'iasi_'//TRIM(IASI_PLATFORM_NAME(platform))
 
 
     ! A user specified channel subset
@@ -208,7 +234,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
           CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
         END IF
       END DO
-      WRITE( sensor_id,'("iasi",i0,"_metop-a")' ) n_subset_channels
+      WRITE( sensor_id,'("iasi",i0,"_",a)' ) n_subset_channels, TRIM(IASI_PLATFORM_NAME(platform))
 
   END SELECT
 
@@ -216,7 +242,8 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   ! Subset the individual band data
   DO i = 1, N_IASI_BANDS
     ! ...Define the filename
-    in_filename = 'iasi'//TRIM(IASI_BandName(i))//'_metop-a.SpcCoeff.bin'
+    in_filename = 'iasi'//TRIM(IASI_BandName(i))//'_'//&
+                  TRIM(IASI_PLATFORM_NAME(platform))//'.SpcCoeff.bin'
     ! ...Read the input data
     err_stat = SpcCoeff_Binary_ReadFile( in_filename, in_spccoeff )
     IF ( err_stat /= SUCCESS ) THEN
