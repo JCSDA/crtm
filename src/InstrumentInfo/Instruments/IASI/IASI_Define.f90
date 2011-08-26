@@ -27,6 +27,8 @@ MODULE IASI_Define
   ! Everything is default private
   PRIVATE
   ! Parameters
+  PUBLIC :: N_IASI_PLATFORMS
+  PUBLIC :: IASI_PLATFORM_NAME
   PUBLIC :: N_IASI_BANDS
   PUBLIC :: N_IASI_CHANNELS
   ! Procedures
@@ -60,6 +62,14 @@ MODULE IASI_Define
   REAL(fp), PARAMETER :: HUNDRED   = 100.0_fp
   REAL(fp), PARAMETER :: M2CM      = HUNDRED
   
+
+  ! Platform parameters
+  INTEGER     , PARAMETER :: N_IASI_PLATFORMS = 3
+  CHARACTER(*), PARAMETER :: IASI_PLATFORM_NAME(N_IASI_PLATFORMS) = &
+    (/ 'metop-a', &
+       'metop-b', &
+       'metop-c' /)
+      
 
   ! Instrument parameters
   ! ...Number of bands and channels
