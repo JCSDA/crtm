@@ -731,7 +731,9 @@ CONTAINS
     CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Type(:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Reflectance(:,:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Reflectance(:)
-    
+    ! Local variables
+    INTEGER :: i
+     
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
    
     IF ( PRESENT(Version        ) ) Version         = self%Version
@@ -755,6 +757,12 @@ CONTAINS
     
     IF ( PRESENT(Surface_Type_ToGet) .AND. PRESENT(Surface_Reflectance) ) THEN
       ! Match surface type and assign
+      DO i = 1, self%n_Surface_Types
+        IF ( self%Surface_Type(i) == Surface_Type_ToGet ) THEN
+          ALLOCATE(Surface_Reflectance(self%n_Frequencies))
+          Surface_Reflectance = self%Reflectance(:,i)
+        END IF
+      END DO
     END IF
 
   END SUBROUTINE LSEcategory_GetValue
