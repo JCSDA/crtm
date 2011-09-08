@@ -68,7 +68,7 @@ MODULE LSEcategory_Define
   ! Datatype information
   CHARACTER(*), PARAMETER :: LSECATEGORY_DATATYPE = 'LSEcategory'
   ! Release and version
-  INTEGER, PARAMETER :: LSECATEGORY_RELEASE = 1  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: LSECATEGORY_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: LSECATEGORY_VERSION = 1  ! This is just the default data version.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
@@ -85,7 +85,6 @@ MODULE LSEcategory_Define
   ! ----------------------------------
   !:tdoc+:
   TYPE :: LSEcategory_type
-    PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Datatype information
@@ -93,6 +92,8 @@ MODULE LSEcategory_Define
     ! Release and version information
     INTEGER(Long) :: Release = LSECATEGORY_RELEASE
     INTEGER(Long) :: Version = LSECATEGORY_VERSION
+    ! Surface classification name
+    CHARACTER(SL) :: Classification_Name = ''
     ! Dimensions
     INTEGER(Long) :: String_Length   = SL
     INTEGER(Long) :: n_Frequencies   = 0  ! L dim.
@@ -296,16 +297,18 @@ CONTAINS
     INTEGER :: n
     WRITE(*,'(1x,"LSEcategory OBJECT")')
     ! Release/version info
-    WRITE(*,'(3x,"Release.Version  :",1x,i0,".",i0)') self%Release, self%Version
+    WRITE(*,'(3x,"Release.Version     :",1x,i0,".",i0)') self%Release, self%Version
+    ! Surface classification name
+    WRITE(*,'(3x,"Classification_Name :",1x,a)') TRIM(self%Classification_Name)
     ! Dimensions
-    WRITE(*,'(3x,"n_Frequencies    :",1x,i0)') self%n_Frequencies
-    WRITE(*,'(3x,"n_Surface_Types  :",1x,i0)') self%n_Surface_Types
+    WRITE(*,'(3x,"n_Frequencies       :",1x,i0)') self%n_Frequencies
+    WRITE(*,'(3x,"n_Surface_Types     :",1x,i0)') self%n_Surface_Types
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Frequency :")')
     WRITE(*,'(5(1x,es13.6,:))') self%Frequency
     WRITE(*,'(3x,"Surface_Type :")')
-    WRITE(*,'(4(a,:))') self%Surface_Type
+    WRITE(*,'(a)') self%Surface_Type
     ! Reflectance array
     WRITE(*,'(3x,"Reflectance :")')
     DO n = 1, self%n_Surface_Types
@@ -395,7 +398,7 @@ CONTAINS
 !       CALL LSEcategory_Info( LSEcategory, Info )
 !
 ! OBJECTS:
-!       LSEcategory:  LSEcategory object about which info is required.
+!       LSEcategory:   LSEcategory object about which info is required.
 !                      UNITS:      N/A
 !                      TYPE:       LSEcategory_type
 !                      DIMENSION:  Scalar
@@ -425,12 +428,14 @@ CONTAINS
     ! Write the required data to the local string
     WRITE( Long_String, &
            '(a,1x,"LSEcategory RELEASE.VERSION: ",i2,".",i2.2,a,3x, &
+           &"CLASSIFICATION: ",a,",",2x,&
            &"N_FREQUENCIES=",i0,2x,&
            &"N_SURFACE_TYPES=",i0 )' ) &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
            self%Release, self%Version, &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-           self%n_Frequencies , &
+           TRIM(self%Classification_Name), &
+           self%n_Frequencies, &
            self%n_Surface_Types
                        
     ! Trim the output based on the
@@ -521,67 +526,77 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL LSEcategory_SetValue( LSEcategory, &
-!                                  Version      = Version     , &
-!                                  Frequency    = Frequency   , &
-!                                  Surface_Type = Surface_Type, &
-!                                  Reflectance  = Reflectance   )
+!                                  Version             = Version            , &
+!                                  Classification_Name = Classification_Name, &
+!                                  Frequency           = Frequency          , &
+!                                  Surface_Type        = Surface_Type       , &
+!                                  Reflectance         = Reflectance          )
 !
 ! OBJECTS:
-!       LSEcategory:        Valid, allocated LSEcategory object for which
-!                           values are to be set.
-!                           UNITS:      N/A
-!                           TYPE:       LSEcategory_type
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
+!       LSEcategory:          Valid, allocated LSEcategory object for which
+!                             values are to be set.
+!                             UNITS:      N/A
+!                             TYPE:       LSEcategory_type
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       Version:            Integer indicating the data version. If not specified
-!                           the value of the module parameter LSECATEGORY_VERSION
-!                           is used.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Version:              Integer indicating the data version. If not specified
+!                             the value of the module parameter LSECATEGORY_VERSION
+!                             is used.
+!                             UNITS:      N/A
+!                             TYPE:       INTEGER
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Frequency:          Real array to which the Frequency component of the
-!                           LSEcategory object is to be set. The size of the
-!                           input must match the allocated size of the component,
-!                           otherwise all the component values are set to zero.
-!                           UNITS:      N/A
-!                           TYPE:       REAL(fp)
-!                           DIMENSION:  Rank-1 (L)
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Classification_Name:  String identifying the classification system used
+!                             for the surface types.
+!                             UNITS:      N/A
+!                             TYPE:       INTEGER
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Surface_Type:       Character array to which the Surface_Type component
-!                           of the LSEcategory object is to be set. The size of the
-!                           input must match the allocated size of the component,
-!                           otherwise all the component values are set to a blank string.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Rank-1 (N)
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Frequency:            Real array to which the Frequency component of the
+!                             LSEcategory object is to be set. The size of the
+!                             input must match the allocated size of the component,
+!                             otherwise all the component values are set to zero.
+!                             UNITS:      N/A
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Rank-1 (L)
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Reflectance:        Real array to which the Reflectance component of the
-!                           LSEcategory object is to be set. The size of the
-!                           input must match the allocated size of the component,
-!                           otherwise all the component values are set to zero.
-!                           UNITS:      N/A
-!                           TYPE:       REAL(fp)
-!                           DIMENSION:  Rank-2 (L x N)
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!       Surface_Type:         Character array to which the Surface_Type component
+!                             of the LSEcategory object is to be set. The size of the
+!                             input must match the allocated size of the component,
+!                             otherwise all the component values are set to a blank string.
+!                             UNITS:      N/A
+!                             TYPE:       CHARACTER(*)
+!                             DIMENSION:  Rank-1 (N)
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Reflectance:          Real array to which the Reflectance component of the
+!                             LSEcategory object is to be set. The size of the
+!                             input must match the allocated size of the component,
+!                             otherwise all the component values are set to zero.
+!                             UNITS:      N/A
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Rank-2 (L x N)
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE LSEcategory_SetValue( &
-    self        , &  ! Input
-    Version     , &  ! Optional input
-    Frequency   , &  ! Optional input
-    Surface_Type, &  ! Optional input
-    Reflectance   )  ! Optional input
+    self               , &  ! Input
+    Version            , &  ! Optional input
+    Classification_Name, &  ! Optional input
+    Frequency          , &  ! Optional input
+    Surface_Type       , &  ! Optional input
+    Reflectance          )  ! Optional input
     ! Arguments
     TYPE(LSEcategory_type), INTENT(IN OUT) :: self
     INTEGER     , OPTIONAL, INTENT(IN)     :: Version
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Classification_Name
     REAL(fp)    , OPTIONAL, INTENT(IN)     :: Frequency(:)
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Surface_Type(:)
     REAL(fp)    , OPTIONAL, INTENT(IN)     :: Reflectance(:,:)
@@ -589,6 +604,7 @@ CONTAINS
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
 
     IF ( PRESENT(Version) ) self%Version = Version
+    IF ( PRESENT(Classification_Name) ) self%Classification_Name = Classification_Name
     
     IF ( PRESENT(Frequency) ) THEN
       IF ( SIZE(Frequency) == self%n_Frequencies ) THEN
@@ -631,6 +647,7 @@ CONTAINS
 !       CALL LSEcategory_GetValue( LSEcategory, &
 !                                  Surface_Type_ToGet  = Surface_Type_ToGet , &
 !                                  Version             = Version            , &
+!                                  Classification_Name = Classification_Name, &
 !                                  n_Frequencies       = n_Frequencies      , &
 !                                  n_Surface_Types     = n_Surface_Types    , &
 !                                  Frequency           = Frequency          , &
@@ -663,6 +680,13 @@ CONTAINS
 !
 ! OPTIONAL OUTPUTS:
 !       Version:                 Integer indicating the data version of the object.
+!                                UNITS:      N/A
+!                                TYPE:       INTEGER
+!                                DIMENSION:  Scalar
+!                                ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
+!       Classification_Name:     String identifying the classification system used
+!                                for the surface types.
 !                                UNITS:      N/A
 !                                TYPE:       INTEGER
 !                                DIMENSION:  Scalar
@@ -715,6 +739,7 @@ CONTAINS
     self               , &  ! Input
     Surface_Type_ToGet , &  ! Optional input
     Version            , &  ! Optional output
+    Classification_Name, &  ! Optional output
     n_Frequencies      , &  ! Optional output
     n_Surface_Types    , &  ! Optional output
     Frequency          , &  ! Optional output
@@ -725,6 +750,7 @@ CONTAINS
     TYPE(LSEcategory_type),              INTENT(IN)  :: self
     CHARACTER(*),              OPTIONAL, INTENT(IN)  :: Surface_Type_ToGet
     INTEGER     ,              OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*),              OPTIONAL, INTENT(OUT) :: Classification_Name
     INTEGER     ,              OPTIONAL, INTENT(OUT) :: n_Frequencies
     INTEGER     ,              OPTIONAL, INTENT(OUT) :: n_Surface_Types
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Frequency(:)
@@ -736,9 +762,10 @@ CONTAINS
      
     IF ( .NOT. LSEcategory_Associated(self) ) RETURN
    
-    IF ( PRESENT(Version        ) ) Version         = self%Version
-    IF ( PRESENT(n_Frequencies  ) ) n_Frequencies   = self%n_Frequencies
-    IF ( PRESENT(n_Surface_Types) ) n_Surface_Types = self%n_Surface_Types
+    IF ( PRESENT(Version            ) ) Version             = self%Version
+    IF ( PRESENT(Classification_Name) ) Classification_Name = self%Classification_Name
+    IF ( PRESENT(n_Frequencies      ) ) n_Frequencies       = self%n_Frequencies
+    IF ( PRESENT(n_Surface_Types    ) ) n_Surface_Types     = self%n_Surface_Types
 
     IF ( PRESENT(Frequency) ) THEN
       ALLOCATE(Frequency(self%n_Frequencies))
@@ -1158,6 +1185,15 @@ CONTAINS
     END IF
 
 
+    ! Read the surface classification name
+    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEcategory%Classification_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading classification name - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
+
+
     ! Read the coefficient data
     ! ...Read the surface type names
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1397,6 +1433,15 @@ CONTAINS
     END IF
 
 
+    ! Write the surface classification name
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+      LSEcategory%Classification_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing classification name - '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
+    END IF
+
+
     ! Write the coefficient data
     ! ...Write the surface type names
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1508,6 +1553,8 @@ CONTAINS
     ! ...Release/version info
     IF ( (x%Release /= y%Release) .OR. &
          (x%Version /= y%Version) ) RETURN
+    ! ...Classification name
+    IF ( (x%Classification_Name /= y%Classification_Name) ) RETURN
     ! ...Dimensions
     IF ( (x%n_Frequencies   /= y%n_Frequencies   ) .OR. &
          (x%n_Surface_Types /= y%n_Surface_Types ) ) RETURN
