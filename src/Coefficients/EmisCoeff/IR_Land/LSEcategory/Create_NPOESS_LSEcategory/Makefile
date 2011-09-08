@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Create_NPOESS_LSEcategory program
+# Makefile for Create_LSEcategory program
 #
 #==============================================================================
 
@@ -11,7 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Create_NPOESS_LSEcategory
+EXE_FILE = Create_LSEcategory
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -24,7 +24,6 @@ SRC_FILES = Type_Kinds.f90 \
             Sort_Utility.f90 \
             Fundamental_Constants.f90 \
             Spectral_Units_Conversion.f90 \
-            UnitTest_Define.f90 \
             LSEcategory_Define.f90
 
 # Obj files used in link phase

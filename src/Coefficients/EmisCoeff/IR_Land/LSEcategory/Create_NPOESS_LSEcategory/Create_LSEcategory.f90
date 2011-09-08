@@ -1,7 +1,7 @@
 !
-! Create_NPOESS_LSEcategory
+! Create_LSEcategory
 !
-! Program to create the NPOESS land emissivity/reflectance coefficient files
+! Program to create the various land emissivity/reflectance coefficient files
 !
 !
 ! CREATION HISTORY:
@@ -9,7 +9,7 @@
 !                       paul.vandelst@noaa.gov
 !
 
-PROGRAM Create_NPOESS_LSEcategory
+PROGRAM Create_LSEcategory
 
   ! ------------------
   ! Environment set up
@@ -25,8 +25,6 @@ PROGRAM Create_NPOESS_LSEcategory
                                        LSEcategory_Associated, &
                                        LSEcategory_Create    , &
                                        LSEcategory_Destroy   , &
-                                       LSEcategory_GetValue  , &
-                                       LSEcategory_SetValue  , &
                                        LSEcategory_WriteFile , &
                                        LSEcategory_ReadFile
   ! Disable all implicit typing
@@ -35,27 +33,33 @@ PROGRAM Create_NPOESS_LSEcategory
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_NPOESS_LSEcategory'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_LSEcategory'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
-  ! Dimensions
-  ! ...The spectral dimension
-  INTEGER, PARAMETER :: N_WAVELENGTHS = 74
-  REAL(dp), PARAMETER :: WAVELENGTH(N_WAVELENGTHS) = &
-    (/ 0.200_dp, 0.225_dp, 0.250_dp, 0.275_dp, 0.300_dp, 0.325_dp, 0.350_dp, 0.375_dp, &
-       0.400_dp, 0.425_dp, 0.450_dp, 0.475_dp, 0.500_dp, 0.525_dp, 0.550_dp, 0.575_dp, &
-       0.600_dp, 0.625_dp, 0.650_dp, 0.675_dp, 0.700_dp, 0.725_dp, 0.750_dp, 0.775_dp, &
-       0.800_dp, 0.825_dp, 0.850_dp, 0.875_dp, 0.900_dp, 0.925_dp, 0.950_dp, 0.975_dp, &
-       1.000_dp, 1.050_dp, 1.100_dp, 1.150_dp, 1.200_dp, 1.250_dp, 1.300_dp, 1.350_dp, &
-       1.400_dp, 1.450_dp, 1.500_dp, 1.550_dp, 1.600_dp, 1.650_dp, 1.700_dp, 1.750_dp, &
-       1.800_dp, 1.850_dp, 1.900_dp, 1.950_dp, 2.000_dp, 2.500_dp, 3.000_dp, 3.500_dp, &
-       4.000_dp, 4.500_dp, 5.000_dp, 5.500_dp, 6.000_dp, 6.500_dp, 7.000_dp, 7.500_dp, &
-       8.000_dp, 8.500_dp, 9.000_dp, 9.500_dp,10.000_dp,11.000_dp,12.000_dp,13.000_dp, &
-      14.000_dp,15.000_dp /)
-    
-  ! ...The non-water/snow/ice NPOESS surface types
-  INTEGER, PARAMETER :: N_SURFACE_TYPES = 20
+  ! The NPOESS surface type indices
+  INTEGER, PARAMETER :: INVALID = 0
+  INTEGER, PARAMETER :: COMPACTED_SOIL           =  1
+  INTEGER, PARAMETER :: TILLED_SOIL              =  2
+  INTEGER, PARAMETER :: SAND                     =  3
+  INTEGER, PARAMETER :: ROCK                     =  4
+  INTEGER, PARAMETER :: IRRIGATED_LOW_VEGETATION =  5
+  INTEGER, PARAMETER :: MEADOW_GRASS             =  6
+  INTEGER, PARAMETER :: SCRUB                    =  7
+  INTEGER, PARAMETER :: BROADLEAF_FOREST         =  8
+  INTEGER, PARAMETER :: PINE_FOREST              =  9
+  INTEGER, PARAMETER :: TUNDRA                   = 10
+  INTEGER, PARAMETER :: GRASS_SOIL               = 11
+  INTEGER, PARAMETER :: BROADLEAF_PINE_FOREST    = 12
+  INTEGER, PARAMETER :: GRASS_SCRUB              = 13
+  INTEGER, PARAMETER :: SOIL_GRASS_SCRUB         = 14
+  INTEGER, PARAMETER :: URBAN_CONCRETE           = 15
+  INTEGER, PARAMETER :: PINE_BRUSH               = 16
+  INTEGER, PARAMETER :: BROADLEAF_BRUSH          = 17
+  INTEGER, PARAMETER :: WET_SOIL                 = 18
+  INTEGER, PARAMETER :: SCRUB_SOIL               = 19
+  INTEGER, PARAMETER :: BROADLEAF70_PINE30       = 20
+
 
 
   ! ---------
@@ -63,110 +67,90 @@ PROGRAM Create_NPOESS_LSEcategory
   ! ---------
   CHARACTER(256) :: msg
   INTEGER :: err_stat
-  REAL(dp), ALLOCATABLE :: frequency(:)
-  TYPE(LSEcategory_type) :: npoess, npoess_copy
+  TYPE(LSEcategory_type) :: npoess
+  TYPE(LSEcategory_type) :: usgs
+  TYPE(LSEcategory_type) :: igbp
   
   
   ! Program header
   CALL Program_Message( PROGRAM_NAME, &
-                        'Program to generate the NPOESS LSEcategory land '//&
+                        'Program to generate the LSEcategory land '//&
                         'reflectance coefficient files.', &
                         '$Revision$' )
 
 
-  ! Create structure
-  CALL LSEcategory_Create( &
-         npoess, &
-         n_Frequencies   = N_WAVELENGTHS, &
-         n_Surface_Types = N_SURFACE_TYPES )
-  IF ( .NOT. LSEcategory_Associated(npoess) ) THEN
-    msg = 'Error creating LSEcategory structure'
-    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-  END IF
-
-
-  ! Compute frequency
-  ! ...Get the empty frequency array
-  CALL LSEcategory_GetValue( &
-         npoess, &
-         Frequency = frequency )
-  ! ...compute frequency
-  frequency = micron_to_inverse_cm( WAVELENGTH )
-  ! ...Now flip it to ascending order
-  frequency = frequency(N_WAVELENGTHS:1:-1)
-  ! ...Save it
-  CALL LSEcategory_SetValue( &
-         npoess, &
-         Frequency = frequency )
-
-
-  ! Fill structure with data
-  CALL Load_NPOESS_Data()
-  
+  ! Fill structures with data
+  CALL Load_NPOESS_Data(npoess)
+  CALL Load_USGS_Data(npoess,usgs)
+  CALL Load_IGBP_Data(npoess,igbp)
   
   ! Write data to file
-  err_stat = LSEcategory_WriteFile( &
-               npoess, &
-               'NPOESS.LSEcategory.bin', &
-               Title = 'IR/VIS NPOESS Surface Reflectances', &
-               History = PROGRAM_VERSION_ID, &
-               Comment = 'Data extracted from CRTM_surface_ir_emissivity module.' )
-  IF ( err_stat /= SUCCESS ) THEN
-    msg = 'Error writing NPOESS data to file.'
-    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-  END IF
-
-
-  ! Read data from file
-  err_stat = LSEcategory_ReadFile( &
-               npoess_copy, &
-               'NPOESS.LSEcategory.bin' )
-  IF ( err_stat /= SUCCESS ) THEN
-    msg = 'Error reading NPOESS data from file.'
-    CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-  END IF
-
-
-  ! Check that structures are equal
-  IF ( npoess == npoess_copy ) THEN
-    msg = 'Structure read from file is the same!'
-  ELSE
-    msg = 'Structure read from file is different!'
-  END IF
-  CALL Display_Message( PROGRAM_NAME, msg, INFORMATION )
+  WRITE( *,'(5x,"Writing NPOESS data to file...")' )
+  CALL Write_File(npoess)
+  WRITE( *,'(/5x,"Writing USGS data to file...")' )
+  CALL Write_File(usgs)
+  WRITE( *,'(/5x,"Writing IGBP data to file...")' )
+  CALL Write_File(igbp)
   
-  
-  ! Clean up
+  ! Cleanup
   CALL LSEcategory_Destroy( npoess )
-  CALL LSEcategory_Destroy( npoess_copy )
+  CALL LSEcategory_Destroy( usgs )
+  CALL LSEcategory_Destroy( igbp )
+  
   
 CONTAINS
 
-  SUBROUTINE Load_NPOESS_Data()
-    
-    ! The surface type indices
-    INTEGER, PARAMETER :: COMPACTED_SOIL           =  1
-    INTEGER, PARAMETER :: TILLED_SOIL              =  2
-    INTEGER, PARAMETER :: SAND                     =  3
-    INTEGER, PARAMETER :: ROCK                     =  4
-    INTEGER, PARAMETER :: IRRIGATED_LOW_VEGETATION =  5
-    INTEGER, PARAMETER :: MEADOW_GRASS             =  6
-    INTEGER, PARAMETER :: SCRUB                    =  7
-    INTEGER, PARAMETER :: BROADLEAF_FOREST         =  8
-    INTEGER, PARAMETER :: PINE_FOREST              =  9
-    INTEGER, PARAMETER :: TUNDRA                   = 10
-    INTEGER, PARAMETER :: GRASS_SOIL               = 11
-    INTEGER, PARAMETER :: BROADLEAF_PINE_FOREST    = 12
-    INTEGER, PARAMETER :: GRASS_SCRUB              = 13
-    INTEGER, PARAMETER :: SOIL_GRASS_SCRUB         = 14
-    INTEGER, PARAMETER :: URBAN_CONCRETE           = 15
-    INTEGER, PARAMETER :: PINE_BRUSH               = 16
-    INTEGER, PARAMETER :: BROADLEAF_BRUSH          = 17
-    INTEGER, PARAMETER :: WET_SOIL                 = 18
-    INTEGER, PARAMETER :: SCRUB_SOIL               = 19
-    INTEGER, PARAMETER :: BROADLEAF70_PINE30       = 20
 
-    ! The surface type names
+  SUBROUTINE Write_File(lsec)
+    TYPE(LSEcategory_type), INTENT(IN) :: lsec
+    TYPE(LSEcategory_type) :: lsec_copy
+    CHARACTER(256) :: class_name
+    
+    class_name = lsec%Classification_Name
+
+    ! Write data to file
+    err_stat = LSEcategory_WriteFile( &
+                 lsec, &
+                 TRIM(class_name)//'.LSEcategory.bin', &
+                 Title = 'IR/VIS '//TRIM(class_name)//' Surface Reflectances', &
+                 History = PROGRAM_VERSION_ID, &
+                 Comment = 'Data extracted from CRTM_surface_ir_emissivity module.' )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing '//TRIM(class_name)//' data to file.'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Read data from file
+    err_stat = LSEcategory_ReadFile( &
+                 lsec_copy, &
+                 TRIM(class_name)//'.LSEcategory.bin' )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading '//TRIM(class_name)//' data from file.'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Check that structures are equal
+    IF ( lsec == lsec_copy ) THEN
+      msg = TRIM(class_name)//' structure read from file is the same!'
+    ELSE
+      msg = TRIM(class_name)//' structure read from file is different!'
+    END IF
+    CALL Display_Message( PROGRAM_NAME, msg, INFORMATION )
+  
+  
+    ! Clean up
+    CALL LSEcategory_Destroy( lsec_copy )
+
+  END SUBROUTINE Write_File
+
+
+  SUBROUTINE Load_NPOESS_Data(npoess)
+    TYPE(LSEcategory_type), INTENT(OUT) :: npoess
+    
+    ! The surface types
+    INTEGER     , PARAMETER :: N_SURFACE_TYPES = 20
     CHARACTER(*), PARAMETER :: SURFACE_TYPE(N_SURFACE_TYPES) = &
      (/ 'compacted_soil          ', &
         'tilled_soil             ', &
@@ -189,6 +173,20 @@ CONTAINS
         'scrub_soil              ', &
         'broadleaf70_pine30      ' /)    
     
+    ! The spectral dimension
+    INTEGER , PARAMETER :: N_WAVELENGTHS = 74
+    REAL(dp), PARAMETER :: WAVELENGTH(N_WAVELENGTHS) = &
+      (/ 0.200_dp, 0.225_dp, 0.250_dp, 0.275_dp, 0.300_dp, 0.325_dp, 0.350_dp, 0.375_dp, &
+         0.400_dp, 0.425_dp, 0.450_dp, 0.475_dp, 0.500_dp, 0.525_dp, 0.550_dp, 0.575_dp, &
+         0.600_dp, 0.625_dp, 0.650_dp, 0.675_dp, 0.700_dp, 0.725_dp, 0.750_dp, 0.775_dp, &
+         0.800_dp, 0.825_dp, 0.850_dp, 0.875_dp, 0.900_dp, 0.925_dp, 0.950_dp, 0.975_dp, &
+         1.000_dp, 1.050_dp, 1.100_dp, 1.150_dp, 1.200_dp, 1.250_dp, 1.300_dp, 1.350_dp, &
+         1.400_dp, 1.450_dp, 1.500_dp, 1.550_dp, 1.600_dp, 1.650_dp, 1.700_dp, 1.750_dp, &
+         1.800_dp, 1.850_dp, 1.900_dp, 1.950_dp, 2.000_dp, 2.500_dp, 3.000_dp, 3.500_dp, &
+         4.000_dp, 4.500_dp, 5.000_dp, 5.500_dp, 6.000_dp, 6.500_dp, 7.000_dp, 7.500_dp, &
+         8.000_dp, 8.500_dp, 9.000_dp, 9.500_dp,10.000_dp,11.000_dp,12.000_dp,13.000_dp, &
+        14.000_dp,15.000_dp /)
+        
     ! The reflectance data
     REAL(dp) :: reflectance(N_WAVELENGTHS, N_SURFACE_TYPES)
     INTEGER :: i, n
@@ -433,17 +431,209 @@ CONTAINS
     0.030_dp, 0.030_dp, 0.030_dp, 0.030_dp, 0.030_dp, 0.030_dp, 0.038_dp, 0.030_dp,  &
     0.016_dp, 0.016_dp/
 
-    ! Flip reflectance data to ascending frequency order
-    DO n = 1, N_SURFACE_TYPES
-      reflectance(:,n) = reflectance(N_WAVELENGTHS:1:-1,n)
-    END DO
+
+    ! Create structure
+    CALL LSEcategory_Create( &
+           npoess, &
+           n_Frequencies   = N_WAVELENGTHS, &
+           n_Surface_Types = N_SURFACE_TYPES )
+    IF ( .NOT. LSEcategory_Associated(npoess) ) THEN
+      msg = 'Error creating NPOESS LSEcategory structure'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Assign the classification type and spectral ordinate
+    npoess%Classification_Name = 'NPOESS'
+    npoess%Frequency = micron_to_inverse_cm(WAVELENGTH(N_WAVELENGTHS:1:-1))
+
 
     ! Assign the data to the structure
-    CALL LSEcategory_SetValue( &
-           npoess, &
-           Surface_Type = SURFACE_TYPE, &
-           Reflectance  = reflectance   )
+    npoess%Surface_Type = SURFACE_TYPE
+    DO n = 1, N_SURFACE_TYPES
+      npoess%Reflectance(:,n) = reflectance(N_WAVELENGTHS:1:-1,n)
+    END DO
 
   END SUBROUTINE Load_NPOESS_Data
 
-END PROGRAM Create_NPOESS_LSEcategory
+
+  SUBROUTINE Load_USGS_Data(npoess,usgs)
+    TYPE(LSEcategory_type), INTENT(IN)  :: npoess
+    TYPE(LSEcategory_type), INTENT(OUT) :: usgs
+    INTEGER :: n
+    
+    ! The surface types
+    INTEGER     , PARAMETER :: N_SURFACE_TYPES = 27
+    CHARACTER(*), PARAMETER :: SURFACE_TYPE(N_SURFACE_TYPES) = &
+     (/ 'urban_and_built-up_land                     ', &
+        'dryland_cropland_and_pasture                ', &
+        'irrigated_cropland_and_pasture              ', &
+        'mixed_dryland/irrigated_cropland_and_pasture', &
+        'cropland/grassland_mosaic                   ', &
+        'cropland/woodland_mosaic                    ', &
+        'grassland                                   ', &
+        'shrubland                                   ', &
+        'mixed_shrubland/grassland                   ', &
+        'savanna                                     ', &
+        'deciduous_broadleaf_forest                  ', &
+        'deciduous_needleleaf_forest                 ', &
+        'evergreen_broadleaf_forest                  ', &
+        'evergreen_needleleaf_forest                 ', &
+        'mixed_forest                                ', &
+        'water_bodies (empty)                        ', &
+        'herbaceous_wetland                          ', &
+        'wooded_wetland                              ', &
+        'barren_or_sparsely_vegetated                ', &
+        'herbaceous_tundra                           ', &
+        'wooded_tundra                               ', &
+        'mixed_tundra                                ', &
+        'bare_ground_tundra                          ', &
+        'snow_or_ice (empty)                         ', &
+        'playa                                       ', &
+        'lava                                        ', &
+        'white_sand                                  ' /)
+        
+    
+    ! The NPOESS->USGS mapping
+    INTEGER, PARAMETER :: NPOESS_TO_USGS(N_SURFACE_TYPES) = &
+      (/ URBAN_CONCRETE          , &  ! urban_and_built-up_land                     
+         COMPACTED_SOIL          , &  ! dryland_cropland_and_pasture                
+         IRRIGATED_LOW_VEGETATION, &  ! irrigated_cropland_and_pasture              
+         GRASS_SOIL              , &  ! mixed_dryland/irrigated_cropland_and_pasture
+         MEADOW_GRASS            , &  ! cropland/grassland_mosaic                   
+         MEADOW_GRASS            , &  ! cropland/woodland_mosaic                    
+         MEADOW_GRASS            , &  ! grassland                                   
+         SCRUB                   , &  ! shrubland                                   
+         GRASS_SCRUB             , &  ! mixed_shrubland/grassland                   
+         MEADOW_GRASS            , &  ! savanna                                     
+         BROADLEAF_FOREST        , &  ! deciduous_broadleaf_forest                  
+         PINE_FOREST             , &  ! deciduous_needleleaf_forest                 
+         BROADLEAF_FOREST        , &  ! evergreen_broadleaf_forest                  
+         PINE_FOREST             , &  ! evergreen_needleleaf_forest                 
+         BROADLEAF_PINE_FOREST   , &  ! mixed_forest                                
+         INVALID                 , &  ! water_bodies (empty)                        
+         WET_SOIL                , &  ! herbaceous_wetland                          
+         WET_SOIL                , &  ! wooded_wetland                              
+         IRRIGATED_LOW_VEGETATION, &  ! barren_or_sparsely_vegetated                
+         TUNDRA                  , &  ! herbaceous_tundra                           
+         TUNDRA                  , &  ! wooded_tundra                               
+         TUNDRA                  , &  ! mixed_tundra                                
+         TUNDRA                  , &  ! bare_ground_tundra                          
+         INVALID                 , &  ! snow_or_ice (empty)                         
+         COMPACTED_SOIL          , &  ! playa                              
+         ROCK                    , &  ! lava                               
+         SAND                     /)  ! white_sand                         
+         
+         
+    ! Create structure
+    CALL LSEcategory_Create( &
+           usgs, &
+           n_Frequencies   = npoess%n_Frequencies, &
+           n_Surface_Types = N_SURFACE_TYPES )
+    IF ( .NOT. LSEcategory_Associated(npoess) ) THEN
+      msg = 'Error creating USGS LSEcategory structure'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Assign the classification type and spectral ordinate
+    usgs%Classification_Name = 'USGS'
+    usgs%Frequency = npoess%Frequency
+
+
+    ! Assign the data to the structure
+    usgs%Surface_Type = SURFACE_TYPE
+    DO n = 1, N_SURFACE_TYPES
+      IF ( NPOESS_TO_USGS(n) /= INVALID ) THEN
+        usgs%Reflectance(:,n) = npoess%Reflectance(:,NPOESS_TO_USGS(n))
+      ELSE
+        usgs%Reflectance(:,n) = -1.0_dp
+      END IF
+    END DO
+
+  END SUBROUTINE Load_USGS_Data
+
+
+  SUBROUTINE Load_IGBP_Data(npoess,igbp)
+    TYPE(LSEcategory_type), INTENT(IN)  :: npoess
+    TYPE(LSEcategory_type), INTENT(OUT) :: igbp
+    INTEGER :: n
+    
+    ! The surface types
+    INTEGER     , PARAMETER :: N_SURFACE_TYPES = 20
+    CHARACTER(*), PARAMETER :: SURFACE_TYPE(N_SURFACE_TYPES) = &
+     (/ 'evergreen_needleleaf_forest       ', &
+        'evergreen_broadleaf_forest        ', &
+        'deciduous_needleleaf_forest       ', &
+        'deciduous_broadleaf_forest        ', &
+        'mixed_forests                     ', &
+        'closed_shrublands                 ', &
+        'open_shrublands                   ', &
+        'woody_savannas                    ', &
+        'savannas                          ', &
+        'grasslands                        ', &
+        'permanent_wetlands                ', &
+        'croplands                         ', &
+        'urban_and_built-up                ', &
+        'cropland/natural_vegetation_mosaic', &
+        'snow_and_ice (empty)              ', &
+        'barren_or_sparsely_vegetated      ', &
+        'water (empty)                     ', &
+        'wooded_tundra                     ', &
+        'mixed_tundra                      ', &
+        'bare_ground_tundra                ' /)
+        
+    
+    ! The NPOESS->IGBP mapping
+    INTEGER, PARAMETER :: NPOESS_TO_IGBP(N_SURFACE_TYPES) = &
+      (/ PINE_FOREST          , &  ! evergreen_needleleaf_forest       
+         BROADLEAF_FOREST     , &  ! evergreen_broadleaf_forest        
+         PINE_FOREST          , &  ! deciduous_needleleaf_forest       
+         BROADLEAF_FOREST     , &  ! deciduous_broadleaf_forest        
+         BROADLEAF_PINE_FOREST, &  ! mixed_forests                     
+         SCRUB                , &  ! closed_shrublands                 
+         SCRUB_SOIL           , &  ! open_shrublands                   
+         BROADLEAF_BRUSH      , &  ! woody_savannas                    
+         BROADLEAF_BRUSH      , &  ! savannas                          
+         SCRUB                , &  ! grasslands                        
+         BROADLEAF_BRUSH      , &  ! permanent_wetlands                
+         TILLED_SOIL          , &  ! croplands                         
+         URBAN_CONCRETE       , &  ! urban_and_built-up                
+         TILLED_SOIL          , &  ! cropland/natural_vegetation_mosaic
+         INVALID              , &  ! snow_and_ice (empty)              
+         COMPACTED_SOIL       , &  ! barren_or_sparsely_vegetated      
+         INVALID              , &  ! water (empty)                     
+         TUNDRA               , &  ! wooded_tundra                     
+         TUNDRA               , &  ! mixed_tundra                      
+         TUNDRA                /)  ! bare_ground_tundra                
+         
+         
+    ! Create structure
+    CALL LSEcategory_Create( &
+           igbp, &
+           n_Frequencies   = npoess%n_Frequencies, &
+           n_Surface_Types = N_SURFACE_TYPES )
+    IF ( .NOT. LSEcategory_Associated(npoess) ) THEN
+      msg = 'Error creating IGBP LSEcategory structure'
+      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+    END IF
+
+
+    ! Assign the classification type and spectral ordinate
+    igbp%Classification_Name = 'IGBP'
+    igbp%Frequency = npoess%Frequency
+
+
+    ! Assign the data to the structure
+    igbp%Surface_Type = SURFACE_TYPE
+    DO n = 1, N_SURFACE_TYPES
+      IF ( NPOESS_TO_IGBP(n) /= INVALID ) THEN
+        igbp%Reflectance(:,n) = npoess%Reflectance(:,NPOESS_TO_IGBP(n))
+      ELSE
+        igbp%Reflectance(:,n) = -1.0_dp
+      END IF
+    END DO
+
+  END SUBROUTINE Load_IGBP_Data
+
+END PROGRAM Create_LSEcategory
