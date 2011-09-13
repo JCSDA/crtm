@@ -44,6 +44,7 @@ MODULE LSEcategory_Define
   PUBLIC :: LSEcategory_ValidRelease
   PUBLIC :: LSEcategory_Info
   PUBLIC :: LSEcategory_Name
+  PUBLIC :: LSEcategory_Index
   PUBLIC :: LSEcategory_DefineVersion
   PUBLIC :: LSEcategory_SetValue
   PUBLIC :: LSEcategory_GetValue
@@ -452,7 +453,7 @@ CONTAINS
 !       LSEcategory_Name
 !
 ! PURPOSE:
-!       Function to return the datatype name of an LSEcategory object.
+!       Pure function to return the datatype name of an LSEcategory object.
 !
 ! CALLING SEQUENCE:
 !       datatype_name = LSEcategory_Name( LSEcategory )         
@@ -474,9 +475,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION LSEcategory_Name( self ) RESULT( datatype_name )
+  PURE FUNCTION LSEcategory_Name( self ) RESULT( datatype_name )
     ! Arguments
-    TYPE(LSEcategory_type), INTENT(OUT) :: self
+    TYPE(LSEcategory_type), INTENT(IN) :: self
     ! Function result
     CHARACTER(LEN(self%Datatype_Name)) :: datatype_name
     
@@ -484,6 +485,73 @@ CONTAINS
 
   END FUNCTION LSEcategory_Name
 
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LSEcategory_Index
+!
+! PURPOSE:
+!       Pure function to return the index of a particular surface type
+!       in the LSEcategory object.
+!
+! CALLING SEQUENCE:
+!       idx = LSEcategory_Index( LSEcategory, Surface_Type )
+!
+! OBJECTS:
+!       LSEcategory:   Valid, allocated LSEcategory object from which
+!                      the surface type index is to be retrieved.
+!                      UNITS:      N/A
+!                      TYPE:       LSEcategory_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!       Surface_Type:  Character string containing the name of the
+!                      surface type for which the index is required.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       idx:           The index along the surface type dimension corresponding
+!                      to the requested surface type name.
+!                      If no surface type match is found, the value 0 is returned.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  PURE FUNCTION LSEcategory_Index( &
+    self         , &  ! Input
+    Surface_Type ) &  ! Input
+  RESULT( idx )
+    ! Arguments
+    TYPE(LSEcategory_type), INTENT(IN) :: self
+    CHARACTER(*)          , INTENT(IN) :: Surface_Type
+    ! Function result
+    INTEGER :: idx
+    ! Local variables
+    INTEGER :: i
+
+    ! Setup
+    idx = 0     
+    IF ( .NOT. LSEcategory_Associated(self) ) RETURN
+   
+    ! Match surface type and assign
+    DO i = 1, self%n_Surface_Types
+      IF ( self%Surface_Type(i) == Surface_Type ) THEN
+        idx = i
+        RETURN
+      END IF
+    END DO
+
+  END FUNCTION LSEcategory_Index
+ 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -784,17 +852,15 @@ CONTAINS
     
     IF ( PRESENT(Surface_Type_ToGet) .AND. PRESENT(Surface_Reflectance) ) THEN
       ! Match surface type and assign
-      DO i = 1, self%n_Surface_Types
-        IF ( self%Surface_Type(i) == Surface_Type_ToGet ) THEN
-          ALLOCATE(Surface_Reflectance(self%n_Frequencies))
-          Surface_Reflectance = self%Reflectance(:,i)
-        END IF
-      END DO
+      i = LSEcategory_Index(self,Surface_Type_ToGet)
+      IF ( i > 0 ) THEN
+        ALLOCATE(Surface_Reflectance(self%n_Frequencies))
+        Surface_Reflectance = self%Reflectance(:,i)
+      END IF
     END IF
 
   END SUBROUTINE LSEcategory_GetValue
  
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

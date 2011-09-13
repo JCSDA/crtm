@@ -141,7 +141,7 @@ MODULE IRlandCoeff_Define
   ! ----------------------------------
   !:tdoc+:
   TYPE :: IRlandCoeff_type
-    PRIVATE
+!    PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Release and version information
