@@ -69,6 +69,7 @@ NOCPP_FILES = \
   CRTM_SfcOptics.f90 \
   CRTM_IR_Ice_SfcOptics.f90 \
   CRTM_IR_Land_SfcOptics.f90 \
+    CRTM_LSEcategory.f90 \
   CRTM_IR_Snow_SfcOptics.f90 \
   CRTM_IR_Water_SfcOptics.f90 \
   CRTM_MW_Ice_SfcOptics.f90 \
