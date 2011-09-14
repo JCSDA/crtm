@@ -470,6 +470,8 @@ CONTAINS
     
     ! Set Up
     Error_Status = SUCCESS
+    e_AD = ZERO
+    v_AD = ZERO
     ! ...Check internal variable allocation
     IF ( .NOT. Einterp_Associated( EVar%ei ) ) THEN
       Error_Status = FAILURE
