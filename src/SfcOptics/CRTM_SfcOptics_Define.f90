@@ -45,10 +45,6 @@ MODULE CRTM_SfcOptics_Define
   PUBLIC :: CRTM_SfcOptics_DefineVersion
   PUBLIC :: CRTM_SfcOptics_Compare
 
-!  PUBLIC :: CRTM_Associated_SfcOptics
-!  PUBLIC :: CRTM_Destroy_SfcOptics
-!  PUBLIC :: CRTM_Allocate_SfcOptics
-!  PUBLIC :: CRTM_Assign_SfcOptics
 
   ! ---------------------
   ! Procedure overloading

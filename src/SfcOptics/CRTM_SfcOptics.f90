@@ -63,7 +63,7 @@ MODULE CRTM_SfcOptics
                                       Compute_MW_Ice_SfcOptics, &
                                       Compute_MW_Ice_SfcOptics_TL, &
                                       Compute_MW_Ice_SfcOptics_AD
-  USE CRTM_IR_Land_SfcOptics,   ONLY: IRLSOVariables_type, &
+  USE CRTM_IR_Land_SfcOptics,   ONLY: IRLSOVar_type => iVar_type, &
                                       Compute_IR_Land_SfcOptics, &
                                       Compute_IR_Land_SfcOptics_TL, &
                                       Compute_IR_Land_SfcOptics_AD
@@ -122,7 +122,7 @@ MODULE CRTM_SfcOptics
     TYPE(MWSSOVariables_type) :: MWSSOV ! Snow
     TYPE(MWISOVariables_type) :: MWISOV ! Ice
     ! Infrared
-    TYPE(IRLSOVariables_type) :: IRLSOV ! Land
+    TYPE(IRLSOVar_type) :: IRLSOV ! Land
     TYPE(IRWSOVariables_type) :: IRWSOV ! Water
     TYPE(IRSSOVariables_type) :: IRSSOV ! Snow
     TYPE(IRISOVariables_type) :: IRISOV ! Ice
@@ -427,7 +427,7 @@ CONTAINS
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
     SfcOptics   , &  ! Output
-    iVar         ) &  ! Internal variable output
+    iVar        ) &  ! Internal variable output
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type)     , INTENT(IN)     :: Surface
@@ -1495,15 +1495,8 @@ CONTAINS
         Infrared_Land: IF( Surface%Land_Coverage > ZERO ) THEN
 
           ! Compute the surface optics
-          Error_Status = Compute_IR_Land_SfcOptics_TL( &
-                           Surface     , &  ! Input
-                           SfcOptics   , &  ! Input
-                           Surface_TL  , &  ! Input
-                           GeometryInfo, &  ! Input
-                           SensorIndex , &  ! Input
-                           ChannelIndex, &  ! Input
-                           SfcOptics_TL, &  ! In/Output
-                           iVar%IRLSOV   )  ! Internal variable input
+          ! **STUB PROCEDURE**
+          Error_Status = Compute_IR_Land_SfcOptics_TL( SfcOptics_TL )
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error computing IR land SfcOptics_TL at ",&
                             &"channel index ",i0)' ) ChannelIndex
@@ -2271,15 +2264,8 @@ CONTAINS
             (Reflectivity_AD(1:nZ,1:nL,1:nZ,1:nL)*Surface%Land_Coverage)
 
           ! Compute the surface optics adjoints
-          Error_Status = Compute_IR_Land_SfcOptics_AD( &
-                           Surface     , &  ! Input
-                           SfcOptics   , &  ! Input     
-                           SfcOptics_AD, &  ! Input     
-                           GeometryInfo, &  ! Input
-                           SensorIndex , &  ! Input
-                           ChannelIndex, &  ! Input
-                           Surface_AD  , &  ! Output
-                           iVar%IRLSOV   )  ! Internal variable input
+          ! **STUB PROCEDURE**
+          Error_Status = Compute_IR_Land_SfcOptics_AD( SfcOptics_AD )
           IF ( Error_Status /= SUCCESS ) THEN
             WRITE( Message,'("Error computing IR land SfcOptics_AD at ",&
                             &"channel index ",i0)' ) ChannelIndex
