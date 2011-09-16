@@ -719,15 +719,7 @@ CONTAINS
       message = 'Error destroying TC'
       CALL Display_Message( ROUTINE_NAME, TRIM(message), Error_Status)
       RETURN
-    END IF                          
-
-    ! Destroy TC
-    CALL TauCoeff_Destroy(TC, Error_Status)                                                                   
-    IF ( Error_Status /= SUCCESS ) THEN 
-      message = 'Error destroying TC'
-      CALL Display_Message( ROUTINE_NAME, TRIM(message), Error_Status)
-      RETURN
-    END IF                          
+    END IF                                                    
 
   END FUNCTION CRTM_Destroy_TauCoeff
 
