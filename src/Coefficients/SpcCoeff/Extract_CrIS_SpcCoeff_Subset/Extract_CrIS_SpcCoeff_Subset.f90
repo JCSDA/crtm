@@ -153,7 +153,7 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
       END IF
       ! ...Fill values
       Subset_List = (/(i,i=1,N_CRIS_CHANNELS)/)
-      Sensor_ID   = 'cris_npp'
+      WRITE( sensor_id,'("cris",i0,"_npp")' ) n_subset_channels
 
 
     ! A user specified channel subset

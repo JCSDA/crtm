@@ -194,7 +194,7 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
       END IF
       ! ...Fill values
       Subset_List = (/(i,i=1,N_IASI_CHANNELS)/)
-      Sensor_ID   = 'iasi_'//TRIM(IASI_PLATFORM_NAME(platform))
+      WRITE( sensor_id,'("iasi",i0,"_",a)' ) n_subset_channels, TRIM(IASI_PLATFORM_NAME(platform))
 
 
     ! A user specified channel subset

@@ -153,7 +153,7 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
       END IF
       ! ...Fill values
       Subset_List = (/(i,i=1,N_AIRS_CHANNELS)/)
-      Sensor_ID   = 'airs_aqua'
+      WRITE( sensor_id,'("airs",i0,"_aqua")' ) n_subset_channels
 
 
     ! A user specified channel subset
