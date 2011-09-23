@@ -48,6 +48,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
                                    N_CRIS_CHANNELS, &
                                    CrIS_BandName
   USE CrIS_Subset,           ONLY: N_CRIS_SUBSET_374, CRIS_SUBSET_374, CRIS_SUBSET_374_COMMENT, &
+                                   N_CRIS_SUBSET_399, CRIS_SUBSET_399, CRIS_SUBSET_399_COMMENT, &
                                    CrIS_Subset_Index
   ! Disable implicit typing
   IMPLICIT NONE
@@ -59,7 +60,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   
-  INTEGER,      PARAMETER :: N_VALID_SUBSETS = 3
+  INTEGER,      PARAMETER :: N_VALID_SUBSETS = 4
   
   ! ------------------------------------------------------------------
   ! ********Need to add ODPS******************************************
@@ -71,6 +72,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   
   CHARACTER(*), PARAMETER :: VALID_SUBSET_NAME(N_VALID_SUBSETS) = &
     (/ 'NESDIS 374 channel set', &
+       'NESDIS 399 channel set', &
        'All channels          ', &
        'User specified        ' /)
 
@@ -174,7 +176,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
     
       ! Assign values
       n_Subset_Channels = N_CRIS_SUBSET_374
-      Subset_Comment    = 'Data extracted from the individual CRIS band ODPS datafiles.; '//&
+      Subset_Comment    = 'Data extracted from the individual CRIS band ODAS datafiles.; '//&
                           CRIS_SUBSET_374_COMMENT
 
       ! Allocate list array
@@ -192,10 +194,34 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
       Subset_List = CRIS_SUBSET_374
       Sensor_ID   = 'cris374_npp'
 
+    ! The 399 channel subset
+    ! ----------------------
+    CASE (2)
+    
+      ! Assign values
+      n_Subset_Channels = N_CRIS_SUBSET_399
+      Subset_Comment    = 'Data extracted from the individual CRIS band ODAS datafiles.; '//&
+                          CRIS_SUBSET_374_COMMENT
+
+      ! Allocate list array
+      ALLOCATE( Subset_List( n_Subset_Channels ), &
+                STAT=Allocate_Status )
+      IF ( Allocate_Status /= 0 ) THEN
+        WRITE( Message,'("Error allocating Subset_List array. STAT = ",i0)' ) Allocate_Status
+        CALL Display_Message( PROGRAM_NAME, &
+                              TRIM(Message), &
+                              FAILURE )
+        STOP
+      END IF
+
+      ! Fill values
+      Subset_List = CRIS_SUBSET_399
+      Sensor_ID   = 'cris399_npp'
+
 
     ! All the channels
     ! ----------------
-    CASE (2)
+    CASE (3)
     
       ! Assign values
       n_Subset_Channels = N_CRIS_CHANNELS
@@ -218,7 +244,7 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
 
     ! A user specified channel subset
     ! -------------------------------
-    CASE (3)
+    CASE (4)
     
       ! Get a channel subset list filename
       WRITE( *, FMT='(/5x,"Enter an CrIS channel subset list filename : ")', &
