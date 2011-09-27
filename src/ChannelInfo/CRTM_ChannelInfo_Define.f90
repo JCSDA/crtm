@@ -16,15 +16,12 @@ MODULE CRTM_ChannelInfo_Define
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds
-  USE Message_Handler      , ONLY: SUCCESS, &
-                                   FAILURE, &
-                                   INFORMATION, &
-                                   Display_Message
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters      , ONLY: STRLEN
   USE SensorInfo_Parameters, ONLY: INVALID_SENSOR, &
                                    INVALID_WMO_SATELLITE_ID, &
-                                   INVALID_WMO_SENSOR_ID   
+                                   INVALID_WMO_SENSOR_ID 
+  USE Sort_Utility         , ONLY: InsertionSort  
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -45,6 +42,8 @@ MODULE CRTM_ChannelInfo_Define
   PUBLIC :: CRTM_ChannelInfo_Inspect
   PUBLIC :: CRTM_ChannelInfo_DefineVersion
   PUBLIC :: CRTM_ChannelInfo_n_Channels
+  PUBLIC :: CRTM_ChannelInfo_Subset
+
 
   ! ---------------------
   ! Procedure overloading
@@ -65,7 +64,9 @@ MODULE CRTM_ChannelInfo_Define
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
+  
 
   ! --------------------------------
   ! ChannelInfo data type definition
@@ -83,8 +84,9 @@ MODULE CRTM_ChannelInfo_Define
     INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     INTEGER           :: Sensor_Index     = 0
     ! Array data
-    INTEGER, ALLOCATABLE :: Sensor_Channel(:)  ! L
-    INTEGER, ALLOCATABLE :: Channel_Index(:)   ! L
+    LOGICAL, ALLOCATABLE :: Process_Channel(:)  ! L
+    INTEGER, ALLOCATABLE :: Sensor_Channel(:)   ! L
+    INTEGER, ALLOCATABLE :: Channel_Index(:)    ! L
   END TYPE CRTM_ChannelInfo_type
   !:tdoc-:
 
@@ -213,7 +215,8 @@ CONTAINS
 
 
     ! Perform the allocations.
-    ALLOCATE( ChannelInfo%Sensor_Channel( n_Channels ), &
+    ALLOCATE( ChannelInfo%Process_Channel( n_Channels ), &
+              ChannelInfo%Sensor_Channel( n_Channels ), &
               ChannelInfo%Channel_Index( n_Channels ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -223,8 +226,9 @@ CONTAINS
     ! ...Dimensions
     ChannelInfo%n_Channels = n_Channels
     ! ...Arrays
-    ChannelInfo%Sensor_Channel = 0
-    ChannelInfo%Channel_Index  = 0
+    ChannelInfo%Process_Channel = .TRUE.
+    ChannelInfo%Sensor_Channel  = 0
+    ChannelInfo%Channel_Index   = 0
 
 
     ! Set allocation indicator
@@ -246,7 +250,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL CRTM_ChannelInfo_Inspect( ChannelInfo )
 !
-! INPUTS:
+! OBJECTS:
 !       ChannelInfo:   ChannelInfo object to display.
 !                      UNITS:      N/A
 !                      TYPE:       TYPE(CRTM_ChannelInfo_type)
@@ -258,6 +262,8 @@ CONTAINS
 
   SUBROUTINE CRTM_ChannelInfo_Inspect( ChannelInfo )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
+    INTEGER :: i
+    CHARACTER(3) :: process
     WRITE(*,'(1x,"ChannelInfo OBJECT")')
     WRITE(*,'(3x,"n_Channels       :",1x,i0)') ChannelInfo%n_Channels
     WRITE(*,'(3x,"Sensor Id        :",1x,a )') TRIM(ChannelInfo%Sensor_ID)
@@ -266,10 +272,18 @@ CONTAINS
     WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') ChannelInfo%WMO_Sensor_ID   
     WRITE(*,'(3x,"Sensor_Index     :",1x,i0)') ChannelInfo%Sensor_Index    
     IF ( .NOT. CRTM_ChannelInfo_Associated(ChannelInfo) ) RETURN
-    WRITE(*,'(3x,"ChannelInfo Sensor Channel:")')
-    WRITE(*,'(5(1x,i5,:))') ChannelInfo%Sensor_Channel
-    WRITE(*,'(3x,"ChannelInfo Channel Index:")')
-    WRITE(*,'(5(1x,i5,:))') ChannelInfo%Channel_Index
+    WRITE(*,'(3x,"Channel#     Index     Process?")')
+    DO i = 1, ChannelInfo%n_Channels
+      IF ( ChannelInfo%Process_Channel(i) ) THEN
+        process = 'yes'
+      ELSE
+        process = 'no'
+      END IF
+      WRITE(*,'(4x,i5,7x,i5,8x,a)') &
+        ChannelInfo%Sensor_Channel(i), & 
+        ChannelInfo%Channel_Index(i), & 
+        process
+    END DO
   END SUBROUTINE CRTM_ChannelInfo_Inspect
 
 
@@ -281,13 +295,13 @@ CONTAINS
 !
 ! PURPOSE:
 !       Function to return the number of channels defined in a ChannelInfo
-!       structure or structure array
+!       object or object array
 !
 ! CALLING SEQUENCE:
 !       n_Channels = CRTM_ChannelInfo_n_Channels( ChannelInfo )
 !
-! INPUTS:
-!       ChannelInfo: ChannelInfo structure or structure which is to have its
+! OBJECTS:
+!       ChannelInfo: ChannelInfo object or object array which is to have its
 !                    channels counted.
 !                    UNITS:      N/A
 !                    TYPE:       TYPE(CRTM_ChannelInfo_type)
@@ -297,7 +311,7 @@ CONTAINS
 !                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n_Channels:   The number of defined channels in the input argument.
+!       n_Channels:  The number of defined channels in the input argument.
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
 !                    DIMENSION:  Scalar
@@ -318,6 +332,136 @@ CONTAINS
   END FUNCTION n_Channels_Rank1
 
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_ChannelInfo_Subset
+!
+! PURPOSE:
+!       Function to specify a channel subset for processing in the CRTM.
+!       By default, ALL channels are processed. This function allows the
+!       list of channels that are to be processed to be altered.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_ChannelInfo_Subset( ChannelInfo   , &
+!                                               Subset_Channel, &
+!                                               Reset           )
+!
+! OBJECTS:
+!       ChannelInfo:    Valid ChannelInfo object for which a channel subset is
+!                       to be specified.
+!                       UNITS:      N/A
+!                       TYPE:       TYPE(CRTM_ChannelInfo_type)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUTS:
+!       Subset_Channel: An integer array containing the subset list of channels.
+!                       Future calls to the CRTM main functions using the passed
+!                       ChannelInfo object will process ONLY the channels
+!                       specified in this list.
+!                       *** NOTE: This argument is ignored if the Reset optional
+!                       *** argument is specified with a .TRUE. value.            
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Reset:          Logical flag to reset the ChannelInfo object channel
+!                       processing subset to ALL channels.
+!                       If == .TRUE.  Future calls to the CRTM main functions using
+!                                     the passed ChannelInfo object will process
+!                                     ALL the channels
+!                          == .FALSE. Procedure execution is equivalent to the Reset
+!                                     argument not being specified at all.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the channel subset setting was sucessful
+!                          == FAILURE an error occurred
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+! COMMENTS:
+!       - The ChannelInfo object can be modified by this procedure.
+!       - An error in this procedure will DISABLE processing for ALL channels.
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_ChannelInfo_Subset( &
+    ChannelInfo   , &  ! In/output
+    Subset_Channel, &  ! Optional input
+    Reset         ) &  ! Optional input
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo
+    INTEGER,           OPTIONAL, INTENT(IN)     :: Subset_Channel(:)
+    LOGICAL,           OPTIONAL, INTENT(IN)     :: Reset
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_ChannelInfo_Subset'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    INTEGER :: i, j, n
+    INTEGER :: channel_idx(ChannelInfo%n_Channels)
+    INTEGER :: subset_idx(SIZE(Subset_Channel))
+    
+    ! Setup
+    err_stat = SUCCESS
+    
+    ! Process Reset option first
+    IF ( PRESENT(Reset) ) THEN
+      IF ( Reset ) THEN
+        ChannelInfo%Process_Channel = .TRUE.
+        RETURN
+      END IF
+    END IF
+    
+    ! Process channel list
+    IF ( PRESENT(Subset_Channel) ) THEN
+      n = SIZE(Subset_Channel)
+      ! Default: turn off all processing
+      ChannelInfo%Process_Channel = .FALSE.
+      ! No channels specified
+      IF ( n == 0 ) RETURN
+      ! Too many specified
+      IF ( n > ChannelInfo%n_Channels ) THEN
+        err_stat = FAILURE
+        msg = 'Specified Subset_Channel contains too many channels!'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+      END IF
+      ! Invalid channels specified
+      IF ( ANY(Subset_Channel < MINVAL(ChannelInfo%Sensor_Channel)) .OR. &
+           ANY(Subset_Channel > MAXVAL(ChannelInfo%Sensor_Channel)) ) THEN
+        err_stat = FAILURE
+        msg = 'Specified Subset_Channel contains invalid channels!'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+      END IF
+      ! Turn on processing for selected channels
+      CALL InsertionSort( ChannelInfo%Sensor_Channel, channel_idx )
+      CALL InsertionSort( Subset_Channel, subset_idx )
+      j = 1
+      Channel_Loop: DO i = 1, ChannelInfo%n_Channels
+        IF ( Subset_Channel(subset_idx(j)) == ChannelInfo%Sensor_Channel(channel_idx(i)) ) THEN
+          ChannelInfo%Process_Channel(channel_idx(i)) = .TRUE.
+          j = j + 1
+          IF ( j > n ) EXIT Channel_Loop
+        END IF
+      END DO Channel_Loop
+    END IF
+
+  END FUNCTION CRTM_ChannelInfo_Subset
+  
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -408,8 +552,9 @@ CONTAINS
          (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
          (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
          (x%Sensor_Index     == y%Sensor_Index    ) .AND. &
-         ALL(x%Sensor_Channel == y%Sensor_Channel) .AND. &
-         ALL(x%Channel_Index  == y%Channel_Index )       ) &
+         ALL(x%Process_Channel .EQV. y%Process_Channel) .AND. &
+         ALL(x%Sensor_Channel   ==   y%Sensor_Channel ) .AND. &
+         ALL(x%Channel_Index    ==   y%Channel_Index  )       ) &
       is_equal = .TRUE.
                        
   END FUNCTION CRTM_ChannelInfo_Equal
