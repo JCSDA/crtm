@@ -42,12 +42,12 @@ MODULE CRTM_Aerosol_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
-  CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
+  ! File status on close after write error
+  CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
 
 
 CONTAINS
@@ -102,7 +102,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Aerosol_InquireFile( &
-    Filename, &  ! Input
+    Filename  , &  ! Input
     n_Aerosols) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
@@ -114,17 +114,19 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_InquireFile'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: na
 
     ! Setup
     err_stat = SUCCESS
-    ! Check that the file exists
+    ! ...Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
       msg = 'File '//TRIM(Filename)//' not found.'
       CALL Inquire_Cleanup(); RETURN
     END IF
+
 
     ! Open the aerosol data file
     err_stat = Open_Binary_File( Filename, fid )
@@ -133,39 +135,36 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
+
     ! Read the number of aerosols dimension
-    READ( fid,IOSTAT=io_stat ) na
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) na
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading n_Aerosols dimensions from ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
-      CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
-    END IF
-    
-    ! Close the file
-    CLOSE( fid, IOSTAT=io_stat )
-    IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error reading n_Aerosols dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
     END IF
+
+    
+    ! Close the file
+    CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+
     
     ! Set the return arguments
     IF ( PRESENT(n_Aerosols) ) n_Aerosols = na
 
   CONTAINS
   
-    SUBROUTINE Inquire_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( fid,IOSTAT=io_stat )
-          IF ( io_stat /= SUCCESS ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup'
-        END IF
+    SUBROUTINE Inquire_CleanUp()
+      IF ( File_Open(fid) ) THEN
+        CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
+        IF ( io_stat /= SUCCESS ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      ! Set error status and print error message
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION CRTM_Aerosol_InquireFile
@@ -196,7 +195,7 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       Aerosol:        CRTM Aerosol object array containing the aerosol data.
+!       Aerosol:        CRTM Aerosol object array containing the Aerosol data.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_Aerosol_type
 !                       DIMENSION:  Rank-1
@@ -241,7 +240,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Aerosol_ReadFile( &
+  FUNCTION CRTM_Aerosol_Readfile( &
     Filename  , &  ! Input
     Aerosol   , &  ! Output
     Quiet     , &  ! Optional input
@@ -262,9 +261,10 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_ReadFile'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    LOGICAL :: Yes_Close
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
+    LOGICAL :: noisy
+    LOGICAL :: yes_close
     INTEGER :: fid
     INTEGER :: m
     INTEGER :: na
@@ -272,15 +272,13 @@ CONTAINS
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Check file close argument
-    Yes_Close = .TRUE.
-    IF ( PRESENT(No_Close) ) Yes_Close = .NOT. No_Close
+    yes_close = .TRUE.
+    IF ( PRESENT(No_Close) ) yes_close = .NOT. No_Close
     ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
-    END IF
+    IF ( PRESENT(Debug) ) noisy = Debug
 
     
     ! Check if the file is open
@@ -289,7 +287,7 @@ CONTAINS
       ! ...Get the file id
       INQUIRE( FILE=Filename,NUMBER=fid )
       IF ( fid == -1 ) THEN
-        msg = 'Error inquiring '//TRIM(Filename)//' for its fid'
+        msg = 'Error inquiring '//TRIM(Filename)//' for its unit number'
         CALL Read_Cleanup(); RETURN
       END IF
     ELSE
@@ -309,18 +307,16 @@ CONTAINS
 
 
     ! Read the number of aerosols dimension
-    READ( fid,IOSTAT=io_stat ) na
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) na
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading n_Aerosols data dimension from ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+      msg = 'Error reading n_Aerosols data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check if output array large enough
     IF ( na > SIZE(Aerosol) ) THEN
       WRITE( msg,'("Number of aerosols, ",i0," > size of the output ",&
-             &"Aerosol object array, ",i0,".")' ) &
-             na, SIZE(Aerosol)
-      CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+             &"Aerosol object array, ",i0,".")' ) na, SIZE(Aerosol)
+      CALL Read_Cleanup(); RETURN
     END IF
 
 
@@ -328,18 +324,17 @@ CONTAINS
     Aerosol_Loop: DO m = 1, na
       err_stat = Read_Record( fid, Aerosol(m) )
       IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error reading Aerosol element #",i0," from ",a)' ) &
-               m, TRIM(Filename)
-        CALL Read_Cleanup(Close_File=.TRUE.); RETURN
+        WRITE( msg,'("Error reading Aerosol element #",i0," from ",a)' ) m, TRIM(Filename)
+        CALL Read_Cleanup(); RETURN
       END IF
     END DO Aerosol_Loop
 
 
     ! Close the file
-    IF ( Yes_Close ) THEN
-      CLOSE( fid,IOSTAT=io_stat )
+    IF ( yes_close ) THEN
+      CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+        msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
         CALL Read_Cleanup(); RETURN
       END IF
     END IF
@@ -350,32 +345,25 @@ CONTAINS
 
  
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of aerosols read from ",a,": ",i0)' ) TRIM(Filename), na
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
   
-    SUBROUTINE Read_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( fid,IOSTAT=io_stat )
-          IF ( io_stat /= 0 ) &
-            msg = TRIM(msg)//'; Error closing input file during error cleanup.'
-        END IF
+    SUBROUTINE Read_CleanUp()
+      IF ( File_Open(fid) ) THEN
+        CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
+        IF ( io_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      ! Destroy the structure
       CALL CRTM_Aerosol_Destroy( Aerosol )
-      ! Set error status and print error message
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
   
   END FUNCTION CRTM_Aerosol_ReadFile
-
 
 
 !------------------------------------------------------------------------------
@@ -389,9 +377,9 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Aerosol_WriteFile( Filename           , &
-!                                            Aerosol              , &
-!                                            Quiet    = Quiet   , &
-!                                            No_Close = No_Close  )
+!                                              Aerosol            , &
+!                                              Quiet    = Quiet   , &
+!                                              No_Close = No_Close  )
 !
 ! INPUTS:
 !       Filename:       Character string specifying the name of the
@@ -401,7 +389,7 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       Aerosol:          CRTM Aerosol object array containing the Aerosol data.
+!       Aerosol:        CRTM Aerosol object array containing the Aerosol data.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_Aerosol_type
 !                       DIMENSION:  Rank-1
@@ -452,36 +440,34 @@ CONTAINS
     Debug   ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: Filename
-    TYPE(CRTM_Aerosol_type) , INTENT(IN)  :: Aerosol(:)
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Quiet
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: No_Close
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),            INTENT(IN)  :: Filename
+    TYPE(CRTM_Aerosol_type), INTENT(IN)  :: Aerosol(:)
+    LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
+    LOGICAL,       OPTIONAL, INTENT(IN)  :: No_Close
+    LOGICAL,       OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_WriteFile'
-    CHARACTER(*), PARAMETER :: FILE_STATUS_ON_ERROR = 'DELETE'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
-    LOGICAL :: Yes_Close
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
+    LOGICAL :: noisy
+    LOGICAL :: yes_close
     INTEGER :: fid
     INTEGER :: m, na
  
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Check file close argument
-    Yes_Close = .TRUE.
-    IF ( PRESENT(No_Close) ) Yes_Close = .NOT. No_Close
+    yes_close = .TRUE.
+    IF ( PRESENT(No_Close) ) yes_close = .NOT. No_Close
     ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
-    END IF
+    IF ( PRESENT(Debug) ) noisy = Debug
 
     ! Check the Aerosol structure dimensions
     IF ( ANY(Aerosol%n_Layers < 1) ) THEN 
@@ -495,7 +481,7 @@ CONTAINS
       ! Yes, the file is already open
       INQUIRE( FILE=Filename,NUMBER=fid )
       IF ( fid == -1 ) THEN
-        msg = 'Error inquiring '//TRIM(Filename)//' for its fid'
+        msg = 'Error inquiring '//TRIM(Filename)//' for its unit number'
         CALL Write_Cleanup(); RETURN
       END IF
     ELSE
@@ -510,11 +496,10 @@ CONTAINS
 
     ! Write the number of aerosols dimension
     na = SIZE(Aerosol)    
-    WRITE( fid,IOSTAT=io_stat) na
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) na
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing n_Aerosols data dimension to ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
-      CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+      msg = 'Error writing n_Aerosols data dimension to '//TRIM(Filename)//'- '//TRIM(io_msg)
+      CALL Write_Cleanup(); RETURN
     END IF
 
 
@@ -522,44 +507,38 @@ CONTAINS
     Aerosol_Loop: DO m = 1, na
       err_stat = Write_Record( fid, Aerosol(m) )
       IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error writing Aerosol element #",i0," to ",a)' ) &
-               m, TRIM(Filename)
-        CALL Write_Cleanup(Close_File=.TRUE.); RETURN
+        WRITE( msg,'("Error writing Aerosol element #",i0," to ",a)' ) m, TRIM(Filename)
+        CALL Write_Cleanup(); RETURN
       END IF
     END DO Aerosol_Loop
 
 
     ! Close the file (if error, no delete)
-    IF ( Yes_Close ) THEN
-      CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    IF ( yes_close ) THEN
+      CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+        msg = 'Error closing '//TRIM(Filename)//'- '//TRIM(io_msg)
         CALL Write_Cleanup(); RETURN
       END IF
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of aerosols written to ",a,": ",i0)' ) TRIM(Filename), na
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
   
-    SUBROUTINE Write_CleanUp( Close_File )
-      LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
-      ! Close file if necessary
-      IF ( PRESENT(Close_File) ) THEN
-        IF ( Close_File ) THEN
-          CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
-          IF ( io_stat /= 0 ) &
-            msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
-        END IF
+    SUBROUTINE Write_CleanUp()
+      IF ( File_Open(fid) ) THEN
+        CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
+        IF ( io_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deleting output file during error cleanup - '//TRIM(io_msg)
       END IF
-      ! Set error status and print error message
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION CRTM_Aerosol_WriteFile
@@ -578,12 +557,12 @@ CONTAINS
 !       CALL CRTM_Aerosol_IOVersion( Id )
 !
 ! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -602,41 +581,16 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-!----------------------------------------------------------------------------------
 !
 ! NAME:
 !       Read_Record
 !
 ! PURPOSE:
-!       Utility function to read a single CRTM Aerosol object
+!       Utility function to read a single CRTM Aerosol object in binary format
 !
 ! CALLING SEQUENCE:
 !       Error_Status = Read_Record( FileID, Aerosol )
 !
-! INPUTS:
-!       FileID:       Logical unit number from which to read data.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUTS:
-!       Aerosol:      CRTM Aerosol object containing the data read in.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Aerosol_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS, the record read was successful
-!                        == FAILURE, an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
 
   FUNCTION Read_Record( &
     fid    , &  ! Input
@@ -648,26 +602,27 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_ReadFile(Record)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_ReadFile(Binary Record)'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
-    INTEGER :: n_Layers
+    INTEGER :: n_layers
 
     ! Set up
     err_stat = SUCCESS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat ) n_Layers
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_layers
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading n_Layers dimension - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Allocate the structure
-    CALL CRTM_Aerosol_Create( aerosol, n_Layers )
+    CALL CRTM_Aerosol_Create( aerosol, n_layers )
     IF ( .NOT. CRTM_Aerosol_Associated( aerosol ) ) THEN
       msg = 'Aerosol object allocation failed.'
       CALL Read_Record_Cleanup(); RETURN
@@ -675,65 +630,36 @@ CONTAINS
 
     
     ! Read the aerosol data
-    READ( fid,IOSTAT=io_stat ) Aerosol%Type, &
-                               Aerosol%Effective_Radius, &
-                               Aerosol%Concentration
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      aerosol%Type, &
+      aerosol%Effective_Radius, &
+      aerosol%Concentration
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading Aerosol data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading Aerosol data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
   CONTAINS
   
     SUBROUTINE Read_Record_Cleanup()
-      ! Deallocate aerosol structure if necessary
       CALL CRTM_Aerosol_Destroy( aerosol )
-      ! Close input file
-      CLOSE( fid,IOSTAT=io_stat )
+      CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= SUCCESS ) &
-        msg = TRIM(msg)//'; Error closing file during error cleanup'
-      ! Report error(s)
+        msg = TRIM(msg)//'; Error closing file during error cleanup - '//TRIM(io_msg)
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_Record_Cleanup
 
   END FUNCTION Read_Record
 
 
-!----------------------------------------------------------------------------------
 !
 ! NAME:
 !       Write_Record
 !
 ! PURPOSE:
-!       Function to write a single CRTM Aerosol object
+!       Function to write a single CRTM Aerosol object in binary format
 !
-! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID, Aerosol )
-!
-! INPUT ARGUMENTS:
-!       FileID:       Logical unit number to which data is written
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-!       Aerosol:      CRTM Aerosol object containing the data to write.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Aerosol_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS, the record write was successful
-!                        == FAILURE, an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
 
   FUNCTION Write_Record( &
     fid    , &  ! Input
@@ -745,9 +671,10 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_WriteFile(Record)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_WriteFile(Binary Record)'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
  
     ! Setup
@@ -759,30 +686,29 @@ CONTAINS
 
 
     ! Write the dimensions
-    WRITE( fid,IOSTAT=io_stat ) Aerosol%n_Layers
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) Aerosol%n_Layers
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing dimensions - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the data
-    WRITE( fid,IOSTAT=io_stat ) Aerosol%Type, &
-                                Aerosol%Effective_Radius, &
-                                Aerosol%Concentration
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      Aerosol%Type, &
+      Aerosol%Effective_Radius, &
+      Aerosol%Concentration
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing Aerosol data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing Aerosol data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
   CONTAINS
   
     SUBROUTINE Write_Record_Cleanup()
-      ! Close and delete output file
-      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= SUCCESS ) &
         msg = TRIM(msg)//'; Error closing file during error cleanup'
-      ! Report error(s)
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Write_Record_Cleanup
