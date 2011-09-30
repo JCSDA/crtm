@@ -397,9 +397,10 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_ChannelInfo_Subset'
     ! Local variables
     CHARACTER(ML) :: msg
+    INTEGER :: alloc_stat
     INTEGER :: i, j, n
     INTEGER :: channel_idx(ChannelInfo%n_Channels)
-    INTEGER :: subset_idx(SIZE(Channel_Subset))
+    INTEGER, ALLOCATABLE :: subset_idx(:)
     
     ! Setup
     err_stat = SUCCESS
@@ -414,7 +415,14 @@ CONTAINS
     
     ! Process channel list
     IF ( PRESENT(Channel_Subset) ) THEN
+      ! Allocate subset index array
       n = SIZE(Channel_Subset)
+      ALLOCATE( subset_idx(n),STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        err_stat = FAILURE
+        msg = 'Error allocating subset_idx array'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+      END IF
       ! Default: turn off all processing
       ChannelInfo%Process_Channel = .FALSE.
       ! No channels specified
@@ -443,6 +451,8 @@ CONTAINS
           IF ( j > n ) EXIT Channel_Loop
         END IF
       END DO Channel_Loop
+      ! Clean up
+      DEALLOCATE( subset_idx )
     END IF
 
   END FUNCTION CRTM_ChannelInfo_Subset
