@@ -52,11 +52,6 @@ MODULE CRTM_ChannelInfo_Define
     MODULE PROCEDURE CRTM_ChannelInfo_Equal
   END INTERFACE OPERATOR(==)
   
-  INTERFACE CRTM_ChannelInfo_n_Channels
-    MODULE PROCEDURE n_Channels_Scalar
-    MODULE PROCEDURE n_Channels_Rank1
-  END INTERFACE CRTM_ChannelInfo_n_Channels
-  
   
   ! -----------------
   ! Module parameters
@@ -158,7 +153,7 @@ CONTAINS
 !       ChannelInfo:    Re-initialized ChannelInfo object.
 !                       UNITS:      N/A
 !                       TYPE:       TYPE(CRTM_ChannelInfo_type)
-!                       DIMENSION:  Scalar OR any rank
+!                       DIMENSION:  Scalar or any rank
 !                       ATTRIBUTES: INTENT(OUT)
 !
 !:sdoc-:
@@ -195,7 +190,7 @@ CONTAINS
 !                          Must be > 0.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!                          DIMENSION:  Conformable with ChannelInfo argument
 !                          ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
@@ -294,42 +289,33 @@ CONTAINS
 !       CRTM_ChannelInfo_n_Channels
 !
 ! PURPOSE:
-!       Function to return the number of channels defined in a ChannelInfo
-!       object or object array
+!       Elemental function to return the number of channels defined in a
+!       ChannelInfo object.
 !
 ! CALLING SEQUENCE:
 !       n_Channels = CRTM_ChannelInfo_n_Channels( ChannelInfo )
 !
 ! OBJECTS:
-!       ChannelInfo: ChannelInfo object or object array which is to have its
-!                    channels counted.
+!       ChannelInfo: ChannelInfo object which is to have its channels counted.
 !                    UNITS:      N/A
 !                    TYPE:       TYPE(CRTM_ChannelInfo_type)
-!                    DIMENSION:  Scalar
-!                                  or
-!                                Rank-1
+!                    DIMENSION:  Scalar or any rank
 !                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n_Channels:  The number of defined channels in the input argument.
+!       n_Channels:  The number of defined channels in the ChannelInfo object.
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
-!                    DIMENSION:  Scalar
+!                    DIMENSION:  Same as input ChannelInfo argument.
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION n_Channels_Scalar( ChannelInfo ) RESULT( n_Channels )
+  ELEMENTAL FUNCTION CRTM_ChannelInfo_n_Channels( ChannelInfo ) RESULT( n_Channels )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
     INTEGER :: n_Channels
     n_Channels = ChannelInfo%n_Channels
-  END FUNCTION n_Channels_Scalar
-  
-  FUNCTION n_Channels_Rank1( ChannelInfo ) RESULT( n_Channels )
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo(:) ! N
-    INTEGER :: n_Channels
-    n_Channels = SUM(ChannelInfo%n_Channels)
-  END FUNCTION n_Channels_Rank1
+  END FUNCTION CRTM_ChannelInfo_n_Channels
 
 
 !--------------------------------------------------------------------------------
