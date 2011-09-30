@@ -314,7 +314,7 @@ CONTAINS
   ELEMENTAL FUNCTION CRTM_ChannelInfo_n_Channels( ChannelInfo ) RESULT( n_Channels )
     TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
     INTEGER :: n_Channels
-    n_Channels = ChannelInfo%n_Channels
+    n_Channels = COUNT(ChannelInfo%Process_Channel)
   END FUNCTION CRTM_ChannelInfo_n_Channels
 
 
@@ -331,7 +331,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_ChannelInfo_Subset( ChannelInfo   , &
-!                                               Subset_Channel, &
+!                                               Channel_Subset, &
 !                                               Reset           )
 !
 ! OBJECTS:
@@ -343,7 +343,7 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       Subset_Channel: An integer array containing the subset list of channels.
+!       Channel_Subset: An integer array containing the subset list of channels.
 !                       Future calls to the CRTM main functions using the passed
 !                       ChannelInfo object will process ONLY the channels
 !                       specified in this list.
@@ -384,12 +384,12 @@ CONTAINS
 
   FUNCTION CRTM_ChannelInfo_Subset( &
     ChannelInfo   , &  ! In/output
-    Subset_Channel, &  ! Optional input
+    Channel_Subset, &  ! Optional input
     Reset         ) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_ChannelInfo_type), INTENT(IN OUT) :: ChannelInfo
-    INTEGER,           OPTIONAL, INTENT(IN)     :: Subset_Channel(:)
+    INTEGER,           OPTIONAL, INTENT(IN)     :: Channel_Subset(:)
     LOGICAL,           OPTIONAL, INTENT(IN)     :: Reset
     ! Function result
     INTEGER :: err_stat
@@ -399,7 +399,7 @@ CONTAINS
     CHARACTER(ML) :: msg
     INTEGER :: i, j, n
     INTEGER :: channel_idx(ChannelInfo%n_Channels)
-    INTEGER :: subset_idx(SIZE(Subset_Channel))
+    INTEGER :: subset_idx(SIZE(Channel_Subset))
     
     ! Setup
     err_stat = SUCCESS
@@ -413,8 +413,8 @@ CONTAINS
     END IF
     
     ! Process channel list
-    IF ( PRESENT(Subset_Channel) ) THEN
-      n = SIZE(Subset_Channel)
+    IF ( PRESENT(Channel_Subset) ) THEN
+      n = SIZE(Channel_Subset)
       ! Default: turn off all processing
       ChannelInfo%Process_Channel = .FALSE.
       ! No channels specified
@@ -422,22 +422,22 @@ CONTAINS
       ! Too many specified
       IF ( n > ChannelInfo%n_Channels ) THEN
         err_stat = FAILURE
-        msg = 'Specified Subset_Channel contains too many channels!'
+        msg = 'Specified Channel_Subset contains too many channels!'
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! Invalid channels specified
-      IF ( ANY(Subset_Channel < MINVAL(ChannelInfo%Sensor_Channel)) .OR. &
-           ANY(Subset_Channel > MAXVAL(ChannelInfo%Sensor_Channel)) ) THEN
+      IF ( ANY(Channel_Subset < MINVAL(ChannelInfo%Sensor_Channel)) .OR. &
+           ANY(Channel_Subset > MAXVAL(ChannelInfo%Sensor_Channel)) ) THEN
         err_stat = FAILURE
-        msg = 'Specified Subset_Channel contains invalid channels!'
+        msg = 'Specified Channel_Subset contains invalid channels!'
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! Turn on processing for selected channels
       CALL InsertionSort( ChannelInfo%Sensor_Channel, channel_idx )
-      CALL InsertionSort( Subset_Channel, subset_idx )
+      CALL InsertionSort( Channel_Subset, subset_idx )
       j = 1
       Channel_Loop: DO i = 1, ChannelInfo%n_Channels
-        IF ( Subset_Channel(subset_idx(j)) == ChannelInfo%Sensor_Channel(channel_idx(i)) ) THEN
+        IF ( Channel_Subset(subset_idx(j)) == ChannelInfo%Sensor_Channel(channel_idx(i)) ) THEN
           ChannelInfo%Process_Channel(channel_idx(i)) = .TRUE.
           j = j + 1
           IF ( j > n ) EXIT Channel_Loop
