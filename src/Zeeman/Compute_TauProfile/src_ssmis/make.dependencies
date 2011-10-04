@@ -1,0 +1,34 @@
+TmpAtmProfile_Define.o : TmpAtmProfile_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+TmpAtmProfile_netCDF_IO.o : TmpAtmProfile_netCDF_IO.f90 netCDF_Utility.o TmpAtmProfile_Define.o Message_Handler.o Type_Kinds.o 
+Atmospheric_Properties.o : Atmospheric_Properties.f90 Profile_Utility_Parameters.o Message_Handler.o Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Integrate_Utility.o : Integrate_Utility.f90 Interpolate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Spline_Interpolation.o Polynomial_Interpolation.o Linear_Interpolation.o 
+Linear_Interpolation.o : Linear_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+MW_SensorFrequencies.o : MW_SensorFrequencies.f90 Type_Kinds.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Model_Profile_Set.o : Model_Profile_Set.f90 Message_Handler.o Type_Kinds.o 
+O2_zeeman_lbl.o : O2_zeeman_lbl.f90 Tran_matrix_linearBase.o Type_Kinds.o ZEEMAN.o TBMX.o
+Polynomial_Interpolation.o : Polynomial_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+Profile_Utility_Parameters.o : Profile_Utility_Parameters.f90 Fundamental_Constants.o Type_Kinds.o 
+Read_AtmProfile.o : Read_AtmProfile.f90 Units_Conversion.o TmpAtmProfile_netCDF_IO.o TmpAtmProfile_Define.o Message_Handler.o Type_Kinds.o 
+SRF_Define.o : SRF_Define.f90 Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+SRF_netCDF_IO.o : SRF_netCDF_IO.f90 SRF_Define.o String_Utility.o Message_Handler.o Type_Kinds.o 
+Search_Utility.o : Search_Utility.f90 Message_Handler.o Type_Kinds.o 
+Spline_Interpolation.o : Spline_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+String_Utility.o : String_Utility.f90 
+Tran_matrix_linearBase.o : Tran_matrix_linearBase.f90 
+Type_Kinds.o : Type_Kinds.f90 
+Units_Conversion.o : Units_Conversion.f90 Profile_Utility_Parameters.o Atmospheric_Properties.o Message_Handler.o Type_Kinds.o 
+compute_channel_trans.o : compute_channel_trans.f90 Profile_Utility_Parameters.o Read_AtmProfile.o Model_Profile_Set.o interpolate.o profile_conversion.o radiance_ssmis.o Type_Kinds.o ssmis_passband.o
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+interpolate.o : interpolate.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 
+profile_conversion.o : profile_conversion.f90 Message_Handler.o Fundamental_Constants.o Type_Kinds.o 
+radiance_ssmis.o : radiance_ssmis.f90 ssmis_passband.o transmittance_microwave_lbl.o Type_Kinds.o 
+ssmis_passband.o : ssmis_passband.f90 SRF_netCDF_IO.o SRF_Define.o interpolate.o Message_Handler.o Type_Kinds.o 
+transmittance_microwave_lbl.o : transmittance_microwave_lbl.f90 O2_zeeman_lbl.o Type_Kinds.o o2abs.o ABSN2.o ABH2O.o
