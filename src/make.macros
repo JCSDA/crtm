@@ -270,7 +270,7 @@ HPUX_FLAGS = $(HPUX_FLAGS_DEBUG)
 NAME_GFORTRAN = gfortran
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_GFORTRAN_DEBUG = -pg
+LINUX_COMMON_FLAGS_GFORTRAN_DEBUG = 
 LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
 	                     "FL=${NAME_GFORTRAN}" \
 	                     "FC_FLAGS= -c \
@@ -329,7 +329,7 @@ LINUX_FLAGS_GFORTRAN = $(LINUX_FLAGS_GFORTRAN_DEBUG)
 NAME_PGI = pgf95
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee -Mprof=lines
+LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee
 LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                         "FL=${NAME_PGI}" \
                         "FC_FLAGS= -c \
@@ -377,7 +377,7 @@ LINUX_FLAGS_PGI = $(LINUX_FLAGS_PGI_DEBUG)
 NAME_INTEL = ifort
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_INTEL_DEBUG = -pg
+LINUX_COMMON_FLAGS_INTEL_DEBUG = 
 LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                           "FL=${NAME_INTEL}" \
                           "FC_FLAGS= -c \
@@ -472,7 +472,7 @@ LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
 NAME_G95 = g95
 
 # Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_G95_DEBUG = -pg
+LINUX_COMMON_FLAGS_G95_DEBUG = 
 LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
 	                "FL=${NAME_G95}" \
 	                "FC_FLAGS= -c \

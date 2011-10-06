@@ -37,7 +37,8 @@ MODULE CRTM_K_Matrix_Module
                                         CRTM_Surface_IsValid
   USE CRTM_Geometry_Define,       ONLY: CRTM_Geometry_type, &
                                         CRTM_Geometry_IsValid
-  USE CRTM_ChannelInfo_Define,    ONLY: CRTM_ChannelInfo_type
+  USE CRTM_ChannelInfo_Define,    ONLY: CRTM_ChannelInfo_type, &
+                                        CRTM_ChannelInfo_n_Channels
   USE CRTM_Options_Define,        ONLY: CRTM_Options_type, &
                                         CRTM_Options_IsValid
   USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers, &
@@ -332,7 +333,7 @@ CONTAINS
 
     ! If no sensors or channels, simply return
     n_Sensors  = SIZE(ChannelInfo)
-    n_Channels = SUM(ChannelInfo%n_Channels)
+    n_Channels = SUM(CRTM_ChannelInfo_n_Channels(ChannelInfo))
     IF ( n_Sensors == 0 .OR. n_Channels == 0 ) RETURN
 
 
@@ -627,13 +628,22 @@ CONTAINS
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
 
-
-          ! Shorter name
+          ! Channel setup
+          ! ...Skip channel if requested
+          IF ( .NOT. ChannelInfo(n)%Process_Channel(l) ) CYCLE Channel_Loop
+          ! ...Shorter name
           ChannelIndex = ChannelInfo(n)%Channel_Index(l)
-
-
-          ! Increment channel counter
+          ! ...Increment the processed channel counter
           ln = ln + 1
+          ! ...Assign sensor+channel information to output
+          RTSolution(ln,m)%Sensor_Id        = ChannelInfo(n)%Sensor_Id
+          RTSolution(ln,m)%WMO_Satellite_Id = ChannelInfo(n)%WMO_Satellite_Id
+          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id   
+          RTSolution(ln,m)%Sensor_Channel   = ChannelInfo(n)%Sensor_Channel(l)
+          RTSolution_K(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id       
+          RTSolution_K(ln,m)%WMO_Satellite_Id = RTSolution(ln,m)%WMO_Satellite_Id
+          RTSolution_K(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id   
+          RTSolution_K(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel  
 
 
           ! Initialisations
