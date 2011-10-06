@@ -42,6 +42,7 @@ MODULE CRTM_ChannelInfo_Define
   PUBLIC :: CRTM_ChannelInfo_Inspect
   PUBLIC :: CRTM_ChannelInfo_DefineVersion
   PUBLIC :: CRTM_ChannelInfo_n_Channels
+  PUBLIC :: CRTM_ChannelInfo_Channels
   PUBLIC :: CRTM_ChannelInfo_Subset
 
 
@@ -289,21 +290,23 @@ CONTAINS
 !       CRTM_ChannelInfo_n_Channels
 !
 ! PURPOSE:
-!       Elemental function to return the number of channels defined in a
-!       ChannelInfo object.
+!       Elemental function to return the number of channels flagged for 
+!       processing in a ChannelInfo object.
 !
 ! CALLING SEQUENCE:
 !       n_Channels = CRTM_ChannelInfo_n_Channels( ChannelInfo )
 !
 ! OBJECTS:
-!       ChannelInfo: ChannelInfo object which is to have its channels counted.
+!       ChannelInfo: ChannelInfo object which is to have its processed 
+!                    channels counted.
 !                    UNITS:      N/A
 !                    TYPE:       TYPE(CRTM_ChannelInfo_type)
 !                    DIMENSION:  Scalar or any rank
 !                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n_Channels:  The number of defined channels in the ChannelInfo object.
+!       n_Channels:  The number of channels to be processed in the ChannelInfo
+!                    object.
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
 !                    DIMENSION:  Same as input ChannelInfo argument.
@@ -316,6 +319,43 @@ CONTAINS
     INTEGER :: n_Channels
     n_Channels = COUNT(ChannelInfo%Process_Channel)
   END FUNCTION CRTM_ChannelInfo_n_Channels
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_ChannelInfo_Channels
+!
+! PURPOSE:
+!       Pure function to return the list of channels to be processed in a
+!       ChannelInfo object.
+!
+! CALLING SEQUENCE:
+!       Channels = CRTM_ChannelInfo_Channels( ChannelInfo )
+!
+! OBJECTS:
+!       ChannelInfo: ChannelInfo object which is to have its channel list queried.
+!                    UNITS:      N/A
+!                    TYPE:       TYPE(CRTM_ChannelInfo_type)
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Channels:    The list of channels to be processed in the ChannelInfo
+!                    object.
+!                    UNITS:      N/A
+!                    TYPE:       INTEGER
+!                    DIMENSION:  Rank-1
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  PURE FUNCTION CRTM_ChannelInfo_Channels( ChannelInfo ) RESULT( Channels )
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
+    INTEGER :: Channels(CRTM_ChannelInfo_n_Channels(ChannelInfo))
+    Channels = PACK(ChannelInfo%Sensor_Channel, MASK=ChannelInfo%Process_Channel)
+  END FUNCTION CRTM_ChannelInfo_Channels
 
 
 !--------------------------------------------------------------------------------
@@ -415,14 +455,7 @@ CONTAINS
     
     ! Process channel list
     IF ( PRESENT(Channel_Subset) ) THEN
-      ! Allocate subset index array
       n = SIZE(Channel_Subset)
-      ALLOCATE( subset_idx(n),STAT=alloc_stat )
-      IF ( alloc_stat /= 0 ) THEN
-        err_stat = FAILURE
-        msg = 'Error allocating subset_idx array'
-        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
-      END IF
       ! Default: turn off all processing
       ChannelInfo%Process_Channel = .FALSE.
       ! No channels specified
@@ -438,6 +471,13 @@ CONTAINS
            ANY(Channel_Subset > MAXVAL(ChannelInfo%Sensor_Channel)) ) THEN
         err_stat = FAILURE
         msg = 'Specified Channel_Subset contains invalid channels!'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+      END IF
+      ! Allocate subset index array
+      ALLOCATE( subset_idx(n),STAT=alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        err_stat = FAILURE
+        msg = 'Error allocating subset_idx array'
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
       ! Turn on processing for selected channels
