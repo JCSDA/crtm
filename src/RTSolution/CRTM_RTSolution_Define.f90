@@ -22,7 +22,10 @@ MODULE CRTM_RTSolution_Define
   USE Compare_Float_Numbers, ONLY: DEFAULT_N_SIGFIG, &
                                    OPERATOR(.EqualTo.), &
                                    Compares_Within_Tolerance
-  USE CRTM_Parameters      , ONLY: ZERO, ONE, SET
+  USE CRTM_Parameters      , ONLY: ZERO, STRLEN
+  USE SensorInfo_Parameters, ONLY: INVALID_SENSOR, &
+                                   INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID   
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -71,6 +74,11 @@ MODULE CRTM_RTSolution_Define
     LOGICAL :: Is_Allocated = .FALSE.
     ! Dimensions
     INTEGER :: n_Layers = 0  ! K
+    ! Sensor information
+    CHARACTER(STRLEN) :: Sensor_ID        = ''
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    INTEGER           :: Sensor_Channel   = 0
     ! Internal variables. Users do not need to worry about these.
     LOGICAL :: Scattering_Flag = .TRUE.
     INTEGER :: n_Full_Streams  = 0
@@ -258,20 +266,22 @@ CONTAINS
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
     WRITE(*,'(1x,"RTSolution OBJECT")')
     ! Display components
-    WRITE(*,'(3x,"Surface Emissivity      :",1x,es13.6)') RTSolution%Surface_Emissivity          
-    WRITE(*,'(3x,"Up Radiance             :",1x,es13.6)') RTSolution%Up_Radiance                 
-    WRITE(*,'(3x,"Down Radiance           :",1x,es13.6)') RTSolution%Down_Radiance               
-    WRITE(*,'(3x,"Down Solar Radiance     :",1x,es13.6)') RTSolution%Down_Solar_Radiance         
-    WRITE(*,'(3x,"Surface Planck Radiance :",1x,es13.6)') RTSolution%Surface_Planck_Radiance     
+    WRITE(*,'(3x,"Sensor Id               : ",a )') TRIM(RTSolution%Sensor_ID)
+    WRITE(*,'(3x,"Channel                 : ",i0)') RTSolution%Sensor_Channel
+    WRITE(*,'(3x,"Surface Emissivity      : ",es13.6)') RTSolution%Surface_Emissivity          
+    WRITE(*,'(3x,"Up Radiance             : ",es13.6)') RTSolution%Up_Radiance                 
+    WRITE(*,'(3x,"Down Radiance           : ",es13.6)') RTSolution%Down_Radiance               
+    WRITE(*,'(3x,"Down Solar Radiance     : ",es13.6)') RTSolution%Down_Solar_Radiance         
+    WRITE(*,'(3x,"Surface Planck Radiance : ",es13.6)') RTSolution%Surface_Planck_Radiance     
     IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
-      WRITE(*,'(3x,"n_Layers :",1x,i0)') RTSolution%n_Layers
+      WRITE(*,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
       WRITE(*,'(3x,"Upwelling Radiance      :")') 
       WRITE(*,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
       WRITE(*,'(3x,"Layer Optical Depth     :")') 
       WRITE(*,'(5(1x,es13.6,:))') RTSolution%Layer_Optical_Depth
     END IF
-    WRITE(*,'(3x,"Radiance                :",1x,es13.6)') RTSolution%Radiance                   
-    WRITE(*,'(3x,"Brightness Temperature  :",1x,es13.6)') RTSolution%Brightness_Temperature     
+    WRITE(*,'(3x,"Radiance                : ",es13.6)') RTSolution%Radiance                   
+    WRITE(*,'(3x,"Brightness Temperature  : ",es13.6)') RTSolution%Brightness_Temperature     
     
   END SUBROUTINE CRTM_RTSolution_Inspect
 
@@ -349,7 +359,7 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN) :: n_SigFig
     LOGICAL :: is_comparable
     ! Variables
-    INTEGER :: k, n
+    INTEGER :: n
 
     ! Set up
     is_comparable = .FALSE.
@@ -358,6 +368,12 @@ CONTAINS
     ELSE
       n = DEFAULT_N_SIGFIG
     END IF
+
+    ! Check the sensor informatin
+    IF ( (x%Sensor_ID        /= y%Sensor_ID       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) .OR. &
+         (x%Sensor_Channel   /= y%Sensor_Channel  ) ) RETURN
     
     ! Check the components
     IF ( .NOT. Compares_Within_Tolerance(x%Surface_Emissivity     , y%Surface_Emissivity     , n) .OR. &
@@ -420,6 +436,10 @@ CONTAINS
     LOGICAL :: is_equal
 
     is_equal = ( (x%n_Layers == y%n_Layers) .AND. &
+                 (x%Sensor_ID        == y%Sensor_ID       ) .AND. &
+                 (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
+                 (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
+                 (x%Sensor_Channel   == y%Sensor_Channel  ) .AND. &
                  (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
                  (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
                  (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
