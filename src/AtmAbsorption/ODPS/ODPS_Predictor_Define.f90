@@ -995,6 +995,7 @@ CONTAINS
                   PAFV%Ap1, &
                   PAFV%b,   &
                   PAFV%LN_Chi,  &
+                  PAFV%Chi,  &
                    STAT = Allocate_Status(1) )                                    
       IF ( Allocate_Status(1) /= 0 ) THEN                                         
         WRITE( Message, '( "Error deallocating OPTRAN predictor FW variables. STAT = ", i5 )' ) &  
