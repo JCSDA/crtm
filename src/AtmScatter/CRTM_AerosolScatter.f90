@@ -237,7 +237,7 @@ CONTAINS
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     INTEGER,                     INTENT(IN)     :: SensorIndex
     TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AScat
-    TYPE(CRTM_ASVariables_type), INTENT(OUT)    :: ASV
+    TYPE(CRTM_ASVariables_type), INTENT(IN OUT) :: ASV
     ! Function result
     INTEGER :: Error_Status    
     ! Local parameters
