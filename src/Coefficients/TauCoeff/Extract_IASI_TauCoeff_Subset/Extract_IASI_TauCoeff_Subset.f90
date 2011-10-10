@@ -225,7 +225,7 @@ PROGRAM Extract_IASI_TauCoeff_Subset
 
       ! Fill values
       Subset_List = (/(l,l=1,N_IASI_CHANNELS)/)
-      Sensor_ID   = 'iasi_metop-a'
+      WRITE( Sensor_ID,'("iasi",i0,"_metop-a")' ) n_Subset_Channels
 
 
     ! A user specified channel subset

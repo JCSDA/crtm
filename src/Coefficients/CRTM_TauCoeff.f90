@@ -209,6 +209,7 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     CHARACTER(256) :: Process_ID_Tag
+    CHARACTER(256) :: local_path
     CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: TauCoeff_File
     INTEGER :: Allocate_Status, Deallocate_Status
     INTEGER :: n, n_Sensors
@@ -221,6 +222,9 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
+    ! ...Test for the optional file path argument
+    local_path = ''
+    IF ( PRESENT(File_Path) ) local_path = TRIM(ADJUSTL(File_Path))
     ! Create a process ID message tag for
     ! WARNING and FAILURE messages
     IF ( PRESENT(Process_ID) ) THEN
@@ -254,11 +258,9 @@ CONTAINS
     END IF
     
     ! Add the file path
-    IF ( PRESENT(File_Path) ) THEN
-      DO n=1,n_Sensors
-        TauCoeff_File(n) = TRIM(ADJUSTL(File_Path))//TRIM(TauCoeff_File(n))
-      END DO
-    END IF
+    DO n=1,n_Sensors
+      TauCoeff_File(n) = TRIM(local_path)//TRIM(TauCoeff_File(n))
+    END DO
 
     ! set the sensor dimension for structure TC
     TC%n_Sensors = n_Sensors
@@ -509,7 +511,7 @@ CONTAINS
                
           ! file name: i.g. zssmis_n16.TauCoeff.bin
         zfnames(i) = 'z'//TRIM(TC%Sensor_ID(n))//'.TauCoeff.bin'
-        IF( File_Exists(TRIM(File_Path)//TRIM(zfnames(i))) ) THEN
+        IF( File_Exists(TRIM(local_path)//TRIM(zfnames(i))) ) THEN
           TC%ZSensor_LoIndex(n) = i
           TC%n_ODZeeman = i
           i = i + 1

@@ -197,7 +197,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
 
       ! Fill values
       Subset_List = (/(l,l=1,N_AIRS_CHANNELS)/)
-      Sensor_ID   = 'airs_aqua'
+      WRITE( Sensor_ID,'("airs",i0,"_aqua")' ) n_Subset_Channels
 
 
     ! A user specified channel subset
