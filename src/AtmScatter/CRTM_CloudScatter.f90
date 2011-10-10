@@ -247,7 +247,7 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat
-    TYPE(CRTM_CSVariables_type), INTENT(OUT)    :: CSV
+    TYPE(CRTM_CSVariables_type), INTENT(IN OUT) :: CSV
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
