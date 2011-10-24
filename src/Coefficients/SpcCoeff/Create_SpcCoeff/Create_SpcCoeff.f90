@@ -328,8 +328,8 @@ PROGRAM Create_SpcCoeff
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
       ! ...Find the indices of the solar spectrum corresponding to the oSRF begin and end frequencies
-      idx_f1 = NINT((f1 - solar%f1)/df_solar) + 1
-      idx_f2 = NINT((f2 - solar%f1)/df_solar) + 1
+      idx_f1 = NINT((f1 - solar%f1)/df_solar - 0.5_fp) + 1
+      idx_f2 = NINT((f2 - solar%f1)/df_solar - 0.5_fp) + 1
       IF ( (idx_f1 < 1 .OR. idx_f1 > solar%n_Frequencies) .OR. &
            (idx_f2 < 1 .OR. idx_f2 > solar%n_Frequencies) ) THEN
         msg = 'Solar indices for oSRF end points are invalid'
