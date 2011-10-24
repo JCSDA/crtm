@@ -24,6 +24,7 @@ MODULE CRTM_Module
 
   ! Parameter definition module
   USE CRTM_Parameters
+  USE SensorInfo_Parameters
   
   ! The main function modules
   USE CRTM_LifeCycle
