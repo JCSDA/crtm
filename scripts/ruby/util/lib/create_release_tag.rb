@@ -15,6 +15,9 @@
 # --no-commit  (-n)
 #    Create the release working copy, but do not commit to the repository.
 #
+# --noop  (-x)
+#    Output the commands to be used, but do nothing.
+#
 # TAG_WCPATH
 #    The path to an existing working copy of tagged version of the CRTM.
 #
@@ -23,6 +26,7 @@
 #
 #
 # Written by:: Paul van Delst, 10-Aug-2011 (paul.vandelst@noaa.gov)
+# $Id$
 #
 
 require 'optparse'
@@ -66,11 +70,15 @@ end
 options = {}
 # ...Specify defaults
 options[:commit] = true
+options[:noop] = false
 # ...Specify the options
 opts = OptionParser.new do |opts|
-  opts.banner = "Usage: create_release_tag.rb [options] tag_wcpath release_wcpath"
-  opts.on("-n", "--no-commit", "create release, but do not commit to the repository") do |n|
+  opts.banner = "Usage: create_release_tag.rb [options] tag_wcpath release_wcpath\n$Revision$"
+  opts.on("-n", "--no-commit", "Create release, but do not commit to the repository") do |n|
     options[:commit] = n
+  end
+  opts.on("-x", "--noop", "Output the commands to be used, but do nothing") do |x|
+    options[:noop] = x
   end
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
@@ -94,9 +102,8 @@ begin
   tag_wcpath = ARGV[0]
   release_wcpath = ARGV[1]
 
-  svn = Svn_Util::Svn.new()
+  svn = Svn_Util::Svn.new(noop = options[:noop])
   puts svn.versioned?(release_wcpath)
-
 
   # Create the release working copy
   raise "#{release_wcpath} already exists!" if File.directory?(release_wcpath)
