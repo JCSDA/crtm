@@ -99,6 +99,10 @@ MODULE CRTM_Options_Define
     LOGICAL :: Use_Direct_Reflectivity = .FALSE.
     REAL(fp), ALLOCATABLE :: Direct_Reflectivity(:) ! L
 
+    ! User defined number of RT solver streams (streams up + streams down)
+    LOGICAL :: Use_N_Streams = .FALSE.
+    INTEGER :: n_Streams = 0
+
     ! SSU instrument input
     TYPE(SSU_Input_type) :: SSU
 
@@ -378,7 +382,10 @@ CONTAINS
     CALL SSU_Input_Inspect( Options%SSU )
     ! ...Zeeman input
     CALL Zeeman_Input_Inspect( Options%Zeeman )
-        
+    !  nstreams
+    WRITE(*,'(5x,"Use n_Streams flag          :",1x,l1)') Options%Use_N_Streams
+    WRITE(*,'(5x,"n_Streams                   :",1x,i0)') Options%n_Streams
+            
   END SUBROUTINE CRTM_Options_Inspect
 
 

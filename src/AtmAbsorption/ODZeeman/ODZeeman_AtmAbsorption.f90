@@ -7,7 +7,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Yong Han, JCSDA, NOAA/NESDIS 10-NOV-2009
+!       Written by:     Yong Han, 10-Nov-2009
+!                       yong.han@noaa.gov
 !
 
 MODULE ODZeeman_AtmAbsorption
@@ -20,7 +21,7 @@ MODULE ODZeeman_AtmAbsorption
   USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,           ONLY: ZERO, ONE
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
-  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
+  USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type, &
                                        CRTM_GeometryInfo_GetValue
   USE ODPS_Predictor_Define,     ONLY: Predictor_type
@@ -93,7 +94,7 @@ CONTAINS
 !    SUBROUTINE Zeeman_Compute_AtmAbsorption(TC,            &
 !                                            ChannelIndex,  &
 !                                            Predictor,     &       
-!                                            AtmAbsorption )
+!                                            AtmOptics )
 !
 ! INPUT ARGUMENTS:
 !
@@ -116,10 +117,10 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 !   OUTPUT ARGUMENTS:
-!        AtmAbsorption:  Structure containing computed optical depth
+!        AtmOptics:  Structure containing computed optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -127,13 +128,13 @@ CONTAINS
   SUBROUTINE Zeeman_Compute_AtmAbsorption(TC           , &  ! Input
                                           ChannelIndex , &  ! Input     
                                           Predictor    , &  ! Input     
-                                          AtmAbsorption)    ! Output    
+                                          AtmOptics)    ! Output    
 
     ! Arguments
-    TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    INTEGER                      , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
+    TYPE(ODPS_type)          , INTENT(IN)     :: TC
+    INTEGER                  , INTENT(IN)     :: ChannelIndex
+    TYPE(Predictor_type)     , INTENT(IN OUT) :: Predictor
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics
     ! Local variables
     INTEGER  :: n_User_Layers
     REAL(fp) :: OD_Path(0:Predictor%n_Layers)
@@ -184,7 +185,7 @@ CONTAINS
 
     ! Optical depth profile scaled to zenith.  Note that the scaling
     ! factor is the surface secant zenith angle.
-    AtmAbsorption%Optical_Depth = (User_OD_Path(1:n_User_Layers) - &
+    AtmOptics%Optical_Depth = (User_OD_Path(1:n_User_Layers) - &
                                    User_OD_Path(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
@@ -205,7 +206,7 @@ CONTAINS
 !                                             ChannelIndex,  &
 !                                             Predictor,     &  
 !                                             Predictor_TL,  &  
-!                                             AtmAbsorption_TL )
+!                                             AtmOptics_TL )
 !
 ! INPUT ARGUMENTS:
 !
@@ -234,10 +235,10 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(INOUT)
 !
 !   OUTPUT ARGUMENTS:
-!      AtmAbsorption_TL: Structure containing computed TL optical depth
+!      AtmOptics_TL: Structure containing computed TL optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -246,13 +247,13 @@ CONTAINS
                                              ChannelIndex ,    &  ! Input    
                                              Predictor    ,    &  ! Input    
                                              Predictor_TL,     &  ! Input       
-                                             AtmAbsorption_TL)    ! Output   
+                                             AtmOptics_TL)    ! Output   
     ! Arguments
-    TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    INTEGER                      , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
-    TYPE(Predictor_type)         , INTENT(INOUT)  :: Predictor_TL
-    TYPE(CRTM_AtmAbsorption_type), INTENT(INOUT)  :: AtmAbsorption_TL
+    TYPE(ODPS_type)          , INTENT(IN)     :: TC
+    INTEGER                  , INTENT(IN)     :: ChannelIndex
+    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor
+    TYPE(Predictor_type)     , INTENT(INOUT)  :: Predictor_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(INOUT)  :: AtmOptics_TL
     ! Local variables
     INTEGER  :: n_User_Layers
     REAL(fp) :: OD_TL(Predictor%n_Layers)  
@@ -286,7 +287,7 @@ CONTAINS
                                    OD_Path_TL,                      &
                                    User_OD_Path_TL)
 
-    AtmAbsorption_TL%Optical_Depth = (User_OD_Path_TL(1:n_User_Layers) - &
+    AtmOptics_TL%Optical_Depth = (User_OD_Path_TL(1:n_User_Layers) - &
                                    User_OD_Path_TL(0:n_User_Layers-1)) / &
                                    Predictor%Secant_Zenith_Surface
 
@@ -306,7 +307,7 @@ CONTAINS
 !        CALL Zeeman_Compute_AtmAbsorption_AD(TC,           &
 !                                      ChannelIndex,        &
 !                                      Predictor,           &
-!                                      AtmAbsorption_AD,    &  
+!                                      AtmOptics_AD,    &  
 !                                      Predictor_AD)    
 !
 ! INPUT ARGUMENTS:
@@ -336,10 +337,10 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(INOUT)
 !
 !   OUTPUT ARGUMENTS:
-!      AtmAbsorption_AD: Structure containing computed AD optical depth
+!      AtmOptics_AD: Structure containing computed AD optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -347,14 +348,14 @@ CONTAINS
   SUBROUTINE Zeeman_Compute_AtmAbsorption_AD( TC           ,    &  ! Input
                                               ChannelIndex ,    &  ! Input   
                                               Predictor    ,    &  ! Input   
-                                              AtmAbsorption_AD, &  ! Input   
+                                              AtmOptics_AD, &  ! Input   
                                               Predictor_AD)        ! Output  
     ! Arguments
-    TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    INTEGER                      , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_AD
-    TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor_AD
+    TYPE(ODPS_type)          , INTENT(IN)     :: TC
+    INTEGER                  , INTENT(IN)     :: ChannelIndex
+    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(Predictor_type)     , INTENT(IN OUT) :: Predictor_AD
     ! Local variables
     INTEGER  :: n_User_Layers, k
     REAL(fp) :: OD_AD(Predictor%n_Layers)                 
@@ -372,11 +373,11 @@ CONTAINS
     User_OD_Path_AD(n_User_Layers) = ZERO
     DO k = n_User_Layers, 1, -1
       User_OD_Path_AD(k) = User_OD_Path_AD(k) &
-                           + AtmAbsorption_AD%Optical_Depth(k)/Predictor%Secant_Zenith_Surface
+                           + AtmOptics_AD%Optical_Depth(k)/Predictor%Secant_Zenith_Surface
       ! combined with initilization
-      User_OD_Path_AD(k-1) = -AtmAbsorption_AD%Optical_Depth(k)/Predictor%Secant_Zenith_Surface
+      User_OD_Path_AD(k-1) = -AtmOptics_AD%Optical_Depth(k)/Predictor%Secant_Zenith_Surface
     END DO
-    AtmAbsorption_AD%Optical_Depth = ZERO
+    AtmOptics_AD%Optical_Depth = ZERO
 
     OD_Path_AD = ZERO          
     CALL Interpolate_Profile_F1_AD(Predictor%PAFV%ODPS2User_Idx,       &

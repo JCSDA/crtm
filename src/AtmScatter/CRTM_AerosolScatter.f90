@@ -7,8 +7,8 @@
 !       
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 15-Feb-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 15-Feb-2005
+!                       paul.vandelst@noaa.gov
 !       Modified by     Quanhua Liu, 03-Oct-2006
 !                       Quanhua.Liu@noaa.gov
 !                       
@@ -59,12 +59,7 @@ MODULE CRTM_AerosolScatter
                                       LPoly       , &
                                       LPoly_TL    , &
                                       LPoly_AD
-  USE CRTM_AtmScatter_Define,   ONLY: CRTM_AtmScatter_type      , &
-                                      CRTM_Associated_AtmScatter, &
-                                      CRTM_Destroy_AtmScatter   , &
-                                      CRTM_Allocate_AtmScatter  , &
-                                      CRTM_Assign_AtmScatter    , &
-                                      CRTM_Zero_AtmScatter
+  USE CRTM_AtmOptics_Define,    ONLY: CRTM_AtmOptics_type
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -75,28 +70,18 @@ MODULE CRTM_AerosolScatter
   ! Everything private by default
   PRIVATE
   ! Data types
-  PUBLIC :: CRTM_AtmScatter_type
   PUBLIC :: CRTM_ASVariables_type
   ! Procedures
   PUBLIC :: CRTM_Compute_AerosolScatter
   PUBLIC :: CRTM_Compute_AerosolScatter_TL
   PUBLIC :: CRTM_Compute_AerosolScatter_AD
-  PUBLIC :: CRTM_Associated_AtmScatter
-  PUBLIC :: CRTM_Destroy_AtmScatter
-  PUBLIC :: CRTM_Allocate_AtmScatter
-  PUBLIC :: CRTM_Assign_AtmScatter
-  PUBLIC :: CRTM_Zero_AtmScatter
 
-!  ! FOR TESTING ONLY
-!  PUBLIC :: Get_Aerosol_Opt
-!  PUBLIC :: Get_Aerosol_Opt_TL
-!  PUBLIC :: Get_Aerosol_Opt_AD
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'  
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
@@ -172,7 +157,7 @@ CONTAINS
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -192,11 +177,11 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AerosolScatter: CRTM_AtmScatter structure containing the aerosol
+!        AerosolScatter: CRTM_AtmOptics structure containing the aerosol
 !                        absorption and scattering properties required by
 !                        the radiative transfer.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmScatter_type)
+!                        TYPE:       CRTM_AtmOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -205,7 +190,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_AerosolScatter module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_ASVariables_type)
+!                        TYPE:       CRTM_ASVariables_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -236,7 +221,7 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     INTEGER,                     INTENT(IN)     :: SensorIndex
-    TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AScat
+    TYPE(CRTM_AtmOptics_type),   INTENT(IN OUT) :: AScat
     TYPE(CRTM_ASVariables_type), INTENT(IN OUT) :: ASV
     ! Function result
     INTEGER :: Error_Status    
@@ -397,22 +382,22 @@ CONTAINS
 !       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
 !                           profile data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
+!                           TYPE:       CRTM_Atmosphere_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AerosolScatter:     CRTM_AtmScatter structure containing the forward model
+!       AerosolScatter:     CRTM_AtmOptics structure containing the forward model
 !                           aerosol absorption and scattering properties required
 !                           for radiative transfer.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmScatter_type)
+!                           TYPE:       CRTM_AtmOptics_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:      CRTM Atmosphere structure containing the tangent-linear
 !                           atmospheric state data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
+!                           TYPE:       CRTM_Atmosphere_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
@@ -437,16 +422,16 @@ CONTAINS
 !                           The contents of this structure are NOT accessible
 !                           outside of the CRTM_AerosolScatter module.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_ASVariables_type)
+!                           TYPE:       CRTM_ASVariables_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AerosolScatter_TL: CRTM_AtmScatter structure containing the tangent-linear
+!        AerosolScatter_TL: CRTM_AtmOptics structure containing the tangent-linear
 !                           aerosol absorption and scattering properties required
 !                           for radiative transfer.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmScatter_type)
+!                           TYPE:       CRTM_AtmOptics_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
@@ -478,11 +463,11 @@ CONTAINS
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: AScat
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: AScat
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm_TL
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: AScat_TL
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AScat_TL
     TYPE(CRTM_ASVariables_type), INTENT(IN)     :: ASV
     ! Function result
     INTEGER :: Error_Status
@@ -603,25 +588,25 @@ CONTAINS
 !       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
 !                           profile data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
+!                           TYPE:       CRTM_Atmosphere_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AerosolScatter:     CRTM_AtmScatter structure containing the forward model
+!       AerosolScatter:     CRTM_AtmOptics structure containing the forward model
 !                           aerosol absorption and scattering properties required
 !                           for radiative transfer.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmScatter_type)
+!                           TYPE:       CRTM_AtmOptics_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       AerosolScatter_AD:  CRTM_AtmScatter structure containing the adjoint
+!       AerosolScatter_AD:  CRTM_AtmOptics structure containing the adjoint
 !                           aerosol absorption and scattering properties.
 !                           **NOTE: On EXIT from this function, the contents of
 !                                   this structure may be modified (e.g. set to
 !                                   zero.)
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmScatter_type)
+!                           TYPE:       CRTM_AtmOptics_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
@@ -645,7 +630,7 @@ CONTAINS
 !                           The contents of this structure are NOT accessible
 !                           outside of the CRTM_AerosolScatter module.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_ASVariables_type)
+!                           TYPE:       CRTM_ASVariables_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
@@ -653,7 +638,7 @@ CONTAINS
 !       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
 !                           atmospheric state data.
 !                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
+!                           TYPE:       CRTM_Atmosphere_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN OUT)
 !
@@ -688,8 +673,8 @@ CONTAINS
   RESULT( Error_Status )               
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmScatter_type),  INTENT(IN)     :: AScat
-    TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AScat_AD
+    TYPE(CRTM_AtmOptics_type),   INTENT(IN)     :: AScat
+    TYPE(CRTM_AtmOptics_type),   INTENT(IN OUT) :: AScat_AD
     INTEGER,                     INTENT(IN)     :: SensorIndex
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Atmosphere_type),  INTENT(IN OUT) :: Atm_AD
@@ -872,14 +857,14 @@ CONTAINS
                               pcoeff        , &  ! Output spherical Legendre coefficients
                               asi             )  ! Output interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter
-    REAL(fp)                  , INTENT(IN)     :: Frequency
-    INTEGER                   , INTENT(IN)     :: Aerosol_Type
-    REAL(fp)                  , INTENT(IN)     :: Reff
-    REAL(fp)                  , INTENT(OUT)    :: ke
-    REAL(fp)                  , INTENT(OUT)    :: w
-    REAL(fp)                  , INTENT(IN OUT) :: pcoeff(0:,:)
-    TYPE(ASinterp_type)       , INTENT(IN OUT) :: asi
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AerosolScatter
+    REAL(fp)                 , INTENT(IN)     :: Frequency
+    INTEGER                  , INTENT(IN)     :: Aerosol_Type
+    REAL(fp)                 , INTENT(IN)     :: Reff
+    REAL(fp)                 , INTENT(OUT)    :: ke
+    REAL(fp)                 , INTENT(OUT)    :: w
+    REAL(fp)                 , INTENT(IN OUT) :: pcoeff(0:,:)
+    TYPE(ASinterp_type)      , INTENT(IN OUT) :: asi
     ! Local variables
     INTEGER  :: k, l, m
 
@@ -945,13 +930,13 @@ CONTAINS
                                 asi                )  ! Input interpolation data
 
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_TL
-    INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN)     :: Reff_TL
-    REAL(fp),                   INTENT(OUT)    :: ke_TL
-    REAL(fp),                   INTENT(OUT)    :: w_TL
-    REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
-    TYPE(ASinterp_type),        INTENT(IN)     :: asi
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AerosolScatter_TL
+    INTEGER ,                  INTENT(IN)     :: Aerosol_Type
+    REAL(fp),                  INTENT(IN)     :: Reff_TL
+    REAL(fp),                  INTENT(OUT)    :: ke_TL
+    REAL(fp),                  INTENT(OUT)    :: w_TL
+    REAL(fp),                  INTENT(IN OUT) :: pcoeff_TL(0:,:)
+    TYPE(ASinterp_type),       INTENT(IN)     :: asi
     ! Local variables
     INTEGER  :: k, l, m
     REAL(fp) :: f_int_TL, r_int_TL
@@ -1042,13 +1027,13 @@ CONTAINS
                                  Reff_AD          , & ! AD Output effective radius
                                  asi                ) ! Input interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: AerosolScatter_AD
-    INTEGER ,                   INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                   INTENT(IN OUT) :: ke_AD            ! AD Input
-    REAL(fp),                   INTENT(IN OUT) :: w_AD             ! AD Input
-    REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input
-    REAL(fp),                   INTENT(IN OUT) :: Reff_AD          ! AD Output
-    TYPE(ASinterp_type),        INTENT(IN)     :: asi
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AerosolScatter_AD
+    INTEGER ,                  INTENT(IN)     :: Aerosol_Type
+    REAL(fp),                  INTENT(IN OUT) :: ke_AD            ! AD Input
+    REAL(fp),                  INTENT(IN OUT) :: w_AD             ! AD Input
+    REAL(fp),                  INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input
+    REAL(fp),                  INTENT(IN OUT) :: Reff_AD          ! AD Output
+    TYPE(ASinterp_type),       INTENT(IN)     :: asi
     ! Local variables
     INTEGER  :: k, l, m
     REAL(fp) :: f_int_AD, r_int_AD

@@ -23,7 +23,7 @@ MODULE ODPS_AtmAbsorption
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type, H2O_ID
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type, &
                                        CRTM_GeometryInfo_GetValue
-  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmAbsorption_type => CRTM_AtmScatter_type
+  USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type
   USE ODPS_Define,               ONLY: ODPS_type,                &
                                        SIGNIFICANCE_OPTRAN
   USE ODPS_Predictor,            ONLY: Compute_Predictor,        &
@@ -157,7 +157,7 @@ CONTAINS
 !        AtmAbsorption:  Structure containing computed optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -176,7 +176,7 @@ CONTAINS
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmAbsorption
     ! Local variables
     INTEGER  :: n_Layers, n_User_Layers
     INTEGER  :: i          ! coefficent index
@@ -356,7 +356,7 @@ CONTAINS
 !        AtmAbsorption:  Structure containing computed optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -377,7 +377,7 @@ CONTAINS
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(INOUT)  :: Predictor_TL
-    TYPE(CRTM_AtmAbsorption_type), INTENT(INOUT)  :: AtmAbsorption_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(INOUT)  :: AtmAbsorption_TL
     ! Local variables
     INTEGER  :: n_Layers, n_User_Layers
     INTEGER  :: i          ! coefficent index
@@ -524,7 +524,7 @@ CONTAINS
 !        AtmAbsorption:  Structure containing computed optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -544,7 +544,7 @@ CONTAINS
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
     INTEGER                      , INTENT(IN)     :: ChannelIndex
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
-    TYPE(CRTM_AtmAbsorption_type), INTENT(IN OUT) :: AtmAbsorption_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmAbsorption_AD
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor_AD
     ! Local variables
     INTEGER  :: n_Layers, n_User_Layers

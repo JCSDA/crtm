@@ -24,7 +24,8 @@ MODULE CRTM_Tangent_Linear_Module
                                         MAX_N_STOKES        , &
                                         MAX_N_ANGLES        , &
                                         MAX_N_AZIMUTH_FOURIER, &
-                                        MAX_SOURCE_ZENITH_ANGLE
+                                        MAX_SOURCE_ZENITH_ANGLE, &
+                                        MAX_N_STREAMS   
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsVisibleSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
@@ -53,17 +54,11 @@ MODULE CRTM_Tangent_Linear_Module
                                         CRTM_Compute_Predictors_TL   , &
                                         CRTM_Predictor_type          , &
                                         CRTM_APVariables_type    
-
-! **** REPLACE
-  USE CRTM_AtmScatter_Define,     ONLY: CRTM_AtmOptics_type     => CRTM_AtmScatter_type    , &
-                                        CRTM_Allocate_AtmOptics => CRTM_Allocate_AtmScatter, &
-                                        CRTM_Destroy_AtmOptics  => CRTM_Destroy_AtmScatter
-! **** WITH THE FOLLOWING
-!  USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type    , &
-!                                        CRTM_Allocate_AtmOptics, &
-!                                        CRTM_Destroy_AtmOptics 
-! ****
-
+  USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type      , &
+                                        CRTM_AtmOptics_Associated, &
+                                        CRTM_AtmOptics_Create    , &
+                                        CRTM_AtmOptics_Destroy   , &
+                                        CRTM_AtmOptics_Zero
   USE CRTM_AerosolScatter,        ONLY: CRTM_ASVariables_type         , &
                                         CRTM_Compute_AerosolScatter   , &
                                         CRTM_Compute_AerosolScatter_TL
@@ -270,7 +265,7 @@ CONTAINS
     CHARACTER(256) :: Message
     LOGICAL :: Options_Present
     LOGICAL :: Check_Input
-    LOGICAL :: User_Emissivity, User_Direct_Reflectivity
+    LOGICAL :: User_Emissivity, User_Direct_Reflectivity, User_N_Streams
     LOGICAL :: User_AntCorr, Compute_AntCorr
     LOGICAL :: Apply_NLTE_Correction
     LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
@@ -399,6 +394,7 @@ CONTAINS
       User_Emissivity       = Default_Options%Use_Emissivity
       User_AntCorr          = Default_Options%Use_Antenna_Correction
       Apply_NLTE_Correction = Default_Options%Apply_NLTE_Correction
+      User_N_Streams        = Default_Options%Use_N_Streams
       ! ...Check the Options argument
       IF (Options_Present) THEN
         ! Override input checker with option
@@ -427,6 +423,19 @@ CONTAINS
         AncillaryInput%Zeeman = Options(m)%Zeeman
         ! Copy over surface optics input
         SfcOptics%Use_New_MWSSEM = .NOT. Options(m)%Use_Old_MWSSEM
+        ! Check if n_Streams should be used
+        User_N_Streams = Options(m)%Use_N_Streams
+        ! Check value for nstreams
+        IF ( User_N_Streams ) THEN
+          IF ( Options(m)%n_Streams <= 0 .OR. MOD(Options(m)%n_Streams,2) /= 0 .OR. & 
+               Options(m)%n_Streams > MAX_N_STREAMS ) THEN
+              Error_Status = FAILURE
+              WRITE( Message,'( "Input Options n_Streams (", i0, ") is invalid" )' ) &
+                     Options(m)%n_Streams
+              CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+              RETURN
+          END IF
+        END IF
       END IF
 
 
@@ -497,16 +506,16 @@ CONTAINS
         RETURN
       END IF
       ! ...Allocate the atmospheric optics structures based on Atm extension
-      AllocStatus(1)   =CRTM_Allocate_AtmOptics( Atm%n_Layers        , &  ! Input
-                                                 MAX_N_LEGENDRE_TERMS, &  ! Input
-                                                 MAX_N_PHASE_ELEMENTS, &  ! Input
-                                                 AtmOptics             )  ! Output
-      AllocStatus_TL(1)=CRTM_Allocate_AtmOptics( Atm%n_Layers        , &  ! Input
-                                                 MAX_N_LEGENDRE_TERMS, &  ! Input
-                                                 MAX_N_PHASE_ELEMENTS, &  ! Input
-                                                 AtmOptics_TL          )  ! Output
-      IF ( AllocStatus(1)    /= SUCCESS .OR. &
-           AllocStatus_TL(1) /= SUCCESS ) THEN
+      CALL CRTM_AtmOptics_Create( AtmOptics, &
+                                  Atm%n_Layers        , &
+                                  MAX_N_LEGENDRE_TERMS, &
+                                  MAX_N_PHASE_ELEMENTS  )
+      CALL CRTM_AtmOptics_Create( AtmOptics_TL, &
+                                  Atm%n_Layers        , &
+                                  MAX_N_LEGENDRE_TERMS, &
+                                  MAX_N_PHASE_ELEMENTS  )
+      IF ( .NOT. CRTM_AtmOptics_Associated( Atmoptics ) .OR. &
+           .NOT. CRTM_AtmOptics_Associated( Atmoptics_TL ) ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error allocating AtmOptics data structures for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
@@ -623,22 +632,21 @@ CONTAINS
 
 
           ! Initialisations
-          AtmOptics%Optical_Depth         = ZERO
-          AtmOptics%Phase_Coefficient     = ZERO
-          AtmOptics%Delta_Truncation      = ZERO
-          AtmOptics%Single_Scatter_Albedo = ZERO
-   
-          AtmOptics_TL%Optical_Depth         = ZERO
-          AtmOptics_TL%Phase_Coefficient     = ZERO
-          AtmOptics_TL%Delta_Truncation      = ZERO
-          AtmOptics_TL%Single_Scatter_Albedo = ZERO          
+          CALL CRTM_AtmOptics_Zero( AtmOptics )
+          CALL CRTM_AtmOptics_Zero( AtmOptics_TL )
 
 
           ! Determine the number of streams (n_Full_Streams) in up+downward directions
-          n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
-                                                  SensorIndex     , &  ! Input
-                                                  ChannelIndex    , &  ! Input
-                                                  RTSolution(ln,m)  )  ! Output
+          IF ( User_N_Streams ) THEN
+            n_Full_Streams = Options(m)%n_Streams
+            RTSolution(ln,m)%n_Full_Streams = n_Full_Streams + 2 
+            RTSolution(ln,m)%Scattering_Flag = .TRUE.
+          ELSE
+            n_Full_Streams = CRTM_Compute_nStreams( Atm             , &  ! Input
+                                                    SensorIndex     , &  ! Input
+                                                    ChannelIndex    , &  ! Input
+                                                    RTSolution(ln,m)  )  ! Output
+          END IF
           ! ...Transfer stream count to scattering structures
           AtmOptics%n_Legendre_Terms    = n_Full_Streams
           AtmOptics_TL%n_Legendre_Terms = n_Full_Streams
@@ -889,14 +897,8 @@ CONTAINS
 
       ! Deallocate local sensor independent data structures   
       ! ...Atmospheric optics
-      AllocStatus_TL(1)=CRTM_Destroy_AtmOptics( AtmOptics_TL )
-      AllocStatus(1)   =CRTM_Destroy_AtmOptics( AtmOptics )
-      IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_TL(1) /= SUCCESS ) THEN
-        Error_Status = FAILURE                                                              
-        WRITE( Message,'("Error deallocating AtmOptics data structures for profile #",i0)' ) m  
-        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-        RETURN
-      END IF                                    
+      CALL CRTM_AtmOptics_Destroy( AtmOptics )
+      CALL CRTM_AtmOptics_Destroy( AtmOptics_TL )
 
     END DO Profile_Loop
 

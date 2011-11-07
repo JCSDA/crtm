@@ -16,42 +16,35 @@ MODULE CRTM_RTSolution
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,                ONLY: fp
-  USE Message_Handler,           ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters,           ONLY: SET, ZERO, ONE, TWO, PI, &
-                                       MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
-                                       DEGREES_TO_RADIANS, &
-                                       SECANT_DIFFUSIVITY, &
-                                       SCATTERING_ALBEDO_THRESHOLD, &
-                                       OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SpcCoeff,             ONLY: SC, &
-                                       SpcCoeff_IsSolar            , &
-                                       SpcCoeff_IsZeeman           , &
-                                       SpcCoeff_IsMicrowaveSensor  , &
-                                       SpcCoeff_IsInfraredSensor   , &
-                                       SpcCoeff_IsVisibleSensor    , &
-                                       SpcCoeff_IsUltravioletSensor
-  USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
-  USE CRTM_Surface_Define,       ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
-  USE CRTM_Planck_Functions,     ONLY: CRTM_Planck_Radiance      , &
-                                       CRTM_Planck_Radiance_TL   , &
-                                       CRTM_Planck_Radiance_AD   , &
-                                       CRTM_Planck_Temperature   , &
-                                       CRTM_Planck_Temperature_TL, &
-                                       CRTM_Planck_Temperature_AD
-! **** REPLACE 
-  USE CRTM_AtmScatter_Define,    ONLY: CRTM_AtmOptics_type => CRTM_AtmScatter_type 
-! **** WITH THE FOLLOWING 
-!  USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type 
-! ****
-
+  USE Type_Kinds,               ONLY: fp
+  USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,          ONLY: SET, ZERO, ONE, TWO, PI, &
+                                      MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
+                                      DEGREES_TO_RADIANS, &
+                                      SECANT_DIFFUSIVITY, &
+                                      SCATTERING_ALBEDO_THRESHOLD, &
+                                      OPTICAL_DEPTH_THRESHOLD
+  USE CRTM_SpcCoeff,            ONLY: SC, &
+                                      SpcCoeff_IsSolar            , &
+                                      SpcCoeff_IsZeeman           , &
+                                      SpcCoeff_IsMicrowaveSensor  , &
+                                      SpcCoeff_IsInfraredSensor   , &
+                                      SpcCoeff_IsVisibleSensor    , &
+                                      SpcCoeff_IsUltravioletSensor
+  USE CRTM_Atmosphere_Define,   ONLY: CRTM_Atmosphere_type
+  USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_Planck_Functions,    ONLY: CRTM_Planck_Radiance      , &
+                                      CRTM_Planck_Radiance_TL   , &
+                                      CRTM_Planck_Radiance_AD   , &
+                                      CRTM_Planck_Temperature   , &
+                                      CRTM_Planck_Temperature_TL, &
+                                      CRTM_Planck_Temperature_AD
+  USE CRTM_AtmOptics_Define,    ONLY: CRTM_AtmOptics_type 
   USE CRTM_SfcOptics_Define   , ONLY: CRTM_SfcOptics_type
   USE CRTM_SfcOptics          , ONLY: CRTM_Compute_SfcOptics   , &
                                       CRTM_Compute_SfcOptics_TL, &
                                       CRTM_Compute_SfcOptics_AD
-                                      
-  
   USE CRTM_RTSolution_Define  , ONLY: CRTM_RTSolution_type      , &
                                       OPERATOR(==)              , &
                                       CRTM_RTSolution_Associated, &

@@ -25,15 +25,11 @@ MODULE CRTM_AtmAbsorption
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type, &
                                         CRTM_GeometryInfo_GetValue
-! **** REPLACE
-  USE CRTM_AtmScatter_Define,     ONLY: CRTM_AtmOptics_type => CRTM_AtmScatter_type
-! **** WITH THE FOLLOWING
-!  USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type
-! ****
-  USE ODAS_AtmAbsorption,         ONLY: ODAS_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
-                                        ODAS_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &
-                                        ODAS_Compute_AtmAbsorption_AD => Compute_AtmAbsorption_AD, &
-                                        ODAS_AAVariables_type      => AAVariables_type                                      
+  USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type
+  USE ODAS_AtmAbsorption,         ONLY: ODAS_AAVar_type => iVar_type , &
+                                        ODAS_Compute_AtmAbsorption   , &
+                                        ODAS_Compute_AtmAbsorption_TL, &
+                                        ODAS_Compute_AtmAbsorption_AD
   USE ODAS_Predictor,             ONLY: ODAS_Compute_Predictors    => Compute_Predictors,    &
                                         ODAS_Compute_Predictors_TL => Compute_Predictors_TL, &
                                         ODAS_Compute_Predictors_AD => Compute_Predictors_AD, &
@@ -54,12 +50,12 @@ MODULE CRTM_AtmAbsorption
                                         ODPS_Compute_Predictors_AD,    &
                                         ALLOW_OPTRAN
 
-  USE ODSSU_AtmAbsorption,        ONLY: ODSSU_Compute_AtmAbsorption    => Compute_AtmAbsorption,    &
-                                        ODSSU_Compute_AtmAbsorption_TL => Compute_AtmAbsorption_TL, &
-                                        ODSSU_Compute_AtmAbsorption_AD => Compute_AtmAbsorption_AD, &
-                                        ODSSU_AAVariables_type         => AAVariables_type, &
-                                        ODSSU_Compute_AAV                                       
-                            
+  USE ODSSU_AtmAbsorption,        ONLY: ODSSU_AAVar_type => iVar_type , &
+                                        ODSSU_Compute_Weights         , &
+                                        ODSSU_Compute_AtmAbsorption   , &
+                                        ODSSU_Compute_AtmAbsorption_TL, &
+                                        ODSSU_Compute_AtmAbsorption_AD
+
   USE ODPS_Predictor,             ONLY: ODPS_Predictor_type        => Predictor_type,        &
                                         ODPS_APVariables_type,                               &
                                         ODPS_Get_n_Components      => Get_n_Components ,     &
@@ -70,15 +66,15 @@ MODULE CRTM_AtmAbsorption
                                         ODPS_Destroy_PAFV          => Destroy_PAFV,          &
                                         ODPS_Allocate_PAFV         => Allocate_PAFV,         &
                                         ODPS_Get_SaveFWVFlag       => Get_SaveFWVFlag
-                                         
+
   USE ODZeeman_AtmAbsorption,     ONLY: Zeeman_Compute_AtmAbsorption,    &
                                         Zeeman_Compute_AtmAbsorption_TL, &
                                         Zeeman_Compute_AtmAbsorption_AD, &
                                         Zeeman_Compute_Predictors,     &
                                         Zeeman_Compute_Predictors_TL,  &
                                         Zeeman_Compute_Predictors_AD,  &
-                                        Get_NumOfZComponents, &      
-                                        Get_NumOfZAbsorbers,  &      
+                                        Get_NumOfZComponents, &
+                                        Get_NumOfZAbsorbers,  &
                                         Get_NumOfZPredictors, &
                                         Is_Zeeman_Channel,    &
                                         Is_ODZeeman
@@ -125,7 +121,7 @@ MODULE CRTM_AtmAbsorption
     TYPE(ODAS_Predictor_type)   :: ODAS
     TYPE(ODPS_Predictor_type)   :: ODPS
     TYPE(ODPS_Predictor_type)   :: ODZeeman
-    
+
   END TYPE CRTM_Predictor_type
 
   ! Structure to hold AtmAbsorption
@@ -133,9 +129,9 @@ MODULE CRTM_AtmAbsorption
   ! FWD, TL, and AD calls
   TYPE :: CRTM_AAVariables_type
     PRIVATE
-    TYPE(ODAS_AAVariables_type)   :: ODAS
+    TYPE(ODAS_AAVar_type)   :: ODAS
     TYPE(ODPS_AAVariables_type)   :: ODPS
-    TYPE(ODSSU_AAVariables_type)  :: ODSSU
+    TYPE(ODSSU_AAVar_type)  :: ODSSU
   END TYPE CRTM_AAVariables_type
 
   ! Structure to hold Predictor
@@ -147,7 +143,7 @@ MODULE CRTM_AtmAbsorption
     TYPE(ODPS_APVariables_type)   :: ODPS
   END TYPE CRTM_APVariables_type
 
-  
+
 CONTAINS
 
 
@@ -206,7 +202,7 @@ CONTAINS
 !       Predictor:       Structure containing the integrated absorber and
 !                        predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_Predictor_type 
+!                        TYPE:       CRTM_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -214,7 +210,7 @@ CONTAINS
 !        AtmOptics:      Structure containing computed optical depth
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_AtmOptics_type 
+!                        TYPE:       CRTM_AtmOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -223,7 +219,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of this module.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_AAVariables_type 
+!                        TYPE:       CRTM_AAVariables_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -236,11 +232,11 @@ CONTAINS
 
   SUBROUTINE CRTM_Compute_AtmAbsorption( &
     SensorIndex   , &  ! Input
-    ChannelIndex  , &  ! Input 
+    ChannelIndex  , &  ! Input
     AncillaryInput, &  ! Input
-    Predictor     , &  ! Input                       
-    AtmOptics     , &  ! Output                      
-    AAV             )  ! Internal variable output    
+    Predictor     , &  ! Input
+    AtmOptics     , &  ! Output
+    AAV             )  ! Internal variable output
     ! Arguments
     INTEGER                       , INTENT(IN)     :: SensorIndex
     INTEGER                       , INTENT(IN)     :: ChannelIndex
@@ -256,19 +252,19 @@ CONTAINS
     IF( idx > 0 )THEN
       IF( Is_Zeeman_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
         CALL Zeeman_Compute_AtmAbsorption( &
-               TC%ODZeeman(idx)  , &  ! Input  
-               ChannelIndex      , &  ! Input 
-               Predictor%ODZeeman, &  ! Input                          
+               TC%ODZeeman(idx)  , &  ! Input
+               ChannelIndex      , &  ! Input
+               Predictor%ODZeeman, &  ! Input
                AtmOptics           )  ! Output
         RETURN
-      END IF 
+      END IF
     END IF
-    
-    
+
+
     ! Call required model
     idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption( &
@@ -288,11 +284,11 @@ CONTAINS
 
       ! SSU instrument specific
       CASE( ODSSU_ALGORITHM )
-        CALL ODSSU_Compute_AAV( &
+        CALL ODSSU_Compute_Weights( &
                AncillaryInput%SSU, &  ! Input
                SensorIndex       , &  ! Input
                ChannelIndex      , &  ! Input
-               AAV%ODSSU           )  ! Internal variable output     
+               AAV%ODSSU           )  ! Internal variable output
 
         ! ...Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
@@ -313,7 +309,7 @@ CONTAINS
         END SELECT
     END SELECT
 
-  END SUBROUTINE CRTM_Compute_AtmAbsorption               
+  END SUBROUTINE CRTM_Compute_AtmAbsorption
 
 
 !------------------------------------------------------------------------------
@@ -373,7 +369,7 @@ CONTAINS
 !                           The contents of this structure are NOT accessible
 !                           outside of this module.
 !                           UNITS:      N/A
-!                           TYPE:       CRTM_AAVariables_type 
+!                           TYPE:       CRTM_AAVariables_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
@@ -427,7 +423,7 @@ CONTAINS
     ! Call required model
     idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption_TL( &
@@ -449,7 +445,7 @@ CONTAINS
 
       ! SSU instrument specific
       CASE( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -471,7 +467,7 @@ CONTAINS
         END SELECT
     END SELECT
 
-  END SUBROUTINE CRTM_Compute_AtmAbsorption_TL               
+  END SUBROUTINE CRTM_Compute_AtmAbsorption_TL
 
 
 !--------------------------------------------------------------------------------
@@ -573,26 +569,26 @@ CONTAINS
       IF( Is_Zeeman_Channel(TC%ODZeeman(idx), ChannelIndex) )THEN
         CALL Zeeman_Compute_AtmAbsorption_AD( &
                TC%ODZeeman(idx)     , &  ! Input
-               ChannelIndex         , &  ! Input 
+               ChannelIndex         , &  ! Input
                Predictor%ODZeeman   , &  ! Input
-               AtmOptics_AD         , &  ! AD Input                                      
-               Predictor_AD%ODZeeman  )  ! AD Output                                      
+               AtmOptics_AD         , &  ! AD Input
+               Predictor_AD%ODZeeman  )  ! AD Output
         RETURN
-      END IF        
+      END IF
     END IF
 
     ! Call required model
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_AtmAbsorption_AD( &
                TC%ODAS(idx)     , &  ! Input
-               ChannelIndex     , &  ! Input                            
+               ChannelIndex     , &  ! Input
                Predictor%ODAS   , &  ! FWD Input
-               AtmOptics_AD     , &  ! AD Input                           
-               Predictor_AD%ODAS, &  ! AD Output               
+               AtmOptics_AD     , &  ! AD Input
+               Predictor_AD%ODAS, &  ! AD Output
                AAV%ODAS           )  ! Internal variable input
 
       ! ODPS transmittance model
@@ -603,32 +599,32 @@ CONTAINS
                Predictor%ODPS   , &  ! FWD Input
                AtmOptics_AD     , &  ! AD Input
                Predictor_AD%ODPS  )  ! AD Output
-                  
+
       ! SSU instrument specific
       CASE( ODSSU_ALGORITHM )
-      
+
         ! Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
             CALL ODSSU_Compute_AtmAbsorption_AD( &
-                   TC%Sensor_LoIndex(SensorIndex), &  ! Input                    
-                   ChannelIndex                  , &  ! Input                                 
+                   TC%Sensor_LoIndex(SensorIndex), &  ! Input
+                   ChannelIndex                  , &  ! Input
                    Predictor%ODAS                , &  ! FWD Input
-                   AtmOptics_AD                  , &  ! AD Input                                
-                   Predictor_AD%ODAS             , &  ! AD Output                
+                   AtmOptics_AD                  , &  ! AD Input
+                   Predictor_AD%ODAS             , &  ! AD Output
                    AAV%ODSSU                       )  ! Internal variable input
           CASE( ODPS_ALGORITHM )
             CALL ODSSU_Compute_AtmAbsorption_AD( &
-                   TC%Sensor_LoIndex(SensorIndex), &  ! Input                     
-                   ChannelIndex                  , &  ! Input                                  
+                   TC%Sensor_LoIndex(SensorIndex), &  ! Input
+                   ChannelIndex                  , &  ! Input
                    Predictor%ODPS                , &  ! FWD Input
-                   AtmOptics_AD                  , &  ! AD Input                                 
-                   Predictor_AD%ODPS             , &  ! AD Output                 
+                   AtmOptics_AD                  , &  ! AD Input
+                   Predictor_AD%ODPS             , &  ! AD Output
                    AAV%ODSSU                       )  ! Internal variable input
         END SELECT
     END SELECT
 
-  END SUBROUTINE CRTM_Compute_AtmAbsorption_AD              
+  END SUBROUTINE CRTM_Compute_AtmAbsorption_AD
 
 
 !--------------------------------------------------------------------------------
@@ -665,7 +661,7 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_GeometryInfo_type
@@ -699,10 +695,10 @@ CONTAINS
 
   SUBROUTINE CRTM_Compute_Predictors( &
     SensorIndex   , &  ! Input
-    Atmosphere    , &  ! Input                                            
-    GeometryInfo  , &  ! Input                                         
+    Atmosphere    , &  ! Input
+    GeometryInfo  , &  ! Input
     AncillaryInput, &  ! Input
-    Predictor     , &  ! Output 
+    Predictor     , &  ! Output
     APV             )  ! Internal variable output
     ! Arguments
     INTEGER                       , INTENT(IN)     :: SensorIndex
@@ -715,14 +711,14 @@ CONTAINS
     INTEGER :: idx, n
 
     ! Call required model
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! Predictors for ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_Predictors( &
                Atmosphere            , &  ! Input
-               GeometryInfo          , &  ! Input        
+               GeometryInfo          , &  ! Input
                TC%ODAS(idx)%Max_Order, &  ! Input
                TC%ODAS(idx)%Alpha    , &  ! Input
                Predictor%ODAS        , &  ! Output
@@ -733,12 +729,12 @@ CONTAINS
          CALL ODPS_Compute_Predictors( &
                 TC%ODPS(idx)  , &  ! Input
                 Atmosphere    , &  ! Input
-                GeometryInfo  , &  ! Input  
+                GeometryInfo  , &  ! Input
                 Predictor%ODPS  )  ! Output
 
       ! Predictors for SSU instrument specific model
       CASE( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -748,14 +744,14 @@ CONTAINS
                    Atmosphere                               , &  ! Input
                    GeometryInfo                             , &  ! Input
                    SPREAD(ODAS_MAX_N_ORDERS,DIM=1,NCOPIES=n), &  ! Input
-                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input 
+                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input
                    Predictor%ODAS                           , &  ! Output
-                   APV%ODAS                                   )  ! Output            
+                   APV%ODAS                                   )  ! Output
           CASE( ODPS_ALGORITHM )
             CALL ODPS_Compute_Predictors( &
                    TC%ODSSU(idx)%ODPS(1), &  ! Input
                    Atmosphere           , &  ! Input
-                   GeometryInfo         , &  ! Input  
+                   GeometryInfo         , &  ! Input
                    Predictor%ODPS         )  ! Output
         END SELECT
     END SELECT
@@ -766,10 +762,10 @@ CONTAINS
       IF( Is_ODZeeman(TC%ODZeeman(idx)) )THEN
         CALL Zeeman_Compute_Predictors( &
                AncillaryInput%Zeeman, &  ! Input
-               TC%ODZeeman(idx)     , &  ! Input   
-               Atmosphere           , &  ! Input   
-               GeometryInfo         , &  ! Input   
-               Predictor%ODZeeman     )  ! Output     
+               TC%ODZeeman(idx)     , &  ! Input
+               Atmosphere           , &  ! Input
+               GeometryInfo         , &  ! Input
+               Predictor%ODZeeman     )  ! Output
       END IF
     END IF
 
@@ -832,11 +828,11 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       AncillaryInput:    Structure holding ancillary inputs 
-!                          UNITS:      N/A                    
-!                          TYPE:       AncillaryInput_type    
-!                          DIMENSION:  Scalar                 
-!                          ATTRIBUTES: INTENT(IN)             
+!       AncillaryInput:    Structure holding ancillary inputs
+!                          UNITS:      N/A
+!                          TYPE:       AncillaryInput_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
 !
 !       APVariables:       Structure containing internal variables required for
 !                          subsequent tangent-linear or adjoint model calls.
@@ -879,16 +875,16 @@ CONTAINS
     INTEGER :: idx, n
 
     ! Call required model
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! Predictors for ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_Predictors_TL( &
                Atmosphere            , &  ! FWD Input
                Predictor%ODAS        , &  ! FWD Input
                Atmosphere_TL         , &  ! TL Input
-               GeometryInfo          , &  ! Input    
+               GeometryInfo          , &  ! Input
                TC%ODAS(idx)%Max_Order, &  ! Input
                TC%ODAS(idx)%Alpha    , &  ! Input
                Predictor_TL%ODAS     , &  ! TL Output
@@ -903,10 +899,10 @@ CONTAINS
                Predictor%ODPS   , &  ! FWD Input
                Atmosphere_TL    , &  ! TL Input
                Predictor_TL%ODPS  )  ! TL Output
-               
+
       ! Predictors for SSU instrument specific model
       CASE( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -916,11 +912,11 @@ CONTAINS
                    Atmosphere                               , &  ! FWD Input
                    Predictor%ODAS                           , &  ! FWD Input
                    Atmosphere_TL                            , &  ! TL Input
-                   GeometryInfo                             , &  ! Input    
+                   GeometryInfo                             , &  ! Input
                    SPREAD(ODAS_MAX_N_ORDERS,DIM=1,NCOPIES=n), &  ! Input
-                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input, 
+                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input,
                    Predictor_TL%ODAS                        , &  ! TL Output
-                   APV%ODAS                                   )  ! Internal variable input                 
+                   APV%ODAS                                   )  ! Internal variable input
           CASE( ODPS_ALGORITHM )
             CALL ODPS_Compute_Predictors_TL( &
                    TC%ODSSU(idx)%ODPS(1), &  ! Input
@@ -938,11 +934,11 @@ CONTAINS
       IF( Is_ODZeeman(TC%ODZeeman(idx)) )THEN
         CALL Zeeman_Compute_Predictors_TL( &
                AncillaryInput%Zeeman, &  ! Input
-               TC%ODZeeman(idx)     , &  ! Input    
-               Atmosphere           , &  ! FWD Input    
-               GeometryInfo         , &  ! Input    
+               TC%ODZeeman(idx)     , &  ! Input
+               Atmosphere           , &  ! FWD Input
+               GeometryInfo         , &  ! Input
                Predictor%ODZeeman   , &  ! FWD Input
-               Atmosphere_TL        , &  ! TL Input 
+               Atmosphere_TL        , &  ! TL Input
                Predictor_TL%ODZeeman  )  ! TL Output
       END IF
     END IF
@@ -1066,7 +1062,7 @@ CONTAINS
                AncillaryInput%Zeeman, &  ! Input
                TC%ODZeeman(idx)     , &  ! Input
                Atmosphere           , &  ! FWD Input
-               GeometryInfo         , &  ! Input    
+               GeometryInfo         , &  ! Input
                Predictor%ODZeeman   , &  ! FWD Input
                Predictor_AD%ODZeeman, &  ! AD Intput
                Atmosphere_AD          )  ! AD Output
@@ -1074,16 +1070,16 @@ CONTAINS
     END IF
 
     ! Call required model
-    idx = TC%Sensor_LoIndex(SensorIndex)  
+    idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! Predictors for ODAS transmittance model
       CASE( ODAS_ALGORITHM )
         CALL ODAS_Compute_Predictors_AD( &
                Atmosphere            , &  ! FWD Input
                Predictor%ODAS        , &  ! FWD Input
                Predictor_AD%ODAS     , &  ! AD Intput
-               GeometryInfo          , &  ! Input    
+               GeometryInfo          , &  ! Input
                TC%ODAS(idx)%Max_Order, &  ! Input
                TC%ODAS(idx)%Alpha    , &  ! Input
                Atmosphere_AD         , &  ! AD Output
@@ -1094,14 +1090,14 @@ CONTAINS
         CALL ODPS_Compute_Predictors_AD( &
                TC%ODPS(idx)     , &  ! Input
                Atmosphere       , &  ! FWD Input
-               GeometryInfo     , &  ! Input     
+               GeometryInfo     , &  ! Input
                Predictor%ODPS   , &  ! FWD Input
                Predictor_AD%ODPS, &  ! AD Intput
                Atmosphere_AD      )  ! AD Output
-             
+
       ! Predictors for SSU instrument specific model
       CASE( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular transmittance algorithm for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -1111,16 +1107,16 @@ CONTAINS
                    Atmosphere                               , &  ! FWD Input
                    Predictor%ODAS                           , &  ! FWD Input
                    Predictor_AD%ODAS                        , &  ! AD Intput
-                   GeometryInfo                             , &  ! Input    
+                   GeometryInfo                             , &  ! Input
                    SPREAD(ODAS_MAX_N_ORDERS,DIM=1,NCOPIES=n), &  ! Input
-                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input, 
+                   TC%ODSSU(idx)%ODAS(1)%Alpha              , &  ! Input,
                    Atmosphere_AD                            , &  ! AD Output
                    APV%ODAS                                   )  ! Internal variable input
           CASE( ODPS_ALGORITHM )
             CALL ODPS_Compute_Predictors_AD( &
                    TC%ODSSU(idx)%ODPS(1), &  ! Input
                    Atmosphere           , &  ! FWD Input
-                   GeometryInfo         , &  ! Input     
+                   GeometryInfo         , &  ! Input
                    Predictor%ODPS       , &  ! FWD Input
                    Predictor_AD%ODPS    , &  ! AD Intput
                    Atmosphere_AD          )  ! AD Output
@@ -1134,7 +1130,7 @@ CONTAINS
 !
 ! NAME:
 !       CRTM_Destroy_Predictor
-! 
+!
 ! PURPOSE:
 !       Function to re-initialize the scalar and pointer members of
 !       a CRTM_Predictor data structure.
@@ -1182,13 +1178,13 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION CRTM_Destroy_Predictor( &
-    SensorIndex, &  ! Input            
-    Predictor  , &  ! Output           
-    No_Clear   ) &  ! Optional input   
-  RESULT(Error_Status)                 
+    SensorIndex, &  ! Input
+    Predictor  , &  ! Output
+    No_Clear   ) &  ! Optional input
+  RESULT(Error_Status)
     ! Arguments
     INTEGER,                   INTENT(IN)     :: SensorIndex
-    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor 
+    TYPE(CRTM_Predictor_type), INTENT(IN OUT) :: Predictor
     INTEGER,      OPTIONAL   , INTENT(IN)     :: No_Clear
     ! Function result
     INTEGER :: Error_Status
@@ -1204,10 +1200,10 @@ CONTAINS
     ! Call the required procedure
     idx = TC%Sensor_LoIndex(SensorIndex)
     SELECT CASE( TC%Algorithm_ID(SensorIndex) )
-    
+
       ! Predictors for ODAS transmittance model
       CASE ( ODAS_ALGORITHM )
-        Error_Status = ODAS_Destroy_Predictor( Predictor%ODAS, No_Clear=No_Clear )          
+        Error_Status = ODAS_Destroy_Predictor( Predictor%ODAS, No_Clear=No_Clear )
 
       ! Predictors for ODPS transmittance model
       CASE ( ODPS_ALGORITHM )
@@ -1220,7 +1216,7 @@ CONTAINS
 
       ! Predictors for SSU instrument specific model
       CASE ( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular predictor type for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -1239,7 +1235,7 @@ CONTAINS
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error deallocating Predictor structure'
       CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-    END IF                                                                    
+    END IF
 
     ! Is this a Zeeman channel?
     idx = TC%ZSensor_LoIndex(SensorIndex)
@@ -1253,7 +1249,7 @@ CONTAINS
       IF ( Error_Status /= SUCCESS ) THEN
         Message = 'Error deallocating Zeeman Predictor structure'
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-      END IF                                                                    
+      END IF
     END IF
 
   END FUNCTION CRTM_Destroy_Predictor
@@ -1263,7 +1259,7 @@ CONTAINS
 !
 ! NAME:
 !       CRTM_Allocate_Predictor
-! 
+!
 ! PURPOSE:
 !       Function to allocate the pointer members of the CRTM_Predictor
 !       data structure.
@@ -1300,13 +1296,13 @@ CONTAINS
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       SaveFWV:             Flag indicating the predictor allocation is for FW calculation.
-!                            This flag may be used for some algorithms for additional memory 
+!                            This flag may be used for some algorithms for additional memory
 !                            allocation to save FW variables for TL and AD calculations.
 !                            UNITS:      N/A
 !                            TYPE:       Integer
 !                            DIMENSION:  Scalar
 !                            ATTRIBUTES: INTENT(IN), OPTIONAL
-! 
+!
 !
 ! FUNCTION RESULT:
 !       Error_Status:        The return value is an integer defining the error status.
@@ -1326,13 +1322,13 @@ CONTAINS
 
   FUNCTION CRTM_Allocate_Predictor( &
     SensorIndex , &  ! Input
-    n_Layers    , &  ! Input            
-    Predictor   , &  ! Output 
-    SaveFWV     ) &  ! Optional Input          
-  RESULT( Error_Status )                 
+    n_Layers    , &  ! Input
+    Predictor   , &  ! Output
+    SaveFWV     ) &  ! Optional Input
+  RESULT( Error_Status )
     ! Arguments
-    INTEGER                     , INTENT(IN)     :: SensorIndex    
-    INTEGER                     , INTENT(IN)     :: n_Layers       
+    INTEGER                     , INTENT(IN)     :: SensorIndex
+    INTEGER                     , INTENT(IN)     :: n_Layers
     TYPE(CRTM_Predictor_type)   , INTENT(IN OUT) :: Predictor
     INTEGER,           OPTIONAL , INTENT(IN)     :: SaveFWV
     ! Function result
@@ -1343,7 +1339,7 @@ CONTAINS
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status
     INTEGER :: i, idx
-    
+
     ! Set up
     Error_Status=SUCCESS
 
@@ -1359,7 +1355,7 @@ CONTAINS
                              ODAS_MAX_N_ABSORBERS          , &  ! Input
                              MAXVAL(TC%ODAS(idx)%Max_Order), &  ! Input
                              Predictor%ODAS                  )  ! Output
-                             
+
       ! Predictors for ODPS transmittance model
       CASE( ODPS_ALGORITHM )
         i = TC%ODPS(idx)%Group_Index
@@ -1370,8 +1366,8 @@ CONTAINS
         Allocate_Status = ODPS_Allocate_Predictor( &
                             TC%ODPS(idx)%n_Layers         , &  ! Input - internal layers
                             ODPS_Get_n_Components(i)      , &  ! Input
-                            ODPS_Get_max_n_Predicotrs(i)  , &  ! Input                              
-                            Predictor%ODPS                , &  ! Output            
+                            ODPS_Get_max_n_Predicotrs(i)  , &  ! Input
+                            Predictor%ODPS                , &  ! Output
                             OPTRAN = Predictor%ODPS%OPTRAN, &  ! Optional Input
                             n_User_Layers = n_Layers        )  ! Optional Input
         ! ...Allocate memory for saved forward variables
@@ -1389,7 +1385,7 @@ CONTAINS
 
       ! Predictors for SSU instrument specific model
       CASE( ODSSU_ALGORITHM )
-      
+
         ! ...Select particular procedure for this instrument
         SELECT CASE( TC%ODSSU(idx)%subAlgorithm )
           CASE( ODAS_ALGORITHM )
@@ -1408,8 +1404,8 @@ CONTAINS
             Allocate_Status = ODPS_Allocate_Predictor( &
                                 TC%ODSSU(idx)%ODPS(1)%n_Layers, &  ! Input - internal layers
                                 ODPS_Get_n_Components(i)      , &  ! Input
-                                ODPS_Get_max_n_Predicotrs(i)  , &  ! Input                              
-                                Predictor%ODPS                , &  ! Output            
+                                ODPS_Get_max_n_Predicotrs(i)  , &  ! Input
+                                Predictor%ODPS                , &  ! Output
                                 OPTRAN = Predictor%ODPS%OPTRAN, &  ! Optional Input
                                 n_User_Layers = n_Layers        )  ! Optional Input
             ! ...Allocate memory for saved forward variables
@@ -1428,12 +1424,12 @@ CONTAINS
     END SELECT
 
     ! Check status
-    IF ( Allocate_Status /= SUCCESS ) THEN                                             
-      Error_Status = FAILURE                                                              
-      WRITE( Message,'("Error allocating Predictor for the sensor index ",i0)' ) SensorIndex  
+    IF ( Allocate_Status /= SUCCESS ) THEN
+      Error_Status = FAILURE
+      WRITE( Message,'("Error allocating Predictor for the sensor index ",i0)' ) SensorIndex
       CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-      RETURN                                                                            
-    END IF                                                                              
+      RETURN
+    END IF
 
     ! Is this a Zeeman channel?
     idx = TC%ZSensor_LoIndex(SensorIndex)
@@ -1450,8 +1446,8 @@ CONTAINS
         Error_Status=FAILURE
         WRITE( Message,'("Error allocating Zeeman Predictor for the sensor index ",i0)' ) SensorIndex
         CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-        RETURN                                                                                            
-      END IF                                                                                              
+        RETURN
+      END IF
       ! ...Allocate memory for saved forward variables
       ! *****FLAW*****
       ! MUST CHECK FOR SaveFWV *VALUE* NOT JUST PRESCENCE!
@@ -1467,8 +1463,8 @@ CONTAINS
           Error_Status=FAILURE
           WRITE( Message,'("Error allocating Zeeman PAFV for the sensor index ",i0)' ) SensorIndex
           CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
-          RETURN                                                                                                    
-        END IF                                                                                              
+          RETURN
+        END IF
       END IF
     END IF Zeeman_Block
 

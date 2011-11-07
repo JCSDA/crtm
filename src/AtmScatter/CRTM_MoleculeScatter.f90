@@ -19,7 +19,7 @@ MODULE CRTM_MoleculeScatter
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters       , ONLY: ZERO
   USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type
-  USE CRTM_AtmScatter_Define, ONLY: CRTM_AtmScatter_type
+  USE CRTM_AtmOptics_Define , ONLY: CRTM_AtmOptics_type
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -88,7 +88,7 @@ CONTAINS
 !                        to which the molecular scattering and extinction
 !                        component is added.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmScatter_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -121,7 +121,7 @@ CONTAINS
     ! Arguments
     REAL(fp),                   INTENT(IN)     :: Wavenumber
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_AtmScatter_type), INTENT(IN OUT) :: AtmOptics 
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics 
     CHARACTER(*), OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -208,7 +208,7 @@ CONTAINS
 !                        optics data to which the molecular scattering and
 !                        extinction component is added.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmScatter_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -241,7 +241,7 @@ CONTAINS
     ! Arguments
     REAL(fp),                   INTENT(IN)     :: Wavenumber
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere_TL
-    TYPE(CRTM_AtmScatter_type), INTENT(IN OUT) :: AtmOptics_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_TL
     CHARACTER(*), OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result
     INTEGER :: Error_Status
@@ -305,7 +305,7 @@ CONTAINS
 !                        optics data from which the molecular scattering and
 !                        extinction component is taken.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmScatter_type)
+!                        TYPE:       TYPE(CRTM_AtmOptics_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -345,7 +345,7 @@ CONTAINS
                                          RESULT( Error_Status )
     ! Arguments
     REAL(fp),                   INTENT(IN)     :: Wavenumber
-    TYPE(CRTM_AtmScatter_type), INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atmosphere_AD
     CHARACTER(*), OPTIONAL,     INTENT(IN)     :: Message_Log
     ! Function result

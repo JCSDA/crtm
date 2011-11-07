@@ -6,9 +6,9 @@
 !
 !
 ! CREATION HISTORY  
-!        Written by:     Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov 
-!                        Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
-!                        Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!        Written by:     Quanhua Liu,    quanhua.liu@noaa.gov 
+!                        Yong Han,       yong.han@noaa.gov
+!                        Paul van Delst, paul.vandelst@noaa.gov
 !                        02-July-2005
 !
 
@@ -56,12 +56,7 @@ MODULE CRTM_CloudScatter
                                       LPoly       , &
                                       LPoly_TL    , &
                                       LPoly_AD
-  USE CRTM_AtmScatter_Define,   ONLY: CRTM_AtmScatter_type      , &
-                                      CRTM_Associated_AtmScatter, &
-                                      CRTM_Destroy_AtmScatter   , &
-                                      CRTM_Allocate_AtmScatter  , &
-                                      CRTM_Assign_AtmScatter    , &
-                                      CRTM_Zero_AtmScatter
+  USE CRTM_AtmOptics_Define,    ONLY: CRTM_AtmOptics_type
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -72,31 +67,18 @@ MODULE CRTM_CloudScatter
   ! Everything private by default
   PRIVATE
   ! Data types
-  PUBLIC :: CRTM_AtmScatter_type
   PUBLIC :: CRTM_CSVariables_type
   ! Procedures
   PUBLIC :: CRTM_Compute_CloudScatter
   PUBLIC :: CRTM_Compute_CloudScatter_TL
   PUBLIC :: CRTM_Compute_CloudScatter_AD
-  PUBLIC :: CRTM_Associated_AtmScatter
-  PUBLIC :: CRTM_Destroy_AtmScatter
-  PUBLIC :: CRTM_Allocate_AtmScatter
-  PUBLIC :: CRTM_Assign_AtmScatter
-  PUBLIC :: CRTM_Zero_AtmScatter
 
-!  ! FOR TESTING ONLY
-!  PUBLIC :: Get_Cloud_Opt_IR
-!  PUBLIC :: Get_Cloud_Opt_IR_TL
-!  PUBLIC :: Get_Cloud_Opt_IR_AD
-!  PUBLIC :: Get_Cloud_Opt_MW
-!  PUBLIC :: Get_Cloud_Opt_MW_TL
-!  PUBLIC :: Get_Cloud_Opt_MW_AD
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
@@ -178,7 +160,7 @@ CONTAINS
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
 !                        profile data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -202,11 +184,11 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        CloudScatter:   CRTM_AtmScatter structure containing the cloud particle
+!        CloudScatter:   CRTM_AtmOptics structure containing the cloud particle
 !                        absorption and scattering properties required for
 !                        radiative transfer.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmScatter_type)
+!                        TYPE:       CRTM_AtmOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -215,7 +197,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_CloudScatter module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_CSVariables_type)
+!                        TYPE:       CRTM_CSVariables_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -246,7 +228,7 @@ CONTAINS
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat
     TYPE(CRTM_CSVariables_type), INTENT(IN OUT) :: CSV
     ! Function result
     INTEGER :: Error_Status
@@ -428,22 +410,22 @@ CONTAINS
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
 !                         profile data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_Atmosphere_type)
+!                         TYPE:       CRTM_Atmosphere_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CloudScatter:     CRTM_AtmScatter structure containing the forward model
+!       CloudScatter:     CRTM_AtmOptics structure containing the forward model
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_AtmScatter_type)
+!                         TYPE:       CRTM_AtmOptics_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:    CRTM Atmosphere structure containing the tangent-linear
 !                         atmospheric state data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_Atmosphere_type)
+!                         TYPE:       CRTM_Atmosphere_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
@@ -471,16 +453,16 @@ CONTAINS
 !                         The contents of this structure are NOT accessible
 !                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_CSVariables_type)
+!                         TYPE:       CRTM_CSVariables_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        CloudScatter_TL: CRTM_AtmScatter structure containing the tangent-linear
+!        CloudScatter_TL: CRTM_AtmOptics structure containing the tangent-linear
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_AtmScatter_type)
+!                         TYPE:       CRTM_AtmOptics_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN OUT)
 !
@@ -511,11 +493,11 @@ CONTAINS
                                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: CScat
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: CScat
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm_TL
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat_TL
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat_TL
     TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
     ! Function result
     INTEGER :: Error_Status
@@ -652,26 +634,26 @@ CONTAINS
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
 !                         profile data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_Atmosphere_type)
+!                         TYPE:       CRTM_Atmosphere_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CloudScatter:     CRTM_AtmScatter structure containing the forward model
+!       CloudScatter:     CRTM_AtmOptics structure containing the forward model
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_AtmScatter_type)
+!                         TYPE:       CRTM_AtmOptics_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CloudScatter_AD:  CRTM_AtmScatter structure containing the adjoint
+!       CloudScatter_AD:  CRTM_AtmOptics structure containing the adjoint
 !                         of the cloud particle absorption and scattering
 !                         properties required for radiative transfer.
 !                         **NOTE: On EXIT from this function, the contents of
 !                                 this structure may be modified (e.g. set to
 !                                 zero.)
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_AtmScatter_type)
+!                         TYPE:       CRTM_AtmOptics_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN OUT)
 !
@@ -694,12 +676,12 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       ASVariables:      Structure containing internal variables required for
+!       CSVariables:      Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
 !                         The contents of this structure are NOT accessible
-!                         outside of the CRTM_AerosolScatter module.
+!                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_ASVariables_type)
+!                         TYPE:       CRTM_CSVariables_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
@@ -707,7 +689,7 @@ CONTAINS
 !       Atmosphere_AD:    CRTM Atmosphere structure containing the adjoint
 !                         atmospheric state data.
 !                         UNITS:      N/A
-!                         TYPE:       TYPE(CRTM_Atmosphere_type)
+!                         TYPE:       CRTM_Atmosphere_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN OUT)
 !
@@ -740,8 +722,8 @@ CONTAINS
                                        RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN)     :: CScat
-    TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat_AD
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: CScat
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat_AD
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Atmosphere_type) , INTENT(IN OUT) :: Atm_AD
@@ -905,7 +887,7 @@ CONTAINS
                                pcoeff      , &  ! Output spherical Legendre coefficients
                                csi           )  ! Output interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter
     REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Cloud_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
@@ -979,7 +961,7 @@ CONTAINS
                                   pcoeff_TL      , &  ! TL  Output spherical Legendre coefficients
                                   csi              )  ! Input interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_TL
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
@@ -1080,7 +1062,7 @@ CONTAINS
                                   Reff_AD        , &  ! AD  Output effective radius (mm)
                                   csi              )  ! Input interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_AD
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
@@ -1193,7 +1175,7 @@ CONTAINS
                                pcoeff      , &  ! Output spherical Legendre coefficients
                                csi           )  ! Output interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter
     REAL(fp)                  , INTENT(IN)     :: Frequency
     INTEGER                   , INTENT(IN)     :: Cloud_Type
     REAL(fp)                  , INTENT(IN)     :: Reff
@@ -1312,7 +1294,7 @@ CONTAINS
                                   pcoeff_TL      , &  ! TL  Output spherical Legendre coefficients
                                   csi              )  ! Input interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_TL
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN)     :: Reff_TL
     REAL(fp),                   INTENT(IN)     :: Temperature_TL
@@ -1481,7 +1463,7 @@ CONTAINS
                                  Temperature_AD , &  ! AD  Output temperature
                                  csi              ) ! Input interpolation data
     ! Arguments
-    TYPE(CRTM_AtmScatter_type), INTENT(IN)     :: CloudScatter_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_AD
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
