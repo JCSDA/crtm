@@ -23,6 +23,8 @@ NOCPP_FILES = \
   SpcCoeff_Binary_IO.f90 ACCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.f90 \
   CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
   AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
+  CRTM_Options_Define.f90 \
+  CRTM_AOD_Module.f90 \
   EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
   IRlandCoeff_Define.f90 \
     LSEcategory_Define.f90 \
@@ -92,7 +94,6 @@ NOCPP_FILES = \
   CRTM_Planck_Functions.f90 \
   CRTM_AntennaCorrection.f90 \
   CRTM_AncillaryInput_Define.f90 SSU_Input_Define.f90 Zeeman_Input_Define.f90 \
-  CRTM_Options_Define.f90 \
   CRTM_Parameters.f90 \
   CRTM_LifeCycle.f90 \
   CRTM_Forward_Module.f90 \

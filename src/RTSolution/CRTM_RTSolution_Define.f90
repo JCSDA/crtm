@@ -339,11 +339,12 @@ CONTAINS
 !                      components.
 !                      UNITS:      N/A
 !                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar or same as input
+!                      DIMENSION:  Conformable with inputs
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
-!       is_equal:      Logical value indicating whether the inputs are equal.
+!       is_comparable: Logical value indicating whether the inputs are
+!                      comparable.
 !                      UNITS:      N/A
 !                      TYPE:       LOGICAL
 !                      DIMENSION:  Same as inputs.
@@ -369,13 +370,16 @@ CONTAINS
       n = DEFAULT_N_SIGFIG
     END IF
 
+    ! Check the structure association status
+    IF ( .NOT. (CRTM_RTSolution_Associated(x) .EQV. CRTM_RTSolution_Associated(y)) ) RETURN
+
     ! Check the sensor informatin
     IF ( (x%Sensor_ID        /= y%Sensor_ID       ) .OR. &
          (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
          (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) .OR. &
          (x%Sensor_Channel   /= y%Sensor_Channel  ) ) RETURN
     
-    ! Check the components
+    ! Check the scalar components
     IF ( .NOT. Compares_Within_Tolerance(x%Surface_Emissivity     , y%Surface_Emissivity     , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Up_Radiance            , y%Up_Radiance            , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Down_Radiance          , y%Down_Radiance          , n) .OR. &
@@ -384,6 +388,12 @@ CONTAINS
          .NOT. Compares_Within_Tolerance(x%Radiance               , y%Radiance               , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Brightness_Temperature , y%Brightness_Temperature , n) ) RETURN
 
+    ! Check the array components
+    IF ( CRTM_RTSolution_Associated(x) .AND. CRTM_RTSolution_Associated(y) ) THEN
+      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Upwelling_Radiance ,y%Upwelling_Radiance ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Layer_Optical_Depth,y%Layer_Optical_Depth,n))) ) RETURN
+    END IF
+        
     ! If we get here, the structures are comparable
     is_comparable = .TRUE.
     
@@ -435,19 +445,34 @@ CONTAINS
     TYPE(CRTM_RTSolution_type) , INTENT(IN)  :: x, y
     LOGICAL :: is_equal
 
-    is_equal = ( (x%n_Layers == y%n_Layers) .AND. &
-                 (x%Sensor_ID        == y%Sensor_ID       ) .AND. &
-                 (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
-                 (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
-                 (x%Sensor_Channel   == y%Sensor_Channel  ) .AND. &
-                 (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
-                 (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
-                 (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
-                 (x%Down_Solar_Radiance     .EqualTo. y%Down_Solar_Radiance    ) .AND. &
-                 (x%Surface_Planck_Radiance .EqualTo. y%Surface_Planck_Radiance) .AND. &
-                 (x%Radiance                .EqualTo. y%Radiance               ) .AND. &
-                 (x%Brightness_Temperature  .EqualTo. y%Brightness_Temperature ) )
-                 
+    ! Setup
+    is_equal = .FALSE.
+    
+    ! Check the structure association status
+    IF ( .NOT. (CRTM_RTSolution_Associated(x) .EQV. CRTM_RTSolution_Associated(y)) ) RETURN
+    
+    ! Check scalars
+    IF ( (x%n_Layers == y%n_Layers) .AND. &
+         (x%Sensor_ID        == y%Sensor_ID       ) .AND. &
+         (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
+         (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
+         (x%Sensor_Channel   == y%Sensor_Channel  ) .AND. &
+         (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
+         (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
+         (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
+         (x%Down_Solar_Radiance     .EqualTo. y%Down_Solar_Radiance    ) .AND. &
+         (x%Surface_Planck_Radiance .EqualTo. y%Surface_Planck_Radiance) .AND. &
+         (x%Radiance                .EqualTo. y%Radiance               ) .AND. &
+         (x%Brightness_Temperature  .EqualTo. y%Brightness_Temperature ) ) &
+      is_equal = .TRUE.
+
+    ! Check arrays (which may or may not be allocated)
+    IF ( CRTM_RTSolution_Associated(x) .AND. CRTM_RTSolution_Associated(y) ) THEN
+      is_equal = is_equal .AND. &
+                 ALL(x%Upwelling_Radiance  .EqualTo. y%Upwelling_Radiance ) .AND. &
+                 ALL(x%Layer_Optical_Depth .EqualTo. y%Layer_Optical_Depth)
+    END IF
+    
   END FUNCTION CRTM_RTSolution_Equal
 
 END MODULE CRTM_RTSolution_Define

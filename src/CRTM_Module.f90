@@ -32,6 +32,8 @@ MODULE CRTM_Module
   USE CRTM_Tangent_Linear_Module
   USE CRTM_Adjoint_Module
   USE CRTM_K_Matrix_Module
+  ! ...The aerosol optical depth tool
+  USE CRTM_AOD_Module
 
   ! Structure I/O modules
   USE CRTM_Atmosphere_IO
