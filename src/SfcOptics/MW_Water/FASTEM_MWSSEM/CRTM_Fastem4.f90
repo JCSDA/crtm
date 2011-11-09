@@ -1097,13 +1097,13 @@ CONTAINS
     ! Arguments
     TYPE(iVar_type),    INTENT(IN) :: iVar
     REAL(fp),    INTENT(INOUT) :: small_corr_AD
-    REAL(fp),    INTENT(OUT) :: Wind_Speed_AD
+    REAL(fp),    INTENT(INOUT) :: Wind_Speed_AD
     ! Local variables
     REAL(fp) :: scor_AD, windspeed_AD
     
  ! Small-scale correction AD
     scor_AD = -small_corr_AD*iVar%cos_z*iVar%cos_z* iVar%small_corr   
-    windspeed_AD = ( Scoef(1)*iVar%freq_S +Scoef(2)*iVar%freq_S**2 &
+    windspeed_AD = Wind_Speed_AD + ( Scoef(1)*iVar%freq_S +Scoef(2)*iVar%freq_S**2 &
             +TWO*Scoef(3) *iVar%windspeed*iVar%freq_S +TWO*Scoef(4)*iVar%windspeed* iVar%freq_S**2 &
             +TWO*Scoef(5) *iVar%windspeed/iVar%freq_S +TWO*Scoef(6) *iVar%windspeed/iVar%freq_S**2 &
             +Scoef(7) + TWO*Scoef(8) *iVar%windspeed  )*scor_AD
