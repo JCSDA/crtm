@@ -25,12 +25,14 @@ MODULE CRTM_Forward_Module
                                         MAX_N_ANGLES        , &
                                         MAX_N_AZIMUTH_FOURIER, &
                                         MAX_SOURCE_ZENITH_ANGLE, &
-                                        MAX_N_STREAMS
+                                        MAX_N_STREAMS, &
+                                        AIRCRAFT_PRESSURE_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsVisibleSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
-                                        CRTM_Atmosphere_IsValid
+                                        CRTM_Atmosphere_IsValid, &
+                                        CRTM_Get_PressureLevelIdx
   USE CRTM_Surface_Define,        ONLY: CRTM_Surface_type, &
                                         CRTM_Surface_IsValid
   USE CRTM_Geometry_Define,       ONLY: CRTM_Geometry_type, &
@@ -62,13 +64,11 @@ MODULE CRTM_Forward_Module
                                         CRTM_Compute_CloudScatter
   USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type , &
                                         CRTM_Combine_AtmOptics
-
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
                                         CRTM_SfcOptics_Associated, &
                                         CRTM_SfcOptics_Create    , &
                                         CRTM_SfcOptics_Destroy
   USE CRTM_SfcOptics,             ONLY: CRTM_Compute_SurfaceT
-
   USE CRTM_RTSolution,            ONLY: CRTM_RTSolution_type    , &
                                         CRTM_Compute_nStreams   , &
                                         CRTM_Compute_RTSolution
@@ -79,18 +79,14 @@ MODULE CRTM_Forward_Module
   USE CRTM_AntennaCorrection,     ONLY: CRTM_Compute_AntCorr
   USE CRTM_MoleculeScatter,       ONLY: CRTM_Compute_MoleculeScatter
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
-
   USE CRTM_CloudCoeff,            ONLY: CRTM_CloudCoeff_IsLoaded
   USE CRTM_AerosolCoeff,          ONLY: CRTM_AerosolCoeff_IsLoaded
-
   USE CRTM_NLTECorrection,        ONLY: NLTE_Predictor_type    , &
                                         NLTE_Predictor_IsActive, &
                                         Compute_NLTE_Predictor , &
                                         Compute_NLTE_Correction
-
   USE ACCoeff_Define,             ONLY: ACCoeff_Associated
   USE NLTECoeff_Define,           ONLY: NLTECoeff_Associated
-
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature
 
 
@@ -238,6 +234,7 @@ CONTAINS
     INTEGER :: AllocStatus(2)
     REAL(fp) :: Source_ZA
     REAL(fp) :: Wavenumber
+    REAL(fp) :: Aircraft_Pressure
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default values
@@ -348,6 +345,7 @@ CONTAINS
       User_AntCorr          = Default_Options%Use_Antenna_Correction
       Apply_NLTE_Correction = Default_Options%Apply_NLTE_Correction
       User_N_Streams        = Default_Options%Use_N_Streams
+      Aircraft_Pressure     = Default_Options%Aircraft_Pressure
       ! ...Check the Options argument
       IF (Options_Present) THEN
         ! Override input checker with option
@@ -371,6 +369,8 @@ CONTAINS
         User_AntCorr = Options(m)%Use_Antenna_Correction
         ! Set NLTE correction option
         Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
+        ! Set aircraft pressure altitude
+        Aircraft_Pressure = Options(m)%Aircraft_Pressure        
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -461,7 +461,23 @@ CONTAINS
         RETURN
       END IF
 
-
+      ! Process aircraft pressure altitude
+      IF ( Aircraft_Pressure > ZERO ) THEN
+        RTV%aircraft%rt = .TRUE.
+        RTV%aircraft%idx = CRTM_Get_PressureLevelIdx(Atm, Aircraft_Pressure)
+        ! ...Issue warning if profile level is TOO different from flight level
+        IF ( ABS(Atm%Level_Pressure(RTV%aircraft%idx)-Aircraft_Pressure) > AIRCRAFT_PRESSURE_THRESHOLD ) THEN
+          WRITE( Message,'("Difference between aircraft pressure level (",es13.6,&
+                          &"hPa) and closest input profile level (",es13.6,&
+                          &"hPa) is larger than recommended (",f4.1,"hPa) for profile #",i0)') &
+                          Aircraft_Pressure, Atm%Level_Pressure(RTV%aircraft%idx), &
+                          AIRCRAFT_PRESSURE_THRESHOLD, m
+          CALL Display_Message( ROUTINE_NAME, Message, WARNING )
+        END IF
+      ELSE
+        RTV%aircraft%rt = .FALSE.
+      END IF
+      
       ! -----------
       ! SENSOR LOOP
       ! -----------

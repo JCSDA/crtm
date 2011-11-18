@@ -19,7 +19,7 @@ MODULE CRTM_Options_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
-  USE CRTM_Parameters      , ONLY: ZERO, ONE, STRLEN, NOT_SET
+  USE CRTM_Parameters      , ONLY: ZERO, ONE, STRLEN, NOT_SET, TOA_PRESSURE
   USE SSU_Input_Define     , ONLY: SSU_Input_type, &
                                    OPERATOR(==), &
                                    SSU_Input_IsValid, &
@@ -86,6 +86,10 @@ MODULE CRTM_Options_Define
 
     ! NLTE radiance correction is ON by default
     LOGICAL :: Apply_NLTE_Correction = .TRUE.
+
+    ! Aircraft flight level pressure
+    ! Value > 0 turns "on" the aircraft option
+    REAL(fp) :: Aircraft_Pressure = -ONE
     
     ! User defined emissivity/reflectivity
     ! ...Dimensions
@@ -300,7 +304,7 @@ CONTAINS
     
     ! Setup
     IsValid = .TRUE.
-    
+
     ! Check emissivity options
     IF ( opt%Use_Emissivity .OR. opt%Use_Direct_Reflectivity ) THEN
       IsValid = CRTM_Options_Associated(opt)
@@ -364,6 +368,7 @@ CONTAINS
     WRITE(*,'(3x,"Use old MWSSEM flag         :",1x,l1)') Options%Use_Old_MWSSEM
     WRITE(*,'(3x,"Use antenna correction flag :",1x,l1)') Options%Use_Antenna_Correction
     WRITE(*,'(3x,"Apply NLTE correction flag  :",1x,l1)') Options%Apply_NLTE_Correction
+    WRITE(*,'(3x,"Aircraft pressure altitude  :",1x,es13.6)') Options%Aircraft_Pressure
     ! ...Emissivity component
     WRITE(*,'(3x,"Emissivity component")')
     WRITE(*,'(5x,"n_Channels                   :",1x,i0)') Options%n_Channels
@@ -466,10 +471,11 @@ CONTAINS
     TYPE(CRTM_Options_type) , INTENT(IN) :: x, y
     LOGICAL :: is_equal
 
-    is_equal = (x%Check_Input            .EQV. y%Check_Input           ) .AND. &
-               (x%Use_Old_MWSSEM         .EQV. y%Use_Old_MWSSEM        ) .AND. &
-               (x%Use_Antenna_Correction .EQV. y%Use_Antenna_Correction) .AND. &
-               (x%Apply_NLTE_Correction  .EQV. y%Apply_NLTE_Correction )
+    is_equal = (x%Check_Input              .EQV.   y%Check_Input           ) .AND. &
+               (x%Use_Old_MWSSEM           .EQV.   y%Use_Old_MWSSEM        ) .AND. &
+               (x%Use_Antenna_Correction   .EQV.   y%Use_Antenna_Correction) .AND. &
+               (x%Apply_NLTE_Correction    .EQV.   y%Apply_NLTE_Correction ) .AND. &
+               (x%Aircraft_Pressure      .EqualTo. y%Aircraft_Pressure     )
 
     ! Emissivity component
     is_equal = is_equal .AND. &

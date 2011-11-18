@@ -262,7 +262,12 @@ MODULE CRTM_Parameters
   LOGICAL, PUBLIC, PARAMETER :: HGPHASE = .FALSE.
                                                                                                         
 
-
+  !#----------------------------------------------------------------------------#
+  !#            -- Aircraft/profile pressure difference threshold --            #
+  !#----------------------------------------------------------------------------#
+  REAL(fp), PUBLIC, PARAMETER :: AIRCRAFT_PRESSURE_THRESHOLD = 0.1_fp
+  
+  
 CONTAINS
 
 

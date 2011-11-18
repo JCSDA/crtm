@@ -33,7 +33,8 @@ MODULE CRTM_Adjoint_Module
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
                                         CRTM_Atmosphere_IsValid, &
-                                        CRTM_Atmosphere_AddLayerCopy
+                                        CRTM_Atmosphere_AddLayerCopy, &
+                                        CRTM_Get_PressureLevelIdx
   USE CRTM_Surface_Define,        ONLY: CRTM_Surface_type, &
                                         CRTM_Surface_IsValid
   USE CRTM_Geometry_Define,       ONLY: CRTM_Geometry_type, &
@@ -43,7 +44,7 @@ MODULE CRTM_Adjoint_Module
   USE CRTM_Options_Define,        ONLY: CRTM_Options_type, &
                                         CRTM_Options_IsValid
   USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers, &
-                                        CRTM_Atmosphere_AddLayers_AD
+                                        CRTM_Atmosphere_AddLayers_AD 
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type, &
                                         CRTM_GeometryInfo_SetValue, &
                                         CRTM_GeometryInfo_GetValue

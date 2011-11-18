@@ -16,7 +16,7 @@ MODULE RTV_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds,      ONLY: fp
+  USE Type_Kinds     , ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters, ONLY: SET, ZERO, ONE, TWO, PI, &
                              MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
@@ -24,7 +24,7 @@ MODULE RTV_Define
                              SECANT_DIFFUSIVITY, &
                              SCATTERING_ALBEDO_THRESHOLD, &
                              OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SfcOptics,  ONLY: SOVar_type => iVar_type
+  USE CRTM_SfcOptics , ONLY: SOVar_type => iVar_type
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -41,6 +41,7 @@ MODULE RTV_Define
   PUBLIC :: MAX_ALBEDO
   PUBLIC :: SMALL_OD_FOR_SC
   ! Datatypes
+  PUBLIC :: aircraft_rt_type
   PUBLIC :: RTV_type
   ! Procedures
   PUBLIC :: RTV_Associated
@@ -69,11 +70,18 @@ MODULE RTV_Define
   REAL(fp), PARAMETER :: SMALL_OD_FOR_SC = 1.E-5_fp
   
   
-  ! --------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL, and AD calls
-  ! --------------------------------------
-
+  ! ---------------------
+  ! Structure definitions
+  ! ---------------------
+  ! ...Aircraft model structure
+  TYPE :: aircraft_rt_type
+    ! The switch
+    LOGICAL :: rt = .FALSE.
+    ! The output level index
+    INTEGER :: idx
+  END TYPE aircraft_rt_type
+  
+  ! ...Forward variables for TL and AD calls
   TYPE :: RTV_type
     ! Dimension information
     INTEGER :: n_Layers       = 0       ! Total number of atmospheric layers
@@ -109,6 +117,9 @@ MODULE RTV_Define
     ! Logical switches
     LOGICAL :: Diffuse_Surface = .TRUE.
 
+    ! Aircraft model RT information
+    TYPE(aircraft_rt_type) :: aircraft
+    
     ! Scattering, visible model variables    
     INTEGER :: n_Streams         = 0       ! Number of *hemispheric* stream angles used in RT    
     INTEGER :: mth_Azi                     ! mth fourier component

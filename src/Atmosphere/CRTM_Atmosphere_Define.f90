@@ -183,6 +183,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_SetLayers_Atmosphere
   ! ...Utilities
   PUBLIC :: CRTM_Get_AbsorberIdx
+  PUBLIC :: CRTM_Get_PressureLevelIdx
 
   ! -------------------
   ! Procedure overloads
@@ -1111,6 +1112,59 @@ CONTAINS
     AbsorberIdx=Idx(1)
     
   END FUNCTION CRTM_Get_AbsorberIdx
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Get_PressureLevelIdx
+! 
+! PURPOSE:
+!       Function to determine the index in the CRTM Atmosphere structure
+!       pressure level array component that corresponds to the value
+!       closest to the requested level pressure.
+!
+! CALLING SEQUENCE:
+!       Idx = CRTM_Get_PressureLevelIdx(Atm, Level_Pressure)
+!
+! INPUTS:
+!       Atm:             CRTM Atmosphere structure.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Level_Pressure:  Level pressure for which the index in the atmosphere
+!                        structure level pressure profile is required.
+!                        UNITS:      N/A
+!                        TYPE:       REAL(fp)
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       Idx:             Index of the level in the Atm%Level_Pressure
+!                        array component for the closest value to the
+!                        input level pressure.
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Get_PressureLevelIdx(Atm, Level_Pressure) RESULT(Level_Idx)
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atm
+    REAL(fp)                  , INTENT(IN) :: Level_Pressure
+    ! Function result
+    INTEGER :: Level_Idx
+    
+    ! Find the closest pressure level
+    ! Note: The "- 1" takes into account the array starting at index 0. 
+    Level_Idx = MINLOC(ABS(Atm%Level_Pressure - Level_Pressure), DIM=1) - 1
+
+  END FUNCTION CRTM_Get_PressureLevelIdx
 
 
 !--------------------------------------------------------------------------------

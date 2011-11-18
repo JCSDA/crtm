@@ -486,9 +486,14 @@ CONTAINS
              SfcOptics%Reflectivity( 1:nZ, 1, 1:nZ, 1 ), & ! Input, surface reflectivity
              SfcOptics%Direct_Reflectivity(1:nZ,1)     , & ! Input, surface reflectivity for a point source
              RTV                                         ) ! Output, Internal variables
-      ! The output radiance
-      Radiance = RTV%s_Level_Rad_UP( SfcOptics%Index_Sat_Ang, 0 )
- 
+
+      ! The output radiance at TOA or at Aircraft height
+      IF ( RTV%aircraft%rt ) THEN
+        Radiance = RTV%s_Level_Rad_UP(SfcOptics%Index_Sat_Ang, RTV%aircraft%idx)
+      ELSE
+        Radiance = RTV%s_Level_Rad_UP(SfcOptics%Index_Sat_Ang, 0)
+      END IF
+
     ELSE
 
 
@@ -511,8 +516,13 @@ CONTAINS
              Is_Solar_Channel,                      & ! Input, Source sensitive channel info.
              GeometryInfo%Source_Zenith_Radian,     & ! Input, Source zenith angle
              RTV                                    ) ! Output, Internal variables
-      ! The output radiance
-      Radiance = RTV%e_Level_Rad_UP(0)
+
+      ! The output radiance at TOA or at Aircraft height
+      IF ( RTV%aircraft%rt ) THEN
+        Radiance = RTV%e_Level_Rad_UP(RTV%aircraft%idx)
+      ELSE
+        Radiance = RTV%e_Level_Rad_UP(0)
+      END IF
 
       ! Other emission-only output
       RTSolution%Up_Radiance             = RTV%Up_Radiance
