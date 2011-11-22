@@ -19,11 +19,17 @@
 
 %\draftwatermark
 
+\section{Updating the CRTM's Incarnation of Fastem4 to be Consistent With What is Used in RTTOV}
+
+
 \section{Radiometric Impact of Implementing FASTEM-4 into the CRTM}
-The radiometric impact of implementing FASTEM-4 for any particular CRTM simulation depends on the channel central frequency, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a standard tropical atmosphere we performed CRTM simulations using FASTEM-4 and the MWSSEM that was used in CRTM release 2.0.2 for NOAA-19 AMSUA, NOAA-19 MHS, F16 SSMIS and Aqua AMSRE to assess how the magnitude of the radiometric impact depends on these inputs.  CRTM simulations for release 2.0.2 were based on the 'Low Frequency' model for channel frequencies less than 20 GHz and FASTEM1 for channel frequencies greater than 20 GHz. 
+The radiometric impact of implementing FASTEM-4 for any particular CRTM simulation depends on the channel central frequency, sensor zenith angle, salinity, sea-surface temperature, surface wind speed and the angle between the wind direction and the sensor azimuth angle.  For a standard tropical atmosphere we performed CRTM simulations using FASTEM-4 and the MWSSEM that was used in CRTM release 2.0.2 for NOAA-19 AMSUA, NOAA-19 MHS, F16 SSMIS and Aqua AMSRE to assess how the magnitude of the radiometric impact depends on these inputs.  CRTM simulations for release 2.0.2 were based on the 'Low Frequency' model for channel frequencies less than 20 GHz and FASTEM1 for channel frequencies greater than 20 GHz. 
 
 \subsection{Dependance on Channel Frequency}
-The channel central frequency determines the sensitivity to the surface and accounts for the most significant variability in the impact on CRTM simulations.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on simulations for AMSUA NOAA-19 can vary from channel to channel by more than 5K.  With the exception of AMSRE Aqua channels 1-4 the CRTM simulations using FASTEM-4 are colder for all the surface conditions we considered.  For AMSRE channels 1-4 the CRTM simulations using FASTEM-4 can be 5K larger as shown in figure \ref{fig:AMSRE_Wind_Speed_Impact}.  Note that for AMSRE channels 1-6 the low frequency emissivity model was used.
+The channel central frequency determines the sensitivity to the surface.  As such the radiometric impact resulting from emissivity differences depends strongly on the channel central frequency.  For example as shown in figure \ref{fig:AMSUA_Wind_Speed_Impact} the magnitude of the impact on simulations for AMSUA NOAA-19 surface channels can be more than 5K depending on the wind speed; whereas for some of the high peaking channels the impact is neglibible regardless of the wind speed.  The CRTM release 2.0.2 microwave sea surface emissivities for all AMSUA surface sensitive channels are computed based on the Fastem-1 model.
+
+\subsection{Dependence on Sensor Zenith Angle}
+For AMSRE Aqua channels 1-4 the CRTM brightness temperatures using FASTEM-4 are larger than those when using the CRTM's release 2.0.2 microwave sea surface emissivities with the exception of cases where the sensor zenith angles exceed 60.  The smaller CRTM brightness temperatures when using Fastem-4 for large sensor zenith angles is due to the exponential inverse relationship between the cosine of the sensor zenith angle and the small scale correction.  For AMSRE Aqua channels 1-6 the CRTM release 2.0.2 emissivities were computed using the 'Low Frequency' microwave sea surface emissivity model.  Figure \ref{fig:AMSRE_Sensor_Zenith_Impact} shows that CRTM brightness temperature simulations for AMSRE Aqua channels using FASTEM-4 can be significantly smaller than those when using the CRTM release 2.0.2 microwave sea surface emissivities for angles larger than 60.  
 
 \begin{figure}[htp]
   \centering
@@ -36,6 +42,13 @@ The channel central frequency determines the sensitivity to the surface and acco
 
 \begin{figure}[htp]
   \centering
+  \includegraphics[scale=0.75]{graphics/AMSRE_Sensor_Zenith_BT.eps}
+  \caption{The radiometric impact of implementing FASTEM-4 on AMSRE Aqua simulations as a function of sensor zenith angle.}
+  \label{fig:AMSRE_Sensor_Zenith_Impact}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
   \includegraphics[scale=0.75]{graphics/AMSRE_Wind_Speed_BT.eps}
   \caption{The radiometric impact of implementing FASTEM-4 on AMSRE Aqua simulations as a function of wind speed.}
   \label{fig:AMSRE_Wind_Speed_Impact}
@@ -44,19 +57,23 @@ The channel central frequency determines the sensitivity to the surface and acco
 %\newpage
 
 \subsection{Dependence on Wind Speed}
-The impact on CRTM simulations for microwave channels sensitive to the surface is most dependant on wind speed.  Figure \ref{fig:AMSUA_Wind_Speed_Impact} shows that the magnitude of the impact at wind speeds approaching 15 m/s are on the order of 2K larger than at wind speeds less than 4 m/s.  This result is corroborated by Figure \ref{fig:AMSUA_Background_Impact} which shows scatter plots of impact as brightness temperature differences for AMSUA MetOP-A using global NCEP background data from February 2, 2009 and August 1, 2009 as input.  The scatter plots for both days illustrate that the impact on MetOP-A AMSUA simulations increases with wind speed.
+The impact on CRTM simulations for any particular surface sensitive microwave channel is strongly dependent on the surface wind speed.  The maximum impact on CRTM simulations as a function of wind speed occurs at around 10 m/s.  Figure \ref{fig:AMSUA_Wind_Speed_Impact} shows that among the 4 most surface sensitive AMSUA channels the magnitude of the impact for the range of wind speeds we considered can vary by as much as 4K.  
 
 \begin{figure}[htp]
   \centering
   \includegraphics[scale=0.75]{graphics/emissD_windS_f.eps}
-  \caption{The radiometric impact on MetOP-A AMSUA simulations as a function of wind speed using global NCEP background data from February 2, 2009 and August 1, 2009 as input .}
+  \caption{The radiometric impact on MetOP-A AMSUA simulations as a function of wind speed using global NCEP background data from February 2, 2009 and August 1, 2009 as input.}
   \label{fig:AMSUA_Background_Impact}
 \end{figure}
 
 \newpage
 
 \subsection{Dependence on Salinity}
-For AMSUA and MHS surface channels the impact decreases with increasing salinity as shown in figures \ref{fig:AMSUA_Salinity_Impact} and \ref{fig:MHS_Salinity_Impact}.  
+The impact on CRTM simulations is much less dependent on salinity than wind speed.  Figure \ref{fig:AMSUA_Salinity_Impact} shows that among the 4 most surface sensitive AMSUA channels the magnitude of the impact varies by no more than about 1K.
+
+
+
+  
 
 \begin{figure}[htp]
   \centering
@@ -72,10 +89,11 @@ For AMSUA and MHS surface channels the impact decreases with increasing salinity
   \label{fig:MHS_Salinity_Impact}
 \end{figure}
 
-\newpage
+\newpage  
 
 \subsection{Dependence on the Angle Between the Sensor Azimuth and Wind Direction} 
-The impact can vary significantly as a function of the angle between the sensor azimuth and wind direction.  The impact increases with the perpendicularity of the sensor azimuth to the wind direction.  When the sensor azimuths are perpedicular to the CRTM default wind direction (North) the magnitude of the brightness temperature differences are nearly 1K larger than those at sensor azimuths parallel or opposite to the wind direction as shown in figure \ref{fig:AMSUA_Sensor_Azimuth_Impact}.  
+The impact increases or decreases with the perpendicularity of the sensor azimuth to the wind direction depending on the channel polarization.  For vertically polarized channels the impact increases with perpendicularity of the sensor azimuth to the wind direction; whereas for horizontally polarized channels the impact decreases with perpendicularity of the sensor azimuth to the wind direction.  Among the four most surface sensitive AMSUA NOAA-19 channels the impact can vary by as much as 1K as shown in figure \ref{fig:AMSUA_Sensor_Azimuth_Impact}.
+  
 
 \begin{figure}[htp]
   \centering
