@@ -2776,7 +2776,7 @@ CONTAINS
      HH_TL(:,:) = matmul( PPM_TL(:,:), RTV%PPP(1:nZ,1:nZ,KL) )+matmul( RTV%PPM(1:nZ,1:nZ,KL), PPP_TL(:,:) )
      !
      ! compute TL eigenvectors EigVe, and eigenvalues EigVa
-     CALL ASYMTX_TL(COS_Angle(nZ),n_streams,nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL),HH_TL, &
+     CALL ASYMTX_TL(nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL),HH_TL, &
           EigVe_TL,EigVa_TL,Error_Status)
 
      DO i = 1, nZ
@@ -3302,7 +3302,7 @@ CONTAINS
      END DO
 
      ! compute eigenvectors EigVe, and eigenvalues EigVa
-     CALL ASYMTX_AD(COS_Angle(nZ),n_Streams,nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL), &
+     CALL ASYMTX_AD(nZ,RTV%EigVe(1:nZ,1:nZ,KL),RTV%EigVa(1:nZ,KL), &
           EigVe_AD,EigVa_AD,HH_AD,Error_Status) 
 
      PPM_AD(:,:) = matmul( HH_AD(:,:), transpose(RTV%PPP(1:nZ,1:nZ,KL)) )
