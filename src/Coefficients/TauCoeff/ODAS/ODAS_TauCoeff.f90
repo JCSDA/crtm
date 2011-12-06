@@ -198,8 +198,7 @@ CONTAINS
     CHARACTER(256) :: Process_ID_Tag
     CHARACTER(256), DIMENSION(MAX_N_SENSORS) :: TauCoeff_File
     INTEGER :: Allocate_Status
-    INTEGER :: n, n_Sensors, n_Channels
-    INTEGER :: Max_n_Channels  ! Maximum channels protected variable
+    INTEGER :: n, n_Sensors
 
     ! Set up
     Error_Status = SUCCESS

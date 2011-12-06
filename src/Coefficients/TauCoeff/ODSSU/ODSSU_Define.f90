@@ -934,9 +934,6 @@ CONTAINS
 
   SUBROUTINE Clear_ODSSU( ODSSU )
     TYPE(ODSSU_type), INTENT(IN OUT) :: ODSSU
-    ! Local
-    INTEGER :: i
-
     ODSSU%Release   = ODSSU_RELEASE
     ODSSU%Version   = ODSSU_VERSION
     ODSSU%Algorithm = ODSSU_ALGORITHM
