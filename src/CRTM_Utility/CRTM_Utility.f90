@@ -818,14 +818,13 @@ CONTAINS
    END SUBROUTINE  ASYMTX
 !
 !
-     SUBROUTINE ASYMTX_TL( COS_Angle,n_streams, nZ, V, VAL, A_TL, V_TL, VAL_TL, Error_Status)
+     SUBROUTINE ASYMTX_TL( nZ, V, VAL, A_TL, V_TL, VAL_TL, Error_Status)
        IMPLICIT NONE
-       INTEGER :: nZ,Error_Status,n_streams
+       INTEGER :: nZ,Error_Status
        REAL(fp), DIMENSION(:,:) :: V, A_TL, V_TL
        REAL(fp), DIMENSION(:) :: VAL, VAL_TL
-       REAL(fp), INTENT(IN) :: COS_Angle
        REAL(fp), DIMENSION(nZ,nZ) :: V_int, A1_TL
-       REAL(fp) :: b_TL, d0, d1
+       REAL(fp) :: b_TL
        INTEGER :: i,j
        CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ASYMTX_TL'
        CHARACTER(256) :: Message
@@ -880,13 +879,12 @@ CONTAINS
        END SUBROUTINE ASYMTX_TL
 !
 !
-     SUBROUTINE ASYMTX_AD( COS_Angle,n_streams, nZ, V, VAL, V_AD, VAL_AD, A_AD, Error_Status)
+     SUBROUTINE ASYMTX_AD( nZ, V, VAL, V_AD, VAL_AD, A_AD, Error_Status)
        IMPLICIT NONE
        INTEGER :: nZ,Error_Status
        REAL(fp), DIMENSION(:,:) :: V, V_AD, A_AD
        REAL(fp), DIMENSION(:) :: VAL, VAL_AD
-       INTEGER :: i,j,k,n_streams
-       REAL(fp) :: COS_Angle,d0,d1
+       INTEGER :: i,j,k
        REAL(fp), DIMENSION(nZ,nZ) :: V_int, A1_AD
        CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ASYMTX_AD'
        CHARACTER(256) :: Message
@@ -922,7 +920,7 @@ CONTAINS
        INTEGER :: nZ,Error_Status
        REAL(fp), DIMENSION(:,:) :: V, V_AD, A_AD
        REAL(fp), DIMENSION(:) :: VAL, VAL_AD
-       INTEGER :: i,j,k,n_streams,n
+       INTEGER :: i,j,n_streams,n
        REAL(fp) :: COS_Angle,d0,d1
        REAL(fp), DIMENSION(nZ,nZ) :: V_int, A1_AD
        REAL(fp) :: b_AD
