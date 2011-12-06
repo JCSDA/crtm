@@ -226,8 +226,6 @@ CONTAINS
 !       CALL Compute_Predictors_zssmis_TL(Temperature,   &
 !                                         Be,            & 
 !                                         CosBK,         & 
-!                                         Doppler_Shift, &  
-!                                         Secang,        &  
 !                                         Temperature_TL,& 
 !                                         Predictor_TL )   
 ! INPUT ARGUMENTS:
@@ -252,19 +250,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Doppler_Shift :  Doppler shift due Earth ratation, positive when
-!                        the emitter moves towards the sensor
-!                        UNITS:      KHz
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!             Secang  :  Secant of the zenith angle profile
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(n_Layers) array  
-!                        ATTRIBUTES: INTENT(IN)
-!
 !       Temperature_TL:  TL Temperature profile
 !                        UNITS:      K
 !                        TYPE:       REAL(fp)
@@ -283,15 +268,11 @@ CONTAINS
   SUBROUTINE Compute_Predictors_zssmis_TL(Temperature,   &
                                           Be,            &
                                           CosBK,         &
-                                          Doppler_Shift, & 
-                                          Secang,        & 
                                           Temperature_TL,&
                                           Predictor_TL )
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Be
     REAL(fp), INTENT( IN ) :: CosBK
-    REAL(fp), INTENT( IN ) :: Doppler_Shift
-    REAL(fp), INTENT( IN ) :: Secang(:)
     REAL(fp), INTENT( IN ) :: Temperature_TL(:)
     TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_TL
     
@@ -334,8 +315,6 @@ CONTAINS
 !        CALL Compute_Predictors_zssmis_AD(Temperature,   &
 !                                          Be,            &
 !                                          CosBK,         &
-!                                          Doppler_Shift, & 
-!                                          Secang,        & 
 !                                          Predictor_AD,  &
 !                                          Temperature_AD )
 ! INPUT ARGUMENTS:
@@ -360,19 +339,6 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Doppler_Shift :  Doppler shift due Earth ratation, positive when
-!                        the emitter moves towards the sensor
-!                        UNITS:      KHz
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!             Secang  :  Secant of the zenith angle profile
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(n_Layers) array  
-!                        ATTRIBUTES: INTENT(IN)
-!
 !       Predictor_AD:    AD Predictor structure
 !                        UNITS:      N/A
 !                        TYPE:       TYPE(Predictor_type)
@@ -390,15 +356,11 @@ CONTAINS
   SUBROUTINE Compute_Predictors_zssmis_AD(Temperature,   &
                                           Be,            &
                                           CosBK,         &
-                                          Doppler_Shift, & 
-                                          Secang,        & 
                                           Predictor_AD,  &
                                           Temperature_AD )
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Be
     REAL(fp), INTENT( IN ) :: CosBK
-    REAL(fp), INTENT( IN ) :: Doppler_Shift
-    REAL(fp), INTENT( IN ) :: Secang(:)
     TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_AD
     REAL(fp), INTENT( INOUT ) :: Temperature_AD(:)
     
@@ -541,9 +503,6 @@ CONTAINS
 !
 !       CALL Compute_Predictors_zamsua_TL(Temperature,     &
 !                                         Ref_Temperature, &
-!                                         Be,            & 
-!                                         CosBK,         & 
-!                                         Secang,        &  
 !                                         Temperature_TL,& 
 !                                         Predictor_TL )   
 ! INPUT ARGUMENTS:
@@ -556,26 +515,6 @@ CONTAINS
 !
 !    RefTemperature:     Reference temperature profile
 !                        UNITS:      K
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(n_Layers) array  
-!                        ATTRIBUTES: INTENT(IN)
-!
-!         Be    :        Earth magnetic filed strength
-!                        UNITS:      Guass (range 0.2 - 0.7)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!         CosBK :        Cosine of the angle between the Earth magnetic
-!                        field and the electromagnetic wave propagation
-!                        direction
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!             Secang  :  Secant of the zenith angle profile
-!                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
 !                        DIMENSION:  Rank-1(n_Layers) array  
 !                        ATTRIBUTES: INTENT(IN)
@@ -597,16 +536,10 @@ CONTAINS
 
   SUBROUTINE Compute_Predictors_zamsua_TL(Temperature,      &
                                           Ref_Temperature,  &
-                                          Be,               &
-                                          CosBK,            &
-                                          Secang,           & 
                                           Temperature_TL,   &
                                           Predictor_TL )
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Ref_Temperature(:)
-    REAL(fp), INTENT( IN ) :: Be
-    REAL(fp), INTENT( IN ) :: CosBK
-    REAL(fp), INTENT( IN ) :: Secang(:)
     REAL(fp), INTENT( IN ) :: Temperature_TL(:)
     TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_TL
     
@@ -637,16 +570,13 @@ CONTAINS
 !       Compute_Predictors_zamsua_AD
 !
 ! PURPOSE:
-!       Subroutine to compute TL predictors for the ZAMSUA sensor (a virtual sensor
+!       Subroutine to compute AD predictors for the ZAMSUA sensor (a virtual sensor
 !       with AMSUA channel 14)
 !
 ! CALLING SEQUENCE:
 !
 !        CALL Compute_Predictors_zamsua_AD(Temperature,     &
 !                                          Ref_Temperature, &
-!                                          Be,            &
-!                                          CosBK,         &
-!                                          Secang,        & 
 !                                          Predictor_AD,  &
 !                                          Temperature_AD )
 ! INPUT ARGUMENTS:
@@ -659,26 +589,6 @@ CONTAINS
 !
 !    Ref_Temperature:    Reference temperature profile
 !                        UNITS:      K
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(n_Layers) array  
-!                        ATTRIBUTES: INTENT(IN)
-!
-!         Be    :        Earth magnetic filed strength
-!                        UNITS:      Guass (range 0.2 - 0.7)
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!         CosBK :        Cosine of the angle between the Earth magnetic
-!                        field and the electromagnetic wave propagation
-!                        direction
-!                        UNITS:      N/A
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!             Secang  :  Secant of the zenith angle profile
-!                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
 !                        DIMENSION:  Rank-1(n_Layers) array  
 !                        ATTRIBUTES: INTENT(IN)
@@ -699,16 +609,10 @@ CONTAINS
 !------------------------------------------------------------------------------
   SUBROUTINE Compute_Predictors_zamsua_AD(Temperature,    &
                                           Ref_Temperature,&
-                                          Be,            &
-                                          CosBK,         &
-                                          Secang,        & 
                                           Predictor_AD,  &
                                           Temperature_AD )
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Ref_Temperature(:)
-    REAL(fp), INTENT( IN ) :: Be
-    REAL(fp), INTENT( IN ) :: CosBK
-    REAL(fp), INTENT( IN ) :: Secang(:)
     TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_AD
     REAL(fp), INTENT( INOUT ) :: Temperature_AD(:)
     

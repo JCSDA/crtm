@@ -256,10 +256,8 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type), INTENT(INOUT)  :: AtmOptics_TL
     ! Local variables
     INTEGER  :: n_User_Layers
-    REAL(fp) :: OD_TL(Predictor%n_Layers)  
     REAL(fp) :: OD_Path_TL(0:Predictor%n_Layers)
     REAL(fp) :: User_OD_Path_TL(0:Predictor%n_User_Layers)
-    INTEGER  :: ODPS2User_Idx(2, 0:Predictor%n_User_Layers)
     INTEGER  :: idx
 
     n_User_Layers = Predictor%n_User_Layers
@@ -281,7 +279,6 @@ CONTAINS
     ! Interpolate the path profile back on the user pressure grids,
     ! Compute layer optical depths (vertical direction)
     CALL Interpolate_Profile_F1_TL(Predictor%PAFV%ODPS2User_Idx,    &
-                                   Predictor%PAFV%OD_Path,          &
                                    Predictor%Ref_Level_LnPressure,  &
                                    Predictor%User_Level_LnPressure, &
                                    OD_Path_TL,                      &
@@ -358,10 +355,8 @@ CONTAINS
     TYPE(Predictor_type)     , INTENT(IN OUT) :: Predictor_AD
     ! Local variables
     INTEGER  :: n_User_Layers, k
-    REAL(fp) :: OD_AD(Predictor%n_Layers)                 
     REAL(fp) :: OD_Path_AD(0:Predictor%n_Layers) 
     REAL(fp) :: User_OD_Path_AD(0:Predictor%n_User_Layers)
-    INTEGER  :: ODPS2User_Idx(2, 0:Predictor%n_User_Layers)
     INTEGER  :: idx
 
     n_User_Layers = Predictor%n_User_Layers
@@ -381,7 +376,6 @@ CONTAINS
 
     OD_Path_AD = ZERO          
     CALL Interpolate_Profile_F1_AD(Predictor%PAFV%ODPS2User_Idx,       &
-                                   Predictor%PAFV%OD_Path,             &
                                    Predictor%Ref_Level_LnPressure,     &
                                    Predictor%User_Level_LnPressure,    &
                                    User_OD_Path_AD,                    &
@@ -1362,8 +1356,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Zeeman_Compute_Predictors_TL( Zeeman      , &  ! Input
 !                                          TC          , &  ! Input                    
-!                                          Atm         , &  ! FWD Input                    
-!                                          GeoInfo     , &  ! Input                    
 !                                          Predictor   , &  ! FWD Input                    
 !                                          Atm_TL      , &  ! TL  Input                    
 !                                          Predictor_TL  )  ! TL  Output                   
@@ -1378,20 +1370,6 @@ CONTAINS
 !       TC:              ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Atm:             CRTM Atmosphere structure containing the atmospheric
-!                        state data.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Atmosphere_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeoInfo:         CRTM_GeometryInfo structure containing the 
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -1422,16 +1400,12 @@ CONTAINS
   SUBROUTINE Zeeman_Compute_Predictors_TL( &
     Zeeman      , &
     TC          , &  
-    Atm         , &  
-    GeoInfo     , &  
     Predictor   , &  
     Atm_TL      , &  
     Predictor_TL)      
     ! Arguments
     TYPE(Zeeman_Input_type)     , INTENT(IN)     :: Zeeman
     TYPE(ODPS_type)             , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atm         
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)        , INTENT(IN)     :: Predictor
     TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atm_TL
     TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor_TL
@@ -1442,7 +1416,6 @@ CONTAINS
 
     ! Mapping data from user to internal fixed pressure layers/levels.
     CALL Map_Input_TL( &
-           Atm           , &  ! Input
            TC            , &  ! Input
            Atm_TL        , &  ! Input
            Temperature_TL, &  ! Output
@@ -1461,8 +1434,6 @@ CONTAINS
                Predictor%PAFV%Temperature, &
                Be                        , &
                COS_ThetaB                , &
-               Doppler_Shift             , &
-               Predictor%Secant_Zenith   , &
                Temperature_TL            , &
                Predictor_TL                )
 
@@ -1474,9 +1445,6 @@ CONTAINS
         CALL Compute_Predictors_zamsua_TL( &
                Predictor%PAFV%Temperature, &
                TC%Ref_Temperature        , &
-               Be                        , &
-               COS_ThetaB                , &
-               Predictor%Secant_Zenith   , &
                Temperature_TL            , &
                Predictor_TL                )
         
@@ -1502,8 +1470,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL Zeeman_Compute_Predictors_AD( Zeeman      , &  ! Input
 !                                          TC,         , &  ! Input                 
-!                                          Atm,        , &  ! FWD Input                 
-!                                          GeoInfo,    , &  ! Input                 
 !                                          Predictor,  , &  ! FWD Input                 
 !                                          Predictor_AD, &  ! AD  Input                 
 !                                          Atm_AD        )  ! AD  Output                
@@ -1518,20 +1484,6 @@ CONTAINS
 !       TC:              ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Atm:             CRTM Atmosphere structure containing the atmospheric
-!                        state data.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Atmosphere_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeoInfo:         CRTM_GeometryInfo structure containing the 
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -1563,16 +1515,12 @@ CONTAINS
   SUBROUTINE Zeeman_Compute_Predictors_AD( &
     Zeeman      , &
     TC          , &  
-    Atm         , &  
-    GeoInfo     , &  
     Predictor   , &  
     Predictor_AD, &  
     Atm_AD        )    
     ! Arguments
     TYPE(Zeeman_Input_type)      , INTENT(IN)     :: Zeeman
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
-    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(IN OUT) :: predictor_AD
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN OUT) :: Atm_AD
@@ -1597,8 +1545,6 @@ CONTAINS
                Predictor%PAFV%Temperature, &
                Be                        , &
                COS_ThetaB                , & 
-               Doppler_Shift             , & 
-               Predictor%Secant_Zenith   , &
                Predictor_AD              , &
                Temperature_AD              )
 
@@ -1610,9 +1556,6 @@ CONTAINS
         CALL Compute_Predictors_zamsua_AD( &
                Predictor%PAFV%Temperature, &
                TC%Ref_Temperature        , &
-               Be                        , &
-               COS_ThetaB                , & 
-               Predictor%Secant_Zenith   , &
                Predictor_AD              , &
                Temperature_AD              )
         
@@ -1623,7 +1566,6 @@ CONTAINS
 
     ! Mapping data from user to internal fixed pressure layers/levels.
     CALL Map_Input_AD( &
-           Atm           , & ! Input
            TC            , & ! Input
            Temperature_AD, & ! Input  
            Absorber_AD   , & ! Input
@@ -1695,19 +1637,17 @@ CONTAINS
 
 
   !----------------------------------------------------------
-  ! Obtain number of compoents, given an ODPS group index
+  ! Obtain number of compoents
   !----------------------------------------------------------
-  FUNCTION Get_NumOfZComponents( gIndex ) RESULT( n_Components )
-    INTEGER, INTENT(IN) :: gIndex
+  FUNCTION Get_NumOfZComponents() RESULT( n_Components )
     INTEGER :: n_Components
     n_Components = N_ZCOMPONENTS
   END FUNCTION Get_NumOfZComponents
 
       
-  ! Obtain number of compoents, given an ODPS group index
+  ! Obtain number of compoents
   !----------------------------------------------------------
-  FUNCTION Get_NumOfZAbsorbers( gIndex ) RESULT( n_Absorbers )
-    INTEGER, INTENT(IN) :: gIndex
+  FUNCTION Get_NumOfZAbsorbers() RESULT( n_Absorbers )
     INTEGER :: n_Absorbers
     n_Absorbers = N_ZABSORBERS
   END FUNCTION Get_NumOfZAbsorbers

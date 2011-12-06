@@ -740,7 +740,6 @@ CONTAINS
 !       CALL Compute_Predictor_TL( Group_ID,           &  ! Input
 !                                  Temperature,        &  ! Input
 !                                  Absorber,           &  ! Input
-!                                  Ref_Level_Pressure, &  ! Input    
 !                                  Ref_Temperature,    &  ! Input    
 !                                  Ref_Absorber,       &  ! Input    
 !                                  secang,             &  ! Input
@@ -766,12 +765,6 @@ CONTAINS
 !                        UNITS:      vary
 !                        TYPE:       REAL(fp)
 !                        DIMENSION:  Rank-2(n_Layers x n_Absorbers) array
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Ref_Level_Pressure : Reference level pressure profile
-!                        UNITS:      hPa
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(0:n_Layers) array
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Ref_Temperature : Reference layer temperature profile
@@ -825,7 +818,6 @@ CONTAINS
   SUBROUTINE Compute_Predictor_TL( Group_ID,           &
                                    Temperature,        &
                                    Absorber,           &
-                                   Ref_Level_Pressure, &     
                                    Ref_Temperature,    &     
                                    Ref_Absorber,       &     
                                    secang,             & 
@@ -837,7 +829,6 @@ CONTAINS
     INTEGER,    INTENT(IN)              :: Group_ID 
     REAL( fp ), INTENT(IN)              :: Temperature(:)
     REAL( fp ), INTENT(IN)              :: Absorber(:, :)
-    REAL( fp ), INTENT(IN)              :: Ref_Level_Pressure(0:)
     REAL( fp ), INTENT(IN)              :: Ref_Temperature(:)   
     REAL( fp ), INTENT(IN)              :: Ref_Absorber(:, :)
     REAL( fp ), INTENT(IN)              :: Secang(:)
@@ -1312,7 +1303,6 @@ CONTAINS
 !       CALL Compute_Predictor_AD( Group_ID,           &  ! Input
 !                                  Temperature,        &  ! Input
 !                                  Absorber,           &  ! Input   
-!                                  Ref_Level_Pressure, &  ! Input    
 !                                  Ref_Temperature,    &  ! Input    
 !                                  Ref_Absorber,       &  ! Input    
 !                                  secang,             &  ! Input
@@ -1338,12 +1328,6 @@ CONTAINS
 !                        UNITS:      vary
 !                        TYPE:       REAL(fp)
 !                        DIMENSION:  Rank-2(n_Layers x n_Absorbers) array
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Ref_Level_Pressure : Reference level pressure profile
-!                        UNITS:      hPa
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-1(0:n_Layers) array
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Ref_Temperature : Reference layer temperature profile
@@ -1397,7 +1381,6 @@ CONTAINS
   SUBROUTINE Compute_Predictor_AD( Group_ID,           &
                                    Temperature,        &   
                                    Absorber,           &     
-                                   Ref_Level_Pressure, &     
                                    Ref_Temperature,    &     
                                    Ref_Absorber,       &     
                                    secang,             &     
@@ -1409,7 +1392,6 @@ CONTAINS
     INTEGER,    INTENT(IN)              :: Group_ID 
     REAL( fp ), INTENT(IN)              :: Temperature(:)
     REAL( fp ), INTENT(IN)              :: Absorber(:, :)
-    REAL( fp ), INTENT(IN)              :: Ref_Level_Pressure(0:)
     REAL( fp ), INTENT(IN)              :: Ref_Temperature(:)   
     REAL( fp ), INTENT(IN)              :: Ref_Absorber(:, :)
     REAL( fp ), INTENT(IN)              :: Secang(:)
@@ -2433,11 +2415,9 @@ CONTAINS
 ! CALLING SEQUENCE:
 !    CALL SUBROUTINE Compute_Predictor_OPTRAN_TL(Temperature,    &  ! Input
 !                                                vapor,          &  ! Inpt
-!                                                Level_Pressure, &  ! Input
 !                                                Pressure,       &  ! Input
 !                                                secant_angle,   &  ! Input
 !                                                Alpha,          &  ! Input
-!                                                Alpha_C1,       &  ! Input
 !                                                Alpha_C2,       &  ! Input
 !                                                Predictor,      &  ! Input
 !                                                Temperature_TL, &  ! Input
@@ -2458,12 +2438,6 @@ CONTAINS
 !                        DIMENSION:  Rank-1(n_Layers) array
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Level_Pressure : level pressure profile
-!                        UNITS:      hPa
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-Ap11(0:n_Layers) array
-!                        ATTRIBUTES: INTENT(IN)
-!
 !            Pressure :  Layer pressure profile
 !                        UNITS:      hPa
 !                        TYPE:       REAL(fp)
@@ -2476,7 +2450,7 @@ CONTAINS
 !                        DIMENSION:  Rank-1(n_Layers) array  
 !                        ATTRIBUTES: INTENT(IN)
 !
-!      Alpha, Alpha_C1, Alpha_C2  :  Coefficients for converting water vapor integrated amount
+!      Alpha, Alpha_C2  :  Coefficients for converting water vapor integrated amount
 !                        to Compact OPTRAN water vapor regression space
 !                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
@@ -2514,11 +2488,9 @@ CONTAINS
 
   SUBROUTINE Compute_Predictor_OPTRAN_TL(Temperature,    &
                                          Vapor,          &
-                                         Level_Pressure, &
                                          Pressure,       &
                                          secant_angle,   &
                                          Alpha,          &
-                                         Alpha_C1,       &
                                          Alpha_C2,       &
                                          Predictor,      &
                                          Temperature_TL, &
@@ -2526,10 +2498,9 @@ CONTAINS
                                          Predictor_TL) 
      REAL(fp)            , INTENT(IN)    :: Temperature(:)
      REAL(fp)            , INTENT(IN)    :: Vapor(:)
-     REAL(fp)            , INTENT(IN)    :: Level_Pressure(0:)
      REAL(fp)            , INTENT(IN)    :: Pressure(:)
      REAL(fp)            , INTENT(IN)    :: secant_angle(:)
-     REAL(fp)            , INTENT(IN)    :: Alpha, Alpha_C1, Alpha_C2
+     REAL(fp)            , INTENT(IN)    :: Alpha, Alpha_C2
      TYPE(Predictor_type), TARGET, INTENT(IN) :: Predictor
      REAL(fp)            , INTENT(IN)    :: Temperature_TL(:)
      REAL(fp)            , INTENT(IN)    :: Vapor_TL(:)
@@ -2625,11 +2596,9 @@ CONTAINS
 ! CALLING SEQUENCE:
 !    CALL SUBROUTINE Compute_Predictor_OPTRAN_AD(Temperature,    &  ! Input
 !                                                vapor,          &  ! Inpt
-!                                                Level_Pressure, &  ! Input
 !                                                Pressure,       &  ! Input
 !                                                secant_angle,   &  ! Input
 !                                                Alpha,          &  ! Input
-!                                                Alpha_C1,       &  ! Input
 !                                                Alpha_C2,       &  ! Input
 !                                                Predictor,      &  ! Input
 !                                                Predictor_AD,   &  ! Input
@@ -2650,12 +2619,6 @@ CONTAINS
 !                        DIMENSION:  Rank-1(n_Layers) array
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Level_Pressure : level pressure profile
-!                        UNITS:      hPa
-!                        TYPE:       REAL(fp)
-!                        DIMENSION:  Rank-Ap11(0:n_Layers) array
-!                        ATTRIBUTES: INTENT(IN)
-!
 !            Pressure :  Layer pressure profile
 !                        UNITS:      hPa
 !                        TYPE:       REAL(fp)
@@ -2668,7 +2631,7 @@ CONTAINS
 !                        DIMENSION:  Rank-1(n_Layers) array  
 !                        ATTRIBUTES: INTENT(IN)
 !
-!      Alpha, Alpha_C1, Alpha_C2  :  Coefficients for converting water vapor integrated amount
+!      Alpha, Alpha_C2  :  Coefficients for converting water vapor integrated amount
 !                        to Compact OPTRAN water vapor regression space
 !                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
@@ -2706,11 +2669,9 @@ CONTAINS
 
   SUBROUTINE Compute_Predictor_OPTRAN_AD(Temperature,    &
                                          Vapor,          &
-                                         Level_Pressure, &
                                          Pressure,       &
                                          secant_angle,   &
                                          Alpha,          &
-                                         Alpha_C1,       &
                                          Alpha_C2,       &
                                          Predictor,      &
                                          Predictor_AD,   &
@@ -2718,10 +2679,9 @@ CONTAINS
                                          Vapor_AD)
      REAL(fp)            , INTENT(IN)    :: Temperature(:)
      REAL(fp)            , INTENT(IN)    :: Vapor(:)
-     REAL(fp)            , INTENT(IN)    :: Level_Pressure(0:)
      REAL(fp)            , INTENT(IN)    :: Pressure(:)
      REAL(fp)            , INTENT(IN)    :: secant_angle(:)
-     REAL(fp)            , INTENT(IN)    :: Alpha, Alpha_C1, Alpha_C2
+     REAL(fp)            , INTENT(IN)    :: Alpha, Alpha_C2
      TYPE(Predictor_type), TARGET, INTENT(IN) :: Predictor
      TYPE(Predictor_type), INTENT(INOUT) :: Predictor_AD
      REAL(fp)            , INTENT(INOUT) :: Temperature_AD(:)
@@ -2914,17 +2874,10 @@ CONTAINS
   END FUNCTION Get_Ozone_Component_ID
 
   ! This function gets a flag (true or false) indicating the
-  ! need for saveing the FWD variables for a given group
-  FUNCTION Get_SaveFWVFlag( Group_Index )RESULT( Flag )
-    INTEGER, INTENT(IN) :: Group_Index
-    
+  ! need for saveing the FWD variables
+  FUNCTION Get_SaveFWVFlag()RESULT( Flag )
     LOGICAL :: Flag
-  
-!    IF(Group_Index == GROUP_ZSSMIS)THEN
-!      Flag = .FALSE.
-!    ELSE
-      Flag = .TRUE.
-!    END IF
+    Flag = .TRUE.
   END FUNCTION Get_SaveFWVFlag
   
 END MODULE ODPS_Predictor

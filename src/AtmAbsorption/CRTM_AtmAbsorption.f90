@@ -894,8 +894,6 @@ CONTAINS
       CASE( ODPS_ALGORITHM )
         CALL ODPS_Compute_Predictors_TL( &
                TC%ODPS(idx)     , &  ! Input
-               Atmosphere       , &  ! FWD Input
-               GeometryInfo     , &  ! Input
                Predictor%ODPS   , &  ! FWD Input
                Atmosphere_TL    , &  ! TL Input
                Predictor_TL%ODPS  )  ! TL Output
@@ -920,8 +918,6 @@ CONTAINS
           CASE( ODPS_ALGORITHM )
             CALL ODPS_Compute_Predictors_TL( &
                    TC%ODSSU(idx)%ODPS(1), &  ! Input
-                   Atmosphere           , &  ! FWD Input
-                   GeometryInfo         , &  ! Input
                    Predictor%ODPS       , &  ! FWD Input
                    Atmosphere_TL        , &  ! TL Input
                    Predictor_TL%ODPS      )  ! TL Output
@@ -935,8 +931,6 @@ CONTAINS
         CALL Zeeman_Compute_Predictors_TL( &
                AncillaryInput%Zeeman, &  ! Input
                TC%ODZeeman(idx)     , &  ! Input
-               Atmosphere           , &  ! FWD Input
-               GeometryInfo         , &  ! Input
                Predictor%ODZeeman   , &  ! FWD Input
                Atmosphere_TL        , &  ! TL Input
                Predictor_TL%ODZeeman  )  ! TL Output
@@ -1061,8 +1055,6 @@ CONTAINS
         CALL Zeeman_Compute_Predictors_AD( &
                AncillaryInput%Zeeman, &  ! Input
                TC%ODZeeman(idx)     , &  ! Input
-               Atmosphere           , &  ! FWD Input
-               GeometryInfo         , &  ! Input
                Predictor%ODZeeman   , &  ! FWD Input
                Predictor_AD%ODZeeman, &  ! AD Intput
                Atmosphere_AD          )  ! AD Output
@@ -1089,8 +1081,6 @@ CONTAINS
       CASE( ODPS_ALGORITHM )
         CALL ODPS_Compute_Predictors_AD( &
                TC%ODPS(idx)     , &  ! Input
-               Atmosphere       , &  ! FWD Input
-               GeometryInfo     , &  ! Input
                Predictor%ODPS   , &  ! FWD Input
                Predictor_AD%ODPS, &  ! AD Intput
                Atmosphere_AD      )  ! AD Output
@@ -1115,8 +1105,6 @@ CONTAINS
           CASE( ODPS_ALGORITHM )
             CALL ODPS_Compute_Predictors_AD( &
                    TC%ODSSU(idx)%ODPS(1), &  ! Input
-                   Atmosphere           , &  ! FWD Input
-                   GeometryInfo         , &  ! Input
                    Predictor%ODPS       , &  ! FWD Input
                    Predictor_AD%ODPS    , &  ! AD Intput
                    Atmosphere_AD          )  ! AD Output
@@ -1207,7 +1195,7 @@ CONTAINS
 
       ! Predictors for ODPS transmittance model
       CASE ( ODPS_ALGORITHM )
-        Error_Status = ODPS_Destroy_Predictor( Predictor%ODPS, No_Clear=No_Clear )
+        Error_Status = ODPS_Destroy_Predictor( Predictor%ODPS )
         ! *****FLAW*****
         ! WHAT IS THIS DOING HERE???
         IF ( Error_Status == SUCCESS ) &
@@ -1222,7 +1210,7 @@ CONTAINS
           CASE( ODAS_ALGORITHM )
             Error_Status = ODAS_Destroy_Predictor( Predictor%ODAS, No_Clear=No_Clear )
           CASE( ODPS_ALGORITHM )
-            Error_Status = ODPS_Destroy_Predictor( Predictor%ODPS, No_Clear=No_Clear )
+            Error_Status = ODPS_Destroy_Predictor( Predictor%ODPS )
             ! *****FLAW*****
             ! AGAIN, WHAT IS THIS DOING HERE???
             IF ( Error_Status == SUCCESS ) &
@@ -1240,7 +1228,7 @@ CONTAINS
     ! Is this a Zeeman channel?
     idx = TC%ZSensor_LoIndex(SensorIndex)
     IF ( idx > 0 ) THEN
-      Error_Status = ODPS_Destroy_Predictor( Predictor%ODZeeman, No_Clear=No_Clear )
+      Error_Status = ODPS_Destroy_Predictor( Predictor%ODZeeman )
       ! *****FLAW*****
       ! AND ONE MORE TIME, WHAT IS THIS DOING HERE???
       IF( Error_Status == SUCCESS ) &
@@ -1373,7 +1361,7 @@ CONTAINS
         ! ...Allocate memory for saved forward variables
         ! *****FLAW*****
         ! MUST CHECK FOR SaveFWV *VALUE* NOT JUST PRESCENCE!
-        IF ( PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag(i) ) THEN
+        IF ( PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag() ) THEN
         ! *****FLAW*****
           Allocate_Status = ODPS_Allocate_PAFV( &
                               TC%ODPS(idx)%n_Layers  , & ! Input
@@ -1411,7 +1399,7 @@ CONTAINS
             ! ...Allocate memory for saved forward variables
             ! *****FLAW*****
             ! MUST CHECK FOR SaveFWV *VALUE* NOT JUST PRESCENCE!
-            IF ( PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag(i) ) THEN
+            IF ( PRESENT(SaveFWV) .AND. ODPS_Get_SaveFWVFlag() ) THEN
             ! *****FLAW*****
               Allocate_Status = ODPS_Allocate_PAFV( &
                                   TC%ODSSU(idx)%ODPS(1)%n_Layers, & ! Input
@@ -1438,7 +1426,7 @@ CONTAINS
       ! ...Allocate main structure
       Allocate_Status = ODPS_Allocate_Predictor( &
                           TC%ODZeeman(idx)%n_Layers, & ! Input - internal layers
-                          Get_NumOfZComponents(i)  , & ! Input
+                          Get_NumOfZComponents()   , & ! Input
                           Get_NumOfZPredictors(i)  , & ! Input
                           Predictor%ODZeeman       , & ! Output
                           n_User_Layers = n_Layers   ) ! Optional Input
@@ -1455,7 +1443,7 @@ CONTAINS
       ! *****FLAW*****
         Allocate_Status = ODPS_Allocate_PAFV( &
                             TC%ODZeeman(idx)%n_Layers , & ! Input
-                            Get_NumOfZAbsorbers(i)    , & ! Input
+                            Get_NumOfZAbsorbers()     , & ! Input
                             n_Layers                  , & ! Input
                             Predictor%ODZeeman%OPTRAN , & ! Input
                             Predictor%ODZeeman%PAFV     ) ! Output

@@ -171,7 +171,6 @@ CONTAINS
     TYPE(PAFV_type)              , INTENT(INOUT)  :: PAFV
     
     ! Local variables
-    INTEGER  :: idx(1)
     REAL(fp) :: tolerance
     REAL(fp) :: SineAng
     REAL(fp) :: ODPS_sfc_fraction, Z_Offset, s 
@@ -330,22 +329,13 @@ CONTAINS
 !       internal pressure space for the ODPS algorithm.
 !
 ! CALLING SEQUENCE:
-!       CALL Map_Input_TL( Atm,                   & ! Input
-!                          TC,                    & ! Input   
+!       CALL Map_Input_TL( TC,                    & ! Input   
 !                          Atm_TL,                & ! Input
 !                          Temperature_TL,        & ! Output
 !                          Absorber_TL,           & ! Output
 !                          PAFV )                   ! In/Output
 !
 ! INPUT ARGUMENTS:
-!
-!        Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                        state data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
 !          TC:           ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
@@ -380,13 +370,11 @@ CONTAINS
 !
 !
 !------------------------------------------------------------------------------  
-  SUBROUTINE Map_Input_TL(Atm,             & ! Input
-                          TC,              & ! Input         
+  SUBROUTINE Map_Input_TL(TC,              & ! Input         
                           Atm_TL,          & ! Input
                           Temperature_TL,  & ! Output
                           Absorber_TL,     & ! Output        
                           PAFV)              ! Input            
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm_TL
     REAL(fp)                     , INTENT(OUT)    :: Temperature_TL(:)
@@ -394,11 +382,10 @@ CONTAINS
     TYPE(PAFV_type)              , INTENT(IN)     :: PAFV
 
     ! Local variables
-    INTEGER  :: idx(1)
     REAL(fp) :: tolerance
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
-    INTEGER  :: j, jj, k, n_ODPS_Layers
+    INTEGER  :: j, k, n_ODPS_Layers
 
     ! Define numerical precision tolerance.
     tolerance = EPSILON(ONE)
@@ -451,22 +438,13 @@ CONTAINS
 !       internal pressure space for the ODPS algorithm.
 !
 ! CALLING SEQUENCE:
-!       CALL Map_Input_AD( Atm,                   & ! Input
-!                          TC,                    & ! Input   
+!       CALL Map_Input_AD( TC,                    & ! Input   
 !                          Temperature_AD,        & ! Input
 !                          Absorber_AD,           & ! Input
 !                          Atm_AD,                & ! In/Output
 !                          PAFV )                   ! Input
 !
 ! INPUT ARGUMENTS:
-!
-!        Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                        state data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
 !          TC:           ODPS structure holding tau coefficients
 !                        UNITS:      N/A
 !                        TYPE:       ODPS_type
@@ -500,14 +478,12 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(INOUT)
 !
 !------------------------------------------------------------------------------  
-  SUBROUTINE Map_Input_AD(Atm,             & ! Input
-                          TC,              & ! Input
+  SUBROUTINE Map_Input_AD(TC,              & ! Input
                           Temperature_AD,  & ! Input 
                           Absorber_AD,     & !  Input        
                           Atm_AD,          & ! Output  
                           PAFV)              ! Input            
                                 
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
     REAL(fp)                     , INTENT(INOUT)  :: Temperature_AD(:)
     REAL(fp)                     , INTENT(INOUT)  :: Absorber_AD(:,:)
@@ -515,11 +491,10 @@ CONTAINS
     TYPE(PAFV_type)              , INTENT(IN)     :: PAFV
 
     ! Local variables
-    INTEGER  :: idx(1)
     REAL(fp) :: tolerance
     ! absorber index mapping from ODPS to user 
     INTEGER  :: Idx_map(TC%n_Absorbers), H2O_idx
-    INTEGER  :: j, jj, k, n_ODPS_Layers
+    INTEGER  :: j, k, n_ODPS_Layers
  
     ! Define numerical precision tolerance.
     tolerance = EPSILON(ONE)
@@ -662,7 +637,6 @@ CONTAINS
   SUBROUTINE Geopotential_Height_TL( Level_Pressure,           &  ! Input
                                      Temperature,              &  ! Input
                                      Water_Vapor,              &  ! Input
-                                     Surface_Height,           &  ! input
                                      Temperature_TL,           &  ! input
                                      Water_Vapor_TL,           &  ! input
                                      Level_Height_TL)             ! Output
@@ -671,7 +645,6 @@ CONTAINS
     REAL(fp),               INTENT(IN)  :: Level_Pressure(0:)
     REAL(fp),               INTENT(IN)  :: Temperature(:)
     REAL(fp),               INTENT(IN)  :: Water_Vapor(:)
-    REAL(fp),               INTENT(IN)  :: Surface_Height
     REAL(fp),               INTENT(IN)  :: Temperature_TL(:)
     REAL(fp),               INTENT(IN)  :: Water_Vapor_TL(:)
     REAL(fp),               INTENT(OUT) :: Level_Height_TL(0:)
@@ -701,7 +674,6 @@ CONTAINS
   SUBROUTINE Geopotential_Height_AD( Level_Pressure,           &  ! Input
                                      Temperature,              &  ! Input
                                      Water_Vapor,              &  ! Input
-                                     Surface_Height,           &  ! input
                                      Level_Height_AD,          &  ! input
                                      Temperature_AD,           &  ! output
                                      Water_Vapor_AD)              ! output
@@ -710,7 +682,6 @@ CONTAINS
     REAL(fp),               INTENT(IN)     :: Level_Pressure(0:)
     REAL(fp),               INTENT(IN)     :: Temperature(:)
     REAL(fp),               INTENT(IN)     :: Water_Vapor(:)
-    REAL(fp),               INTENT(IN)     :: Surface_Height
     REAL(fp),               INTENT(INOUT)  :: Level_Height_AD(0:)
     REAL(fp),               INTENT(INOUT)  :: Temperature_AD(:)
     REAL(fp),               INTENT(INOUT)  :: Water_Vapor_AD(:)
@@ -898,10 +869,9 @@ CONTAINS
 !       Written by:     Yong Han, 10-Dec-2008
 !-----------------------------------------------------------------------------------
     
-  SUBROUTINE Interpolate_Profile_F1_TL(interp_index, y, x, u, y_TL, y_int_TL)
+  SUBROUTINE Interpolate_Profile_F1_TL(interp_index, x, u, y_TL, y_int_TL)
     ! Arguments
     INTEGER,  DIMENSION(:,:), INTENT(IN)  :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: y
     REAL(fp), DIMENSION(:),   INTENT(IN)  :: x
     REAL(fp), DIMENSION(:),   INTENT(IN)  :: u
     REAL(fp), DIMENSION(:),   INTENT(IN)  :: y_TL
@@ -916,7 +886,7 @@ CONTAINS
       IF( k1 == k2)THEN
         y_int_TL(i) = y_TL(k1)
       ELSE
-        CALL Interp_linear_F1_TL(y(k1), x(k1), y(k2), x(k2), u(i), y_TL(k1), y_TL(k2), y_int_TL(i))
+        CALL Interp_linear_F1_TL(x(k1), x(k2), u(i), y_TL(k1), y_TL(k2), y_int_TL(i))
       END IF
     END DO
 
@@ -1043,10 +1013,9 @@ CONTAINS
 !       Written by:     Yong Han, 10-Dec-2008
 !-----------------------------------------------------------------------------------
     
-  SUBROUTINE Interpolate_Profile_F1_AD(interp_index, y, x, u, y_int_AD, y_AD)
+  SUBROUTINE Interpolate_Profile_F1_AD(interp_index, x, u, y_int_AD, y_AD)
     ! Arguments
     INTEGER,  DIMENSION(:,:), INTENT(IN)      :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: y
     REAL(fp), DIMENSION(:),   INTENT(IN)      :: x
     REAL(fp), DIMENSION(:),   INTENT(IN)      :: u
     REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: y_int_AD
@@ -1062,7 +1031,7 @@ CONTAINS
         y_AD(k1) = y_AD(k1) + y_int_AD(i)
         y_int_AD(i) = ZERO
       ELSE
-        CALL Interp_linear_F1_AD(y(k1), x(k1), y(k2), x(k2), u(i), y_int_AD(i), y_AD(k1), y_AD(k2))
+        CALL Interp_linear_F1_AD(x(k1), x(k2), u(i), y_int_AD(i), y_AD(k1), y_AD(k2))
       END IF
     END DO
 
@@ -1228,15 +1197,15 @@ CONTAINS
   END SUBROUTINE Interp_linear
 
 
-  SUBROUTINE Interp_linear_F1_TL(y1, x1, y2, x2, x, y1_TL, y2_TL, y_TL)
-    REAL(fp), INTENT(IN)  :: y1, x1, y2, x2, x, y1_TL, y2_TL
+  SUBROUTINE Interp_linear_F1_TL(x1, x2, x, y1_TL, y2_TL, y_TL)
+    REAL(fp), INTENT(IN)  :: x1, x2, x, y1_TL, y2_TL
     REAL(fp), INTENT(OUT) :: y_TL
     y_TL = y1_TL + (y2_TL-y1_TL)*(x - x1)/(x2 - x1)
   END SUBROUTINE Interp_linear_F1_TL
 
 
-  SUBROUTINE Interp_linear_F1_AD(y1, x1, y2, x2, x, y_AD, y1_AD, y2_AD)
-    REAL(fp), INTENT(IN)     :: y1, x1, y2, x2, x
+  SUBROUTINE Interp_linear_F1_AD(x1, x2, x, y_AD, y1_AD, y2_AD)
+    REAL(fp), INTENT(IN)     :: x1, x2, x
     REAL(fp), INTENT(IN OUT) :: y_AD
     REAL(fp), INTENT(IN OUT) :: y1_AD, y2_AD
     ! Local variables
@@ -1368,7 +1337,7 @@ CONTAINS
     ! Local variables
     INTEGER  ::  KN1,KN2, ibot,itop,ii,istart,iend, J,IC,ISKIP,KI
     REAL(fp) ::  z1,z2,z3,zw1,zw2,zsum
-    REAL(fp) ::  y1,y2,d,d2,w10,w20,dz,dx,dy,dzd,dxd
+    REAL(fp) ::  y1,y2,d,w10,w20,dz,dx,dy,dzd,dxd
     
     KN1 = SIZE(PX1)
     KN2 = SIZE(PX2)

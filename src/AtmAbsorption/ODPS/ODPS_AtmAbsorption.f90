@@ -191,7 +191,7 @@ CONTAINS
     INTEGER  :: ODPS2User_Idx(2, 0:Predictor%n_User_Layers)
     REAL(fp) :: OD_tmp
     LOGICAL  :: OPTRAN
-    INTEGER  :: j0, js, ComID
+    INTEGER  :: j0, js
 
     ! ------
     ! Set up
@@ -460,7 +460,6 @@ CONTAINS
     ! Interpolate the path profile back on the user pressure grids,
     ! Compute layer optical depths (vertical direction)
     CALL Interpolate_Profile_F1_TL(Predictor%PAFV%ODPS2User_Idx,    &
-                                   Predictor%PAFV%OD_Path,          &
                                    Predictor%Ref_Level_LnPressure,  &
                                    Predictor%User_Level_LnPressure, &
                                    OD_Path_TL,                      &
@@ -580,7 +579,6 @@ CONTAINS
 
     OD_Path_AD = ZERO          
     CALL Interpolate_Profile_F1_AD(Predictor%PAFV%ODPS2User_Idx,       &
-                                   Predictor%PAFV%OD_Path,             &
                                    Predictor%Ref_Level_LnPressure,     &
                                    Predictor%User_Level_LnPressure,    &
                                    User_OD_Path_AD,                    &
@@ -1158,8 +1156,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL ODPS_Compute_Predictors_TL ( TC,              &  ! Input
-!                                         Atm,             &  ! Input
-!                                         GeoInfo,         &  ! Input                     
 !                                         Predictor,       &  ! Input
 !                                         Atm_TL,          &  ! Input
 !                                         Predictor_TL,    &  ! Output
@@ -1172,24 +1168,10 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
 !       Atm_TL    :     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
 !                       UNITS:      N/A
 !                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       GeoInfo     :   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -1211,15 +1193,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE ODPS_Compute_Predictors_TL(TC,             &
-                                        Atm,            &    
-                                        GeoInfo,        &
                                         Predictor,      &
                                         Atm_TL,         & 
                                         Predictor_TL)
  
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm         
-    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm_TL
     TYPE(Predictor_type)         , INTENT(IN OUT) :: Predictor_TL
@@ -1231,8 +1209,7 @@ CONTAINS
     !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
     !------------------------------------------------------------------
-    CALL Map_Input_TL(Atm,            &  ! Input
-                      TC,             &  ! Input
+    CALL Map_Input_TL(TC,             &  ! Input
                       Atm_TL,         &  ! Input
                       Temperature_TL, &  ! Output
                       Absorber_TL,    &  ! Output
@@ -1244,7 +1221,6 @@ CONTAINS
     CALL Compute_Predictor_TL(TC%Group_index,          &                                      
                             Predictor%PAFV%Temperature,&                                     
                             Predictor%PAFV%Absorber,   &                                     
-                            TC%Ref_Level_Pressure,     &                                      
                             TC%Ref_Temperature,        &                                      
                             TC%Ref_Absorber,           &                                      
                             Predictor%Secant_Zenith,   &                                     
@@ -1256,11 +1232,9 @@ CONTAINS
 
        CALL Compute_Predictor_OPTRAN_TL( Predictor%PAFV%Temperature,       &                 
                                       Predictor%PAFV%Absorber(:, Predictor%PAFV%H2O_idx), &  
-                                      TC%Ref_Level_Pressure, &                               
                                       TC%Ref_Pressure,       &                               
                                       Predictor%Secant_Zenith,&                              
                                       TC%Alpha,              &                               
-                                      TC%Alpha_C1,           &                               
                                       TC%Alpha_C2,           &                               
                                       Predictor,              &                              
                                       Temperature_TL,         &                              
@@ -1284,8 +1258,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL ODPS_Compute_Predictors_AD ( TC,              &  ! Input
-!                                         Atm,             &  ! Input
-!                                         GeoInfo,         &  ! Input
 !                                         Predictor,       &  ! Input                   
 !                                         Predictor_AD,    &  ! Input
 !                                         Atm_AD,          &  ! Output
@@ -1297,20 +1269,6 @@ CONTAINS
 !                        TYPE:       ODPS_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-!
-!       Atm       :     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       GeoInfo     :   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
 !
 !       Predictor:      Predictor structure containing the integrated absorber
 !                       and predictor profiles.
@@ -1338,15 +1296,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE ODPS_Compute_Predictors_AD(TC,             &
-                                        Atm,            &    
-                                        GeoInfo,        &
                                         Predictor,      &
                                         Predictor_AD,   &
                                         Atm_AD)
 
     TYPE(ODPS_type)              , INTENT(IN)     :: TC
-    TYPE(CRTM_Atmosphere_type)   , INTENT(IN)     :: Atm
-    TYPE(CRTM_GeometryInfo_type) , INTENT(IN)     :: GeoInfo
     TYPE(Predictor_type)         , INTENT(IN)     :: Predictor
     TYPE(Predictor_type)         , INTENT(IN OUT) :: predictor_AD
     TYPE(CRTM_Atmosphere_type)   , INTENT(IN OUT) :: Atm_AD
@@ -1372,11 +1326,9 @@ CONTAINS
 
        CALL Compute_Predictor_OPTRAN_AD( Predictor%PAFV%Temperature,         &                 
                                       Predictor%PAFV%Absorber(:, Predictor%PAFV%H2O_idx),  &  
-                                      TC%Ref_Level_Pressure, &                                 
                                       TC%Ref_Pressure,       &                                 
                                       Predictor%Secant_Zenith,&                                
                                       TC%Alpha,              &                                 
-                                      TC%Alpha_C1,           &                                 
                                       TC%Alpha_C2,           &                                 
                                       Predictor,              &                                
                                       Predictor_AD,           &                                
@@ -1388,7 +1340,6 @@ CONTAINS
     CALL Compute_Predictor_AD( TC%Group_index,         &                                        
                             Predictor%PAFV%Temperature,&                                       
                             Predictor%PAFV%Absorber,   &                                       
-                            TC%Ref_Level_Pressure,     &                                        
                             TC%Ref_Temperature,        &                                        
                             TC%Ref_Absorber,           &                                        
                             Predictor%Secant_Zenith,   &                                       
@@ -1400,8 +1351,7 @@ CONTAINS
     !------------------------------------------------------------------
     ! Mapping data from user to internal fixed pressure layers/levels.
     !------------------------------------------------------------------
-    CALL Map_Input_AD(Atm,            & ! Input
-                      TC,             & ! Input
+    CALL Map_Input_AD(TC,             & ! Input
                       Temperature_AD, & ! Input  
                       Absorber_AD,    & ! Input
                       Atm_AD,         & ! output

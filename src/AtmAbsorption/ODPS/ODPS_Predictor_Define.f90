@@ -229,46 +229,6 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 !##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_Predictor
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a Predictor structure.
-!
-! CALLING SEQUENCE:
-!       CALL Clear_Predictor( Predictor ) ! Output
-!
-! OUTPUT ARGUMENTS:
-!       Predictor:  Predictor structure for which the scalar
-!                   members have been cleared.
-!                   UNITS:      N/A
-!                   TYPE:       Predictor_type
-!                   DIMENSION:  Scalar
-!                   ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Predictor argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE Clear_Predictor(Predictor)
-    TYPE(Predictor_type), INTENT(IN OUT) :: Predictor
-  END SUBROUTINE Clear_Predictor
-
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
 !##                           ## PUBLIC MODULE ROUTINES ##                       ##
 !##                                                                              ##
 !##################################################################################
@@ -337,7 +297,6 @@ CONTAINS
     LOGICAL :: Association_Status
     ! Local variables
     LOGICAL :: ALL_Test
-    INTEGER :: j
 
     ! Default is to test ALL the pointer members
     ! for a true association status....
@@ -451,13 +410,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   FUNCTION Destroy_Predictor( Predictor  , &  ! Output
-                              No_Clear   , &  ! Optional input
                               RCS_Id     , &  ! Revision control
                               Message_Log) &  ! Error messaging
                             RESULT(Error_Status)
     ! Arguments
     TYPE(Predictor_type)     , INTENT(IN OUT) :: Predictor 
-    INTEGER,      OPTIONAL   , INTENT(IN)     :: No_Clear
     CHARACTER(*), OPTIONAL   , INTENT(OUT)    :: RCS_Id
     CHARACTER(*), OPTIONAL   , INTENT(IN)     :: Message_Log
     ! Function result
@@ -466,22 +423,11 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_Predictor'
     ! Local variables
     CHARACTER(ML) :: Message
-    LOGICAL :: Clear
     INTEGER :: Allocate_Status
     
     ! Set up
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == 1 ) Clear = .FALSE.
-    END IF
-    
-    ! Initialise the scalar members
-    IF ( Clear ) CALL Clear_Predictor(Predictor)
     
     ! If ALL pointer members are NOT associated, do nothing
     IF ( .NOT. Associated_Predictor(Predictor) ) RETURN
@@ -723,7 +669,6 @@ CONTAINS
     IF ( Associated_Predictor( Predictor, ANY_Test=1 ) ) THEN
       Error_Status = Destroy_Predictor( &
                        Predictor, &
-                       No_Clear=1, &
                        Message_Log=Message_Log )
       IF ( Error_Status /= SUCCESS ) THEN
         Error_Status = FAILURE
@@ -1044,7 +989,6 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: Message
     INTEGER :: Allocate_Status(3)
-    INTEGER :: n_OUsed_Pred
     
     ! Set up
     Error_Status = SUCCESS

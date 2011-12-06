@@ -700,7 +700,7 @@ CONTAINS
        INTEGER, INTENT( IN ) :: SensorIndex, ChannelIndex
        REAL(fp), INTENT( IN ) :: u
        REAL(fp), INTENT( OUT ) :: y0
-       INTEGER :: n, jLower, jUpper, jMiddle, indx
+       INTEGER :: n, jLower, jUpper, indx
 
        n = SIZE(TC(SensorIndex)%Ref_Time)
        jLower = 1
