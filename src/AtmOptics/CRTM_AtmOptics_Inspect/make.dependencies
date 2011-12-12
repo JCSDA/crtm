@@ -1,0 +1,8 @@
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_AtmOptics_Define.o : CRTM_AtmOptics_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+CRTM_AtmOptics_Inspect.o : CRTM_AtmOptics_Inspect.f90 CRTM_AtmOptics_Define.o Message_Handler.o File_Utility.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Type_Kinds.o : Type_Kinds.f90 
