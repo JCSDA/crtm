@@ -73,23 +73,40 @@ PRO Read_modiss_Raw_SRF, $
   ; ...Lists for the SRF data
   frequency = LIST()
   response  = LIST()  
+  
+  NPTS_POSITION = 1L
+  F1_POSITION = 2L
+  F2_POSITION = 3L
+  
+  DF = 0.1d0
 
-
-  ; 1) Add code to read the data.
-  ;
-  ; 2) Don't forget to check for uniqueness of the frequency grid
-  ;    for each band, i.e.
-  ;      ; Only keep the unique values for each band
-  ;      idx = UNIQ(f, SORT(f))
-  ;      f = f[idx]
-  ;      r = r[idx]
-  ;
-  ; 3) Add the individual bands to the return argument lists, e.g.
-  ;        frequency.Add, f
-  ;        response.Add , r
-  ;
-  ; 4) Don;t forget to assign the n_points return argument
-
+  n_lines = FILE_LINES(Filename)
+  data = STRARR(n_lines)
+  OPENR, fid, Filename, /GET_LUN
+  READF, fid, data
+  FREE_LUN, fid
+  
+  n_data_lines = n_lines - 2L
+  
+  hdr_data = STRSPLIT(data[i], /EXTRACT)
+  n_points = DOUBLE(hdr_data[NPTS_POSITION])
+  f1 = DOUBLE(hdr_data[F1_POSITION])
+  f2 = DOUBLE(hdr_data[F2_POSITION])
+  
+  r=DBLARR(n_points)
+  f=DBLARR(n_points)
+  f[*]= f1 + DF*Dindgen(n_points)
+  
+  idx1=0L
+  FOR i = 2L, n_data_lines-1L DO BEGIN
+    elements = STRSPLIT(data[i], /EXTRACT, COUNT=n_elements) 
+    idx2 = idx1 + n_elements - 1L
+    r[idx1:idx2]
+    idx1 = idx2 + 1L
+  ENDFOR
+  
+  frequency.Add, f, /NO_COPY
+  response.Add, r, /NO_COPY
   
 END
 
