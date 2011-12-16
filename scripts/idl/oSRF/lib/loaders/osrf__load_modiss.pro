@@ -88,29 +88,27 @@ PRO Read_modiss_Raw_SRF, $
   
   n_data_lines = n_lines - 2L
   
-  hdr_data = STRSPLIT(data[i], /EXTRACT)
-  n_points = DOUBLE(hdr_data[NPTS_POSITION])
+  hdr_data = STRSPLIT(data[1], /EXTRACT)
+  n_points = LONG(hdr_data[NPTS_POSITION])
   f1 = DOUBLE(hdr_data[F1_POSITION])
   f2 = DOUBLE(hdr_data[F2_POSITION])
-  
+
   r=DBLARR(n_points)
   f=DBLARR(n_points)
   f[*]= f1 + DF*Dindgen(n_points)
-  
+
   idx1=0L
   FOR i = 2L, n_data_lines-1L DO BEGIN
     elements = STRSPLIT(data[i], /EXTRACT, COUNT=n_elements) 
     idx2 = idx1 + n_elements - 1L
-    r[idx1:idx2]
-    idx1 = idx2 + 1L
+    r[idx1:idx2] = DOUBLE(elements)
+    idx1 = idx2 + 1L    
   ENDFOR
-  
+
   frequency.Add, f, /NO_COPY
   response.Add, r, /NO_COPY
   
 END
-
-
 ;+
 ;
 ; NAME:
