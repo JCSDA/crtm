@@ -86,8 +86,6 @@ PRO Read_modiss_Raw_SRF, $
   READF, fid, data
   FREE_LUN, fid
   
-  n_data_lines = n_lines - 2L
-  
   hdr_data = STRSPLIT(data[1], /EXTRACT)
   n_points = LONG(hdr_data[NPTS_POSITION])
   f1 = DOUBLE(hdr_data[F1_POSITION])
@@ -98,7 +96,7 @@ PRO Read_modiss_Raw_SRF, $
   f[*]= f1 + DF*Dindgen(n_points)
 
   idx1=0L
-  FOR i = 2L, n_data_lines-1L DO BEGIN
+  FOR i = 2L, n_lines-1L DO BEGIN
     elements = STRSPLIT(data[i], /EXTRACT, COUNT=n_elements) 
     idx2 = idx1 + n_elements - 1L
     r[idx1:idx2] = DOUBLE(elements)
