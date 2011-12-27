@@ -8,7 +8,7 @@ export FC="pgf95"
 export FL="pgf95"
 
 # Compiler and linker settings for DEBUG builds
-F_COMMON_FLAGS="-Kieee -pg"
+F_COMMON_FLAGS="-Kieee"
 
 export FC_FLAGS="\
  -c \

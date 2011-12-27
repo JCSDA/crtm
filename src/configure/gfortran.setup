@@ -8,20 +8,18 @@ export FC="gfortran"
 export FL="gfortran"
 
 # Compiler and linker settings for PRODUCTION builds
-F_COMMON_FLAGS=""
+F_COMMON_FLAGS=
 
 export FC_FLAGS="\
  -c \
  -O3 \
  -fimplicit-none \
  -fconvert=big-endian \
- -ffast-math \
  -ffree-form \
  -fno-second-underscore \
  -frecord-marker=4 \
  -funroll-loops \
  -ggdb \
- -static \
  -Wall \
  -std=f2003 \
  ${F_COMMON_FLAGS}"

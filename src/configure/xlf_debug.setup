@@ -9,7 +9,7 @@ export FL="xlf2003"
 
 
 # Compiler and linker settings
-F_COMMON_FLAGS="-pg"
+F_COMMON_FLAGS=
 
 export FC_FLAGS="\
  -c \

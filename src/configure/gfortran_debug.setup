@@ -8,7 +8,7 @@ export FC="gfortran"
 export FL="gfortran"
 
 # Compiler and linker settings for DEBUG builds
-F_COMMON_FLAGS="-pg"
+F_COMMON_FLAGS=
 
 export FC_FLAGS="\
  -c \
@@ -20,7 +20,6 @@ export FC_FLAGS="\
  -fno-second-underscore \
  -frecord-marker=4 \
  -ggdb \
- -static \
  -Wall \
  -std=f2003 \
  ${F_COMMON_FLAGS}"
