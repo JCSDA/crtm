@@ -51,7 +51,7 @@ MODULE SpcCoeff_Binary_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Default message length
   INTEGER, PARAMETER :: ML = 512
@@ -439,8 +439,8 @@ CONTAINS
                    No_Close = .TRUE., &
                    Quiet    = Quiet , &
                    Debug    = Debug   )
-      IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error reading antenna correction data. IOSTAT = ",i0)' ) io_stat
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error reading antenna correction data.'
         CALL Read_Cleanup(); RETURN
       END IF
       ! ..Check that the ACCoeff data is for the same sensor
@@ -469,8 +469,8 @@ CONTAINS
                    No_Close = .TRUE., &
                    Quiet    = Quiet , &
                    Debug    = Debug   )
-      IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error reading NLTE correction data. IOSTAT = ",i0)' ) io_stat
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error reading NLTE correction data.'
         CALL Read_Cleanup(); RETURN
       END IF
       ! ..Check that the NLTECoeff data is for the same sensor
@@ -682,8 +682,8 @@ CONTAINS
                    No_Close = .TRUE., &
                    Quiet    = Quiet , &
                    Debug    = Debug   )
-      IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error writing antenna correction data. IOSTAT = ",i0)' ) io_stat
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error writing antenna correction data.'
         CALL Write_Cleanup(); RETURN
       END IF
       ! ..Check that the ACCoeff data is for the same sensor
@@ -717,8 +717,8 @@ CONTAINS
                    No_Close = .TRUE., &
                    Quiet    = Quiet , &
                    Debug    = Debug   )
-      IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error writing NLTE correction data. IOSTAT = ",i0)' ) io_stat
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error writing NLTE correction data.'
         CALL Write_Cleanup(); RETURN
       END IF
       ! ..Check that the NLTECoeff data is for the same sensor
