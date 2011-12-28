@@ -43,8 +43,6 @@ MODULE IRwaterCoeff_Define
   PUBLIC :: IRwaterCoeff_ValidRelease
   PUBLIC :: IRwaterCoeff_Info
   PUBLIC :: IRwaterCoeff_DefineVersion
-  PUBLIC :: IRwaterCoeff_SetValue
-  PUBLIC :: IRwaterCoeff_GetValue
   PUBLIC :: IRwaterCoeff_InquireFile
   PUBLIC :: IRwaterCoeff_ReadFile
   PUBLIC :: IRwaterCoeff_WriteFile
@@ -79,7 +77,6 @@ MODULE IRwaterCoeff_Define
   ! ----------------------------------
   !:tdoc+:
   TYPE :: IRwaterCoeff_type
-    PRIVATE
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Release and version information
@@ -296,6 +293,7 @@ CONTAINS
 
   SUBROUTINE IRwaterCoeff_Inspect( self )
     TYPE(IRwaterCoeff_type), INTENT(IN) :: self
+    INTEGER :: i2, i3
     WRITE(*,'(1x,"IRwaterCoeff OBJECT")')
     ! Release/version info
     WRITE(*,'(3x,"Release.Version :",1x,i0,".",i0)') self%Release, self%Version
@@ -313,7 +311,13 @@ CONTAINS
     WRITE(*,'(5(1x,es13.6,:))') self%Wind_Speed
     ! Emissivity array
     WRITE(*,'(3x,"Emissivity :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Emissivity
+    DO i3 = 1, self%n_Wind_Speeds
+      WRITE(*,'(5x,"WIND_SPEED :",es13.6)') self%Wind_Speed(i3)
+      DO i2 = 1, self%n_Frequencies
+        WRITE(*,'(5x,"FREQUENCY  :",es13.6)') self%Frequency(i2)      
+        WRITE(*,'(5(1x,es13.6,:))') self%Emissivity(:,i2,i3)
+      END DO
+    END DO
   END SUBROUTINE IRwaterCoeff_Inspect
 
 
@@ -471,270 +475,6 @@ CONTAINS
     Id = MODULE_VERSION_ID
   END SUBROUTINE IRwaterCoeff_DefineVersion
 
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       IRwaterCoeff_SetValue
-!
-! PURPOSE:
-!       Subroutine to set the contents of a valid IRwaterCoeff object.
-!
-! CALLING SEQUENCE:
-!       CALL IRwaterCoeff_SetValue( IRwaterCoeff, &
-!                                   Version    = Version   , &
-!                                   Angle      = Angle     , &
-!                                   Frequency  = Frequency , &
-!                                   Wind_Speed = Wind_Speed, &
-!                                   Emissivity = Emissivity  )
-!
-! OBJECTS:
-!       IRwaterCoeff: Valid, allocated IRwaterCoeff object for which
-!                     values are to be set.
-!                     UNITS:      N/A
-!                     TYPE:       IRwaterCoeff_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUTS:
-!       Version:      Integer indicating the data version. If not specified
-!                     the value of the module parameter IRWATERCOEFF_VERSION
-!                     is used.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Angle:        Real array to which the Angle component of the
-!                     IRwaterCoeff object is to be set. The size of the
-!                     input must match the allocated size of the component,
-!                     otherwise all the component values are set to zero.
-!                     UNITS:      N/A
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Rank-1 (I)
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Frequency:    Real array to which the Frequency component of the
-!                     IRwaterCoeff object is to be set. The size of the
-!                     input must match the allocated size of the component,
-!                     otherwise all the component values are set to zero.
-!                     UNITS:      N/A
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Rank-1 (L)
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Wind_Speed:   Real array to which the Wind_Speed component of the
-!                     IRwaterCoeff object is to be set. The size of the
-!                     input must match the allocated size of the component,
-!                     otherwise all the component values are set to zero.
-!                     UNITS:      N/A
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Rank-1 (N)
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Emissivity:   Real array to which the Emissivity component of the
-!                     IRwaterCoeff object is to be set. The size of the
-!                     input must match the allocated size of the component,
-!                     otherwise all the component values are set to zero.
-!                     UNITS:      N/A
-!                     TYPE:       REAL(fp)
-!                     DIMENSION:  Rank-3 (I x L x N)
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE IRwaterCoeff_SetValue( &
-    self      , &  ! Input
-    Version   , &  ! Optional input
-    Angle     , &  ! Optional input
-    Frequency , &  ! Optional input
-    Wind_Speed, &  ! Optional input
-    Emissivity  )  ! Optional input
-    ! Arguments
-    TYPE(IRwaterCoeff_type)         , INTENT(IN OUT) :: self
-    INTEGER     , OPTIONAL, INTENT(IN)     :: Version
-    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Angle(:)
-    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Frequency(:)
-    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Wind_Speed(:)
-    REAL(fp)    , OPTIONAL, INTENT(IN)     :: Emissivity(:,:,:)
-
-    IF ( .NOT. IRwaterCoeff_Associated(self) ) RETURN
-
-    IF ( PRESENT(Version) ) self%Version = Version
-    
-    IF ( PRESENT(Angle) ) THEN
-      IF ( SIZE(Angle) == self%n_Angles ) THEN
-        self%Angle = Angle
-      ELSE
-        self%Angle = ZERO
-      END IF
-    END IF
-
-    IF ( PRESENT(Frequency) ) THEN
-      IF ( SIZE(Frequency) == self%n_Frequencies ) THEN
-        self%Frequency = Frequency
-      ELSE
-        self%Frequency = ZERO
-      END IF
-    END IF
-
-    IF ( PRESENT(Wind_Speed) ) THEN
-      IF ( SIZE(Wind_Speed) == self%n_Wind_Speeds ) THEN
-        self%Wind_Speed = Wind_Speed
-      ELSE
-        self%Wind_Speed = ZERO
-      END IF
-    END IF
-
-    IF ( PRESENT(Emissivity) ) THEN
-      IF ( SIZE(Emissivity,DIM=1) == self%n_Angles      .AND. &
-           SIZE(Emissivity,DIM=2) == self%n_Frequencies .AND. &
-           SIZE(Emissivity,DIM=3) == self%n_Wind_Speeds ) THEN
-        self%Emissivity = Emissivity
-      ELSE
-        self%Emissivity = ZERO
-      END IF
-    END IF
-   
-  END SUBROUTINE IRwaterCoeff_SetValue
- 
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       IRwaterCoeff_GetValue
-!
-! PURPOSE:
-!       Subroutine to get the contents of a valid IRwaterCoeff object.
-!
-! CALLING SEQUENCE:
-!       CALL IRwaterCoeff_GetValue( IRwaterCoeff, &
-!                                   Version       = Version      , &
-!                                   n_Angles      = n_Angles     , &
-!                                   n_Frequencies = n_Frequencies, &
-!                                   n_Wind_Speeds = n_Wind_Speeds, &
-!                                   Angle         = Angle        , &
-!                                   Frequency     = Frequency    , &
-!                                   Wind_Speed    = Wind_Speed   , &
-!                                   Emissivity    = Emissivity     )
-!
-! OBJECTS:
-!       IRwaterCoeff:   Valid IRwaterCoeff object from which values are
-!                       to be retrieved.
-!                       UNITS:      N/A
-!                       TYPE:       IRwaterCoeff_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL OUTPUTS:
-!       Version:        Integer indicating the data version.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Angles:       Number of angles dimension.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Frequencies:  Number of frequencies dimension.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Wind_Speeds:  Number of wind speeds dimension.
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       Angle:          Angle dimensional vector. The actual argument
-!                       must be declared as allocatable.
-!                       UNITS:      N/A
-!                       TYPE:       REAL(fp)
-!                       DIMENSION:  Rank-1 (I)
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
-!
-!       Frequency:      Frequency dimensional vector. The actual argument
-!                       must be declared as allocatable.
-!                       UNITS:      N/A
-!                       TYPE:       REAL(fp)
-!                       DIMENSION:  Rank-1 (L)
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
-!
-!       Wind_Speed:     Wind_Speed dimensional vector. The actual argument
-!                       must be declared as allocatable.
-!                       UNITS:      N/A
-!                       TYPE:       REAL(fp)
-!                       DIMENSION:  Rank-1 (N)
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
-!
-!       Emissivity:     Emissivity LUT data. The actual argument
-!                       must be declared as allocatable.
-!                       UNITS:      N/A
-!                       TYPE:       REAL(fp)
-!                       DIMENSION:  Rank-3 (I x L x N)
-!                       ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE IRwaterCoeff_GetValue( &
-    self         , &  ! Input
-    Version      , &  ! Optional output
-    n_Angles     , &  ! Optional output
-    n_Frequencies, &  ! Optional output
-    n_Wind_Speeds, &  ! Optional output
-    Angle        , &  ! Optional output
-    Frequency    , &  ! Optional output
-    Wind_Speed   , &  ! Optional output
-    Emissivity     )  ! Optional output
-    ! Arguments
-    TYPE(IRwaterCoeff_type)        , INTENT(IN)  :: self
-    INTEGER ,              OPTIONAL, INTENT(OUT) :: Version
-    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Angles     
-    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Frequencies
-    INTEGER ,              OPTIONAL, INTENT(OUT) :: n_Wind_Speeds
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Angle(:)     
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Frequency(:)
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Wind_Speed(:)
-    REAL(fp), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Emissivity(:,:,:)
-    
-    IF ( .NOT. IRwaterCoeff_Associated(self) ) RETURN
-   
-    IF ( PRESENT(Version      ) ) Version       = self%Version
-    IF ( PRESENT(n_Angles     ) ) n_Angles      = self%n_Angles     
-    IF ( PRESENT(n_Frequencies) ) n_Frequencies = self%n_Frequencies
-    IF ( PRESENT(n_Wind_Speeds) ) n_Wind_Speeds = self%n_Wind_Speeds
-
-    IF ( PRESENT(Angle) ) THEN
-      ALLOCATE(Angle(self%n_Angles))
-      Angle = self%Angle
-    END IF
-
-    IF ( PRESENT(Frequency) ) THEN
-      ALLOCATE(Frequency(self%n_Frequencies))
-      Frequency = self%Frequency
-    END IF
-
-    IF ( PRESENT(Wind_Speed) ) THEN
-      ALLOCATE(Wind_Speed(self%n_Wind_Speeds))
-      Wind_Speed = self%Wind_Speed
-    END IF
-
-    IF ( PRESENT(Emissivity) ) THEN
-      ALLOCATE(Emissivity(self%n_Angles, self%n_Frequencies, self%n_Wind_Speeds))
-      Emissivity = self%Emissivity
-    END IF
-    
-  END SUBROUTINE IRwaterCoeff_GetValue
- 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -962,12 +702,13 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = IRwaterCoeff_ReadFile( &
-!                        IRwaterCoeff     , &
-!                        Filename         , &
-!                        Quiet   = Quiet  , &
-!                        Title   = Title  , &
-!                        History = History, &
-!                        Comment = Comment  )
+!                        IRwaterCoeff       , &
+!                        Filename           , &
+!                        No_Close = No_Close, &
+!                        Quiet    = Quiet   , &
+!                        Title    = Title   , &
+!                        History  = History , &
+!                        Comment  = Comment   )
 !
 ! OBJECTS:
 !       IRwaterCoeff:   Object containing the data read from file.
@@ -985,6 +726,17 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
+!       No_Close:       Set this logical argument to *NOT* close the datafile
+!                       upon exiting this routine. This option is required if
+!                       the IRwaterCoeff data is embedded within another file.
+!                       If == .FALSE., File is closed upon function exit [DEFAULT].
+!                          == .TRUE.,  File is NOT closed upon function exit
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Quiet:          Set this logical argument to suppress INFORMATION
 !                       messages being printed to stdout
 !                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
@@ -1032,6 +784,7 @@ CONTAINS
   FUNCTION IRwaterCoeff_ReadFile( &
     IRwaterCoeff, &  ! Output
     Filename    , &  ! Input
+    No_Close    , &  ! Optional input
     Quiet       , &  ! Optional input
     Title       , &  ! Optional output
     History     , &  ! Optional output
@@ -1041,6 +794,7 @@ CONTAINS
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(OUT) :: IRwaterCoeff
     CHARACTER(*),            INTENT(IN)  :: Filename
+    LOGICAL     ,  OPTIONAL, INTENT(IN)  :: No_Close
     LOGICAL     ,  OPTIONAL, INTENT(IN)  :: Quiet
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*),  OPTIONAL, INTENT(OUT) :: History
@@ -1053,6 +807,7 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    LOGICAL :: close_file
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
@@ -1061,6 +816,9 @@ CONTAINS
 
     ! Setup
     err_stat = SUCCESS
+    ! ...Check No_Close argument
+    close_file = .TRUE.
+    IF ( PRESENT(No_Close) ) close_file = .NOT. No_Close
     ! ...Check Quiet argument
     noisy = .TRUE.
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
@@ -1070,16 +828,27 @@ CONTAINS
     END IF
 
    
-    ! Open the file
-    IF ( File_Exists( Filename ) ) THEN
-      err_stat = Open_Binary_File( Filename, fid )
-      IF ( err_Stat /= SUCCESS ) THEN
-        msg = 'Error opening '//TRIM(Filename)
+    ! Check if the file is open.
+    IF ( File_Open( Filename ) ) THEN
+      ! ...Inquire for the logical unit number
+      INQUIRE( FILE=Filename, NUMBER=fid )
+      ! ...Ensure it's valid
+      IF ( fid < 0 ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for its FileID'
         CALL Read_CleanUp(); RETURN
       END IF
     ELSE
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_CleanUp(); RETURN
+      ! ...Open the file if it exists
+      IF ( File_Exists( Filename ) ) THEN
+        err_stat = Open_Binary_File( Filename, fid )
+        IF ( err_Stat /= SUCCESS ) THEN
+          msg = 'Error opening '//TRIM(Filename)
+          CALL Read_CleanUp(); RETURN
+        END IF
+      ELSE
+        msg = 'File '//TRIM(Filename)//' not found.'
+        CALL Read_CleanUp(); RETURN
+      END IF
     END IF
 
 
@@ -1152,10 +921,12 @@ CONTAINS
     
     
     ! Close the file
-    CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
+    IF ( close_file ) THEN
+      CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
     END IF
 
 
@@ -1192,12 +963,13 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = IRwaterCoeff_WriteFile( &
-!                        IRwaterCoeff     , &
-!                        Filename         , &
-!                        Quiet   = Quiet  , &
-!                        Title   = Title  , &
-!                        History = History, &
-!                        Comment = Comment  )
+!                        IRwaterCoeff       , &
+!                        Filename           , &
+!                        No_Close = No_Close, &
+!                        Quiet    = Quiet   , &
+!                        Title    = Title   , &
+!                        History  = History , &
+!                        Comment  = Comment   )
 !
 ! OBJECTS:
 !       IRwaterCoeff:   Object containing the data to write to file.
@@ -1215,6 +987,17 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
+!       No_Close:       Set this logical argument to *NOT* close the datafile
+!                       upon exiting this routine. This option is required if
+!                       the IRwaterCoeff data is to be embedded within another file.
+!                       If == .FALSE., File is closed upon function exit [DEFAULT].
+!                          == .TRUE.,  File is NOT closed upon function exit
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Quiet:          Set this logical argument to suppress INFORMATION
 !                       messages being printed to stdout
 !                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
@@ -1259,8 +1042,9 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION IRwaterCoeff_WriteFile( &
-    IRwaterCoeff, &  ! Output
+    IRwaterCoeff, &  ! Input
     Filename    , &  ! Input
+    No_Close    , &  ! Optional input
     Quiet       , &  ! Optional input
     Title       , &  ! Optional input
     History     , &  ! Optional input
@@ -1270,6 +1054,7 @@ CONTAINS
     ! Arguments
     TYPE(IRwaterCoeff_type), INTENT(IN) :: IRwaterCoeff
     CHARACTER(*),            INTENT(IN) :: Filename
+    LOGICAL     ,  OPTIONAL, INTENT(IN) :: No_Close
     LOGICAL     ,  OPTIONAL, INTENT(IN) :: Quiet
     CHARACTER(*),  OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*),  OPTIONAL, INTENT(IN) :: History
@@ -1282,6 +1067,7 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    LOGICAL :: close_file
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
@@ -1289,6 +1075,9 @@ CONTAINS
 
     ! Setup
     err_stat = SUCCESS
+    ! ...Check No_Close argument
+    close_file = .TRUE.
+    IF ( PRESENT(No_Close) ) close_file = .NOT. No_Close
     ! ...Check Quiet argument
     noisy = .TRUE.
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
@@ -1303,11 +1092,22 @@ CONTAINS
     END IF
 
    
-    ! Open the file
-    err_stat = Open_Binary_File( Filename, fid, For_Output=.TRUE. )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error opening '//TRIM(Filename)
-      CALL Write_CleanUp(); RETURN
+    ! Check if the file is open.
+    IF ( File_Open( FileName ) ) THEN
+      ! ...Inquire for the logical unit number
+      INQUIRE( FILE=Filename, NUMBER=fid )
+      ! ...Ensure it's valid
+      IF ( fid < 0 ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for its FileID'
+        CALL Write_CleanUp(); RETURN
+      END IF
+    ELSE
+      ! ...Open the file for output
+      err_stat = Open_Binary_File( Filename, fid, For_Output=.TRUE. )
+      IF ( err_Stat /= SUCCESS ) THEN
+        msg = 'Error opening '//TRIM(Filename)
+        CALL Write_CleanUp(); RETURN
+      END IF
     END IF
 
 
@@ -1365,10 +1165,12 @@ CONTAINS
 
     
     ! Close the file
-    CLOSE( fid, STATUS='KEEP', IOSTAT=io_stat, IOMSG=io_msg )
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
+    IF ( close_file ) THEN
+      CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
     END IF
 
 
