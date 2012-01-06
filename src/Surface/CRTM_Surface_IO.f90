@@ -964,7 +964,8 @@ CONTAINS
                                sfc%Soil_Moisture_Content, &
                                sfc%Canopy_Water_Content , &
                                sfc%Vegetation_Fraction, &
-                               sfc%Soil_Temperature
+                               sfc%Soil_Temperature, &
+                               sfc%Lai
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading land surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Record_Cleanup(); RETURN
@@ -1171,7 +1172,8 @@ CONTAINS
                                 sfc%Soil_Moisture_Content, &
                                 sfc%Canopy_Water_Content, &
                                 sfc%Vegetation_Fraction, &
-                                sfc%Soil_Temperature
+                                sfc%Soil_Temperature, &
+                                sfc%Lai
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing land surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Record_Cleanup(); RETURN

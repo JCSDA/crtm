@@ -370,7 +370,8 @@ CONTAINS
         ! Set NLTE correction option
         Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
         ! Set aircraft pressure altitude
-        Aircraft_Pressure = Options(m)%Aircraft_Pressure        
+        Aircraft_Pressure = Options(m)%Aircraft_Pressure  
+
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -454,6 +455,12 @@ CONTAINS
                                   Atm%n_Layers        , &
                                   MAX_N_LEGENDRE_TERMS, &
                                   MAX_N_PHASE_ELEMENTS  )
+
+      IF (Options_Present) THEN
+        ! Set Scattering Switch
+        AtmOptics%Include_Scattering = Options(m)%Include_Scattering
+      END IF
+
       IF ( .NOT. CRTM_AtmOptics_Associated( Atmoptics ) ) THEN
         Error_Status = FAILURE
         WRITE( Message,'("Error allocating AtmOptics data structure for profile #",i0)' ) m
@@ -523,9 +530,9 @@ CONTAINS
 
 
         ! Allocate the RTV structure if necessary
-        IF( Atm%n_Clouds   > 0 .OR. &
+        IF( (Atm%n_Clouds   > 0 .OR. &
             Atm%n_Aerosols > 0 .OR. &
-            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
+            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) .and. AtmOptics%Include_Scattering ) THEN
           CALL RTV_Create( RTV, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, Atm%n_Layers )
           IF ( .NOT. RTV_Associated(RTV) ) THEN
             Error_Status=FAILURE
@@ -568,8 +575,7 @@ CONTAINS
 
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
-
-
+  
           ! Determine the number of streams (n_Full_Streams) in up+downward directions
           IF ( User_N_Streams ) THEN
             n_Full_Streams = Options(m)%n_Streams
@@ -647,7 +653,6 @@ CONTAINS
             END IF
           END IF
 
-
           ! Compute the aerosol absorption/scattering properties
           IF ( Atm%n_Aerosols > 0 ) THEN
             Error_Status = CRTM_Compute_AerosolScatter( Atm         , &  ! Input
@@ -666,9 +671,11 @@ CONTAINS
 
 
           ! Compute the combined atmospheric optical properties
-          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          IF( AtmOptics%Include_Scattering ) THEN
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          END IF
 
-
+!          AtmOptics%Single_Scatter_Albedo = ZERO
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed
           SfcOptics%Compute = .TRUE.

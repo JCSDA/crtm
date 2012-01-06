@@ -672,7 +672,7 @@ CONTAINS
       c = SP_COMPARE_CUTOFF
     END IF
     is_comparable = .TRUE.
-    IF ( ABS(x) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
+    IF ( ABS(x) > c .OR. ABS(y) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
   END FUNCTION cwt_Real_Single
 
 
@@ -688,7 +688,7 @@ CONTAINS
       c = DP_COMPARE_CUTOFF
     END IF
     is_comparable = .TRUE.
-    IF ( ABS(x) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
+    IF ( ABS(x) > c .OR. ABS(y) > c ) is_comparable = ABS(x-y) < Tolerance(x,n)
   END FUNCTION cwt_Real_Double
 
 

@@ -419,6 +419,7 @@ CONTAINS
         User_AntCorr = Options(m)%Use_Antenna_Correction
         ! Set NLTE correction option
         Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
+           
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -523,6 +524,11 @@ CONTAINS
         RETURN
       END IF
 
+      IF (Options_Present) THEN
+        ! Set Scattering Switch
+        AtmOptics%Include_Scattering = Options(m)%Include_Scattering
+        AtmOptics_TL%Include_Scattering = Options(m)%Include_Scattering
+      END IF
 
       ! -----------
       ! SENSOR LOOP
@@ -581,9 +587,9 @@ CONTAINS
 
 
         ! Allocate the RTV structure if necessary
-        IF( Atm%n_Clouds   > 0 .OR. &
+        IF( (Atm%n_Clouds   > 0 .OR. &
             Atm%n_Aerosols > 0 .OR. &
-            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) THEN
+            SpcCoeff_IsVisibleSensor( SC(SensorIndex) ) ) .and. AtmOptics%Include_Scattering ) THEN
           CALL RTV_Create( RTV, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, Atm%n_Layers )
           IF ( .NOT. RTV_Associated(RTV) ) THEN
             Error_Status=FAILURE
@@ -761,9 +767,10 @@ CONTAINS
 
 
           ! Compute the combined atmospheric optical properties
-          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
-          CALL CRTM_Combine_AtmOptics_TL( AtmOptics, AtmOptics_TL, AOV )
-
+          IF( AtmOptics%Include_Scattering ) THEN
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+            CALL CRTM_Combine_AtmOptics_TL( AtmOptics, AtmOptics_TL, AOV )
+          END IF
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed

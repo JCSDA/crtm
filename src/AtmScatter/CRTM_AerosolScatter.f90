@@ -345,7 +345,7 @@ CONTAINS
         ! p = p + p(LUT)*bs
         ! where
         !   p(LUT) = the phase coefficient from the LUT
-        IF( AScat%n_Phase_Elements > 0 ) THEN
+        IF( AScat%n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
           DO m = 1, AScat%n_Phase_Elements
             DO l = 0, AScat%n_Legendre_Terms
               AScat%Phase_Coefficient(l,m,ka) = AScat%Phase_Coefficient(l,m,ka) + &
@@ -355,6 +355,7 @@ CONTAINS
         END IF
       END DO Aerosol_Layer_loop
     END DO Aerosol_loop                                      
+
                                                     
   END FUNCTION CRTM_Compute_AerosolScatter
 
@@ -551,7 +552,7 @@ CONTAINS
                                      (ASV%ke(ka,n) * Atm_TL%Aerosol(n)%Concentration(ka))
 
         ! Compute the phase matrix coefficients
-        IF( n_Phase_Elements > 0) THEN
+        IF( n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               AScat_TL%Phase_Coefficient(l,m,ka) = AScat_TL%Phase_Coefficient(l,m,ka) + &
@@ -745,7 +746,7 @@ CONTAINS
         
         ! Compute the adjoint of the
         ! phase matrix coefficients
-        IF( n_Phase_Elements > 0 ) THEN
+        IF( n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               bs_AD = bs_AD + (ASV%pcoeff(l,m,ka,n) * AScat_AD%Phase_Coefficient(l,m,ka))
@@ -900,14 +901,18 @@ CONTAINS
     ! ---------------------
     CALL interp_2D( AeroC%ke(asi%i1:asi%i2,asi%j1:asi%j2,k), asi%wlp, asi%xlp, ke )
     CALL interp_2D( AeroC%w(asi%i1:asi%i2,asi%j1:asi%j2,k) , asi%wlp, asi%xlp, w  )
-    IF (AerosolScatter%n_Phase_Elements > 0 ) THEN
+    IF (AerosolScatter%n_Phase_Elements > 0 .and. AerosolScatter%Include_Scattering ) THEN
       pcoeff(0,1) = POINT_5
       DO m = 1, AerosolScatter%n_Phase_Elements
         DO l = 1, AerosolScatter%n_Legendre_Terms
           CALL interp_2D( AeroC%pcoeff(asi%i1:asi%i2,asi%j1:asi%j2,k,l+AerosolScatter%lOffset,m), &
                           asi%wlp, asi%xlp, pcoeff(l,m) )
         END DO
-      END DO
+      END DO      
+    ELSE
+      ! Absorption coefficient
+      ke = ke - w
+      w  = ZERO
     END IF
 
   END SUBROUTINE Get_Aerosol_Opt
@@ -995,7 +1000,7 @@ CONTAINS
                        z_TL, wlp_TL , xlp_TL , &  ! TL  Input
                        w_TL                    )  ! TL  Output
     ! Phase matrix coefficients    
-    IF (AerosolScatter_TL%n_Phase_Elements > 0 ) THEN
+    IF (AerosolScatter_TL%n_Phase_Elements > 0 .and. AerosolScatter_TL%Include_Scattering ) THEN
       pcoeff_TL(0,1) = ZERO
       DO m = 1, AerosolScatter_TL%n_Phase_Elements
         DO l = 1, AerosolScatter_TL%n_Legendre_Terms
@@ -1005,6 +1010,10 @@ CONTAINS
                              pcoeff_TL(l,m)          )  ! TL  Output
         END DO
       END DO
+    ELSE
+      ! Absorption coefficient
+      ke_TL = ke_TL - w_TL
+      w_TL  = ZERO 
     END IF
     NULLIFY(z)
     
@@ -1072,7 +1081,7 @@ CONTAINS
     ! Perform interpolation
     ! ---------------------
     ! Phase matrix coefficients
-    IF (AerosolScatter_AD%n_Phase_Elements > 0 ) THEN
+    IF (AerosolScatter_AD%n_Phase_Elements > 0 .and. AerosolScatter_AD%Include_Scattering ) THEN
       DO m = 1, AerosolScatter_AD%n_Phase_Elements
         DO l = 1, AerosolScatter_AD%n_Legendre_Terms
           z => AeroC%pcoeff(asi%i1:asi%i2,asi%j1:asi%j2,k,l+AerosolScatter_AD%lOffset,m)
@@ -1082,7 +1091,13 @@ CONTAINS
         END DO
       END DO
       pcoeff_AD(0,1) = ZERO
+    ELSE
+      ! Absorption coefficient
+      w_AD  = ZERO
+      w_AD = -ke_AD
+      ke_AD = ke_AD       
     END IF
+    
     ! Single scatter albedo
     z => AeroC%w(asi%i1:asi%i2,asi%j1:asi%j2,k)
     CALL interp_2D_AD( z   , asi%wlp, asi%xlp, &  ! FWD Input

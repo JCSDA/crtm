@@ -90,7 +90,11 @@ MODULE CRTM_Options_Define
     ! Aircraft flight level pressure
     ! Value > 0 turns "on" the aircraft option
     REAL(fp) :: Aircraft_Pressure = -ONE
-    
+
+    ! Scattering switch. Default is for 
+    ! Cloud/Aerosol scattering to be included.
+    LOGICAL :: Include_Scattering = .TRUE.
+        
     ! User defined emissivity/reflectivity
     ! ...Dimensions
     INTEGER :: n_Channels = 0  ! L dimension

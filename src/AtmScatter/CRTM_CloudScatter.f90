@@ -371,7 +371,7 @@ CONTAINS
         !   p = p + p(LUT)*bs
         ! where
         !   p(LUT) = the phase coefficient from the LUT
-        IF( CScat%n_Phase_Elements > 0 ) THEN
+        IF( CScat%n_Phase_Elements > 0  .and. CScat%Include_Scattering ) THEN
           DO m = 1, CScat%n_Phase_Elements       
             DO l = 1, CScat%n_Legendre_Terms
               CScat%Phase_Coefficient(l,m,kc) = CScat%Phase_Coefficient(l,m,kc) + &
@@ -379,11 +379,10 @@ CONTAINS
             END DO              
           END DO
         END IF
-  
+         
       END DO Cloud_Layer_loop
     END DO Cloud_loop
-
-
+ 
   END FUNCTION CRTM_Compute_CloudScatter
 
 
@@ -596,7 +595,7 @@ CONTAINS
                                      (ke_TL        * Atm%Cloud(n)%Water_Content(kc)) + &
                                      (CSV%ke(kc,n) * Atm_TL%Cloud(n)%Water_Content(kc))
         ! Compute the phase matrix coefficients
-        IF( n_Phase_Elements > 0 ) THEN
+        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               CScat_TL%Phase_Coefficient(l,m,kc) = CScat_TL%Phase_Coefficient(l,m,kc) + &
@@ -789,7 +788,7 @@ CONTAINS
 
         ! Compute the adjoint of the
         ! phase matrix coefficients
-        IF( n_Phase_Elements > 0 ) THEN
+        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               bs_AD = bs_AD + (CSV%pcoeff(l,m,kc,n) * CScat_AD%Phase_Coefficient(l,m,kc))
@@ -935,12 +934,16 @@ CONTAINS
     ! ---------------------
     CALL interp_2D( CloudC%ke_IR(csi%i1:csi%i2,csi%j1:csi%j2,k), csi%wlp, csi%xlp, ke )
     CALL interp_2D( CloudC%w_IR(csi%i1:csi%i2,csi%j1:csi%j2,k) , csi%wlp, csi%xlp, w  )
-    IF (CloudScatter%n_Phase_Elements > 0 ) THEN
+    IF (CloudScatter%n_Phase_Elements > 0 .and. CloudScatter%Include_Scattering ) THEN
       pcoeff(0,1) = POINT_5
       DO l = 1, CloudScatter%n_Legendre_Terms
         CALL interp_2D( CloudC%pcoeff_IR(csi%i1:csi%i2,csi%j1:csi%j2,k,l+CloudScatter%lOffset), &
                         csi%wlp, csi%xlp, pcoeff(l,1) )
-      END DO
+      END DO      
+    ELSE
+      ! Absorption coefficient
+      ke = ke - w
+      w  = ZERO    
     END IF
     
   END SUBROUTINE Get_Cloud_Opt_IR
@@ -1035,7 +1038,7 @@ CONTAINS
                        z_TL, wlp_TL , xlp_TL , &  ! TL  Input
                        w_TL                    )  ! TL  Output
     ! Phase matrix coefficients
-    IF ( CloudScatter_TL%n_Phase_Elements > 0 ) THEN
+    IF ( CloudScatter_TL%n_Phase_Elements > 0 .and. CloudScatter_TL%Include_Scattering ) THEN
       pcoeff_TL(0,1) = ZERO
       DO l = 1, CloudScatter_TL%n_Legendre_Terms
         z => CloudC%pcoeff_IR(csi%i1:csi%i2,csi%j1:csi%j2,k,l+CloudScatter_TL%lOffset)
@@ -1043,6 +1046,10 @@ CONTAINS
                            z_TL, wlp_TL , xlp_TL , &  ! TL  Input
                            pcoeff_TL(l,1)          )  ! TL  Output
       END DO
+    ELSE    
+      ! Absorption coefficient
+      ke_TL = ke_TL - w_TL
+      w_TL  = ZERO
     END IF
     NULLIFY(z)
     
@@ -1110,19 +1117,22 @@ CONTAINS
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
     END SELECT
-
     
     ! Perform interpolation
     ! ---------------------
     ! Phase matrix coefficients
-    IF (CloudScatter_AD%n_Phase_Elements > 0 ) THEN
+    IF (CloudScatter_AD%n_Phase_Elements > 0 .and. CloudScatter_AD%Include_Scattering ) THEN
       DO l = 1, CloudScatter_AD%n_Legendre_Terms
         z => CloudC%pcoeff_IR(csi%i1:csi%i2,csi%j1:csi%j2,k,l+CloudScatter_AD%lOffset)
         CALL interp_2D_AD( z   , csi%wlp   , csi%xlp   , &  ! FWD Input
                            pcoeff_AD(l,1)      , &  ! AD  Input
                            z_AD, wlp_AD, xlp_AD  )  ! AD  Output
       END DO
-      pcoeff_AD(0,1) = ZERO
+      pcoeff_AD(0,1) = ZERO    
+    ELSE
+      ! Absorption coefficient
+      w_AD  = -ke_AD
+      ke_AD = ke_AD
     END IF
     ! Single scatter albedo
     z => CloudC%w_IR(csi%i1:csi%i2,csi%j1:csi%j2,k)
@@ -1236,7 +1246,7 @@ CONTAINS
       CASE (RAIN_CLOUD)
         CALL interp_3D( CloudC%ke_L_MW(csi%i1:csi%i2,csi%j1:csi%j2,csi%k1:csi%k2), csi%wlp, csi%xlp, csi%ylp, ke )
         CALL interp_3D( CloudC%w_L_MW(csi%i1:csi%i2,csi%j1:csi%j2,csi%k1:csi%k2) , csi%wlp, csi%xlp, csi%ylp, w  )
-        IF ( CloudScatter%n_Phase_Elements > 0 ) THEN
+        IF ( CloudScatter%n_Phase_Elements > 0 .and. CloudScatter%Include_Scattering ) THEN
           pcoeff(0,1) = POINT_5
           DO m = 1, CloudScatter%n_Phase_Elements
             DO l = 1, CloudScatter%n_Legendre_Terms
@@ -1244,6 +1254,12 @@ CONTAINS
                               csi%wlp, csi%xlp, csi%ylp, pcoeff(l,m) )
             END DO
           END DO
+
+        ELSE
+        ! Absorption coefficient
+          ke = ke - w
+          w  = ZERO
+        
         END IF
 
       ! Only 1-D interpolation of extinction coefficient as a
@@ -1264,7 +1280,7 @@ CONTAINS
         ! Perform interpolation
         CALL interp_2D( CloudC%ke_S_MW(csi%i1:csi%i2,csi%j1:csi%j2,k), csi%wlp, csi%xlp, ke )
         CALL interp_2D( CloudC%w_S_MW(csi%i1:csi%i2,csi%j1:csi%j2,k) , csi%wlp, csi%xlp, w  )
-        IF (CloudScatter%n_Phase_Elements > 0 ) THEN
+        IF (CloudScatter%n_Phase_Elements > 0 .and. CloudScatter%Include_Scattering ) THEN
           pcoeff(0,1) = POINT_5
           DO m = 1, CloudScatter%n_Phase_Elements
             DO l = 1, CloudScatter%n_Legendre_Terms
@@ -1272,9 +1288,15 @@ CONTAINS
                               csi%wlp, csi%xlp, pcoeff(l,m) )
             END DO
           END DO
+
+        ELSE
+        ! Absorption coefficient
+          ke = ke - w
+          w  = ZERO
         END IF
+        
     END SELECT
-    
+
   END SUBROUTINE Get_Cloud_Opt_MW
 
 
@@ -1388,7 +1410,7 @@ CONTAINS
                            z3_TL, wlp_TL , xlp_TL , ylp_TL , &  ! TL  Input
                            w_TL                              )  ! TL  Output
         ! Phase matrix coefficients
-        IF ( CloudScatter_TL%n_Phase_Elements > 0 ) THEN
+        IF ( CloudScatter_TL%n_Phase_Elements > 0 .and. CloudScatter_TL%Include_Scattering ) THEN
           pcoeff_TL(0,1) = ZERO
           DO m = 1, CloudScatter_TL%n_Phase_Elements
             DO l = 1, CloudScatter_TL%n_Legendre_Terms
@@ -1398,6 +1420,11 @@ CONTAINS
                                  pcoeff_TL(l,m)                    )  ! TL  Output
             END DO
           END DO
+        ELSE
+        ! Absorption coefficient
+          ke_TL = ke_TL - w_TL
+          w_TL  = ZERO
+
         END IF
 
       ! No TL interpolation of extinction coefficient as it
@@ -1431,7 +1458,7 @@ CONTAINS
                            z2_TL, wlp_TL , xlp_TL , &  ! TL  Input
                            w_TL                     )  ! TL  Output
         ! Phase matrix coefficients
-        IF ( CloudScatter_TL%n_Phase_Elements > 0 ) THEN
+        IF ( CloudScatter_TL%n_Phase_Elements > 0 .and. CloudScatter_TL%Include_Scattering ) THEN
           pcoeff_TL(0,1) = ZERO
           DO m = 1, CloudScatter_TL%n_Phase_Elements
             DO l = 1, CloudScatter_TL%n_Legendre_Terms
@@ -1441,6 +1468,11 @@ CONTAINS
                                  pcoeff_TL(l,m)           )  ! TL  Output
             END DO
           END DO
+
+        ELSE
+          ! Absorption coefficient
+          ke_TL = ke_TL - w_TL
+          w_TL  = ZERO
         END IF
     END SELECT
     NULLIFY(z2, z3)
@@ -1549,7 +1581,7 @@ CONTAINS
         END IF
         ! Perform the AD interpolations
         ! Phase matrix coefficients
-        IF (CloudScatter_AD%n_Phase_Elements > 0 ) THEN
+        IF (CloudScatter_AD%n_Phase_Elements > 0 .and. CloudScatter_AD%Include_Scattering ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
             DO l = 1, CloudScatter_AD%n_Legendre_Terms
               z3 => CloudC%pcoeff_L_MW(csi%i1:csi%i2,csi%j1:csi%j2,csi%k1:csi%k2,l+CloudScatter_AD%lOffset,m)
@@ -1559,6 +1591,12 @@ CONTAINS
             END DO
           END DO
           pcoeff_AD(0,1) = ZERO 
+
+        ELSE
+        ! Absorption coefficient
+          w_AD  = -ke_AD
+          ke_AD = ke_AD
+          
         END IF
         ! Single scatter albedo
         z3 => CloudC%w_L_MW(csi%i1:csi%i2,csi%j1:csi%j2,csi%k1:csi%k2)
@@ -1620,7 +1658,7 @@ CONTAINS
         END SELECT
         ! Perform the AD interpolations
         ! Phase matrix coefficients
-        IF (CloudScatter_AD%n_Phase_Elements > 0 ) THEN
+        IF (CloudScatter_AD%n_Phase_Elements > 0 .and. CloudScatter_AD%Include_Scattering ) THEN
           DO m = 1, CloudScatter_AD%n_Phase_Elements
             DO l = 1, CloudScatter_AD%n_Legendre_Terms
               z2 => CloudC%pcoeff_S_MW(csi%i1:csi%i2,csi%j1:csi%j2,k,l+CloudScatter_AD%lOffset,m)
@@ -1630,6 +1668,10 @@ CONTAINS
             END DO
           END DO
           pcoeff_AD(0,1) = ZERO 
+        ELSE
+          ! Absorption coefficient
+          w_AD  = -ke_AD
+          ke_AD = ke_AD
         END IF
         ! Single scatter albedo
         z2 => CloudC%w_S_MW(csi%i1:csi%i2,csi%j1:csi%j2,k)
