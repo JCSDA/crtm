@@ -130,39 +130,60 @@ $Revision$
    to build and run both the forward and k_matrix test/example programs. This process
    does generate a lot of output to screen so be prepared to scroll through it.
    
-   Currently there are five forward model test, or example, programs:
+   Currently there are nine forward model test, or example, programs:
      test/forward/Example1_Simple
      test/forward/Example2_SSU
      test/forward/Example3_Zeeman
      test/forward/Example4_ODPS
      test/forward/Example5_ClearSky
-   And there are four cases for the k_matrix model:
+     test/forward/Example6_ChannelSubset
+     test/forward/Example7_AOD
+     test/forward/Example9_Aircraft
+     test/forward/Example10_ScatteringSwitch
+   And there are eight cases for the k_matrix model:
      test/k_matrix/Example1_Simple
      test/k_matrix/Example2_SSU
      test/k_matrix/Example3_Zeeman
      test/k_matrix/Example4_ODPS
+     test/k_matrix/Example5_ClearSky
+     test/k_matrix/Example6_ChannelSubset
+     test/k_matrix/Example7_AOD
+     test/k_matrix/Example10_ScatteringSwitch
    
-   Both the forward and k_matrix tests should end with output that looks like:
+   As mentioned previously, the Aircaft capability is only implemented for the
+   forward model.
    
-   
-     ======================
-     SUMMARY OF ALL RESULTS
-     ======================
-
-     Passed 14 of 14 tests.
-     Failed 0 of 14 tests.
-   
-   
-   Currently they both have the same number of tests. If you encounter failures you
-   might see something like:
+   The forward tests should end with output that looks like:
    
    
      ======================
      SUMMARY OF ALL RESULTS
      ======================
 
-     Passed 10 of 14 tests.
-     Failed 4 of 14 tests.  <----<<<  **WARNING**
+     Passed 36 of 36 tests.
+     Failed 0 of 36 tests.
+   
+   
+   and the k-matrix tests with:
+   
+   
+     ======================
+     SUMMARY OF ALL RESULTS
+     ======================
+
+     Passed 33 of 33 tests.
+     Failed 0 of 33 tests.
+   
+   
+   If you encounter failures you might see something like:
+   
+   
+     ======================
+     SUMMARY OF ALL RESULTS
+     ======================
+
+     Passed 25 of 36 tests.
+     Failed 11 of 36 tests.  <----<<<  **WARNING**
    
    
    Some important things to note about the tests:
