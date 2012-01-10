@@ -1,58 +1,46 @@
-JCSDA CRTM beta v2.0.2 Build Instructions
-=========================================
+JCSDA CRTM v2.1 Build Instructions
+==================================
 
 $Revision$
 
 
   CRTM SUPPORT EMAIL: ncep.list.emc.jcsda_crtm.support@noaa.gov
      
-
-  *****************
-  *** IMPORTANT ***
-  *****************
-  To (hopefully) make it easier for people to compile the CRTM library and
-  associated test/example programs, we've changed the structure of the build
-  process. As such, please read this carefully.
-  *****************
-  *****************
-
   
 0) PREAMBLE
 -----------
    The CRTM tarball directory structure looks like:
      ./
      |-configure   .............. compiler environment shell source files
+     |-fix         .............. CRTM coefficient datafiles
      |-libsrc      .............. CRTM Fortran95/2003 source files
      `-test        .............. test/example programs and results
         |-forward  .............. forward model tests/examples
         |  |-Example1_Simple
-        |  |  |-coefficients .... contains the coefficient data for the program
-        |  |  `-results      .... contains the results of the program
+        |  |  |-coefficients ...... contains the coefficient data for the program
+        |  |  `-results      ...... contains the results of the program
         |  |-Example2_SSU
-        |  |  |-coefficients
-        |  |  `-results
         |  |-Example3_Zeeman
-        |  |  |-coefficients
-        |  |  `-results
         |  |-Example4_ODPS
-        |  |  |-coefficients
-        |  |  `-results
-        |  `-Example5_ClearSky
-        |     |-coefficients
-        |     `-results
+        |  |-Example5_ClearSky
+        |  |-Example6_ChannelSubset
+        |  |-Example7_AOD
+        |  |-Example9_Aircraft
+        |  `-Example10_ScatteringSwitch
         `-k_matrix  ............. k-matrix model tests/examples
            |-Example1_Simple
-           |  |-coefficients
-           |  `-results
+           |  |-coefficients ...... contains the coefficient data for the program
+           |  `-results      ...... contains the results of the program
            |-Example2_SSU
-           |  |-coefficients
-           |  `-results
            |-Example3_Zeeman
-           |  |-coefficients
-           |  `-results
-           `-Example4_ODPS
-              |-coefficients
-              `-results
+           |-Example4_ODPS
+           |-Example5_ClearSky
+           |-Example6_ChannelSubset
+           |-Example7_AOD
+           `-Example10_ScatteringSwitch
+   
+   Note: The Aircaft capability only applies to the Forward model, so there is
+         no equivalent Example9_Aircraft for the K-matrix model.
    
    The build makefiles now assumes that environment variables (envars) will
    be defined that describe the compilation and link environment. The envars
@@ -142,12 +130,13 @@ $Revision$
    to build and run both the forward and k_matrix test/example programs. This process
    does generate a lot of output to screen so be prepared to scroll through it.
    
-   Currently there are four forward model test, or example, programs:
+   Currently there are five forward model test, or example, programs:
      test/forward/Example1_Simple
      test/forward/Example2_SSU
      test/forward/Example3_Zeeman
      test/forward/Example4_ODPS
-   And there are the same four cases for the k_matrix model:
+     test/forward/Example5_ClearSky
+   And there are four cases for the k_matrix model:
      test/k_matrix/Example1_Simple
      test/k_matrix/Example2_SSU
      test/k_matrix/Example3_Zeeman
@@ -204,9 +193,6 @@ $Revision$
    You can then copy/move/link these directories to the preferred location
    on your system.
    
-   Note: Currently, running the tests also does this. That will change in
-         future tarball releases so don;t rely on that behaviour.
-
 
 
 5) CLEANUP
