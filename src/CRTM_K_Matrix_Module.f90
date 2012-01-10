@@ -292,6 +292,7 @@ CONTAINS
     LOGICAL :: Apply_NLTE_Correction
     LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
     INTEGER :: iFOV
+    INTEGER :: nc, na
     INTEGER :: n, n_Sensors,  SensorIndex
     INTEGER :: l, n_Channels, ChannelIndex
     INTEGER :: m, n_Profiles
@@ -418,9 +419,18 @@ CONTAINS
       DO l = 1, n_Channels
         ! ...Atmosphere
         Atmosphere_K(l,m)%Climatology = Atmosphere(m)%Climatology
+        ! Loop over absorbers
         DO j = 1, Atmosphere(m)%n_Absorbers
           Atmosphere_K(l,m)%Absorber_ID(j)    = Atmosphere(m)%Absorber_ID(j)
           Atmosphere_K(l,m)%Absorber_Units(j) = Atmosphere(m)%Absorber_Units(j)
+        END DO
+        ! Loop over and assign cloud types
+        DO nc = 1, Atmosphere(m)%n_Clouds
+          Atmosphere_K(l,m)%Cloud(nc)%Type = Atmosphere(m)%Cloud(nc)%Type
+        END DO
+        ! Loop over and assign aerosol types
+        DO na = 1, Atmosphere(m)%n_Aerosols
+          Atmosphere_K(l,m)%Aerosol(na)%Type = Atmosphere(m)%Aerosol(na)%Type
         END DO
         ! ...Surface
         Surface_K(l,m)%Land_Coverage  = Surface(m)%Land_Coverage 
