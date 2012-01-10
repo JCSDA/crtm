@@ -29,15 +29,6 @@ MODULE CRTM_surface_ir_emissivity
   PUBLIC :: surface_ir_emissivity
 
 
-  ! -------------------
-  ! Procedure overloads
-  ! -------------------
-  INTERFACE surface_ir_emissivity 
-    MODULE PROCEDURE surface_ir_emissivity_byLo
-    MODULE PROCEDURE surface_ir_emissivity_byType
-  END INTERFACE surface_ir_emissivity 
-
-  
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -48,7 +39,7 @@ MODULE CRTM_surface_ir_emissivity
   
 CONTAINS
 !
-      SUBROUTINE surface_ir_emissivity_byType(wavelength,  & ! INPUT, wavelength in micrometer
+      SUBROUTINE surface_ir_emissivity(wavelength,  & ! INPUT, wavelength in micrometer
                                        emissivity,   & ! OUTPUT, surface emissivity (0 - 1)
                                      surface_type)     ! OPTIONAL INPUT, surface type (1 - 24)
 ! ----------------------------------------------------------------------------------------
@@ -76,84 +67,8 @@ CONTAINS
       CALL IRVIS_surface_model(surface_type,wavelength,Reflection)
       emissivity = 1.0 - Reflection
 !
-      END SUBROUTINE surface_ir_emissivity_byType
-!
-!
-      SUBROUTINE surface_ir_emissivity_byLo(wavelength,  & ! INPUT, wavelength in micrometer
-                                       emissivity,   & ! OUTPUT, surface emissivity (0 - 1)
-                                             alat,   & ! OPTIONAL INPUT, latitude in degree
-                                             alon)     ! OPTIONAL INPUT, longitude in degree
-! ----------------------------------------------------------------------------------------
-!
-      INTEGER :: surface_type
-      REAL(fp), INTENT( IN ) :: alat, alon
-      REAL(fp), INTENT( IN ) :: wavelength
-      REAL(fp), INTENT( OUT ) :: emissivity
+      END SUBROUTINE surface_ir_emissivity
 
-     ! --------------------------------------------------  !
-     !       internal variables                            !
-     ! --------------------------------------------------  !
-
-      REAL(fp) :: surface_cover
-
-        CALL read_topography(alat, alon, surface_type, surface_cover)
-!
-        CALL surface_ir_emissivity_byType(wavelength,emissivity,surface_type)
-!
-      END SUBROUTINE surface_ir_emissivity_byLo
-!
-      subroutine read_topography(alat,alon,stype,scover)
-! -------------------------------------------------------------------
-!     get surface type, primary coverage, and altitude
-!     based on latitude and longitude.
-! -------------------------------------------------------------------
-!
-      USE File_Utility
-      REAL(fp), INTENT( IN ) :: alat, alon
-      REAL(fp) :: alon1,scover 
-      INTEGER, PARAMETER :: Nlat = 1080, NLon = 2160
-      INTEGER i,j,k,stype,init_topo,index_lat,index_lon,FileID
-      INTEGER(KIND=1), DIMENSION( NLon, Nlat) :: Surface_Type
-      INTEGER(KIND=1) :: I3      ! One byte
-      INTEGER(KIND=2) :: I2         ! Two bytes
-      DATA init_topo/0/
-      SAVE init_topo, Surface_Type
-!
-     IF(init_topo .eq. 0) THEN 
-!  data contains surface topography parameters
-        FileID = Get_Lun()
-        PRINT *,' READ TOPOGRAPHY DATA '
-        OPEN(FileID,file='topography.bin.Big_Endian',form='unformatted', &
-        access='direct',RECL=4)
-        DO i = 1, Nlat
-          DO j = 1, Nlon
-           k = (i-1) * Nlon + j
-           READ(FileID,rec=k) Surface_Type(j,i), I3, I2
-          ENDDO
-!      alt=I2*1.0
-!      scover = I3 * 0.01
-          ENDDO
-        CLOSE(FileID)
-        init_topo=1
-     ENDIF 
-!
-      if(alon .gt. 180.0_fp) then
-      alon1 = alon - 360.0_fp
-      else
-      alon1=alon
-      endif
-      index_lat=(90.0_fp - alat)*6+1
-      index_lon=(180_fp + alon1)*6+1
-      if(index_lat.gt.Nlat) index_lat=Nlat
-      if(index_lon.gt.Nlon) index_lon=Nlon
-      stype = Surface_Type(index_lon, index_lat)
- 
-      return
-      end subroutine read_topography
-!
-
-!
-END MODULE CRTM_surface_ir_emissivity
 !
   !
       SUBROUTINE IRVIS_surface_model(stype,      &  ! INPUT    assigned surface type
@@ -499,3 +414,5 @@ END MODULE CRTM_surface_ir_emissivity
 !
        RETURN
        END SUBROUTINE IRVIS_surface_model
+
+END MODULE CRTM_surface_ir_emissivity
