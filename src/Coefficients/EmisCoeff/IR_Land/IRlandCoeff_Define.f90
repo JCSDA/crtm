@@ -21,22 +21,22 @@ MODULE IRlandCoeff_Define
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   USE File_Utility         , ONLY: File_Open, File_Exists
   USE Binary_File_Utility  , ONLY: Open_Binary_File
-  USE LSEcategory_Define   , ONLY: LSECATEGORY_DATATYPE     , &
-                                   LSEcategory_type         , &
-                                   OPERATOR(==)             , &      
-                                   LSEcategory_Associated   , & 
-                                   LSEcategory_Destroy      , & 
-                                   LSEcategory_Create       , & 
-                                   LSEcategory_Inspect      , & 
-                                   LSEcategory_ValidRelease , & 
-                                   LSEcategory_Info         , & 
-                                   LSEcategory_Name         , & 
-                                   LSEcategory_DefineVersion, & 
-                                   LSEcategory_SetValue     , &
-                                   LSEcategory_GetValue     , &
-                                   LSEcategory_InquireFile  , &
-                                   LSEcategory_ReadFile     , &
-                                   LSEcategory_WriteFile
+  USE SEcategory_Define    , ONLY: SECATEGORY_DATATYPE     , &
+                                   SEcategory_type         , &
+                                   OPERATOR(==)            , &      
+                                   SEcategory_Associated   , & 
+                                   SEcategory_Destroy      , & 
+                                   SEcategory_Create       , & 
+                                   SEcategory_Inspect      , & 
+                                   SEcategory_ValidRelease , & 
+                                   SEcategory_Info         , & 
+                                   SEcategory_Name         , & 
+                                   SEcategory_DefineVersion, & 
+                                   SEcategory_SetValue     , &
+                                   SEcategory_GetValue     , &
+                                   SEcategory_InquireFile  , &
+                                   SEcategory_ReadFile     , &
+                                   SEcategory_WriteFile
   USE LSEatlas_Define      , ONLY: LSEATLAS_DATATYPE     , &
                                    LSEatlas_type         , &
                                    OPERATOR(==)          , &      
@@ -78,21 +78,21 @@ MODULE IRlandCoeff_Define
   PUBLIC :: IRlandCoeff_GetValue
   PUBLIC :: IRlandCoeff_InquireFile
   ! ...Inherited datatypes and procedures
-  PUBLIC :: LSECATEGORY_DATATYPE
-  PUBLIC :: LSEcategory_type
-  PUBLIC :: LSEcategory_Associated   
-  PUBLIC :: LSEcategory_Destroy      
-  PUBLIC :: LSEcategory_Create       
-  PUBLIC :: LSEcategory_Inspect      
-  PUBLIC :: LSEcategory_ValidRelease 
-  PUBLIC :: LSEcategory_Info         
-  PUBLIC :: LSEcategory_Name       
-  PUBLIC :: LSEcategory_DefineVersion
-  PUBLIC :: LSEcategory_SetValue
-  PUBLIC :: LSEcategory_GetValue
-  PUBLIC :: LSEcategory_InquireFile
-  PUBLIC :: LSEcategory_ReadFile
-  PUBLIC :: LSEcategory_WriteFile
+  PUBLIC :: SECATEGORY_DATATYPE
+  PUBLIC :: SEcategory_type
+  PUBLIC :: SEcategory_Associated   
+  PUBLIC :: SEcategory_Destroy      
+  PUBLIC :: SEcategory_Create       
+  PUBLIC :: SEcategory_Inspect      
+  PUBLIC :: SEcategory_ValidRelease 
+  PUBLIC :: SEcategory_Info         
+  PUBLIC :: SEcategory_Name       
+  PUBLIC :: SEcategory_DefineVersion
+  PUBLIC :: SEcategory_SetValue
+  PUBLIC :: SEcategory_GetValue
+  PUBLIC :: SEcategory_InquireFile
+  PUBLIC :: SEcategory_ReadFile
+  PUBLIC :: SEcategory_WriteFile
   ! ...
   PUBLIC :: LSEATLAS_DATATYPE
   PUBLIC :: LSEatlas_type
@@ -148,8 +148,8 @@ MODULE IRlandCoeff_Define
     INTEGER(Long) :: Release = IRLANDCOEFF_RELEASE
     INTEGER(Long) :: Version = IRLANDCOEFF_VERSION
     ! Derived type components
-    TYPE(LSEcategory_type) :: LSEcategory
-    TYPE(LSEatlas_type)    :: LSEatlas
+    TYPE(SEcategory_type) :: LSEcategory
+    TYPE(LSEatlas_type)   :: LSEatlas
   END TYPE IRlandCoeff_type
   !:tdoc-:
 
@@ -294,7 +294,7 @@ CONTAINS
     ! Release/version info
     WRITE(*,'(3x,"Release.Version  :",1x,i0,".",i0)') self%Release, self%Version
     ! Derived types
-    IF ( LSEcategory_Associated( self%LSEcategory ) ) CALL LSEcategory_Inspect( self%LSEcategory )
+    IF ( SEcategory_Associated( self%LSEcategory ) ) CALL SEcategory_Inspect( self%LSEcategory )
     IF ( LSEatlas_Associated( self%LSEatlas ) ) CALL LSEatlas_Inspect( self%LSEatlas )
   END SUBROUTINE IRlandCoeff_Inspect
 
@@ -471,10 +471,10 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       LSEcategory:  Object containing an LSEcategory land surface
+!       LSEcategory:  Object containing a land surface SEcategory
 !                     emissivity/refelctivity dataset.
 !                     UNITS:      N/A
-!                     TYPE:       LSEcategory_type
+!                     TYPE:       SEcategory_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -493,9 +493,9 @@ CONTAINS
     LSEcategory, &  ! Input
     LSEatlas     )  ! Optional input
     ! Arguments
-    TYPE(IRlandCoeff_type)          , INTENT(IN OUT) :: self
-    TYPE(LSEcategory_type), OPTIONAL, INTENT(IN)     :: LSEcategory
-    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(IN)     :: LSEatlas   
+    TYPE(IRlandCoeff_type)         , INTENT(IN OUT) :: self
+    TYPE(SEcategory_type), OPTIONAL, INTENT(IN)     :: LSEcategory
+    TYPE(LSEatlas_type)  , OPTIONAL, INTENT(IN)     :: LSEatlas   
 
     IF ( PRESENT(LSEcategory) ) self%LSEcategory = LSEcategory
     IF ( PRESENT(LSEatlas   ) ) self%LSEatlas    = LSEatlas   
@@ -526,10 +526,10 @@ CONTAINS
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL OUTPUTS:
-!       LSEcategory:  Object containing an LSEcategory land surface
+!       LSEcategory:  Object containing an land surface SEcategory
 !                     emissivity/reflectivity dataset.
 !                     UNITS:      N/A
-!                     TYPE:       LSEcategory_type
+!                     TYPE:       SEcategory_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
@@ -548,9 +548,9 @@ CONTAINS
     LSEcategory, &  ! Optional output
     LSEatlas     )  ! Optional output
     ! Arguments
-    TYPE(IRlandCoeff_type)          , INTENT(IN)  :: self
-    TYPE(LSEcategory_type), OPTIONAL, INTENT(OUT) :: LSEcategory
-    TYPE(LSEatlas_type)   , OPTIONAL, INTENT(OUT) :: LSEatlas   
+    TYPE(IRlandCoeff_type)         , INTENT(IN)  :: self
+    TYPE(SEcategory_type), OPTIONAL, INTENT(OUT) :: LSEcategory
+    TYPE(LSEatlas_type)  , OPTIONAL, INTENT(OUT) :: LSEatlas   
    
     IF ( PRESENT(LSEcategory) ) LSEcategory = self%LSEcategory
     IF ( PRESENT(LSEatlas   ) ) LSEatlas    = self%LSEatlas   
@@ -720,8 +720,8 @@ CONTAINS
     IF ( (x%Release /= y%Release) .OR. &
          (x%Version /= y%Version) ) RETURN
     ! ...Structures
-    IF ( LSEcategory_Associated( x%LSEcategory ) .NEQV. LSEcategory_Associated( y%LSEcategory ) ) RETURN
-    IF ( LSEcategory_Associated( x%LSEcategory ) .AND.  LSEcategory_Associated( y%LSEcategory ) ) THEN
+    IF ( SEcategory_Associated( x%LSEcategory ) .NEQV. SEcategory_Associated( y%LSEcategory ) ) RETURN
+    IF ( SEcategory_Associated( x%LSEcategory ) .AND.  SEcategory_Associated( y%LSEcategory ) ) THEN
       IF ( .NOT. (x%LSEcategory == y%LSEcategory) ) RETURN
     END IF
     IF ( LSEatlas_Associated( x%LSEatlas ) .NEQV. LSEatlas_Associated( y%LSEatlas ) ) RETURN

@@ -28,7 +28,18 @@ MODULE CRTM_IRlandCoeff
   ! -----------------
   ! Module use
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, Display_Message
-  USE IRlandCoeff_Define
+  USE IRlandCoeff_Define, ONLY: IRlandCoeff_type, &
+                                IRlandCoeff_Associated, &
+                                IRlandCoeff_Create, &
+                                IRlandCoeff_Destroy, &
+                                IRlandCoeff_SetValue, &
+                                IRlandCoeff_InquireFile, &
+                                SECATEGORY_DATATYPE, &
+                                SEcategory_type, &
+                                SEcategory_ReadFile, &
+                                LSEATLAS_DATATYPE, &
+                                LSEatlas_type, &
+                                LSEatlas_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -169,8 +180,8 @@ CONTAINS
     CHARACTER(ML) :: IRlandCoeff_File
     CHARACTER(ML) :: datatype_name
     LOGICAL :: noisy
-    TYPE(LSEcategory_type) :: LSEcategory
-    TYPE(LSEatlas_type)    :: LSEatlas
+    TYPE(SEcategory_type) :: LSEcategory
+    TYPE(LSEatlas_type)   :: LSEatlas
 
     ! Setup 
     err_stat = SUCCESS
@@ -210,14 +221,14 @@ CONTAINS
     SELECT CASE (TRIM(datatype_name))
 
       ! Surface category dataset type
-      CASE (LSECATEGORY_DATATYPE)
-        ! ...Read the LSEcategory file
-        err_stat = LSEcategory_ReadFile( &
+      CASE (SECATEGORY_DATATYPE)
+        ! ...Read the land SEcategory file
+        err_stat = SEcategory_ReadFile( &
                      LSEcategory, &
                      IRlandCoeff_File, &
                      Quiet = .NOT. noisy )
         IF ( err_stat /= SUCCESS ) THEN
-          msg = 'Error reading IRlandCoeff LSEcategory file '//TRIM(IRlandCoeff_File)//TRIM(pid_msg)
+          msg = 'Error reading IRlandCoeff SEcategory file '//TRIM(IRlandCoeff_File)//TRIM(pid_msg)
           CALL Load_Cleanup(); RETURN
         END IF
         ! ...Load the data into the shared data structure

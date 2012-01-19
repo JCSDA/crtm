@@ -287,7 +287,7 @@ CONTAINS
     Default_CloudCoeff_File   = 'CloudCoeff.bin'
     Default_AerosolCoeff_File = 'AerosolCoeff.bin'
     Default_EmisCoeff_File    = 'EmisCoeff.bin'
-    Default_IRlandCoeff_File  = 'NPOESS.LSEcategory.bin'
+    Default_IRlandCoeff_File  = 'NPOESS.IRlandSEcategory.bin'
     ! ...Were other filenames specified?
     IF ( PRESENT(CloudCoeff_File  ) ) Default_CloudCoeff_File   = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(AerosolCoeff_File) ) Default_AerosolCoeff_File = TRIM(ADJUSTL(AerosolCoeff_File))

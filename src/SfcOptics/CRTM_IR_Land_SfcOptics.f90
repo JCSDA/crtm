@@ -21,16 +21,16 @@ MODULE CRTM_IR_Land_SfcOptics
   ! Environment setup
   ! -----------------
   ! Module use
-  USE Type_Kinds               , ONLY: fp
-  USE Message_Handler          , ONLY: SUCCESS, Display_Message
-  USE CRTM_Parameters          , ONLY: ZERO, ONE, MAX_N_ANGLES
-  USE CRTM_SpcCoeff            , ONLY: SC, SpcCoeff_IsSolar
-  USE CRTM_Surface_Define      , ONLY: CRTM_Surface_type
-  USE CRTM_GeometryInfo_Define , ONLY: CRTM_GeometryInfo_type
-  USE CRTM_SfcOptics_Define    , ONLY: CRTM_SfcOptics_type
-  USE CRTM_LSEcategory         , ONLY: LCVar_type => iVar_type, &
-                                       LSEcategory_Emissivity
-  USE CRTM_IRlandCoeff         , ONLY: IRlandC
+  USE Type_Kinds              , ONLY: fp
+  USE Message_Handler         , ONLY: SUCCESS, Display_Message
+  USE CRTM_Parameters         , ONLY: ZERO, ONE, MAX_N_ANGLES
+  USE CRTM_SpcCoeff           , ONLY: SC, SpcCoeff_IsSolar
+  USE CRTM_Surface_Define     , ONLY: CRTM_Surface_type
+  USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
+  USE CRTM_SfcOptics_Define   , ONLY: CRTM_SfcOptics_type
+  USE CRTM_SEcategory         , ONLY: SEVar_type => iVar_type, &
+                                      SEcategory_Emissivity
+  USE CRTM_IRlandCoeff        , ONLY: IRlandC
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -51,7 +51,6 @@ MODULE CRTM_IR_Land_SfcOptics
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Message string length
@@ -64,7 +63,7 @@ MODULE CRTM_IR_Land_SfcOptics
   ! --------------------------------------
   TYPE :: iVar_type
     PRIVATE
-    TYPE(LCVar_type) :: lcvar
+    TYPE(SEVar_type) :: sevar
   END TYPE iVar_type
 
 
@@ -192,14 +191,14 @@ CONTAINS
 
 
     ! Compute Lambertian surface emissivity
-    err_stat = LSEcategory_Emissivity( &
+    err_stat = SEcategory_Emissivity( &
                  IRlandC%LSEcategory, &  ! Input
                  frequency          , &  ! Input
                  Surface%Land_Type  , &  ! Input
                  emissivity         , &  ! Output
-                 iVar%lcvar           )  ! Internal variable output
+                 iVar%sevar           )  ! Internal variable output
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error occurred in LSEcategory_Emissivity()'
+      msg = 'Error occurred in SEcategory_Emissivity()'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 

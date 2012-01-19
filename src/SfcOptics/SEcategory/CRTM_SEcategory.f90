@@ -1,11 +1,8 @@
 !
-! CRTM_LSEcategory
+! CRTM_SEcategory
 !
-! Module to compute the surface optical properties for LAND surfaces
-! using a surface type category look-up-table.
-!
-! NB: Currently this module is used for IR frequencies only, but may
-!     also be adapted for use with MW and VIS LUTs
+! Module to compute the surface optical properties using
+! a surface type category look-up-table.
 !
 !
 ! CREATION HISTORY:
@@ -13,7 +10,7 @@
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE CRTM_LSEcategory
+MODULE CRTM_SEcategory
 
   ! -----------------
   ! Environment setup
@@ -32,7 +29,7 @@ MODULE CRTM_LSEcategory
                                 LPoly       , &
                                 LPoly_TL    , &
                                 LPoly_AD
-  USE LSEcategory_Define, ONLY: LSEcategory_type
+  USE SEcategory_Define , ONLY: SEcategory_type
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -45,7 +42,7 @@ MODULE CRTM_LSEcategory
   ! Data types
   PUBLIC :: iVar_type
   ! Science routines
-  PUBLIC :: LSEcategory_Emissivity
+  PUBLIC :: SEcategory_Emissivity
 
 
   ! -----------------
@@ -84,24 +81,24 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       LSEcategory_Emissivity
+!       SEcategory_Emissivity
 !
 ! PURPOSE:
-!       Function to compute land surface emissivities from an emissivity or
+!       Function to compute surface emissivities from an emissivity or
 !       reflectance LUT as a function of surface type category.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = LSEcategory_Emissivity( &
-!                        LSEcategory , & 
+!       Error_Status = SEcategory_Emissivity( &
+!                        SEcategory , & 
 !                        Frequency   , & 
 !                        Surface_Type, & 
 !                        Emissivity  , & 
 !                        iVar          ) 
 !
 ! INPUTS:
-!       LSEcategory:     Emissivity/reflectivity LUT.
+!       SEcategory:      Emissivity/reflectivity LUT.
 !                        UNITS:      N/A
-!                        TYPE:       LSEcategory_type
+!                        TYPE:       SEcategory_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -112,14 +109,14 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Surface_Type:    Index into the surface type dimension of the LUT indicating
-!                        the land surface type for which an emissivity is required.
+!                        the surface type for which an emissivity is required.
 !                        UNITS:      N/A
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       Emissivity:      Land surface emissivity for the specified surface type
+!       Emissivity:      Surface emissivity for the specified surface type
 !                        interpolated to the requested frequency.
 !                        UNITS:      N/A
 !                        TYPE:       REAL(fp)
@@ -147,23 +144,23 @@ CONTAINS
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION LSEcategory_Emissivity( &
-    LSEcategory , &
+  FUNCTION SEcategory_Emissivity( &
+    SEcategory  , &
     Frequency   , &
     Surface_Type, &
     Emissivity  , &
     iVar        ) &
   RESULT( err_stat )
     ! Arguments
-    TYPE(LSEcategory_type), INTENT(IN)  :: LSEcategory
-    REAL(fp)              , INTENT(IN)  :: Frequency
-    INTEGER               , INTENT(IN)  :: Surface_Type
-    REAL(fp)              , INTENT(OUT) :: Emissivity
-    TYPE(iVar_type)       , INTENT(OUT) :: iVar
+    TYPE(SEcategory_type), INTENT(IN)  :: SEcategory
+    REAL(fp)             , INTENT(IN)  :: Frequency
+    INTEGER              , INTENT(IN)  :: Surface_Type
+    REAL(fp)             , INTENT(OUT) :: Emissivity
+    TYPE(iVar_type)      , INTENT(OUT) :: iVar
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'LSEcategory_Emissivity'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'SEcategory_Emissivity'
     ! Local variables
     CHARACTER(ML) :: msg
     REAL(fp) :: reflectance
@@ -171,7 +168,7 @@ CONTAINS
     ! Setup
     err_stat = SUCCESS
     IF ( Surface_Type < 1 .OR. &
-         Surface_Type > LSEcategory%n_Surface_Types ) THEN
+         Surface_Type > SEcategory%n_Surface_Types ) THEN
       Emissivity = ZERO
       err_stat = FAILURE
       msg = 'Invalid surface type index specified'
@@ -180,11 +177,11 @@ CONTAINS
     
     
     ! Find the frequency indices for interpolation
-    iVar%x_int = MAX(MIN(LSEcategory%Frequency(LSEcategory%n_Frequencies),&
+    iVar%x_int = MAX(MIN(SEcategory%Frequency(SEcategory%n_Frequencies),&
                          Frequency), &
-                     LSEcategory%Frequency(1))
-    CALL find_index(LSEcategory%Frequency, iVar%x_int, iVar%i1, iVar%i2, iVar%x_outbound)
-    iVar%x = LSEcategory%Frequency(iVar%i1:iVar%i2)
+                     SEcategory%Frequency(1))
+    CALL find_index(SEcategory%Frequency, iVar%x_int, iVar%i1, iVar%i2, iVar%x_outbound)
+    iVar%x = SEcategory%Frequency(iVar%i1:iVar%i2)
 
 
     ! Calculate the interpolating polynomial
@@ -193,9 +190,9 @@ CONTAINS
 
 
     ! Perform Interpolation
-    CALL interp_1D( LSEcategory%Reflectance(iVar%i1:iVar%i2, Surface_Type), iVar%xlp, reflectance )
+    CALL interp_1D( SEcategory%Reflectance(iVar%i1:iVar%i2, Surface_Type), iVar%xlp, reflectance )
     Emissivity = ONE - reflectance
 
-  END FUNCTION LSEcategory_Emissivity
+  END FUNCTION SEcategory_Emissivity
   
-END MODULE CRTM_LSEcategory
+END MODULE CRTM_SEcategory

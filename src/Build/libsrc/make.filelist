@@ -27,9 +27,9 @@ NOCPP_FILES = \
   CRTM_Options_Define.f90 \
   CRTM_AOD_Module.f90 \
   EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
+  SEcategory_Define.f90 \
+  LSEatlas_Define.f90 \
   IRlandCoeff_Define.f90 \
-    LSEcategory_Define.f90 \
-    LSEatlas_Define.f90 \
   NESDIS_AMSRE_SICEEM_Module.f90 \
   NESDIS_AMSRE_SNOWEM_Module.f90 \
   NESDIS_AMSU_SICEEM_Module.f90 \
@@ -71,7 +71,6 @@ NOCPP_FILES = \
   CRTM_SfcOptics.f90 \
   CRTM_IR_Ice_SfcOptics.f90 \
   CRTM_IR_Land_SfcOptics.f90 \
-    CRTM_LSEcategory.f90 \
   CRTM_IR_Snow_SfcOptics.f90 \
   CRTM_IR_Water_SfcOptics.f90 \
   CRTM_MW_Ice_SfcOptics.f90 \
@@ -79,6 +78,7 @@ NOCPP_FILES = \
   CRTM_MW_Snow_SfcOptics.f90 \
   CRTM_MW_Water_SfcOptics.f90 \
   CRTM_VIS_Water_SfcOptics.f90 \
+  CRTM_SEcategory.f90 \
   CRTM_LowFrequency_MWSSEM.f90 \
   CRTM_Fastem1.f90 \
   CRTM_Fastem3.f90 \
