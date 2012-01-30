@@ -18,10 +18,10 @@ module SrcGen
   TYPE :: #{config.type_name}
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
-#{construct_releaseversion}
-#{construct_dimensions}
-#{construct_dimvectors}
-#{construct_arraydata}
+#{construct_releaseversion.join}
+#{construct_dimensions.join}
+#{construct_dimvectors.join}
+#{construct_arraydata.join}
   END TYPE #{config.type_name}
   !:tdoc-:
         EOT

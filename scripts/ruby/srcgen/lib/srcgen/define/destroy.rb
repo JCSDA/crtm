@@ -11,6 +11,8 @@ module SrcGen
 
         # Construct the definition string
         str = <<-EOT
+
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !

@@ -5,15 +5,15 @@ module SrcGen
 
     class Create < SrcGen::Define::Base
 
-
+      BASE_INDENT = " "*4
+      
+      
       # Method to generate the creation procedure
       def generate(debug=false)
 
-x = prepend_pad_append_string("!          ",[config.name,config.dim_names].flatten,", &\n",last="  )\n")
-
-puts x
- 
         str = <<-EOT
+
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -21,14 +21,11 @@ puts x
 !   #{config.name}_Create
 !
 ! PURPOSE:
-!   Pure subroutine to create an instance of the #{config.name} object.
+!   Elemental subroutine to create an instance of the #{config.name} object.
 !
 ! CALLING SEQUENCE:
 !   CALL #{config.name}_Create( &
-#{prepend_pad_append_string("!          ",
-                            [config.name,config.dim_names].flatten,
-                            ", &\n",
-                            last="  )")}
+#{doc_calling_sequence}
 !
 ! OBJECTS:
 !   #{config.name}:
@@ -39,60 +36,28 @@ puts x
 !     ATTRIBUTES: INTENT(OUT)
 !
 ! INPUTS:
-  xxxx loop here to create input descriptions xxxx
-!
+#{doc_inputs}
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  PURE SUBROUTINE #{config.name}_Create( &
-    xxxx loop here to create argument list... including self xxxx
+  ELEMENTAL SUBROUTINE #{config.name}_Create( &
+#{interface_arglist}
     ! Arguments
-    xxxx loop here to create argument definitions... including self xxxx
-    1. need to align the type.
-    2. need to align the intent attributes, e.g.
-    TYPE(MWwaterLSCLUT_type), INTENT(OUT) :: self
-    INTEGER                 , INTENT(IN)  :: n_Angles             
-    INTEGER                 , INTENT(IN)  :: n_Frequencies             
-    INTEGER                 , INTENT(IN)  :: n_Temperatures       
-    INTEGER                 , INTENT(IN)  :: n_Wind_Speeds             
+#{interface_argdef}
     ! Local variables
     INTEGER :: alloc_stat
 
     ! Check input
-    xxxx loop here to create dimension value check, e.g. xxxx
-    IF ( n_Angles       < 1 .OR. &
-         n_Frequencies  < 1 .OR. &
-         n_Temperatures < 1 .OR. &
-         n_Wind_Speeds  < 1 ) RETURN
+#{body_check_input}
 
     
     ! Perform the allocation
-    xxxx loop here to create the allocation list, e.g. xxxx
-    ALLOCATE( self%Angle( n_Angles ), &
-              self%Frequency( n_Frequencies ), &
-              self%Temperature( n_Temperatures ), &
-              self%Wind_Speed( n_Wind_Speeds ), &
-              self%lsc_ev( n_Angles, n_Frequencies, n_Temperatures, n_Wind_Speeds ), &
-              self%lsc_eh( n_Angles, n_Frequencies, n_Temperatures, n_Wind_Speeds ), &
-              STAT = alloc_stat )
-    IF ( alloc_stat /= 0 ) RETURN
+#{body_allocation}
 
 
     ! Initialise
-    ! ...Dimensions
-    xxxx loop here to create dimension assignment xxxx
-    self%n_Angles       = n_Angles     
-    self%n_Frequencies  = n_Frequencies
-    self%n_Temperatures = n_Temperatures
-    self%n_Wind_Speeds  = n_Wind_Speeds
-    ! ...Arrays
-    xxxx loop here to create array initialisations xxxx
-    self%Angle       = ZERO
-    self%Frequency   = ZERO
-    self%Temperature = ZERO
-    self%Wind_Speed  = ZERO
-    self%lsc_ev      = ZERO
-    self%lsc_eh      = ZERO
+#{body_initialise}
+
 
     ! Set allocation indicator
     self%Is_Allocated = .TRUE.
@@ -108,11 +73,98 @@ puts x
           puts("\n----END-DEBUG-OUTPUT----")
         end
 
-puts config.dim_names
-
         str
       end
 
+    private
+
+      def doc_calling_sequence
+        sandwich_string("!          ",
+                        [config.name,config.dim_names],
+                        ", &\n",
+                        last="  )").join
+      end
+    
+      def doc_inputs
+        input_doc_string = ""
+        config.dim_names.each_with_index do |name,index|
+          str = <<-EOT
+!   #{name}:
+!     #{config.dimensions[index][:description]}
+!     UNITS:      N/A
+!     TYPE:       INTEGER
+!     DIMENSION:  Scalar
+!     ATTRIBUTES: INTENT(IN)
+! 
+          EOT
+          input_doc_string << str
+        end
+        input_doc_string.chomp
+      end
+      
+      def interface_arglist
+        append_array = ["  ! Output\n"] + ["  ! Input\n"]*config.n_dimensions
+        arglist_string = sandwich_string(BASE_INDENT,
+                                         ["self",config.dim_names],
+                                         ", &\n",
+                                         last="  )").join
+      end
+      
+      def interface_argdef
+        type_list = ["TYPE(#{config.type_name})"] + ["INTEGER"]*config.n_dimensions
+        str = sandwich_string(BASE_INDENT,type_list,", ")
+        intent_list = ["INTENT(OUT)"] + ["INTENT(IN)"]*config.n_dimensions
+        str = sandwich_string(str,intent_list," :: ")
+        arg_list = ["self",config.dim_names]
+        str = sandwich_string(str,arg_list,"\n",last="").join
+      end
+
+      def body_check_input
+        leader = "IF ( "; space = " "*leader.length
+        check_string = ["#{leader}#{config.dim_names[0]}"] + 
+                       prepend_string(config.dim_names[1..-1],space)
+        check_string = sandwich_string(BASE_INDENT,
+                                       check_string,
+                                       " < 1 .OR. &\n",
+                                       last=" < 1 ) RETURN").join
+      end
+
+      def body_allocation
+        leader = "ALLOCATE( "
+        alloc_string = []
+        config.dimvectors.each do |v|
+          alloc_string << "#{v[:name]}( #{config.component_dim_list(v)} ), &"
+        end
+        config.arraydata.each do |a|
+          alloc_string << "#{a[:name]}( #{config.component_dim_list(a)} ), &"
+        end
+        alloc_string << "STAT = alloc_stat )"
+        alloc_string = ["#{leader}#{alloc_string[0]}"] + 
+                       prepend_string(alloc_string[1..-1]," "*leader.length)
+        alloc_string << "IF ( alloc_stat /= 0 ) RETURN"
+        alloc_string = sandwich_string(BASE_INDENT,
+                                       alloc_string,
+                                       "\n",
+                                       last="").join
+      end
+      
+      def body_initialise
+        init_string = ["! ...Dimensions"]
+        str = sandwich_string("self%",config.dim_names," = ")
+        str = append_string(str,config.dim_names)
+        init_string = init_string + str + 
+                      ["! ...Dimension vectors"]
+        str = sandwich_string("self%",config.dimvec_names," = ZERO")
+        init_string = init_string + str + 
+                      ["! ...Arrays"]
+        str = sandwich_string("self%",config.array_names," = ZERO")
+        init_string = init_string + str
+        init_string = sandwich_string(BASE_INDENT,
+                                      init_string,
+                                      "\n",
+                                      last="").join
+      end
+      
     end
   end
 end
