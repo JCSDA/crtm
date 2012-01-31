@@ -37,9 +37,6 @@ MODULE CRTM_MW_Water_SfcOptics
                                       LowFrequency_MWSSEM_TL, &
                                       LowFrequency_MWSSEM_AD
   USE CRTM_Fastem1,             ONLY: Fastem1
-  USE CRTM_Fastem3,             ONLY: Fastem3, &
-                                      Fastem3_TL, &
-                                      Fastem3_AD
   USE CRTM_Fastem4,             ONLY: FASTEM4_type => iVar_type, &
                                       Compute_FASTEM4,   &
                                       Compute_FASTEM4_TL,&
@@ -57,7 +54,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! Data types
   PUBLIC :: iVar_type
   ! Science routines
-  PUBLIC :: Compute_MW_Water_SfcOptics  
+  PUBLIC :: Compute_MW_Water_SfcOptics
   PUBLIC :: Compute_MW_Water_SfcOptics_TL
   PUBLIC :: Compute_MW_Water_SfcOptics_AD
 
@@ -65,8 +62,8 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Low frequency model threshold
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD = 20.0_fp ! GHz
@@ -75,7 +72,7 @@ MODULE CRTM_MW_Water_SfcOptics
 !  REAL(fp), PARAMETER, PUBLIC :: INVALID_TRANSMITTANCE = -999.0_fp  ! Disable non-specular correction
   REAL(fp), PARAMETER, PUBLIC :: INVALID_Rel_Azi_Angle = -999.0_fp
 
- 
+
   ! --------------------------------------
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
@@ -96,7 +93,6 @@ MODULE CRTM_MW_Water_SfcOptics
 CONTAINS
 
 
-
 !----------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -110,25 +106,26 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Water_SfcOptics( Surface     , &  ! Input
-!                                                  GeometryInfo, &  ! Input
-!                                                  SensorIndex , &  ! Input
-!                                                  ChannelIndex, &  ! Input     
-!                                                  SfcOptics   , &  ! Output     
-!                                                  iVar          )  ! Internal variable output
+!       Error_Status = Compute_MW_Water_SfcOptics( &
+!                        Surface     , &
+!                        GeometryInfo, &
+!                        SensorIndex , &
+!                        ChannelIndex, &
+!                        SfcOptics   , &
+!                        iVar          )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Surface:         CRTM_Surface structure containing the surface state
 !                        data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -151,13 +148,13 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       SfcOptics:       CRTM_SfcOptics structure containing the surface
 !                        optical properties required for the radiative
 !                        transfer calculation. On input the Angle component
 !                        is assumed to contain data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -206,10 +203,10 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_MW_Water_SfcOptics'
     ! Local variables
-    INTEGER  :: i, j
+    INTEGER  :: i
     REAL(fp) :: Frequency
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
-    REAL(fp) :: Emissivity(N_STOKES), Reflectivity(N_STOKES)
+    REAL(fp) :: Reflectivity(N_STOKES)
 
 
     ! Set up
@@ -225,7 +222,7 @@ CONTAINS
 
     ! Compute the surface optical parameters
     IF( SfcOptics%Use_New_MWSSEM ) THEN
-    
+
       ! FASTEM4 model
       SfcOptics%Azimuth_Angle = Surface%Wind_Direction - Sensor_Azimuth_Angle
       DO i = 1, SfcOptics%n_Angles
@@ -239,14 +236,14 @@ CONTAINS
                SfcOptics%Emissivity(i,:)              , &  ! Output
                Reflectivity                           , &  ! Output
                Azimuth_Angle = SfcOptics%Azimuth_Angle  )  ! Optional input
-        SfcOptics%Reflectivity(i,1,i,1) = Reflectivity(1) 
-        SfcOptics%Reflectivity(i,2,i,2) = Reflectivity(2) 
+        SfcOptics%Reflectivity(i,1,i,1) = Reflectivity(1)
+        SfcOptics%Reflectivity(i,2,i,2) = Reflectivity(2)
         SfcOptics%Reflectivity(i,3,i,3) = Reflectivity(3)
-        SfcOptics%Reflectivity(i,4,i,4) = Reflectivity(4)   
+        SfcOptics%Reflectivity(i,4,i,4) = Reflectivity(4)
       END DO
-      
+
     ELSE
-    
+
       ! Low frequency model coupled with Fastem1
       IF( Frequency < LOW_F_THRESHOLD ) THEN
         ! Call the low frequency model
@@ -278,7 +275,7 @@ CONTAINS
       END IF
 
     END IF
-    
+
   END FUNCTION Compute_MW_Water_SfcOptics
 
 
@@ -295,27 +292,20 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Water_SfcOptics_TL( Surface     , &  ! Input
-!                                                     SfcOptics   , &  ! Input
-!                                                     Surface_TL  , &  ! Input
-!                                                     GeometryInfo, &  ! Input
-!                                                     SensorIndex , &  ! Input
-!                                                     ChannelIndex, &  ! Output     
-!                                                     SfcOptics_TL, &  ! Output
-!                                                     iVar          )  ! Internal variable input
+!       Error_Status = Compute_MW_Water_SfcOptics_TL( &
+!                        SfcOptics   , &
+!                        Surface_TL  , &
+!                        GeometryInfo, &
+!                        SensorIndex , &
+!                        ChannelIndex, &
+!                        SfcOptics_TL, &
+!                        iVar          )
 !
-! INPUT ARGUMENTS:
-!       Surface:         CRTM_Surface structure containing the surface state
-!                        data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Surface_TL:      CRTM_Surface structure containing the tangent-linear 
+! INPUTS:
+!       Surface_TL:      CRTM_Surface structure containing the tangent-linear
 !                        surface state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -323,14 +313,14 @@ CONTAINS
 !                        optical properties required for the radiative
 !                        transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -362,12 +352,12 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       SfcOptics_TL:    CRTM_SfcOptics structure containing the tangent-linear
 !                        surface optical properties required for the tangent-
 !                        linear radiative transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -389,17 +379,15 @@ CONTAINS
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_MW_Water_SfcOptics_TL( &
-    Surface     , &  ! Input
-    SfcOptics   , &  ! Input     
+    SfcOptics   , &  ! Input
     Surface_TL  , &  ! Input
     GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
-    SfcOptics_TL, &  ! Output     
+    SfcOptics_TL, &  ! Output
     iVar        ) &  ! Internal variable input
   RESULT( err_stat )
     ! Arguments
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
@@ -415,7 +403,7 @@ CONTAINS
     INTEGER :: i
     REAL(fp) :: Frequency
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
-    REAL(fp) :: Reflectivity(N_STOKES), Reflectivity_TL(N_STOKES)
+    REAL(fp) :: Reflectivity_TL(N_STOKES)
 
 
     ! Set up
@@ -445,11 +433,11 @@ CONTAINS
         SfcOptics_TL%Reflectivity(i,1,i,1) = Reflectivity_tl(1)
         SfcOptics_TL%Reflectivity(i,2,i,2) = Reflectivity_tl(2)
         SfcOptics_TL%Reflectivity(i,3,i,3) = Reflectivity_tl(3)
-        SfcOptics_TL%Reflectivity(i,4,i,4) = Reflectivity_tl(4) 
+        SfcOptics_TL%Reflectivity(i,4,i,4) = Reflectivity_tl(4)
       END DO
-      
+
     ELSE
-    
+
       ! Low frequency model coupled with Fastem1
       IF( Frequency < LOW_F_THRESHOLD ) THEN
         ! Call the low frequency model
@@ -480,6 +468,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Compute_MW_Water_SfcOptics_AD
@@ -491,28 +480,21 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Water_SfcOptics_AD( Surface     , &  ! Input
-!                                                     SfcOptics   , &  ! Input     
-!                                                     SfcOptics_AD, &  ! Input     
-!                                                     GeometryInfo, &  ! Input
-!                                                     SensorIndex , &  ! Input
-!                                                     ChannelIndex, &  ! Output     
-!                                                     Surface_AD  , &  ! Output
-!                                                     iVar          )  ! Internal variable input
+!       Error_Status = Compute_MW_Water_SfcOptics_AD( &
+!                        SfcOptics   , &
+!                        SfcOptics_AD, &
+!                        GeometryInfo, &
+!                        SensorIndex , &
+!                        ChannelIndex, &
+!                        Surface_AD  , &
+!                        iVar          )
 !
-! INPUT ARGUMENTS:
-!       Surface:         CRTM_Surface structure containing the surface state
-!                        data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
+! INPUTS:
 !       SfcOptics:       CRTM_SfcOptics structure containing the surface
 !                        optical properties required for the radiative
 !                        transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -520,14 +502,14 @@ CONTAINS
 !                        surface optical properties required for the adjoint
 !                        radiative transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -559,11 +541,11 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Surface_AD:      CRTM_Surface structure containing the adjoint
 !                        surface state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -583,22 +565,20 @@ CONTAINS
 !
 !       Note the INTENT on the output Surface_AD argument is IN OUT rather
 !       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       upon input.
 !
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_MW_Water_SfcOptics_AD( &
-    Surface     , &  ! Input
-    SfcOptics   , &  ! Input     
+    SfcOptics   , &  ! Input
     SfcOptics_AD, &  ! Input
     GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
-    Surface_AD  , &  ! Output     
+    Surface_AD  , &  ! Output
     iVar        ) &  ! Internal variable input
   RESULT( err_stat )
     ! Arguments
-    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
@@ -614,7 +594,7 @@ CONTAINS
     INTEGER :: i, j
     REAL(fp) :: Frequency
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
-    REAL(fp) :: Emissivity(N_STOKES), Reflectivity(N_STOKES), Reflectivity_AD(N_STOKES)
+    REAL(fp) :: Reflectivity_AD(N_STOKES)
     REAL(fp) :: Azimuth_Angle_AD
 
 
@@ -630,13 +610,13 @@ CONTAINS
 
     ! Compute the adjoint surface optical parameters
     IF( SfcOptics%Use_New_MWSSEM ) THEN
-    
+
       ! FASTEM4 model
       Azimuth_Angle_AD = ZERO
       DO i = 1, SfcOptics%n_Angles
         DO j = 1, N_STOKES
           Reflectivity_AD(j) = SfcOptics_AD%Reflectivity(i,j,i,j)
-        END DO                                 
+        END DO
         CALL Compute_FASTEM4_AD( &
                SfcOptics_AD%Emissivity(i,:)       , &  ! AD Input
                Reflectivity_ad                    , &  ! AD Input
@@ -647,9 +627,9 @@ CONTAINS
                Azimuth_Angle_AD = Azimuth_Angle_AD  )  ! Optional AD Output
       END DO
       Surface_AD%Wind_Direction = Surface_AD%Wind_Direction + Azimuth_Angle_AD
-      
+
     ELSE
-    
+
       ! Low frequency model coupled with Fastem1
       IF( Frequency < LOW_F_THRESHOLD ) THEN
         ! Call the low frequency model
@@ -688,7 +668,7 @@ CONTAINS
     END IF
 
     SfcOptics_AD%Reflectivity = ZERO
-    
+
   END FUNCTION Compute_MW_Water_SfcOptics_AD
 
 END MODULE CRTM_MW_Water_SfcOptics
