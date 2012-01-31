@@ -41,7 +41,7 @@ MODULE Ellison
   PUBLIC :: Ellison_Ocean_Permittivity_TL
   PUBLIC :: Ellison_Ocean_Permittivity_AD
 
-  
+
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -87,8 +87,8 @@ MODULE Ellison
                                                -0.0114770_fp /)
   REAL(fp), PARAMETER :: SIGMA_COEFF(0:1) = (/      2.906_fp, &
                                                   0.09437_fp /)
-  
-  
+
+
   ! --------------------------------------
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
@@ -130,7 +130,6 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Ellison_Ocean_Permittivity( Temperature , & ! Input
-!                                        Salinity    , & ! Input
 !                                        Frequency   , & ! Input
 !                                        Permittivity, & ! Output
 !                                        iVar          ) ! Internal variable output
@@ -138,12 +137,6 @@ CONTAINS
 ! INPUTS:
 !       Temperature:   Sea surface temperature
 !                      UNITS:      Kelvin (K)
-!                      TYPE:       REAL(fp)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
-!
-!       Salinity:      Water salinity
-!                      UNITS:      ppt (parts per thousand)
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
@@ -177,13 +170,11 @@ CONTAINS
 
   SUBROUTINE Ellison_Ocean_Permittivity( &
     Temperature , & ! Input
-    Salinity    , & ! Input
     Frequency   , & ! Input
     Permittivity, & ! Output
     iVar          ) ! Internal variable output
     ! Arguments
     REAL(fp),        INTENT(IN)     :: Temperature
-    REAL(fp),        INTENT(IN)     :: Salinity
     REAL(fp),        INTENT(IN)     :: Frequency
     COMPLEX(fp),     INTENT(OUT)    :: Permittivity
     TYPE(iVar_type), INTENT(IN OUT) :: iVar
@@ -216,12 +207,12 @@ CONTAINS
     iVar%delta2 = DELTA2_COEFF(0) + iVar%t*(DELTA2_COEFF(1) + &
                                       iVar%t*(DELTA2_COEFF(2) + &
                                         iVar%t*DELTA2_COEFF(3)))
-    
+
     ! Compute the "infinite" permittivity term
     ! (No coeffs provided in ref. Taken from existing code)
     einf = EINF_COEFF(0) + iVar%t*EINF_COEFF(1)
 
-    
+
     ! Compute the permittivities using the double Debye model
     ! (eqn on pg ACL 1-3 of Ellison et al. 2003)
     ! -------------------------------------------------------
@@ -229,15 +220,15 @@ CONTAINS
     iVar%f  = TWOPI * Frequency * SCALE_FACTOR
     iVar%f2 = iVar%f**2
     iVar%f0 = TWOPI * Frequency * GHZ_TO_HZ * E0
-    
+
     ! The denominators of the double Debye model
     iVar%d1 = ONE + iVar%f2*iVar%tau1**2
     iVar%d2 = ONE + iVar%f2*iVar%tau2**2
-    
+
     ! The real parts of the "delta" terms
     re1 = iVar%delta1 / iVar%d1
     re2 = iVar%delta2 / iVar%d2
-    
+
     ! The imaginary parts of the "delta" terms
     ie1 = iVar%delta1 * iVar%f * iVar%tau1 / iVar%d1
     ie2 = iVar%delta2 * iVar%f * iVar%tau2 / iVar%d2
@@ -271,26 +262,12 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Ellison_Ocean_Permittivity_TL( Temperature_TL , & ! Input
-!                                           Salinity_TL    , & ! Input
-!                                           Frequency      , & ! Input
 !                                           Permittivity_TL, & ! Output
 !                                           iVar             ) ! Internal variable input
 !
 ! INPUTS:
 !       Temperature_TL:   Tangent-linear sea surface temperature
 !                         UNITS:      Kelvin (K)
-!                         TYPE:       REAL(fp)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       Salinity_TL:      Tangent-linear water salinity
-!                         UNITS:      ppt (parts per thousand)
-!                         TYPE:       REAL(fp)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
-!
-!       Frequency:        Frequency
-!                         UNITS:      GHz
 !                         TYPE:       REAL(fp)
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
@@ -318,14 +295,10 @@ CONTAINS
 
   SUBROUTINE Ellison_Ocean_Permittivity_TL( &
     Temperature_TL , & ! Input
-    Salinity_TL    , & ! Input
-    Frequency      , & ! Input
     Permittivity_TL, & ! Output
     iVar             ) ! Internal variable input
     ! Arguments
     REAL(fp),        INTENT(IN)  :: Temperature_TL
-    REAL(fp),        INTENT(IN)  :: Salinity_TL
-    REAL(fp),        INTENT(IN)  :: Frequency
     COMPLEX(fp),     INTENT(OUT) :: Permittivity_TL
     TYPE(iVar_type), INTENT(IN)  :: iVar
     ! Local variables
@@ -355,12 +328,12 @@ CONTAINS
     ! (eqn on pg ACL 1-4 of Ellison et al. 2003)
     delta1_TL = (DELTA1_COEFF(1) + iVar%t*(TWO*DELTA1_COEFF(2) + iVar%t*THREE*DELTA1_COEFF(3))) * t_TL
     delta2_TL = (DELTA2_COEFF(1) + iVar%t*(TWO*DELTA2_COEFF(2) + iVar%t*THREE*DELTA2_COEFF(3))) * t_TL
-    
+
     ! Compute the tangent-liner "infinite" permittivity term
     ! (No coeffs provided in ref. Taken from existing code)
     einf_TL = EINF_COEFF(1) * t_TL
 
-    
+
     ! Compute the tangent-linear permittivities
     ! using the double Debye model
     ! (eqn on pg ACL 1-3 of Ellison et al. 2003)
@@ -374,7 +347,7 @@ CONTAINS
     d22 = iVar%d2**2
     re1_TL = (iVar%d1*delta1_TL - iVar%delta1*d1_TL) / d12
     re2_TL = (iVar%d2*delta2_TL - iVar%delta2*d2_TL) / d22
-    
+
     ! The tangent-linear imaginary parts of the "delta" terms
     ie1_TL = iVar%f * (delta1_TL*iVar%tau1*iVar%d1 + iVar%delta1*tau1_TL*iVar%d1 - iVar%delta1*iVar%tau1*d1_TL) / d12
     ie2_TL = iVar%f * (delta2_TL*iVar%tau2*iVar%d2 + iVar%delta2*tau2_TL*iVar%d2 - iVar%delta2*iVar%tau2*d2_TL) / d22
@@ -382,12 +355,12 @@ CONTAINS
     ! The conductivity term
     sigma_TL   = SIGMA_COEFF(1)*t_TL
     iesigma_TL = sigma_TL / iVar%f0
-    
+
     ! Construct the complex permittivity, de = de' - j.de"
     re_TL = re1_TL + re2_TL + einf_TL
     ie_TL = ie1_TL + ie2_TL + iesigma_TL
     Permittivity_TL = CMPLX(re_TL, -ie_TL, fp)
-    
+
   END SUBROUTINE Ellison_Ocean_Permittivity_TL
 
 
@@ -408,9 +381,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Ellison_Ocean_Permittivity_AD( Permittivity_AD, & ! Input
-!                                           Frequency      , & ! Input
 !                                           Temperature_AD , & ! Output
-!                                           Salinity_AD    , & ! Output
 !                                           iVar             ) ! Internal variable input
 !
 ! INPUTS:
@@ -419,12 +390,6 @@ CONTAINS
 !                         TYPE:       COMPLEX(fp)
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN OUT)
-!
-!       Frequency:        Frequency
-!                         UNITS:      GHz
-!                         TYPE:       REAL(fp)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN)
 !
 !       iVar:             Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
@@ -442,32 +407,23 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN OUT)
 !
-!       Salinity_AD:      Adjoint water salinity, de/dS
-!                         UNITS:      per ppt (parts-per-thousand^-1)
-!                         TYPE:       REAL(fp)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN OUT)
-!
 ! SIDE EFFECTS:
 !       The input adjoint variable, Permittivity_AD, is set to zero upon
 !       exiting this routine.
 !
 ! COMMENTS:
 !       There is currently no salinity dependence.
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Ellison_Ocean_Permittivity_AD( &
     Permittivity_AD, & ! Input
-    Frequency      , & ! Input
     Temperature_AD , & ! Output
-    Salinity_AD    , & ! Output
     iVar             ) ! Internal variable input
     ! Arguments
     COMPLEX(fp),     INTENT(IN OUT) :: Permittivity_AD
-    REAL(fp),        INTENT(IN)     :: Frequency
     REAL(fp),        INTENT(IN OUT) :: Temperature_AD
-    REAL(fp),        INTENT(IN OUT) :: Salinity_AD
     TYPE(iVar_type), INTENT(IN)     :: iVar
     ! Local variables
     REAL(fp) :: t_AD
@@ -489,7 +445,7 @@ CONTAINS
     ie_AD = -AIMAG(Permittivity_AD)
     re_AD = REAL(Permittivity_AD,fp)
     Permittivity_AD = ZERO
-    
+
     ! Initialise all the local adjoint variables
     iesigma_AD = ie_AD; ie2_AD = ie_AD; ie1_AD = ie_AD
     einf_AD    = re_AD; re2_AD = re_AD; re1_AD = re_AD
@@ -497,7 +453,7 @@ CONTAINS
     ! The adjoint of the conductivity term
     sigma_AD = iesigma_AD / iVar%f0
     t_AD = SIGMA_COEFF(1)*sigma_AD
-    
+
     ! The adjoints of the imaginary parts of the "delta" terms
     d22 = iVar%d2**2; m2 = iVar%f / d22
     d12 = iVar%d1**2; m1 = iVar%f / d12
@@ -521,7 +477,7 @@ CONTAINS
     tau2_AD = tau2_AD + (TWO * iVar%f2 * iVar%tau2 * d2_AD)
     tau1_AD = tau1_AD + (TWO * iVar%f2 * iVar%tau1 * d1_AD)
 
-    
+
     ! Compute the adjoints of the various
     ! polynomial components of the double Debye model
     ! -----------------------------------------------
@@ -544,8 +500,7 @@ CONTAINS
 
     ! The return value
     Temperature_AD = Temperature_AD + t_AD
-    Salinity_AD    = ZERO  ! Fixed for now
-    
+
   END SUBROUTINE Ellison_Ocean_Permittivity_AD
 
 END MODULE Ellison

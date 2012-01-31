@@ -3,13 +3,13 @@
 !
 ! Module containgin routines to compute microwave ocean emissivity components
 ! (FWD, TL, and AD) for low frequencies.
-!                                                                               
+!
 !
 ! CREATION HISTORY:
 !       Written by:     Masahiro Kazumori, JCSDA 31-Jul-2006
 !                       Masahiro.Kazumori@noaa.gov
 !                       Quanhua Liu, QSS Group Inc.
-!                       Quanhua.Liu@noaa.gov 
+!                       Quanhua.Liu@noaa.gov
 !
 !       Refactored by:  Paul van Delst, CIMSS/SSEC, April 2007
 !                       paul.vandelst@ssec.wisc.edu
@@ -42,7 +42,7 @@ MODULE CRTM_LowFrequency_MWSSEM
                                 Find_Index  , &
                                 LPoly       , &
                                 LPoly_TL    , &
-                                LPoly_AD    , &    
+                                LPoly_AD    , &
                                 Interp_2D   , &
                                 Interp_2D_TL, &
                                 Interp_2D_AD
@@ -69,7 +69,7 @@ MODULE CRTM_LowFrequency_MWSSEM
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-  
+
   ! Various quantities
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD        = 20.0_fp  ! Frequency threshold for permittivity models(GHz)
   REAL(fp), PARAMETER :: SMALLSCALE_F_THRESHOLD = 15.0_fp  ! Frequency threshold for small scale limit(GHz)
@@ -94,7 +94,7 @@ MODULE CRTM_LowFrequency_MWSSEM
     16.5_fp,17.0_fp,17.5_fp,18.0_fp,18.5_fp,19.0_fp,19.5_fp,20.0_fp /)
 
   ! Foam coverage coefficients
-  ! See Eqn.(1) in 
+  ! See Eqn.(1) in
   !   Liu, Q. et al. (1998) Monte Carlo simulations of the
   !     microwave emissivity of the sea surface.
   !     JGR, Volume 103, No.C11, Pages 24983-24989
@@ -102,13 +102,13 @@ MODULE CRTM_LowFrequency_MWSSEM
   REAL(fp), PARAMETER :: FC2 = 3.231_fp     ! FWD model
   REAL(fp), PARAMETER :: FC3 = FC1*FC2      ! TL model
   REAL(fp), PARAMETER :: FC4 = FC2-ONE      ! TL model
-  
+
   ! Reflectivity large scale correction coefficients
   REAL(fp), PARAMETER :: LSC_COEFF(8) = &
-    (/ 5.209e-04_fp,  1.582e-05_fp, -3.510e-07_fp, &  ! Rv coefficients 
+    (/ 5.209e-04_fp,  1.582e-05_fp, -3.510e-07_fp, &  ! Rv coefficients
        5.209e-04_fp, -1.550e-05_fp, -1.356e-07_fp, &  ! Rh coefficients
          1.90896_fp,   0.120448_fp /)                 ! Frequency coefficients
-      
+
 
   ! --------------------------------------
   ! Structure definition to hold internal
@@ -370,7 +370,7 @@ MODULE CRTM_LowFrequency_MWSSEM
      1.06990E-01_fp, 1.22540E-01_fp, 1.33950E-01_fp, 1.41810E-01_fp, 1.49100E-01_fp, &
      1.53340E-01_fp, 1.58850E-01_fp, 1.61700E-01_fp, 1.64030E-01_fp, 1.65960E-01_fp, &
      1.68950E-01_fp  /
-  
+
 
 CONTAINS
 
@@ -404,7 +404,7 @@ CONTAINS
 !              iVar          )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
-!       Frequency:      Microwave frequency. Valid input range is 
+!       Frequency:      Microwave frequency. Valid input range is
 !                       UNITS:      GHz
 !                       TYPE:       REAL(fp)
 !                       DIMENSION:  Scalar
@@ -481,10 +481,10 @@ CONTAINS
 
     ! Setup
     ! ...Save forward input variables for TL and AD calculations
-    iVar%Frequency    = Frequency   
+    iVar%Frequency    = Frequency
     iVar%Zenith_Angle = Zenith_Angle
-    iVar%Temperature  = Temperature 
-    iVar%Salinity     = Salinity    
+    iVar%Temperature  = Temperature
+    iVar%Salinity     = Salinity
     iVar%Wind_Speed   = Wind_Speed
     ! ...Save derived variables
     iVar%cos_z  = COS(Zenith_Angle*DEGREES_TO_RADIANS)
@@ -504,7 +504,7 @@ CONTAINS
     CALL LPoly( FREQUENCY_SDD(iVar%i1:iVar%i2), &  ! Input
                 iVar%f_int                    , &  ! Input
                 iVar%flp                        )  ! Output
-    ! ...Wind speed term                
+    ! ...Wind speed term
     CALL LPoly( WIND_SPEED_SDD(iVar%j1:iVar%j2), &  ! Input
                 iVar%w_int                     , &  ! Input
                 iVar%wlp                         )  ! Output
@@ -521,7 +521,7 @@ CONTAINS
                                        iVar%Permittivity, &
                                        iVar%gpVar )
     ELSE
-      CALL Ellison_Ocean_Permittivity( Temperature, Salinity, Frequency, &
+      CALL Ellison_Ocean_Permittivity( Temperature, Frequency, &
                                        iVar%Permittivity, &
                                        iVar%epVar )
     END IF
@@ -561,10 +561,10 @@ CONTAINS
     Emissivity(1) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rv - iVar%Foam_Cover*iVar%Rv_Foam
     Emissivity(2) = ONE - (ONE-iVar%Foam_Cover)*iVar%Rh - iVar%Foam_Cover*iVar%Rh_Foam
 
-    
+
     ! Flag the internal variable structure as valid
     iVar%Is_Valid = .TRUE.
-    
+
   END SUBROUTINE LowFrequency_MWSSEM
 
 
@@ -613,7 +613,7 @@ CONTAINS
 !                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-! 
+!
 ! OUTPUT ARGUMENTS:
 !       Emissivity_TL:   The tangent-linear sea surface emissivity at
 !                        vertical and horizontal polarizations.
@@ -675,7 +675,7 @@ CONTAINS
     !    so we just need to initialise the polynomial so it has
     !    no impact on the TL interpolation below.
     CALL Clear_LPoly(flp_TL)
-    ! Wind speed term                
+    ! Wind speed term
     CALL LPoly_TL( WIND_SPEED_SDD(iVar%j1:iVar%j2), &  ! FWD Input
                    iVar%w_int                     , &  ! FWD Input
                    iVar%wlp                       , &  ! FWD Input
@@ -698,7 +698,7 @@ CONTAINS
                                           Permittivity_TL, &
                                           iVar%gpVar)
     ELSE
-      CALL Ellison_Ocean_Permittivity_TL( Temperature_TL, Salinity_TL, iVar%Frequency, &
+      CALL Ellison_Ocean_Permittivity_TL( Temperature_TL, &
                                           Permittivity_TL, &
                                           iVar%epVar )
     END IF
@@ -733,7 +733,7 @@ CONTAINS
     Rv_TL = Rv_TL + Rv_Large_TL
     Rh_TL = Rh_TL + Rh_Large_TL
 
-    
+
     ! Emissivity calculation
     Emissivity_TL(1) = (iVar%Foam_Cover-ONE)*Rv_TL + &
                        (iVar%Rv-iVar%Rv_Foam)*Foam_Cover_TL - &
@@ -779,7 +779,7 @@ CONTAINS
 !                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-! 
+!
 ! OUTPUT ARGUMENTS:
 !       Temperature_AD:  The adjoint sea surface temperature
 !                        UNITS:      (Kelvin, K)^-1
@@ -865,7 +865,7 @@ CONTAINS
     Rv_AD         = (iVar%Foam_Cover-ONE) *Emissivity_AD(1)
 
     Emissivity_AD = ZERO
-    
+
 
     ! Large scale correction calculation
     Rh_Large_AD = Rh_AD
@@ -898,8 +898,8 @@ CONTAINS
                                           Temperature_AD, Salinity_AD, &
                                           iVar%gpVar)
     ELSE
-      CALL Ellison_Ocean_Permittivity_AD( Permittivity_AD, iVar%Frequency, &
-                                          Temperature_AD, Salinity_AD, &
+      CALL Ellison_Ocean_Permittivity_AD( Permittivity_AD, &
+                                          Temperature_AD, &
                                           iVar%epVar)
     END IF
 
@@ -924,7 +924,7 @@ CONTAINS
 
     ! The AD outputs
     Wind_Speed_AD = Wind_Speed_AD + w_int_AD
-    
+
   END SUBROUTINE LowFrequency_MWSSEM_AD
 
 
@@ -955,7 +955,7 @@ CONTAINS
          -7.336e-5_fp, 1.044e-7_fp,     -0.93_fp /)
     ! Local variables
     REAL(fp) :: Fv, Fh
-    ! The vertical component    
+    ! The vertical component
     Fv = ONE + z*(FR_COEFF(1)+ z*(FR_COEFF(2) + z*FR_COEFF(3))) + FR_COEFF(4)*z**10
     Rv = FR_COEFF(5)
     ! The horizontal component
@@ -966,7 +966,7 @@ CONTAINS
 
   ! ======================================================
   ! Foam coverage routines
-  ! See Eqn.(1) in 
+  ! See Eqn.(1) in
   !   Liu, Q. et al. (1998) Monte Carlo simulations of the
   !     microwave emissivity of the sea surface.
   !     JGR, Volume 103, No.C11, Pages 24983-24989
@@ -981,7 +981,7 @@ CONTAINS
        coverage = FC1 * (wind_speed**FC2)
     END IF
   END SUBROUTINE Foam_Coverage
-  
+
   ! Tangent-linear model
   SUBROUTINE Foam_Coverage_TL(wind_speed, wind_speed_TL, coverage_TL)
     REAL(fp), INTENT(IN)  :: wind_speed
@@ -1008,7 +1008,7 @@ CONTAINS
 
   ! ======================================================
   ! Reflectivity small scale correction routines
-  ! See Eqns.(17a) and (17b) in 
+  ! See Eqns.(17a) and (17b) in
   !   Liu, Q. et al. (1998) Monte Carlo simulations of the
   !     microwave emissivity of the sea surface.
   !     JGR, Volume 103, No.C11, Pages 24983-24989
@@ -1022,7 +1022,7 @@ CONTAINS
     REAL(fp), INTENT(IN)  :: f       ! Frequency
     REAL(fp), INTENT(OUT) :: Rv, Rh  ! Reflectivity correction
     REAL(fp), INTENT(OUT) :: R_term  ! Intermediate variable output
-  
+
     IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
       R_term = EXP(-sdd*cos2_z)
     ELSE
@@ -1031,7 +1031,7 @@ CONTAINS
     Rv = R_term
     Rh = R_term
   END SUBROUTINE Small_Scale_Correction
-  
+
   ! Tangent-linear model
   SUBROUTINE Small_Scale_Correction_TL( sdd_TL, cos2_z, f, Rv_TL, Rh_TL, &
                                         R_term )
@@ -1043,7 +1043,7 @@ CONTAINS
     REAL(fp), INTENT(IN)  :: R_term  ! Intermediate variable input
     ! Local variables
     REAL(fp) :: R_term_TL
-  
+
     IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
       R_term_TL = -cos2_z * R_term * sdd_TL
     ELSE
@@ -1052,7 +1052,7 @@ CONTAINS
     Rv_TL = R_term_TL
     Rh_TL = R_term_TL
   END SUBROUTINE Small_Scale_Correction_TL
-  
+
   ! Adjoint model
   SUBROUTINE Small_Scale_Correction_AD( Rv_AD, Rh_AD, cos2_z, f, sdd_AD, &
                                         R_term )
@@ -1064,7 +1064,7 @@ CONTAINS
     REAL(fp), INTENT(IN)     :: R_term        ! Intermediate variable input
     ! Local variables
     REAL(fp) :: R_term_AD
-  
+
     R_term_AD = Rv_AD            ;  Rv_AD = ZERO
     R_term_AD = R_term_AD + Rh_AD;  Rh_AD = ZERO
     IF ( f > SMALLSCALE_F_THRESHOLD ) THEN
@@ -1073,7 +1073,7 @@ CONTAINS
       sdd_AD = ZERO
     END IF
   END SUBROUTINE Small_Scale_Correction_AD
-  
+
 
   ! ============================================
   ! Reflectivity large scale correction routines
@@ -1089,11 +1089,11 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: Rv_term, Rh_term  ! Intermediate variable output
     ! Local variables
     REAL(fp) :: f_term
-    
+
     f_term  = f / (LSC_COEFF(7) + f*LSC_COEFF(8))
     Rv_Term = (LSC_COEFF(1) + z*(LSC_COEFF(2) + z*LSC_COEFF(3))) * f_term
     Rh_term = (LSC_COEFF(4) + z*(LSC_COEFF(5) + z*LSC_COEFF(6))) * f_term
-    
+
     Rv = Rv_term * v
     Rh = Rh_term * v
   END SUBROUTINE Large_Scale_Correction
@@ -1120,7 +1120,7 @@ CONTAINS
 
     v_AD = v_AD + Rv_term*Rv_AD
     v_AD = v_AD + Rh_term*Rh_AD
-    
+
     Rv_AD = ZERO
     Rh_AD = ZERO
   END SUBROUTINE Large_Scale_Correction_AD

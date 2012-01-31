@@ -5,15 +5,15 @@
 !       CRTM_FASTEM1
 !
 ! PURPOSE:
-!       This module computes ocean emissivity and its jacobian over water. The code is adopted 
-!          from RTTOV Fastem version 1.                           
-!                                                                               
-! Method:                                                                       
-! FASTEM-1 English and Hewison 1998.                                                                     
-! http://www.metoffice.com/research/interproj/nwpsaf/rtm/evalfastems.pdf                  
-!                                                                               
-! History:   
-!                                                                   
+!       This module computes ocean emissivity and its jacobian over water. The code is adopted
+!          from RTTOV Fastem version 1.
+!
+! Method:
+! FASTEM-1 English and Hewison 1998.
+! http://www.metoffice.com/research/interproj/nwpsaf/rtm/evalfastems.pdf
+!
+! History:
+!
 ! CATEGORY:
 !       CRTM : Surface : MW OPEN OCEAN EM
 !
@@ -22,19 +22,19 @@
 !
 ! CREATION HISTORY:
 !
-!   1998-02-20  treadon - gather all emissivity calculations from 
+!   1998-02-20  treadon - gather all emissivity calculations from
 !                         setuprad and move into this subroutine
-!   2004-07-23  weng,yan,okamoto - incorporate MW land and snow/ice emissivity 
+!   2004-07-23  weng,yan,okamoto - incorporate MW land and snow/ice emissivity
 !                         models for AMSU-A/B and SSM/I
 !   2004-08-02  treadon - add only to module use, add intent in/out
 !   2004-11-22  derber - modify for openMP
-!   2005-01-20  okamoto- add preprocessing for ocean MW emissivity jacobian 
+!   2005-01-20  okamoto- add preprocessing for ocean MW emissivity jacobian
 !   2005-03-05  derber- add adjoint of surface emissivity to this routine
 !   2005-07-15  derber- include mhs
 !   2005-09-28  derber - modify to handle percent surface type and mixed conditions
 !
 !   2005-12-15  Modified for CRTM
-!               by:     Quanhua Liu, QSS Group Inc.,     Quanhua.Liu@noaa.gov 
+!               by:     Quanhua Liu, QSS Group Inc.,     Quanhua.Liu@noaa.gov
 !                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
 !                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
 !
@@ -71,7 +71,7 @@ MODULE CRTM_Fastem1
 ! [16-17]: Temperature polynomial coefficients for static permittivity - Lamkaouchi (1996)
 ! [18-19]: Temperature polynomial coefficients for infinite freq. permittivity - Lamkaouchi (1996)
 ! Pi is stored for good measure
-!    [20]: Stored value of Pi  
+!    [20]: Stored value of Pi
 ! Bragg scattering correction coefficients
 !    [21]: Scaling factor for small scale correction - see English (1997)
 ! Foam model coefficients for Monahan model
@@ -194,7 +194,7 @@ CONTAINS
 !
 !
 ! OUTPUT ARGUMENTS:
-! 
+!
 !         Emissivity:              The surface emissivity at vertical and horizontal polarizations.
 !                                  ** NOTE: THIS IS A MANDATORY MEMBER **
 !                                  **       OF THIS STRUCTURE          **
@@ -234,7 +234,7 @@ CONTAINS
                      SST,                                               & ! INPUT
                      Wind_Speed,                                        & ! INPUT
                      Emissivity,                                        & ! OUTPUT
-                     dEH_dWindSpeed,                                    & ! OUTPUT)  
+                     dEH_dWindSpeed,                                    & ! OUTPUT)
                      dEV_dWindSpeed)                                      ! OUTPUT)
 ! ---------------------------------------------------------------------------------------------------
 !
@@ -247,22 +247,19 @@ CONTAINS
 ! Declare passed variables.
 
 ! Declare local variables
-  INTEGER ::  kcho,n,kch,nn,nnp,i
-  INTEGER ::  error_status
-
   real(fp) zch4,xcorr2v,evertr,ehorzr,xcorr2h,ffoam,zcv2,zcv3
-  real(fp) xcorr1,zcv1,zcv4,zch1,zch2,zcv5,zcv6,tau2,degre
-  real(fp) wind,ehorz,evert,sec,sec2,freqghz2,dtde
-  real(fp) u10mps2,usec,tccub,tau1,tc,tcsq,term2,freqghz
-  real(fp) term1,u10mps,ps2,pc2,pcc,pss,rvertsi,rverts,rvertsr
+  real(fp) xcorr1,zcv1,zcv4,zch1,zch2,zcv5,zcv6,tau2
+  real(fp) wind,ehorz,evert,sec,sec2,freqghz2
+  real(fp) u10mps2,usec,tccub,tau1,tc,tcsq,freqghz
+  real(fp) u10mps,ps2,pc2,pcc,pss,rvertsi,rverts,rvertsr
   real(fp) rverts5,rhorzs5,xcorr15,ffoam5,evertr5,ehorzr5
   real(fp) perm_real,perm_imag,rhorzsr,zch5,zch6,zch3,rhorzsi
   real(fp) rhorzs,perm_imag2,einf,fen,del2,del1,fen2,perm_real2
-  real(fp) perm_imag1,perm_real1,den1,den2,emisst
+  real(fp) perm_imag1,perm_real1,den1,den2
   real(fp) ffoamv,ffoamh,xcorr1h,xcorr1v
   complex(fp) perm1,perm2,rvth,rhth,xperm
 
-!    
+!
 !          First set constants.  Then perform the calculation.
            wind  = Wind_Speed
            u10mps  = wind
@@ -276,7 +273,7 @@ CONTAINS
            sec=one/pcc
            sec2=sec*sec
            usec=u10mps*sec
-       
+
 !          calculate piom (ellison et al.) xperm
 !          to calculate xperm of saline water based on piom model.
 !          convert from kelvin to centigrate and define quadratic and
@@ -284,16 +281,16 @@ CONTAINS
            tc=SST-273.15_fp
            tcsq=tc*tc
            tccub=tcsq*tc
-        
+
 !          define two relaxation frequencies, tau1 and tau2
            tau1=emc(1)+emc(2)*tc+emc(3)*tcsq
            tau2=emc(4)+emc(5)*tc+emc(6)*tcsq+emc(7)*tccub
-        
+
 !          static xperm estatic=del1+del2+einf
            del1=emc(8)+emc(9)*tc+emc(10)*tcsq+emc(11)*tccub
            del2=emc(12)+emc(13)*tc+emc(14)*tcsq+emc(15)*tccub
            einf=emc(18)+emc(19)*tc
-         
+
 !          calculate xperm using double-debye formula
            fen=two*pi*freqghz*0.001_fp
            fen2=fen**two
@@ -313,7 +310,7 @@ CONTAINS
 !          and profiles
            perm1 = sqrt(xperm - cmplx(ps2,zero,fp))
            perm2  = xperm*pcc
-           rhth = (pcc - perm1)/(pcc + perm1)                     
+           rhth = (pcc - perm1)/(pcc + perm1)
            rvth = (perm2 - perm1)/(perm2 + perm1)
            rvertsr=real(rvth,fp)
 !           rvertsi=dimag(rvth)
@@ -329,9 +326,9 @@ CONTAINS
 
 !          calculate large scale geometric correction
 !          to calculate a correction to the fresnel reflection coefficients
-!          allowing for the presence of large scale roughness      
+!          allowing for the presence of large scale roughness
 
-!          jc: six coefficients (constant, u, u^2, sec, sec^2, u*sec)	
+!          jc: six coefficients (constant, u, u^2, sec, sec^2, u*sec)
            zcv1=emc(24)+emc(25)*freqghz+emc(26)*freqghz2
            zcv2=(emc(27)+emc(28)*freqghz+emc(29)*freqghz2)*sec
            zcv3=(emc(30)+emc(31)*freqghz+emc(32)*freqghz2)*sec2
@@ -348,7 +345,7 @@ CONTAINS
 !          calculate correction for this polarisation
            xcorr2v=.01_fp*(zcv1+zcv2+zcv3+zcv4+zcv5+zcv6)
            xcorr2h=.01_fp*(zch1+zch2+zch3+zch4+zch5+zch6)
-        
+
            evertr=one-rverts*xcorr1+xcorr2v
            ehorzr=one-rhorzs*xcorr1+xcorr2h
 
@@ -358,7 +355,7 @@ CONTAINS
            evert=evertr - ffoam*evertr+ ffoam
            ehorz=ehorzr - ffoam*ehorzr + ffoam
 
-!        write(769,'(6f12.6)') ffoam,evertr,ehorzr,evert,ehorz 
+!        write(769,'(6f12.6)') ffoam,evertr,ehorzr,evert,ehorz
            rverts5 = rverts
            rhorzs5 = rhorzs
            xcorr15 = xcorr1
