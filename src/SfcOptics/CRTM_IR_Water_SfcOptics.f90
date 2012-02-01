@@ -11,8 +11,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 25-Jun-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 25-Jun-2005
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_IR_Water_SfcOptics
@@ -39,7 +39,7 @@ MODULE CRTM_IR_Water_SfcOptics
   ! Everything private by default
   PRIVATE
   ! Data types
-  PUBLIC :: IRWSOVariables_type
+  PUBLIC :: iVar_type
   ! Science routines
   PUBLIC :: Compute_IR_Water_SfcOptics
   PUBLIC :: Compute_IR_Water_SfcOptics_TL
@@ -49,31 +49,40 @@ MODULE CRTM_IR_Water_SfcOptics
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Coefficients for Sigma**2 in the Cox & Munk slope probability density function
+  REAL(fp), PARAMETER :: CM_1 = 0.003_fp, CM_2 = 5.12e-3_fp
 
 
   ! --------------------------------------
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
   ! --------------------------------------
-  TYPE :: IRWSOVariables_type
+  TYPE :: iVar_type
     PRIVATE
     ! Variables in routines rough sea BRDF
-    REAL(fp) :: pdf            ! slope distribution function 
+    REAL(fp) :: pdf            ! slope distribution function
     REAL(fp) :: W              ! BRDF = W*pdf
     REAL(fp) :: tan2_theta_f   ! tan(theta_f)**2
     ! IRSSEM data structure
     TYPE(IRSSEM_type) :: IRSSEM
-  END TYPE IRWSOVariables_type
+  END TYPE iVar_type
 
-  ! Coefficients for Sigma**2 in the Cox & Munk slope probability density function 
-  REAL(fp), PARAMETER :: CM_1 = 0.003_fp, CM_2 = 5.12e-3_fp 
-  
+
 CONTAINS
 
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Compute_IR_Water_SfcOptics
@@ -85,25 +94,26 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics( Surface       , &  ! Input
-!                                                  GeometryInfo  , &  ! Input
-!                                                  SensorIndex   , &  ! Input
-!                                                  ChannelIndex  , &  ! Output     
-!                                                  SfcOptics     , &  ! Output     
-!                                                  IRWSOVariables  )  ! Internal variable output
+!       Error_Status = Compute_IR_Water_SfcOptics( &
+!                        Surface     , &  ! Input
+!                        GeometryInfo, &  ! Input
+!                        SensorIndex , &  ! Input
+!                        ChannelIndex, &  ! Output
+!                        SfcOptics   , &  ! Output
+!                        iVar          )  ! Internal variable output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Surface:         CRTM_Surface structure containing the surface state
 !                        data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -126,22 +136,22 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       SfcOptics:       CRTM_SfcOptics structure containing the surface
 !                        optical properties required for the radiative
 !                        transfer calculation. On input the Angle component
 !                        is assumed to contain data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!       IRWSOVariables:  Structure containing internal variables required for
+!       iVar:            Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_IR_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       IRWSOVariables_type
+!                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -158,6 +168,7 @@ CONTAINS
 !       Note the INTENT on the output SfcOptics argument is IN OUT rather
 !       than just OUT as it is assumed to contain some data upon input.
 !
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_IR_Water_SfcOptics( &
@@ -166,7 +177,7 @@ CONTAINS
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
     SfcOptics   , &  ! Output
-    IRWSOV      ) &  ! Internal variable output
+    iVar        ) &  ! Internal variable output
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
@@ -174,7 +185,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
-    TYPE(IRWSOVariables_type),    INTENT(IN OUT) :: IRWSOV
+    TYPE(iVar_type),              INTENT(IN OUT) :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -196,7 +207,7 @@ CONTAINS
                                         SC(SensorIndex)%Wavenumber(ChannelIndex), &
                                         SfcOptics%Angle(1:nZ), &
                                         SfcOptics%Emissivity(1:nZ,1), &
-                                        IRWSOV%IRSSEM )
+                                        iVar%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing IR sea surface emissivity', &
@@ -210,19 +221,19 @@ CONTAINS
 
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &
-                                  GeometryInfo%Source_Azimuth_Radian    
-        CALL BRDF_Rough_Sea(SC(SensorIndex)%Wavenumber(ChannelIndex), &                       
-                            GeometryInfo%Source_Zenith_Radian,     &    
-                            Relative_Azimuth_Radian,               &    
-                            GeometryInfo%Sensor_Zenith_Radian,     &    
-                            Surface%Wind_Speed,                    &    
-                            brdf,                                  &    
-                            IRWSOV)                                     
+                                  GeometryInfo%Source_Azimuth_Radian
+        CALL BRDF_Rough_Sea(SC(SensorIndex)%Wavenumber(ChannelIndex), &
+                            GeometryInfo%Source_Zenith_Radian,     &
+                            Relative_Azimuth_Radian,               &
+                            GeometryInfo%Sensor_Zenith_Radian,     &
+                            Surface%Wind_Speed,                    &
+                            brdf,                                  &
+                            iVar)
         SfcOptics%Direct_Reflectivity(1:nZ,1) = brdf
       ELSE
-        SfcOptics%Direct_Reflectivity(1:nZ,1) = ZERO 
+        SfcOptics%Direct_Reflectivity(1:nZ,1) = ZERO
       END IF
-                        
+
     END IF
 
     ! Surface reflectance (currently assumed to be specular ALWAYS)
@@ -232,8 +243,9 @@ CONTAINS
 
   END FUNCTION Compute_IR_Water_SfcOptics
 
-     
+
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Compute_IR_Water_SfcOptics_TL
@@ -245,27 +257,28 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics_TL( Surface       , &  ! Input
-!                                                     SfcOptics     , &  ! Input     
-!                                                     Surface_TL    , &  ! Input
-!                                                     GeometryInfo  , &  ! Input
-!                                                     SensorIndex   , &  ! Input
-!                                                     ChannelIndex  , &  ! Output     
-!                                                     SfcOptics_TL  , &  ! Output     
-!                                                     IRWSOVariables  )  ! Internal variable input
+!       Error_Status = Compute_IR_Water_SfcOptics_TL( &
+!                        Surface     , &
+!                        SfcOptics   , &
+!                        Surface_TL  , &
+!                        GeometryInfo, &
+!                        SensorIndex , &
+!                        ChannelIndex, &
+!                        SfcOptics_TL, &
+!                        iVar          )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Surface:         CRTM_Surface structure containing the surface state
 !                        data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       Surface_TL:      CRTM_Surface structure containing the tangent-linear 
+!       Surface_TL:      CRTM_Surface structure containing the tangent-linear
 !                        surface state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -273,14 +286,14 @@ CONTAINS
 !                        optical properties required for the radiative
 !                        transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -303,21 +316,21 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       IRWSOVariables:  Structure containing internal variables required for
+!       iVar:            Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_IR_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       IRWSOVariables_type
+!                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       SfcOptics_TL:    CRTM_SfcOptics structure containing the tangent-linear
 !                        surface optical properties required for the tangent-
 !                        linear radiative transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -333,8 +346,9 @@ CONTAINS
 ! COMMENTS:
 !       Note the INTENT on the output SfcOptics_TL argument is IN OUT rather
 !       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       upon input.
 !
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_IR_Water_SfcOptics_TL( &
@@ -345,7 +359,7 @@ CONTAINS
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
     SfcOptics_TL, &  ! Output
-    IRWSOV      ) &  ! Internal variable input
+    iVar        ) &  ! Internal variable input
   RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
@@ -355,7 +369,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
-    TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
+    TYPE(iVar_type),              INTENT(IN)     :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -373,7 +387,7 @@ CONTAINS
     ! Compute tangent-linear IR sea surface emissivity
     Error_Status = CRTM_Compute_IRSSEM_TL( Surface_TL%Wind_Speed, &
                                            SfcOptics_TL%Emissivity(1:nZ,1), &
-                                           IRWSOV%IRSSEM )
+                                           iVar%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Tangent_linear IR sea surface emissivity', &
@@ -384,25 +398,21 @@ CONTAINS
 
     ! Compute the tangent-linear solar direct BRDF
     IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
-    
+
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
-        Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &  
-                                  GeometryInfo%Source_Azimuth_Radian      
-        CALL BRDF_Rough_Sea_TL(SC(SensorIndex)%Wavenumber(ChannelIndex), &  
-                               GeometryInfo%Source_Zenith_Radian,     &     
-                               Relative_Azimuth_Radian,               &     
-                               GeometryInfo%Sensor_Zenith_Radian,     &     
-                               Surface%Wind_Speed,                    &     
-                               Surface_TL%Wind_Speed,                 &     
-                               brdf_TL,                               &     
-                               IRWSOV)                                      
+        Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian - &
+                                  GeometryInfo%Source_Azimuth_Radian
+        CALL BRDF_Rough_Sea_TL(Surface%Wind_Speed,                    &
+                               Surface_TL%Wind_Speed,                 &
+                               brdf_TL,                               &
+                               iVar)
         SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = brdf_TL
       ELSE
-        SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = ZERO                   
+        SfcOptics_TL%Direct_Reflectivity(1:nZ,1) = ZERO
       END IF
-      
+
     END IF
-    
+
     ! Surface reflectance (currently assumed to be specular ALWAYS)
     DO j = 1, nZ
       SfcOptics_TL%Reflectivity(j,1,j,1) = -SfcOptics_TL%Emissivity(j,1)
@@ -412,6 +422,7 @@ CONTAINS
 
 
 !----------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Compute_IR_Water_SfcOptics_AD
@@ -423,20 +434,21 @@ CONTAINS
 !       This function is a wrapper for third party code.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_IR_Water_SfcOptics_AD( Surface               , &  ! Input
-!                                                     SfcOptics             , &  ! Input     
-!                                                     SfcOptics_AD          , &  ! Input     
-!                                                     GeometryInfo          , &  ! Input
-!                                                     SensorIndex           , &  ! Input
-!                                                     ChannelIndex          , &  ! Output     
-!                                                     Surface_AD            , &  ! Output
-!                                                     IRWSOVariables          )  ! Internal variable input
+!       Error_Status = Compute_IR_Water_SfcOptics_AD( &
+!                        Surface     , &
+!                        SfcOptics   , &
+!                        SfcOptics_AD, &
+!                        GeometryInfo, &
+!                        SensorIndex , &
+!                        ChannelIndex, &
+!                        Surface_AD  , &
+!                        iVar          )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Surface:         CRTM_Surface structure containing the surface state
 !                        data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -444,7 +456,7 @@ CONTAINS
 !                        optical properties required for the radiative
 !                        transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -452,14 +464,14 @@ CONTAINS
 !                        surface optical properties required for the adjoint
 !                        radiative transfer calculation.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_SfcOptics_type)
+!                        TYPE:       CRTM_SfcOptics_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
+!       GeometryInfo:    CRTM_GeometryInfo structure containing the
 !                        view geometry information.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
+!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -471,7 +483,7 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
-!avhrr3_n18.Forward.output-new
+!
 !       ChannelIndex:    Channel index id. This is a unique index associated
 !                        with a (supported) sensor channel used to access the
 !                        shared coefficient data for a particular sensor's
@@ -482,20 +494,20 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       IRWSOVariables:  Structure containing internal variables required for
+!       iVar:            Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_IR_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       IRWSOVariables_type
+!                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Surface_AD:      CRTM_Surface structure containing the adjoint
 !                        surface state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Surface_type)
+!                        TYPE:       CRTM_Surface_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -515,19 +527,20 @@ CONTAINS
 !
 !       Note the INTENT on the output Surface_AD argument is IN OUT rather
 !       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       upon input.
 !
+!:sdoc-:
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_IR_Water_SfcOptics_AD( &
     Surface     , &  ! Input
-    SfcOptics   , &  ! Input     
+    SfcOptics   , &  ! Input
     SfcOptics_AD, &  ! Input
     GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
-    Surface_AD  , &  ! Output     
-    IRWSOV      ) &  ! Internal variable input
+    Surface_AD  , &  ! Output
+    iVar        ) &  ! Internal variable input
   RESULT ( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
@@ -537,7 +550,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
-    TYPE(IRWSOVariables_type),    INTENT(IN)     :: IRWSOV
+    TYPE(iVar_type),              INTENT(IN)     :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -561,31 +574,27 @@ CONTAINS
 
     ! Solar direct BRDF
     IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
-    
+
       IF( GeometryInfo%Source_Zenith_Radian < PI/TWO ) THEN
 
         Relative_Azimuth_Radian = GeometryInfo%Sensor_Azimuth_Radian -   &
-                                  GeometryInfo%Source_Azimuth_Radian   
-                                    
+                                  GeometryInfo%Source_Azimuth_Radian
+
         brdf_AD = SUM(SfcOptics_AD%Direct_Reflectivity(1:nZ,1))
         SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO
-        CALL BRDF_Rough_Sea_AD(SC(SensorIndex)%Wavenumber(ChannelIndex), & 
-                               GeometryInfo%Source_Zenith_Radian,     &    
-                               Relative_Azimuth_Radian,               &    
-                               GeometryInfo%Sensor_Zenith_Radian,     &    
-                               Surface%Wind_Speed,                    &    
-                               brdf_AD,                               &    
-                               Surface_AD%Wind_Speed,                 &    
-                               IRWSOV)                                            
+        CALL BRDF_Rough_Sea_AD(Surface%Wind_Speed,                    &
+                               brdf_AD,                               &
+                               Surface_AD%Wind_Speed,                 &
+                               iVar)
       END IF
       SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO
 
     END IF
- 
+
     ! Compute sdjoint IRSSEM sea surface emissivity
     Error_Status = CRTM_Compute_IRSSEM_AD( SfcOptics_AD%Emissivity(1:nZ,1), &
                                            Surface_AD%Wind_Speed, &
-                                           IRWSOV%IRSSEM )
+                                           iVar%IRSSEM )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Adjoint IR sea surface emissivity', &
@@ -595,8 +604,17 @@ CONTAINS
 
   END FUNCTION Compute_IR_Water_SfcOptics_AD
 
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
   !--------------------------------------------------------------------
-  ! Compute rough sea Bi-directional Reflectance Distribution Function (BRDF) 
+  ! Compute rough sea Bi-directional Reflectance Distribution Function (BRDF)
   ! for IR solar reflection
   !   Inputs:
   !      Frequency - Frequency (cm-1)
@@ -604,8 +622,8 @@ CONTAINS
   !      dphi - relative sun azimuth agnle, relative to the senosr's azimuth angle (Radian)
   !      theta_r - senor zenith angle (Radian)
   !      Wind_Speed - wind speed (m/s)
-  ! 
-  !        note: dphi is such defined that if the observation direction and the sun direction 
+  !
+  !        note: dphi is such defined that if the observation direction and the sun direction
   !              ara in the same vertical plane, then  dphi = 180 degree
   !
   !                              sun   Zenith    sensor
@@ -617,34 +635,34 @@ CONTAINS
   !                                    \  | /
   !                                     \ |/
   !                             -------------------------
-  !  
+  !
   !  output:
   !      brdf - value of the Bi-directional Reflectance Distribution Function at
   !             the given condition.
   !  In/out:
-  !     IRWSOV -  Structure containing internal variables required for
-  !               subsequent tangent-linear or adjoint model calls.         
+  !     iVar -  Structure containing internal variables required for
+  !               subsequent tangent-linear or adjoint model calls.
   !
   !         Written by Y. Han, May 5, 2009
-  !--------------------------------------------------------------------   
+  !--------------------------------------------------------------------
 
   SUBROUTINE BRDF_Rough_Sea(Frequency, theta_s, dphi, theta_r, Wind_Speed, &
-                            brdf, IRWSOV)
+                            brdf, iVar)
     REAL(fp), INTENT(IN)  :: Frequency
     REAL(fp), INTENT(IN)  :: theta_s
     REAL(fp), INTENT(IN)  :: dphi
     REAL(fp), INTENT(IN)  :: theta_r
     REAL(fp), INTENT(IN)  :: Wind_Speed
     REAL(fp), INTENT(OUT) :: brdf
-    TYPE(IRWSOVariables_type), INTENT(IN OUT) :: IRWSOV
-    
+    TYPE(iVar_type), INTENT(IN OUT) :: iVar
+
     ! LOCAL
     REAL(fp), PARAMETER :: MIN_THETA = 1.0e-15_fp
-    REAL(fp) :: sin_theta_s, cos_theta_s, sin_theta_r, cos_theta_r, sin2_theta_s, & 
+    REAL(fp) :: sin_theta_s, cos_theta_s, sin_theta_r, cos_theta_r, sin2_theta_s, &
                 sin2_theta_r, cos_dphi, CosSum2, sec4_theta_f, &
                 cos2_alpha, cos_alpha, alpha, rho
 
-    ! various intermidiate variables                
+    ! various intermidiate variables
     sin_theta_s     = SIN(theta_s)
     cos_theta_s     = MAX(COS(theta_s), MIN_THETA)   ! make sure COS(theta_s) > 0
     sin_theta_r     = SIN(theta_r)
@@ -663,67 +681,59 @@ CONTAINS
     rho = Fresnel_Reflectance(Frequency, alpha)
 
     ! Compute Tan(theta_f)**2, where theta_f is the zenith angle of the normal
-    ! of the facet at the point of reflection.       
-    IRWSOV%tan2_theta_f = (sin2_theta_s + sin2_theta_r &
+    ! of the facet at the point of reflection.
+    iVar%tan2_theta_f = (sin2_theta_s + sin2_theta_r &
                + TWO*sin_theta_s*sin_theta_r*cos_dphi) &
-               / CosSum2 
-    
+               / CosSum2
+
     ! Compute splope probability density function
-    CALL Slope_pdf(IRWSOV%tan2_theta_f, Wind_Speed, IRWSOV%pdf)
-        
+    CALL Slope_pdf(iVar%tan2_theta_f, Wind_Speed, iVar%pdf)
+
     ! Compute BRDF
-    sec4_theta_f = (IRWSOV%tan2_theta_f + ONE)**2
-    IRWSOV%W     = PI * rho * sec4_theta_f / (FOUR*cos_theta_r*cos_theta_s)
-    brdf         = IRWSOV%W * IRWSOV%pdf
+    sec4_theta_f = (iVar%tan2_theta_f + ONE)**2
+    iVar%W       = PI * rho * sec4_theta_f / (FOUR*cos_theta_r*cos_theta_s)
+    brdf         = iVar%W * iVar%pdf
 
   END SUBROUTINE BRDF_Rough_Sea
 
-  SUBROUTINE BRDF_Rough_Sea_TL(Frequency, theta_s, dphi, theta_r, Wind_Speed, &
-                               Wind_Speed_TL, brdf_TL, IRWSOV)
-    REAL(fp), INTENT(IN)  :: Frequency
-    REAL(fp), INTENT(IN)  :: theta_s
-    REAL(fp), INTENT(IN)  :: dphi
-    REAL(fp), INTENT(IN)  :: theta_r
+  SUBROUTINE BRDF_Rough_Sea_TL(Wind_Speed, &
+                               Wind_Speed_TL, brdf_TL, iVar)
     REAL(fp), INTENT(IN)  :: Wind_Speed
     REAL(fp), INTENT(IN)  :: Wind_Speed_TL
     REAL(fp), INTENT(OUT) :: brdf_TL
-    TYPE(IRWSOVariables_type), INTENT(IN) :: IRWSOV
-    
+    TYPE(iVar_type), INTENT(IN) :: iVar
+
     ! LOCAL
     REAL(fp) :: pdf_TL
 
-    CALL Slope_pdf_TL(IRWSOV%tan2_theta_f, Wind_Speed, IRWSOV%pdf, Wind_Speed_TL, pdf_TL)
+    CALL Slope_pdf_TL(iVar%tan2_theta_f, Wind_Speed, iVar%pdf, Wind_Speed_TL, pdf_TL)
 
-    brdf_TL   = IRWSOV%W * pdf_TL
-    
+    brdf_TL   = iVar%W * pdf_TL
+
   END SUBROUTINE BRDF_Rough_Sea_TL
 
-  SUBROUTINE BRDF_Rough_Sea_AD(Frequency, theta_s, dphi, theta_r, Wind_Speed, &
-                               brdf_AD, Wind_Speed_AD, IRWSOV)
-    REAL(fp), INTENT(IN)     :: Frequency
-    REAL(fp), INTENT(IN)     :: theta_s
-    REAL(fp), INTENT(IN)     :: dphi
-    REAL(fp), INTENT(IN)     :: theta_r
+  SUBROUTINE BRDF_Rough_Sea_AD(Wind_Speed, &
+                               brdf_AD, Wind_Speed_AD, iVar)
     REAL(fp), INTENT(IN)     :: Wind_Speed
     REAL(fp), INTENT(INOUT)  :: brdf_AD
     REAL(fp), INTENT(INOUT)  :: Wind_Speed_AD
-    TYPE(IRWSOVariables_type), INTENT(IN) :: IRWSOV
-    
+    TYPE(iVar_type), INTENT(IN) :: iVar
+
     ! LOCAL
     REAL(fp) :: pdf_AD
 
-    pdf_AD   = IRWSOV%W * brdf_AD     
-    brdf_AD  = ZERO                   
+    pdf_AD   = iVar%W * brdf_AD
+    brdf_AD  = ZERO
 
-    CALL Slope_pdf_AD(IRWSOV%tan2_theta_f, Wind_Speed, IRWSOV%pdf, pdf_AD, Wind_Speed_AD)
-      
+    CALL Slope_pdf_AD(iVar%tan2_theta_f, Wind_Speed, iVar%pdf, pdf_AD, Wind_Speed_AD)
+
   END SUBROUTINE BRDF_Rough_Sea_AD
 
   ! Compute facet slope distribution function (pdf)
   !   Inputs:  tan2_theta_f  - tan(theta_f)**2
   !            Wind_Speed (m/s)
-  !   Outputs: pdf 
-          
+  !   Outputs: pdf
+
   SUBROUTINE Slope_pdf(tan2_theta_f, Wind_Speed, pdf)
     REAL(fp), INTENT(IN)   :: tan2_theta_f
     REAL(fp), INTENT(IN)   :: Wind_Speed
@@ -731,11 +741,11 @@ CONTAINS
 
     ! Local
     REAL(fp) :: Sigma2
-        
-    ! Cox & Munk slope probability density function    
+
+    ! Cox & Munk slope probability density function
     Sigma2 = CM_1 + CM_2*Wind_Speed
     pdf = EXP(-tan2_theta_f / Sigma2) / (PI*Sigma2)
-    
+
   END SUBROUTINE Slope_pdf
 
   SUBROUTINE Slope_pdf_TL(tan2_theta_f, Wind_Speed, pdf, Wind_Speed_TL, pdf_TL)
@@ -751,9 +761,9 @@ CONTAINS
     Sigma2    = CM_1 + CM_2*Wind_Speed
     Sigma2_TL = CM_2*Wind_Speed_TL
     pdf_TL    = ( pdf*(tan2_theta_f/Sigma2 - ONE)/Sigma2 )*Sigma2_TL
-    
+
   END SUBROUTINE Slope_pdf_TL
- 
+
   SUBROUTINE Slope_pdf_AD(tan2_theta_f, Wind_Speed, pdf, pdf_AD, Wind_Speed_AD)
     REAL(fp), INTENT(IN)      :: tan2_theta_f
     REAL(fp), INTENT(IN)      :: Wind_Speed
@@ -763,14 +773,14 @@ CONTAINS
 
     ! LOCAL
     REAL(fp) :: Sigma2, Sigma2_AD
-   
+
     Sigma2        = CM_1 + CM_2*Wind_Speed
     Sigma2_AD     = ( pdf*(tan2_theta_f/Sigma2 - ONE)/Sigma2 )*pdf_AD
     pdf_AD        = ZERO
     Wind_Speed_AD = Wind_Speed_AD + 5.12e-3_fp*Sigma2_AD
-    
+
   END SUBROUTINE Slope_pdf_AD
-  
+
   !---------------------------------------------------------
   ! Compute Fresnel sea surface reflectivity
   !   Inputs:
@@ -779,26 +789,26 @@ CONTAINS
   !  output (as a function return):
   !      r - Fresnel reflectivity
   !         Written by Y. Han, May 5, 2009
-  !---------------------------------------------------------   
+  !---------------------------------------------------------
   FUNCTION Fresnel_Reflectance(Frequency, Ang_i) RESULT( r )
 
     REAL(fp),    INTENT(IN) :: Frequency
     REAL(fp),    INTENT(IN) :: Ang_i
-  
+
     REAL(fp) :: r
-  
+
     ! LOCAL
     REAL(fp) :: rh, rv
     COMPLEX(fp) :: CCos_i, CCos_t, n, z
-    
+
     ! call function to compute complex refractive index
     n = Ref_Index(Frequency)
-   
+
     ! Fresnel reflectivity
 
     z = CMPLX(SIN(Ang_i), ZERO)/n
     CCos_t = SQRT(CMPLX(ONE, ZERO) - z*z)
- 
+
     CCos_i = CMPLX(COS(Ang_i), ZERO)
 
     rv = ( ABS( (n*CCos_i - CCos_t) / (n*CCos_i + CCos_t) ) )**2
@@ -812,14 +822,14 @@ CONTAINS
   ! Obtain IR refractive index
   !  Input: Frequency - wavenumber cm-1, valid range 500 - 3500 cm-1
   !  Return: complex refractive index
-  !------------------------------------------------------------ 
+  !------------------------------------------------------------
   FUNCTION Ref_Index(Frequency) RESULT(ref)
     REAL(fp), INTENT(IN) :: Frequency
-    
+
     COMPLEX(fp) :: ref
 
     !-------------------------------------------------------------------------
-    ! Refractive index of water from Wieliczka (1989), added 
+    ! Refractive index of water from Wieliczka (1989), added
     ! salinity and chlorinity CORRECTIONS from Friedman (1969). The resolution
     ! of the Wieliczka data set is reduced to 20 cm-1. The frequancy range
     ! of the Friedman starts at 666.67 cm-1. For frequency < 666.67 cm-1
@@ -883,19 +893,19 @@ CONTAINS
     REAL(fp), PARAMETER :: df = freq(2) - freq(1)
     INTEGER  :: idx
     REAL(fp) :: c
-    
+
     IF(Frequency < freq(1))THEN
       ref = CMPLX( nr(1), ni(1) )
     ELSE IF( Frequency > freq(nf) )THEN
       ref = CMPLX( nr(nf), ni(nf) )
-    ELSE  
-      ! Linear interpolation  
+    ELSE
+      ! Linear interpolation
       idx = INT((Frequency - freq(1))/df) + 1  ! find the starting index
       c = (Frequency - freq(idx))/(freq(idx+1) - freq(idx))
       ref = CMPLX( nr(idx) + c*(nr(idx+1) - nr(idx)), &
                    ni(idx) + c*(ni(idx+1) - ni(idx)) )
     END IF
-   
+
   END FUNCTION Ref_Index
 
 END MODULE CRTM_IR_Water_SfcOptics

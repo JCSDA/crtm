@@ -55,7 +55,7 @@ MODULE CRTM_IR_Land_SfcOptics
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
-  
+
 
   ! --------------------------------------
   ! Structure definition to hold forward
@@ -68,7 +68,6 @@ MODULE CRTM_IR_Land_SfcOptics
 
 
 CONTAINS
-
 
 
 !----------------------------------------------------------------------------------
@@ -86,7 +85,6 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = Compute_IR_Land_SfcOptics( &
 !                        Surface     , &
-!                        GeometryInfo, &
 !                        SensorIndex , &
 !                        ChannelIndex, &
 !                        SfcOptics   , &
@@ -96,13 +94,6 @@ CONTAINS
 !       Surface:         Structure containing the surface state data.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:    Structure containing the view geometry and location
-!                        information.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_GeometryInfo_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -162,7 +153,6 @@ CONTAINS
 
   FUNCTION Compute_IR_Land_SfcOptics( &
     Surface     , &  ! Input
-    GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
     SfcOptics   , &  ! Output
@@ -170,7 +160,6 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
@@ -192,11 +181,11 @@ CONTAINS
 
     ! Compute Lambertian surface emissivity
     err_stat = SEcategory_Emissivity( &
-                 IRlandC%LSEcategory, &  ! Input
-                 frequency          , &  ! Input
-                 Surface%Land_Type  , &  ! Input
-                 emissivity         , &  ! Output
-                 iVar%sevar           )  ! Internal variable output
+                 IRlandC          , &  ! Input
+                 frequency        , &  ! Input
+                 Surface%Land_Type, &  ! Input
+                 emissivity       , &  ! Output
+                 iVar%sevar         )  ! Internal variable output
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error occurred in SEcategory_Emissivity()'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
@@ -211,7 +200,7 @@ CONTAINS
 
     ! Fill the return emissivity and reflectivity arrays
     SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
-    DO j = 1, SfcOptics%n_Angles 
+    DO j = 1, SfcOptics%n_Angles
       SfcOptics%Reflectivity(j,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
     END DO
 
@@ -237,8 +226,8 @@ CONTAINS
 !       Error_Status = Compute_IR_Land_SfcOptics_TL( SfcOptics_TL )
 !
 ! OUTPUTS:
-!       SfcOptics_TL:    CRTM_SfcOptics structure containing the tangent-linear
-!                        surface optical properties required for the tangent-
+!       SfcOptics_TL:    Structure containing the tangent-linear surface
+!                        optical properties required for the tangent-
 !                        linear radiative transfer calculation.
 !                        UNITS:      N/A
 !                        TYPE:       CRTM_SfcOptics_type
@@ -262,7 +251,7 @@ CONTAINS
 !----------------------------------------------------------------------------------
 
   FUNCTION Compute_IR_Land_SfcOptics_TL( &
-    SfcOptics_TL ) &  ! Output     
+    SfcOptics_TL ) &  ! Output
   RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_SfcOptics_type), INTENT(IN OUT) :: SfcOptics_TL
