@@ -1,17 +1,17 @@
 !
-! CRTM_VIS_Water_SfcOptics
+! CRTM_VIS_Land_SfcOptics
 !
-! Module to compute the surface optical properties for WATER surfaces at
-! visible frequencies required for determining the WATER surface
+! Module to compute the surface optical properties for LAND surfaces at
+! visible frequencies required for determining the LAND surface
 ! contribution to the radiative transfer.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, 17-Dec-2008
+!       Written by:     Paul van Delst, 31-Jan-2012
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE CRTM_VIS_Water_SfcOptics
+MODULE CRTM_VIS_Land_SfcOptics
 
   ! -----------------
   ! Environment setup
@@ -27,7 +27,7 @@ MODULE CRTM_VIS_Water_SfcOptics
   USE CRTM_SfcOptics_Define    , ONLY: CRTM_SfcOptics_type
   USE CRTM_SEcategory          , ONLY: SEVar_type => iVar_type, &
                                        SEcategory_Emissivity
-  USE CRTM_VISwaterCoeff       , ONLY: VISwaterC
+  USE CRTM_VISlandCoeff        , ONLY: VISlandC
 
 
 use crtm_surface_ir_emissivity
@@ -45,9 +45,9 @@ use crtm_surface_ir_emissivity
   ! Data types
   PUBLIC :: iVar_type
   ! Science routines
-  PUBLIC :: Compute_VIS_Water_SfcOptics
-  PUBLIC :: Compute_VIS_Water_SfcOptics_TL
-  PUBLIC :: Compute_VIS_Water_SfcOptics_AD
+  PUBLIC :: Compute_VIS_Land_SfcOptics
+  PUBLIC :: Compute_VIS_Land_SfcOptics_TL
+  PUBLIC :: Compute_VIS_Land_SfcOptics_AD
 
 
   ! -----------------
@@ -76,14 +76,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Compute_VIS_Water_SfcOptics
+!       Compute_VIS_Land_SfcOptics
 !
 ! PURPOSE:
 !       Function to compute the surface emissivity and reflectivity at UV/visible
-!       frequencies over a water surface.
+!       frequencies over a land surface.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_VIS_Water_SfcOptics(
+!       Error_Status = Compute_VIS_Land_SfcOptics(
 !                        Surface      , &
 !                        SensorIndex  , &
 !                        Channel_Index, &
@@ -149,7 +149,7 @@ CONTAINS
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_VIS_Water_SfcOptics( &
+  FUNCTION Compute_VIS_Land_SfcOptics( &
     Surface     , &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
@@ -165,7 +165,7 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Water_SfcOptics'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Land_SfcOptics'
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER  :: j
@@ -179,9 +179,9 @@ real(fp) :: wavelength
 
     ! Compute Lambertian surface emissivity
     err_stat = SEcategory_Emissivity( &
-                 VISwaterC         , &  ! Input
+                 VISlandC         , &  ! Input
                  frequency         , &  ! Input
-                 Surface%Water_Type, &  ! Input
+                 Surface%Land_Type, &  ! Input
                  emissivity        , &  ! Output
                  iVar%sevar          )  ! Internal variable output
     IF ( err_stat /= SUCCESS ) THEN
@@ -209,7 +209,7 @@ real(fp) :: wavelength
     ! -------------------------------------------------------
     ! Compute Lambertian surface emissivity
     !
-    ! The call below is uses a set offset for the water surface
+    ! The call below is uses a set offset for the land surface
     ! type based on those defined in the CRTM_Surface_Define.
     ! -------------------------------------------------------
     CALL Surface_IR_Emissivity( Wavelength, &
@@ -227,26 +227,26 @@ real(fp) :: wavelength
       SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE-Emissivity)*SfcOptics%Weight(j)
     END DO
 
-  END FUNCTION Compute_VIS_Water_SfcOptics
+  END FUNCTION Compute_VIS_Land_SfcOptics
 
 
 !----------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Compute_VIS_Water_SfcOptics_TL
+!       Compute_VIS_Land_SfcOptics_TL
 !
 ! PURPOSE:
 !       Function to compute the tangent-linear surface emissivity and
-!       reflectivity at UV/visible frequencies over a water surface.
+!       reflectivity at UV/visible frequencies over a land surface.
 !
 !       This function is a wrapper for third party code.
 !
 !       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO TL
-!           COMPONENTS IN THE VIS WATER SFCOPTICS COMPUTATIONS.
+!           COMPONENTS IN THE VIS LAND SFCOPTICS COMPUTATIONS.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_VIS_Water_SfcOptics_TL( SfcOptics_TL )
+!       Error_Status = Compute_VIS_Land_SfcOptics_TL( SfcOptics_TL )
 !
 ! OUTPUTS:
 !       SfcOptics_TL:    CRTM_SfcOptics structure containing the tangent-linear
@@ -273,7 +273,7 @@ real(fp) :: wavelength
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_VIS_Water_SfcOptics_TL( &
+  FUNCTION Compute_VIS_Land_SfcOptics_TL( &
     SfcOptics_TL ) &  ! Output
   RESULT( err_stat )
     ! Arguments
@@ -281,7 +281,7 @@ real(fp) :: wavelength
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Water_SfcOptics_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Land_SfcOptics_TL'
     ! Local variables
 
 
@@ -295,26 +295,26 @@ real(fp) :: wavelength
     SfcOptics_TL%Direct_Reflectivity = ZERO
     SfcOptics_TL%Emissivity          = ZERO
 
-  END FUNCTION Compute_VIS_Water_SfcOptics_TL
+  END FUNCTION Compute_VIS_Land_SfcOptics_TL
 
 
 !----------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Compute_VIS_Water_SfcOptics_AD
+!       Compute_VIS_Land_SfcOptics_AD
 !
 ! PURPOSE:
 !       Function to compute the adjoint surface emissivity and
-!       reflectivity at UW/visible frequencies over a water surface.
+!       reflectivity at UW/visible frequencies over a land surface.
 !
 !       This function is a wrapper for third party code.
 !
 !       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO AD
-!           COMPONENTS IN THE VIS WATER SFCOPTICS COMPUTATIONS.
+!           COMPONENTS IN THE VIS LAND SFCOPTICS COMPUTATIONS.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Compute_VIS_Water_SfcOptics_AD( SfcOptics_AD )
+!       Error_Status = Compute_VIS_Land_SfcOptics_AD( SfcOptics_AD )
 !
 ! INPUTS:
 !       SfcOptics_AD:    Structure containing the adjoint surface optical
@@ -344,7 +344,7 @@ real(fp) :: wavelength
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION Compute_VIS_Water_SfcOptics_AD( &
+  FUNCTION Compute_VIS_Land_SfcOptics_AD( &
     SfcOptics_AD ) &  ! Input
   RESULT( err_stat )
     ! Arguments
@@ -352,7 +352,7 @@ real(fp) :: wavelength
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Water_SfcOptics_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_VIS_Land_SfcOptics_AD'
     ! Local variables
 
 
@@ -366,6 +366,6 @@ real(fp) :: wavelength
     SfcOptics_AD%Direct_Reflectivity = ZERO
     SfcOptics_AD%Emissivity          = ZERO
 
-  END FUNCTION Compute_VIS_Water_SfcOptics_AD
+  END FUNCTION Compute_VIS_Land_SfcOptics_AD
 
-END MODULE CRTM_VIS_Water_SfcOptics
+END MODULE CRTM_VIS_Land_SfcOptics
