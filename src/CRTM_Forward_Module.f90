@@ -675,7 +675,6 @@ CONTAINS
             CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
           END IF
 
-!          AtmOptics%Single_Scatter_Albedo = ZERO
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed
           SfcOptics%Compute = .TRUE.
