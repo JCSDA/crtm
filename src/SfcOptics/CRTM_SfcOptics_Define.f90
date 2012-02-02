@@ -60,7 +60,7 @@ MODULE CRTM_SfcOptics_Define
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
-   
+
   ! -----------------------------------
   ! Surface optics data type definition
   ! -----------------------------------
@@ -72,18 +72,18 @@ MODULE CRTM_SfcOptics_Define
     INTEGER :: n_Stokes = 0 ! Ls
     ! Flag for SfcOptics computation
     LOGICAL :: Compute = .TRUE.
-  
+
     ! MW Water SfcOptics options
     LOGICAL  :: Use_New_MWSSEM = .TRUE.    ! Flag for MW Water SfcOptics algorithm switch
     REAL(fp) :: Azimuth_Angle  = 999.9_fp  ! Relative azimuth angle
-    
+
     ! Index of the satellite view angle in the angle arrays
     INTEGER  :: Index_Sat_Ang = 1
     ! The counter for the m'th component of the Fourier exapnsion of
-    ! the radiance for azimuth angle    
+    ! the radiance for azimuth angle
     INTEGER  :: mth_Azi = 0
     ! The weighted mean surface temperature
-    REAL(fp) :: Surface_Temperature = ZERO    
+    REAL(fp) :: Surface_Temperature = ZERO
 
     ! The stream angles and weights
     REAL(fp), ALLOCATABLE :: Angle(:)                 ! I
@@ -98,15 +98,15 @@ MODULE CRTM_SfcOptics_Define
   !
   ! 1) The physical meaning of Reflectivity(:,:,:,:) is the following:
   !
-  !    Given a pair of polarization indices, ip and rp, for the incident and 
+  !    Given a pair of polarization indices, ip and rp, for the incident and
   !    reflected radiances respectively, assuming there are no cross contributions
-  !    from incident radiation with different polarization, Reflectivity(:, rp, :, ip) 
+  !    from incident radiation with different polarization, Reflectivity(:, rp, :, ip)
   !    is defined as a reflectivity matrix with
-  !       
+  !
   !      Reflectivity(:, rp, :, ip) = 0 ;  if rp /= ip
   !
-  !    and 
-  !        
+  !    and
+  !
   !      I(angle_r, p) = SUM( Reflectivity(angle_r, p, :, p) * I(:, p)), if rp=ip=p
   !
   !    where I(angle_r, p) is the reflected radiance at zenith angle with index angle_r,
@@ -117,12 +117,12 @@ MODULE CRTM_SfcOptics_Define
   !       Reflectivity(angle_r, p, angle_in, p) = &
   !             BRDF(angle_r, p, angle_in, p)*cos(angle_in)*w(angle_in)
   !
-  !    where w(angle_in) is the quadrature weight.               
+  !    where w(angle_in) is the quadrature weight.
   !
   !    A SPECIAL CASE
   !    --------------
   !    For a Lambertian surface, if only one angle is given, then
-  ! 
+  !
   !        I_r = Reflectivity(1, rp, 1, ip) * I_diff
   !
   !    where I_r is the reflected radiance, constant at all angles, I_diff
@@ -131,11 +131,11 @@ MODULE CRTM_SfcOptics_Define
   !
   ! 2) Regarding the Direct_Reflectivity(:,:) component,
   !
-  !    If I(angle_r, p) is the reflected radiance at the zenith angle with index                    
-  !    angle_r and F_direct(angle_in) is the direct incident irradiance at the surface,                
+  !    If I(angle_r, p) is the reflected radiance at the zenith angle with index
+  !    angle_r and F_direct(angle_in) is the direct incident irradiance at the surface,
   !    then Direct_Reflectivity(angle_r, p) is defined as
-  !                                           
-  !      I(angle_r, p) = Direct_Reflectivity(angle_r, p) * cos(angle_in) * F_direct(angle_in) 
+  !
+  !      I(angle_r, p) = Direct_Reflectivity(angle_r, p) * cos(angle_in) * F_direct(angle_in)
   !
 
 
@@ -195,7 +195,7 @@ CONTAINS
 !
 ! NAME:
 !       CRTM_SfcOptics_Destroy
-! 
+!
 ! PURPOSE:
 !       Elemental subroutine to re-initialize CRTM SfcOptics objects.
 !
@@ -216,14 +216,14 @@ CONTAINS
     TYPE(CRTM_SfcOptics_type), INTENT(OUT) :: SfcOptics
     SfcOptics%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_SfcOptics_Destroy
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
 !       CRTM_SfcOptics_Create
-! 
+!
 ! PURPOSE:
 !       Elemental subroutine to create an instance of the CRTM SfcOptics object.
 !
@@ -281,7 +281,7 @@ CONTAINS
     SfcOptics%Emissivity          = ZERO
     SfcOptics%Reflectivity        = ZERO
     SfcOptics%Direct_Reflectivity = ZERO
-    
+
     ! Set allocation indicator
     SfcOptics%Is_Allocated = .TRUE.
 
@@ -419,7 +419,7 @@ CONTAINS
     ELSE
       n = DEFAULT_N_SIGFIG
     END IF
-    
+
     ! Check the structure association status
     IF ( (.NOT. CRTM_SfcOptics_Associated(x)) .OR. &
          (.NOT. CRTM_SfcOptics_Associated(y)) ) RETURN
@@ -437,9 +437,9 @@ CONTAINS
 
     ! If we get here, the structures are comparable
     is_comparable = .TRUE.
-    
+
   END FUNCTION CRTM_SfcOptics_Compare
-  
+
 
 !##################################################################################
 !##################################################################################
@@ -488,7 +488,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-    
+
     ! Check the structure association status
     IF ( (.NOT. CRTM_SfcOptics_Associated(x)) .OR. &
          (.NOT. CRTM_SfcOptics_Associated(y))      ) RETURN
@@ -519,7 +519,7 @@ CONTAINS
 !! CALLING SEQUENCE:
 !!       CALL CRTM_Clear_SfcOptics( SfcOptics ) ! Output
 !!
-!! OUTPUT ARGUMENTS:
+!! OUTPUTS:
 !!       SfcOptics:   CRTM_SfcOptics structure for which the scalar members have
 !!                    been cleared.
 !!                    UNITS:      N/A
@@ -572,7 +572,7 @@ CONTAINS
 !!       Association_Status = CRTM_Associated_SfcOptics( SfcOptics,          &  ! Input
 !!                                                       ANY_Test = Any_Test )  ! Optional input
 !!
-!! INPUT ARGUMENTS:
+!! INPUTS:
 !!       SfcOptics:           CRTM_SfcOptics structure which is to have its pointer
 !!                            member's association status tested.
 !!                            UNITS:      N/A
@@ -580,7 +580,7 @@ CONTAINS
 !!                            DIMENSION:  Scalar
 !!                            ATTRIBUTES: INTENT(IN)
 !!
-!! OPTIONAL INPUT ARGUMENTS:
+!! OPTIONAL INPUTS:
 !!       ANY_Test:            Set this argument to test if ANY of the
 !!                            CRTM_SfcOptics structure pointer members are associated.
 !!                            The default is to test if ALL the pointer members
@@ -665,7 +665,7 @@ CONTAINS
 !!
 !! NAME:
 !!       CRTM_Destroy_SfcOptics
-!! 
+!!
 !! PURPOSE:
 !!       Function to re-initialize the scalar and pointer members of
 !!       a CRTM_SfcOptics data structure.
@@ -675,7 +675,7 @@ CONTAINS
 !!                                              RCS_Id = RCS_Id,          &  ! Revision control
 !!                                              Message_Log = Message_Log )  ! Error messaging
 !!
-!! OPTIONAL INPUT ARGUMENTS:
+!! OPTIONAL INPUTS:
 !!       Message_Log:  Character string specifying a filename in which any
 !!                     messages will be logged. If not specified, or if an
 !!                     error occurs opening the log file, the default action
@@ -685,14 +685,14 @@ CONTAINS
 !!                     DIMENSION:  Scalar
 !!                     ATTRIBUTES: INTENT(IN), OPTIONAL
 !!
-!! OUTPUT ARGUMENTS:
+!! OUTPUTS:
 !!       SfcOptics:    Re-initialized CRTM_SfcOptics structure.
 !!                     UNITS:      N/A
 !!                     TYPE:       CRTM_SfcOptics_type
 !!                     DIMENSION:  Scalar OR Rank-1 array
 !!                     ATTRIBUTES: INTENT(IN OUT)
 !!
-!! OPTIONAL OUTPUT ARGUMENTS:
+!! OPTIONAL OUTPUTS:
 !!       RCS_Id:       Character string containing the Revision Control
 !!                     System Id field for the module.
 !!                     UNITS:      N/A
@@ -790,7 +790,7 @@ CONTAINS
 !      END IF
 !    END IF
 !
-!    ! Deallocate the CRTM_SfcOptics Weight 
+!    ! Deallocate the CRTM_SfcOptics Weight
 !    IF ( ASSOCIATED( SfcOptics%Weight ) ) THEN
 !      DEALLOCATE( SfcOptics%Weight, STAT = Allocate_Status )
 !      IF ( Allocate_Status /= 0 ) THEN
@@ -873,7 +873,7 @@ CONTAINS
 !!
 !! NAME:
 !!       CRTM_Allocate_SfcOptics
-!! 
+!!
 !! PURPOSE:
 !!       Function to allocate the pointer members of the CRTM_SfcOptics
 !!       data structure.
@@ -885,7 +885,7 @@ CONTAINS
 !!                                               RCS_Id = RCS_Id,          &  ! Revision control
 !!                                               Message_Log = Message_Log )  ! Error messaging
 !!
-!! INPUT ARGUMENTS:
+!! INPUTS:
 !!       n_Angles:            Number of angles for which surface optical
 !!                            data are represented.
 !!                            Must be > 0
@@ -902,7 +902,7 @@ CONTAINS
 !!                            DIMENSION:  Scalar
 !!                            ATTRIBUTES: INTENT(IN)
 !!
-!! OPTIONAL INPUT ARGUMENTS:
+!! OPTIONAL INPUTS:
 !!       Message_Log:         Character string specifying a filename in which any
 !!                            messages will be logged. If not specified, or if an
 !!                            error occurs opening the log file, the default action
@@ -912,7 +912,7 @@ CONTAINS
 !!                            DIMENSION:  Scalar
 !!                            ATTRIBUTES: INTENT(IN), OPTIONAL
 !!
-!! OUTPUT ARGUMENTS:
+!! OUTPUTS:
 !!       SfcOptics:           CRTM_SfcOptics structure with allocated pointer members
 !!                            UNITS:      N/A
 !!                            TYPE:       CRTM_SfcOptics_type
@@ -920,7 +920,7 @@ CONTAINS
 !!                            ATTRIBUTES: INTENT(IN OUT)
 !!
 !!
-!! OPTIONAL OUTPUT ARGUMENTS:
+!! OPTIONAL OUTPUTS:
 !!       RCS_Id:              Character string containing the Revision Control
 !!                            System Id field for the module.
 !!                            UNITS:      N/A
@@ -1078,14 +1078,14 @@ CONTAINS
 !!                                             RCS_Id      = RCS_Id,     &  ! Revision control
 !!                                             Message_Log = Message_Log )  ! Error messaging
 !!
-!! INPUT ARGUMENTS:
+!! INPUTS:
 !!       SfcOptics_in:    CRTM_SfcOptics structure which is to be copied.
 !!                        UNITS:      N/A
 !!                        TYPE:       CRTM_SfcOptics_type
 !!                        DIMENSION:  Scalar
 !!                        ATTRIBUTES: INTENT(IN)
 !!
-!! OPTIONAL INPUT ARGUMENTS:
+!! OPTIONAL INPUTS:
 !!       Message_Log:     Character string specifying a filename in which any
 !!                        messages will be logged. If not specified, or if an
 !!                        error occurs opening the log file, the default action
@@ -1095,7 +1095,7 @@ CONTAINS
 !!                        DIMENSION:  Scalar
 !!                        ATTRIBUTES: INTENT(IN), OPTIONAL
 !!
-!! OUTPUT ARGUMENTS:
+!! OUTPUTS:
 !!       SfcOptics_out:   Copy of the input structure, CRTM_SfcOptics_in.
 !!                        UNITS:      N/A
 !!                        TYPE:       CRTM_SfcOptics_type
@@ -1103,7 +1103,7 @@ CONTAINS
 !!                        ATTRIBUTES: INTENT(IN OUT)
 !!
 !!
-!! OPTIONAL OUTPUT ARGUMENTS:
+!! OPTIONAL OUTPUTS:
 !!       RCS_Id:          Character string containing the Revision Control
 !!                        System Id field for the module.
 !!                        UNITS:      N/A
@@ -1205,7 +1205,7 @@ CONTAINS
 !    SfcOptics_out%Weight              = SfcOptics_in%Weight
 !    SfcOptics_out%Emissivity          = SfcOptics_in%Emissivity
 !    SfcOptics_out%Reflectivity        = SfcOptics_in%Reflectivity
-!    SfcOptics_out%Direct_Reflectivity = SfcOptics_in%Direct_Reflectivity 
+!    SfcOptics_out%Direct_Reflectivity = SfcOptics_in%Direct_Reflectivity
 !  END FUNCTION CRTM_Assign_SfcOptics
 
 END MODULE CRTM_SfcOptics_Define
