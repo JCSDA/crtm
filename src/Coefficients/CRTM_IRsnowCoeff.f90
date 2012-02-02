@@ -1,27 +1,27 @@
 !
-! CRTM_IRlandCoeff
+! CRTM_IRsnowCoeff
 !
-! Module containing the shared CRTM infrared land surface emissivity
+! Module containing the shared CRTM infrared snow surface emissivity
 ! data and their load/destruction routines. 
 !
 ! PUBLIC DATA:
-!   IRlandC:  Data structure containing the infrared land surface
+!   IRsnowC:  Data structure containing the infrared snow surface
 !             emissivity data.
 !
 ! SIDE EFFECTS:
 !       Routines in this module modify the contents of the public
-!       data structure IRlandC.
+!       data structure IRsnowC.
 !
 ! RESTRICTIONS:
 !       Routines in this module should only be called during the
 !       CRTM initialisation.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, 19-Aug-2011
+!       Written by:     Paul van Delst, 20-Jan-2012
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE CRTM_IRlandCoeff
+MODULE CRTM_IRsnowCoeff
 
   ! -----------------
   ! Environment setup
@@ -42,11 +42,11 @@ MODULE CRTM_IRlandCoeff
   ! Everything private by default
   PRIVATE
   ! The shared data
-  PUBLIC :: IRlandC
+  PUBLIC :: IRsnowC
   ! Procedures
-  PUBLIC :: CRTM_IRlandCoeff_Load
-  PUBLIC :: CRTM_IRlandCoeff_Destroy
-  PUBLIC :: CRTM_IRlandCoeff_IsLoaded
+  PUBLIC :: CRTM_IRsnowCoeff_Load
+  PUBLIC :: CRTM_IRsnowCoeff_Destroy
+  PUBLIC :: CRTM_IRsnowCoeff_IsLoaded
 
 
   ! -----------------
@@ -59,9 +59,9 @@ MODULE CRTM_IRlandCoeff
 
 
   ! ------------------------------------------------
-  ! The shared infrared land surface emissivity data
+  ! The shared infrared snow surface emissivity data
   ! ------------------------------------------------
-  TYPE(SEcategory_type), SAVE :: IRlandC
+  TYPE(SEcategory_type), SAVE :: IRsnowC
 
 
 CONTAINS
@@ -71,14 +71,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_IRlandCoeff_Load
+!       CRTM_IRsnowCoeff_Load
 !
 ! PURPOSE:
-!       Function to load the infrared land surface emissivity data into
-!       the public data structure IRlandC
+!       Function to load the infrared snow surface emissivity data into
+!       the public data structure IRsnowC
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_IRlandCoeff_Load( &
+!       Error_Status = CRTM_IRsnowCoeff_Load( &
 !                        Filename,                              &
 !                        File_Path         = File_Path        , &
 !                        Quiet             = Quiet            , &
@@ -86,7 +86,7 @@ CONTAINS
 !                        Output_Process_ID = Output_Process_ID  )
 !
 ! INPUT ARGUMENTS:
-!       Filename:           Name of the IRlandCoeff file.
+!       Filename:           Name of the IRsnowCoeff file.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -145,12 +145,12 @@ CONTAINS
 !
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data
-!       structure IRlandC.
+!       structure IRsnowC.
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_IRlandCoeff_Load( &
+  FUNCTION CRTM_IRsnowCoeff_Load( &
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
     Quiet            , &  ! Optional input
@@ -166,18 +166,18 @@ CONTAINS
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_IRlandCoeff_Load'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_IRsnowCoeff_Load'
     ! Local variables
     CHARACTER(ML) :: msg, pid_msg
-    CHARACTER(ML) :: IRlandCoeff_File
+    CHARACTER(ML) :: IRsnowCoeff_File
     LOGICAL :: noisy
 
     ! Setup 
     err_stat = SUCCESS
     ! ...Assign the filename to local variable
-    IRlandCoeff_File = ADJUSTL(Filename)
+    IRsnowCoeff_File = ADJUSTL(Filename)
     ! ...Add the file path
-    IF ( PRESENT(File_Path) ) IRlandCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(IRlandCoeff_File)
+    IF ( PRESENT(File_Path) ) IRsnowCoeff_File = TRIM(ADJUSTL(File_Path))//TRIM(IRsnowCoeff_File)
     ! ...Check Quiet argument
     noisy = .TRUE.
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
@@ -193,13 +193,13 @@ CONTAINS
     END IF
     
     
-    ! Read the IR land SEcategory file
+    ! Read the IR snow SEcategory file
     err_stat = SEcategory_ReadFile( &
-                 IRlandC, &
-                 IRlandCoeff_File, &
+                 IRsnowC, &
+                 IRsnowCoeff_File, &
                  Quiet = .NOT. noisy )
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error reading IRlandCoeff SEcategory file '//TRIM(IRlandCoeff_File)//TRIM(pid_msg)
+      msg = 'Error reading IRsnowCoeff SEcategory file '//TRIM(IRsnowCoeff_File)//TRIM(pid_msg)
       CALL Load_Cleanup(); RETURN
     END IF
 
@@ -207,26 +207,26 @@ CONTAINS
    CONTAINS
    
      SUBROUTINE Load_CleanUp()
-       CALL SEcategory_Destroy( IRlandC )
+       CALL SEcategory_Destroy( IRsnowC )
        err_stat = FAILURE
        CALL Display_Message( ROUTINE_NAME, msg, err_stat )
      END SUBROUTINE Load_CleanUp
 
-  END FUNCTION CRTM_IRlandCoeff_Load
+  END FUNCTION CRTM_IRsnowCoeff_Load
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_IRlandCoeff_Destroy
+!       CRTM_IRsnowCoeff_Destroy
 !
 ! PURPOSE:
-!       Function to deallocate the public data structure IRlandC containing
-!       the CRTM infrared land surface emissivity data.
+!       Function to deallocate the public data structure IRsnowC containing
+!       the CRTM infrared snow surface emissivity data.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_IRlandCoeff_Destroy( Process_ID = Process_ID )
+!       Error_Status = CRTM_IRsnowCoeff_Destroy( Process_ID = Process_ID )
 !
 ! OPTIONAL INPUTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
@@ -251,18 +251,18 @@ CONTAINS
 !
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data
-!       structure IRlandC.
+!       structure IRsnowC.
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_IRlandCoeff_Destroy( Process_ID ) RESULT( err_stat )
+  FUNCTION CRTM_IRsnowCoeff_Destroy( Process_ID ) RESULT( err_stat )
     ! Arguments
     INTEGER, OPTIONAL, INTENT(IN) :: Process_ID
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_IRlandCoeff_Destroy'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_IRsnowCoeff_Destroy'
     ! Local variables
     CHARACTER(ML) :: msg, pid_msg
 
@@ -276,35 +276,35 @@ CONTAINS
     END IF
 
     ! Destroy the structure
-    CALL SEcategory_Destroy( IRlandC )
-    IF ( SEcategory_Associated( IRlandC ) ) THEN
+    CALL SEcategory_Destroy( IRsnowC )
+    IF ( SEcategory_Associated( IRsnowC ) ) THEN
       err_stat = FAILURE
-      msg = 'Error deallocating IRlandCoeff shared data structure'//TRIM(pid_msg)
+      msg = 'Error deallocating IRsnowCoeff shared data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
-  END FUNCTION CRTM_IRlandCoeff_Destroy
+  END FUNCTION CRTM_IRsnowCoeff_Destroy
 
   
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_IRlandCoeff_IsLoaded
+!       CRTM_IRsnowCoeff_IsLoaded
 !
 ! PURPOSE:
-!       Function to test if infrared land surface emissivity data has
-!       been loaded into the public data structure IRlandC.
+!       Function to test if infrared snow surface emissivity data has
+!       been loaded into the public data structure IRsnowC.
 !
 ! CALLING SEQUENCE:
-!       status = CRTM_IRlandCoeff_IsLoaded()
+!       status = CRTM_IRsnowCoeff_IsLoaded()
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_IRlandCoeff_IsLoaded() RESULT( IsLoaded )
+  FUNCTION CRTM_IRsnowCoeff_IsLoaded() RESULT( IsLoaded )
     LOGICAL :: IsLoaded
-    IsLoaded = SEcategory_Associated( IRlandC )
-  END FUNCTION CRTM_IRlandCoeff_IsLoaded
+    IsLoaded = SEcategory_Associated( IRsnowC )
+  END FUNCTION CRTM_IRsnowCoeff_IsLoaded
 
-END MODULE CRTM_IRlandCoeff
+END MODULE CRTM_IRsnowCoeff
