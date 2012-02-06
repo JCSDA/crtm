@@ -1001,7 +1001,10 @@ MODULE MW_SensorData_Define
 
 
   ! NPOESS-NPP ATMS
-  ! Frequency information taken from ppt presentation
+  ! Frequency information taken from ppt presentation and
+  ! supplemented with information from NGC.
+  ! See CRTM trac ticket #303,
+  !   https://svnemc.ncep.noaa.gov/trac/crtm/ticket/303
   ! It is assumed there are no stopbands in the same manner
   ! as other microwave instruments with no sidebands so f1
   ! values are all 0.000.
@@ -1026,19 +1029,19 @@ MODULE MW_SensorData_Define
                 0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &      ! ATMS ch7
                 0.000000_fp,  0.200000_fp,  ZERO,         ZERO,        &      ! ATMS ch8
                 0.000000_fp,  0.165000_fp,  ZERO,         ZERO,        &      ! ATMS ch9
-                0.000000_fp,  0.165000_fp,  ZERO,         ZERO,        &      ! ATMS ch10
+                0.011500_fp,  0.162900_fp,  ZERO,         ZERO,        &      ! ATMS ch10
                 0.178000_fp,  0.256000_fp,  ZERO,         ZERO,        &      ! ATMS ch11
                 0.256200_fp,  0.292200_fp,  0.352200_fp,  0.388200_fp, &      ! ATMS ch12
                 0.292200_fp,  0.308200_fp,  0.336200_fp,  0.352200_fp, &      ! ATMS ch13
                 0.308200_fp,  0.316200_fp,  0.328200_fp,  0.336200_fp, &      ! ATMS ch14
                 0.316200_fp,  0.319200_fp,  0.325200_fp,  0.328200_fp, &      ! ATMS ch15
                 0.000000_fp,  1.000000_fp,  ZERO,         ZERO,        &      ! ATMS ch16
-                0.000000_fp,  1.500000_fp,  ZERO,         ZERO,        &      ! ATMS ch17
-                6.000000_fp,  8.000000_fp,  ZERO,         ZERO,        &      ! ATMS ch18
-                3.500000_fp,  5.500000_fp,  ZERO,         ZERO,        &      ! ATMS ch19
-                2.500000_fp,  3.500000_fp,  ZERO,         ZERO,        &      ! ATMS ch20
-                1.300000_fp,  2.300000_fp,  ZERO,         ZERO,        &      ! ATMS ch21
-                0.750000_fp,  1.250000_fp,  ZERO,         ZERO        /), &   ! ATMS ch22
+                0.360000_fp,  1.490000_fp,  ZERO,         ZERO,        &      ! ATMS ch17
+                6.038000_fp,  7.958000_fp,  ZERO,         ZERO,        &      ! ATMS ch18
+                3.517000_fp,  5.475000_fp,  ZERO,         ZERO,        &      ! ATMS ch19
+                2.500000_fp,  3.496000_fp,  ZERO,         ZERO,        &      ! ATMS ch20
+                1.305000_fp,  2.300000_fp,  ZERO,         ZERO,        &      ! ATMS ch21
+                0.755000_fp,  1.251000_fp,  ZERO,         ZERO        /), &   ! ATMS ch22
              (/ 2, MAX_N_SIDEBANDS, N_ATMS_CHANNELS /) )
 
 
