@@ -181,13 +181,18 @@ integer :: type_map(16) ! currently defined n_valid_snow_types
     ! Set up
     err_stat = SUCCESS
     frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
-
+    
+    !
+    type_map = (/ 2, 2, 3, 3, & ! map the snow surface types defined in the
+                  2, 2, 2, 2, & ! crtm_surface_define module to the two snow
+                  3, 3, 3, 2, & ! surface types (2 - old snow; 3 - fresh snow)
+                  2, 3, 2, 2 /) ! used in this model
 
     ! Compute Lambertian surface emissivity
     err_stat = SEcategory_Emissivity( &
                  IRsnowC          , &  ! Input
                  frequency        , &  ! Input
-                 Surface%Snow_Type, &  ! Input
+                 type_map(Surface%Snow_Type), &  ! Input
                  emissivity       , &  ! Output
                  iVar%sevar         )  ! Internal variable output
     IF ( err_stat /= SUCCESS ) THEN
@@ -210,10 +215,7 @@ integer :: type_map(16) ! currently defined n_valid_snow_types
 
 
  ! old methodology
- type_map = (/ 2, 2, 3, 3, & ! map the snow surface types defined in the
-               2, 2, 2, 2, & ! crtm_surface_define module to the two snow
-               3, 3, 3, 2, & ! surface types (2 - old snow; 3 - fresh snow)
-               2, 3, 2, 2 /) ! used in this model
+
  wavelength = inverse_cm_to_micron(sc(sensorindex)%wavenumber(channelindex))
  call surface_ir_emissivity( wavelength, &
                              emissivity, &
