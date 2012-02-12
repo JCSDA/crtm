@@ -1,8 +1,0 @@
-Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
-File_Utility.o : File_Utility.f90 
-Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Planck_Functions.o : Planck_Functions.f90 Message_Handler.o Fundamental_Constants.o Type_Kinds.o 
-Planck_Functions_Test.o : Planck_Functions_Test.f90 Unit_Test.o Planck_Functions.o Message_Handler.o File_Utility.o Type_Kinds.o 
-Type_Kinds.o : Type_Kinds.f90 
-Unit_Test.o : Unit_Test.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
