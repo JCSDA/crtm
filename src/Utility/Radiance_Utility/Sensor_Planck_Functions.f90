@@ -1,14 +1,14 @@
 !
 ! Sensor_Planck_Functions
 !
-! Module containing Planck function radiance, temperature, dB/dT, and 
+! Module containing Planck function radiance, temperature, dB/dT, and
 ! dT/dB routines for use in computing sensor channel values using the
 ! sensor's SpcCoeff data structure.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 07-May-2001
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 07-May-2001
+!                       paul.vandelst@noaa.gov
 
 
 MODULE Sensor_Planck_Functions
@@ -17,13 +17,15 @@ MODULE Sensor_Planck_Functions
   ! Environment setup
   ! -----------------
   ! Modules used
-  USE Type_Kinds      , ONLY: fp
-  USE Message_Handler , ONLY: SUCCESS, FAILURE, Display_Message
-  USE SpcCoeff_Define , ONLY: SpcCoeff_type
-  USE Planck_Functions, ONLY: Planck_Radiance   , &
-                              Planck_Temperature, &
-                              Planck_dBdT       , &
-                              Planck_dTdB
+  USE Type_Kinds               , ONLY: fp
+  USE Message_Handler          , ONLY: SUCCESS, FAILURE, Display_Message
+  USE Spectral_Units_Conversion, ONLY: Wavelength => inverse_cm_to_micron
+  USE SpcCoeff_Define          , ONLY: SpcCoeff_type
+  USE Planck_Functions         , ONLY: Planck_Radiance   , &
+                                       Planck_Temperature, &
+                                       Planck_dBdT       , &
+                                       Planck_dTdB       , &
+                                       Planck_Version
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -32,23 +34,21 @@ MODULE Sensor_Planck_Functions
   ! Visibilities
   ! ------------
   PRIVATE
-  PUBLIC :: Sensor_Radiance
-  PUBLIC :: Sensor_Temperature
-  PUBLIC :: Sensor_dBdT
-  PUBLIC :: Sensor_dTdB
+  PUBLIC :: Sensor_Planck_Radiance
+  PUBLIC :: Sensor_Planck_Temperature
+  PUBLIC :: Sensor_Planck_dBdT
+  PUBLIC :: Sensor_Planck_dTdB
+  PUBLIC :: Sensor_Planck_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
-  ! Keyword set value
-  INTEGER, PARAMETER :: SET = 1
   ! Numeric literals
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
-  ! Floating point precision
-  REAL(fp), PARAMETER :: TOLERANCE = EPSILON(ZERO)
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
 
 
 CONTAINS
@@ -66,21 +66,21 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       Sensor_Radiance
+!       Sensor_Planck_Radiance
 !
 ! PURPOSE:
-!       Function to calculate the Planck radiance for a sensor channel.
+!       Subroutine to calculate the Planck radiance for a sensor channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Sensor_Radiance( Sensor_SpcCoeff                  , &  ! Input
-!                                       Sensor_Channel                   , &  ! Input
-!                                       Temperature                      , &  ! Input
-!                                       Radiance                         , &  ! Output
-!                                       Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                       Message_Log     =Message_Log       )  ! Error messaging
+!       CALL Sensor_Planck_Radiance( &
+!              SpcCoeff                         , &  ! Input
+!              Sensor_Channel                   , &  ! Input
+!              Temperature                      , &  ! Input
+!              Radiance                         , &  ! Output
+!              Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
-! INPUT ARGUMENTS:
-!       Sensor_SpcCoeff:  The SpcCoeff data structure for the required sensor.
+! INPUTS:
+!       SpcCoeff:         The SpcCoeff data structure for the required sensor.
 !                         UNITS:      N/A
 !                         TYPE:       SpcCoeff_type
 !                         DIMENSION:  Scalar
@@ -100,7 +100,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Radiance:         The Planck radiance for the requested sensor channel
 !                         at the specified temperature.
 !                         UNITS:      mW/(m2.sr.cm-1)  *DEFAULT*
@@ -111,139 +111,101 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Wavelength_Units: Set this optional argument to specify the radiance
-!                         units in terms of wavelength rather than frequency
-!                         (the default).
-!                         If == 0, Radiance units are mW/(m2.sr.cm-1)  *DEFAULT*
-!                            == 1, Radiance units are W/(m2.sr.micron)
+! OPTIONAL INPUTS:
+!       Wavelength_Units: Set this logical argument to specify the spectral
+!                         ordinate and radiance units in terms of wavelength
+!                         rather than frequency.
+!                         If == .FALSE., Input spectral ordinate units are cm^-1,  [DEFAULT]
+!                                        Ouptut Radiance units are mW/(m2.sr.cm-1) [DEFAULT]
+!                            == .TRUE.,  Input spectral ordinate units are microns
+!                                        Ouptut Radiance units are W/(m2.sr.micron)
+!                         If not specified, default is .FALSE.
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
+!                         TYPE:       LOGICAL
+!                         DIMENSION:  Conformable with x input argument.
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the Message_Handler module.
-!                         If == SUCCESS the Planck calculation was successful
-!                            == FAILURE an error occurred.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Sensor_Radiance( Sensor_SpcCoeff , &  ! Input
-                            Sensor_Channel  , &  ! Input
-                            Temperature     , &  ! Input
-                            Radiance        , &  ! Output
-                            Wavelength_Units, &  ! Optional input
-                            Message_Log     ) &  ! Error messaging
-                          RESULT( Error_Status )
+  SUBROUTINE Sensor_Planck_Radiance( &
+    SpcCoeff        , &  ! Input
+    Sensor_Channel  , &  ! Input
+    Temperature     , &  ! Input
+    Radiance        , &  ! Output
+    Wavelength_Units  )  ! Optional input
     ! Arguments
-    TYPE(SpcCoeff_type)   , INTENT(IN)  :: Sensor_SpcCoeff
-    INTEGER               , INTENT(IN)  :: Sensor_Channel
-    REAL(fp)              , INTENT(IN)  :: Temperature
-    REAL(fp)              , INTENT(OUT) :: Radiance
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(SpcCoeff_type), INTENT(IN)  :: SpcCoeff
+    INTEGER ,            INTENT(IN)  :: Sensor_Channel
+    REAL(fp),            INTENT(IN)  :: Temperature
+    REAL(fp),            INTENT(OUT) :: Radiance
+    LOGICAL ,  OPTIONAL, INTENT(IN)  :: Wavelength_Units
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Radiance'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Planck_Radiance'
     ! Local variables
-    CHARACTER(256) :: Message
     LOGICAL :: Frequency_Units
-    INTEGER :: Idx(1), l
+    INTEGER :: l
     REAL(fp) :: x
     REAL(fp) :: Effective_Temperature
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    ! Sensor channel input
-    IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
-      Error_Status = FAILURE
+    Radiance = ZERO
+    ! ...Check sensor channel input
+    IF ( .NOT. ( ANY(SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input SpcCoeff structure does not contain '//&
                             'the requested Sensor_Channel.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            FAILURE )
       RETURN
-    ENDIF
-    ! Default units are in terms of frequency....
-    Frequency_Units = .TRUE.
-    ! ....unless the WAVELENGTH_UNITS argument is set
-    IF ( PRESENT(Wavelength_Units) ) THEN
-      IF ( Wavelength_Units == SET ) Frequency_Units = .FALSE.
     END IF
+    ! ...Set spectral units
+    Frequency_Units = .TRUE.
+    IF ( PRESENT(Wavelength_Units) ) Frequency_Units = .NOT. Wavelength_Units
 
 
     ! Get the required channel index
-    ! ------------------------------
-    l = Get_ChannelIndex( Sensor_SpcCoeff, Sensor_Channel )
-    
+    l = Get_Channel_Index( SpcCoeff, Sensor_Channel )
+
 
     ! Convert the frequency if required
-    ! ---------------------------------
-    x = Get_SpectralVariable( Sensor_SpcCoeff, Frequency_Units, l )
+    x = Get_Spectral_Variable( SpcCoeff, Frequency_Units, l )
 
 
     ! Calculate the temperature corrected
     ! for polychromaticity
-    ! -----------------------------------
-    Effective_Temperature = Compute_Effective_Temperature(Sensor_SpcCoeff, l, Temperature)
+    Effective_Temperature = Compute_Effective_Temperature(SpcCoeff, l, Temperature)
 
 
     ! Calculate the monochromatic Planck radiance
     ! with the corrected temperature
-    ! -------------------------------------------
-    Error_Status = Planck_Radiance( x                    , &
-                                    Effective_Temperature, &
-                                    Radiance             , &
-                                    Wavelength_Units=Wavelength_Units, &
-                                    Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message,'("Call to Planck_Radiance failed for channel ",i0)' ) Sensor_Channel
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL Planck_Radiance( &
+      x                    , &
+      Effective_Temperature, &
+      Radiance             , &
+      Wavelength_Units=Wavelength_Units )
 
-  END FUNCTION Sensor_Radiance 
+  END SUBROUTINE Sensor_Planck_Radiance
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Sensor_Temperature
+!       Sensor_Planck_Temperature
 !
 ! PURPOSE:
-!       Function to calculate the Planck temperature for a sensor channel.
+!       Subroutine to calculate the Planck temperature for a sensor channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Sensor_Temperature( Sensor_SpcCoeff                  , &  ! Input
-!                                          Sensor_Channel                   , &  ! Input
-!                                          Radiance                         , &  ! Input
-!                                          Temperature                      , &  ! Output
-!                                          Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                          Message_Log     =Message_Log       )  ! Error messaging
+!       CALL Sensor_Planck_Temperature( &
+!              SpcCoeff                         , &  ! Input
+!              Sensor_Channel                   , &  ! Input
+!              Radiance                         , &  ! Input
+!              Temperature                      , &  ! Output
+!              Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
-! INPUT ARGUMENTS:
-!       Sensor_SpcCoeff:  The SpcCoeff data structure for the required sensor.
+! INPUTS:
+!       SpcCoeff:         The SpcCoeff data structure for the required sensor.
 !                         UNITS:      N/A
 !                         TYPE:       SpcCoeff_type
 !                         DIMENSION:  Scalar
@@ -266,7 +228,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Temperature:      Brightness temperature of the required sensor channel
 !                         for the given radiance.
 !                         UNITS:      Kelvin (K)
@@ -274,141 +236,102 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Wavelength_Units: Set this optional argument to specify the radiance
-!                         units in terms of wavelength rather than frequency
-!                         (the default).
-!                         If == 0, Radiance units are mW/(m2.sr.cm-1)  *DEFAULT*
-!                            == 1, Radiance units are W/(m2.sr.micron)
+! OPTIONAL INPUTS:
+!       Wavelength_Units: Set this logical argument to specify the spectral
+!                         ordinate and radiance units in terms of wavelength
+!                         rather than frequency.
+!                         If == .FALSE., Input spectral ordinate units are cm^-1, [DEFAULT]
+!                                        Input Radiance units are mW/(m2.sr.cm-1) [DEFAULT]
+!                            == .TRUE.,  Input spectral ordinate units are microns
+!                                        Input Radiance units are W/(m2.sr.micron)
+!                         If not specified, default is .FALSE.
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
+!                         TYPE:       LOGICAL
+!                         DIMENSION:  Conformable with x input argument.
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the Planck calculation was successful
-!                             == FAILURE an error occurred.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Sensor_Temperature( Sensor_SpcCoeff , &  ! Input
-                               Sensor_Channel  , &  ! Input
-                               Radiance        , &  ! Input
-                               Temperature     , &  ! Output
-                               Wavelength_Units, &  ! Optional input
-                               Message_Log     ) &  ! Error messaging
-                             RESULT( Error_Status )
+  SUBROUTINE Sensor_Planck_Temperature( &
+    SpcCoeff        , &  ! Input
+    Sensor_Channel  , &  ! Input
+    Radiance        , &  ! Input
+    Temperature     , &  ! Output
+    Wavelength_Units  )  ! Optional input
     ! Arguments
-    TYPE( SpcCoeff_type ) , INTENT(IN)  :: Sensor_SpcCoeff
-    INTEGER               , INTENT(IN)  :: Sensor_Channel
-    REAL(fp)              , INTENT(IN)  :: Radiance
-    REAL(fp)              , INTENT(OUT) :: Temperature
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(SpcCoeff_type), INTENT(IN)  :: SpcCoeff
+    INTEGER ,            INTENT(IN)  :: Sensor_Channel
+    REAL(fp),            INTENT(IN)  :: Radiance
+    REAL(fp),            INTENT(OUT) :: Temperature
+    LOGICAL ,  OPTIONAL, INTENT(IN)  :: Wavelength_Units
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Temperature'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Planck_Temperature'
     ! Local variables
-    CHARACTER(256) :: Message
     LOGICAL :: Frequency_Units
-    INTEGER :: Idx(1), l
+    INTEGER :: l
     REAL(fp) :: x
     REAL(fp) :: Effective_Temperature
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    ! Sensor channel input
-    IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
-      Error_Status = FAILURE
+    Temperature = ZERO
+    ! ...Check sensor channel input
+    IF ( .NOT. ( ANY(SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input Sensor_SpcCoeff structure does not contain '//&
+                            'Input SpcCoeff structure does not contain '//&
                             'the requested Sensor_Channel.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            FAILURE )
       RETURN
-    ENDIF
-    ! Default units are in terms of frequency....
-    Frequency_Units = .TRUE.
-    ! ....unless the WAVELENGTH_UNITS argument is set
-    IF ( PRESENT( Wavelength_Units ) ) THEN
-      IF ( Wavelength_Units == SET ) Frequency_Units = .FALSE.
     END IF
+    ! ...Set spectral units
+    Frequency_Units = .TRUE.
+    IF ( PRESENT(Wavelength_Units) ) Frequency_Units = .NOT. Wavelength_Units
 
 
     ! Get the required channel index
-    ! ------------------------------
-    l = Get_ChannelIndex( Sensor_SpcCoeff, Sensor_Channel )
-    
+    l = Get_Channel_Index( SpcCoeff, Sensor_Channel )
+
 
     ! Convert the frequency if required
-    ! ---------------------------------
-    x = Get_SpectralVariable( Sensor_SpcCoeff, Frequency_Units, l )
+    x = Get_Spectral_Variable( SpcCoeff, Frequency_Units, l )
 
 
     ! Calculate the brightness temperature with
     ! the monochromatic Planck function
-    ! -----------------------------------------
-    Error_Status = Planck_Temperature( x                    , &
-                                       Radiance             , &
-                                       Effective_Temperature, &
-                                       Wavelength_Units=Wavelength_Units, &
-                                       Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message,'("Call to Planck_Temperature failed for channel ",i0)' ) &
-                     Sensor_Channel
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL Planck_Temperature( &
+      x                    , &
+      Radiance             , &
+      Effective_Temperature, &
+      Wavelength_Units=Wavelength_Units )
 
 
     ! Correct the brightness temperature
     ! for polychromaticity
-    ! ----------------------------------
-    Temperature = Compute_Temperature(Sensor_SpcCoeff, l, Effective_Temperature)
+    Temperature = Compute_Temperature(SpcCoeff, l, Effective_Temperature)
 
-  END FUNCTION Sensor_Temperature
+  END SUBROUTINE Sensor_Planck_Temperature
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Sensor_dBdT
+!       Sensor_Planck_dBdT
 !
 ! PURPOSE:
-!       Function to calculate the derivative of the Planck radiance with
+!       Subroutine to calculate the derivative of the Planck radiance with
 !       respect to temperature for a sensor channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Sensor_dBdT( Sensor_SpcCoeff                  , &  ! Input
-!                                   Sensor_Channel                   , &  ! Input
-!                                   Temperature                      , &  ! Input
-!                                   dBdT                             , &  ! Output
-!                                   Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                   Message_Log     =Message_Log       )  ! Error messaging
+!       CALL Sensor_Planck_dBdT( &
+!              SpcCoeff                         , &  ! Input
+!              Sensor_Channel                   , &  ! Input
+!              Temperature                      , &  ! Input
+!              dBdT                             , &  ! Output
+!              Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
-! INPUT ARGUMENTS:
-!       Sensor_SpcCoeff:  The SpcCoeff data structure for the required sensor.
+! INPUTS:
+!       SpcCoeff:         The SpcCoeff data structure for the required sensor.
 !                         UNITS:      N/A
 !                         TYPE:       SpcCoeff_type
 !                         DIMENSION:  Scalar
@@ -428,7 +351,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       dBdT:             The derivative of the Planck radiance with respect
 !                         to temperature at the supplied temperature for the
 !                         requested sensor channel.
@@ -440,143 +363,102 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Wavelength_Units: Set this optional argument to specify the radiance
-!                         units in terms of wavelength rather than frequency
-!                         (the default).
-!                         If == 0, dBdT units are mW/(m2.sr.cm-1.K)  *DEFAULT*
-!                            == 1, dBdT units are W/(m2.sr.um.K)
+! OPTIONAL INPUTS:
+!       Wavelength_Units: Set this logical argument to specify the spectral
+!                         ordinate and radiance units in terms of wavelength
+!                         rather than frequency.
+!                         If == .FALSE., Input spectral ordinate units are cm^-1, [DEFAULT]
+!                                        Output dB/dT units are mW/(m2.sr.cm-1.K) [DEFAULT]
+!                            == .TRUE.,  Input spectral ordinate units are microns
+!                                        Output dB/dT units are W/(m2.sr.um.K)
+!                         If not specified, default is .FALSE.
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
+!                         TYPE:       LOGICAL
+!                         DIMENSION:  Conformable with x input argument.
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:      The return value is an integer defining the error status.
-!                          The error codes are defined in the Message_Handler module.
-!                          If == SUCCESS the Planck calculation was successful
-!                             == FAILURE an error occurred.
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Sensor_dBdT( Sensor_SpcCoeff , &  ! Input
-                        Sensor_Channel  , &  ! Input
-                        Temperature     , &  ! Input
-                        dBdT            , &  ! Output
-                        Wavelength_Units, &  ! Optional input
-                        Message_Log     ) &  ! Error messaging
-                      RESULT( Error_Status )
+  SUBROUTINE Sensor_Planck_dBdT( &
+    SpcCoeff        , &  ! Input
+    Sensor_Channel  , &  ! Input
+    Temperature     , &  ! Input
+    dBdT            , &  ! Output
+    Wavelength_Units  )  ! Optional input
     ! Arguments
-    TYPE( SpcCoeff_type ) , INTENT(IN)  :: Sensor_SpcCoeff
-    INTEGER               , INTENT(IN)  :: Sensor_Channel
-    REAL(fp)              , INTENT(IN)  :: Temperature
-    REAL(fp)              , INTENT(OUT) :: dBdT
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(SpcCoeff_type), INTENT(IN)  :: SpcCoeff
+    INTEGER ,            INTENT(IN)  :: Sensor_Channel
+    REAL(fp),            INTENT(IN)  :: Temperature
+    REAL(fp),            INTENT(OUT) :: dBdT
+    LOGICAL ,  OPTIONAL, INTENT(IN)  :: Wavelength_Units
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_dBdT'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Planck_dBdT'
     ! Local variables
-    CHARACTER(256) :: Message
     LOGICAL :: Frequency_Units
-    INTEGER :: Idx(1), l
+    INTEGER :: l
     REAL(fp) :: x
     REAL(fp) :: Effective_Temperature
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Sensor channel input
-    IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
-      Error_Status = FAILURE
+    dBdT = ZERO
+    ! ...Check sensor channel input
+    IF ( .NOT. ( ANY(SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Input SpcCoeff structure does not contain '//&
                             'the requested Sensor_Channel.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            FAILURE )
       RETURN
-    ENDIF
- 
-    ! Default units are in terms of frequency....
-    Frequency_Units = .TRUE.
-    ! ....unless the WAVELENGTH_UNITS argument is set
-    IF ( PRESENT(Wavelength_Units) ) THEN
-      IF ( Wavelength_Units == SET ) Frequency_Units = .FALSE.
     END IF
+    ! ...Set spectral units
+    Frequency_Units = .TRUE.
+    IF ( PRESENT(Wavelength_Units) ) Frequency_Units = .NOT. Wavelength_Units
 
 
     ! Get the required channel index
-    ! ------------------------------
-    l = Get_ChannelIndex( Sensor_SpcCoeff, Sensor_Channel )
-    
+    l = Get_Channel_Index( SpcCoeff, Sensor_Channel )
+
 
     ! Convert the frequency if required
-    ! ---------------------------------
-    x = Get_SpectralVariable( Sensor_SpcCoeff, Frequency_Units, l )
+    x = Get_Spectral_Variable( SpcCoeff, Frequency_Units, l )
 
 
     ! Calculate the temperature corrected
     ! for polychromaticity
-    ! -----------------------------------
-    Effective_Temperature = Compute_Effective_Temperature( Sensor_SpcCoeff, l, Temperature )
+    Effective_Temperature = Compute_Effective_Temperature( SpcCoeff, l, Temperature )
 
 
     ! Calculate the monochromatic Planck dB/dT
     ! with the corrected temperature
-    ! ----------------------------------------
-    Error_Status = Planck_dBdT( x                    , &
-                                Effective_Temperature, &
-                                dBdT                 , &
-                                Wavelength_Units=Wavelength_Units, &
-                                Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message,'("Call to Planck_dBdT failed for channel ",i0)' ) &
-                     Sensor_Channel
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL Planck_dBdT( &
+      x                    , &
+      Effective_Temperature, &
+      dBdT                 , &
+      Wavelength_Units=Wavelength_Units )
 
-  END FUNCTION Sensor_dBdT
+  END SUBROUTINE Sensor_Planck_dBdT
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Sensor_dTdB
+!       Sensor_Planck_dTdB
 !
 ! PURPOSE:
-!       Function to calculate the Planck temperature derivative with respect
+!       Subroutine to calculate the Planck temperature derivative with respect
 !       to radiance for a sensor channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Sensor_dTdB( Sensor_SpcCoeff                  , &  ! Input
-!                                   Sensor_Channel                   , &  ! Input
-!                                   Radiance                         , &  ! Input
-!                                   dTdB                             , &  ! Output
-!                                   Wavelength_Units=Wavelength_Units, &  ! Optional input
-!                                   Message_Log     =Message_Log       )  ! Error messaging
+!       CALL  Sensor_Planck_dTdB( &
+!               SpcCoeff                         , &  ! Input
+!               Sensor_Channel                   , &  ! Input
+!               Radiance                         , &  ! Input
+!               dTdB                             , &  ! Output
+!               Wavelength_Units=Wavelength_Units  )  ! Optional input
 !
-! INPUT ARGUMENTS:
-!       Sensor_SpcCoeff:  The SpcCoeff data structure for the required sensor.
+! INPUTS:
+!       SpcCoeff:         The SpcCoeff data structure for the required sensor.
 !                         UNITS:      N/A
 !                         TYPE:       SpcCoeff_type
 !                         DIMENSION:  Scalar
@@ -599,7 +481,7 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       dTdB:             The derivative of Planck temperature with respect
 !                         to radiance of the required sensor channel for the
 !                         given radiance.
@@ -611,124 +493,112 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Wavelength_Units: Set this optional argument to specify the radiance
-!                         units in terms of wavelength rather than frequency
-!                         (the default).
-!                         If == 0, Radiance units are mW/(m2.sr.cm-1)  *DEFAULT*
-!                                  dT/dB units are (K.m2.sr.cm-1)/mW   *DEFAULT*
-!                            == 1, Radiance units are W/(m2.sr.micron)
-!                                  dT/dB units are (K.m2.sr.um)/W
+! OPTIONAL INPUTS:
+!       Wavelength_Units: Set this logical argument to specify the spectral
+!                         ordinate and radiance units in terms of wavelength
+!                         rather than frequency.
+!                         If == .FALSE., Input spectral ordinate units are cm^-1, [DEFAULT]
+!                                        Input Radiance units are mW/(m2.sr.cm-1) [DEFAULT]
+!                                        Output dT/dB units are (K.m2.sr.cm-1)/mW [DEFAULT]
+!                            == .TRUE.,  Input spectral ordinate units are microns
+!                                        Input Radiance units are W/(m2.sr.um)
+!                                        Output dT/dB units are (K.m2.sr.um)/W
+!                         If not specified, default is .FALSE.
 !                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
+!                         TYPE:       LOGICAL
+!                         DIMENSION:  Conformable with x input argument.
 !                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:      Character string specifying a filename in which any
-!                         messages will be logged. If not specified, or if an
-!                         error occurs opening the log file, the default action
-!                         is to output messages to standard output.
-!                         UNITS:      None
-!                         TYPE:       CHARACTER(*)
-!                         DIMENSION:  Scalar
-!                         ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:     The return value is an integer defining the error status.
-!                         The error codes are defined in the Message_Handler module.
-!                         If == SUCCESS the Planck calculation was successful
-!                            == FAILURE an error occurred.
-!                         UNITS:      N/A
-!                         TYPE:       INTEGER
-!                         DIMENSION:  Scalar
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Sensor_dTdB( Sensor_SpcCoeff , &  ! Input
-                        Sensor_Channel  , &  ! Input
-                        Radiance        , &  ! Input
-                        dTdB            , &  ! Output
-                        Wavelength_Units, &  ! Optional input
-                        Message_Log     ) &  ! Error messaging
-                      RESULT( Error_Status )
+  SUBROUTINE Sensor_Planck_dTdB( &
+    SpcCoeff        , &  ! Input
+    Sensor_Channel  , &  ! Input
+    Radiance        , &  ! Input
+    dTdB            , &  ! Output
+    Wavelength_Units  )  ! Optional input
     ! Arguments
-    TYPE( SpcCoeff_type ) , INTENT(IN)  :: Sensor_SpcCoeff
-    INTEGER               , INTENT(IN)  :: Sensor_Channel
-    REAL(fp)              , INTENT(IN)  :: Radiance
-    REAL(fp)              , INTENT(OUT) :: dTdB
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Wavelength_Units
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(SpcCoeff_type), INTENT(IN)  :: SpcCoeff
+    INTEGER ,            INTENT(IN)  :: Sensor_Channel
+    REAL(fp),            INTENT(IN)  :: Radiance
+    REAL(fp),            INTENT(OUT) :: dTdB
+    LOGICAL ,  OPTIONAL, INTENT(IN)  :: Wavelength_Units
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_dTdB'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Sensor_Planck_dTdB'
     ! Local variables
-    CHARACTER(256) :: Message
     LOGICAL :: Frequency_Units
-    INTEGER :: Idx(1), l
+    INTEGER :: l
     REAL(fp) :: x
     REAL(fp) :: Effective_dTdB
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-
-    ! Sensor channel input
-    IF ( .NOT. ( ANY(Sensor_SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
-      Error_Status = FAILURE
+    dTdB = ZERO
+    ! ...Check sensor channel input
+    IF ( .NOT. ( ANY(SpcCoeff%Sensor_Channel == Sensor_Channel) ) ) THEN
       CALL Display_Message( ROUTINE_NAME, &
-                            'Input Sensor_SpcCoeff structure does not contain '//&
+                            'Input SpcCoeff structure does not contain '//&
                             'the requested Sensor_Channel.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+                            FAILURE )
       RETURN
-    ENDIF
- 
-    ! Default units are in terms of frequency....
-    Frequency_Units = .TRUE.
-    ! ....unless the WAVELENGTH_UNITS argument is set
-    IF ( PRESENT( Wavelength_Units ) ) THEN
-      IF ( Wavelength_Units == SET ) Frequency_Units = .FALSE.
     END IF
+    ! ...Set spectral units
+    Frequency_Units = .TRUE.
+    IF ( PRESENT(Wavelength_Units) ) Frequency_Units = .NOT. Wavelength_Units
 
 
     ! Get the required channel index
-    ! ------------------------------
-    l = Get_ChannelIndex( Sensor_SpcCoeff, Sensor_Channel )
-    
+    l = Get_Channel_Index( SpcCoeff, Sensor_Channel )
+
 
     ! Convert the frequency if required
-    ! ---------------------------------
-    x = Get_SpectralVariable( Sensor_SpcCoeff, Frequency_Units, l )
+    x = Get_Spectral_Variable( SpcCoeff, Frequency_Units, l )
 
 
     ! Calculate the dT/dB derivative with
     ! the monochromatic Planck function
-    ! -----------------------------------
-    Error_Status = Planck_dTdB( x             , &
-                                Radiance      , &
-                                Effective_dTdB, &
-                                Wavelength_Units=Wavelength_Units, &
-                                Message_Log     =Message_Log       )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE( Message,'("Call to Planck_dTdB failed for channel ",i0)' ) &
-                     Sensor_Channel
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    ENDIF
+    CALL Planck_dTdB( &
+      x             , &
+      Radiance      , &
+      Effective_dTdB, &
+      Wavelength_Units=Wavelength_Units )
 
 
-    ! Correct the derivative
-    ! for polychromaticity
-    ! ----------------------
-    dTdB = Effective_dTdB / Sensor_SpcCoeff%Band_C2(l)
+    ! Correct the derivative for polychromaticity
+    dTdB = Effective_dTdB / SpcCoeff%Band_C2(l)
 
-  END FUNCTION Sensor_dTdB
+  END SUBROUTINE Sensor_Planck_dTdB
 
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Sensor_Planck_Version
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL Sensor_Planck_Version( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Sensor_Planck_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    CHARACTER(256) :: planck_version_id
+    CALL Planck_Version(planck_version_id)
+    Id = MODULE_VERSION_ID//'; '//TRIM(planck_version_id)
+  END SUBROUTINE Sensor_Planck_Version
 
 
 !################################################################################
@@ -741,33 +611,31 @@ CONTAINS
 
   ! Function to search the SpcCoeff
   ! structure for a particular channel
-  FUNCTION Get_ChannelIndex( SC, Ch ) RESULT( ChIdx )
+  FUNCTION Get_Channel_Index( SC, Ch ) RESULT( ChIdx )
     TYPE(SpcCoeff_type), INTENT(IN) :: SC
     INTEGER            , INTENT(IN) :: Ch
     INTEGER :: ChIdx
     INTEGER :: Idx(1), l
-    Idx = PACK( (/(l,l=1,SC%n_Channels)/), &
-                SC%Sensor_Channel == Ch )
+    Idx = PACK( (/(l,l=1,SC%n_Channels)/), SC%Sensor_Channel == Ch )
     ChIdx = Idx(1)
-  END FUNCTION Get_ChannelIndex
+  END FUNCTION Get_Channel_Index
 
   ! Function to retrieive the required
   ! spectral variable
-  FUNCTION Get_SpectralVariable( SC, FUnits, ChIdx ) RESULT( x )
+  FUNCTION Get_Spectral_Variable( SC, FUnits, ChIdx ) RESULT( x )
     TYPE(SpcCoeff_type), INTENT(IN) :: SC
     LOGICAL            , INTENT(IN) :: FUnits
     INTEGER            , INTENT(IN) :: ChIdx
-    REAL(fp), PARAMETER :: TEN_THOUSAND = 10000.0_fp
     REAL(fp) :: x
     IF ( FUnits ) THEN
       ! Frequency in cm^-1
       x = SC%Wavenumber(ChIdx)
     ELSE
       ! Wavelength in microns
-      x = TEN_THOUSAND/SC%Wavenumber(ChIdx)
+      x = Wavelength(SC%Wavenumber(ChIdx))
     END IF
-  END FUNCTION Get_SpectralVariable
-  
+  END FUNCTION Get_Spectral_Variable
+
   ! Function to compute an effective temperature
   ! due to polychromaticity.
   FUNCTION Compute_Effective_Temperature(SC, ChIdx, T ) RESULT( Teff )
@@ -777,7 +645,7 @@ CONTAINS
     REAL(fp) :: Teff
     Teff = SC%Band_C1(ChIdx) + (SC%Band_C2(ChIdx)*T)
   END FUNCTION Compute_Effective_Temperature
-  
+
   ! Function to correct temperatures for polychromaticity
   FUNCTION Compute_Temperature(SC, ChIdx, Teff ) RESULT( T )
     TYPE(SpcCoeff_type), INTENT(IN) :: SC
@@ -786,5 +654,5 @@ CONTAINS
     REAL(fp) :: T
     T = (Teff - SC%Band_C1(ChIdx))/SC%Band_C2(ChIdx)
   END FUNCTION Compute_Temperature
-  
+
 END MODULE Sensor_Planck_Functions
