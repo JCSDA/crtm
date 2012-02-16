@@ -11,13 +11,13 @@
 ! See also:
 !
 !   Mohr, P.J. and B.N. Taylor, "CODATA recommended values of the
-!     fundamental physical constants: 1998", Reviews of Modern Physics, 
+!     fundamental physical constants: 1998", Reviews of Modern Physics,
 !     Vol.72, No.2, 2000.
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 02-May-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 02-May-2000
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Fundamental_Constants
@@ -31,19 +31,25 @@ MODULE Fundamental_Constants
   IMPLICIT NONE
 
 
+
   ! ------------------
   ! Default visibility
   ! ------------------
   PRIVATE
+  ! Procedures
+  PUBLIC :: Fundamental_Constants_Version
 
- 
 
-  !#----------------------------------------------------------------------------#
-  !#                       -- LOCAL LITERAL CONSTANTS --                        #
-  !#----------------------------------------------------------------------------#
-  REAL(fp), PARAMETER, PRIVATE :: ONE = 1.0_fp
-  REAL(fp), PARAMETER, PRIVATE :: TWO = 2.0_fp
 
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
+  ! Numeric literals
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  REAL(fp), PARAMETER :: TWO  = 2.0_fp
 
 
   !#----------------------------------------------------------------------------#
@@ -263,14 +269,46 @@ MODULE Fundamental_Constants
   !
   ! which rearranges to
   !
-  !          P0  
+  !          P0
   !   n0 = ------     .....(3)
-  !         k.T0 
+  !         k.T0
   !
   ! Equation (1) rather than eqn(3) is used here.
   ! ------------------------------------------------------------------
   REAL(fp), PARAMETER, PUBLIC :: LOSCHMIDT_CONSTANT = AVOGADRO_CONSTANT / &
   !                                                   -----------------
                                                       STP_MOLAR_VOLUME
+
+
+CONTAINS
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Fundamental_Constants_Version
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL Fundamental_Constants_Version( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Fundamental_Constants_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE Fundamental_Constants_Version
 
 END MODULE Fundamental_Constants
