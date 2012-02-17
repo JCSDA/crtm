@@ -81,7 +81,7 @@ remove_links:
 BUILD = $(PACKAGE)
 TAR_DIR = $(BUILD)
 TAR_FILE = $(TAR_DIR).tar
-tar:: create_links distclean
+tar:: clean create_links
 	@$(LINK) $(BUILD_DIR) $(TAR_DIR)
 	$(TARBALL_CREATE) $(TAR_FILE) --exclude .svn $(TAR_DIR)
 	@$(REMOVE) $(TAR_DIR)
