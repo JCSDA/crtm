@@ -1,0 +1,25 @@
+# Source and object file list for the Planck package
+# --------------------------------------------------
+SRC_FILES = Type_Kinds.f90 \
+            File_Utility.f90 \
+            Endian_Utility.f90 \
+            Binary_File_Utility.f90 \
+            Message_Handler.f90 \
+            Fundamental_Constants.f90 \
+            Compare_Float_Numbers.f90 \
+            UnitTest_Define.f90 \
+            Sort_Utility.f90 \
+            Spectral_Units_Conversion.f90 \
+            Subset_Define.f90 \
+            SensorInfo_Parameters.f90 \
+            ACCoeff_Define.f90 \
+            ACCoeff_Binary_IO.f90 \
+            NLTECoeff_Define.f90 \
+            NLTECoeff_Binary_IO.f90 \
+            SpcCoeff_Define.f90 \
+            SpcCoeff_Binary_IO.f90 \
+            Planck_Functions.f90 \
+            Sensor_Planck_Functions.f90 \
+            Sensor_Planck_Utility.f90
+
+OBJ_FILES = ${SRC_FILES:.f90=.o}
