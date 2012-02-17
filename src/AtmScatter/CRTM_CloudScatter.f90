@@ -57,6 +57,15 @@ MODULE CRTM_CloudScatter
                                       LPoly_TL    , &
                                       LPoly_AD
   USE CRTM_AtmOptics_Define,    ONLY: CRTM_AtmOptics_type
+
+  ! Internal variable definition module
+  USE CSvar_Define, ONLY: CSvar_type, &
+                          CSinterp_type, &
+                          CSvar_Associated, &
+                          CSvar_Destroy   , &
+                          CSvar_Create  
+                          
+
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -66,8 +75,6 @@ MODULE CRTM_CloudScatter
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Data types
-  PUBLIC :: CRTM_CSVariables_type
   ! Procedures
   PUBLIC :: CRTM_Compute_CloudScatter
   PUBLIC :: CRTM_Compute_CloudScatter_TL
@@ -91,55 +98,11 @@ MODULE CRTM_CloudScatter
   INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
   
 
-  ! --------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL, and AD calls
-  ! --------------------------------------
-  ! The interpolation routine structure
-  TYPE :: CSinterp_type
-    ! The interpolating polynomials
-    TYPE(LPoly_type) :: wlp  ! Frequency
-    TYPE(LPoly_type) :: xlp  ! Effective radius
-    TYPE(LPoly_type) :: ylp  ! Temperature
-    ! The LUT interpolation indices
-    INTEGER :: i1, i2        ! Frequency
-    INTEGER :: j1, j2        ! Effective radius
-    INTEGER :: k1, k2        ! Temperature
-    ! The LUT interpolation boundary check
-    LOGICAL :: f_outbound    ! Frequency
-    LOGICAL :: r_outbound    ! Effective radius
-    LOGICAL :: t_outbound    ! Temperature
-    ! The interpolation input
-    REAL(fp) :: f_int        ! Frequency
-    REAL(fp) :: r_int        ! Effective radius
-    REAL(fp) :: t_int        ! Temperature
-    ! The data to be interpolated
-    REAL(fp) :: f(NPTS)      ! Frequency
-    REAL(fp) :: r(NPTS)      ! Effective radius
-    REAL(fp) :: t(NPTS)      ! Temperature
-  END TYPE CSinterp_type
-  
-  TYPE :: CRTM_CSVariables_type
-    PRIVATE
-    ! The interpolation data
-    TYPE(CSinterp_type) :: csi(MAX_N_LAYERS, MAX_N_CLOUDS)
-    ! The interpolation result
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: ke  ! Mass extinction coefficient
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: w   ! Single scatter albedo
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_CLOUDS) :: g   ! Asymmetry factor
-    REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
-                        MAX_N_PHASE_ELEMENTS,  &
-                        MAX_N_LAYERS,          &
-                        MAX_N_CLOUDS           ) :: pcoeff ! Phase coefficients
-    ! The accumulated scattering coefficient
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs          ! Volume scattering coefficient
-  END TYPE CRTM_CSVariables_type
-
-
 CONTAINS
-
+  
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_CloudScatter
@@ -150,11 +113,11 @@ CONTAINS
 !       single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere  , &  ! Input
-!                                                 SensorIndex , &  ! Input
-!                                                 ChannelIndex, &  ! Input
-!                                                 CloudScatter, &  ! Output
-!                                                 CSVariables   )  ! Internal variable output
+!       Error_Status = CRTM_Compute_CloudScatter( Atmosphere  , &
+!                                                 SensorIndex , &
+!                                                 ChannelIndex, &
+!                                                 CloudScatter, &
+!                                                 CSvar         )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
@@ -192,12 +155,10 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!        CSVariables:    Structure containing internal variables required for
+!        CSvar:          Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
-!                        The contents of this structure are NOT accessible
-!                        outside of the CRTM_CloudScatter module.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_CSVariables_type
+!                        TYPE:       CSvar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -210,26 +171,22 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on the output CloudScatter argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter( Atm         , &  ! Input
-                                      SensorIndex , &  ! Input
-                                      ChannelIndex, &  ! Input
-                                      CScat       , &  ! Output
-                                      CSV         ) &  ! Internal variable output
-                                    RESULT( Error_Status )
+  FUNCTION CRTM_Compute_CloudScatter( &
+    Atm         , &  ! Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    CScat       , &  ! Output
+    CSV         ) &  ! Internal variable output
+  RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    INTEGER                    , INTENT(IN)     :: SensorIndex
-    INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat
-    TYPE(CRTM_CSVariables_type), INTENT(IN OUT) :: CSV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    INTEGER                   , INTENT(IN)     :: SensorIndex
+    INTEGER                   , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN OUT) :: CScat
+    TYPE(CSvar_type)          , INTENT(IN OUT) :: CSV
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters
@@ -387,6 +344,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_CloudScatter_TL
@@ -397,13 +355,13 @@ CONTAINS
 !       for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere     , &  ! Input
-!                                                    CloudScatter   , &  ! Input
-!                                                    Atmosphere_TL  , &  ! Input
-!                                                    SensorIndex    , &  ! Input
-!                                                    ChannelIndex   , &  ! Input
-!                                                    CloudScatter_TL, &  ! Output        
-!                                                    CSVariables      )  ! Internal variable input
+!       Error_Status = CRTM_Compute_CloudScatter_TL( Atmosphere     , &
+!                                                    CloudScatter   , &
+!                                                    Atmosphere_TL  , &
+!                                                    SensorIndex    , &
+!                                                    ChannelIndex   , &
+!                                                    CloudScatter_TL, &
+!                                                    CSvar            )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
@@ -447,17 +405,14 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CSVariables:      Structure containing internal variables required for
+!       CSvar:            Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
-!                         The contents of this structure are NOT accessible
-!                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       CRTM_CSVariables_type
+!                         TYPE:       CSvar_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
-!
 ! OUTPUT ARGUMENTS:
-!        CloudScatter_TL: CRTM_AtmOptics structure containing the tangent-linear
+!       CloudScatter_TL:  CRTM_AtmOptics structure containing the tangent-linear
 !                         cloud particle absorption and scattering properties
 !                         required for radiative transfer.
 !                         UNITS:      N/A
@@ -475,29 +430,26 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on the output CloudScatter_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_TL( Atm         , &  ! FWD Input
-                                         CScat       , &  ! FWD Input
-                                         Atm_TL      , &  ! TL  Input
-                                         SensorIndex , &  ! Input
-                                         ChannelIndex, &  ! Input
-                                         CScat_TL    , &  ! TL  Output
-                                         CSV         ) &  ! Internal variable input
-                                       RESULT( Error_Status )
+  FUNCTION CRTM_Compute_CloudScatter_TL( &
+    Atm         , &  ! FWD Input
+    CScat       , &  ! FWD Input
+    Atm_TL      , &  ! TL  Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    CScat_TL    , &  ! TL  Output
+    CSV         ) &  ! Internal variable input
+  RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: CScat
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm_TL
-    INTEGER                    , INTENT(IN)     :: SensorIndex
-    INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat_TL
-    TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN)     :: CScat
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_TL
+    INTEGER                   , INTENT(IN)     :: SensorIndex
+    INTEGER                   , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN OUT) :: CScat_TL
+    TYPE(CSvar_type)          , INTENT(IN)     :: CSV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -612,6 +564,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_CloudScatter_AD
@@ -621,13 +574,13 @@ CONTAINS
 !       scattering properties for a single channel.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere     , &  ! Input   
-!                                                     CloudScatter   , &  ! Input   
-!                                                     CloudScatter_AD, &  ! Input   
-!                                                     SensorIndex    , &  ! Input
-!                                                     ChannelIndex   , &  ! Input
-!                                                     Atmosphere_AD  , &  ! Output  
-!                                                     CSVariables      )  ! Internal variable input
+!       Error_Status = CRTM_Compute_CloudScatter_AD(  Atmosphere     , &
+!                                                     CloudScatter   , &
+!                                                     CloudScatter_AD, &
+!                                                     SensorIndex    , &
+!                                                     ChannelIndex   , &
+!                                                     Atmosphere_AD  , &
+!                                                     CSvar            )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:       CRTM_Atmosphere structure containing the atmospheric
@@ -675,12 +628,10 @@ CONTAINS
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
-!       CSVariables:      Structure containing internal variables required for
+!       CSvar:            Structure containing internal variables required for
 !                         subsequent tangent-linear or adjoint model calls.
-!                         The contents of this structure are NOT accessible
-!                         outside of the CRTM_CloudScatter module.
 !                         UNITS:      N/A
-!                         TYPE:       CRTM_CSVariables_type
+!                         TYPE:       CSvar_type
 !                         DIMENSION:  Scalar
 !                         ATTRIBUTES: INTENT(IN)
 !
@@ -702,31 +653,26 @@ CONTAINS
 !                         TYPE:       INTEGER
 !                         DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on all of the adjoint arguments (whether input or output)
-!       is IN OUT rather than just OUT. This is necessary because the INPUT
-!       adjoint arguments are modified, and the OUTPUT adjoint arguments must
-!       be defined prior to entry to this routine. So, anytime a structure is
-!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Compute_CloudScatter_AD( Atm         , &  ! FWD Input
-                                         CScat       , &  ! FWD Input
-                                         CScat_AD    , &  ! AD  Input
-                                         SensorIndex , &  ! Input
-                                         ChannelIndex, &  ! Input
-                                         Atm_AD      , &  ! AD  Output
-                                         CSV         ) &  ! Internal variable input
-                                       RESULT( Error_Status )
+  FUNCTION CRTM_Compute_CloudScatter_AD( &
+    Atm         , &  ! FWD Input
+    CScat       , &  ! FWD Input
+    CScat_AD    , &  ! AD  Input
+    SensorIndex , &  ! Input
+    ChannelIndex, &  ! Input
+    Atm_AD      , &  ! AD  Output
+    CSV         ) &  ! Internal variable input
+  RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: CScat
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: CScat_AD
-    INTEGER                    , INTENT(IN)     :: SensorIndex
-    INTEGER                    , INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN OUT) :: Atm_AD
-    TYPE(CRTM_CSVariables_type), INTENT(IN)     :: CSV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN)     :: CScat
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN OUT) :: CScat_AD
+    INTEGER                   , INTENT(IN)     :: SensorIndex
+    INTEGER                   , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
+    TYPE(CSvar_type)          , INTENT(IN)     :: CSV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -856,8 +802,6 @@ CONTAINS
     END DO Cloud_loop
                                  
   END FUNCTION CRTM_Compute_CloudScatter_AD
-
-
 
 
 

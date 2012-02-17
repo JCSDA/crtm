@@ -63,11 +63,9 @@ MODULE CRTM_Adjoint_Module
                                         CRTM_AtmOptics_Create    , &
                                         CRTM_AtmOptics_Destroy   , &
                                         CRTM_AtmOptics_Zero
-  USE CRTM_AerosolScatter,        ONLY: CRTM_ASVariables_type         , &
-                                        CRTM_Compute_AerosolScatter   , &
+  USE CRTM_AerosolScatter,        ONLY: CRTM_Compute_AerosolScatter   , &
                                         CRTM_Compute_AerosolScatter_AD
-  USE CRTM_CloudScatter,          ONLY: CRTM_CSVariables_type       , &
-                                        CRTM_Compute_CloudScatter   , &
+  USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter   , &
                                         CRTM_Compute_CloudScatter_AD
   USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type    , &
                                         CRTM_Combine_AtmOptics   , &
@@ -109,6 +107,19 @@ MODULE CRTM_Adjoint_Module
 
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
                                         CRTM_Planck_Temperature_AD
+  
+  ! Internal variable definition modules
+  ! ...CloudScatter
+  USE CSvar_Define, ONLY: CSvar_type, &
+                          CSvar_Associated, &
+                          CSvar_Destroy   , &
+                          CSvar_Create    
+  ! ...AerosolScatter
+  USE ASvar_Define, ONLY: ASvar_type, &
+                          ASvar_Associated, &
+                          ASvar_Destroy   , &
+                          ASvar_Create    
+
 
   ! -----------------------
   ! Disable implicit typing
@@ -314,8 +325,8 @@ CONTAINS
     ! Component variable internals
     TYPE(CRTM_APVariables_type) :: APV  ! Predictor
     TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
-    TYPE(CRTM_CSVariables_type) :: CSV  ! CloudScatter
-    TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
+    TYPE(CSVar_type) :: CSvar  ! CloudScatter
+    TYPE(ASVar_type) :: ASvar  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
     TYPE(RTV_type) :: RTV  ! RTSolution
     ! NLTE correction term predictors
@@ -571,6 +582,26 @@ CONTAINS
         AtmOptics_AD%Include_Scattering = Options(m)%Include_Scattering
       END IF
 
+
+      ! Allocate the scattering internal variables if necessary
+      ! ...Cloud
+      IF ( Atm%n_Clouds > 0 ) THEN
+        CALL CSvar_Create( CSvar, &
+                           MAX_N_LEGENDRE_TERMS, &
+                           MAX_N_PHASE_ELEMENTS, &
+                           Atm%n_Layers        , &
+                           Atm%n_Clouds          )
+      END IF
+      ! ...Aerosol
+      IF ( Atm%n_Aerosols > 0 ) THEN
+        CALL ASvar_Create( ASvar, &
+                           MAX_N_LEGENDRE_TERMS, &
+                           MAX_N_PHASE_ELEMENTS, &
+                           Atm%n_Layers        , &
+                           Atm%n_Aerosols        )
+      END IF
+
+
       ! -----------
       ! SENSOR LOOP
       ! -----------
@@ -738,7 +769,7 @@ CONTAINS
                                                       SensorIndex , &  ! Input
                                                       ChannelIndex, &  ! Input
                                                       AtmOptics   , &  ! Output
-                                                      CSV           )  ! Internal variable output
+                                                      CSvar         )  ! Internal variable output
             IF (Error_Status /= SUCCESS) THEN
               WRITE( Message,'("Error computing CloudScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
@@ -755,7 +786,7 @@ CONTAINS
                                                         SensorIndex , &  ! Input
                                                         ChannelIndex, &  ! Input
                                                         AtmOptics   , &  ! In/Output
-                                                        ASV           )  ! Internal variable output
+                                                        ASvar         )  ! Internal variable output
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
@@ -982,7 +1013,7 @@ CONTAINS
                                                            SensorIndex , &  ! Input
                                                            ChannelIndex, &  ! Input
                                                            Atm_AD      , &  ! AD  Output
-                                                           ASV           )  ! Internal variable input
+                                                           ASvar         )  ! Internal variable input
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'("Error computing AerosolScatter_AD for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
@@ -1001,7 +1032,7 @@ CONTAINS
                                                          SensorIndex , &  ! Input
                                                          ChannelIndex, &  ! Input
                                                          Atm_AD      , &  ! AD  Output
-                                                         CSV           )  ! Internal variable input
+                                                         CSvar         )  ! Internal variable input
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'("Error computing CloudScatter_AD for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &

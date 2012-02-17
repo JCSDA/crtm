@@ -64,8 +64,8 @@ NOCPP_FILES = \
   CRTM_Atmosphere.f90 iAtm_Define.f90 \
   CRTM_Model_Profiles.f90 \
   CRTM_AtmAbsorption.f90 \
-  CRTM_AerosolScatter.f90 \
-  CRTM_CloudScatter.f90 \
+  CRTM_AerosolScatter.f90 ASvar_Define.f90 \
+  CRTM_CloudScatter.f90 CSvar_Define.f90 \
   CRTM_MoleculeScatter.f90 \
   CRTM_SfcOptics_Define.f90 \
   CRTM_SfcOptics.f90 \

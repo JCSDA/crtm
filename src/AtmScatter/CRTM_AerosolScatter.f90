@@ -60,6 +60,15 @@ MODULE CRTM_AerosolScatter
                                       LPoly_TL    , &
                                       LPoly_AD
   USE CRTM_AtmOptics_Define,    ONLY: CRTM_AtmOptics_type
+
+  ! Internal variable definition module
+  USE ASvar_Define, ONLY: ASvar_type, &
+                          ASinterp_type, &
+                          ASvar_Associated, &
+                          ASvar_Destroy   , &
+                          ASvar_Create  
+                          
+
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -69,8 +78,6 @@ MODULE CRTM_AerosolScatter
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Data types
-  PUBLIC :: CRTM_ASVariables_type
   ! Procedures
   PUBLIC :: CRTM_Compute_AerosolScatter
   PUBLIC :: CRTM_Compute_AerosolScatter_TL
@@ -93,51 +100,12 @@ MODULE CRTM_AerosolScatter
   INTEGER, PARAMETER :: SIXTEEN_STREAMS   = 16
   INTEGER, PARAMETER :: THIRTYTWO_STREAMS = 32
   
-  
-  ! --------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL and AD calls
-  ! --------------------------------------
-  ! The interpolation routine structure
-  TYPE :: ASinterp_type
-    ! The interpolating polynomials
-    TYPE(LPoly_type) :: wlp  ! Frequency
-    TYPE(LPoly_type) :: xlp  ! Effective radius
-    ! The LUT interpolation indices
-    INTEGER :: i1, i2        ! Frequency
-    INTEGER :: j1, j2        ! Effective radius
-    ! The LUT interpolation boundary check
-    LOGICAL :: f_outbound    ! Frequency
-    LOGICAL :: r_outbound    ! Effective radius
-    ! The interpolation input
-    REAL(fp) :: f_int        ! Frequency
-    REAL(fp) :: r_int        ! Effective radius
-    ! The data to be interpolated
-    REAL(fp) :: f(NPTS)      ! Frequency
-    REAL(fp) :: r(NPTS)      ! Effective radius
-  END TYPE ASinterp_type
-  
-  TYPE :: CRTM_ASVariables_type
-    PRIVATE
-    ! The interpolation data
-    TYPE(ASinterp_type) :: asi(MAX_N_LAYERS, MAX_N_AEROSOLS)
-    ! The interpolation result
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: ke  ! Mass extinction coefficient
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: w   ! Single Scatter Albedo
-    REAL(fp), DIMENSION(MAX_N_LAYERS, MAX_N_AEROSOLS) :: g   ! Asymmetry factor
-    REAL(fp), DIMENSION(0:MAX_N_LEGENDRE_TERMS,&
-                        MAX_N_PHASE_ELEMENTS,  &
-                        MAX_N_LAYERS,          &
-                        MAX_N_AEROSOLS         ) :: pcoeff   ! Phase coefficients
-    ! The accumulated scattering coefficient
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Total_bs            ! Volume scattering coefficient
-  END TYPE CRTM_ASVariables_type
-
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_AerosolScatter
@@ -151,7 +119,7 @@ CONTAINS
 !                                                   SensorIndex   , &
 !                                                   ChannelIndex  , &
 !                                                   AerosolScatter, &
-!                                                   ASVariables     )
+!                                                   ASvar           )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
@@ -177,7 +145,7 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AerosolScatter: CRTM_AtmOptics structure containing the aerosol
+!       AerosolScatter:  CRTM_AtmOptics structure containing the aerosol
 !                        absorption and scattering properties required by
 !                        the radiative transfer.
 !                        UNITS:      N/A
@@ -185,12 +153,10 @@ CONTAINS
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
-!        ASVariables:    Structure containing internal variables required for
+!       ASvar:           Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
-!                        The contents of this structure are NOT accessible
-!                        outside of the CRTM_AerosolScatter module.
 !                        UNITS:      N/A
-!                        TYPE:       CRTM_ASVariables_type
+!                        TYPE:       ASvar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -203,11 +169,7 @@ CONTAINS
 !                        TYPE:       INTEGER
 !                        DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on the output AerosolScatter argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_AerosolScatter( &
@@ -216,13 +178,13 @@ CONTAINS
     ChannelIndex, &  ! Input
     AScat       , &  ! Output
     ASV         ) &  ! Internal variable output
-  RESULT ( Error_Status )
+  RESULT( Error_Status )
     !Arguments
-    TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
-    INTEGER,                     INTENT(IN)     :: ChannelIndex
-    INTEGER,                     INTENT(IN)     :: SensorIndex
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN OUT) :: AScat
-    TYPE(CRTM_ASVariables_type), INTENT(IN OUT) :: ASV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    INTEGER                   , INTENT(IN)     :: ChannelIndex
+    INTEGER                   , INTENT(IN)     :: SensorIndex
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN OUT) :: AScat
+    TYPE(ASvar_type)          , INTENT(IN OUT) :: ASV
     ! Function result
     INTEGER :: Error_Status    
     ! Local parameters
@@ -361,6 +323,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_AerosolScatter_TL
@@ -377,7 +340,7 @@ CONTAINS
 !                                                      SensorIndex      , &
 !                                                      ChannelIndex     , &
 !                                                      AerosolScatter_TL, &
-!                                                      ASVariables        )
+!                                                      ASvar              )
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
@@ -418,17 +381,15 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!        ASVariables:       Structure containing internal variables required for
+!       ASvar:              Structure containing internal variables required for
 !                           subsequent tangent-linear or adjoint model calls.
-!                           The contents of this structure are NOT accessible
-!                           outside of the CRTM_AerosolScatter module.
 !                           UNITS:      N/A
-!                           TYPE:       CRTM_ASVariables_type
+!                           TYPE:       ASvar_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!        AerosolScatter_TL: CRTM_AtmOptics structure containing the tangent-linear
+!       AerosolScatter_TL:  CRTM_AtmOptics structure containing the tangent-linear
 !                           aerosol absorption and scattering properties required
 !                           for radiative transfer.
 !                           UNITS:      N/A
@@ -445,12 +406,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on the output AerosolScatter_TL argument is IN OUT
-!       rather than just OUT. This is necessary because the argument may be
-!       defined upon input. To prevent memory leaks, the IN OUT INTENT is
-!       a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_AerosolScatter_TL( &
@@ -469,7 +425,7 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AScat_TL
-    TYPE(CRTM_ASVariables_type), INTENT(IN)     :: ASV
+    TYPE(ASvar_type)           , INTENT(IN)     :: ASV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -568,6 +524,7 @@ CONTAINS
 
   
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       CRTM_Compute_AerosolScatter_AD
@@ -626,12 +583,10 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
-!       ASVariables:        Structure containing internal variables required for
+!       ASvar:              Structure containing internal variables required for
 !                           subsequent tangent-linear or adjoint model calls.
-!                           The contents of this structure are NOT accessible
-!                           outside of the CRTM_AerosolScatter module.
 !                           UNITS:      N/A
-!                           TYPE:       CRTM_ASVariables_type
+!                           TYPE:       ASvar_type
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN)
 !
@@ -654,13 +609,7 @@ CONTAINS
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !
-! COMMENTS:
-!       Note the INTENT on all of the adjoint arguments (whether input or output)
-!       is IN OUT rather than just OUT. This is necessary because the INPUT
-!       adjoint arguments are modified, and the OUTPUT adjoint arguments must
-!       be defined prior to entry to this routine. So, anytime a structure is
-!       to be output, to prevent memory leaks the IN OUT INTENT is a must.
-!
+!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Compute_AerosolScatter_AD( &
@@ -673,13 +622,13 @@ CONTAINS
     ASV         ) &  ! Internal Variable input
   RESULT( Error_Status )               
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN)     :: AScat
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN OUT) :: AScat_AD
-    INTEGER,                     INTENT(IN)     :: SensorIndex
-    INTEGER,                     INTENT(IN)     :: ChannelIndex
-    TYPE(CRTM_Atmosphere_type),  INTENT(IN OUT) :: Atm_AD
-    TYPE(CRTM_ASVariables_type), INTENT(IN)     :: ASV
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN)     :: AScat
+    TYPE(CRTM_AtmOptics_type) , INTENT(IN OUT) :: AScat_AD
+    INTEGER                   , INTENT(IN)     :: SensorIndex
+    INTEGER                   , INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
+    TYPE(ASvar_type)          , INTENT(IN)     :: ASV
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -771,7 +720,7 @@ CONTAINS
         ke_AD = ke_AD + (Atm%Aerosol(n)%Concentration(ka) * bs_AD * ASV%w(ka,n) )
         Atm_AD%Aerosol(n)%Concentration(ka) = Atm_AD%Aerosol(n)%Concentration(ka) + &
                                               ( bs_AD * ASV%ke(ka,n) * ASV%w(ka,n) )
-! 
+
         ! interpolation quality control
         IF( ASV%w(ka,n) >= ONE ) THEN
           w_AD = ZERO
@@ -820,7 +769,7 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
-  
+
   ! --------------------------------------------
   ! Determine the aerosol type index, k, for the
   ! aerosols based on AeroC LUT organisation

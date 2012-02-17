@@ -30,13 +30,19 @@ MODULE CRTM_AOD_Module
                                       CRTM_AtmOptics_Create    , &
                                       CRTM_AtmOptics_Destroy   , &
                                       CRTM_AtmOptics_Zero
-  USE CRTM_AerosolScatter,      ONLY: CRTM_ASVariables_type      , &
-                                      CRTM_Compute_AerosolScatter, &
+  USE CRTM_AerosolScatter,      ONLY: CRTM_Compute_AerosolScatter, &
                                       CRTM_Compute_AerosolScatter_TL, &
                                       CRTM_Compute_AerosolScatter_AD
   USE CRTM_RTSolution_Define,   ONLY: CRTM_RTSolution_type, &
                                       CRTM_RTSolution_Associated
   USE CRTM_AerosolCoeff,        ONLY: CRTM_AerosolCoeff_IsLoaded
+
+  ! Internal variable definition modules
+  ! ...AerosolScatter
+  USE ASvar_Define, ONLY: ASvar_type, &
+                          ASvar_Associated, &
+                          ASvar_Destroy   , &
+                          ASvar_Create    
 
 
   ! -----------------------
@@ -158,9 +164,8 @@ CONTAINS
     INTEGER :: m, n_Profiles
     INTEGER :: ln
     ! Component variables
-    TYPE(CRTM_AtmOptics_type)   :: AtmOptics 
-    ! Component variable internals
-    TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
+    TYPE(CRTM_AtmOptics_type) :: AtmOptics 
+    TYPE(ASVar_type) :: ASvar
 
 
     ! ------
@@ -275,6 +280,16 @@ CONTAINS
       AtmOptics%n_Legendre_Terms = 4
 
 
+      ! Allocate the aerosol scattering internal variable if necessary
+      IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+        CALL ASvar_Create( ASvar, &
+                           MAX_N_LEGENDRE_TERMS    , &
+                           MAX_N_PHASE_ELEMENTS    , &
+                           Atmosphere(m)%n_Layers  , &
+                           Atmosphere(m)%n_Aerosols  )
+      END IF
+
+
       ! -----------
       ! SENSOR LOOP
       ! -----------
@@ -316,7 +331,7 @@ CONTAINS
                                                         SensorIndex  , &  ! Input
                                                         ChannelIndex , &  ! Input
                                                         AtmOptics    , &  ! In/Output
-                                                        ASV            )  ! Internal variable output
+                                                        ASVar          )  ! Internal variable output
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
                      &", channel ",i0,", profile #",i0)' ) &
@@ -451,8 +466,7 @@ CONTAINS
     INTEGER :: ln
     ! Component variables
     TYPE(CRTM_AtmOptics_type)   :: AtmOptics, AtmOptics_TL
-    ! Component variable internals
-    TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
+    TYPE(ASVar_type) :: ASvar
 
 
     ! ------
@@ -577,6 +591,16 @@ CONTAINS
       AtmOptics_TL%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
 
 
+      ! Allocate the aerosol scattering internal variable if necessary
+      IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+        CALL ASvar_Create( ASvar, &
+                           MAX_N_LEGENDRE_TERMS    , &
+                           MAX_N_PHASE_ELEMENTS    , &
+                           Atmosphere(m)%n_Layers  , &
+                           Atmosphere(m)%n_Aerosols  )
+      END IF
+
+
       ! -----------
       ! SENSOR LOOP
       ! -----------
@@ -623,14 +647,14 @@ CONTAINS
                                                       SensorIndex  , &  ! Input
                                                       ChannelIndex , &  ! Input
                                                       AtmOptics    , &  ! In/Output
-                                                      ASV            )  ! Internal variable output
+                                                      ASVar          )  ! Internal variable output
             Status_TL = CRTM_Compute_AerosolScatter_TL( Atmosphere(m)   , &  ! FWD Input
                                                         AtmOptics       , &  ! FWD Input 
                                                         Atmosphere_TL(m), &  ! TL  Input
                                                         SensorIndex     , &  ! Input
                                                         ChannelIndex    , &  ! Input
                                                         AtmOptics_TL    , &  ! TL  Output  
-                                                        ASV               )  ! Internal variable 
+                                                        ASVar             )  ! Internal variable 
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
               Error_Status = FAILURE
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
@@ -774,9 +798,8 @@ CONTAINS
     INTEGER :: na
     INTEGER :: ln
     ! Component variables
-    TYPE(CRTM_AtmOptics_type)    :: AtmOptics, AtmOptics_AD
-    ! Component variable internals
-    TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
+    TYPE(CRTM_AtmOptics_type) :: AtmOptics, AtmOptics_AD
+    TYPE(ASVar_type) :: ASvar
 
 
     ! ------
@@ -901,6 +924,16 @@ CONTAINS
       AtmOptics_AD%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
 
 
+      ! Allocate the aerosol scattering internal variable if necessary
+      IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+        CALL ASvar_Create( ASvar, &
+                           MAX_N_LEGENDRE_TERMS    , &
+                           MAX_N_PHASE_ELEMENTS    , &
+                           Atmosphere(m)%n_Layers  , &
+                           Atmosphere(m)%n_Aerosols  )
+      END IF
+
+
       ! Copy over atmosphere info to adjoint output
       ! ...Climatology
       Atmosphere_AD(m)%Climatology = Atmosphere(m)%Climatology
@@ -961,14 +994,14 @@ CONTAINS
                                                       SensorIndex  , &  ! Input
                                                       ChannelIndex , &  ! Input
                                                       AtmOptics    , &  ! In/Output
-                                                      ASV            )  ! Internal variable output
+                                                      ASVar          )  ! Internal variable output
             Status_AD = CRTM_Compute_AerosolScatter_AD( Atmosphere(m)   , &  ! FWD Input
                                                         AtmOptics       , &  ! FWD Input
                                                         AtmOptics_AD    , &  ! AD  Input
                                                         SensorIndex     , &  ! Input
                                                         ChannelIndex    , &  ! Input
                                                         Atmosphere_AD(m), &  ! AD  Output
-                                                        ASV               )  ! Internal variable input
+                                                        ASVar             )  ! Internal variable input
             IF ( Status_FWD /= SUCCESS .OR. Status_AD /= SUCCESS) THEN
               Error_Status = FAILURE
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
@@ -1112,9 +1145,8 @@ CONTAINS
     INTEGER :: na
     INTEGER :: ln
     ! Component variables
-    TYPE(CRTM_AtmOptics_type)   :: AtmOptics, AtmOptics_K
-    ! Component variable internals
-    TYPE(CRTM_ASVariables_type) :: ASV  ! AerosolScatter
+    TYPE(CRTM_AtmOptics_type) :: AtmOptics, AtmOptics_K
+    TYPE(ASVar_type) :: ASvar
 
 
     ! ------
@@ -1244,6 +1276,16 @@ CONTAINS
       AtmOptics_K%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
 
 
+      ! Allocate the aerosol scattering internal variable if necessary
+      IF ( Atmosphere(m)%n_Aerosols > 0 ) THEN
+        CALL ASvar_Create( ASvar, &
+                           MAX_N_LEGENDRE_TERMS    , &
+                           MAX_N_PHASE_ELEMENTS    , &
+                           Atmosphere(m)%n_Layers  , &
+                           Atmosphere(m)%n_Aerosols  )
+      END IF
+
+
       ! -----------
       ! SENSOR LOOP
       ! -----------
@@ -1304,14 +1346,14 @@ CONTAINS
                                                       SensorIndex  , &  ! Input
                                                       ChannelIndex , &  ! Input
                                                       AtmOptics    , &  ! In/Output
-                                                      ASV            )  ! Internal variable output
+                                                      ASVar          )  ! Internal variable output
             Status_K = CRTM_Compute_AerosolScatter_AD( Atmosphere(m)     , &  ! FWD Input
                                                        AtmOptics         , &  ! FWD Input
                                                        AtmOptics_K       , &  ! AD  Input
                                                        SensorIndex       , &  ! Input
                                                        ChannelIndex      , &  ! Input
                                                        Atmosphere_K(ln,m), &  ! AD  Output
-                                                       ASV                 )  ! Internal variable input
+                                                       ASVar               )  ! Internal variable input
             IF ( Status_FWD /= SUCCESS .OR. Status_K /= SUCCESS) THEN
               Error_Status = FAILURE
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
