@@ -137,7 +137,7 @@ PRO Read_modiss_Raw_SRF, $
   
   detector_loc = WHERE( detector EQ detector_number )
   
-  IF ( strmid(Filename,0,2) NE 'v.' AND Platform EQ 'terra'  ) THEN BEGIN 
+  IF ( Platform EQ 'terra'  ) THEN BEGIN 
     f = 10000.0d0/wavelength[detector_loc]
   ENDIF ELSE BEGIN
     ; Convert wavelength in nm to frequency in cm^-1
