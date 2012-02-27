@@ -1,18 +1,19 @@
-;
 ; NAME:
 ;       Read_modiss_Raw_SRF
 ;
 ; PURPOSE:
 ;       This (private) helper procedure reads individual channel data
-;       files and loads the modiss SRF data into arrays and lists.
+;       files and loads the modis SRF data into arrays and lists.
 ;
 ; CALLING SEQUENCE:
 ;       Read_modiss_Raw_SRF, $
-;         Filename     , $  ; Input
-;         n_points     , $  ; Output
-;         frequency    , $  ; Output
-;         response     , $  ; Output
-;         Debug = debug     ; Input keyword
+;         Filename         , $  ; Input
+;         Platform         , $  ; Input
+;         Detector_Number  , $  ; Input
+;         n_points         , $  ; Output
+;         frequency        , $  ; Output
+;         response         , $  ; Output
+;         Debug = debug      ; Input keyword
 ;
 ; INPUTS:
 ;       Filename:    The filename conmtaining the SRF data to be read.
@@ -20,6 +21,25 @@
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
+;
+;       Platform:    The Platorm name
+;                    UNITS:      N/A
+;                    TYPE:       CHARACTER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+;Detector_Number:    The Platorm name
+;                    UNITS:      N/A
+;                    TYPE:       LONG
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+;frequency_shift:    The frequency to be applied
+;                    UNITS:      cm^-1
+;                    TYPE:       DOUBLE
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
 ;                    
 ; OUTPUTS:
 ;       n_points:    Array containing the number of SRF data points
@@ -60,10 +80,13 @@
 ;
 
 PRO Read_modiss_Raw_SRF, $
-  Filename     , $  ; Input
-  n_points     , $  ; Output
-  frequency    , $  ; Output
-  response     , $  ; Output
+  Filename       , $  ; Input
+  Platform       , $  ; Input
+  detector_number, $  ; Input
+  frequency_shift, $  ; Input
+  n_points       , $  ; Output
+  frequency      , $  ; Output
+  response       , $  ; Output
   Debug = debug     ; Input keyword
 
   COMPILE_OPT HIDDEN
@@ -72,71 +95,133 @@ PRO Read_modiss_Raw_SRF, $
   @osrf_pro_err_handler
   ; ...Lists for the SRF data
   frequency = LIST()
-  response  = LIST()  
+  response  = LIST()
   
-  NPTS_POSITION = 1L
-  F1_POSITION = 2L
-  F2_POSITION = 3L
+  ; specific sensor file parameters
+  HDR_ID       = '#'
+  IDX_CHANNEL  = 0
+  IDX_DETECTOR = 1
+  IDX_SPECTRAL = 2
+  IDX_RESPONSE = 3
   
-  DF = 0.1d0
-
-  n_lines = FILE_LINES(Filename)
-  data = STRARR(n_lines)
+  ; Read the files
+  n_lines = FILE_LINES(Filename) 
+  data   = STRARR(n_lines)
   OPENR, fid, Filename, /GET_LUN
   READF, fid, data
   FREE_LUN, fid
   
-  hdr_data = STRSPLIT(data[1], /EXTRACT)
-  n_points = LONG(hdr_data[NPTS_POSITION])
-  f1 = DOUBLE(hdr_data[F1_POSITION])
-  f2 = DOUBLE(hdr_data[F2_POSITION])
-
-  r=DBLARR(n_points)
-  f=DBLARR(n_points)
-  f[*]= f1 + DF*Dindgen(n_points)
-
-  idx1=0L
-  FOR i = 2L, n_lines-1L DO BEGIN
-    elements = STRSPLIT(data[i], /EXTRACT, COUNT=n_elements) 
-    idx2 = idx1 + n_elements - 1L
-    r[idx1:idx2] = DOUBLE(elements)
-    idx1 = idx2 + 1L    
-  ENDFOR
-
-  frequency.Add, f, /NO_COPY
-  response.Add, r, /NO_COPY
+  ; Separate the header comments and data
+  hdr_flag = STRMID(data,0,1)
+  hdr_loc = WHERE( hdr_flag EQ HDR_ID, $
+                   hdr_count, $
+                   COMPLEMENT=data_loc, $
+                   NCOMPLEMENT=data_count )
+  IF ( hdr_count EQ 0 AND data_count EQ 0 ) THEN $
+    MESSAGE, 'Header and data counts are zero!'
+  hdr  = data[hdr_loc]
+  data = TEMPORARY(data[data_loc])
   
+  ; Extract the data from string array
+  channel    = INTARR(data_count)
+  detector   = INTARR(data_count)
+  wavelength = DBLARR(data_count)
+  r          = DBLARR(data_count)
+  FOR i = 0L, data_count-1L DO BEGIN
+    elements = STRSPLIT(data[i], /EXTRACT)
+    channel[i]    = LONG(elements[IDX_CHANNEL])
+    detector[i]   = LONG(elements[IDX_DETECTOR])
+    wavelength[i] = DOUBLE(elements[IDX_SPECTRAL])
+    r[i]          = DOUBLE(elements[IDX_RESPONSE])  
+  ENDFOR
+  
+  detector_loc = WHERE( detector EQ detector_number )
+  
+  IF ( strmid(Filename,0,2) NE 'v.' AND Platform EQ 'terra'  ) THEN BEGIN 
+    f = 10000.0d0/wavelength[detector_loc]
+  ENDIF ELSE BEGIN
+    ; Convert wavelength in nm to frequency in cm^-1
+    f = wavelength[detector_loc]/1000.0d0
+    f = 10000.0d0/f
+  ENDELSE
+  
+  ; Only keep the unique values  
+  idx = UNIQ(f, SORT(f))
+  f = f[idx]
+  detector_r = r[idx]
+
+  f = f + frequency_shift
+
+  ; Assign data to return argumentS
+  n_points = N_ELEMENTS(f)
+  frequency.Add, f, /NO_COPY
+  response.Add,  detector_r, /NO_COPY
+
 END
+  
+  
+  ; 1) Add code to read the data.
+  ;
+  ; 2) Don't forget to check for uniqueness of the frequency grid
+  ;    for each band, i.e.
+  ;      ; Only keep the unique values for each band
+  ;      idx = UNIQ(f, SORT(f))
+  ;      f = f[idx]
+  ;      r = r[idx]
+  ;
+  ; 3) Add the individual bands to the return argument lists, e.g.
+  ;        frequency.Add, f
+  ;        response.Add , r
+  ;
+  ; 4) Don;t forget to assign the n_points return argument
+
+  
+;END
+
+
 ;+
 ;
 ; NAME:
-;       oSRF::Load_modiss
+;       oSRF::Load_modis
 ;
 ; PURPOSE:
-;       This procedure loads oSRF objects with modiss SRF data.
+;       This procedure loads oSRF objects with modis SRF data.
 ;
 ; CALLING SEQUENCE:
-;       obj->[oSRF::]Load_modiss, $
+;       obj->[oSRF::]Load_modis, $
 ;         Sensor_Id        , $ ; Input
+;         Platform         , $ ; Input
 ;         Channel          , $ ; Input
 ;         Path    = Path   , $ ; Input keyword.
 ;         Debug   = Debug  , $ ; Input keyword.
 ;         History = HISTORY    ; Output keyword.
 ;
 ; INPUTS:
-;       Sensor_Id:   The sensor id of the sensor for which SRF data is to be
+;      Sensor_Id:    The sensor id of the sensor for which SRF data is to be
 ;                    loaded. This id is used to construct the filename containing
 ;                    SRF data.
 ;                    UNITS:      N/A
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
+;
+;       Platform:    The satellite name.
+;                    UNITS:      N/A
+;                    TYPE:       CHARACTER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
 ;                    
-;       Channel:     The sensor channel number for which SRF data is to be
+;        Channel:    The sensor channel number for which SRF data is to be
 ;                    loaded. This value is used to construct the filename
 ;                    containing SRF data.
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+;frequency shift:    The frequency shift for the channel.
+;                    UNITS:      cm^-1
+;                    TYPE:       DOUBLE
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
 ;
@@ -179,8 +264,11 @@ END
 ;-
 
 PRO oSRF::Load_modiss, $
-  Sensor_Id        , $ ; Input
+  Input_File_Id    , $ ; Input
+  Platform         , $ ; Input
+  detector_number  , $ ; Input
   Channel          , $ ; Input
+  frequency_shift  , $ ; Input
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
   Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
   History = HISTORY    ; Output keyword of version id.
@@ -202,17 +290,16 @@ PRO oSRF::Load_modiss, $
 
   ; Construct file name
   ch = STRING(Channel,FORMAT='(i2.2)')
-  filename = Path+PATH_SEP()+Sensor_Id+'-'+ch+'.inp'
+  filename = Path+PATH_SEP()+Input_File_Id+'-'+ch+'.inp'
   ; ...Check it exists
   fInfo = FILE_INFO(filename)
   IF ( NOT fInfo.EXISTS ) THEN $
     MESSAGE, 'Datafile '+filename+' not found....', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-
-
+    
   ; Read the file
-  Read_modiss_Raw_SRF, filename, n_points, frequency, response
-
+  Read_modis_Raw_SRF, filename, Platform, detector_number, frequency_shift, $
+                                n_points, frequency, response
 
   ; Load the SRF data into the oSRF object
   ; ...Allocate
@@ -223,12 +310,15 @@ PRO oSRF::Load_modiss, $
     /All
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
+ 
+  Sensor_Id = 'modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+  
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
     self->Set_Property, $
       band, $
       Debug=Debug, $
-      Sensor_Id = Sensor_Id, $
+      Sensor_Id = Sensor_Id, $      
       Channel   = Channel, $
       Frequency = frequency[i], $
       Response  = response[i]
