@@ -257,10 +257,6 @@ END
 ;
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
-; CREATION HISTORY:
-;       Written by:     Joe Bloggs, DD-Mon-YYYY
-;                       joe.bloggs@domain
-;
 ;-
 
 PRO oSRF::Load_modiss, $
@@ -298,8 +294,8 @@ PRO oSRF::Load_modiss, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
     
   ; Read the file
-  Read_modis_Raw_SRF, filename, Platform, detector_number, frequency_shift, $
-                                n_points, frequency, response
+  Read_modiss_Raw_SRF, filename, Platform, detector_number, frequency_shift, $
+                                 n_points, frequency, response
 
   ; Load the SRF data into the oSRF object
   ; ...Allocate
