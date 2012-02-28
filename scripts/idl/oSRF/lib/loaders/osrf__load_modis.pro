@@ -13,6 +13,7 @@
 ;         n_points        , $  ; Output
 ;         frequency       , $  ; Output
 ;         response        , $  ; Output
+;         Frequency_Shift = Frequency_Shift , $ ; Input keyword
 ;         Debug = debug     ; Input keyword
 ;
 ; INPUTS:
@@ -87,11 +88,11 @@ PRO Read_modis_Raw_SRF, $
   n_points       , $  ; Output
   frequency      , $  ; Output
   response       , $  ; Output
-  Frequency_Shift=Frequency_Shift , $ ; Input keyword
+  Frequency_Shift, $ ; Input keyword
   Debug = debug     ; Input keyword
 
   COMPILE_OPT HIDDEN
-
+    
   ; Set up
   @osrf_pro_err_handler
   ; ...Lists for the SRF data
@@ -152,7 +153,7 @@ PRO Read_modis_Raw_SRF, $
   idx = UNIQ(f, SORT(f))
   f = f[idx]
   detector_r = detector_r[idx]
-  
+
   f = f + Frequency_Shift
 
   ; Assign data to return argument
@@ -272,8 +273,7 @@ PRO oSRF::Load_modis, $
   Platform         , $ ; Input
   detector_number  , $ ; Input
   Channel          , $ ; Input
-  Frequency_Shift = Frequency_Shift , $ ; Input keyword. Shifts SRF data.
-  Shifted_Dataset = Shifted_Dataset , $ ; Input keyword.
+  Frequency_Shift  , $ ; Input keyword. Shifts SRF data.
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
   Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
   History = HISTORY    ; Output keyword of version id.
@@ -287,11 +287,9 @@ PRO oSRF::Load_modis, $
   ; ...Check keywords
   Check_Threshold = N_ELEMENTS(Response_Threshold) GT 0 ? TRUE : FALSE
   Path            = Valid_String(Path) ? Path : "./"
-  Shifted_Dataset = ARG_PRESENT(Shifted_Dataset) ? Shifted_Dataset : FALSE
-
+  
   ; Parameters
   HISTORY = "$Id$"
-
 
   ; Construct file name
   ch = STRING(Channel,FORMAT='(i2.2)')
@@ -303,14 +301,9 @@ PRO oSRF::Load_modis, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; Read the file
-  IF ( Shifted_Dataset ) THEN BEGIN
-    Read_modis_Raw_SRF, filename, Platform, detector_number, $
-                        n_points, frequency, response, $
-                        Frequency_Shift=Frequency_Shift
-  ENDIF ELSE BEGIN
-    Read_modis_Raw_SRF, filename, Platform, detector_number, $
-                        n_points, frequency, response
-  ENDELSE
+  Read_modis_Raw_SRF, filename, Platform, detector_number, $
+                      n_points, frequency, response, $
+                      Frequency_Shift
     
   ; Load the SRF data into the oSRF object
   ; ...Allocate
