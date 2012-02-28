@@ -315,10 +315,25 @@ PRO oSRF::Load_modis, $
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
 
+  ; convert sensor order
+  ; to product order
+  CASE detector_number OF
+     1: product_number=10L
+     2: product_number=9L
+     3: product_number=8L
+     4: product_number=7L
+     5: product_number=6L
+     6: product_number=5L
+     7: product_number=4L
+     8: product_number=3L
+     9: product_number=2L
+    10: product_number=1L
+  ENDCASE
+
   IF ( Channel LT 20 OR Channel EQ 26 ) THEN BEGIN
-    Sensor_Id = 'v.modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+    Sensor_Id = 'v.modis'+'D'+STRING(product_number,FORMAT='(i2.2)')+'_'+platform
   ENDIF ELSE BEGIN
-    Sensor_Id = 'modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
+    Sensor_Id = 'modis'+'D'+STRING(product_number,FORMAT='(i2.2)')+'_'+platform
   ENDELSE
   
   FOR i = 0, n_bands-1 DO BEGIN
