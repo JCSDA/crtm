@@ -130,6 +130,8 @@ PRO Read_modis_Raw_SRF, $
   
   detector_loc = WHERE( detector EQ detector_number )
   
+  detector_r = r[detector_loc]
+  
   IF ( strmid(Filename,0,2) NE 'v.' AND Platform EQ 'terra'  ) THEN BEGIN 
     f = 10000.0d0/wavelength[detector_loc]
   ENDIF ELSE BEGIN
@@ -141,7 +143,7 @@ PRO Read_modis_Raw_SRF, $
   ; Only keep the unique values  
   idx = UNIQ(f, SORT(f))
   f = f[idx]
-  detector_r = r[idx]
+  detector_r = detector_r[idx]
 
   ; Assign data to return argument
   n_points = N_ELEMENTS(f)
