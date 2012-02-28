@@ -273,6 +273,7 @@ PRO oSRF::Load_modis, $
   detector_number  , $ ; Input
   Channel          , $ ; Input
   Frequency_Shift = Frequency_Shift , $ ; Input keyword. Shifts SRF data.
+  Shifted_Dataset = Shifted_Dataset , $ ; Input keyword.
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
   Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
   History = HISTORY    ; Output keyword of version id.
@@ -300,9 +301,9 @@ PRO oSRF::Load_modis, $
   IF ( NOT fInfo.EXISTS ) THEN $
     MESSAGE, 'Datafile '+filename+' not found....', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    
+
   ; Read the file
-  IF ( Keyword_Set(Frequency_Shift) ) THEN BEGIN
+  IF ( Shifted_Dataset ) THEN BEGIN
     Read_modis_Raw_SRF, filename, Platform, detector_number, $
                         n_points, frequency, response, $
                         Frequency_Shift=Frequency_Shift
@@ -320,7 +321,7 @@ PRO oSRF::Load_modis, $
     /All
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
-  
+
   IF ( Channel LT 20 OR Channel EQ 26 ) THEN BEGIN
     Sensor_Id = 'v.modis'+'D'+STRING(detector_number,FORMAT='(i2.2)')+'_'+platform
   ENDIF ELSE BEGIN
