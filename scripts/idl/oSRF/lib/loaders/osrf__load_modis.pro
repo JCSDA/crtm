@@ -59,7 +59,14 @@
 ;                    ATTRIBUTES: INTENT(OUT)
 ;
 ; INPUT KEYWORD PARAMETERS:
-;       Debug:       Set this keyword for debugging. If set then:
+;
+;Frequency Shift:    Set this keyword to shift the srf data read from file.
+;                    UNITS:      cm^-1
+;                    TYPE:       DOUBLE
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;         Debug:     Set this keyword for debugging. If set then:
 ;                    - the error handler for this function is disabled
 ;                      so that execution halts where the error occurs,
 ;                    - more verbose output is produced.
@@ -80,6 +87,7 @@ PRO Read_modis_Raw_SRF, $
   n_points       , $  ; Output
   frequency      , $  ; Output
   response       , $  ; Output
+  Frequency_Shift=Frequency_Shift , $ ; Input keyword
   Debug = debug     ; Input keyword
 
   COMPILE_OPT HIDDEN
@@ -144,6 +152,8 @@ PRO Read_modis_Raw_SRF, $
   idx = UNIQ(f, SORT(f))
   f = f[idx]
   detector_r = detector_r[idx]
+  
+  f = f + Frequency_Shift
 
   ; Assign data to return argument
   n_points = N_ELEMENTS(f)
@@ -213,14 +223,21 @@ END
 ;                    ATTRIBUTES: INTENT(IN)
 ;
 ; INPUT KEYWORDS:
-;       Path:        Set this keyword to the directory path of the input files.
+;
+;Frequency Shift:    Set this keyword to shift the srf data read from file.
+;                    UNITS:      cm^-1
+;                    TYPE:       DOUBLE
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;     
+;           Path:    Set this keyword to the directory path of the input files.
 ;                    If not specified, the default is the current directory, "./"
 ;                    UNITS:      N/A
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Debug:       Set this keyword for debugging. If set then:
+;          Debug:    Set this keyword for debugging. If set then:
 ;                    - the error handler for this function is disabled
 ;                      so that execution halts where the error occurs,
 ;                    - more verbose output is produced.
@@ -251,10 +268,11 @@ END
 ;-
 
 PRO oSRF::Load_modis, $
-  Input_File_Id        , $ ; Input
+  Input_File_Id    , $ ; Input
   Platform         , $ ; Input
   detector_number  , $ ; Input
   Channel          , $ ; Input
+  Frequency_Shift = Frequency_Shift , $ ; Input keyword. Shifts SRF data.
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
   Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
   History = HISTORY    ; Output keyword of version id.
@@ -284,8 +302,15 @@ PRO oSRF::Load_modis, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
     
   ; Read the file
-  Read_modis_Raw_SRF, filename, Platform, detector_number, n_points, frequency, response
-
+  IF ( Keyword_Set(Frequency_Shift) ) THEN BEGIN
+    Read_modis_Raw_SRF, filename, Platform, detector_number, $
+                        n_points, frequency, response, $
+                        Frequency_Shift=Frequency_Shift
+  ENDIF ELSE BEGIN
+    Read_modis_Raw_SRF, filename, Platform, detector_number, $
+                        n_points, frequency, response
+  ENDELSE
+    
   ; Load the SRF data into the oSRF object
   ; ...Allocate
   self->Allocate, n_points, Debug=Debug
