@@ -287,7 +287,7 @@ PRO oSRF::Load_modis, $
   ; ...Check keywords
   Check_Threshold = N_ELEMENTS(Response_Threshold) GT 0 ? TRUE : FALSE
   Path            = Valid_String(Path) ? Path : "./"
-
+  Shifted_Dataset = ARG_PRESENT(Shifted_Dataset) ? Shifted_Dataset : FALSE
 
   ; Parameters
   HISTORY = "$Id$"
