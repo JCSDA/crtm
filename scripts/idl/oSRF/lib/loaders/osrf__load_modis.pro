@@ -137,7 +137,7 @@ PRO Read_modis_Raw_SRF, $
     r[i]          = DOUBLE(elements[IDX_RESPONSE])  
   ENDFOR
   
-  detector_loc = WHERE( detector EQ detector_number )
+  detector_loc = WHERE( detector EQ detector_number AND r GT -90.0d0 )
   
   detector_r = r[detector_loc]
   
@@ -153,7 +153,7 @@ PRO Read_modis_Raw_SRF, $
   idx = UNIQ(f, SORT(f))
   f = f[idx]
   detector_r = detector_r[idx]
-
+  
   f = f + Frequency_Shift
 
   ; Assign data to return argument
