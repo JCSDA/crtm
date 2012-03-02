@@ -340,8 +340,7 @@ PRO oSRF::Load_modis, $
     band = i+1
     self->Set_Property, $
       band, $
-      Debug=Debug, $
-      Sensor_Id = Sensor_Id, $      
+      Debug=Debug, $      
       Channel   = Channel, $
       Frequency = frequency[i], $
       Response  = response[i]
