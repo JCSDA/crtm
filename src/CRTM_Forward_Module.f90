@@ -235,6 +235,7 @@ CONTAINS
     LOGICAL :: User_AntCorr, Compute_AntCorr
     LOGICAL :: Apply_NLTE_Correction
     LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
+    INTEGER :: RT_Algorithm_Id
     INTEGER :: iFOV
     INTEGER :: n, n_Sensors,  SensorIndex
     INTEGER :: l, n_Channels, ChannelIndex
@@ -354,6 +355,7 @@ CONTAINS
       User_Emissivity       = Default_Options%Use_Emissivity
       User_AntCorr          = Default_Options%Use_Antenna_Correction
       Apply_NLTE_Correction = Default_Options%Apply_NLTE_Correction
+      RT_Algorithm_Id       = Default_Options%RT_Algorithm_Id
       User_N_Streams        = Default_Options%Use_N_Streams
       Aircraft_Pressure     = Default_Options%Aircraft_Pressure
       ! ...Check the Options argument
@@ -387,6 +389,8 @@ CONTAINS
         AncillaryInput%Zeeman = Options(m)%Zeeman
         ! Copy over surface optics input
         SfcOptics%Use_New_MWSSEM = .NOT. Options(m)%Use_Old_MWSSEM
+        ! Specify the RT algorithm
+        RT_Algorithm_Id = Options(m)%RT_Algorithm_Id
         ! Check if n_Streams should be used
         User_N_Streams = Options(m)%Use_N_Streams
         ! Check value for nstreams
@@ -569,6 +573,8 @@ CONTAINS
             CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
             RETURN
           END IF
+          ! Assign algorithm selector
+          RTV%RT_Algorithm_Id = RT_Algorithm_Id
         END IF
 
 
@@ -702,6 +708,11 @@ CONTAINS
           IF( AtmOptics%Include_Scattering ) THEN
             CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
           END IF
+          
+          ! ------------------------------------------------------
+          ! Compute vertically integrated scattering optical depth
+          ! ------------------------------------------------------
+          RTSolution(ln,m)%sod = SUM( AOV%w * AOV%Optical_Depth )
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed

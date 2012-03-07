@@ -27,6 +27,7 @@ MODULE CRTM_Surface_Define
   USE CRTM_SensorData_Define, ONLY: CRTM_SensorData_type, &
                                     OPERATOR(==), &          
                                     OPERATOR(+), &           
+                                    OPERATOR(-), &
                                     CRTM_SensorData_Associated, & 
                                     CRTM_SensorData_Destroy, &    
                                     CRTM_SensorData_Create, &     
@@ -47,6 +48,7 @@ MODULE CRTM_Surface_Define
   ! Operators
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! SensorData enitities
   ! ...Structures
   PUBLIC :: CRTM_SensorData_type
@@ -183,6 +185,10 @@ MODULE CRTM_Surface_Define
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Surface_Add
   END INTERFACE OPERATOR(+)
+
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_Surface_Subtract
+  END INTERFACE OPERATOR(-)
 
 
   ! -----------------
@@ -1157,6 +1163,73 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_Surface_Add
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_Surface_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM Surface objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       sfcdiff = CRTM_Surface_Subtract( sfc1, sfc2 )
+!
+!         or
+!
+!       sfcdiff = sfc1 - sfc2
+!
+!
+! INPUTS:
+!       sfc1, sfc2: The Surface objects to subtract.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Surface_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sfcdiff:    Surface structure containing the differenced components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Surface_type
+!                   DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Surface_Subtract( sfc1, sfc2 ) RESULT( sfcdiff )
+    TYPE(CRTM_Surface_type), INTENT(IN) :: sfc1, sfc2
+    TYPE(CRTM_Surface_type) :: sfcdiff
+
+    ! Copy the first structure
+    sfcdiff = sfc1
+
+    ! And subtract the second one's components from it.
+    sfcdiff%Land_Temperature      = sfcdiff%Land_Temperature      - sfc2%Land_Temperature     
+    sfcdiff%Soil_Moisture_Content = sfcdiff%Soil_Moisture_Content - sfc2%Soil_Moisture_Content
+    sfcdiff%Canopy_Water_Content  = sfcdiff%Canopy_Water_Content  - sfc2%Canopy_Water_Content 
+    sfcdiff%Vegetation_Fraction   = sfcdiff%Vegetation_Fraction   - sfc2%Vegetation_Fraction  
+    sfcdiff%Soil_Temperature      = sfcdiff%Soil_Temperature      - sfc2%Soil_Temperature 
+    sfcdiff%Lai                   = sfcdiff%Lai                   - sfc2%Lai
+    sfcdiff%Water_Temperature     = sfcdiff%Water_Temperature     - sfc2%Water_Temperature
+    sfcdiff%Wind_Speed            = sfcdiff%Wind_Speed            - sfc2%Wind_Speed       
+    sfcdiff%Wind_Direction        = sfcdiff%Wind_Direction        - sfc2%Wind_Direction   
+    sfcdiff%Salinity              = sfcdiff%Salinity              - sfc2%Salinity         
+    sfcdiff%Snow_Temperature      = sfcdiff%Snow_Temperature      - sfc2%Snow_Temperature 
+    sfcdiff%Snow_Depth            = sfcdiff%Snow_Depth            - sfc2%Snow_Depth     
+    sfcdiff%Snow_Density          = sfcdiff%Snow_Density          - sfc2%Snow_Density   
+    sfcdiff%Snow_Grain_Size       = sfcdiff%Snow_Grain_Size       - sfc2%Snow_Grain_Size
+    sfcdiff%Ice_Temperature       = sfcdiff%Ice_Temperature       - sfc2%Ice_Temperature
+    sfcdiff%Ice_Thickness         = sfcdiff%Ice_Thickness         - sfc2%Ice_Thickness  
+    sfcdiff%Ice_Density           = sfcdiff%Ice_Density           - sfc2%Ice_Density    
+    sfcdiff%Ice_Roughness         = sfcdiff%Ice_Roughness         - sfc2%Ice_Roughness  
+    ! ...SensorData component
+    IF ( CRTM_SensorData_Associated(sfc1%SensorData) .AND. &
+         CRTM_SensorData_Associated(sfc2%SensorData)       ) THEN
+      sfcdiff%SensorData = sfcdiff%SensorData - sfc2%SensorData
+    END IF
+
+  END FUNCTION CRTM_Surface_Subtract
 
 
 

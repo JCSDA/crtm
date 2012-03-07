@@ -38,7 +38,7 @@ PROGRAM Surface_OLD2NEW
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Surface_OLD2NEW'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id:$'
+    '$Id$'
   INTEGER,      PARAMETER :: SET = 1
   CHARACTER(*), PARAMETER :: OLD_SFC_FILE = 'Old_Data/ECMWF-Surface.bin.old'
   CHARACTER(*), PARAMETER :: NEW_SFC_FILE = 'ECMWF-Surface.bin'

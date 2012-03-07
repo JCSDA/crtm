@@ -41,6 +41,7 @@ MODULE CRTM_SensorData_Define
   ! Operators
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_SensorData_Associated
   PUBLIC :: CRTM_SensorData_Destroy
@@ -62,6 +63,10 @@ MODULE CRTM_SensorData_Define
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_SensorData_Add
   END INTERFACE OPERATOR(+)
+
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_SensorData_Subtract
+  END INTERFACE OPERATOR(-)
 
   ! -----------------
   ! Module parameters
@@ -632,5 +637,63 @@ CONTAINS
     sDatasum%Tb(1:n) = sDatasum%Tb(1:n) + sData2%Tb(1:n)     
 
   END FUNCTION CRTM_SensorData_Add
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SensorData_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM SensorData objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       sDatadiff = CRTM_SensorData_Subtract( sData1, sData2 )
+!
+!         or
+!
+!       sDatadiff = sData1 - sData2
+!
+!
+! INPUTS:
+!       sData1, sData2: The SensorData objects to difference.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SensorData_type
+!                       DIMENSION:  Scalar or any rank
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sDatadiff:      SensorData structure containing the differenced components.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SensorData_type
+!                       DIMENSION:  Same as input
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SensorData_Subtract( sData1, sData2 ) RESULT( sDatadiff )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: sData1, sData2
+    TYPE(CRTM_SensorData_type) :: sDatadiff
+    ! Variables
+    INTEGER :: n
+
+    ! Check input
+    ! ...If input structures not used, do nothing
+    IF ( .NOT. CRTM_SensorData_Associated( sData1 ) .OR. &
+         .NOT. CRTM_SensorData_Associated( sData2 )      ) RETURN
+    ! ...If input structure for different sensors, or sizes, do nothing
+    IF ( sData1%n_Channels         /= sData2%n_Channels        .OR. &
+         sData1%Sensor_Id          /= sData2%Sensor_Id         .OR. &
+         sData1%WMO_Satellite_ID   /= sData2%WMO_Satellite_ID  .OR. &
+         sData1%WMO_Sensor_ID      /= sData2%WMO_Sensor_ID     .OR. &
+         ANY(sData1%Sensor_Channel /= sData2%Sensor_Channel) ) RETURN
+         
+    ! Copy the first structure
+    sDatadiff = sData1
+
+    ! And subtract the second one's components from it
+    n = sData1%n_Channels
+    sDatadiff%Tb(1:n) = sDatadiff%Tb(1:n) - sData2%Tb(1:n)     
+
+  END FUNCTION CRTM_SensorData_Subtract
 
 END MODULE CRTM_SensorData_Define

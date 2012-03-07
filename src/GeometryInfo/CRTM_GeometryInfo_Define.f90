@@ -89,9 +89,10 @@ MODULE CRTM_GeometryInfo_Define
     REAL(fp) :: Sensor_Zenith_Radian  = ZERO
     REAL(fp) :: Sensor_Azimuth_Radian = ZERO
     REAL(fp) :: Secant_Sensor_Zenith  = ZERO
-    ! ...Zenith angle used in the transmittance algorithms 
+    REAL(fp) :: Cosine_Sensor_Zenith  = ZERO
+    ! ...Zenith angle used in the transmittance algorithms  
     REAL(fp) :: Trans_Zenith_Radian  = ZERO
-    REAL(fp) :: Secant_Trans_Zenith  = ZERO
+    REAL(fp) :: Secant_Trans_Zenith  = ZERO    
     ! ...Source angle information
     REAL(fp) :: Source_Zenith_Radian  = ZERO
     REAL(fp) :: Source_Azimuth_Radian = ZERO
@@ -175,6 +176,7 @@ CONTAINS
 !                                        Sensor_Zenith_Radian  = Sensor_Zenith_Radian , &
 !                                        Sensor_Azimuth_Radian = Sensor_Azimuth_Radian, &
 !                                        Secant_Sensor_Zenith  = Secant_Sensor_Zenith , &
+!                                        Cosine_Sensor_Zenith  = Cosine_Sensor_Zenith , &
 !                                        Source_Zenith_Radian  = Source_Zenith_Radian , &
 !                                        Source_Azimuth_Radian = Source_Azimuth_Radian, &
 !                                        Secant_Source_Zenith  = Secant_Source_Zenith , &
@@ -228,6 +230,7 @@ CONTAINS
     Sensor_Zenith_Radian , &  ! Optional input
     Sensor_Azimuth_Radian, &  ! Optional input
     Secant_Sensor_Zenith , &  ! Optional input
+    Cosine_Sensor_Zenith , &  ! Optional input
     Source_Zenith_Radian , &  ! Optional input
     Source_Azimuth_Radian, &  ! Optional input
     Secant_Source_Zenith , &  ! Optional input
@@ -257,6 +260,7 @@ CONTAINS
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Sensor_Zenith_Radian 
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Sensor_Azimuth_Radian
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Secant_Sensor_Zenith 
+    REAL(fp),                 OPTIONAL, INTENT(IN)     :: Cosine_Sensor_Zenith
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Source_Zenith_Radian 
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Source_Azimuth_Radian
     REAL(fp),                 OPTIONAL, INTENT(IN)     :: Secant_Source_Zenith 
@@ -287,7 +291,8 @@ CONTAINS
     IF ( PRESENT(Sensor_Scan_Radian   ) ) gInfo%Sensor_Scan_Radian    = Sensor_Scan_Radian   
     IF ( PRESENT(Sensor_Zenith_Radian ) ) gInfo%Sensor_Zenith_Radian  = Sensor_Zenith_Radian 
     IF ( PRESENT(Sensor_Azimuth_Radian) ) gInfo%Sensor_Azimuth_Radian = Sensor_Azimuth_Radian
-    IF ( PRESENT(Secant_Sensor_Zenith ) ) gInfo%Secant_Sensor_Zenith  = Secant_Sensor_Zenith 
+    IF ( PRESENT(Secant_Sensor_Zenith ) ) gInfo%Secant_Sensor_Zenith  = Secant_Sensor_Zenith
+    IF ( PRESENT(Cosine_Sensor_Zenith ) ) gInfo%Cosine_Sensor_Zenith  = Cosine_Sensor_Zenith
     IF ( PRESENT(Source_Zenith_Radian ) ) gInfo%Source_Zenith_Radian  = Source_Zenith_Radian 
     IF ( PRESENT(Source_Azimuth_Radian) ) gInfo%Source_Azimuth_Radian = Source_Azimuth_Radian
     IF ( PRESENT(Secant_Source_Zenith ) ) gInfo%Secant_Source_Zenith  = Secant_Source_Zenith 
@@ -331,6 +336,7 @@ CONTAINS
 !                                        Sensor_Zenith_Radian  = Sensor_Zenith_Radian , &
 !                                        Sensor_Azimuth_Radian = Sensor_Azimuth_Radian, &
 !                                        Secant_Sensor_Zenith  = Secant_Sensor_Zenith , &
+!                                        Cosine_Sensor_Zenith  = Cosine_Sensor_Zenith , &
 !                                        Source_Zenith_Radian  = Source_Zenith_Radian , &
 !                                        Source_Azimuth_Radian = Source_Azimuth_Radian, &
 !                                        Secant_Source_Zenith  = Secant_Source_Zenith , &
@@ -380,6 +386,7 @@ CONTAINS
     Sensor_Zenith_Radian , &  ! Optional output
     Sensor_Azimuth_Radian, &  ! Optional output
     Secant_Sensor_Zenith , &  ! Optional output
+    Cosine_Sensor_Zenith , &  ! Optional output
     Source_Zenith_Radian , &  ! Optional output
     Source_Azimuth_Radian, &  ! Optional output
     Secant_Source_Zenith , &  ! Optional output
@@ -408,7 +415,8 @@ CONTAINS
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Sensor_Scan_Radian   
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Sensor_Zenith_Radian 
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Sensor_Azimuth_Radian
-    REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Sensor_Zenith 
+    REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Sensor_Zenith
+    REAL(fp),                 OPTIONAL, INTENT(OUT) :: Cosine_Sensor_Zenith 
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Source_Zenith_Radian 
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Source_Azimuth_Radian
     REAL(fp),                 OPTIONAL, INTENT(OUT) :: Secant_Source_Zenith 
@@ -440,6 +448,7 @@ CONTAINS
     IF ( PRESENT(Sensor_Zenith_Radian ) ) Sensor_Zenith_Radian  = gInfo%Sensor_Zenith_Radian 
     IF ( PRESENT(Sensor_Azimuth_Radian) ) Sensor_Azimuth_Radian = gInfo%Sensor_Azimuth_Radian
     IF ( PRESENT(Secant_Sensor_Zenith ) ) Secant_Sensor_Zenith  = gInfo%Secant_Sensor_Zenith 
+    IF ( PRESENT(Cosine_Sensor_Zenith ) ) Cosine_Sensor_Zenith  = gInfo%Cosine_Sensor_Zenith
     IF ( PRESENT(Source_Zenith_Radian ) ) Source_Zenith_Radian  = gInfo%Source_Zenith_Radian 
     IF ( PRESENT(Source_Azimuth_Radian) ) Source_Azimuth_Radian = gInfo%Source_Azimuth_Radian
     IF ( PRESENT(Secant_Source_Zenith ) ) Secant_Source_Zenith  = gInfo%Secant_Source_Zenith 
@@ -535,9 +544,10 @@ CONTAINS
     WRITE(*, '(3x,"Sensor zenith radian  :",1x,'//RFMT//')') gInfo%Sensor_Zenith_Radian 
     WRITE(*, '(3x,"Sensor azimuth radian :",1x,'//RFMT//')') gInfo%Sensor_Azimuth_Radian
     WRITE(*, '(3x,"Secant sensor zenith  :",1x,'//RFMT//')') gInfo%Secant_Sensor_Zenith 
+    WRITE(*, '(3x,"Cosine sensor zenith  :",1x,'//RFMT//')') gInfo%Cosine_Sensor_Zenith
     ! ...Transmittance algorithm sensor angle information
     WRITE(*, '(3x,"Trans zenith radian   :",1x,'//RFMT//')') gInfo%Trans_Zenith_Radian 
-    WRITE(*, '(3x,"Secant trans zenith   :",1x,'//RFMT//')') gInfo%Secant_Trans_Zenith 
+    WRITE(*, '(3x,"Secant trans zenith   :",1x,'//RFMT//')') gInfo%Secant_Trans_Zenith
     ! ...Source angle information
     WRITE(*, '(3x,"Source zenith radian  :",1x,'//RFMT//')') gInfo%Source_Zenith_Radian 
     WRITE(*, '(3x,"Source azimuth radian :",1x,'//RFMT//')') gInfo%Source_Azimuth_Radian
@@ -632,10 +642,11 @@ CONTAINS
                  (x%Distance_Ratio        .EqualTo. y%Distance_Ratio       ) .AND. &
                  (x%Sensor_Scan_Radian    .EqualTo. y%Sensor_Scan_Radian   ) .AND. &
                  (x%Sensor_Zenith_Radian  .EqualTo. y%Sensor_Zenith_Radian ) .AND. &
-                 (x%Sensor_Azimuth_Radian .EqualTo. y%Sensor_Azimuth_Radian) .AND. &
+                 (x%Sensor_Azimuth_Radian .EqualTo. y%Sensor_Azimuth_Radian) .AND. &                 
                  (x%Secant_Sensor_Zenith  .EqualTo. y%Secant_Sensor_Zenith ) .AND. &
                  (x%Trans_Zenith_Radian   .EqualTo. y%Trans_Zenith_Radian  ) .AND. &
-                 (x%Secant_Trans_Zenith   .EqualTo. y%Secant_Trans_Zenith  ) .AND. &
+                 (x%Secant_Trans_Zenith   .EqualTo. y%Secant_Trans_Zenith  ) .AND. &                 
+                 (x%Cosine_Sensor_Zenith  .EqualTo. y%Cosine_Sensor_Zenith ) .AND. &
                  (x%Source_Zenith_Radian  .EqualTo. y%Source_Zenith_Radian ) .AND. &
                  (x%Source_Azimuth_Radian .EqualTo. y%Source_Azimuth_Radian) .AND. &
                  (x%Secant_Source_Zenith  .EqualTo. y%Secant_Source_Zenith ) .AND. &

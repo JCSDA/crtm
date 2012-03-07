@@ -51,7 +51,7 @@ MODULE CRTM_AtmOptics
   ! variables across FWD, TL, and AD calls
   ! ------------------------------------
   TYPE :: CRTM_AOVariables_type
-    PRIVATE
+!    PRIVATE
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs           
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: w            

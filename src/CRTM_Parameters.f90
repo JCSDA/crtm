@@ -86,6 +86,7 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: PI = 3.141592653589793238462643383279_fp
   REAL(fp), PUBLIC, PARAMETER :: TWOPI = TWO * PI
   REAL(fp), PUBLIC, PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
+  REAL(fp), PUBLIC, PARAMETER :: RADIANS_TO_DEGREES = 180.0_fp / PI
 
 
   ! -------------------------
@@ -237,10 +238,12 @@ MODULE CRTM_Parameters
   REAL(fp), PUBLIC, PARAMETER :: MAX_SECANT_FLUX_ZENITH = 2.25_fp
 
 
-
   !#----------------------------------------------------------------------------#
   !#            -- CloudScatter, RTSolution, AtmOptics PARAMETERS --            #
   !#----------------------------------------------------------------------------#
+  INTEGER, PUBLIC, PARAMETER :: RT_ADA = 56
+  INTEGER, PUBLIC, PARAMETER :: RT_SOI = 168
+  
   INTEGER, PUBLIC, PARAMETER :: MAX_N_CLOUDS   = 4 ! Max. number of clouds/profile. Needed for CSV...
   INTEGER, PUBLIC, PARAMETER :: MAX_N_AEROSOLS = 20 ! Max. number of aerosols/profile. Needed for ASV
   
@@ -259,7 +262,10 @@ MODULE CRTM_Parameters
   INTEGER, PUBLIC, PARAMETER :: MAX_N_STOKES = 4
   INTEGER, PUBLIC, PARAMETER :: MAX_N_AZIMUTH_FOURIER = 16   ! maximum number of Fourier components for azimuth angles
     
+!### SOI uses HG phase function (modified by Tahara, Feb 2008)
   LOGICAL, PUBLIC, PARAMETER :: HGPHASE = .FALSE.
+! LOGICAL, PUBLIC, PARAMETER :: HGPHASE = .TRUE.
+!### SOI uses HG phase function (modified by Tahara, Feb 2008)
                                                                                                         
 
   !#----------------------------------------------------------------------------#

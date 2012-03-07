@@ -617,6 +617,15 @@ CONTAINS
       msg = 'Error reading sensor information - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
+    
+    
+    ! Read the RT algorithm name
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      rts%RT_Algorithm_Name
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error reading RT Algorithm Name'//TRIM(io_msg)
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
 
 
     ! Read the forward radiative transfer intermediate results
@@ -710,6 +719,15 @@ CONTAINS
       msg = 'Error writing sensor information - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
+    
+    
+    ! Write the sensor info
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      rts%RT_Algorithm_Name 
+    IF ( io_stat /= 0 ) THEN
+      msg = 'Error writing RT Algorithm Name'//TRIM(io_msg)
+      CALL Write_Record_Cleanup(); RETURN
+    END IF    
 
 
     ! Write the forward radiative transfer intermediate results

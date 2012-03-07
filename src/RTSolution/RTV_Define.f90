@@ -4,6 +4,14 @@
 ! Module containing the intermediate variables for RTSolution module.
 !
 !
+! NOTE: Modified as generic "bucket" for all RT-related algorithm,
+!       ADA, AMOM, and SOI.
+!       This is initial step in truly separating out the algorithms
+!       into their own modules. Currently each algorithm ties into 
+!       the same RTV components (not good.)
+!       
+!
+!
 ! CREATION HISTORY:
 !       Written by:     Quanhua Liu,    QSS at JCSDA;    Quanhua.Liu@noaa.gov 
 !                       Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
@@ -16,15 +24,17 @@ MODULE RTV_Define
   ! Environment set up
   ! ------------------
   ! Module use statements
-  USE Type_Kinds     , ONLY: fp
-  USE Message_Handler, ONLY: SUCCESS, FAILURE, Display_Message
-  USE CRTM_Parameters, ONLY: SET, ZERO, ONE, TWO, PI, &
-                             MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
-                             DEGREES_TO_RADIANS, &
-                             SECANT_DIFFUSIVITY, &
-                             SCATTERING_ALBEDO_THRESHOLD, &
-                             OPTICAL_DEPTH_THRESHOLD
-  USE CRTM_SfcOptics , ONLY: SOVar_type => iVar_type
+  USE Type_Kinds,            ONLY: fp
+  USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
+  USE CRTM_Parameters,       ONLY: SET, ZERO, ONE, TWO, PI, &
+                                   MAX_N_LAYERS, MAX_N_ANGLES, MAX_N_LEGENDRE_TERMS, &
+                                   DEGREES_TO_RADIANS, &
+                                   SECANT_DIFFUSIVITY, &
+                                   SCATTERING_ALBEDO_THRESHOLD, &
+                                   OPTICAL_DEPTH_THRESHOLD, &
+                                   RT_ADA
+  USE SensorInfo_Parameters, ONLY: INVALID_SENSOR
+  USE CRTM_SfcOptics,        ONLY: SOVar_type => iVar_type
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -40,6 +50,8 @@ MODULE RTV_Define
   PUBLIC :: DELTA_OPTICAL_DEPTH
   PUBLIC :: MAX_ALBEDO
   PUBLIC :: SMALL_OD_FOR_SC
+  PUBLIC :: MAX_N_DOUBLING
+  PUBLIC :: MAX_N_SOI_ITERATIONS
   ! Datatypes
   PUBLIC :: aircraft_rt_type
   PUBLIC :: RTV_type
@@ -68,7 +80,13 @@ MODULE RTV_Define
   
   ! Threshold layer optical depth for single scattering
   REAL(fp), PARAMETER :: SMALL_OD_FOR_SC = 1.E-5_fp
+
+  ! The maximum number of doubling processes in the 
+  ! the doubling-adding scheme. 
+  INTEGER,  PARAMETER :: MAX_N_DOUBLING = 55
   
+  ! The maximum number of iterations for the SOI solution method.
+  INTEGER,  PARAMETER :: MAX_N_SOI_ITERATIONS = 75
   
   ! ---------------------
   ! Structure definitions
@@ -79,17 +97,30 @@ MODULE RTV_Define
     LOGICAL :: rt = .FALSE.
     ! The output level index
     INTEGER :: idx
-  END TYPE aircraft_rt_type
-  
-  ! ...Forward variables for TL and AD calls
+  END TYPE aircraft_rt_type  
+
+  ! --------------------------------------
+  ! Structure definition to hold forward
+  ! variables across FWD, TL, and AD calls
+  ! --------------------------------------
   TYPE :: RTV_type
+  
+    ! Type of sensor
+    INTEGER :: Sensor_Type = INVALID_SENSOR
+    
+    ! Type of RT algorithm
+    INTEGER :: RT_Algorithm_Id = RT_ADA
+    
     ! Dimension information
-    INTEGER :: n_Layers       = 0       ! Total number of atmospheric layers
-    INTEGER :: n_Added_Layers = 0       ! Number of layers appended to TOA
-    INTEGER :: n_Angles       = 0       ! Number of angles to be considered
+    INTEGER :: n_Layers         = 0       ! Total number of atmospheric layers
+    INTEGER :: n_Added_Layers   = 0       ! Number of layers appended to TOA
+    INTEGER :: n_Angles         = 0       ! Number of angles to be considered
+    INTEGER :: n_SOI_Iterations = 0       ! Number of SOI iterations
+    
 
     REAL(fp):: COS_SUN = ZERO           ! Cosine of sun zenith angle
-    REAL(fp):: Solar_irradiance = ZERO  ! channel solar iiradiance at TOA 
+    REAL(fp):: Solar_irradiance = ZERO  ! channel solar iiradiance at TOA
+    REAL(fp):: Cosmic_Background_Radiance = ZERO ! For background temp=2.7253 
             
     ! Variable to hold the various portions of the
     ! radiance for emissivity retrieval algorithms
@@ -116,10 +147,11 @@ MODULE RTV_Define
 
     ! Logical switches
     LOGICAL :: Diffuse_Surface = .TRUE.
-
+    LOGICAL :: Is_Solar_Channel = .FALSE.
+    
     ! Aircraft model RT information
     TYPE(aircraft_rt_type) :: aircraft
-    
+
     ! Scattering, visible model variables    
     INTEGER :: n_Streams         = 0       ! Number of *hemispheric* stream angles used in RT    
     INTEGER :: mth_Azi                     ! mth fourier component
@@ -128,9 +160,9 @@ MODULE RTV_Define
     LOGICAL :: Visible_Flag_true = .FALSE. 
     LOGICAL :: Scattering_RT     = .FALSE.
 
-    !-------------------------------------------------------
+    !-----------------------------------
     ! Variables used in the ADA routines
-    !-------------------------------------------------------
+    !-----------------------------------
     ! Flag to indicate the following arrays have all been allocated
     LOGICAL :: Is_Allocated = .FALSE.
      
@@ -156,7 +188,6 @@ MODULE RTV_Define
     REAL(fp), ALLOCATABLE :: sum_fac(:,:)   ! 0:MAX_N_ANGLES, MAX_N_LAYERS
 
     ! Adding-Doubling model variables
-
     REAL(fp), ALLOCATABLE :: Inv_Gamma(:,:,:)         ! MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS
     REAL(fp), ALLOCATABLE :: Inv_GammaT(:,:,:)        ! MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS
     REAL(fp), ALLOCATABLE :: Refl_Trans(:,:,:)        ! MAX_N_ANGLES, MAX_N_ANGLES, MAX_N_LAYERS
@@ -170,8 +201,11 @@ MODULE RTV_Define
     REAL(fp), ALLOCATABLE :: s_Layer_Source_UP(:,:)   ! MAX_N_ANGLES, MAX_N_LAYERS
     REAL(fp), ALLOCATABLE :: s_Layer_Source_DOWN(:,:) ! MAX_N_ANGLES, MAX_N_LAYERS
 
-   ! AMOM layer variables
-   ! dimensions, MAX_N_ANGLES, MAX_N_LAYERS
+
+    !------------------------------------
+    ! Variables used in the AMOM routines
+    !------------------------------------
+    ! dimensions, MAX_N_ANGLES, MAX_N_LAYERS
     REAL(fp), ALLOCATABLE :: Thermal_C(:,:)
     REAL(fp), ALLOCATABLE :: EigVa(:,:)
     REAL(fp), ALLOCATABLE :: Exp_x(:,:)
@@ -199,6 +233,24 @@ MODULE RTV_Define
     REAL(fp), ALLOCATABLE :: A6(:,:,:)
     REAL(fp), ALLOCATABLE :: Gm_A5(:,:,:)
     REAL(fp), ALLOCATABLE :: i_Gm_A5(:,:,:)
+
+
+    !-----------------------------------
+    ! Variables used in the SOI routines
+    !-----------------------------------
+    INTEGER :: Number_SOI_Iter = 0
+    REAL(fp), ALLOCATABLE :: e_Layer_Trans(:,:)           ! MAX_N_ANGLES, MAX_N_LAYERS
+    REAL(fp), ALLOCATABLE :: s_Level_IterRad_DOWN(:,:,:)  ! MAX_N_ANGLES, 0:MAX_N_LAYERS, MAX_N_SOI_ITERATIONS
+    REAL(fp), ALLOCATABLE :: s_Level_IterRad_UP(:,:,:)    ! MAX_N_ANGLES, 0:MAX_N_LAYERS, MAX_N_SOI_ITERATIONS
+
+    INTEGER , ALLOCATABLE :: Number_Doubling(:)  ! n_Layers
+    REAL(fp), ALLOCATABLE :: Delta_Tau(:)        ! n_Layers
+    REAL(fp), ALLOCATABLE :: Refl(:,:,:,:)       ! n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers
+    REAL(fp), ALLOCATABLE :: Trans(:,:,:,:)      ! n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers
+    REAL(fp), ALLOCATABLE :: Inv_BeT(:,:,:,:)    ! n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers
+    REAL(fp), ALLOCATABLE :: C1(:,:)             ! n_Angles, n_Layers
+    REAL(fp), ALLOCATABLE :: C2(:,:)             ! n_Angles, n_Layers
+
 
     ! The surface optics forward variables
     TYPE(SOVar_type) :: SOV
@@ -289,7 +341,7 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE RTV_Destroy( RTV )
     TYPE(RTV_type), INTENT(OUT) :: RTV
-    
+
     ! Belts and braces
     RTV%Is_Allocated = .FALSE.
     
@@ -413,6 +465,26 @@ CONTAINS
               RTV%i_Gm_A5(n_Angles, n_Angles, n_Layers), & 
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
+
+    ! Perform the allocation for SOI variables
+    ALLOCATE( RTV%e_Layer_Trans( n_Angles, n_Layers), &
+              RTV%s_Level_IterRad_DOWN( n_Angles, 0:n_Layers, MAX_N_SOI_ITERATIONS ), &
+              RTV%s_Level_IterRad_UP( n_Angles, 0:n_Layers, MAX_N_SOI_ITERATIONS ), &  
+              RTV%Number_Doubling(n_Layers), &
+              RTV%Delta_Tau(n_Layers), &      
+              RTV%Refl(n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers), &
+              RTV%Trans(n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers), &
+              RTV%Inv_BeT(n_Angles, n_Angles, 0:MAX_N_DOUBLING, n_Layers), &
+              RTV%C1(n_Angles, n_Layers), &
+              RTV%C2(n_Angles, n_Layers), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
+
+    ! Set dimensions
+    RTV%n_Layers         = n_Layers
+    RTV%n_Angles         = n_Angles
+    
+    RTV%n_SOI_Iterations = 0
 
     ! Set the allocate flag
     RTV%Is_Allocated = .TRUE.

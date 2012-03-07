@@ -81,11 +81,15 @@ NOCPP_FILES = \
   CRTM_IRSSEM.f90 \
   CRTM_surface_ir_emissivity.f90 \
   CRTM_AtmOptics.f90 CRTM_AtmOptics_Define.f90 \
-  CRTM_RTSolution_Define.f90 \
-  CRTM_RTSolution_IO.f90 \
-  RTV_Define.f90 \
-  CRTM_RTSolution.f90 \
   CRTM_Planck_Functions.f90 \
+  RTV_Define.f90 \
+  SOI_Module.f90 \
+  ADA_Module.f90 \
+  Emission_Module.f90 \
+  CRTM_RTSolution_Define.f90 \
+  Common_RTSolution.f90 \
+  CRTM_RTSolution_IO.f90 \
+  CRTM_RTSolution.f90 \
   CRTM_AntennaCorrection.f90 \
   CRTM_AncillaryInput_Define.f90 SSU_Input_Define.f90 Zeeman_Input_Define.f90 \
   CRTM_Parameters.f90 \

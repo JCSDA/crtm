@@ -74,6 +74,10 @@ MODULE UnitTest_Define
     MODULE PROCEDURE complexdp_isequal_scalar
     MODULE PROCEDURE complexdp_isequal_rank1
     MODULE PROCEDURE complexdp_isequal_rank2
+    ! CHARACTER(*) procedures
+    MODULE PROCEDURE char_isequal_scalar
+    MODULE PROCEDURE char_isequal_rank1
+    MODULE PROCEDURE char_isequal_rank2
   END INTERFACE UnitTest_IsEqual
   
   INTERFACE UnitTest_IsEqualWithin
@@ -650,7 +654,8 @@ CONTAINS
 !                                  REAL(Single)   , or
 !                                  REAL(Double)   , or
 !                                  COMPLEX(Single), or
-!                                  COMPLEX(Double)
+!                                  COMPLEX(Double), or
+!                                  CHARACTER(*)
 !                      DIMENSION:  Scalar, or
 !                                  Rank-1, or
 !                                  Rank-2
@@ -1439,6 +1444,115 @@ CONTAINS
     END DO
   END SUBROUTINE complexdp_isequal_rank2
   
+
+  SUBROUTINE char_isequal_scalar( UnitTest, Expected, Actual )
+    ! Arguments
+    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CHARACTER(*),        INTENT(IN)     :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
+    ! Variables
+    LOGICAL :: Test
+    LOGICAL :: Verbose
+    CHARACTER(SL) :: Message
+    
+    ! Setup
+    ! ...Assign the test
+    Test = (Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      UnitTest, &
+      Verbose = Verbose )
+    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
+    
+
+    ! Assert the test
+    IF ( Test ) THEN
+      CALL Test_Passed( UnitTest )
+    ELSE
+      CALL Test_Failed( UnitTest )
+    END IF
+    
+    ! Output message
+    WRITE( Message,'("Expected >",a,"< and got >",a,"<")') Expected, Actual
+    CALL Set_Property( &
+      UnitTest, &
+      Level = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message = Message )
+    IF ( Verbose ) CALL Display_Message( UnitTest )
+  END SUBROUTINE char_isequal_scalar
+
+  
+  SUBROUTINE char_isequal_rank1( UnitTest, Expected, Actual )
+    ! Arguments
+    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CHARACTER(*),        INTENT(IN)     :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( UnitTest )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+        isize, SIZE(Actual)
+      CALL Set_Property( &
+        UnitTest, &
+        Level = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message = Message )
+      CALL Display_Message( UnitTest )
+      RETURN
+    ENDIF
+    
+    ! Loop over elements
+    DO i = 1, isize
+      CALL char_isequal_scalar( UnitTest, Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE char_isequal_rank1
+
+  
+  SUBROUTINE char_isequal_rank2( UnitTest, Expected, Actual )
+    ! Arguments
+    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CHARACTER(*),        INTENT(IN)     :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( UnitTest )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        UnitTest, &
+        Level = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message = Message )
+      CALL Display_Message( UnitTest )
+      RETURN
+    ENDIF
+    
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL char_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE char_isequal_rank2
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:

@@ -1,3 +1,0 @@
-Type_Kinds.o : Type_Kinds.f90 
-Test_Sort_Utility.o : Test_Sort_Utility.f90 Type_Kinds.o Sort_Utility.o 
-Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 

@@ -25,7 +25,7 @@ MODULE CRTM_RTSolution_Define
   USE CRTM_Parameters      , ONLY: ZERO, STRLEN
   USE SensorInfo_Parameters, ONLY: INVALID_SENSOR, &
                                    INVALID_WMO_SATELLITE_ID, &
-                                   INVALID_WMO_SENSOR_ID   
+                                   INVALID_WMO_SENSOR_ID
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -43,10 +43,10 @@ MODULE CRTM_RTSolution_Define
   PUBLIC :: CRTM_RTSolution_Associated
   PUBLIC :: CRTM_RTSolution_Destroy
   PUBLIC :: CRTM_RTSolution_Create
+  PUBLIC :: CRTM_RTSolution_Zero
   PUBLIC :: CRTM_RTSolution_Inspect
   PUBLIC :: CRTM_RTSolution_DefineVersion
   PUBLIC :: CRTM_RTSolution_Compare
-
 
   ! ---------------------
   ! Procedure overloading
@@ -55,7 +55,6 @@ MODULE CRTM_RTSolution_Define
     MODULE PROCEDURE CRTM_RTSolution_Equal
   END INTERFACE OPERATOR(==)
 
-
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -63,7 +62,6 @@ MODULE CRTM_RTSolution_Define
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
-
 
   ! -------------------------------
   ! RTSolution data type definition
@@ -78,7 +76,9 @@ MODULE CRTM_RTSolution_Define
     CHARACTER(STRLEN) :: Sensor_ID        = ''
     INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
-    INTEGER           :: Sensor_Channel   = 0
+    INTEGER           :: Sensor_Channel   = 0    
+    ! RT algorithm information
+    CHARACTER(STRLEN) :: RT_Algorithm_Name = ''
     ! Internal variables. Users do not need to worry about these.
     LOGICAL :: Scattering_Flag = .TRUE.
     INTEGER :: n_Full_Streams  = 0
@@ -86,13 +86,13 @@ MODULE CRTM_RTSolution_Define
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
+    REAL(fp) :: SOD                     = ZERO  ! Scattering Optical Depth
     REAL(fp) :: Surface_Emissivity      = ZERO
     REAL(fp) :: Up_Radiance             = ZERO
     REAL(fp) :: Down_Radiance           = ZERO
     REAL(fp) :: Down_Solar_Radiance     = ZERO
     REAL(fp) :: Surface_Planck_Radiance = ZERO
     REAL(fp), ALLOCATABLE :: Upwelling_Radiance(:)   ! K
-    ! The layer optical depths
     REAL(fp), ALLOCATABLE :: Layer_Optical_Depth(:)  ! K
     ! Radiative transfer results for a single channel/node
     REAL(fp) :: Radiance               = ZERO
@@ -244,6 +244,57 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
+!       CRTM_RTSolution_Zero
+! 
+! PURPOSE:
+!       Elemental subroutine to zero out the data components
+!       in a CRTM RTSolution object.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_RTSolution_Zero( rts )
+!
+! OUTPUTS:
+!       rts:          CRTM RTSolution structure in which the data components
+!                     are to be zeroed out.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_RTSolution_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       - The dimension components of the structure are *NOT* set to zero.
+!       - The sensor infomration and RT algorithm components are
+!         *NOT* reset in this routine.
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_RTSolution_Zero( RTSolution )
+    TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
+
+    ! Zero out the scalar data components
+    RTSolution%SOD                     = ZERO
+    RTSolution%Surface_Emissivity      = ZERO
+    RTSolution%Up_Radiance             = ZERO
+    RTSolution%Down_Radiance           = ZERO
+    RTSolution%Down_Solar_Radiance     = ZERO
+    RTSolution%Surface_Planck_Radiance = ZERO
+    RTSolution%Radiance                = ZERO
+    RTSolution%Brightness_Temperature  = ZERO
+
+    ! Zero out the array data components
+    IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
+      RTSolution%Upwelling_Radiance  = ZERO
+      RTSolution%Layer_Optical_Depth = ZERO
+    END IF
+
+  END SUBROUTINE CRTM_RTSolution_Zero
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
 !       CRTM_RTSolution_Inspect
 !
 ! PURPOSE:
@@ -268,6 +319,7 @@ CONTAINS
     ! Display components
     WRITE(*,'(3x,"Sensor Id               : ",a )') TRIM(RTSolution%Sensor_ID)
     WRITE(*,'(3x,"Channel                 : ",i0)') RTSolution%Sensor_Channel
+    WRITE(*,'(3x,"RT Algorithm Name       : ",a )') RTSolution%RT_Algorithm_Name
     WRITE(*,'(3x,"Surface Emissivity      : ",es13.6)') RTSolution%Surface_Emissivity          
     WRITE(*,'(3x,"Up Radiance             : ",es13.6)') RTSolution%Up_Radiance                 
     WRITE(*,'(3x,"Down Radiance           : ",es13.6)') RTSolution%Down_Radiance               
@@ -284,7 +336,6 @@ CONTAINS
     WRITE(*,'(3x,"Brightness Temperature  : ",es13.6)') RTSolution%Brightness_Temperature     
     
   END SUBROUTINE CRTM_RTSolution_Inspect
-
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -313,8 +364,7 @@ CONTAINS
     CHARACTER(*), INTENT(OUT) :: Id
     Id = MODULE_VERSION_ID
   END SUBROUTINE CRTM_RTSolution_DefineVersion
-
-
+     
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
@@ -369,7 +419,7 @@ CONTAINS
     ELSE
       n = DEFAULT_N_SIGFIG
     END IF
-
+    
     ! Check the structure association status
     IF ( .NOT. (CRTM_RTSolution_Associated(x) .EQV. CRTM_RTSolution_Associated(y)) ) RETURN
 
@@ -377,7 +427,10 @@ CONTAINS
     IF ( (x%Sensor_ID        /= y%Sensor_ID       ) .OR. &
          (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
          (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) .OR. &
-         (x%Sensor_Channel   /= y%Sensor_Channel  ) ) RETURN
+         (x%Sensor_Channel   /= y%Sensor_Channel  ) ) RETURN 
+         
+    ! Check the RT algorithm name   
+    IF ( x%RT_Algorithm_Name /= y%RT_Algorithm_Name ) RETURN
     
     ! Check the scalar components
     IF ( .NOT. Compares_Within_Tolerance(x%Surface_Emissivity     , y%Surface_Emissivity     , n) .OR. &
@@ -453,10 +506,11 @@ CONTAINS
     
     ! Check scalars
     IF ( (x%n_Layers == y%n_Layers) .AND. &
-         (x%Sensor_ID        == y%Sensor_ID       ) .AND. &
-         (x%WMO_Satellite_ID == y%WMO_Satellite_ID) .AND. &
-         (x%WMO_Sensor_ID    == y%WMO_Sensor_ID   ) .AND. &
-         (x%Sensor_Channel   == y%Sensor_Channel  ) .AND. &
+         (x%Sensor_ID         == y%Sensor_ID        ) .AND. &
+         (x%WMO_Satellite_ID  == y%WMO_Satellite_ID ) .AND. &
+         (x%WMO_Sensor_ID     == y%WMO_Sensor_ID    ) .AND. &
+         (x%Sensor_Channel    == y%Sensor_Channel   ) .AND. &
+         (x%RT_Algorithm_Name == y%RT_Algorithm_Name) .AND. &
          (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
          (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
          (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
@@ -474,5 +528,5 @@ CONTAINS
     END IF
     
   END FUNCTION CRTM_RTSolution_Equal
-
+  
 END MODULE CRTM_RTSolution_Define
