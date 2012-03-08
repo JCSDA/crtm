@@ -376,6 +376,7 @@ CONTAINS
     WRITE(*,'(3x,"Use old MWSSEM flag         :",1x,l1)') Options%Use_Old_MWSSEM
     WRITE(*,'(3x,"Use antenna correction flag :",1x,l1)') Options%Use_Antenna_Correction
     WRITE(*,'(3x,"Apply NLTE correction flag  :",1x,l1)') Options%Apply_NLTE_Correction
+    WRITE(*,'(3x,"Aircraft pressure altitude  :",1x,es13.6)') Options%Aircraft_Pressure
     ! ...Emissivity component
     WRITE(*,'(3x,"Emissivity component")')
     WRITE(*,'(5x,"n_Channels                   :",1x,i0)') Options%n_Channels
