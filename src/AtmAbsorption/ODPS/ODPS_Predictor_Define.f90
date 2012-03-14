@@ -834,7 +834,7 @@ CONTAINS
   END SUBROUTINE Zero_Predictor
 
   !----------------------------------------------------------
-  ! Routing to deallocate the PAFV structure pointer members
+  ! Routine to deallocate the PAFV structure pointer members
   !----------------------------------------------------------
   FUNCTION Destroy_PAFV( PAFV        , &  ! Output
                          RCS_Id     , &  ! Revision control     
@@ -919,7 +919,7 @@ CONTAINS
                 STAT = Allocate_Status(3) )                                     
 
     IF ( ANY(Allocate_Status /= 0) ) THEN                                         
-      WRITE( Message, '( "Error deallocating predictor FW variables. STAT = ", i5 )' ) &  
+      WRITE( Message, '( "Error deallocating predictor FW variables. STAT = ", 3i5 )' ) &  
                       Allocate_Status                                        
       Error_Status = FAILURE                                                 
       CALL Display_Message( ROUTINE_NAME, &                                                 
@@ -943,7 +943,7 @@ CONTAINS
                   PAFV%Chi,  &
                    STAT = Allocate_Status(1) )                                    
       IF ( Allocate_Status(1) /= 0 ) THEN                                         
-        WRITE( Message, '( "Error deallocating OPTRAN predictor FW variables. STAT = ", i5 )' ) &  
+        WRITE( Message, '( "Error deallocating OPTRAN predictor FW variables. STAT = ", 3i5 )' ) &  
                         Allocate_Status                                        
         Error_Status = FAILURE                                                 
         CALL Display_Message( ROUTINE_NAME, &                                               
@@ -1068,7 +1068,7 @@ CONTAINS
               STAT = Allocate_Status(3) )                                     
 
     IF ( ANY(Allocate_Status /= 0) ) THEN
-      WRITE( Message, '( "Error allocating Predictor PAFV data arrays. STAT = ", i5 )' ) &
+      WRITE( Message, '( "Error allocating Predictor PAFV data arrays. STAT = ", 3i5 )' ) &
                       Allocate_Status
       Error_Status = FAILURE
       CALL Display_Message( &
@@ -1093,7 +1093,7 @@ CONTAINS
                 PAFV%Chi(n_ODPS_Layers), &                 
                 STAT = Allocate_Status(1) )                                      
       IF ( Allocate_Status(1) /= 0 ) THEN
-        WRITE( Message, '( "Error allocating OPTRAN Predictor PAFV data arrays. STAT = ", i5 )' ) &
+        WRITE( Message, '( "Error allocating OPTRAN Predictor PAFV data arrays. STAT = ", 3i5 )' ) &
                         Allocate_Status
         Error_Status = FAILURE
         CALL Display_Message( &
