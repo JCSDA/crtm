@@ -20,6 +20,12 @@
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
+;
+; Frequency_Shift:   Array of frequency shifts to be applied.
+;                    UNITS:      N/A
+;                    TYPE:       LIST
+;                    DIMENSION:  rank-1
+;                    ATTRIBUTES: INTENT(OUT)
 ;                    
 ; OUTPUTS:
 ;       n_points:    Array containing the number of SRF data points
@@ -44,6 +50,7 @@
 ;                    DIMENSION:  N/A
 ;                    ATTRIBUTES: INTENT(OUT)
 ;
+; 
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:       Set this keyword for debugging. If set then:
 ;                    - the error handler for this function is disabled
@@ -60,10 +67,13 @@
 ;
 
 PRO Read_hirs_Raw_SRF, $
-  Filename     , $  ; Input
-  n_points     , $  ; Output
-  frequency    , $  ; Output
-  response     , $  ; Output
+  Filename       , $  ; Input
+  Platform       , $  ; Input
+  Channel        , $  ; Input
+  n_points       , $  ; Output
+  frequency      , $  ; Output
+  response       , $  ; Output
+  F_Shift=F_Shift, $  ; Input
   Debug = debug     ; Input keyword
 
   COMPILE_OPT HIDDEN
@@ -74,38 +84,54 @@ PRO Read_hirs_Raw_SRF, $
   frequency = LIST()
   response  = LIST()
   
-  ; specific sensor file parameters 
-  IDX_WAVENUMBER       = 0
-  IDX_FILTER_TRAN      = 1
-  IDX_SYS_WO_FILTER    = 2
-  IDX_RESPONSE         = 3
-  IDX_NORMALIZED_TOTAL = 4
+  ; Read the data channel by channel
+  OPENR, FileID, Filename, /GET_LUN
+  WHILE NOT EOF(FileID) DO BEGIN
+
+    ; Read a chunk of data for current channeld
+    READF, FileID, Channel_read, nPoints    
+    Data = DBLARR(5,nPoints)
+    READF, FileID, Data
+    
+    IF ( Channel_read NE Channel ) THEN CONTINUE
+
+    ; Split out data in ascending frequency order
+    Freq = REFORM(Data[0,*])
+    FilterTransmittance = REFORM(Data[1,*])
+    Response_NoFilter   = REFORM(Data[2,*])
+    Resp                = REFORM(Data[3,*])
+    NormalisedResponse  = REFORM(Data[4,*])
+
+  ENDWHILE
+  FREE_LUN, FileID
   
-  ; Read the file
-  n_lines = FILE_LINES(Filename) 
-  data   = STRARR(n_lines)
-  OPENR, fid, Filename, /GET_LUN
-  READF, fid, data
-  FREE_LUN, fid
-  
-  data_count = n_lines
-  
-  ; Extract the data from the string array
-  f = DBLARR(n_lines)
-  r   = DBLARR(n_lines)
-  FOR i = 0L, data_count-1L DO BEGIN
-    elements = STRSPLIT(data[i], /EXTRACT)
-    f[i] = DOUBLE(elements[IDX_WAVENUMBER])
-    r[i] = DOUBLE(elements[IDX_RESPONSE])
-  ENDFOR
-  
-  ; Only keep the unique values and sort
-  idx = UNIQ(f, SORT(f))
-  f = f[idx]
-  r = r[idx]
+  ; Correct for ch 9
+  ; problem where necessary
+  IF ( Channel EQ 9L ) THEN BEGIN
+    Loc = WHERE( Freq GE 1000.0d0 )
+    CASE Platform OF
+      'n15'     : Freq[Loc] = Freq[Loc] -  0.03d0
+      'n18'     : Freq[Loc] = Freq[Loc] +  0.03d0
+      'metop-a' : Freq[Loc] = Freq[Loc] +  0.03d0
+      ELSE      : Freq[Loc] = Freq[Loc]
+    ENDCASE
+  ENDIF
+;  IF ( Channel EQ 15 ) THEN STOP
+  ; Apply frequency shift
+  ; where necessary
+  IF ( KEYWORD_SET(F_Shift) ) THEN BEGIN
+    Freq = Freq + F_Shift
+  ENDIF  
+;  IF ( Channel EQ 15 ) THEN STOP  
+  ; Sort and only keep
+  ; the unique values
+  idx = UNIQ(Freq, SORT(Freq))
+  f = Freq[idx]
+  r = Resp[idx]
   
   ; Assign data to return argument
   n_points = N_ELEMENTS(f)
+   ; IF ( Channel EQ 15 ) THEN STOP
   frequency.Add, f, /NO_COPY  
   response.Add , r, /NO_COPY  
 
@@ -181,14 +207,13 @@ END
 ;                       joe.bloggs@domain
 ;
 ;-
-
 PRO oSRF::Load_hirs, $
-  Sensor_Id        , $ ; Input
-  Channel          , $ ; Input
-  Path    = Path   , $ ; Input keyword. If not specified, default is "./"
-  Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
-  History = HISTORY    ; Output keyword of version id.
-
+  Sensor_Id                , $ ; Input
+  Channel                  , $ ; Input
+  F_Shift = F_Shift        , $ ; Input. Shifts SRF data
+  Path    = Path           , $ ; Input keyword. If not specified, default is "./"
+  Debug   = Debug          , $ ; Input keyword. Passed onto all oSRF methods
+  History = HISTORY            ; Output keyword of version id.
 
   ; Set up
   ; ...OSRF parameters
@@ -199,25 +224,40 @@ PRO oSRF::Load_hirs, $
   Check_Threshold = N_ELEMENTS(Response_Threshold) GT 0 ? TRUE : FALSE
   Path            = Valid_String(Path) ? Path : "./"
 
-
   ; Parameters
   HISTORY = "$Id$"
 
-
+  ; Extract platform from sensor id
+  sensor_id_array = STRSPLIT(Sensor_Id,'_',/EXTRACT)
+  platform = sensor_id_array[1]
+  
   ; Construct file name
   ch = STRING(Channel,FORMAT='(i2.2)')
-  filename = Path+PATH_SEP()+Sensor_Id+'-'+ch+'.inp'
+  filename = Path+PATH_SEP()+Sensor_Id+'.inp'
   ; ...Check it exists
   fInfo = FILE_INFO(filename)
   IF ( NOT fInfo.EXISTS ) THEN $
     MESSAGE, 'Datafile '+filename+' not found....', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-
   ; Read the file
-  Read_hirs_Raw_SRF, filename, n_points, frequency, response
-
-
+  IF ( KEYWORD_SET(F_Shift) ) THEN BEGIN
+    Read_hirs_Raw_SRF, filename, $
+                       platform, $
+                        Channel, $
+                       n_points, $
+                      frequency, $
+                       response, $
+                     F_Shift=F_Shift
+  ENDIF ELSE BEGIN
+    Read_hirs_Raw_SRF, filename, $
+                       platform, $
+                        Channel, $
+                       n_points, $
+                      frequency, $
+                       response
+  ENDELSE
+                     
   ; Load the SRF data into the oSRF object
   ; ...Allocate
   self->Allocate, n_points, Debug=Debug
