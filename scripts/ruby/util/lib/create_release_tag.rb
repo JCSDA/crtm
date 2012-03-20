@@ -45,22 +45,22 @@ CRTM_ENV = [{:name => "CRTM_SOURCE_ROOT"    ,:dir => "/src"       },
             {:name => "CRTM_DOC_ROOT"       ,:dir => "/doc"       },
             {:name => "CRTM_VALIDATION_ROOT",:dir => "/validation"}]
 # ...Fixfile information
-FIXFILE_DIRS = ["TauCoeff/ODAS"                ,
-                "TauCoeff/ODPS"                ,
-                "SpcCoeff"                     ,
-                "AerosolCoeff"                 ,
-                "CloudCoeff"                   ,
-                "NLTECoeff"                    ,
-                "EmisCoeff/IR_Ice"             ,
-                "EmisCoeff/IR_Land"            ,
-                "EmisCoeff/IR_Snow"            ,
-                "EmisCoeff/IR_Water"           ,
-                "EmisCoeff/MW_Land"            ,
-                "EmisCoeff/MW_Water"           ,
-                "EmisCoeff/VIS_Ice"            ,
-                "EmisCoeff/VIS_Land"           ,
-                "EmisCoeff/VIS_Snow"           ,
-                "EmisCoeff/VIS_Water"          ]
+FIXFILE_DIRS = ["TauCoeff/ODAS"                 ,
+                "TauCoeff/ODPS"                 ,
+                "SpcCoeff"                      ,
+                "AerosolCoeff"                  ,
+                "CloudCoeff"                    ,
+                "EmisCoeff/IR_Ice/SEcategory"   ,
+                "EmisCoeff/IR_Land/SEcategory"  ,
+                "EmisCoeff/IR_Land/UWIREMIS"    ,
+                "EmisCoeff/IR_Snow/SEcategory"  ,
+                "EmisCoeff/IR_Water"            ,
+                "EmisCoeff/MW_Land"             ,
+                "EmisCoeff/MW_Water"            ,
+                "EmisCoeff/VIS_Ice/SEcategory"  ,
+                "EmisCoeff/VIS_Land/SEcategory" ,
+                "EmisCoeff/VIS_Snow/SEcategory" ,
+                "EmisCoeff/VIS_Water/SEcategory"]
 FIXFILE_FORMAT = ["Big_Endian","Little_Endian"]
 # ...Inventory file for the tag->release transfer
 INVENTORY_FILE = "inventory.txt"
