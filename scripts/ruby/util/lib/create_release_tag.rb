@@ -50,8 +50,17 @@ FIXFILE_DIRS = ["TauCoeff/ODAS"                ,
                 "SpcCoeff"                     ,
                 "AerosolCoeff"                 ,
                 "CloudCoeff"                   ,
-                "EmisCoeff/IR_Land/LSEcategory",
-                "EmisCoeff/IR_Water"           ]
+                "NLTECoeff"                    ,
+                "EmisCoeff/IR_Ice"             ,
+                "EmisCoeff/IR_Land"            ,
+                "EmisCoeff/IR_Snow"            ,
+                "EmisCoeff/IR_Water"           ,
+                "EmisCoeff/MW_Land"            ,
+                "EmisCoeff/MW_Water"           ,
+                "EmisCoeff/VIS_Ice"            ,
+                "EmisCoeff/VIS_Land"           ,
+                "EmisCoeff/VIS_Snow"           ,
+                "EmisCoeff/VIS_Water"          ]
 FIXFILE_FORMAT = ["Big_Endian","Little_Endian"]
 # ...Inventory file for the tag->release transfer
 INVENTORY_FILE = "inventory.txt"
