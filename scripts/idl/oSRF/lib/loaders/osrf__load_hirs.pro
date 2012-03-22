@@ -283,7 +283,6 @@ PRO oSRF::Load_hirs, $
     self->Set_Property, $
       band, $
       Debug=Debug, $
-      Sensor_Id = Sensor_Id, $
       Channel   = Channel, $
       Frequency = frequency[i], $
       Response  = response[i]
