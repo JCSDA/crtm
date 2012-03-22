@@ -95,10 +95,10 @@ PRO Read_hirs_Raw_SRF, $
   WHILE NOT EOF(FileID) DO BEGIN
 
     ; Read a chunk of data for current channeld
-    READF, FileID, Channel_read, n_points    
-    Data = DBLARR(5,n_points)
+    READF, FileID, Channel_read, npts    
+    Data = DBLARR(5,npts)
     READF, FileID, Data
-    
+   
     IF ( Channel_read NE Channel ) THEN CONTINUE
 
     ; Split out data in ascending frequency order
@@ -134,6 +134,8 @@ PRO Read_hirs_Raw_SRF, $
   idx = UNIQ(Freq, SORT(Freq))
   f = Freq[idx]
   r = Resp[idx]
+  
+  n_points = N_ELEMENTS(f)
   
   frequency.Add, f, /NO_COPY  
   response.Add , r, /NO_COPY  
