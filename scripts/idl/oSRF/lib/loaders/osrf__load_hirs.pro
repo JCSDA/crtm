@@ -9,6 +9,8 @@
 ; CALLING SEQUENCE:
 ;       Read_hirs_Raw_SRF, $
 ;         Filename     , $  ; Input
+;         Platform     , $  ; Input
+;         Channel      , $  ; Input
 ;         n_points     , $  ; Output
 ;         frequency    , $  ; Output
 ;         response     , $  ; Output
@@ -52,6 +54,10 @@
 ;
 ; 
 ; INPUT KEYWORD PARAMETERS:
+;
+;     F_Shift:       Set this keyword to apply a frequency
+;                    shift to data read from file
+;
 ;       Debug:       Set this keyword for debugging. If set then:
 ;                    - the error handler for this function is disabled
 ;                      so that execution halts where the error occurs,
@@ -89,8 +95,8 @@ PRO Read_hirs_Raw_SRF, $
   WHILE NOT EOF(FileID) DO BEGIN
 
     ; Read a chunk of data for current channeld
-    READF, FileID, Channel_read, nPoints    
-    Data = DBLARR(5,nPoints)
+    READF, FileID, Channel_read, n_points    
+    Data = DBLARR(5,n_points)
     READF, FileID, Data
     
     IF ( Channel_read NE Channel ) THEN CONTINUE
@@ -116,22 +122,19 @@ PRO Read_hirs_Raw_SRF, $
       ELSE      : Freq[Loc] = Freq[Loc]
     ENDCASE
   ENDIF
-;  IF ( Channel EQ 15 ) THEN STOP
+  
   ; Apply frequency shift
   ; where necessary
   IF ( KEYWORD_SET(F_Shift) ) THEN BEGIN
     Freq = Freq + F_Shift
   ENDIF  
-;  IF ( Channel EQ 15 ) THEN STOP  
+
   ; Sort and only keep
   ; the unique values
   idx = UNIQ(Freq, SORT(Freq))
   f = Freq[idx]
   r = Resp[idx]
   
-  ; Assign data to return argument
-  n_points = N_ELEMENTS(f)
-   ; IF ( Channel EQ 15 ) THEN STOP
   frequency.Add, f, /NO_COPY  
   response.Add , r, /NO_COPY  
 
@@ -171,6 +174,12 @@ END
 ;                    ATTRIBUTES: INTENT(IN)
 ;
 ; INPUT KEYWORDS:
+;    F_Shift:        When applied this keyword applies a frequency shift 
+;                    UNITS:      N/A
+;                    TYPE:       DOUBLE
+;                    DIMENSION:  Rank-1
+;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       Path:        Set this keyword to the directory path of the input files.
 ;                    If not specified, the default is the current directory, "./"
 ;                    UNITS:      N/A
