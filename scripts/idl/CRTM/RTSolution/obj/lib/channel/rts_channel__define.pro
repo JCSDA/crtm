@@ -1,7 +1,13 @@
+;+
 PRO RTS_Channel__Define
   void = { RTS_Channel, $
-           n_Allocates : 0L, $
+           Is_Allocated            : 0L, $
            n_Layers                : 0L, $
+           Sensor_Id               : BYTARR(20), $
+           WMO_Satellite_Id        : 0L, $
+           WMO_Sensor_Id           : 0L, $
+           Sensor_Channel          : 0L, $
+           RT_Algorithm_Name       : BYTARR(20), $
            SOD                     : 0.0d0, $
            Surface_Emissivity      : 0.0d0, $
            Up_Radiance             : 0.0d0, $
@@ -11,5 +17,6 @@ PRO RTS_Channel__Define
            Radiance                : 0.0d0, $
            Brightness_Temperature  : 0.0d0, $
            Upwelling_Radiance      : PTR_NEW(), $
-           Layer_Optical_Depth     : PTR_NEW() }
+           Layer_Optical_Depth     : PTR_NEW()  }
 END
+;-

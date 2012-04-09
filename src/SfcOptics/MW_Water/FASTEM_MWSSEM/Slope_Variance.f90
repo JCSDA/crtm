@@ -22,7 +22,6 @@ MODULE Slope_Variance
   ! Module use
   USE Type_Kinds     , ONLY: fp
   USE Hyperbolic_Step, ONLY: Step, Step_TL, Step_AD
-  USE CRTM_Parameters, ONLY: ZERO, ONE, TWO
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -44,6 +43,11 @@ MODULE Slope_Variance
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+
+  ! Literal constants
+  REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  REAL(fp), PARAMETER :: TWO  = 2.0_fp
 
   ! Wave slope variance parameters
   REAL(fp), PARAMETER :: VAR_COEFFS(2) = (/0.0030_fp, 0.00512_fp/)  ! Cox-Munk coeffs

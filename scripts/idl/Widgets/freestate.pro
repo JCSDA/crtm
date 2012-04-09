@@ -15,10 +15,10 @@ PRO FreeState, id
   IF ( count GT 0 ) THEN $
     IF ( (*infoptr).debug EQ 1 ) THEN PRINT, 'DEBUG: FreeState'
 
-  ; Free any pointer elements
+  ; Free any pointer or object elements
   FOR i = 0, N_TAGS(*infoptr)-1 DO BEGIN
-    IF ( SIZE((*infoptr).(i),/TNAME) EQ 'POINTER' ) THEN $
-      IF ( PTR_VALID((*infoptr).(i)) ) THEN PTR_FREE, (*infoptr).(i)
+    IF ( SIZE((*infoptr).(i),/TNAME) EQ 'POINTER' ) THEN PTR_FREE, (*infoptr).(i)
+    IF ( SIZE((*infoptr).(i),/TNAME) EQ 'OBJREF'  ) THEN OBJ_DESTROY, (*infoptr).(i)
   ENDFOR
 
   ; Free the state information pointer itself

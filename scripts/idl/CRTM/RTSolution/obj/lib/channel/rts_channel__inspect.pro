@@ -1,7 +1,8 @@
+;+
 PRO RTS_Channel::Inspect, $
   Verbose=Verbose, $  ; Input keyword
   Debug=Debug         ; Input keyword
-
+;-
   ; Set up
   @rts_pro_err_handler
 
@@ -13,5 +14,5 @@ PRO RTS_Channel::Inspect, $
   IF ( KEYWORD_SET(Verbose) AND self->Associated(Debug=Debug) ) THEN $
     HELP, *self.Upwelling_Radiance , $
           *self.Layer_Optical_Depth
-  
-END ; FUNCTION RTS_Channel::Inspect
+
+END

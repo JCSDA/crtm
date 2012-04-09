@@ -1,14 +1,20 @@
-FUNCTION RTS_Channel::Init, Debug=Debug  ; Input keyword
+FUNCTION RTS_Channel::Init, $
+  Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
+  @rts_func_err_handler
   ; ...Local parameters
   ZERO = 0.0d0
-  ; ...Set up error handler
-  @rts_func_err_handler
- 
+
 
   ; Set default values
-  self.n_Allocates = 0L
+  self.Is_Allocated = FALSE
+  self.Sensor_Id         = BYTARR(20)
+  self.WMO_Satellite_Id  = 0L
+  self.WMO_Sensor_Id     = 0L
+  self.Sensor_Channel    = 0L
+  self.RT_Algorithm_Name = BYTARR(20)
   self.SOD                     = ZERO
   self.Surface_Emissivity      = ZERO
   self.Up_Radiance             = ZERO
@@ -18,7 +24,6 @@ FUNCTION RTS_Channel::Init, Debug=Debug  ; Input keyword
   self.Radiance                = ZERO
   self.Brightness_Temperature  = ZERO
 
-  CATCH, /CANCEL
-  RETURN, SUCCESS
- 
-END ; FUNCTION RTS_Channel::Init
+  RETURN, TRUE
+
+END

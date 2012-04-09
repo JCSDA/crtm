@@ -6,8 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-Feb-2007
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-Feb-2007
+!                       paul.vandelst@noaa.gov
 !
 MODULE CRTM_Interpolation
 
@@ -30,16 +30,21 @@ MODULE CRTM_Interpolation
   ! Derived types and associated procedures
   PUBLIC :: LPoly_type
   PUBLIC :: Clear_LPoly
+  PUBLIC :: LPoly_Init
+  PUBLIC :: LPoly_Inspect
   ! Procedures
   PUBLIC :: Interp_1D
   PUBLIC :: Interp_2D
   PUBLIC :: Interp_3D
+  PUBLIC :: Interp_4D
   PUBLIC :: Interp_1D_TL
   PUBLIC :: Interp_2D_TL
   PUBLIC :: Interp_3D_TL
+  PUBLIC :: Interp_4D_TL
   PUBLIC :: Interp_1D_AD
   PUBLIC :: Interp_2D_AD
   PUBLIC :: Interp_3D_AD
+  PUBLIC :: Interp_4D_AD
   PUBLIC :: Find_Index
   PUBLIC :: LPoly
   PUBLIC :: LPoly_TL
@@ -55,9 +60,9 @@ MODULE CRTM_Interpolation
   END INTERFACE Find_Index
 
 
-  ! -----------------  
+  ! -----------------
   ! Module parameters
-  ! -----------------  
+  ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID=&
   '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
@@ -119,14 +124,14 @@ CONTAINS
 !                ATTRIBUTES: INTENT(IN OUT)
 !
 ! SIDE EFFECTS:
-!      If the structure contains data on input, it is replaced with the 
+!      If the structure contains data on input, it is replaced with the
 !      reinitialisation value.
 !
 !--------------------------------------------------------------------------------
   SUBROUTINE Clear_LPoly(p)
     TYPE(LPoly_type), INTENT(IN OUT) :: p
-    p%Order = ORDER
-    p%nPts  = NPOLY_PTS
+    p%Order     = ORDER
+    p%nPts      = NPOLY_PTS
     p%lp_left   = ZERO
     p%lp_right  = ZERO
     p%w_left    = ZERO
@@ -136,47 +141,83 @@ CONTAINS
     p%dx_left   = ZERO
     p%dx_right  = ZERO
   END SUBROUTINE Clear_LPoly
-  
-  
+
+
+  SUBROUTINE LPoly_Init(self)
+    TYPE(LPoly_type), INTENT(OUT) :: self
+    self%Order = ORDER
+  END SUBROUTINE LPoly_Init
+
+
+  SUBROUTINE LPoly_Inspect( self )
+    TYPE(LPoly_type), INTENT(IN) :: self
+    WRITE(*,'(1x,"LPoly OBJECT")')
+    WRITE(*,'(3x,"Order : ",i0)') self%Order
+    WRITE(*,'(3x,"nPts  : ",i0)') self%nPts
+    WRITE(*,'(3x,"Left-side :")')
+    WRITE(*,'(5x,"Weighting factor : ",es13.6)') self%w_left
+    WRITE(*,'(5x,"Polynomial :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%lp_left
+    WRITE(*,'(5x,"Numerator differences :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%dxi_left
+    WRITE(*,'(5x,"Denominator differences :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%dx_left
+    WRITE(*,'(3x,"Right-side :")')
+    WRITE(*,'(5x,"Weighting factor : ",es13.6)') self%w_right
+    WRITE(*,'(5x,"Polynomial :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%lp_right
+    WRITE(*,'(5x,"Numerator differences :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%dxi_right
+    WRITE(*,'(5x,"Denominator differences :")')
+    WRITE(*,'(5(1x,es13.6,:))') self%dx_right
+  END SUBROUTINE LPoly_Inspect
+
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
 !       Interp_1D
 !       Interp_2D
 !       Interp_3D
+!       Interp_4D
 !
 ! PURPOSE:
 !       Subroutines to perform interpolation:
-!         o  1-D for z=f(w)
-!         o  2-D for z=f(w,x)
-!         o  3-D for z=f(w,x,y)
+!         o  1-D for z=f(u)
+!         o  2-D for z=f(u,v)
+!         o  3-D for z=f(u,v,w)
+!         o  4-D for z=f(u,v,w,x)
 !
 ! CALLING SEQUENCE:
-!       CALL Interp_1D(z, wlp, z_int)
-!       CALL Interp_2D(z, wlp, xlp, z_int)
-!       CALL Interp_2D(z, wlp, xlp, ylp, z_int)
+!       CALL Interp_1D(z, ulp, z_int)
+!       CALL Interp_2D(z, ulp, vlp, z_int)
+!       CALL Interp_3D(z, ulp, vlp, wlp, z_int)
+!       CALL Interp_4D(z, ulp, vlp, wlp, xlp, z_int)
 !
 ! INPUT ARGUMENTS:
-!       z:                 Data to interpolate
-!                          UNITS:      Variable
-!                          TYPE:       REAL(fp)
-!                          DIMENSION:  Rank-1 (N_PTS)
-!                          ATTRIBUTES: INTENT(IN)
+!       z:                    Data to interpolate
+!                             UNITS:      Variable
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Rank-1 (N_PTS), or
+!                                         Rank-2 (N_PTS,NPTS), or
+!                                         Rank-3 (N_PTS,NPTS,N_PTS), or
+!                                         Rank-4 (N_PTS,NPTS,N_PTS,NPTS), or
+!                             ATTRIBUTES: INTENT(IN)
 !
-!       wlp, xlp, ylp:     Interpolating polynomial structures for the
-!                          w-, x-, and y-dimension respectively from
-!                          previous calls to the LPoly() subroutine
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(LPoly_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
+!       ulp, vlp, wlp, xlp:   Interpolating polynomial structures for the
+!                             respective dimensions from previous calls to
+!                             the LPoly() subroutine
+!                             UNITS:      N/A
+!                             TYPE:       LPoly_type
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT ARGUMENTS:
-!       z_int:             Interpolation result
-!                          UNITS:      Same as z
-!                          TYPE:       REAL(fp)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
+!       z_int:                Interpolation result
+!                             UNITS:      Same as z
+!                             TYPE:       REAL(fp)
+!                             DIMENSION:  Scalar
+!                             ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
 !      Output z_int argument has INTENT(IN OUT) to prevent default reinitialisation
@@ -184,56 +225,74 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
   ! 1-D routine
-  SUBROUTINE Interp_1D(z, wlp, &  ! Input
+  SUBROUTINE Interp_1D(z, ulp, &  ! Input
                        z_int   )  ! Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp
     REAL(fp),         INTENT(IN OUT) :: z_int  ! INTENT(IN OUT) to preclude reinitialisation
     ! Perform interpolation
-    z_int = ( wlp%w_left  * ( wlp%lp_left(1) *z(1) + &
-                              wlp%lp_left(2) *z(2) + &
-                              wlp%lp_left(3) *z(3) ) ) + &
-            ( wlp%w_right * ( wlp%lp_right(1)*z(2) + &
-                              wlp%lp_right(2)*z(3) + &
-                              wlp%lp_right(3)*z(4) ) )
+    z_int = ( ulp%w_left  * ( ulp%lp_left(1) *z(1) + &
+                              ulp%lp_left(2) *z(2) + &
+                              ulp%lp_left(3) *z(3) ) ) + &
+            ( ulp%w_right * ( ulp%lp_right(1)*z(2) + &
+                              ulp%lp_right(2)*z(3) + &
+                              ulp%lp_right(3)*z(4) ) )
   END SUBROUTINE Interp_1D
 
   ! 2-D routine
-  SUBROUTINE Interp_2D(z, wlp, xlp, &  ! Input
+  SUBROUTINE Interp_2D(z, ulp, vlp, &  ! Input
                        z_int        )  ! Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp, xlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp
     REAL(fp),         INTENT(IN OUT) :: z_int  ! INTENT(IN OUT) to preclude reinitialisation
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
-    ! Interpolate z in w dimension for all x
+    ! Interpolate z in u dimension for all v
     DO i = 1, NPTS
-      CALL Interp_1D(z(:,i),wlp,a(i))
+      CALL Interp_1D(z(:,i),ulp,a(i))
     END DO
-    ! Interpolate z in y dimension
-    CALL Interp_1D(a,xlp,z_int)
+    ! Interpolate z in w dimension
+    CALL Interp_1D(a,vlp,z_int)
   END SUBROUTINE Interp_2D
 
   ! 3-D routine
-  SUBROUTINE Interp_3D(z, wlp, xlp, ylp, &  ! Input
+  SUBROUTINE Interp_3D(z, ulp, vlp, wlp, &  ! Input
                        z_int             )  ! Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:,:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp, xlp, ylp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp, wlp
     REAL(fp),         INTENT(IN OUT) :: z_int  ! INTENT(IN OUT) to preclude reinitialisation
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS)
-    ! Interpolate z in w,x dimension for all y
+    ! Interpolate z in u,v dimension for all w
     DO i = 1, NPTS
-      CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
+      CALL Interp_2D(z(:,:,i),ulp,vlp,a(i))
     END DO
-    ! Interpolate a in y dimension
-    CALL Interp_1D(a,ylp,z_int)
+    ! Interpolate a in w dimension
+    CALL Interp_1D(a,wlp,z_int)
   END SUBROUTINE Interp_3D
+
+  ! 4-D routine
+  SUBROUTINE Interp_4D(z, ulp, vlp, wlp, xlp, &  ! Input
+                       z_int                  )  ! Output
+    ! Arguments
+    REAL(fp),         INTENT(IN)     :: z(:,:,:,:)
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp, wlp, xlp
+    REAL(fp),         INTENT(IN OUT) :: z_int  ! INTENT(IN OUT) to preclude reinitialisation
+    ! Local variables
+    INTEGER  :: i
+    REAL(fp) :: a(NPTS)
+    ! Interpolate z in u,v,w dimension for all x
+    DO i = 1, NPTS
+      CALL Interp_3D(z(:,:,:,i),ulp,vlp,wlp,a(i))
+    END DO
+    ! Interpolate a in x dimension
+    CALL Interp_1D(a,xlp,z_int)
+  END SUBROUTINE Interp_4D
 
 
 !--------------------------------------------------------------------------------
@@ -242,45 +301,50 @@ CONTAINS
 !       Interp_1D_TL
 !       Interp_2D_TL
 !       Interp_3D_TL
+!       Interp_4D_TL
 !
 ! PURPOSE:
 !       Subroutines to perform tangent-linear interpolation:
-!         o  1-D for z=f(w)
-!         o  2-D for z=f(w,x)
-!         o  3-D for z=f(w,x,y)
+!         o  1-D for z=f(u)
+!         o  2-D for z=f(u,v)
+!         o  3-D for z=f(u,v,w)
+!         o  4-D for z=f(u,v,w,x)
 !
 ! CALLING SEQUENCE:
-!       CALL Interp_1D_TL(z, wlp, z_TL, wlp_TL, z_int_TL)
-!       CALL Interp_2D_TL(z, wlp, xlp, z_TL, wlp_TL, xlp_TL, z_int_TL)
-!       CALL Interp_2D_TL(z, wlp, xlp, ylp, z_TL, wlp_TL, xlp_TL, ylp_TL, z_int_TL)
+!       CALL Interp_1D_TL(z, ulp, z_TL, ulp_TL, z_int_TL)
+!       CALL Interp_2D_TL(z, ulp, vlp, z_TL, ulp_TL, vlp_TL, z_int_TL)
+!       CALL Interp_3D_TL(z, ulp, vlp, wlp, z_TL, ulp_TL, vlp_TL, wlp_TL, z_int_TL)
+!       CALL Interp_4D_TL(z, ulp, vlp, wlp, xlp, z_TL, ulp_TL, vlp_TL, wlp_TL, xlp_TL, z_int_TL)
 !
 ! INPUT ARGUMENTS:
 !       z:                       Data to interpolate
 !                                UNITS:      Variable
 !                                TYPE:       REAL(fp)
-!                                DIMENSION:  Rank-1 (N_PTS)
+!                                DIMENSION:  Rank-1 (N_PTS), or
+!                                            Rank-2 (N_PTS,NPTS), or
+!                                            Rank-3 (N_PTS,NPTS,N_PTS), or
+!                                            Rank-4 (N_PTS,NPTS,N_PTS,NPTS), or
 !                                ATTRIBUTES: INTENT(IN)
 !
-!       wlp, xlp, ylp:           Interpolating polynomial structures for the
-!                                w-, x-, and y-dimension respectively from
-!                                previous calls to the LPoly() subroutine
+!       ulp, vlp, wlp, xlp:      Interpolating polynomial structures for the
+!                                respective dimensions from previous calls to
+!                                the LPoly() subroutine
 !                                UNITS:      N/A
-!                                TYPE:       TYPE(LPoly_type)
+!                                TYPE:       LPoly_type
 !                                DIMENSION:  Scalar
 !                                ATTRIBUTES: INTENT(IN)
 !
 !       z_TL:                    Tangent-linear interpolation data.
 !                                UNITS:      Same as z
 !                                TYPE:       REAL(fp)
-!                                DIMENSION:  Rank-1 (N_PTS)
+!                                DIMENSION:  Same rank as z input
 !                                ATTRIBUTES: INTENT(IN)
 !
-!       wlp_TL, xlp_TL, ylp_TL:  Tangent-linear interpolating polynomial
-!                                structures for the w-, x-, and y-dimension
-!                                respectively from previous calls to the
-!                                LPoly_TL() subroutine.
+!       ulp_TL, vlp_TL,          Tangent-linear interpolating polynomial
+!       wlp_TL, xlp_TL:          structures for the respective dimensions
+!                                from previous calls to the LPoly_TL() subroutine.
 !                                UNITS:      N/A
-!                                TYPE:       TYPE(LPoly_type)
+!                                TYPE:       LPoly_type
 !                                DIMENSION:  Scalar
 !                                ATTRIBUTES: INTENT(IN)
 !
@@ -297,81 +361,103 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
   ! 1-D routine
-  SUBROUTINE Interp_1D_TL( z   , wlp   , &  ! FWD Input
-                           z_TL, wlp_TL, &  ! TL  Input
+  SUBROUTINE Interp_1D_TL( z   , ulp   , &  ! FWD Input
+                           z_TL, ulp_TL, &  ! TL  Input
                            z_int_TL      )  ! TL  Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp
     REAL(fp),         INTENT(IN)     :: z_TL(:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp_TL
+    TYPE(LPoly_type), INTENT(IN)     :: ulp_TL
     REAL(fp),         INTENT(IN OUT) :: z_int_TL  ! INTENT(IN OUT) to preclude reinitialisation
     ! Perform TL interpolation
-    z_int_TL = ( wlp%w_left    * ( wlp%lp_left(1)    * z_TL(1) + &
-                                   wlp_TL%lp_left(1) * z(1)    + &
-                                   wlp%lp_left(2)    * z_TL(2) + &
-                                   wlp_TL%lp_left(2) * z(2)    + &
-                                   wlp%lp_left(3)    * z_TL(3) + &
-                                   wlp_TL%lp_left(3) * z(3)    ) ) + &
-               ( wlp_TL%w_left * ( wlp%lp_left(1)    * z(1)    + &
-                                   wlp%lp_left(2)    * z(2)    + &
-                                   wlp%lp_left(3)    * z(3)    ) ) + &
-               
-               ( wlp%w_right    * ( wlp%lp_right(1)    * z_TL(2) + &
-                                    wlp_TL%lp_right(1) * z(2)    + &
-                                    wlp%lp_right(2)    * z_TL(3) + &
-                                    wlp_TL%lp_right(2) * z(3)    + &
-                                    wlp%lp_right(3)    * z_TL(4) + &
-                                    wlp_TL%lp_right(3) * z(4)    ) ) + &
-               ( wlp_TL%w_right * ( wlp%lp_right(1)    * z(2)    + &
-                                    wlp%lp_right(2)    * z(3)    + &
-                                    wlp%lp_right(3)    * z(4)    ) )
+    z_int_TL = ( ulp%w_left    * ( ulp%lp_left(1)    * z_TL(1) + &
+                                   ulp_TL%lp_left(1) * z(1)    + &
+                                   ulp%lp_left(2)    * z_TL(2) + &
+                                   ulp_TL%lp_left(2) * z(2)    + &
+                                   ulp%lp_left(3)    * z_TL(3) + &
+                                   ulp_TL%lp_left(3) * z(3)    ) ) + &
+               ( ulp_TL%w_left * ( ulp%lp_left(1)    * z(1)    + &
+                                   ulp%lp_left(2)    * z(2)    + &
+                                   ulp%lp_left(3)    * z(3)    ) ) + &
+
+               ( ulp%w_right    * ( ulp%lp_right(1)    * z_TL(2) + &
+                                    ulp_TL%lp_right(1) * z(2)    + &
+                                    ulp%lp_right(2)    * z_TL(3) + &
+                                    ulp_TL%lp_right(2) * z(3)    + &
+                                    ulp%lp_right(3)    * z_TL(4) + &
+                                    ulp_TL%lp_right(3) * z(4)    ) ) + &
+               ( ulp_TL%w_right * ( ulp%lp_right(1)    * z(2)    + &
+                                    ulp%lp_right(2)    * z(3)    + &
+                                    ulp%lp_right(3)    * z(4)    ) )
 
   END SUBROUTINE Interp_1D_TL
-  
+
   ! 2-D routine
-  SUBROUTINE Interp_2D_TL( z,    wlp   , xlp   , &  ! FWD Input
-                           z_TL, wlp_TL, xlp_TL, &  ! TL  Input
+  SUBROUTINE Interp_2D_TL( z,    ulp   , vlp   , &  ! FWD Input
+                           z_TL, ulp_TL, vlp_TL, &  ! TL  Input
                            z_int_TL              )  ! TL  Output
     REAL(fp),         INTENT(IN)     :: z(:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp, xlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp
     REAL(fp),         INTENT(IN)     :: z_TL(:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp_TL, xlp_TL
+    TYPE(LPoly_type), INTENT(IN)     :: ulp_TL, vlp_TL
     REAL(fp),         INTENT(IN OUT) :: z_int_TL  ! INTENT(IN OUT) to preclude reinitialisation
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
-    ! Interpolate z in x dimension for all y
+    ! Interpolate z in v dimension for all w
     DO i = 1, NPTS
-      CALL Interp_1D(z(:,i),wlp,a(i))
-      CALL Interp_1D_TL(z(:,i),wlp,z_TL(:,i),wlp_TL,a_TL(i))
+      CALL Interp_1D(z(:,i),ulp,a(i))
+      CALL Interp_1D_TL(z(:,i),ulp,z_TL(:,i),ulp_TL,a_TL(i))
     END DO
-    ! Interpolate z in y dimension
-    CALL Interp_1D_TL(a,xlp,a_TL,xlp_TL,z_int_TL)
+    ! Interpolate z in w dimension
+    CALL Interp_1D_TL(a,vlp,a_TL,vlp_TL,z_int_TL)
   END SUBROUTINE Interp_2D_TL
-  
+
   ! 3-D routine
-  SUBROUTINE Interp_3D_TL( z   , wlp   , xlp   , ylp   , &  ! FWD Input
-                           z_TL, wlp_TL, xlp_TL, ylp_TL, &  ! TL  Input
+  SUBROUTINE Interp_3D_TL( z   , ulp   , vlp   , wlp   , &  ! FWD Input
+                           z_TL, ulp_TL, vlp_TL, wlp_TL, &  ! TL  Input
                            z_int_TL                      )  ! TL  Output
     ! Arguments
     REAL(fp),         INTENT(IN)  :: z(:,:,:)
-    TYPE(LPoly_type), INTENT(IN)  :: wlp, xlp, ylp
+    TYPE(LPoly_type), INTENT(IN)  :: ulp, vlp, wlp
     REAL(fp),         INTENT(IN)  :: z_TL(:,:,:)
-    TYPE(LPoly_type), INTENT(IN)  :: wlp_TL, xlp_TL, ylp_TL
+    TYPE(LPoly_type), INTENT(IN)  :: ulp_TL, vlp_TL, wlp_TL
     REAL(fp),         INTENT(IN OUT) :: z_int_TL  ! INTENT(IN OUT) to preclude reinitialisation
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_TL(NPTS)
-    ! Interpolate z in w,x dimension for all y
+    ! Interpolate z in u,v dimension for all w
     DO i = 1, NPTS
-      CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
-      CALL Interp_2D_TL(z(:,:,i),wlp,xlp,z_TL(:,:,i),wlp_TL,xlp_TL,a_TL(i))
+      CALL Interp_2D(z(:,:,i),ulp,vlp,a(i))
+      CALL Interp_2D_TL(z(:,:,i),ulp,vlp,z_TL(:,:,i),ulp_TL,vlp_TL,a_TL(i))
     END DO
-    ! Interpolate a in y dimension
-    CALL Interp_1D_TL(a,ylp,a_TL,ylp_TL,z_int_TL)
+    ! Interpolate a in w dimension
+    CALL Interp_1D_TL(a,wlp,a_TL,wlp_TL,z_int_TL)
   END SUBROUTINE Interp_3D_TL
-  
+
+  ! 4-D routine
+  SUBROUTINE Interp_4D_TL( z   , ulp   , vlp   , wlp   , xlp   , &  ! FWD Input
+                           z_TL, ulp_TL, vlp_TL, wlp_TL, xlp_TL, &  ! TL  Input
+                           z_int_TL                              )  ! TL  Output
+    ! Arguments
+    REAL(fp),         INTENT(IN)  :: z(:,:,:,:)
+    TYPE(LPoly_type), INTENT(IN)  :: ulp, vlp, wlp, xlp
+    REAL(fp),         INTENT(IN)  :: z_TL(:,:,:,:)
+    TYPE(LPoly_type), INTENT(IN)  :: ulp_TL, vlp_TL, wlp_TL, xlp_TL
+    REAL(fp),         INTENT(IN OUT) :: z_int_TL  ! INTENT(IN OUT) to preclude reinitialisation
+    ! Local variables
+    INTEGER  :: i
+    REAL(fp) :: a(NPTS), a_TL(NPTS)
+    ! Interpolate z in u,v,w dimension for all x
+    DO i = 1, NPTS
+      CALL Interp_3D(z(:,:,:,i),ulp,vlp,wlp,a(i))
+      CALL Interp_3D_TL(z(:,:,:,i),ulp,vlp,wlp,z_TL(:,:,:,i),ulp_TL,vlp_TL,wlp_TL,a_TL(i))
+    END DO
+    ! Interpolate a in x dimension
+    CALL Interp_1D_TL(a,xlp,a_TL,xlp_TL,z_int_TL)
+  END SUBROUTINE Interp_4D_TL
+
 
 !--------------------------------------------------------------------------------
 !
@@ -379,38 +465,47 @@ CONTAINS
 !       Interp_1D_AD
 !       Interp_2D_AD
 !       Interp_3D_AD
+!       Interp_4D_AD
 !
 ! PURPOSE:
 !       Subroutines to perform adjoint interpolation:
-!         o  1-D for z=f(w)
-!         o  2-D for z=f(w,x)
-!         o  3-D for z=f(w,x,y)
+!         o  1-D for z=f(u)
+!         o  2-D for z=f(u,v)
+!         o  3-D for z=f(u,v,w)
+!         o  4-D for z=f(u,v,w,x)
 !
 ! CALLING SEQUENCE:
-!       CALL Interp_1D_AD( z   , wlp   , &  ! FWD Input
+!       CALL Interp_1D_AD( z   , ulp   , &  ! FWD Input
 !                          z_int_AD    , &  ! AD  Input
-!                          z_AD, wlp_AD  )  ! AD  Output
+!                          z_AD, ulp_AD  )  ! AD  Output
 !
-!       CALL Interp_2D_AD( z   , wlp   , xlp   , &  ! FWD Input
+!       CALL Interp_2D_AD( z   , ulp   , vlp   , &  ! FWD Input
 !                          z_int_AD            , &  ! AD  Input
-!                          z_AD, wlp_AD, xlp_AD  )  ! AD  Output
+!                          z_AD, ulp_AD, vlp_AD  )  ! AD  Output
 !
-!       CALL Interp_3D_AD( z   , wlp   , xlp   , ylp   , &  ! FWD Input
+!       CALL Interp_3D_AD( z   , ulp   , vlp   , wlp   , &  ! FWD Input
 !                          z_int_AD                    , &  ! AD  Input
-!                          z_AD, wlp_AD, xlp_AD, ylp_AD  )  ! AD  Output
+!                          z_AD, ulp_AD, vlp_AD, wlp_AD  )  ! AD  Output
+!
+!       CALL Interp_4D_AD( z   , ulp   , vlp   , wlp   , xlp   , &  ! FWD Input
+!                          z_int_AD                            , &  ! AD  Input
+!                          z_AD, ulp_AD, vlp_AD, wlp_AD, xlp_AD  )  ! AD  Output
 !
 ! INPUT ARGUMENTS:
 !       z:                       Data to interpolate
 !                                UNITS:      Variable
 !                                TYPE:       REAL(fp)
-!                                DIMENSION:  Rank-1 (N_PTS)
+!                                DIMENSION:  Rank-1 (N_PTS), or
+!                                            Rank-2 (N_PTS,NPTS), or
+!                                            Rank-3 (N_PTS,NPTS,N_PTS), or
+!                                            Rank-4 (N_PTS,NPTS,N_PTS,NPTS), or
 !                                ATTRIBUTES: INTENT(IN)
 !
-!       wlp, xlp, ylp:           Interpolating polynomial structures for the
-!                                w-, x-, and y-dimension respectively from
-!                                previous calls to the LPoly() subroutine
+!       ulp, vlp, wlp, xlp:      Interpolating polynomial structures for the
+!                                respective dimensions from previous calls to
+!                                the LPoly() subroutine
 !                                UNITS:      N/A
-!                                TYPE:       TYPE(LPoly_type)
+!                                TYPE:       LPoly_type
 !                                DIMENSION:  Scalar
 !                                ATTRIBUTES: INTENT(IN)
 !
@@ -425,125 +520,156 @@ CONTAINS
 !                                into the LPoly_AD() subroutine.
 !                                UNITS:      N/A
 !                                TYPE:       REAL(fp)
-!                                DIMENSION:  Rank-1 (N_PTS)
+!                                DIMENSION:  Same rank as z input
 !                                ATTRIBUTES: INTENT(IN OUT)
 !
-!       wlp_AD, xlp_AD, ylp_AD:  Adjoint interpolating polynomial
-!                                structures for the w-, x-, and y-dimension
-!                                respectively. Subsequently passed into the
-!                                LPoly_AD() subroutine.
+!       ulp_AD, vlp_AD,          Adjoint interpolating polynomial
+!       wlp_AD, xlp_AD:          structures for respective dimensions.
+!                                Subsequently passed into the LPoly_AD()
+!                                subroutine.
 !                                UNITS:      N/A
-!                                TYPE:       TYPE(LPoly_type)
+!                                TYPE:       LPoly_type
 !                                DIMENSION:  Scalar
 !                                ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
   ! 1-D routine
-  SUBROUTINE Interp_1D_AD( z   , wlp   , &  ! FWD Input
+  SUBROUTINE Interp_1D_AD( z   , ulp   , &  ! FWD Input
                            z_int_AD    , &  ! AD  Input
-                           z_AD, wlp_AD  )  ! AD  Output
+                           z_AD, ulp_AD  )  ! AD  Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp
     REAL(fp),         INTENT(IN OUT) :: z_int_AD
     REAL(fp),         INTENT(IN OUT) :: z_AD(:)
-    TYPE(LPoly_type), INTENT(IN OUT) :: wlp_AD
+    TYPE(LPoly_type), INTENT(IN OUT) :: ulp_AD
     ! Local variables
     REAL(fp) :: wl_z_int_AD, wr_z_int_AD
     ! Perform adjoint interpolation
-    wlp_AD%w_right = wlp_AD%w_right + &
-                     ( z_int_AD * ( ( wlp%lp_right(1) * z(2) ) + &
-                                    ( wlp%lp_right(2) * z(3) ) + &
-                                    ( wlp%lp_right(3) * z(4) ) ) )
+    ulp_AD%w_right = ulp_AD%w_right + &
+                     ( z_int_AD * ( ( ulp%lp_right(1) * z(2) ) + &
+                                    ( ulp%lp_right(2) * z(3) ) + &
+                                    ( ulp%lp_right(3) * z(4) ) ) )
 
-    wlp_AD%w_left = wlp_AD%w_left + &
-                    ( z_int_AD * ( ( wlp%lp_left(1) * z(1) ) + &
-                                   ( wlp%lp_left(2) * z(2) ) + &
-                                   ( wlp%lp_left(3) * z(3) ) ) )
+    ulp_AD%w_left = ulp_AD%w_left + &
+                    ( z_int_AD * ( ( ulp%lp_left(1) * z(1) ) + &
+                                   ( ulp%lp_left(2) * z(2) ) + &
+                                   ( ulp%lp_left(3) * z(3) ) ) )
 
-    wr_z_int_AD = wlp%w_right * z_int_AD
-    wlp_AD%lp_right(1) = wlp_AD%lp_right(1) + ( wr_z_int_AD * z(2) )
-    wlp_AD%lp_right(2) = wlp_AD%lp_right(2) + ( wr_z_int_AD * z(3) )
-    wlp_AD%lp_right(3) = wlp_AD%lp_right(3) + ( wr_z_int_AD * z(4) )
+    wr_z_int_AD = ulp%w_right * z_int_AD
+    ulp_AD%lp_right(1) = ulp_AD%lp_right(1) + ( wr_z_int_AD * z(2) )
+    ulp_AD%lp_right(2) = ulp_AD%lp_right(2) + ( wr_z_int_AD * z(3) )
+    ulp_AD%lp_right(3) = ulp_AD%lp_right(3) + ( wr_z_int_AD * z(4) )
 
-    wl_z_int_AD = wlp%w_left * z_int_AD
-    wlp_AD%lp_left(1) = wlp_AD%lp_left(1) + ( wl_z_int_AD * z(1) )
-    wlp_AD%lp_left(2) = wlp_AD%lp_left(2) + ( wl_z_int_AD * z(2) )
-    wlp_AD%lp_left(3) = wlp_AD%lp_left(3) + ( wl_z_int_AD * z(3) )
+    wl_z_int_AD = ulp%w_left * z_int_AD
+    ulp_AD%lp_left(1) = ulp_AD%lp_left(1) + ( wl_z_int_AD * z(1) )
+    ulp_AD%lp_left(2) = ulp_AD%lp_left(2) + ( wl_z_int_AD * z(2) )
+    ulp_AD%lp_left(3) = ulp_AD%lp_left(3) + ( wl_z_int_AD * z(3) )
 
-    z_AD(1) = z_AD(1) + ( wl_z_int_AD * wlp%lp_left(1) )
-    
-    z_AD(2) = z_AD(2) + ( wr_z_int_AD * wlp%lp_right(1) ) + &
-                        ( wl_z_int_AD * wlp%lp_left(2)  )
-                        
-    z_AD(3) = z_AD(3) + ( wr_z_int_AD * wlp%lp_right(2) ) + &
-                        ( wl_z_int_AD * wlp%lp_left(3)  )
-                        
-    z_AD(4) = z_AD(4) + ( wr_z_int_AD * wlp%lp_right(3) )
+    z_AD(1) = z_AD(1) + ( wl_z_int_AD * ulp%lp_left(1) )
+
+    z_AD(2) = z_AD(2) + ( wr_z_int_AD * ulp%lp_right(1) ) + &
+                        ( wl_z_int_AD * ulp%lp_left(2)  )
+
+    z_AD(3) = z_AD(3) + ( wr_z_int_AD * ulp%lp_right(2) ) + &
+                        ( wl_z_int_AD * ulp%lp_left(3)  )
+
+    z_AD(4) = z_AD(4) + ( wr_z_int_AD * ulp%lp_right(3) )
 
   END SUBROUTINE Interp_1D_AD
 
   ! 2-D routine
-  SUBROUTINE Interp_2D_AD( z   , wlp   , xlp   , &  ! FWD Input
+  SUBROUTINE Interp_2D_AD( z   , ulp   , vlp   , &  ! FWD Input
                            z_int_AD            , &  ! AD  Input
-                           z_AD, wlp_AD, xlp_AD  )  ! AD  Output
+                           z_AD, ulp_AD, vlp_AD  )  ! AD  Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp, xlp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp
     REAL(fp),         INTENT(IN OUT) :: z_int_AD
     REAL(fp),         INTENT(IN OUT) :: z_AD(:,:)
-    TYPE(LPoly_type), INTENT(IN OUT) :: wlp_AD, xlp_AD
+    TYPE(LPoly_type), INTENT(IN OUT) :: ulp_AD, vlp_AD
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_AD(NPTS)
     ! Forward calculations
-    ! Interpolate z in w dimension for all x
+    ! Interpolate z in u dimension for all v
     DO i = 1, NPTS
-      CALL Interp_1D(z(:,i),wlp,a(i))
+      CALL Interp_1D(z(:,i),ulp,a(i))
     END DO
     ! Adjoint calculations
     ! Initialize local AD variables
     a_AD = ZERO
-    ! Adjoint of z interpolation in x dimension
-    CALL Interp_1D_AD(a,xlp,z_int_AD,a_AD,xlp_AD)
-    ! Adjoint of z interpolation in w dimension for all x
+    ! Adjoint of z interpolation in v dimension
+    CALL Interp_1D_AD(a,vlp,z_int_AD,a_AD,vlp_AD)
+    ! Adjoint of z interpolation in u dimension for all v
     DO i = 1, NPTS
-      CALL Interp_1D_AD(z(:,i),wlp,a_AD(i),z_AD(:,i),wlp_AD)
+      CALL Interp_1D_AD(z(:,i),ulp,a_AD(i),z_AD(:,i),ulp_AD)
     END DO
   END SUBROUTINE Interp_2D_AD
 
   ! 3-D routine
-  SUBROUTINE Interp_3D_AD( z   , wlp   , xlp   , ylp   , &  ! FWD Input
+  SUBROUTINE Interp_3D_AD( z   , ulp   , vlp   , wlp   , &  ! FWD Input
                            z_int_AD                    , &  ! AD  Input
-                           z_AD, wlp_AD, xlp_AD, ylp_AD  )  ! AD  Output
+                           z_AD, ulp_AD, vlp_AD, wlp_AD  )  ! AD  Output
     ! Arguments
     REAL(fp),         INTENT(IN)     :: z(:,:,:)
-    TYPE(LPoly_type), INTENT(IN)     :: wlp, xlp, ylp
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp, wlp
     REAL(fp),         INTENT(IN OUT) :: z_int_AD
     REAL(fp),         INTENT(IN OUT) :: z_AD(:,:,:)
-    TYPE(LPoly_type), INTENT(IN OUT) :: wlp_AD, xlp_AD, ylp_AD
+    TYPE(LPoly_type), INTENT(IN OUT) :: ulp_AD, vlp_AD, wlp_AD
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: a(NPTS), a_AD(NPTS)
 
     ! Forward calculations
-    ! Interpolate z in w and x dimension for all y
+    ! Interpolate z in u and v dimension for all w
     DO i = 1, NPTS
-      CALL Interp_2D(z(:,:,i),wlp,xlp,a(i))
+      CALL Interp_2D(z(:,:,i),ulp,vlp,a(i))
     END DO
-    
+
     ! Adjoint calculations
     ! Initialize local AD variables
     a_AD = ZERO
-    ! Adjoint of a interpolation in y dimension
-    CALL Interp_1D_AD(a,ylp,z_int_AD,a_AD,ylp_AD)
-    ! Adjoint of z interpolation in w and x dimension for all y
+    ! Adjoint of a interpolation in w dimension
+    CALL Interp_1D_AD(a,wlp,z_int_AD,a_AD,wlp_AD)
+    ! Adjoint of z interpolation in u and v dimension for all w
     DO i = 1, NPTS
-      CALL Interp_2D_AD(z(:,:,i),wlp,xlp,a_AD(i),z_AD(:,:,i),wlp_AD,xlp_AD)
+      CALL Interp_2D_AD(z(:,:,i),ulp,vlp,a_AD(i),z_AD(:,:,i),ulp_AD,vlp_AD)
     END DO
   END SUBROUTINE Interp_3D_AD
 
-       
+  ! 4-D routine
+  SUBROUTINE Interp_4D_AD( z   , ulp   , vlp   , wlp   , xlp   , &  ! FWD Input
+                           z_int_AD                            , &  ! AD  Input
+                           z_AD, ulp_AD, vlp_AD, wlp_AD, xlp_AD  )  ! AD  Output
+    ! Arguments
+    REAL(fp),         INTENT(IN)     :: z(:,:,:,:)
+    TYPE(LPoly_type), INTENT(IN)     :: ulp, vlp, wlp, xlp
+    REAL(fp),         INTENT(IN OUT) :: z_int_AD
+    REAL(fp),         INTENT(IN OUT) :: z_AD(:,:,:,:)
+    TYPE(LPoly_type), INTENT(IN OUT) :: ulp_AD, vlp_AD, wlp_AD, xlp_AD
+    ! Local variables
+    INTEGER  :: i
+    REAL(fp) :: a(NPTS), a_AD(NPTS)
+
+    ! Forward calculations
+    ! Interpolate z in u,v,w dimension for all x
+    DO i = 1, NPTS
+      CALL Interp_3D(z(:,:,:,i),ulp,vlp,wlp,a(i))
+    END DO
+
+    ! Adjoint calculations
+    ! Initialize local AD variables
+    a_AD = ZERO
+    ! Adjoint of a interpolation in x dimension
+    CALL Interp_1D_AD(a,xlp,z_int_AD,a_AD,xlp_AD)
+    ! Adjoint of z interpolation in u,v,w dimension for all x
+    DO i = 1, NPTS
+      CALL Interp_3D_AD(z(:,:,:,i),ulp,vlp,wlp,a_AD(i),z_AD(:,:,:,i),ulp_AD,vlp_AD,wlp_AD)
+    END DO
+  END SUBROUTINE Interp_4D_AD
+
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
@@ -554,16 +680,18 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       For regularly spaced x-data:
-!         CALL Find_Index( x, dx, x_int, &  ! Input
+!         CALL Find_Index( x, dx,        &  ! Input
+!                          x_int,        &  ! In/Output
 !                          i1, i2,       &  ! Output
 !                          out_of_bounds )  ! Output
 !
 !       For irregularly spaced x-data:
-!         CALL Find_Index( x, x_int,     &  ! Input
+!         CALL Find_Index( x,            &  ! Input
+!                          x_int,        &  ! In/Output
 !                          i1, i2,       &  ! Output
 !                          out_of_bounds )  ! Output
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       x:             Abscissa data.
 !                      UNITS:      Variable
 !                      TYPE:       REAL(fp)
@@ -573,17 +701,24 @@ CONTAINS
 !       dx:            Abscissa data spacing for the regularly spaced case.
 !                      UNITS:      Same as x.
 !                      TYPE:       REAL(fp)
-!                      DIMENSION:  Sclaar
+!                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-!       x_int:         Abscissa value at which an interpolate is desired.
-!                      Assumption is that x(1) <= xInt <= x(N)
+! INPUTS/OUTPUTS
+!       x_int:         On input : Abscissa value at which an interpolate
+!                                 is desired.
+!                      On output: Valid abscissa value at which an interpolate
+!                                 will be computed.
+!                      If x_int < x(1),          then x_int = x(1) upon exit.
+!                         x_int > x(N),          then x_int = x(N) upon exit
+!                         x(1) <= x_int <= x(N), then x_int is unchanged upon exit.
+!                      Also see the out_of_bounds output argument.
 !                      UNITS:      Same as x.
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN OUT)
 !
-! OUTPUT ARGUMENTS
+! OUTPUTS
 !       i1, i2:        Begin and end indices in the input x-array to
 !                      use for the 4-pt interpolation at the value x_int.
 !                      Three cases are possible for a x array of length N:
@@ -627,9 +762,9 @@ CONTAINS
       x_int = x(1)
     ELSE IF (out_of_bounds .AND. i2==n) THEN
       x_int = x(n)
-    END IF 
+    END IF
   END SUBROUTINE Find_Regular_Index
-  
+
   ! Find indices for random spacing.
   ! Assumption is that x(1) <= xInt <= x(n)
   ! (despite the MIN/MAX test)
@@ -651,7 +786,7 @@ CONTAINS
       x_int = x(1)
     ELSE IF (out_of_bounds .AND. i2==n) THEN
       x_int = x(n)
-    END IF 
+    END IF
   END SUBROUTINE Find_Random_Index
 
 
@@ -708,7 +843,7 @@ CONTAINS
     ! Compute the denominator differences
     CALL Compute_dx(x(1:3),p%dx_left)
     CALL Compute_dx(x(2:4),p%dx_right)
-    
+
     ! Compute the quadratic polynomials
     CALL Compute_QPoly(p%dxi_left , p%dx_left , p%lp_left)
     CALL Compute_QPoly(p%dxi_right, p%dx_right, p%lp_right)
@@ -726,7 +861,7 @@ CONTAINS
     END IF
   END SUBROUTINE LPoly
 
-  
+
 !--------------------------------------------------------------------------------
 !
 ! NAME:
@@ -807,7 +942,7 @@ CONTAINS
     ! Compute the tangent-linear denominator differences
     CALL Compute_dx_TL(x_TL(1:3),p_TL%dx_left)
     CALL Compute_dx_TL(x_TL(2:4),p_TL%dx_right)
-    
+
     ! Compute the tangent-linear quadratic polynomials
     CALL Compute_QPoly_TL(p%dxi_left   , p%dx_left    , p%lp_left,  &
                           p_TL%dxi_left, p_TL%dx_left , p_TL%lp_left)
@@ -914,7 +1049,7 @@ CONTAINS
                           p%lp_right    , &
                           p_AD%lp_right , &
                           p_AD%dxi_right, p_AD%dx_right)
-                          
+
     ! "Left" side quadratic
     CALL Compute_QPoly_AD(p%dxi_left   , p%dx_left,  &
                           p%lp_left    , &
@@ -951,7 +1086,7 @@ CONTAINS
     lp(2) = dxi(1)*dxi(3) / (-dx(1)*dx(3))
     lp(3) = dxi(1)*dxi(2) / ( dx(2)*dx(3))
   END SUBROUTINE Compute_QPoly
-  
+
   ! Tangent-linear model
   SUBROUTINE Compute_QPoly_TL(dxi   , dx   , lp,  &
                               dxi_TL, dx_TL, lp_TL)
@@ -974,7 +1109,7 @@ CONTAINS
                  (dx(3) *dx_TL(2) *lp(3)) - &
                  (dx(2) *dx_TL(3) *lp(3))   ) / (dx(2)*dx(3))
   END SUBROUTINE Compute_QPoly_TL
-  
+
   ! Adjoint model
   SUBROUTINE Compute_QPoly_AD(dxi   , dx, &
                               lp    , &
@@ -1009,9 +1144,9 @@ CONTAINS
     dx_AD(2)  = dx_AD(2)  - d*dx(1)*lp(1)
     lp_AD(1) = ZERO
   END SUBROUTINE Compute_QPoly_AD
-  
 
-  
+
+
   ! -------------------------------------------------------------
   ! Subroutines to compute the polynomial denominator differences
   ! -------------------------------------------------------------
@@ -1023,7 +1158,7 @@ CONTAINS
     dx(2) = x(1)-x(3)
     dx(3) = x(2)-x(3)
   END SUBROUTINE Compute_dx
-  
+
   ! Tangent-linear model
   SUBROUTINE Compute_dx_TL(x_TL,dx_TL)
     REAL(fp), INTENT(IN)     :: x_TL(:)   ! TL Input
@@ -1032,7 +1167,7 @@ CONTAINS
     dx_TL(2) = x_TL(1)-x_TL(3)
     dx_TL(3) = x_TL(2)-x_TL(3)
   END SUBROUTINE Compute_dx_TL
-  
+
   ! Adjoint model
   SUBROUTINE Compute_dx_AD(dx_AD,x_AD)
     REAL(fp), INTENT(IN OUT) :: dx_AD(:)  ! AD Input
@@ -1061,7 +1196,7 @@ CONTAINS
     dxi(2) = xi - x(2)
     dxi(3) = xi - x(3)
   END SUBROUTINE Compute_dxi
-  
+
   ! Tangent-linear model
   SUBROUTINE Compute_dxi_TL(x_TL,xi_TL,dxi_TL)
     REAL(fp), INTENT(IN)     :: x_TL(:)    ! TL Input
@@ -1071,7 +1206,7 @@ CONTAINS
     dxi_TL(2) = xi_TL - x_TL(2)
     dxi_TL(3) = xi_TL - x_TL(3)
   END SUBROUTINE Compute_dxi_TL
-  
+
   ! Adjoint model
   SUBROUTINE Compute_dxi_AD(dxi_AD,x_AD,xi_AD)
     REAL(fp), INTENT(IN OUT) :: dxi_AD(:)  ! AD Input

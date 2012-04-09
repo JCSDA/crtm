@@ -20,13 +20,14 @@ SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
+            String_Utility.f90 \
             CRTM_Parameters.f90 \
             CRTM_Atmosphere_Define.f90 \
             CRTM_Cloud_Define.f90 \
             CRTM_Aerosol_Define.f90 \
-            CRTM_Atmosphere_Binary_IO.f90 \
-            CRTM_Cloud_Binary_IO.f90 \
-            CRTM_Aerosol_Binary_IO.f90 \
+            CRTM_Atmosphere_IO.f90 \
+            CRTM_Cloud_IO.f90 \
+            CRTM_Aerosol_IO.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
@@ -47,14 +48,11 @@ LIBRARIES = -L$(NETCDF_LIB)/lib -lnetcdf
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Source dependency lists
 include make.dependencies

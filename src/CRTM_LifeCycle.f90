@@ -10,7 +10,7 @@
 
 MODULE CRTM_LifeCycle
 
-  
+
   ! -----------------
   ! Environment setup
   ! -----------------
@@ -49,6 +49,8 @@ MODULE CRTM_LifeCycle
                                      CRTM_VISsnowCoeff_Destroy
   USE CRTM_VISiceCoeff       , ONLY: CRTM_VISiceCoeff_Load, &
                                      CRTM_VISiceCoeff_Destroy
+  USE CRTM_MWwaterCoeff      , ONLY: CRTM_MWwaterCoeff_Load, &
+                                     CRTM_MWwaterCoeff_Destroy
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -158,7 +160,7 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Load_CloudCoeff:    Set this logical argument for not loading the CloudCoeff data
-!                           to save memory space under the clear conditions 
+!                           to save memory space under the clear conditions
 !                           If == .FALSE., the CloudCoeff data will not be loaded;
 !                              == .TRUE.,  the CloudCoeff data will be loaded.
 !                           If not specified, default is .TRUE. (will be loaded)
@@ -168,7 +170,7 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Load_AerosolCoeff:  Set this logical argument for not loading the AerosolCoeff data
-!                           to save memory space under the clear conditions 
+!                           to save memory space under the clear conditions
 !                           If == .FALSE., the AerosolCoeff data will not be loaded;
 !                              == .TRUE.,  the AerosolCoeff data will be loaded.
 !                           If not specified, default is .TRUE. (will be loaded)
@@ -200,7 +202,7 @@ CONTAINS
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
 !                           the passed Process_ID value agrees with this value
-!                           the INFORMATION messages are output. 
+!                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
@@ -238,6 +240,7 @@ CONTAINS
     VISlandCoeff_File , &  ! Optional input
     VISsnowCoeff_File , &  ! Optional input
     VISiceCoeff_File  , &  ! Optional input
+    MWwaterCoeff_File , &  ! Optional input
     File_Path         , &  ! Optional input
     Load_CloudCoeff   , &  ! Optional input
     Load_AerosolCoeff , &  ! Optional input
@@ -248,22 +251,23 @@ CONTAINS
     ! Arguments
     CHARACTER(*)               , INTENT(IN)  :: Sensor_ID(:)
     TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File            
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File          
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File             
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File              
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnowCoeff_File  
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRiceCoeff_File   
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnowCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRiceCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISwaterCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISlandCoeff_File 
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISsnowCoeff_File 
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_File  
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path                  
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff            
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff          
-    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet                      
-    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Process_ID                 
-    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Output_Process_ID          
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISlandCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISsnowCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: MWwaterCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff
+    LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Process_ID
+    INTEGER     ,      OPTIONAL, INTENT(IN)  :: Output_Process_ID
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -273,17 +277,19 @@ CONTAINS
     CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_AerosolCoeff_File
     CHARACTER(SL) :: Default_EmisCoeff_File
-    CHARACTER(SL) :: Default_IRlandCoeff_File  
-    CHARACTER(SL) :: Default_IRsnowCoeff_File  
-    CHARACTER(SL) :: Default_IRiceCoeff_File   
+    CHARACTER(SL) :: Default_IRlandCoeff_File
+    CHARACTER(SL) :: Default_IRsnowCoeff_File
+    CHARACTER(SL) :: Default_IRiceCoeff_File
     CHARACTER(SL) :: Default_VISwaterCoeff_File
-    CHARACTER(SL) :: Default_VISlandCoeff_File 
-    CHARACTER(SL) :: Default_VISsnowCoeff_File 
-    CHARACTER(SL) :: Default_VISiceCoeff_File  
+    CHARACTER(SL) :: Default_VISlandCoeff_File
+    CHARACTER(SL) :: Default_VISsnowCoeff_File
+    CHARACTER(SL) :: Default_VISiceCoeff_File
+    CHARACTER(SL) :: Default_MWwaterCoeff_File
+
     INTEGER :: l, n, n_Sensors
     LOGICAL :: Local_Load_CloudCoeff
     LOGICAL :: Local_Load_AerosolCoeff
-    
+
     ! ******
     ! TEMPORARY UNTIL LOAD ROUTINE INTERFACES HAVE BEEN MODIFIED
     INTEGER :: iQuiet
@@ -330,6 +336,7 @@ CONTAINS
     Default_VISlandCoeff_File    = 'NPOESS.VISland.EmisCoeff.bin'
     Default_VISsnowCoeff_File    = 'NPOESS.VISsnow.EmisCoeff.bin'
     Default_VISiceCoeff_File     = 'NPOESS.VISice.EmisCoeff.bin'
+    Default_MWwaterCoeff_File    = 'FASTEM5.MWwater.EmisCoeff.bin'
     ! ...Were other filenames specified?
     IF ( PRESENT(CloudCoeff_File   ) ) Default_CloudCoeff_File    = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(AerosolCoeff_File ) ) Default_AerosolCoeff_File  = TRIM(ADJUSTL(AerosolCoeff_File))
@@ -341,6 +348,7 @@ CONTAINS
     IF ( PRESENT(VISlandCoeff_File ) ) Default_VISlandCoeff_File  = TRIM(ADJUSTL(VISlandCoeff_File))
     IF ( PRESENT(VISsnowCoeff_File ) ) Default_VISsnowCoeff_File  = TRIM(ADJUSTL(VISsnowCoeff_File))
     IF ( PRESENT(VISiceCoeff_File  ) ) Default_VISiceCoeff_File   = TRIM(ADJUSTL(VISiceCoeff_File))
+    IF ( PRESENT(MWwaterCoeff_File ) ) Default_MWwaterCoeff_File  = TRIM(ADJUSTL(MWwaterCoeff_File))
     ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
       Default_CloudCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
@@ -353,6 +361,7 @@ CONTAINS
       Default_VISlandCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISlandCoeff_File)
       Default_VISsnowCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISsnowCoeff_File)
       Default_VISiceCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISiceCoeff_File)
+      Default_MWwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_MWwaterCoeff_File)
     END IF
 
 
@@ -501,8 +510,20 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
-    
-    
+
+    ! Load the emissivity model coefficients
+    ! ...MW water
+    err_stat = CRTM_MWwaterCoeff_Load( &
+                 Default_MWwaterCoeff_File, &
+                 Quiet             = Quiet            , &
+                 Process_ID        = Process_ID       , &
+                 Output_Process_ID = Output_Process_ID  )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error loading MWwaterCoeff data from '//TRIM(Default_MWwaterCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+      RETURN
+    END IF
+
     ! Load the ChannelInfo structure
     DO n = 1, n_Sensors
       ! ...Allocate the ChannelInfo structure
@@ -522,7 +543,7 @@ CONTAINS
       ChannelInfo(n)%WMO_Sensor_ID    = SC(n)%WMO_Sensor_ID
       ChannelInfo(n)%Sensor_Channel   = SC(n)%Sensor_Channel
     END DO
-    
+
   END FUNCTION CRTM_Init
 
 
@@ -605,7 +626,7 @@ CONTAINS
 
     ! Do nothing if CRTM not initialised
     IF ( .NOT. CRTM_IsInitialized(ChannelInfo) ) RETURN
-    
+
 
     ! Destroy all the ChannelInfo structures
     CALL CRTM_ChannelInfo_Destroy( ChannelInfo )
@@ -623,49 +644,49 @@ CONTAINS
       msg = 'Error deallocating shared VISiceCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_VISsnowCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared VISsnowCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_VISwaterCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared VISwaterCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_VISlandCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared VISlandCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_IRiceCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared IRiceCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_IRsnowCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared IRsnowCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_IRlandCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared IRlandCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
-    
+
     Destroy_Status = CRTM_Destroy_EmisCoeff( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
@@ -698,6 +719,14 @@ CONTAINS
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared SpcCoeff data structure(s)'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+    END IF
+
+    ! Destroy the shared data structure
+    Destroy_Status = CRTM_MWwaterCoeff_Destroy( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      msg = 'Error deallocating shared MWwaterCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
@@ -740,7 +769,7 @@ CONTAINS
     LOGICAL :: Status
     Status = ALL(CRTM_ChannelInfo_Associated(ChannelInfo))
   END FUNCTION CRTM_IsInitialized
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
