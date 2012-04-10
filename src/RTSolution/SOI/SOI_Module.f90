@@ -118,7 +118,7 @@ CONTAINS
                                           RTV%Pbb( :, :, k ), RTV%Planck_Atmosphere( k ),    & ! Input 
                                           RTV )                       ! Output
           ELSE
-            CALL CRTM_Doubling_Layer( RTV%n_Streams, RTV%n_Angles, k, w( k ), g( k ), T_OD( k ), & ! Input
+            CALL CRTM_Doubling_Layer( RTV%n_Streams, RTV%n_Angles, k, w( k ), T_OD( k ), & ! Input
                                       RTV%COS_Angle, RTV%COS_Weight, RTV%Pff( :, :, k ), & ! Input
                                       RTV%Pbb( :, :, k ), RTV%Planck_Atmosphere( k ),    & ! Input 
                                       RTV )                       ! Output
@@ -1143,7 +1143,6 @@ CONTAINS
                                           NANG, & ! Input, number of angles
                                             KL, & ! Input, KL-th layer 
                                  single_albedo, & ! Input, single scattering albedo
-                              asymmetry_factor, & ! Input, asymmetry factor
                                  optical_depth, & ! Input, layer optical depth
                                      COS_Angle, & ! Input, COSINE of ANGLES
                                     COS_Weight, & ! Input, GAUSSIAN Weights
@@ -1170,7 +1169,7 @@ CONTAINS
      TYPE(RTV_type), INTENT( INOUT ) :: RTV
      REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
      REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-     REAL(fp), INTENT(IN) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
+     REAL(fp), INTENT(IN) :: single_albedo,optical_depth,Planck_Func
 
      ! internal variables
      REAL(fp), DIMENSION(NANG,NANG) :: term2,term3,term4,trans,refl
