@@ -673,11 +673,11 @@ CONTAINS
                                             Pbb_AD( :, :, k ), Planck_Atmosphere_AD( k ) )  !Output
           ELSE
 
-            CALL CRTM_Doubling_layer_AD(RTV%n_Streams, RTV%n_Angles, k, w( k ), g( k ), T_OD( k ),      &        !Input
+            CALL CRTM_Doubling_layer_AD(RTV%n_Streams, RTV%n_Angles, k, w( k ), T_OD( k ),      &        !Input
                                         RTV%COS_Angle, RTV%COS_Weight, RTV%Pff( :, :, k ), RTV%Pbb( :, :, k ), & ! Input
                                         RTV%Planck_Atmosphere( k ),    & !Input
                                         s_trans_AD( :, :, k ), s_refl_AD( :, :, k ), s_source_up_AD( :, k ),   & 
-                                        s_source_down_AD( :, k ), RTV, w_AD( k ), g_AD( k ), T_OD_AD( k ), Pff_AD( :, :, k ), & 
+                                        s_source_down_AD( :, k ), RTV, w_AD( k ), T_OD_AD( k ), Pff_AD( :, :, k ), & 
                                         Pbb_AD( :, :, k ), Planck_Atmosphere_AD( k ) )  !Output
 
           END IF
@@ -1417,7 +1417,6 @@ CONTAINS
                                          NANG, & ! Input, number of angles
                                            KL, & ! Input, number of angles
                                 single_albedo, & ! Input, single scattering albedo
-                             asymmetry_factor, & ! Input, asymmetry factor
                                 optical_depth, & ! Input, layer optical depth
                                     COS_Angle, & ! Input, COSINE of ANGLES
                                    COS_Weight, & ! Input, GAUSSIAN Weights
@@ -1430,7 +1429,6 @@ CONTAINS
                                source_down_AD, & ! Input, layer tangent-linear source_down 
                                           RTV, & ! Input, structure containing forward results 
                              single_albedo_AD, & ! Output adjoint single scattering albedo
-                          asymmetry_factor_AD, & ! Output AD asymmetry factor
                              optical_depth_AD, & ! Output AD layer optical depth
                                         ff_AD, & ! Output AD forward Phase matrix
                                         bb_AD, & ! Output AD backward Phase matrix
@@ -1441,12 +1439,12 @@ CONTAINS
     TYPE(RTV_type), INTENT(IN) :: RTV
     REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
     REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-    REAL(fp), INTENT(IN) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
+    REAL(fp), INTENT(IN) :: single_albedo,optical_depth,Planck_Func
 
     ! Tangent-Linear Part
     REAL(fp), INTENT( INOUT ), DIMENSION( :,: ) :: trans_AD,refl_AD
     REAL(fp), INTENT( INOUT ), DIMENSION( : ) :: source_up_AD,source_down_AD
-    REAL(fp), INTENT( INOUT ) :: single_albedo_AD,asymmetry_factor_AD
+    REAL(fp), INTENT( INOUT ) :: single_albedo_AD
     REAL(fp), INTENT( INOUT ) :: optical_depth_AD,Planck_Func_AD
     REAL(fp), INTENT(INOUT), DIMENSION(:,:) :: ff_AD,bb_AD
 
