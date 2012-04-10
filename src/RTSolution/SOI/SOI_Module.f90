@@ -113,7 +113,7 @@ CONTAINS
         
         IF ( w( k ) > SCATTERING_ALBEDO_THRESHOLD ) THEN 
           IF ( w( k ) < SNGL_SCAT_ALB_THRESH .AND. T_OD( k ) < OPT_DEPTH_THRESH ) THEN 
-            CALL CRTM_Truncated_Doubling( RTV%n_Streams, RTV%n_Angles, k, w( k ), g( k ), T_OD( k ), & ! Input
+            CALL CRTM_Truncated_Doubling( RTV%n_Streams, RTV%n_Angles, k, w( k ), T_OD( k ), & ! Input
                                           RTV%COS_Angle, RTV%COS_Weight, RTV%Pff( :, :, k ), & ! Input
                                           RTV%Pbb( :, :, k ), RTV%Planck_Atmosphere( k ),    & ! Input 
                                           RTV )                       ! Output
@@ -356,11 +356,11 @@ CONTAINS
 
         IF ( w( k ) > SCATTERING_ALBEDO_THRESHOLD ) THEN 
           IF ( w( k ) < SNGL_SCAT_ALB_THRESH .AND. T_OD( k ) < OPT_DEPTH_THRESH ) THEN 
-            CALL CRTM_Truncated_Doubling_TL(RTV%n_Streams, RTV%n_Angles, k, w( k ), g( k ), T_OD( k ),               & !Input
+            CALL CRTM_Truncated_Doubling_TL(RTV%n_Streams, RTV%n_Angles, k, w( k ), T_OD( k ),               & !Input
                                             RTV%COS_Angle( 1 : RTV%n_Angles ), RTV%COS_Weight( 1 : RTV%n_Angles ),   & !Input
                                             RTV%Pff( 1 : RTV%n_Angles, 1 : RTV%n_Angles, k ),                        & !Input
                                             RTV%Pbb( 1 : RTV%n_Angles, 1 : RTV%n_Angles, k ), RTV%Planck_Atmosphere( k ), & !Input
-                                            w_TL( k ), g_TL( k ), T_OD_TL( k ), Pff_TL( :, :, k ),                   & !Input
+                                            w_TL( k ), T_OD_TL( k ), Pff_TL( :, :, k ),                   & !Input
                                             Pbb_TL( :, :, k ), Planck_Atmosphere_TL( k ), RTV,                       & !Input
                                             s_trans_TL( :, :, k ), s_refl_TL( :, :, k ), s_source_up_TL( :, k ),     & !Output
                                             s_source_down_TL( :, k ) )                                                 !Output
@@ -665,11 +665,11 @@ CONTAINS
 
           IF ( w( k ) < SNGL_SCAT_ALB_THRESH .AND. T_OD( k ) < OPT_DEPTH_THRESH ) THEN 
 
-            CALL CRTM_Truncated_Doubling_AD(RTV%n_Streams, RTV%n_Angles, k, w( k ), g( k ), T_OD( k ),      &        !Input
+            CALL CRTM_Truncated_Doubling_AD(RTV%n_Streams, RTV%n_Angles, k, w( k ), T_OD( k ),      &        !Input
                                             RTV%COS_Angle, RTV%COS_Weight, RTV%Pff( :, :, k ), RTV%Pbb( :, :, k ), & ! Input
                                             RTV%Planck_Atmosphere( k ),    & !Input
                                             s_trans_AD( :, :, k ), s_refl_AD( :, :, k ), s_source_up_AD( :, k ),   & 
-                                            s_source_down_AD( :, k ), RTV, w_AD( k ), g_AD( k ), T_OD_AD( k ), Pff_AD( :, :, k ), & 
+                                            s_source_down_AD( :, k ), RTV, w_AD( k ), T_OD_AD( k ), Pff_AD( :, :, k ), & 
                                             Pbb_AD( :, :, k ), Planck_Atmosphere_AD( k ) )  !Output
           ELSE
 
@@ -743,7 +743,6 @@ CONTAINS
                                                NANG, & ! Input, number of angles
                                                  KL, & ! Input, KL-th layer 
                                       single_albedo, & ! Input, single scattering albedo
-                                   asymmetry_factor, & ! Input, asymmetry factor
                                       optical_depth, & ! Input, layer optical depth
                                           COS_Angle, & ! Input, COSINE of ANGLES
                                          COS_Weight, & ! Input, GAUSSIAN Weights
@@ -769,7 +768,7 @@ CONTAINS
 ! ----------------------------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_streams, NANG, KL
-      REAL(fp), INTENT(IN) :: single_albedo, asymmetry_factor, optical_depth, Planck_Func
+      REAL(fp), INTENT(IN) :: single_albedo, optical_depth, Planck_Func
       REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
       REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff, bb
       TYPE(RTV_type), INTENT( INOUT ) :: RTV
@@ -878,7 +877,6 @@ CONTAINS
                                                  NANG, & ! Input, number of angles
                                                    KL, & ! Input, number of angles
                                         single_albedo, & ! Input, single scattering albedo
-                                     asymmetry_factor, & ! Input, asymmetry factor
                                         optical_depth, & ! Input, layer optical depth
                                             COS_Angle, & ! Input, COSINE of ANGLES
                                            COS_Weight, & ! Input, GAUSSIAN Weights
@@ -886,7 +884,6 @@ CONTAINS
                                                    bb, & ! Input, Phase matrix (backward part)
                                           Planck_Func, & ! Input, Planck for layer temperature
                                      single_albedo_TL, & ! Input, tangent-linear single albedo
-                                  asymmetry_factor_TL, & ! Input, TL asymmetry factor
                                      optical_depth_TL, & ! Input, TL layer optical depth
                                                 ff_TL, & ! Input, TL forward Phase matrix
                                                 bb_TL, & ! Input, TL backward Phase matrix
@@ -908,12 +905,12 @@ CONTAINS
       TYPE(RTV_type), INTENT(IN) :: RTV
       REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff, bb
       REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-      REAL(fp), INTENT(IN) :: single_albedo, asymmetry_factor, optical_depth, Planck_Func
+      REAL(fp), INTENT(IN) :: single_albedo, optical_depth, Planck_Func
 
       ! Tangent-Linear Part
       REAL(fp), INTENT(OUT), DIMENSION( :, : ) :: trans_TL, refl_TL
       REAL(fp), INTENT(OUT), DIMENSION( : ) :: source_up_TL, source_down_TL
-      REAL(fp), INTENT(IN) :: single_albedo_TL, asymmetry_factor_TL
+      REAL(fp), INTENT(IN) :: single_albedo_TL
       REAL(fp), INTENT(IN) :: optical_depth_TL, Planck_Func_TL
       REAL(fp), INTENT(IN), DIMENSION( : ,: ) :: ff_TL, bb_TL
 
@@ -1002,7 +999,6 @@ CONTAINS
                                               NANG, & ! Input, number of angles
                                                 KL, & ! Input, number of angles
                                      single_albedo, & ! Input, single scattering albedo
-                                  asymmetry_factor, & ! Input, asymmetry factor
                                      optical_depth, & ! Input, layer optical depth
                                          COS_Angle, & ! Input, COSINE of ANGLES
                                         COS_Weight, & ! Input, GAUSSIAN Weights
@@ -1015,7 +1011,6 @@ CONTAINS
                                     source_down_AD, & ! Input, layer tangent-linear source_down 
                                                RTV, & ! Input, structure containing forward results 
                                   single_albedo_AD, & ! Output adjoint single scattering albedo
-                               asymmetry_factor_AD, & ! Output AD asymmetry factor
                                   optical_depth_AD, & ! Output AD layer optical depth
                                              ff_AD, & ! Output AD forward Phase matrix
                                              bb_AD, & ! Output AD backward Phase matrix
@@ -1026,12 +1021,12 @@ CONTAINS
     TYPE(RTV_type), INTENT(IN) :: RTV
     REAL(fp), INTENT(IN), DIMENSION(:,:) :: ff,bb
     REAL(fp), INTENT(IN), DIMENSION(:) :: COS_Angle, COS_Weight 
-    REAL(fp), INTENT(IN) :: single_albedo,asymmetry_factor,optical_depth,Planck_Func
+    REAL(fp), INTENT(IN) :: single_albedo,optical_depth,Planck_Func
 
     ! Tangent-Linear Part
     REAL(fp), INTENT( INOUT ), DIMENSION( :,: ) :: trans_AD,refl_AD
     REAL(fp), INTENT( INOUT ), DIMENSION( : ) :: source_up_AD,source_down_AD
-    REAL(fp), INTENT( INOUT ) :: single_albedo_AD,asymmetry_factor_AD
+    REAL(fp), INTENT( INOUT ) :: single_albedo_AD
     REAL(fp), INTENT( INOUT ) :: optical_depth_AD,Planck_Func_AD
     REAL(fp), INTENT(INOUT), DIMENSION(:,:) :: ff_AD,bb_AD
 
