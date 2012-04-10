@@ -171,7 +171,6 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(ML) :: MWwaterCoeff_File
     LOGICAL :: noisy
-    TYPE(MWwaterCoeff_type) :: MWwaterCoeff
 
     ! Setup 
     err_stat = SUCCESS
