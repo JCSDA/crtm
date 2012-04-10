@@ -77,7 +77,6 @@ CONTAINS
     ! local
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'load_bfield_lut'
     Integer            :: file_id, io_status
-    Logical            :: Existence, Is_Open
     Character (len=80) :: Message
     Integer            :: i, j, iskip
 
@@ -355,7 +354,7 @@ CONTAINS
     Real(fp), Intent(out)            :: cos_baziang
 
     ! Local     
-    Real(fp)    :: Bx, By, Bz, Solar_ZA, Solar_AZ, lat, lon, sensor_aziang, cosaz
+    Real(fp)    :: Bx, By, Bz, Solar_ZA, Solar_AZ, lat, lon, sensor_aziang
 
     ! compute the cosines of the angle between the magnetic field Be and
     ! propagation direction and Be's azimuth angle
