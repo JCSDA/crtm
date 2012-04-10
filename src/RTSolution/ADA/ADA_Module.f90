@@ -55,7 +55,6 @@ CONTAINS
   
   SUBROUTINE CRTM_ADA(n_Layers, & ! Input  number of atmospheric layers
                              w, & ! Input  layer scattering albedo
-                             g, & ! Input  layer asymmetry factor
                           T_OD, & ! Input  layer optical depth
              cosmic_background, & ! Input  cosmic background radiance
                     emissivity, & ! Input  surface emissivity
@@ -76,7 +75,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: n_Layers
     INTEGER nZ
     TYPE(RTV_type), INTENT( INOUT ) :: RTV
-    REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
+    REAL (fp), INTENT(IN), DIMENSION( : ) ::  w,T_OD
     REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity, direct_reflectivity
     REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
     REAL (fp), INTENT(IN) ::  cosmic_background
@@ -457,17 +456,14 @@ CONTAINS
   
    SUBROUTINE CRTM_ADA_TL(n_Layers, & ! Input  number of atmospheric layers
                                  w, & ! Input  layer scattering albedo
-                                 g, & ! Input  layer asymmetry factor
                               T_OD, & ! Input  layer optical depth
                  cosmic_background, & ! Input  cosmic background radiance
                         emissivity, & ! Input  surface emissivity
-                                      !   reflectivity is stored in RTV !
                direct_reflectivity, & ! Input  direct reflectivity
                                RTV, & ! Input  structure containing forward part results 
               Planck_Atmosphere_TL, & ! Input  tangent-linear atmospheric layer Planck radiance 
                  Planck_Surface_TL, & ! Input  TL surface Planck radiance
                               w_TL, & ! Input  TL layer scattering albedo
-                              g_TL, & ! Input  TL layer asymmetry factor
                            T_OD_TL, & ! Input  TL layer optical depth
                      emissivity_TL, & ! Input  TL surface emissivity
                    reflectivity_TL, & ! Input  TL  reflectivity
@@ -491,12 +487,12 @@ CONTAINS
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
       TYPE(RTV_type), INTENT(IN) :: RTV
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w,T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
 
       REAL (fp),INTENT(IN),DIMENSION( :,:,: ) ::  Pff_TL, Pbb_TL
-      REAL (fp),INTENT(IN),DIMENSION( : ) ::  g_TL,w_TL,T_OD_TL
+      REAL (fp),INTENT(IN),DIMENSION( : ) ::  w_TL,T_OD_TL
       REAL (fp),INTENT(IN),DIMENSION( 0: ) ::  Planck_Atmosphere_TL
       REAL (fp),INTENT(IN) ::  Planck_Surface_TL
       REAL (fp),INTENT(IN),DIMENSION( : ) ::  emissivity_TL
@@ -693,7 +689,7 @@ CONTAINS
      REAL(fp) :: V1(2*nZ,2*nZ),Sfac2,source_up(nZ),source_down(nZ) 
      REAL(fp) :: EXPfactor_TL,Sfactor_TL,s_transmittance_TL,Solar_TL(2*nZ),V0_TL(2*nZ,2*nZ),Solar1_TL(2*nZ)
      REAL(fp) :: Sfac2_TL
-     REAL(fp), DIMENSION( nZ ) :: thermal_up_TL,thermal_down_TL,C1_TL,C2_TL,C1,C2
+     REAL(fp), DIMENSION( nZ ) :: thermal_up_TL,thermal_down_TL
      REAL(fp), DIMENSION(nZ,nZ) :: trans, refl
      INTEGER :: N2, N2_1
      REAL(fp) :: Thermal_C_TL
@@ -935,18 +931,15 @@ CONTAINS
   
    SUBROUTINE CRTM_ADA_AD(n_Layers, & ! Input  number of atmospheric layers
                                  w, & ! Input  layer scattering albedo
-                                 g, & ! Input  layer asymmetry factor
                               T_OD, & ! Input  layer optical depth
                  cosmic_background, & ! Input  cosmic background radiance
                         emissivity, & ! Input  surface emissivity
-                                      !   surface reflectivity is stored in RTV !
                direct_reflectivity, & ! surface direct reflectivity
                                RTV, & ! Input  structure containing forward results 
                        s_rad_up_AD, & ! Input  adjoint upward radiance 
               Planck_Atmosphere_AD, & ! Output AD atmospheric layer Planck radiance
                  Planck_Surface_AD, & ! Output AD surface Planck radiance
                               w_AD, & ! Output AD layer scattering albedo
-                              g_AD, & ! Output AD layer asymmetry factor
                            T_OD_AD, & ! Output AD layer optical depth
                      emissivity_AD, & ! Output AD surface emissivity
                    reflectivity_AD, & ! Output AD surface reflectivity
@@ -969,12 +962,12 @@ CONTAINS
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
       TYPE(RTV_type), INTENT(IN) :: RTV
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  g,w,T_OD
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w,T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,direct_reflectivity
       REAL (fp), INTENT(IN) ::  cosmic_background
 
       REAL (fp),INTENT(INOUT),DIMENSION( :,:,: ) ::  Pff_AD, Pbb_AD
-      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  g_AD,w_AD,T_OD_AD
+      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  w_AD,T_OD_AD
       REAL (fp),INTENT(INOUT),DIMENSION( 0: ) ::  Planck_Atmosphere_AD
       REAL (fp),INTENT(INOUT) ::  Planck_Surface_AD
       REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  emissivity_AD,direct_reflectivity_AD
@@ -1208,7 +1201,6 @@ CONTAINS
      REAL(fp) :: V1(2*nZ,2*nZ),Sfac2,source_up(nZ),source_down(nZ) 
      REAL(fp) :: EXPfactor_AD,Sfactor_AD,s_transmittance_AD,Solar_AD(2*nZ),V0_AD(2*nZ,2*nZ),Solar1_AD(2*nZ)
      REAL(fp) :: V1_AD(2*nZ,2*nZ),Sfac2_AD
-     REAL(fp), DIMENSION( nZ ) :: C1_AD,C2_AD,C1,C2
      REAL(fp), DIMENSION(nZ,nZ) :: trans, refl
      INTEGER :: N2, N2_1
      REAL(fp) :: Thermal_C_AD
