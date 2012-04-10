@@ -66,7 +66,6 @@ CONTAINS
 
    SUBROUTINE CRTM_SOI(n_Layers, & ! Input  number of atmospheric layers
                               w, & ! Input  layer scattering albedo
-                              g, & ! Input  layer asymmetry factor
                            T_OD, & ! Input  layer optical depth
               cosmic_background, & ! Input  cosmic background radiance
                      emissivity, & ! Input  surface emissivity
@@ -86,7 +85,7 @@ CONTAINS
 ! ------------------------------------------------------------------------- !
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  g, w, T_OD
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w, T_OD
       REAL (fp), INTENT(IN) ::  cosmic_background
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
@@ -95,16 +94,14 @@ CONTAINS
 
    ! -------------- internal variables --------------------------------- !
 
-      INTEGER :: i, j, k, Error_Status, niter
+      INTEGER :: i, k, niter
       REAL(fp) :: rad, rad_change
-      REAL(fp) :: radsum, q, q_old, rad_old, diff
       REAL(fp), PARAMETER :: initial_error = 1.E10   
       REAL(fp), PARAMETER :: SMALL = 1.E-15   
       REAL(fp), PARAMETER :: SNGL_SCAT_ALB_THRESH = 0.8
       REAL(fp), PARAMETER :: OPT_DEPTH_THRESH = 4.0
       REAL(fp) :: radiance_thresh
       REAL(fp), DIMENSION( MAX_N_ANGLES ) :: source
-      LOGICAL :: ACCEL
   
       ! Precompute layer R/T matrices and thermal sources
       DO k = 1, n_Layers
@@ -292,9 +289,7 @@ CONTAINS
 
    SUBROUTINE CRTM_SOI_TL(n_Layers, & ! Input  number of atmospheric layers
                                  w, & ! Input  layer scattering albedo
-                                 g, & ! Input  layer asymmetry factor
                                T_OD, & ! Input  layer optical depth
-                  cosmic_background, & ! Input  cosmic background radiance
                          emissivity, & ! Input  surface emissivity
                        reflectivity, & ! Input  surface reflectivity matrix 
                     Index_Sat_Angle, & ! Input  satellite angle index 
@@ -302,7 +297,6 @@ CONTAINS
                Planck_Atmosphere_TL, & ! Input  tangent-linear atmospheric layer Planck radiance 
                   Planck_Surface_TL, & ! Input  TL surface Planck radiance
                                w_TL, & ! Input  TL layer scattering albedo
-                               g_TL, & ! Input  TL layer asymmetry factor
                             T_OD_TL, & ! Input  TL layer optical depth
                       emissivity_TL, & ! Input  TL surface emissivity
                     reflectivity_TL, & ! Input  TL  reflectivity
@@ -322,15 +316,14 @@ CONTAINS
 ! ------------------------------------------------------------------------- !
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  g, w, T_OD
-      REAL (fp), INTENT(IN) ::  cosmic_background
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w, T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
       REAL (fp), INTENT(IN), DIMENSION( :, : ) :: reflectivity 
       INTEGER, INTENT( IN ) :: Index_Sat_Angle
       TYPE(RTV_type), INTENT( IN ) :: RTV
       REAL (fp), INTENT(IN), DIMENSION( 0: ) ::  Planck_Atmosphere_TL
       REAL (fp), INTENT(IN) ::  Planck_Surface_TL
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w_TL, g_TL, T_OD_TL
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w_TL, T_OD_TL
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity_TL
       REAL (fp), INTENT(IN), DIMENSION( :, : ) :: reflectivity_TL 
       REAL (fp), INTENT(IN), DIMENSION( :, :, : ) ::  Pff_TL, Pbb_TL
@@ -338,8 +331,7 @@ CONTAINS
 
    ! -------------- internal variables --------------------------------- !
 
-      INTEGER :: i, j, k, Error_Status, iter
-      REAL(fp) :: rad, rad_TL
+      INTEGER :: i, k, iter
       REAL(fp), PARAMETER :: SNGL_SCAT_ALB_THRESH = 0.8
       REAL(fp), PARAMETER :: OPT_DEPTH_THRESH = 4.0
       REAL(fp), DIMENSION( RTV%n_Angles ) :: source_TL
@@ -488,9 +480,7 @@ CONTAINS
 
    SUBROUTINE CRTM_SOI_AD(n_Layers, & ! Input  number of atmospheric layers
                                  w, & ! Input  layer scattering albedo
-                                 g, & ! Input  layer asymmetry factor
                               T_OD, & ! Input  layer optical depth
-                 cosmic_background, & ! Input  cosmic background radiance
                         emissivity, & ! Input  surface emissivity
                       reflectivity, & ! Input  surface reflectivity matrix  
                    Index_Sat_Angle, & ! Input  satellite angle index
@@ -499,7 +489,6 @@ CONTAINS
               Planck_Atmosphere_AD, & ! Output AD atmospheric layer Planck radiance
                  Planck_Surface_AD, & ! Output AD surface Planck radiance
                               w_AD, & ! Output AD layer scattering albedo
-                              g_AD, & ! Output AD layer asymmetry factor
                            T_OD_AD, & ! Output AD layer optical depth
                      emissivity_AD, & ! Output AD surface emissivity
                    reflectivity_AD, & ! Output AD surface reflectivity
@@ -514,15 +503,14 @@ CONTAINS
 ! ------------------------------------------------------------------------- !
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: n_Layers
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  g, w, T_OD
-      REAL (fp), INTENT(IN) ::  cosmic_background
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  w, T_OD
       REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
       REAL (fp), INTENT(IN), DIMENSION( :, : ) ::  reflectivity
       INTEGER, INTENT(IN) :: Index_Sat_Angle
       TYPE(RTV_type), INTENT(IN) :: RTV
 
       REAL (fp),INTENT(INOUT),DIMENSION( :, :, : ) ::  Pff_AD, Pbb_AD
-      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  g_AD,w_AD,T_OD_AD
+      REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  w_AD,T_OD_AD
       REAL (fp),INTENT(INOUT),DIMENSION( 0: ) ::  Planck_Atmosphere_AD
       REAL (fp),INTENT(INOUT) ::  Planck_Surface_AD
       REAL (fp),INTENT(INOUT),DIMENSION( : ) ::  emissivity_AD
@@ -774,11 +762,10 @@ CONTAINS
       TYPE(RTV_type), INTENT( INOUT ) :: RTV
 
      ! internal variables
-      REAL(fp), DIMENSION(NANG,NANG) :: term2,term3,term4,trans,refl
+      REAL(fp), DIMENSION(NANG,NANG) :: term2,term3,trans,refl
       REAL(fp), DIMENSION(NANG) :: C1, C2, source_up,source_down 
       REAL(fp) :: s, c
       INTEGER :: i,j,k,L
-      INTEGER :: Error_Status
 
 
       !  Check for tiny optical depth
@@ -1035,7 +1022,7 @@ CONTAINS
     REAL(fp) :: s, c
     REAL(fp) :: s_AD, c_AD, Delta_Tau_AD
     REAL(fp), DIMENSION(NANG) :: C1_AD, C2_AD
-    INTEGER :: i, j, k, L
+    INTEGER :: i, j, L
 
     ! Adjoint Beginning
 

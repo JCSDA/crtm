@@ -260,7 +260,6 @@ CONTAINS
           CALL CRTM_SOI( &
                  Atmosphere%n_Layers                       , & ! Input, number of atmospheric layers
                  AtmOptics%Single_Scatter_Albedo           , & ! Input, layer single scattering albedo
-                 AtmOptics%Asymmetry_Factor                , & ! Input, layer asymmetry factor
                  AtmOptics%Optical_Depth                   , & ! Input, layer optical depth
                  RTV%Cosmic_Background_Radiance            , & ! Input, cosmic background radiation
                  SfcOptics%Emissivity( 1:nZ, 1 )           , & ! Input, surface emissivity
@@ -576,9 +575,7 @@ CONTAINS
           CALL CRTM_SOI_TL( &
                  Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
                  AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
-                 AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
                  AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-                 RTV%Cosmic_Background_Radiance,           & ! cosmic background radiation
                  SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
                  SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, surface reflectivity
                  SfcOptics%Index_Sat_Ang,                  & ! Input, Satellite angle index
@@ -586,7 +583,6 @@ CONTAINS
                  Planck_Atmosphere_TL,                     & ! Input, TL layer radiances
                  Planck_Surface_TL,                        & ! Input, TL surface radiance
                  AtmOptics_TL%Single_Scatter_Albedo,       & ! Input, TL layer single scattering albedo
-                 AtmOptics_TL%Asymmetry_Factor,            & ! Input, TL layer asymmetry factor
                  AtmOptics_TL%Optical_Depth,               & ! Input, TL layer optical depth
                  SfcOptics_TL%Emissivity(1:nZ,1),          & ! Input, TL surface emissivity
                  SfcOptics_TL%Reflectivity(1:nZ,1,1:nZ,1), & ! Input, TL surface reflectivity
@@ -898,9 +894,7 @@ CONTAINS
         CALL CRTM_SOI_AD( &
              Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
              AtmOptics%Single_Scatter_Albedo,          & ! Input, FWD layer single scattering albedo
-             AtmOptics%Asymmetry_Factor,               & ! Input, FWD layer asymmetry factor
              AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
-             RTV%Cosmic_Background_Radiance,           & ! Input, cosmic background radiation
              SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
              SfcOptics%Reflectivity(1:nZ,1,1:nZ,1),    & ! Input, FWD surface reflectivity
              SfcOptics%Index_Sat_Ang,                  & ! Input, Satellite angle index
@@ -909,7 +903,6 @@ CONTAINS
              Planck_Atmosphere_AD,                     & ! Output AD atmospheric layer Planck radiance
              Planck_Surface_AD,                        & ! Output AD surface Planck radiance
              AtmOptics_AD%Single_Scatter_Albedo,       & ! Output, AD layer single scattering albedo
-             AtmOptics_AD%Asymmetry_Factor,            & ! Output, AD layer asymmetry factor
              AtmOptics_AD%Optical_Depth,               & ! Output, AD layer optical depth
              SfcOptics_AD%Emissivity(1:nZ,1),          & ! Output, AD surface emissivity
              SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1), & ! Output, AD surface reflectivity
