@@ -765,10 +765,10 @@ CONTAINS
     WRITE(*, '(3x,"Snow Coverage :",1x,f6.3)') Sfc%Snow_Coverage 
     WRITE(*, '(3x,"Ice Coverage  :",1x,f6.3)') Sfc%Ice_Coverage  
     ! The various surface types
-    CALL CRTM_LandSurface_Inspect(sfc)
-    CALL CRTM_WaterSurface_Inspect(sfc)
-    CALL CRTM_SnowSurface_Inspect(sfc)
-    CALL CRTM_IceSurface_Inspect(sfc)
+    IF ( sfc%Land_Coverage  > ZERO ) CALL CRTM_LandSurface_Inspect(sfc)
+    IF ( sfc%Water_Coverage > ZERO ) CALL CRTM_WaterSurface_Inspect(sfc)
+    IF ( sfc%Snow_Coverage  > ZERO ) CALL CRTM_SnowSurface_Inspect(sfc)
+    IF ( sfc%Ice_Coverage   > ZERO ) CALL CRTM_IceSurface_Inspect(sfc)
     ! SensorData information
     IF ( CRTM_SensorData_Associated(Sfc%SensorData) ) &
       CALL CRTM_SensorData_Inspect(Sfc%SensorData)
@@ -1266,7 +1266,7 @@ CONTAINS
     IsValid = .TRUE.
     
     ! Check the data
-    IF ( Sfc%Land_Type < 1 .OR. Sfc%Land_Type > N_VALID_LAND_TYPES ) THEN
+    IF ( Sfc%Land_Type < 1 ) THEN
       msg = 'Invalid Land Surface type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -1287,24 +1287,15 @@ CONTAINS
 
   SUBROUTINE CRTM_LandSurface_Inspect( Sfc )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    INTEGER :: lType
-    INTEGER :: sType
-    INTEGER :: vType
-    lType = Sfc%Land_Type
-    sType = Sfc%Soil_Type
-    vType = Sfc%Vegetation_Type
-    IF ( lType < 1 .OR. lType > N_VALID_LAND_TYPES ) lType = INVALID_LAND
-    IF ( sType < 1 .OR. sType > N_VALID_SOIL_TYPES ) sType = INVALID_SOIL
-    IF ( vType < 1 .OR. vType > N_VALID_VEGETATION_TYPES ) vType = INVALID_VEGETATION
-    WRITE(*, '(3x,"Land type            :",1x,a)') TRIM(LAND_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Land type index      :",1x,i0)') Sfc%Land_Type
     WRITE(*, '(3x,"Land Temperature     :",1x,es13.6)') Sfc%Land_Temperature     
     WRITE(*, '(3x,"Soil Moisture Content:",1x,es13.6)') Sfc%Soil_Moisture_Content
     WRITE(*, '(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content 
     WRITE(*, '(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction  
     WRITE(*, '(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature     
     WRITE(*, '(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%Lai
-    WRITE(*, '(3x,"Soil type            :",1x,a)') TRIM(SOIL_TYPE_NAME(sType))
-    WRITE(*, '(3x,"Vegetation type      :",1x,a)') TRIM(VEGETATION_TYPE_NAME(vType))
+    WRITE(*, '(3x,"Soil type index      :",1x,i0)') Sfc%Soil_Type
+    WRITE(*, '(3x,"Vegetation type index:",1x,i0)') Sfc%Vegetation_Type
   END SUBROUTINE CRTM_LandSurface_Inspect
 
 
@@ -1324,7 +1315,9 @@ CONTAINS
     END IF
     
     ! Check integers
-    IF ( x%Land_Type /= y%Land_Type ) RETURN
+    IF ( x%Land_Type       /= y%Land_Type .OR. &
+         x%Soil_Type       /= y%Soil_Type .OR. &
+         x%Vegetation_Type /= y%Vegetation_Type ) RETURN
 
     ! Check floats
     IF ( (.NOT. Compares_Within_Tolerance(x%Land_Temperature     ,y%Land_Temperature     ,n)) .OR. &
@@ -1378,7 +1371,7 @@ CONTAINS
     IsValid = .TRUE.
     
     ! Check the data
-    IF ( Sfc%Water_Type < 1 .OR. Sfc%Water_Type > N_VALID_WATER_TYPES ) THEN
+    IF ( Sfc%Water_Type < 1 ) THEN
       msg = 'Invalid Water Surface type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -1397,10 +1390,7 @@ CONTAINS
 
   SUBROUTINE CRTM_WaterSurface_Inspect( Sfc )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    INTEGER :: lType
-    lType = Sfc%Water_Type
-    IF ( lType < 1 .OR. lType > N_VALID_WATER_TYPES ) lType = INVALID_WATER
-    WRITE(*, '(3x,"Water Type       :",1x,a)') TRIM(WATER_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Water Type index :",1x,i0)') Sfc%Water_Type
     WRITE(*, '(3x,"Water Temperature:",1x,es13.6)') Sfc%Water_Temperature
     WRITE(*, '(3x,"Wind Speed       :",1x,es13.6)') Sfc%Wind_Speed    
     WRITE(*, '(3x,"Wind Direction   :",1x,es13.6)') Sfc%Wind_Direction
@@ -1472,7 +1462,7 @@ CONTAINS
     IsValid = .TRUE.
     
     ! Check the data
-    IF ( Sfc%Snow_Type < 1 .OR. Sfc%Snow_Type > N_VALID_Snow_TYPES ) THEN
+    IF ( Sfc%Snow_Type < 1 ) THEN
       msg = 'Invalid Snow Surface type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -1491,10 +1481,7 @@ CONTAINS
 
   SUBROUTINE CRTM_SnowSurface_Inspect( Sfc )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    INTEGER :: lType
-    lType = Sfc%Snow_Type
-    IF ( lType < 1 .OR. lType > N_VALID_SNOW_TYPES ) lType = INVALID_SNOW
-    WRITE(*, '(3x,"Snow Type       :",1x,a)') TRIM(SNOW_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Snow Type index :",1x,i0)') Sfc%Snow_Type
     WRITE(*, '(3x,"Snow Temperature:",1x,es13.6)') Sfc%Snow_Temperature
     WRITE(*, '(3x,"Snow Depth      :",1x,es13.6)') Sfc%Snow_Depth      
     WRITE(*, '(3x,"Snow Density    :",1x,es13.6)') Sfc%Snow_Density    
@@ -1566,7 +1553,7 @@ CONTAINS
     IsValid = .TRUE.
     
     ! Check the data
-    IF ( Sfc%Ice_Type < 1 .OR. Sfc%Ice_Type > N_VALID_Ice_TYPES ) THEN
+    IF ( Sfc%Ice_Type < 1 ) THEN
       msg = 'Invalid Ice Surface type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -1588,7 +1575,7 @@ CONTAINS
     INTEGER :: lType
     lType = Sfc%Ice_Type
     IF ( lType < 1 .OR. lType > N_VALID_ICE_TYPES ) lType = INVALID_ICE
-    WRITE(*, '(3x,"Ice Type       :",1x,a)') TRIM(ICE_TYPE_NAME(lType))
+    WRITE(*, '(3x,"Ice Type index :",1x,i0)') Sfc%Ice_Type
     WRITE(*, '(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
     WRITE(*, '(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness  
     WRITE(*, '(3x,"Ice Density    :",1x,es13.6)') Sfc%Ice_Density    
