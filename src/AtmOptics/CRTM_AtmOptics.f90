@@ -51,7 +51,6 @@ MODULE CRTM_AtmOptics
   ! variables across FWD, TL, and AD calls
   ! ------------------------------------
   TYPE :: CRTM_AOVariables_type
-!    PRIVATE
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs           
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: w            
@@ -289,7 +288,8 @@ CONTAINS
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
 !       CRTM_Combine_AtmOptics_AD
 !
@@ -297,18 +297,12 @@ CONTAINS
 !       Subroutine to compute the adjoint form of the optical properties
 !       from AtmAbsorption, CloudScatter, and AerosolScatter calculations.
 !
-! CATEGORY:
-!       CRTM : AtmOptics
-!
-! LANGUAGE:
-!       Fortran-95
-!
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics_AD( AtmOptics,         &  ! FWD Input
-!                                       AtmOptics_AD,      &  ! AD Input
-!                                       RTVariables        )  ! Internal variable input
+!       CALL CRTM_Combine_AtmOptics_AD( AtmOptics,    &
+!                                       AtmOptics_AD, &
+!                                       AOVariables   )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       AtmOptics:         Structure containing the combined atmospheric optical
 !                          parameters
 !                          UNITS:      N/A
@@ -325,7 +319,6 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-! IN/OUTPUT
 !       AtmOptics_AD:      Structure containing the combined adjoint atmospheric
 !                          optical parameters.
 !                          NOTE: The components of this structures are all zeroed
@@ -335,186 +328,123 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-!
-! OPTIONAL OUTUPT ARGUMENTS:
-!       None.
-!
-! SIDE EFFECTS:
-!       The input AtmOptics_AD structure components are zeroed upon exit.
-!
-! RESTRICTIONS:
-!       There is no argument checking or structure allocation performed in
-!       this subroutine.
-!
-! COMMENTS:
-!       Note the INTENT on the output adjoint arguments is IN OUT rather than
-!       just OUT. This is necessary because the arguments MUST be defined upon
-!       input. To prevent memory leaks, and in this case errors in accessing
-!       unallocated memory, the IN OUT INTENT is a must.
-!
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics_AD( AtmOptics,         &  ! FWD Input
-                                        AtmOptics_AD,      &  ! AD Input
-                                        AOV                )  ! Internal variable input
-
-    !#--------------------------------------------------------------------------#
-    !#                         -- TYPE DECLARATIONS --                          #
-    !#--------------------------------------------------------------------------#
-            
-    ! -------
+  SUBROUTINE CRTM_Combine_AtmOptics_AD( &
+    AtmOptics   , &  ! FWD Input
+    AtmOptics_AD, &  ! AD  Input
+    AOV           )  ! Internal variable input
     ! Arguments
-    ! -------
-
-    !  FWD Inputs
-
-    TYPE(CRTM_AtmOptics_type),    INTENT(IN)     :: AtmOptics
-
-    !  AD Inputs
-    TYPE(CRTM_AtmOptics_type),    INTENT(IN OUT) :: AtmOptics_AD
-
-
-    !  Internal variable input
-    TYPE(CRTM_AOVariables_type),   INTENT(IN)     :: AOV
-
-
-    ! --------------
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: AtmOptics
+    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(CRTM_AOVariables_type), INTENT(IN)     :: AOV
     ! Local parameters
-    ! --------------
-                               
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_AD'
-
-                                           
-    ! -------------
     ! Local variables
-    ! -------------
-
     INTEGER :: i, k, l
     REAL(fp) :: w_AD
-    REAL(fp) :: bs_AD
 
-    !#--------------------------------------------------------------------------#
-    !#                          -- NO SCATTERING CASE --                        #
-    !#--------------------------------------------------------------------------#
-
+    ! No scattering case
     IF( AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
 
-    !#--------------------------------------------------------------------------#
-    !#                         -- BEGIN MAIN LAYER LOOP --                      #
-    !#--------------------------------------------------------------------------#
-                                            
+    ! Begin layer loop
     Layer_Loop: DO k = AtmOptics%n_Layers, 1, -1
 
 
-      ! ---------------------------------------------------
       ! Initialise local, layer independent adjoint variables
-      ! ---------------------------------------------------
+      w_AD = ZERO
 
-      w_AD          = ZERO
-                    
-      ! ----------------------------------------------------
+
       ! Only proceed if the scattering is significant
-      ! ----------------------------------------------------
-               
-                                           
-        Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
+      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
 
 
-          ! -------------------------------------------------
-          ! Compute the adjoint total optical depth and single
-          ! scattering albedo for the delta function adjustment
-          ! -------------------------------------------------
+        ! Compute the adjoint total optical depth and single
+        ! scattering albedo for the delta function adjustment
 
-          !  The tangent-linear single scatter albedo, SSA_TL
-          ! 
-          !              ( 1 - d + SSA.d )              ( SSA - 1 ).w
-          !    SSA_TL = ------------------- . w_TL  +  --------------- . d_TL
-          !                   1 - d.w                      1 - d.w
-          ! 
-          !  so,
-          !                    ( SSA - 1 ).w
-          !    d_AD = d_AD + ---------------- . SSA_AD
-          !                       1 - d.w
-          ! 
-          !                   ( 1 - d + SSA.d ) 
-          !    w_AD = w_AD + ------------------- . SSA_AD
-          !                        1 - d.w     
-          ! 
-          !    SSA_AD = 0
+        !  The tangent-linear single scatter albedo, SSA_TL
+        ! 
+        !              ( 1 - d + SSA.d )              ( SSA - 1 ).w
+        !    SSA_TL = ------------------- . w_TL  +  --------------- . d_TL
+        !                   1 - d.w                      1 - d.w
+        ! 
+        !  so,
+        !                    ( SSA - 1 ).w
+        !    d_AD = d_AD + ---------------- . SSA_AD
+        !                       1 - d.w
+        ! 
+        !                   ( 1 - d + SSA.d ) 
+        !    w_AD = w_AD + ------------------- . SSA_AD
+        !                        1 - d.w     
+        ! 
+        !    SSA_AD = 0
 
-          AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
-            ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOV%w(k) * AtmOptics_AD%Single_Scatter_Albedo(k) / &
-              ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
+        AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
+          ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOV%w(k) * AtmOptics_AD%Single_Scatter_Albedo(k) / &
+            ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
 
-          w_AD = w_AD + ( ( ONE - AtmOptics%Delta_Truncation(k) + &
-                            ( AtmOptics%Single_Scatter_Albedo(k)*AtmOptics%Delta_Truncation(k) ) ) * &
-                          AtmOptics_AD%Single_Scatter_Albedo(k) / &
-                          ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
+        w_AD = w_AD + ( ( ONE - AtmOptics%Delta_Truncation(k) + &
+                          ( AtmOptics%Single_Scatter_Albedo(k)*AtmOptics%Delta_Truncation(k) ) ) * &
+                        AtmOptics_AD%Single_Scatter_Albedo(k) / &
+                        ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
 
-          AtmOptics_AD%Single_Scatter_Albedo(k) = ZERO
+        AtmOptics_AD%Single_Scatter_Albedo(k) = ZERO
 
 
-          !  The tangent-linear optical depth, tau_TL
-          ! 
-          !    tau_TL = ( 1 - d.w ).tau_TL - d.tau.w_TL - w.tau.d_TL
-          ! 
-          !  so,
-          ! 
-          !    d_AD = d_AD - w.tau.tau_AD
-          ! 
-          !    w_AD = w_AD - d.tau.tau_AD
-          ! 
-          !    tau_AD = ( 1 - d.w ).tau_AD
-          ! 
-          !  Note that the optical depth from the AOV structure is
-          !  used on the RHS of the above expressions.
+        !  The tangent-linear optical depth, tau_TL
+        ! 
+        !    tau_TL = ( 1 - d.w ).tau_TL - d.tau.w_TL - w.tau.d_TL
+        ! 
+        !  so,
+        ! 
+        !    d_AD = d_AD - w.tau.tau_AD
+        ! 
+        !    w_AD = w_AD - d.tau.tau_AD
+        ! 
+        !    tau_AD = ( 1 - d.w ).tau_AD
+        ! 
+        !  Note that the optical depth from the AOV structure is
+        !  used on the RHS of the above expressions.
 
-          AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) - &
-            ( AOV%w(k)                    * &  ! w
-              AOV%Optical_Depth(k)        * &  ! tau
-              AtmOptics_AD%Optical_Depth(k) )  ! tau_AD
+        AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) - &
+          ( AOV%w(k)                    * &  ! w
+            AOV%Optical_Depth(k)        * &  ! tau
+            AtmOptics_AD%Optical_Depth(k) )  ! tau_AD
 
-          w_AD = w_AD - ( AtmOptics%Delta_Truncation(k) * &  ! d
-                          AOV%Optical_Depth(k)          * &  ! tau
-                          AtmOptics_AD%Optical_Depth(k)   )  ! tau_AD
+        w_AD = w_AD - ( AtmOptics%Delta_Truncation(k) * &  ! d
+                        AOV%Optical_Depth(k)          * &  ! tau
+                        AtmOptics_AD%Optical_Depth(k)   )  ! tau_AD
 
-          AtmOptics_AD%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) * &
-                                          AtmOptics_AD%Optical_Depth(k)
-
-
-            !  Delta truncation adjoint
-            L = AtmOptics%n_Legendre_Terms
-            AtmOptics_AD%Phase_Coefficient(L,1,k) = AtmOptics_AD%Phase_Coefficient(L,1,k) + &
-                                                    AtmOptics_AD%Delta_Truncation(k)
- 
-            AtmOptics_AD%Delta_Truncation(k) = ZERO
-
-            DO i = 1, AtmOptics%n_Phase_Elements
-        ! Normalization requirement for energy conservation
-              AtmOptics_AD%Phase_Coefficient(0,i,k) = ZERO
-              DO l = 1, AtmOptics%n_Legendre_Terms
-                 AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k)  &
-                   - AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) 
-                 AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) )
-              END DO
-            END DO           
-
-            AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k)  &
-                   + w_AD/ AOV%Optical_Depth(k)
-            
-            AtmOptics_AD%Optical_Depth(k) = AtmOptics_AD%Optical_Depth(k) - w_AD*AOV%w(k) / AOV%Optical_Depth(k)
+        AtmOptics_AD%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) * &
+                                        AtmOptics_AD%Optical_Depth(k)
 
 
-        END IF Significant_Scattering
- 
+        !  Delta truncation adjoint
+        l = AtmOptics%n_Legendre_Terms
+        AtmOptics_AD%Phase_Coefficient(l,1,k) = AtmOptics_AD%Phase_Coefficient(l,1,k) + &
+                                                AtmOptics_AD%Delta_Truncation(k)
+        AtmOptics_AD%Delta_Truncation(k) = ZERO
+
+        DO i = 1, AtmOptics%n_Phase_Elements
+          ! Normalization requirement for energy conservation
+          AtmOptics_AD%Phase_Coefficient(0,i,k) = ZERO
+          DO l = 1, AtmOptics%n_Legendre_Terms
+             AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) - &
+               AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) 
+             AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) )
+          END DO
+        END DO           
+
+        AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) + &
+                                                w_AD / AOV%Optical_Depth(k)
+        AtmOptics_AD%Optical_Depth(k) = AtmOptics_AD%Optical_Depth(k) - &
+                                        w_AD*AOV%w(k) / AOV%Optical_Depth(k)
+
+      END IF Significant_Scattering
 
     END DO Layer_Loop
-
 
   END SUBROUTINE CRTM_Combine_AtmOptics_AD
 
