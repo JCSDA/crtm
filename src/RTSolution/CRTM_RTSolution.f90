@@ -595,7 +595,6 @@ CONTAINS
              Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
              RTV%n_Angles,                             & ! Input, number of discrete zenith angles
              GeometryInfo%Cosine_Sensor_Zenith,        & ! Input, cosine of sensor zenith angle
-             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
              RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
              RTV%Planck_Surface,                       & ! Input, FWD surface radiance
              SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity
@@ -915,7 +914,6 @@ CONTAINS
              Atmosphere%n_Layers,                      & ! Input, number of atmospheric layers
              RTV%n_Angles,                             & ! Input, number of discrete zenith angles
              GeometryInfo%Cosine_Sensor_Zenith,        & ! Input, cosine of sensor zenith angle
-             AtmOptics%Optical_Depth,                  & ! Input, FWD layer optical depth
              RTV%Planck_Atmosphere,                    & ! Input, FWD layer radiances
              RTV%Planck_Surface,                       & ! Input, FWD surface radiance
              SfcOptics%Emissivity(1:nZ,1),             & ! Input, FWD surface emissivity

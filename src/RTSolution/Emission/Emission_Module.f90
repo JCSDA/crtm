@@ -169,7 +169,6 @@ CONTAINS
   SUBROUTINE CRTM_Emission_TL(n_Layers, & ! Input  number of atmospheric layers
                               n_Angles, & ! number angles used in SfcOptics
                                      u, & ! Input  cosine of local viewing angle
-                                  T_OD, & ! Input  nadir layer optical depth
                      Planck_Atmosphere, & ! Input  atmospheric layer Planck radiance
                         Planck_Surface, & ! Input  surface Planck radiance 
                             emissivity, & ! Input  surface emissivity
@@ -196,7 +195,7 @@ CONTAINS
       INTEGER, INTENT(IN) :: n_Layers, n_Angles
       LOGICAL, INTENT(IN) :: Is_Solar_Channel
       REAL (fp), INTENT(IN) :: Solar_irradiance, Source_Zenith_Radian
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  T_OD, emissivity,T_OD_TL,emissivity_TL
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity,T_OD_TL,emissivity_TL
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity ,reflectivity_TL
       REAL (fp), INTENT(IN), DIMENSION( : ) :: direct_reflectivity,direct_reflectivity_TL
       REAL (fp), INTENT(IN), DIMENSION( 0: ) :: Planck_Atmosphere,Planck_Atmosphere_TL
@@ -274,7 +273,6 @@ CONTAINS
       SUBROUTINE CRTM_Emission_AD(n_Layers, & ! Input  number of atmospheric layers
                                   n_Angles, & ! number angles used in SfcOptics
                                          u, & ! Input  cosine of local viewing angle
-                                      T_OD, & ! Input  nadir layer optical depth
                          Planck_Atmosphere, & ! Input  atmospheric layer Planck radiance
                             Planck_Surface, & ! Input  surface Planck radiance 
                                 emissivity, & ! Input  surface emissivity
@@ -301,7 +299,7 @@ CONTAINS
       INTEGER, INTENT(IN) :: n_Layers, n_Angles
       LOGICAL, INTENT(IN) :: Is_Solar_Channel
       REAL (fp), INTENT(IN) :: Solar_Irradiance, Source_Zenith_Radian
-      REAL (fp), INTENT(IN), DIMENSION( : ) ::  T_OD, emissivity
+      REAL (fp), INTENT(IN), DIMENSION( : ) ::  emissivity
       REAL (fp), INTENT(IN), DIMENSION( :,: ) :: reflectivity 
       REAL (fp), INTENT(IN), DIMENSION( : ) :: direct_reflectivity 
       REAL (fp), INTENT(IN), DIMENSION( 0: ) ::  Planck_Atmosphere
