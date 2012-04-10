@@ -50,6 +50,9 @@ MODULE iAtm_Define
   ! --------------------
   !:tdoc+:
   TYPE :: iAtm_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Dimensions
     INTEGER :: n_Layers    = 0  ! K dimension
     INTEGER :: n_Absorbers = 0  ! J dimension
     ! Level arrays
@@ -121,24 +124,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION iAtm_Associated( iAtm ) RESULT( Status )
-    ! Arguments
-    TYPE(iAtm_type), INTENT(IN) :: iAtm
-    ! Function result
+  ELEMENTAL FUNCTION iAtm_Associated( self ) RESULT( Status )
+    TYPE(iAtm_type), INTENT(IN) :: self
     LOGICAL :: Status
-
-    ! Test the structure components
-    Status = &
-      ALLOCATED(iAtm%pl        ) .OR. &
-      ALLOCATED(iAtm%tl        ) .OR. &
-      ALLOCATED(iAtm%al        ) .OR. &
-      ALLOCATED(iAtm%p         ) .OR. &
-      ALLOCATED(iAtm%t         ) .OR. &
-      ALLOCATED(iAtm%a         ) .OR. &
-      ALLOCATED(iAtm%aln_save  ) .OR. &
-      ALLOCATED(iAtm%alint_save) .OR. &
-      ALLOCATED(iAtm%a_save    )
-
+    Status = self%Is_Allocated
   END FUNCTION iAtm_Associated
 
 
@@ -164,8 +153,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL SUBROUTINE iAtm_Destroy( iAtm )
-    TYPE(iAtm_type), INTENT(OUT) :: iAtm
+  ELEMENTAL SUBROUTINE iAtm_Destroy( self )
+    TYPE(iAtm_type), INTENT(OUT) :: self
+    self%Is_Allocated = .FALSE.
   END SUBROUTINE iAtm_Destroy
 
 
@@ -210,11 +200,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL SUBROUTINE iAtm_Create( &
-    iAtm       , &  ! Output
+    self       , &  ! Output
     n_Layers   , &  ! Input
     n_Absorbers  )  ! Input
     ! Arguments
-    TYPE(iAtm_type), INTENT(OUT) :: iAtm
+    TYPE(iAtm_type), INTENT(OUT) :: self
     INTEGER        , INTENT(IN)  :: n_Layers    
     INTEGER        , INTENT(IN)  :: n_Absorbers 
     ! Local variables
@@ -224,29 +214,31 @@ CONTAINS
     IF ( n_Layers < 1 .OR. n_Absorbers < 1 ) RETURN
 
     ! Perform the allocation
-    ALLOCATE( iAtm%pl(0:n_Layers), iAtm%tl(0:n_Layers), iAtm%al(0:n_Layers, 1:n_Absorbers), &
-              iAtm%p(1:n_Layers) , iAtm%t(1:n_Layers) , iAtm%a(1:n_Layers, 1:n_Absorbers) , &
-              iAtm%aln_save(1:n_Absorbers), &
-              iAtm%alint_save(1:n_Absorbers), &
-              iAtm%a_save(1:n_Layers,1:n_Absorbers), &
+    ALLOCATE( self%pl(0:n_Layers), self%tl(0:n_Layers), self%al(0:n_Layers, 1:n_Absorbers), &
+              self%p(1:n_Layers) , self%t(1:n_Layers) , self%a(1:n_Layers, 1:n_Absorbers) , &
+              self%aln_save(1:n_Absorbers), &
+              self%alint_save(1:n_Absorbers), &
+              self%a_save(1:n_Layers,1:n_Absorbers), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
     ! Initialise
     ! ...Dimensions
-    iAtm%n_Layers    = n_Layers
-    iAtm%n_Absorbers = n_Absorbers
+    self%n_Layers    = n_Layers
+    self%n_Absorbers = n_Absorbers
     ! ...Arrays
-    iAtm%pl         = ZERO
-    iAtm%tl         = ZERO
-    iAtm%al         = ZERO
-    iAtm%p          = ZERO
-    iAtm%t          = ZERO
-    iAtm%a          = ZERO
-    iAtm%aln_save   = ZERO
-    iAtm%alint_save = ZERO
-    iAtm%a_save     = ZERO
+    self%pl         = ZERO
+    self%tl         = ZERO
+    self%al         = ZERO
+    self%p          = ZERO
+    self%t          = ZERO
+    self%a          = ZERO
+    self%aln_save   = ZERO
+    self%alint_save = ZERO
+    self%a_save     = ZERO
     
+    ! Set allocation indicator
+    self%Is_Allocated = .TRUE.
   END SUBROUTINE iAtm_Create
 
 END MODULE iAtm_Define
