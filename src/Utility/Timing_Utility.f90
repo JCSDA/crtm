@@ -197,7 +197,7 @@ CONTAINS
     n_Hours        = INT(Total_Time / N_SECONDS_IN_HOUR)
     n_Minutes      = INT(MOD(Total_Time,N_SECONDS_IN_HOUR) / N_SECONDS_IN_MINUTE)
     n_Seconds      = INT(MOD(MOD(Total_Time,N_SECONDS_IN_HOUR), N_SECONDS_IN_MINUTE))
-    n_milliSeconds = INT((Total_Time - INT(Total_Time,fp)) * N_MILLISECONDS_IN_SECOND)
+    n_milliSeconds = INT((Total_Time - AINT(Total_Time,fp)) * N_MILLISECONDS_IN_SECOND)
 
     ! Construct the character string
     WRITE( Elapsed_Time, '("Elapsed time-- ",i2.2,":",i2.2,":",i2.2,".",i3.3 )' ) &
