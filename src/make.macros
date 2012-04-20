@@ -282,9 +282,11 @@ LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
                                         -fno-second-underscore \
                                         -frecord-marker=4 \
                                         -fbacktrace \
+                                        -fvar-tracking-assignments-toggle \
                                         -ggdb \
 	                                -static \
                                         -Wall \
+                                        -Wconversion \
                                         -std=f2003 \
                                         ${INCLUDES} \
                                         ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
