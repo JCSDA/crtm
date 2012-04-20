@@ -6,8 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 01-Apr-2003
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 01-Apr-2003
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Compare_Float_Numbers
@@ -562,7 +562,7 @@ CONTAINS
     REAL(Single), INTENT(IN) :: x
     INTEGER     , INTENT(IN) :: n
     REAL(Single) :: Tolerance
-    REAL(Single) :: e
+    INTEGER :: e
     IF (ABS(x) > SP_ZERO) THEN
       e = FLOOR(LOG10(ABS(x))) - n
       Tolerance = SP_TEN**e
@@ -575,8 +575,8 @@ CONTAINS
     REAL(Double), INTENT(IN) :: x
     INTEGER,      INTENT(IN) :: n
     REAL(Double) :: Tolerance
-    REAL(Double) :: e
-    IF (ABS(x) > SP_ZERO) THEN
+    INTEGER :: e
+    IF (ABS(x) > DP_ZERO) THEN
       e = FLOOR(LOG10(ABS(x))) - n
       Tolerance = DP_TEN**e
     ELSE
