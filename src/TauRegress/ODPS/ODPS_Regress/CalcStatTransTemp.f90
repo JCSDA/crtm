@@ -131,8 +131,8 @@ module CalcStatTransTemp
       do Ilev = 1, Nlay
 
         if( alltrans_lev(Ilev,Iang,Iatm) < Threshold_TransFitTest )then
-	  cycle
-	endif
+         cycle
+        endif
 
         erralltrans_lev = calalltrans_lev(Ilev,Iang,Iatm) - alltrans_lev(Ilev,Iang,Iatm)
 

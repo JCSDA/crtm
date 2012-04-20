@@ -23,6 +23,7 @@ PROGRAM Compute_Coeff
   USE Message_Handler    , ONLY : SUCCESS, WARNING, FAILURE, Display_Message     
   USE File_Utility
   USE Parameters
+  USE SensorInfo_Parameters
   USE AtmProfile_Define
   USE AtmProfile_netCDF_IO
   USE TauProfile_Define
@@ -208,7 +209,7 @@ PROGRAM Compute_Coeff
 
   !--- read spectral coefficients
 
-  Error_Status = Read_SpcCoeff_netCDF( inFilename_spcCoef, SpcCoeff )  
+  Error_Status = SpcCoeff_netCDF_ReadFile( inFilename_spcCoef, SpcCoeff )  
 
   IF( Error_Status /= SUCCESS ) THEN
     print *, '### ERROR ###'        
@@ -583,13 +584,18 @@ PROGRAM Compute_Coeff
               IF(TauTotal(k-1, i, m) < 1.0e-12_fp_kind)THEN
                 TauTotal(k, i, m) = TauTotal(k-1, i, m)
               ELSE
-
-                WRITE( Message, '( "Error: Total trans increase as descending. Tau(k-1), Tau(k) = ", 2es20.12 )' ) &
-                                   TauTotal(k-1, i, m), TauTotal(k, i, m)
+                WRITE( Message, '( "Warning: Total trans increase as descending. k,  Tau(k-1), Tau(k) = ", I5, 2es20.12 )' ) &
+                                   k, TauTotal(k-1, i, m), TauTotal(k, i, m)
+                TauTotal(k, i, m) = TauTotal(k-1, i, m)
                 CALL Display_Message( PROGRAM_NAME, &
                                       TRIM( Message ), &
-                                      FAILURE )
-                STOP 90
+                                      WARNING )
+!                WRITE( Message, '( "Error: Total trans increase as descending. Tau(k-1), Tau(k) = ", 2es20.12 )' ) &
+!                                   TauTotal(k-1, i, m), TauTotal(k, i, m)
+!                CALL Display_Message( PROGRAM_NAME, &
+!                                      TRIM( Message ), &
+!                                      FAILURE )
+!                STOP 90
               END IF
             END IF
           
@@ -632,7 +638,7 @@ PROGRAM Compute_Coeff
 
     TauTotalPred = TauFactor
     !--- correct transmittance profile if it is not monotonously decreasing.
-    DO i = 1,  n_Angles 	       ! Loop over scan angles
+    DO i = 1,  n_Angles ! Loop over scan angles
       DO m= 1, Natm   ! Loop over profiles
        DO k = 1, Nlay         ! Loop over layers
          IF(TauTotalPred(k,i,m) > TauTotalPred(k-1,i,m) ) THEN
@@ -805,7 +811,7 @@ PROGRAM Compute_Coeff
   END IF
 
   ! deallocate the SpcCoeff data structure
-  Error_Status = Destroy_SpcCoeff( SpcCoeff )  
+  CALL SpcCoeff_Destroy( SpcCoeff )  
   
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
@@ -868,10 +874,10 @@ CONTAINS
   
     IF ( Allocate_Status /= 0 ) THEN
       WRITE( Message, '( "Error allocating X, Y, and CC array. STAT = ", i5 )') &
-             Allocate_Status		
+             Allocate_Status
       CALL Display_Message( PROGRAM_NAME, &
                             TRIM( Message ), & 
-                            FAILURE )	
+                            FAILURE )
       STOP 90
     END IF
 
@@ -879,56 +885,56 @@ CONTAINS
    
     Layer_loop:  DO k = 1, Nlay      ! Loop over layers
 
-      X(:,:)	= ZERO 
-      Y(:)	= ZERO 
-      weight(:) = ZERO 
-      CC(:)	= ZERO
+      X(:,:)   = ZERO 
+      Y(:)     = ZERO 
+      weight(:)= ZERO 
+      CC(:)    = ZERO
 
       IF(ALL(TauTotal(k, 1:Nangle_regression, 1:Natm) < TOTAL_TAU_MIN ))CYCLE
 
       Nsample = 0    
-      DO i = 1,  Nangle_regression	 ! Loop over scan angles
-    	DO m= 1, Natm   ! Loop over profiles
+      DO i = 1,  Nangle_regression ! Loop over scan angles
+        DO m= 1, Natm   ! Loop over profiles
 
-          wgt = SQRT(TauTotal(k-1, i, m) * TauTotal(k, i, m))				      
+          wgt = SQRT(TauTotal(k-1, i, m) * TauTotal(k, i, m))      
 
           IF(wgt <= TOLERANCE .OR. layer_od_path(k, i, m) > OD_MAX) CYCLE
- 	
-    	  Nsample = Nsample + 1 								      
-    												      
-    	  weight(Nsample) = wgt 
-								      
-    	  Y(Nsample) = layer_od_path(k, i, m) 								      
 
-    	  DO jp = 1, n_predSub  								      
-    	    X(Nsample, jp ) = Predictors(k, predSubIndex(jp), i, m)			      
-    	  END DO										      
-    												      
-    	END DO ! end of profile loop								      
+          Nsample = Nsample + 1         
+            
+          weight(Nsample) = wgt 
+ 
+          Y(Nsample) = layer_od_path(k, i, m)          
+
+          DO jp = 1, n_predSub     
+            X(Nsample, jp ) = Predictors(k, predSubIndex(jp), i, m) 
+          END DO   
+ 
+        END DO ! end of profile loop 
       END DO  ! End of scan angle loop
 
-      ALLOCATE(  X1(Nsample, n_predSub),  &							      
-    		 Y1(Nsample),             &
+      ALLOCATE(  X1(Nsample, n_predSub),  &    
+                 Y1(Nsample),             &
                  XX(n_predSub,n_predSub), &
-                 XY(n_predSub),           &   								      
-    		 weight1(Nsample),        &								      
-    		 STAT = Allocate_Status )							      
+                 XY(n_predSub),           &       
+     weight1(Nsample),        &       
+      STAT = Allocate_Status )     
   
-      IF ( Allocate_Status /= 0 ) THEN  							      
-    	WRITE( Message, '( "Error allocating X1, Y1, and weight1 array. STAT = ", i5 )' ) &	      
-    			Allocate_Status 							      
-    	CALL Display_Message( PROGRAM_NAME,    &							      
-    			      TRIM( Message ), &						      
-    			      FAILURE ) 							      
-    	STOP 90											      
-      END IF											      
+      IF ( Allocate_Status /= 0 ) THEN       
+       WRITE( Message, '( "Error allocating X1, Y1, and weight1 array. STAT = ", i5 )' ) &       
+             Allocate_Status 
+       CALL Display_Message( PROGRAM_NAME,    &    
+                             TRIM( Message ), &     
+                             FAILURE )   
+     STOP 90      
+      END IF      
 
 !      weight1(1: Nsample) = ONE
       weight1(1: Nsample) = weight(1:Nsample)
-   												      
-      DO i=1, Nsample										      
-       X1(i, :) = X(i, : ) * weight1(i) 							      
-       Y1(i)	= Y(i) * weight1(i)								      
+      
+      DO i=1, Nsample     
+       X1(i, :) = X(i, : ) * weight1(i)       
+       Y1(i) = Y(i) * weight1(i)      
       END DO
 
       CALL Compute_AutoCross_Matrix(X1, Y1, XX, XY)
@@ -942,31 +948,31 @@ CONTAINS
       Error_Status = Compute_RegressionCoeff(XX, XY, CC)
       IF(Error_Status /= 0)THEN
        
-    	CALL Display_Message( PROGRAM_NAME, &							      
-    			      "cannot obtain the solution for this set of predictors,"//&
-                              " so set the Tau coefficients to zero", &						      
-    			      WARNING ) 							      
-        CC = ZERO										      
-      END IF											      
+       CALL Display_Message( PROGRAM_NAME, &      
+          "cannot obtain the solution for this set of predictors,"//&
+          " so set the Tau coefficients to zero", &     
+          WARNING )    
+        CC = ZERO      
+      END IF      
 
 
-      DO i=1, n_predSub 									      
-        Coeff(i,k) = CC(i)									      
-      END DO											      
+      DO i=1, n_predSub      
+        Coeff(i,k) = CC(i)     
+      END DO      
 
-      DEALLOCATE(X1, Y1, XX, XY, weight1, &								      
-    		 STAT = Allocate_Status )							      
+      DEALLOCATE(X1, Y1, XX, XY, weight1, & 
+                 STAT = Allocate_Status ) 
   
-      IF ( Allocate_Status /= 0 ) THEN  							      
-    	WRITE( Message, '( "Error deallocating X1, Y1, and weight1 array. STAT = ", i5 )' ) &	      
-    			Allocate_Status 							      
-    	CALL Display_Message( PROGRAM_NAME, &							      
-    			      TRIM( Message ), &						      
-    			      FAILURE ) 							      
-    	STOP 90											      
-      END IF											      
+      IF ( Allocate_Status /= 0 ) THEN      
+        WRITE( Message, '( "Error deallocating X1, Y1, and weight1 array. STAT = ", i5 )' ) &      
+        Allocate_Status   
+        CALL Display_Message( PROGRAM_NAME, &      
+                              TRIM( Message ), &      
+                              FAILURE )       
+      STOP 90      
+      END IF      
  
-    END DO Layer_loop								      
+    END DO Layer_loop    
 
 
     !----------------------------------------------                                                   
@@ -997,13 +1003,13 @@ CONTAINS
 
     TauTotalPred = TauFactor * TauPred 
      
-    !--- correct transmittance profile if it is not monotonously decreasing.			      
-    DO i = 1,  Nangle_regression            ! Loop over scan angles             			      
-      DO m= 1, Natm   ! Loop over profiles                                    
-        DO k = 1, Nlay      ! Loop over layers                                        
-          IF(TauTotalPred(k,i,m) > TauTotalPred(k-1,i,m) ) THEN                 		      
-            TauTotalPred(k,i,m) = TauTotalPred(k-1,i,m)                         		      
-          ENDIF                                                                 		      
+    !--- correct transmittance profile if it is not monotonously decreasing.    
+    DO i = 1,  Nangle_regression            ! Loop over scan angles             
+      DO m= 1, Natm   ! Loop over profiles                                  
+        DO k = 1, Nlay      ! Loop over layers                              
+          IF(TauTotalPred(k,i,m) > TauTotalPred(k-1,i,m) ) THEN             
+            TauTotalPred(k,i,m) = TauTotalPred(k-1,i,m)                         
+          ENDIF                                                                 
         END DO                                                              
       ENDDO                                                                 
     ENDDO                                                                   
@@ -1015,23 +1021,23 @@ CONTAINS
                             VirtEmiss, SpcCoeff, &
                             tb_pred)
 
-    !--- calculate statistics									      
-    CALL Calc_StatTransTemp( &  								      
-    	   TauTotal(:,1:Nangle_regression,:), tb_lbl(1:Nangle_regression,:),         &			      
-    	   TauTotalPred(:,1:Nangle_regression,:), tb_pred(1:Nangle_regression,:),    &			      
-    	   stat)										      
+    !--- calculate statistics      
+    CALL Calc_StatTransTemp( &       
+           TauTotal(:,1:Nangle_regression,:), tb_lbl(1:Nangle_regression,:),         &       
+           TauTotalPred(:,1:Nangle_regression,:), tb_pred(1:Nangle_regression,:),    &       
+           stat)      
 
-    DEALLOCATE(  X, Y, weight, CC, &								      
-    		STAT = Allocate_Status )					      		     
+    DEALLOCATE(  X, Y, weight, CC, &      
+                 STAT = Allocate_Status )     
   
-    IF ( Allocate_Status /= 0 ) THEN								      
-      WRITE( Message, '( "Error deallocating X, Y, and CC array. STAT = ", i5 )' ) &  		     
-    		      Allocate_Status						      		     
-      CALL Display_Message( PROGRAM_NAME, &					      		     
-    			    TRIM( Message ), &  				      		     
-    			    FAILURE )						      		     
-      STOP 90									      		     
-    END IF											      
+    IF ( Allocate_Status /= 0 ) THEN      
+      WRITE( Message, '( "Error deallocating X, Y, and CC array. STAT = ", i5 )' ) &    
+             Allocate_Status   
+      CALL Display_Message( PROGRAM_NAME, &   
+                            TRIM( Message ), &       
+                            FAILURE )    
+      STOP 90   
+    END IF       
 
   END subroutine DoRegression
   
@@ -1050,17 +1056,17 @@ CONTAINS
     ! local
     integer :: i, m
 
-    DO i = 1,  n_Angles 	    ! Loop over scan angles					      
-      DO m= 1, n_profiles   ! Loop over profiles					      
-        tb(i,m) = Pred_BrightTemp(Ichan,         &                        
-                                  tau(0:, i,m),  &                        
-                                  tk(:, m),      &                        
-                                  ts(m), &                        
+    DO i = 1,  n_Angles     ! Loop over scan angles
+      DO m= 1, n_profiles   ! Loop over profiles   
+        tb(i,m) = Pred_BrightTemp(Ichan,         & 
+                                  tau(0:, i,m),  & 
+                                  tk(:, m),      & 
+                                  ts(m), &         
                                   emi, SpcCoeff )
       ENDDO
-    ENDDO                                             
+    ENDDO 
     
-  END SUBROUTINE Compute_BrightTemp				
+  END SUBROUTINE Compute_BrightTemp 
 
     
   
@@ -1072,10 +1078,10 @@ CONTAINS
 
     !--- parameterlist
 
-    namelist /SATSEN/       File_Prefix,  &	      ! name of satellite sensor
-                            iChan_start,  &	      ! starting ch seq #
-                            iChan_end                 ! ending ch seq #
-    namelist /GENCOEF/      icom,    &	              ! component index
+    namelist /SATSEN/       File_Prefix, &     ! name of satellite sensor
+                            iChan_start, &     ! starting ch seq #
+                            iChan_end          ! ending ch seq #
+    namelist /GENCOEF/      icom,    &         ! component index
                             Nangle_regression         ! # of incidence angles used in coefficient calculation
     namelist /FILENAMES/ inFilename_spcCoef, &   ! Planck coeff. file
                          inFilename_atmProfile,& ! AtmosProfile file

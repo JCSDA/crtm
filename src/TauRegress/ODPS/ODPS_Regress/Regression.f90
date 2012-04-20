@@ -148,12 +148,12 @@ CONTAINS
 
      !inputs				     
 
-    REAL(fp_kind), intent(in) :: Gamma	     
+    REAL(fp_kind), intent(in) :: Gamma
     REAL(fp_kind), intent(in), DIMENSION(:,0:,:,:) ::  PdSub
-   				    !Npd,0:wNlay,1:Nangle,1:Natm    
+                                    !Npd,0:wNlay,1:Nangle,1:Natm    
     REAL(fp_kind), intent(in), DIMENSION(0:,:,:) ::  Kp
                                     !(0:wNlay,1:Nangle,1:Natm)
-						     
+ 
      REAL(fp_kind), intent(out) :: COEFF(:,:)  
      integer, intent(out) :: Ierr
 
@@ -163,34 +163,34 @@ CONTAINS
     real(fp_kind), allocatable :: H_band(:, :), AA_band(:,:), AB_band(:,:), &
                                   AY(:,:), AA_layer(:,:)
  
-    INTEGER :: Nsample, Nw, Nvar, Natm, Nangle 	     
+    INTEGER :: Nsample, Nw, Nvar, Natm, Nangle 
 
     INTEGER :: I, J, K, M, N, iatm, iang, offset, KD
 
-    NVAR = SIZE(PdSub, DIM=1) + 1		     
+    NVAR = SIZE(PdSub, DIM=1) + 1 
     NW = SIZE(PdSub, DIM=2)
     Nangle = SIZE(PdSub, DIM=3)
     Natm = SIZE(PdSub, DIM=4)
 
     NSAMPLE = Nangle * Natm
 
-    N = Nw * Nvar							     
+    N = Nw * Nvar 
     M = Nsample*Nw
-			     
-    allocate(H_band(Nvar + 1, N), &     
-   	     AA_band(Nvar + 1, N), &
-   	     AB_band(Nvar + 1, N), &
-             AY(N, 1), AA_layer(Nvar, Nvar))	   
- 	
+      
+    allocate(H_band(Nvar + 1, N), & 
+             AA_band(Nvar + 1, N), &
+             AB_band(Nvar + 1, N), &
+             AY(N, 1), AA_layer(Nvar, Nvar)) 
+  
     !--------------------------------------------------------	
     ! H matrix used to constrain vertical coeffienct profile
     ! minimize the difference between adjacent coefficient  
     !--------------------------------------------------------
-    H_band(:,:) = ZERO	     
-    H_band(1, Nvar+1:N) = -ONE 	     
-    H_band(Nvar+1, 1:Nvar) = ONE	     
-    H_band(Nvar+1, Nvar+1:N-Nvar) = TWO	     
-    H_band(Nvar+1, N-Nvar+1:N) = ONE	     
+   H_band(:,:) = ZERO                         
+   H_band(1, Nvar+1:N) = -ONE                 
+   H_band(Nvar+1, 1:Nvar) = ONE               
+   H_band(Nvar+1, Nvar+1:N-Nvar) = TWO        
+   H_band(Nvar+1, N-Nvar+1:N) = ONE           
 
     !-------------------------------------------------------
     ! prepare AA band matrix
@@ -204,11 +204,11 @@ CONTAINS
 
     AA_band(:,:) = ZERO
     AY(:, 1) = ZERO
-    KD = Nvar	     
+    KD = Nvar    
 
-    DO K = 1, Nw	     
+    DO K = 1, Nw
 
-      ! put data in up triangle	     
+      ! put data in up triangle    
       
       offset = (k-1)*Nvar
       AA_layer(:,:) = ZERO
@@ -227,22 +227,22 @@ CONTAINS
             AA_layer(1, i) = AA_layer(1, i) + PdSub(i-1,k-1,iang, iatm)
 
             do j = i, Nvar
-          	AA_layer(i, j) = AA_layer(i, j) + &
-          		 PdSub(i-1,k-1,iang, iatm) * PdSub(j-1,k-1,iang,iatm) 
-            enddo		 
-          enddo     
+              AA_layer(i, j) = AA_layer(i, j) + &
+              PdSub(i-1,k-1,iang, iatm) * PdSub(j-1,k-1,iang,iatm) 
+            enddo
+          enddo   
 
         endif
       enddo
       enddo
 
-      do j = 1, Nvar	     
-   	do i = max(1,j-KD), j  	     
-   	  AA_band(KD+1+i-j, j+offset) = AA_layer(i,j)     
-   	enddo					     
-      enddo     
+      do j = 1, Nvar    
+       do i = max(1,j-KD), j     
+         AA_band(KD+1+i-j, j+offset) = AA_layer(i,j)     
+       enddo   
+      enddo    
 
-    ENDDO							     
+    ENDDO      
 
     !----------------------------------------------
     ! prepare AB
@@ -256,175 +256,176 @@ CONTAINS
     !        AB_band * X = AY
     !-----------------------------------------------------------
 !!!    call DPBSV( 'U', N, KD, 1, AB_band, Nvar+1, AY, N, ierr )
+    ierr = 0
     if(ierr /= 0)then
       print *, 'Error flag returned from regression DPBSV'
     endif
 
     !--- get coefficients ---
-    do k = 1, Nw				     
+    do k = 1, Nw 
       do i = 1, Nvar
         COEFF(i,k) = AY((k-1)*Nvar+i, 1)
       enddo
-    enddo						     
+    enddo    
 
-    deallocate(H_band,AA_band,AB_band,AY,AA_layer)	     
- 						     
+    deallocate(H_band,AA_band,AB_band,AY,AA_layer)    
+  
   END Subroutine SMOOTH_coeff
 
 
 
-	SUBROUTINE SMOOTH_Coeff_vertical(H, PdSub, kp, Gamma, Coeff, ierr)
+       SUBROUTINE SMOOTH_Coeff_vertical(H, PdSub, kp, Gamma, Coeff, ierr)
 
  
-	IMPLICIT NONE
+        IMPLICIT NONE
 
-	 !inputs
- 	
-	REAL(fp_kind), intent(in) :: Gamma
-	REAL(fp_kind), intent(in), DIMENSION(:,0:,:,:) ::  PdSub    !Npd, 0:wNlay,1:Nangle,1:Natm,Igas
-	REAL(fp_kind), intent(in), DIMENSION(0:,:,:) ::  Kp  !(0:wNlay,1:Nangle,1:Natm)
-	REAL(fp_kind)  ::  H(:,:)
- 	
-	! I/O
-	 REAL(fp_kind), intent(inout) :: COEFF(:,:)     
-	 integer, intent(inout) :: Ierr
+        !inputs                                                                                         
+
+       REAL(fp_kind), intent(in) :: Gamma                                                               
+       REAL(fp_kind), intent(in), DIMENSION(:,0:,:,:) ::  PdSub    !Npd, 0:wNlay,1:Nangle,1:Natm,Igas   
+       REAL(fp_kind), intent(in), DIMENSION(0:,:,:) ::  Kp  !(0:wNlay,1:Nangle,1:Natm)                  
+       REAL(fp_kind)  ::  H(:,:)                                                                        
+
+       ! I/O                                                                                            
+        REAL(fp_kind), intent(inout) :: COEFF(:,:)                                                      
+        integer, intent(inout) :: Ierr                                                                  
 
         ! local 
 
-  	real(fp_kind), allocatable :: A(:,:), AA(:,:), AA1(:,:)
-	real(fp_kind), allocatable ::  YA(:), AAinv(:,:), Y(:), B(:) 
+ real(fp_kind), allocatable :: A(:,:), AA(:,:), AA1(:,:)
+ real(fp_kind), allocatable ::  YA(:), AAinv(:,:), Y(:), B(:) 
+
+ INTEGER :: Nsample, Nw, Nvar, Natm, Nangle
+
+ real(fp_kind)::SUMM
+
+ INTEGER :: I, J, K, N, M, N1, N2, N3, N4, iatm, iang
+
+ NVAR = SIZE(PdSub, DIM=1) + 1   
+ NW = SIZE(PdSub, DIM=2)         
+ Nangle = SIZE(PdSub, DIM=3)     
+ Natm = SIZE(PdSub, DIM=4)       
+
+ NSAMPLE = Nangle * Natm         
+
+ N = Nw * Nvar                   
+ M = Nsample*Nw                  
+
+print*, Nw, Nvar, Nangle, Natm, Nsample, N, M
+
+allocate(A(M,N), AA(N,N))
+
+!--- A
+
+      A(:,:) = 0.0
+
+      DO K = 1, Nw
+        j = 0
+        DO iatm = 1, Natm
+        Do iang = 1, Nangle
+        J = j + 1 
+
+        A( (K-1)*NSAMPLE+J, (K-1)*Nvar+1)  = 1.       
+
+        A( (K-1)*NSAMPLE+J, (K-1)*Nvar+2:K*Nvar) &
+           = PdSub(1:Nvar-1,K-1,iang, iatm)    
+
+        ENDDO
+        ENDDO
+      ENDDO
+
+      allocate( YA(N), Y(M))          
+
+
+       Y(:) = 0.0
+
+      DO J = 1, Nw
+
+        i =0
+        DO iatm = 1, Natm
+        Do iang = 1, Nangle
+  i = i +1
+
+   Y((J-1)*NSAMPLE  +I) = KP(J-1,Iang, Iatm)  
+
+   ENDDO
+   ENDDO
+ ENDDO
+
+summ = sum(Y)/dble(Natm*Nangle*Nw)
+
+print*, "avg and std of Y", summ, &
+      sqrt( sum((Y -summ)**2)/dble(Natm*Nangle*Nw ))
+
+! YA=A(T)*Y
+
+print*, " computation of YA = A(T)*Y, ", N, M
+
+YA(:) = 0.0
+
+DO I = 1, N
+
+  DO K = (I-1)/Nvar*Nsample+1, (I-1)/Nvar*Nsample+Nsample 
+      YA(I) = YA(I) + A(K,I) * Y(K)
+  ENDDO
+
+ENDDO
+
+print*, " computation of A(T)A"
  
-	INTEGER :: Nsample, Nw, Nvar, Natm, Nangle
 
-	real(fp_kind):: SUMM
+! AA
 
- 	INTEGER :: I, J, K, N, M, N1, N2, N3, N4, iatm, iang
-
-	NVAR = SIZE(PdSub, DIM=1) + 1
-	NW = SIZE(PdSub, DIM=2)	
-	Nangle = SIZE(PdSub, DIM=3)
-	Natm = SIZE(PdSub, DIM=4)
-
-	NSAMPLE = Nangle * Natm
-
-	N = Nw * Nvar
-        M = Nsample*Nw
-
-       print*, Nw, Nvar, Nangle, Natm, Nsample, N, M
-
-	allocate(A(M,N), AA(N,N))	
-      
-	!--- A
-
-	A(:,:) = 0.0
-    
-	DO K = 1, Nw
-	  j = 0
-	  DO iatm = 1, Natm
-	  Do iang = 1, Nangle
-          J = j + 1 
-
-	  A( (K-1)*NSAMPLE+J, (K-1)*Nvar+1)  = 1.	
-
-	  A( (K-1)*NSAMPLE+J, (K-1)*Nvar+2:K*Nvar) &
-             = PdSub(1:Nvar-1,K-1,iang, iatm)    
-
-	  ENDDO
-	  ENDDO
-	ENDDO
- 
-        allocate( YA(N), Y(M))  	
+AA(:,:) = 0.0
 
 
-	 Y(:) = 0.0
+DO I = 1, N
 
-        DO J = 1, Nw
+  DO J = (I-1)/Nvar*Nvar+1, (I-1)/Nvar*Nvar + Nvar
 
-	  i =0
-	  DO iatm = 1, Natm
-	  Do iang = 1, Nangle
-          i = i +1
+     DO K = (J-1)/Nvar*Nsample+1, (J-1)/Nvar*Nsample+Nsample  !ignore the zero.
+       !----------------------------------------------------------------------!
+       ! if Y(I) = 0 and gas/=correction term, this sample can not be counted !
+       !----------------------------------------------------------------------!
+       if( abs(Y(K)) > TOLERANCE ) then
+       AA(I,J) = AA(I,J) + A(K,I) * A(K,J)
+       endif  
 
- 	   Y((J-1)*NSAMPLE  +I) = KP(J-1,Iang, Iatm)  
+     ENDDO
 
-	   ENDDO
-	   ENDDO
- 	 ENDDO
-  
-        summ = sum(Y)/dble(Natm*Nangle*Nw)
+  ENDDO
 
-	print*, "avg and std of Y", summ, &
-              sqrt( sum((Y -summ)**2)/dble(Natm*Nangle*Nw ))
-	
-	! YA=A(T)*Y
-  
-	print*, " computation of YA = A(T)*Y, ", N, M
-
-	YA(:) = 0.0
-
-	DO I = 1, N
- 
-	  DO K = (I-1)/Nvar*Nsample+1, (I-1)/Nvar*Nsample+Nsample  
-		  YA(I) = YA(I) + A(K,I) * Y(K)
-	  ENDDO
-
- 	ENDDO
-
-	print*, " computation of A(T)A"
- 	 
- 
-	! AA
- 
-	AA(:,:) = 0.0
-
-
-	DO I = 1, N
- 
-	  DO J = (I-1)/Nvar*Nvar+1, (I-1)/Nvar*Nvar + Nvar
-
- 	     DO K = (J-1)/Nvar*Nsample+1, (J-1)/Nvar*Nsample+Nsample  !ignore the zero.
-	       !----------------------------------------------------------------------!
-	       ! if Y(I) = 0 and gas/=correction term, this sample can not be counted !
-	       !----------------------------------------------------------------------!
-	       if( abs(Y(K)) > TOLERANCE ) then
-	       AA(I,J) = AA(I,J) + A(K,I) * A(K,J)
-	       endif 	
-
-	     ENDDO
-
-	  ENDDO	 
- 
-	ENDDO
+ENDDO
  
 ! --- to reduce the size of array if the sample number for layer is less than 5
-	N1 = N
-	DO I = N+1-Nvar, 1, -Nvar
-	if(AA(I,I) >= Nvar-1) exit
-	N1 = I-1
- 	ENDDO
+N1 = N
+DO I = N+1-Nvar, 1, -Nvar
+if(AA(I,I) >= Nvar-1) exit
+N1 = I-1
+ENDDO
 
 ! --- to reduce the size of array if the sample number for top-layer is less than 5
-	N2 = 0
-	DO I = 1, N+1-Nvar, Nvar
-	N2 = I-1
-	if(AA(I,I) >= Nvar-1) exit
- 	ENDDO
+N2 = 0
+DO I = 1, N+1-Nvar, Nvar
+N2 = I-1
+if(AA(I,I) >= Nvar-1) exit
+ENDDO
 
 !--- if the sample number >1, the coefficients in the top can not be zero
-	if(N2 > Nvar) then
-	N3 = N2
-	DO I = N2+1, 1, -Nvar
-	if(AA(I,I) == 0) exit
-	N3 = I
- 	ENDDO
-	endif
+if(N2 > Nvar) then
+N3 = N2
+DO I = N2+1, 1, -Nvar
+if(AA(I,I) == 0) exit
+N3 = I
+ENDDO
+endif
 
 !--- if the sample number >1, the coefficients in the bottom can not be zero
-	N4 = N1
-	DO I = N1+1, N+1-Nvar, Nvar
-	N4 = I-1
-	if(AA(I,I) == 0) exit
- 	ENDDO
+N4 = N1
+DO I = N1+1, N+1-Nvar, Nvar
+N4 = I-1
+if(AA(I,I) == 0) exit
+ENDDO
 
 ! array: 1 00 n3 n2 n1 00 n4
  
@@ -432,185 +433,185 @@ CONTAINS
 ! --------- change to H is necessary
  
       deallocate(Y,A)
-	
-      allocate(B(N))  	
+ 
+      allocate(B(N)) 
  
  
 ! -- to change H in the top
-	do i = N2+1, N2+Nvar 
-        H(i,i) = 1.0
-	enddo
+do i = N2+1, N2+Nvar 
+H(i,i) = 1.0
+enddo
 ! -- to change H in the bottom
-	do i = N1-Nvar+1, N1
-        H(i,i) = 1.0
-	enddo
+do i = N1-Nvar+1, N1
+H(i,i) = 1.0
+enddo
 
-        print*, "gamma = ", gamma  
+print*, "gamma = ", gamma  
 
-	DO I = 1, N
-	DO J = 1, N
+DO I = 1, N
+DO J = 1, N
 
-	AA(I,J) = AA(I,J) + GAMMA * H(I,J)
+AA(I,J) = AA(I,J) + GAMMA * H(I,J)
 
-	ENDDO
-	ENDDO
+ENDDO
+ENDDO
 
-  
-	if(N1 <= N2) then
-	print*, "error in the array size!"
-	stop
-	endif
 
-        allocate( AAinv(N1-N2,N1-N2) , AA1(N1-N2, N1-N2))  	
+if(N1 <= N2) then
+print*, "error in the array size!"
+stop
+endif
 
-	print*, " computation of AAinV", N1, N2, N3, N4, nvar
+allocate( AAinv(N1-N2,N1-N2) , AA1(N1-N2, N1-N2))  
 
-	AA1(1:N1-N2, 1:N1-N2) = AA(N2+1:N1, N2+1:N1)
+print*, " computation of AAinV", N1, N2, N3, N4, nvar
+
+AA1(1:N1-N2, 1:N1-N2) = AA(N2+1:N1, N2+1:N1)
 
 !!!	call rinvrs(AA1,AAinv,ierr)
 
-	deallocate(AA1)
+deallocate(AA1)
 
 
-  	B(:) = 0.
- 
+B(:)=0.
+
      if(ierr == 0) then 
 
-	do i = 1, N1-N2
-  	  summ = 0.
-	  do j = 1, N1-N2
-          summ = summ + YA(N2+j)*AAinv(j,i)
-	  end do
-	B(N2+i) = summ
-	end do 
+do i = 1, N1-N2
+  summ = 0.
+  do j = 1, N1-N2
+  summ = summ + YA(N2+j)*AAinv(j,i)
+  end do
+B(N2+i) = summ
+end do 
 
- 	do i = N1+1, N4
-	B(i) = B(i-Nvar)
-	enddo
+do i = N1+1, N4
+B(i) = B(i-Nvar)
+enddo
 
-	if(N2 > Nvar) then 
- 	do i = N3, N2
-	B(i) = B(N2-N3+1+i)
-	enddo
-	endif
- 
+if(N2 > Nvar) then 
+do i = N3, N2
+B(i) = B(N2-N3+1+i)
+enddo
+endif
+
 
      else if(ierr == -1) then 
 
-         print*, "WARNING ... singular array in the computation of AAinv", N1	
+      print*, "WARNING ... singular array in the computation of AAinv", N1 
 
      endif
 
 
-	COEFF(:,:) = 0.0
-	
-	DO J = 1, Nw
-	DO I = 1,Nvar 
- 	COEFF(I,J) = B((J-1)*Nvar  +I)
-	ENDDO
-	ENDDO
+COEFF(:,:) = 0.0
 
+DO J = 1, Nw
+DO I = 1,Nvar 
+COEFF(I,J) = B((J-1)*Nvar  +I)
+ENDDO
+ENDDO
+
+
+deallocate(AA,YA,AAinv,B)    
+
+RETURN
+END Subroutine SMOOTH_Coeff_vertical
+
+
+
+
+Subroutine Normalization (X, factor)
+
+! --- INPUT
+REAL(fp_kind), intent(inout), DIMENSION(0:,:, :) :: X
+
+REAL(fp_kind), intent(out) :: factor
+
+
+!-- LOCAL 
+
+REAL(fp_kind) :: XAVG, summ 
+
+INTEGER  i,j, k
+integer Natm, Nang, Nw
+
+
+Nw = SIZE(X, DIM=1)-1
+Nang = SIZE(X, DIM=2)
+Natm = SIZE(X, DIM=3) 
+
+XAVG = sum(X)/dble(Nang*Natm*(Nw+1))
+
+
+summ = ZERO
+do i = 0, Nw
+do j = 1, Nang
+do k = 1, Natm
+summ = summ + (x(i,j,k) - xavg)**2
+enddo
+enddo
+enddo
+
+factor = sqrt(summ/dble(Nang*Natm*(Nw+1)))
+
+X(0:Nw, 1:Nang, 1:Natm) = X(0:Nw, 1:Nang, 1:Natm) / factor 
+
+
+return 
+
+END Subroutine Normalization
+
+
+
+Subroutine Generation_H_matrix( H, Nvar)
+
+!-- input
+Integer:: Nvar
+
+! -- output
+REAL(fp_kind), intent(out), DIMENSION(:, :) ::  H
+
+! --local 	
+Integer :: N, I, J, K
+REAL(fp_kind), allocatable :: KK(:,:), KT(:,:)
+
+
+N = Size(H, DIM=1)
+
+allocate(KK(N,N), KT(N,N))
  
-	deallocate(AA,YA,AAinv,B)    
+
+KK(:,:) = 0.
+
+DO I = 2, N-Nvar+1
  
-	RETURN
-	END Subroutine SMOOTH_Coeff_vertical
+   KK(I,I-1) = 1.
+   KK(I, I+Nvar-1) = -1.
 
-
-
-
-    Subroutine Normalization (X, factor)
-
-	! --- INPUT
-	REAL(fp_kind), intent(inout), DIMENSION(0:,:, :) :: X
-      
-	REAL(fp_kind), intent(out) :: factor
-
-
-	!-- LOCAL 
-
-	REAL(fp_kind) :: XAVG, summ 
-	
-	INTEGER  i,j, k
-	integer Natm, Nang, Nw	
-
-
-	Nw = SIZE(X, DIM=1)-1
-	Nang = SIZE(X, DIM=2)
- 	Natm = SIZE(X, DIM=3) 
+ENDDO
  
-	XAVG = sum(X)/dble(Nang*Natm*(Nw+1))
+! H = K*K
 
- 
-	summ = ZERO
-	do i = 0, Nw
-	do j = 1, Nang
-	do k = 1, Natm
-	summ = summ + (x(i,j,k) - xavg)**2
-	enddo
-	enddo
-	enddo
+H(:,:) = 0.
 
-	factor = sqrt(summ/dble(Nang*Natm*(Nw+1)))
- 
-	X(0:Nw, 1:Nang, 1:Natm) = X(0:Nw, 1:Nang, 1:Natm) / factor 
- 
+KT = transpose(KK) 
 
-	return 
+print*, "multification of array, H=K(T)K"
+DO I = 1, N
+   DO J = 1, N
 
-	END Subroutine Normalization
+    DO K = 1, N
+    H(I,J) = H(I,J) + KT(I,K)*KK(K,J)
+    ENDDO
 
+  ENDDO
+ENDDO 
 
+deallocate(kk, KT)
 
-	Subroutine Generation_H_matrix( H, Nvar)
-	
-	!-- input
-	Integer :: Nvar
-	
-	! -- output
-	REAL(fp_kind), intent(out), DIMENSION(:, :) ::  H
+return
 
-	! --local 	
- 	Integer :: N, I, J, K
-	REAL(fp_kind), allocatable :: KK(:,:), KT(:,:)
-	
-	
-	N = Size(H, DIM=1)	
- 	
-	allocate(KK(N,N), KT(N,N))
- 
-
-	KK(:,:) = 0.
- 
-	DO I = 2, N-Nvar+1
-	 
-	   KK(I,I-1) = 1.
-	   KK(I, I+Nvar-1) = -1.
-
-	ENDDO
-	 
-	! H = K*K
-
-	H(:,:) = 0.
-
-        KT = transpose(KK) 
-
-	print*, "multification of array, H=K(T)K"
-	DO I = 1, N
-	   DO J = 1, N
-
-    	    DO K = 1, N
-	    H(I,J) = H(I,J) + KT(I,K)*KK(K,J)
-	    ENDDO
-
-	  ENDDO
-	ENDDO 
-
- 	deallocate(kk, KT)
-	
-	return
-	
-	End Subroutine Generation_H_matrix
+End Subroutine Generation_H_matrix
 
 END MODULE Regression
 

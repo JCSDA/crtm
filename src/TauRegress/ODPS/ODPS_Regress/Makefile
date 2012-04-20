@@ -4,6 +4,7 @@
 #
 #==============================================================================
 ROOT=$(CRTM_SOURCE_ROOT)
+NETCDF=/apps/netcdf/4.1.3-intel
 
 # -------------
 # Define macros
@@ -34,17 +35,18 @@ SRC_FILES = Type_Kinds.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_netCDF_IO.f90 \
             SensorInfo_Parameters.f90 \
-            AntCorr_Define.f90 \
-            AntCorr_netCDF_IO.f90 \
+            ACCoeff_Define.f90 \
             Sort_Utility.f90 \
             Compare_Float_Numbers.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
             ODPS_Predictor.f90 \
-            ODPS_ZAtmAbsorption.f90 \
             ODPS_Predictor_Define.f90 \
             ODPS_Define.f90 \
-            ODPS_netCDF_IO.f90   
+            ODPS_netCDF_IO.f90 \
+            CRTM_Parameters.f90 \
+            Subset_Define.f90 \
+            NLTECoeff_Define.f90 
             
 
 
@@ -63,9 +65,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
              
 
 
-INCLUDES = -I$(HOME)/local/netcdf/include
+#INCLUDES = -I$(HOME)/local/netcdf/include
 #LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf -L$(HOME)/local/lapack/bin -llapack -lblas
-LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+#LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+INCLUDES = -I$(NETCDF)/include
+LIBRARIES = -mkl=sequential -L$(NETCDF)/lib -lnetcdff 
 
 
 # ------------------
@@ -74,10 +78,10 @@ LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(ROOT)/make.common_targets
 
 # Create and remove source links
-create_links:
+create_links::
 	@linkfiles $(ROOT) $(SRC_FILES)
                    
-remove_links:
+remove_links::
 	@unlinkfiles $(SRC_FILES)
 
 # Source dependencies

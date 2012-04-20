@@ -25,7 +25,7 @@
   integer,         save   :: best_array(MAX_PREDICTORS, MAX_PREDICTORS)
 
 
-  integer, parameter      :: INFINITE = HUGE(1.0_fp_kind)
+  real(fp_kind), parameter      :: INFINITE = HUGE(1.0_fp_kind)
    
  CONTAINS
 
@@ -59,7 +59,7 @@
 
   function Get_subsetIndex_stepwise(Npredictor_all, &
                                     predictorIdx, &
-				    Npredictors ) result( endOfsel)
+                                    Npredictors ) result( endOfsel)
 
     integer, intent(in)     :: Npredictor_all
     integer, intent(inout)  :: predictorIdx(:)
@@ -156,7 +156,7 @@
   !=============================================================================
 
   function Get_subsetIndex_rev_stepwise(predictorIdx, &
-				        Npredictors ) result( endOfsel)
+                                        Npredictors ) result( endOfsel)
 
     integer, intent(out)    :: predictorIdx(:)
     integer, intent(out)    :: Npredictors
@@ -195,14 +195,14 @@
       MinErr = INFINITE
       best_array(1:Npredictors_selected, i) = predictorIdx_best(1:Npredictors_selected)
 
-      ! selection is completed	   
-    				   
+      ! selection is completed     
+
       if(Npredictors_selected == 1)then  
     
-        endOfsel = 1		   
-        return			   
-    				   
-      endif			   
+        endOfsel = 1 
+        return 
+ 
+      endif    
 
       ! prepare for the next selection run
       Npredictors_selection = Npredictors_selected
