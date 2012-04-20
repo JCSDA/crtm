@@ -10,14 +10,45 @@ MODULE Timing_Utility
   ! Disable all implicit typing
   IMPLICIT NONE
 
+
   ! Visibilities
   PRIVATE
+  ! ...Datatypes
   PUBLIC :: Timing_type
+  ! ...Procedures
+  PUBLIC :: Timing_Begin
+  PUBLIC :: Timing_End
+  PUBLIC :: Timing_Display
+  PUBLIC :: Timing_Inspect
+  PUBLIC :: Timing_Set
+  PUBLIC :: Timing_Get
+  ! ...Old named procedures
   PUBLIC :: Begin_Timing
   PUBLIC :: End_Timing
   PUBLIC :: Display_Timing
 
+
+  ! Parameters
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+
+
+  ! Overloads
+  INTERFACE Begin_Timing
+    MODULE PROCEDURE Timing_Begin
+  END INTERFACE Begin_Timing
+  
+  INTERFACE End_Timing
+    MODULE PROCEDURE Timing_End
+  END INTERFACE End_Timing
+  
+  INTERFACE Display_Timing
+    MODULE PROCEDURE Timing_Display
+  END INTERFACE Display_Timing
+  
+  
   ! Derived type definitions
+  !:tdoc+:
   TYPE :: Timing_type
     PRIVATE
     LOGICAL :: Is_Valid = .FALSE.
@@ -25,41 +56,115 @@ MODULE Timing_Utility
     INTEGER :: Begin_Clock = 0
     INTEGER :: End_Clock   = 0
   END TYPE Timing_type
-
-  ! Module parameters
-  INTEGER,      PARAMETER :: CR = 13
-  INTEGER,      PARAMETER :: LF = 10
-  CHARACTER(2), PARAMETER :: CRLF = ACHAR(CR)//ACHAR(LF)
+  !:tdoc-:
 
 
 CONTAINS
 
-  ! Subroutine to set the begin time count
-  ! in the timing structure variable
-  SUBROUTINE Begin_Timing( Timing )  ! In/Output
-    TYPE(Timing_type), INTENT(OUT) :: Timing
-    CALL SYSTEM_CLOCK( COUNT_RATE=Timing%Hertz, &
-                       COUNT     =Timing%Begin_Clock )
-    IF ( Timing%Hertz == 0 ) RETURN
-    Timing%Is_Valid = .TRUE.
-  END SUBROUTINE Begin_Timing
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   Timing_Begin
+!
+! PURPOSE:
+!   Subroutine to set the begin time count in a timing object
+!
+! CALLING SEQUENCE:
+!   CALL Timing_Begin( timing )
+!
+! INPUTS:
+!   timing:  Timing object.
+!            UNITS:      N/A
+!            TYPE:       Timing_type
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Timing_Begin( self )  ! In/Output
+    TYPE(Timing_type), INTENT(OUT) :: self
+    CALL SYSTEM_CLOCK( COUNT_RATE=self%Hertz, &
+                       COUNT     =self%Begin_Clock )
+    IF ( self%Hertz == 0 ) RETURN
+    self%Is_Valid = .TRUE.
+  END SUBROUTINE Timing_Begin
 
 
-  ! Subroutine to set the end time count
-  ! in the timing structure variable
-  SUBROUTINE End_Timing( Timing )  ! In/Output
-    TYPE(Timing_type), INTENT(IN OUT) :: Timing
-    CALL SYSTEM_CLOCK( COUNT=Timing%End_Clock )
-  END SUBROUTINE End_Timing
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   Timing_End
+!
+! PURPOSE:
+!   Subroutine to set the end time count in a timing object
+!
+! CALLING SEQUENCE:
+!   CALL Timing_End( timing )
+!
+! INPUTS:
+!   timing:  Timing object.
+!            UNITS:      N/A
+!            TYPE:       Timing_type
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Timing_End( self )  ! In/Output
+    TYPE(Timing_type), INTENT(IN OUT) :: self
+    CALL SYSTEM_CLOCK( COUNT=self%End_Clock )
+  END SUBROUTINE Timing_End
 
 
-  ! Subroutine to display the elapsed time between
-  ! the begin and end time counts in the timing
-  ! structure variable
-  SUBROUTINE Display_Timing( Timing, &  ! Input
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   Timing_Display
+!
+! PURPOSE:
+!   Subroutine to display the elapsed time defined by the begin and end time
+!   counts in the timing object.
+!
+! CALLING SEQUENCE:
+!   CALL Timing_Display( timing, Caller = caller )
+!
+! INPUTS:
+!   timing:  Timing object.
+!            *** OBJECT is destroyed upon exit ***
+!            UNITS:      N/A
+!            TYPE:       Timing_type
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN OUT)
+!
+! OPTIONAL INPUTS:
+!   caller:  String containing the name of the calling routine.
+!            If not specified, the name of this procedure is used.
+!            UNITS:      N/A
+!            TYPE:       CHARACTER(*)
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Timing_Display( self  , &  ! Input
                              Caller  )  ! Optional input
     ! Arguments
-    TYPE(Timing_type),      INTENT(IN OUT) :: Timing
+    TYPE(Timing_type),      INTENT(IN OUT) :: self
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
     ! Local parameters
     REAL(fp), PARAMETER :: N_SECONDS_IN_HOUR        = 3600.0_fp
@@ -75,10 +180,10 @@ CONTAINS
     INTEGER        :: n_milliSeconds
 
     ! Set up
-    Routine_Name = 'Display_Timing'
+    Routine_Name = 'Timing_Display'
     IF ( PRESENT(Caller) ) Routine_Name = TRIM(ADJUSTL(Caller))
     ! ...Check if timing structure valid for display
-    IF ( .NOT. Timing%Is_Valid ) THEN
+    IF ( .NOT. self%Is_Valid ) THEN
       CALL Display_Message( TRIM(Routine_Name), &
                             '***** Invalid timing structure! *****', &
                             FAILURE )
@@ -86,13 +191,13 @@ CONTAINS
     END IF
 
     ! Compute the total time in seconds
-    Total_Time = REAL(Timing%End_Clock - Timing%Begin_Clock, fp) / REAL(Timing%Hertz, fp)
+    Total_Time = REAL(self%End_Clock - self%Begin_Clock, fp) / REAL(self%Hertz, fp)
 
     ! Split the total time into hours, minutes, seconds, and millseconds
     n_Hours        = INT(Total_Time / N_SECONDS_IN_HOUR)
     n_Minutes      = INT(MOD(Total_Time,N_SECONDS_IN_HOUR) / N_SECONDS_IN_MINUTE)
     n_Seconds      = INT(MOD(MOD(Total_Time,N_SECONDS_IN_HOUR), N_SECONDS_IN_MINUTE))
-    n_milliSeconds = INT((Total_Time - INT(Total_Time)) * N_MILLISECONDS_IN_SECOND)
+    n_milliSeconds = INT((Total_Time - INT(Total_Time,fp)) * N_MILLISECONDS_IN_SECOND)
 
     ! Construct the character string
     WRITE( Elapsed_Time, '("Elapsed time-- ",i2.2,":",i2.2,":",i2.2,".",i3.3 )' ) &
@@ -102,15 +207,100 @@ CONTAINS
                           INFORMATION )
     
     ! Destroy the timing information
-    CALL Destroy_Timing(Timing)
+    CALL Timing_Destroy(self)
     
-  END SUBROUTINE Display_Timing
+  END SUBROUTINE Timing_Display
 
 
-  ! Subroutine to reinitialise a timing structure
-  SUBROUTINE Destroy_Timing(Timing)
-    TYPE(Timing_type), INTENT(OUT) :: Timing
-    Timing%Is_Valid = .FALSE.
-  END SUBROUTINE Destroy_Timing
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   Timing_Inspect
+!
+! PURPOSE:
+!   Subroutine to print the contents of a Timing object to stdout.
+!
+! CALLING SEQUENCE:
+!   CALL CRTM_Timing_Inspect( timing )
+!
+! OBJECTS:
+!   Timing:  Timing object to display.
+!            UNITS:      N/A
+!            TYPE:       Timing_type
+!            DIMENSION:  Scalar
+!            ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Timing_Inspect( self )
+    TYPE(Timing_type), INTENT(IN) :: self
+    WRITE(*,'(1x,"Timing OBJECT")')
+    WRITE(*,'(3x,"Hertz       : ",i0)') self%Hertz      
+    WRITE(*,'(3x,"Begin_Clock : ",i0)') self%Begin_Clock
+    WRITE(*,'(3x,"End_Clock   : ",i0)') self%End_Clock  
+    WRITE(*,'(3x,"Is_Valid    : ",l1)') self%Is_Valid   
+  END SUBROUTINE Timing_Inspect
+  
+  
+  ! Subroutine to set the components of a timing object
+  ! Public, but only for testing so it's undocumented.
+  SUBROUTINE Timing_Set( &
+    self       , &
+    Hertz      , &
+    Begin_Clock, &
+    End_Clock  , &
+    Is_Valid     )
+    ! Arguments
+    TYPE(Timing_type), INTENT(IN OUT) :: self
+    INTEGER, OPTIONAL, INTENT(IN)     :: Hertz
+    INTEGER, OPTIONAL, INTENT(IN)     :: Begin_Clock
+    INTEGER, OPTIONAL, INTENT(IN)     :: End_Clock
+    LOGICAL, OPTIONAL, INTENT(IN)     :: Is_Valid
+    ! Set object components
+    IF ( PRESENT(Hertz      ) ) self%Hertz       = Hertz
+    IF ( PRESENT(Begin_Clock) ) self%Begin_Clock = Begin_Clock
+    IF ( PRESENT(End_Clock  ) ) self%End_Clock   = End_Clock
+    IF ( PRESENT(Is_Valid   ) ) self%Is_Valid    = Is_Valid
+  END SUBROUTINE Timing_Set
+
+    
+  ! Subroutine to get the components of a timing object
+  ! Public, but only for testing so it's undocumented.
+  SUBROUTINE Timing_Get( &
+    self       , &
+    Hertz      , &
+    Begin_Clock, &
+    End_Clock  , &
+    Is_Valid     )
+    ! Arguments
+    TYPE(Timing_type), INTENT(IN)  :: self
+    INTEGER, OPTIONAL, INTENT(OUT) :: Hertz
+    INTEGER, OPTIONAL, INTENT(OUT) :: Begin_Clock
+    INTEGER, OPTIONAL, INTENT(OUT) :: End_Clock
+    LOGICAL, OPTIONAL, INTENT(OUT) :: Is_Valid
+    ! Set object components
+    IF ( PRESENT(Hertz      ) ) Hertz       = self%Hertz
+    IF ( PRESENT(Begin_Clock) ) Begin_Clock = self%Begin_Clock
+    IF ( PRESENT(End_Clock  ) ) End_Clock   = self%End_Clock
+    IF ( PRESENT(Is_Valid   ) ) Is_Valid    = self%Is_Valid
+  END SUBROUTINE Timing_Get
+
+
+    
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                        ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+  ! Subroutine to reinitialise a timing object
+  SUBROUTINE Timing_Destroy(self)
+    TYPE(Timing_type), INTENT(OUT) :: self
+    self%Is_Valid = .FALSE.
+  END SUBROUTINE Timing_Destroy
 
 END MODULE Timing_Utility
