@@ -41,7 +41,6 @@ MODULE CRTM_MW_Water_SfcOptics
                                       Compute_FastemX,   &
                                       Compute_FastemX_TL,&
                                       Compute_FastemX_AD
-  USE NESDIS_OceanEM_Module,    ONLY: NESDIS_OceanEM
   USE CRTM_MWwaterCoeff       , ONLY: MWwaterC
   ! Disable implicit typing
   IMPLICIT NONE
