@@ -49,7 +49,7 @@ MODULE ODPS_Predictor_Define
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
-  INTEGER, PARAMETER ::  ZERO = 0.0_fp
+  REAL(fp), PARAMETER ::  ZERO = 0.0_fp
   INTEGER, PARAMETER ::  SET = 1
 
   ! C-OPTRAN max. order and number of predictors
