@@ -39,7 +39,6 @@ NOCPP_FILES = \
   NESDIS_MHS_SICEEM_Module.f90 \
   NESDIS_MHS_SnowEM_Module.f90 \
   NESDIS_LandEM_Module.f90 \
-  NESDIS_OCEANEM_Module.f90 \
   NESDIS_SEAICE_PHYEM_MODULE.f90 \
   NESDIS_SnowEM_Parameters.f90 \
   NESDIS_SSMI_Module.f90 \
