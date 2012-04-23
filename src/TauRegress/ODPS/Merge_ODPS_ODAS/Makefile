@@ -4,6 +4,7 @@
 #
 #==============================================================================
 ROOT=$(CRTM_SOURCE_ROOT)
+NETCDF=/apps/netcdf/4.1.3-intel
 
 # -------------
 # Define macros
@@ -36,8 +37,8 @@ SRC_FILES = Type_Kinds.f90 \
             ODPS_netCDF_IO.f90 \
             ODPS_Predictor_Define.f90 \
             ODPS_Predictor.f90 \
-            ODPS_ZAtmAbsorption.f90
-
+            CRTM_Parameters.f90
+ 
 
 EXE_SRC_FILE = Merge_ODPS_ODAS.f90
                       
@@ -51,9 +52,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 #INCLUDES = -I$(HOME)/local/netcdf/include
 #LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 
-INCLUDES = -I$(HOME)/local/netcdf/include
-#LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf -L$(HOME)/local/lapack/bin -llapack -lblas
-LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+#INCLUDES = -I$(HOME)/local/netcdf/include
+#LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+INCLUDES = -I$(NETCDF)/include
+LIBRARIES = -mkl=sequential -L$(NETCDF)/lib -lnetcdff 
+
 
 
 # ------------------
@@ -62,10 +65,10 @@ LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(ROOT)/make.common_targets
 
 # Create and remove source links
-create_links:
+create_links::
 	@linkfiles $(ROOT) $(SRC_FILES)
                    
-remove_links:
+remove_links::
 	@unlinkfiles $(SRC_FILES)
 
 # Source dependencies
