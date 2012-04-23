@@ -17,7 +17,7 @@ PROGRAM Get_SenInfo
 
   !--- read spectral coefficients                               
 
-  error_status = Read_SpcCoeff_netCDF( inFilename_spcCoef, SpcCoeff, Quiet=1 )  
+  error_status = SpcCoeff_netCDF_ReadFile( inFilename_spcCoef, SpcCoeff, Quiet=.TRUE. )  
 
   if( error_status /= SUCCESS ) then                                   
     print *, '### ERROR ###'                                    
