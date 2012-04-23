@@ -68,26 +68,26 @@ module ReadParameters
 
     !--- namelist
 
-    namelist /SATSEN/  SatName,      &	         ! name of satellite	
-                       SenName,      &	         ! name of sensor
-                       Ichan_top,    &	         ! top ch seq #
+    namelist /SATSEN/  SatName,      &           ! name of satellite	
+                       SenName,      &           ! name of sensor
+                       Ichan_top,    &           ! top ch seq #
                        Ichan_last                ! last ch seq #
-    namelist /GENCOEF/ Iabsorber,    &	         ! absorber gas ID (1:dry,2:wet,3:o3)
-                       Alpha,        &		 ! coef to define a curve between abs amount and level
-                       A0,           & 	         ! min abs amount
-                       A1,     	     & 	  	 ! max abs amount
-						 ! (if Alpha == 0, then Alpha,A0,A1 is assigned later)
-		       Nangle,       &	         ! # of incidence angles used in coefficient calculation
+    namelist /GENCOEF/ Iabsorber,    & ! absorber gas ID (1:dry,2:wet,3:o3)
+                       Alpha,        & ! coef to define a curve between abs amount and level
+                       A0,           & ! min abs amount
+                       A1,           & ! max abs amount
+                                       ! (if Alpha == 0, then Alpha,A0,A1 is assigned later)
+                       Nangle,       & ! # of incidence angles used in coefficient calculation
                        Natmpred_allcombsearch, & ! # of atmos predictors whose all combinations are searched
-		       Flag_netCDF_file, &       ! T) read netCDF profile data, F) CIMSS3246 binary data file
+                       Flag_netCDF_file, &       ! T) read netCDF profile data, F) CIMSS3246 binary data file
                        Flag_AtmProfile_Lev2Lay   ! T) convert atmos profiles from level to layer
-                        		         ! F) read layer atmos profiles
+                                                 ! F) read layer atmos profiles
 
     !--- read namelist
 
-    Alpha                   = ZERO	! default
-    Flag_netCDF_file        = .TRUE.	! default
-    Flag_AtmProfile_Lev2Lay = .FALSE.	! default
+    Alpha                   = ZERO      ! default
+    Flag_netCDF_file        = .TRUE.    ! default
+    Flag_AtmProfile_Lev2Lay = .FALSE.   ! default
 
     open( InFileId_Namelist,            &
           FILE   = InFileName_Namelist, &
@@ -147,7 +147,7 @@ module ReadParameters
 
     !--- read spectral coefficients
 
-    Iflag = Read_SpcCoeff_netCDF( InFileName_SpcCoef, SpcCoeff, &
+    Iflag = SpcCoeff_netCDF_ReadFile( InFileName_SpcCoef, SpcCoeff, &
                                   History = TheHistory )
 
     if( Iflag /= SUCCESS ) then
@@ -230,7 +230,7 @@ module ReadParameters
 
     do Ichan = 1, Nchan
       channel_type(Ichan) = Get_ChanType( SpcCoeff%wavenumber(Ichan), &
-   			                  SpcCoeff%frequency (Ichan)  )
+                                          SpcCoeff%frequency (Ichan)  )
     enddo
             
     !--- print assigned parameters
@@ -248,14 +248,14 @@ module ReadParameters
     print *
     do Ichan = Ichan_top, Ichan_last
       print '(1x,a,i4,i3,6E17.8)', &
-      			'Ch seq #, Type, Freq (cm^-1,GHz), Planck c1,c2, Band c1,c2 =', &
-			Ichan, channel_type(Ichan), &
-                        SpcCoeff%wavenumber(Ichan), &
-			SpcCoeff%frequency (Ichan), &
-			SpcCoeff%planck_c1 (Ichan), &
-			SpcCoeff%planck_c2 (Ichan), &
-			SpcCoeff%band_c1   (Ichan), &
-			SpcCoeff%band_c2   (Ichan)   
+            'Ch seq #, Type, Freq (cm^-1,GHz), Planck c1,c2, Band c1,c2 =', &
+            Ichan, channel_type(Ichan), &
+            SpcCoeff%wavenumber(Ichan), &
+            SpcCoeff%frequency (Ichan), &
+            SpcCoeff%planck_c1 (Ichan), &
+            SpcCoeff%planck_c2 (Ichan), &
+            SpcCoeff%band_c1   (Ichan), &
+            SpcCoeff%band_c2   (Ichan)   
     enddo
 
     print *

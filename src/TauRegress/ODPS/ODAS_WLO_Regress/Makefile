@@ -1,4 +1,5 @@
 include $(CRTM_SOURCE_ROOT)/make.macros
+NETCDF=/apps/netcdf/4.1.3-intel
  
 # -------------
 # This makefile
@@ -47,11 +48,10 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_Parameters.f90 \
             SpcCoeff_Define.f90 \
             SpcCoeff_netCDF_IO.f90 \
-            AntCorr_Define.f90 \
-            AntCorr_netCDF_IO.f90 \
+            ACCoeff_Define.f90 \
             TmpODAS_Define.f90 \
             TmpODAS_netCDF_IO.f90 \
-            Units_Conversion.f90 \
+            MR_PPMV.f90 \
             Fundamental_Constants.f90 \
             Profile_Utility_Parameters.f90 \
             Atmospheric_Properties.f90 \
@@ -68,7 +68,9 @@ SRC_FILES = Type_Kinds.f90 \
             CalcStatTransTemp.f90 \
             CalcRegWeight.f90 \
             ChanType.f90 \
-            ConvLevelLayer.f90
+            ConvLevelLayer.f90 \
+            Subset_Define.f90 \
+            NLTECoeff_Define.f90 
 
 # Obj files used in link phase
  
@@ -77,9 +79,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
  
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+#INCLUDES = -I$(HOME)/local/netcdf/include
+#LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
 #LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+INCLUDES = -I$(NETCDF)/include
+LIBRARIES = -mkl=sequential -L$(NETCDF)/lib -lnetcdff 
 
 
 # ------------------
@@ -88,10 +92,10 @@ LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Create and remove source links
-create_links:
+create_links::
 	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
                    
-remove_links:
+remove_links::
 	@unlinkfiles $(SRC_FILES)
 
 # Source dependencies

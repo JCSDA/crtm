@@ -21,6 +21,7 @@ module ReadProfile_netCDF
   use Message_handler
   use ParametersGenCoef
   use TauProfile_netCDF_IO
+  USE SensorInfo_Parameters
   use parameters, only : DEGREES_TO_RADIANS
  
   !--- implicit
@@ -36,7 +37,7 @@ module ReadProfile_netCDF
   Public  Read_TransProf
 
 
-  logical,save        :: Flag_OzoneTrans	! False: no ozone trans
+  logical,save        :: Flag_OzoneTrans ! False: no ozone trans
 
 
  contains
