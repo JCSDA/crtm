@@ -69,7 +69,7 @@ PROGRAM Cat_ODPS
     read(*, '(i3)') cat_type
 
     !--- read Tau coefficient data
-    				      				    
+    
     Error_Status = Read_TauCoeff_netCDF( file1, TauCoeff1,        &
                                          Title=Title,             &  
                                          History=History,         &  
@@ -82,7 +82,7 @@ PROGRAM Cat_ODPS
       print *, 'Error in reading the file '//file1
       stop 90
       
-    endif				      
+    endif      
 
 
     Error_Status = Read_TauCoeff_netCDF( file2, TauCoeff2 ) 
@@ -92,7 +92,7 @@ PROGRAM Cat_ODPS
       print *, 'Error in reading the file '//file2
       stop 90
       
-    endif				      
+    endif      
   
     select case (cat_type)
     
@@ -107,8 +107,8 @@ PROGRAM Cat_ODPS
       case default
       
         print *, "wrong concatenation type: ", cat_type
-	stop 90
-	
+        stop 90
+
     end select
         
     if ( Error_Status /= SUCCESS ) then
@@ -116,7 +116,7 @@ PROGRAM Cat_ODPS
       print *, 'Error in merging the two files: '//TRIM(file1)//' and '//TRIM(file2) 
       stop 90
       
-    endif				      
+    endif
     
     Error_Status = Write_TauCoeff_netCDF( file_out,                      &  
                                           TauCoeff1,                     &
@@ -130,7 +130,7 @@ PROGRAM Cat_ODPS
       print *, 'Error in writing ot the file: '//file_out 
       stop 90
       
-    endif				      
+    endif     
 
     print *, 'Normal End'
     
