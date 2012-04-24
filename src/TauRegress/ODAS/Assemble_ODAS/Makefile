@@ -1,4 +1,5 @@
 include $(CRTM_SOURCE_ROOT)/make.macros
+NETCDF=/apps/netcdf/4.1.3-intel
  
 # -------------
 # This makefile
@@ -42,9 +43,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
+#INCLUDES = -I$(HOME)/local/netcdf/include
+#LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf 
 #LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+INCLUDES = -I$(NETCDF)/include
+LIBRARIES = -mkl=sequential -L$(NETCDF)/lib -lnetcdff
 
 
 # ------------------
@@ -53,10 +56,10 @@ LIBRARIES = -lessl -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Create and remove source links
-create_links:
+create_links::
 	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
                    
-remove_links:
+remove_links::
 	@unlinkfiles $(SRC_FILES)
 
 # Source dependencies

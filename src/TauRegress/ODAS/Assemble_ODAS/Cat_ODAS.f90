@@ -63,7 +63,6 @@ PROGRAM Cat_ODAS
             
 
     !--- read Tau coefficient data
-    				      				    
     Error_Status = Read_TauCoeff_netCDF( nc_file1, TauCoeff1, &
 
                                     Title=Title,             &  
@@ -79,7 +78,7 @@ PROGRAM Cat_ODAS
       print *, 'Error in reading the file '//nc_file1
       stop 90
       
-    endif				      
+    endif      
 
 
     Error_Status = Read_TauCoeff_netCDF( nc_file2, TauCoeff2 ) 
@@ -89,7 +88,7 @@ PROGRAM Cat_ODAS
       print *, 'Error in reading the file '//nc_file2
       stop 90
       
-    endif				      
+    endif      
     
     select case (cat_type)
     
@@ -104,8 +103,8 @@ PROGRAM Cat_ODAS
       case default
       
         print *, "wrong concatenation type: ", cat_type
-	stop 90
-	
+        stop 90
+
     end select
         
     if ( Error_Status /= SUCCESS ) then
@@ -113,7 +112,7 @@ PROGRAM Cat_ODAS
       print *, 'Error in merging the two files: '//nc_file1//' and '//nc_file2 
       stop 90
       
-    endif				      
+    endif      
     
     Error_Status = Write_TauCoeff_netCDF( nc_file_out,   &  
                                   TauCoeff1,      &  
@@ -129,7 +128,7 @@ PROGRAM Cat_ODAS
       print *, 'Error in writing ot the file: '//nc_file_out 
       stop 90
       
-    endif				      
+    endif      
 
     print *, 'Normal End'
     
