@@ -60,7 +60,7 @@ module WriteTransTable
     !index offsets for Integrated predictors: offs(1) - wet, offs(2) - dry
     !offs(3) - ozo. 
     integer, parameter :: offs(3) = (/17, 11, 23/)     
-	    
+    
     
     !--- Allocate memory for pointers
     
@@ -68,10 +68,10 @@ module WriteTransTable
     
     Error_Status = Allocate_TauCoeff( Npolyorder_max,       &
                                       Natmpred_maxused, &
-				      1,            & ! Number of absorbers 
-				      Mchan, 		&  
+                                      1,            & ! Number of absorbers 
+                                      Mchan, &  
                                       TauCoeff )
-				      
+      
     if ( Error_Status /= SUCCESS ) then
       CALL display_message( ROUTINE_NAME,    &
                             'Error in allocating memory for TauCoeff', &
@@ -79,7 +79,7 @@ module WriteTransTable
                             )    
       stop 90
       
-    endif				      
+    endif      
     
     !--- Fill the structure TauCoeff
     
@@ -108,21 +108,21 @@ module WriteTransTable
 
       mapping = (/1,2,3,4,5,6,7,8,9,10,11,&
                     offs(Iabsorber)+1,offs(Iabsorber)+2,&
-		    offs(Iabsorber)+3,offs(Iabsorber)+4,&
-		    offs(Iabsorber)+5,offs(Iabsorber)+6/)
-		    		    
+                    offs(Iabsorber)+3,offs(Iabsorber)+4,&
+                    offs(Iabsorber)+5,offs(Iabsorber)+6/)
+       
       do i = 1, Natmpred_maxused
       
         if ( predcomb(i,Ichan) == 0 )then
-	
-	  TauCoeff%Predictor_Index(i,1,k) = 0
-	
-	else  
+
+             TauCoeff%Predictor_Index(i,1,k) = 0
+
+        else  
         
-	  TauCoeff%Predictor_Index(i,1,k) = mapping(predcomb(i,Ichan))
+             TauCoeff%Predictor_Index(i,1,k) = mapping(predcomb(i,Ichan))
 
         endif
-	
+
       enddo 
 
       do Ipred=0, Npredcomb(Ichan)
@@ -147,12 +147,12 @@ module WriteTransTable
     Error_Status = Write_TauCoeff_netCDF( &
                                   OutFileName_TransCoeff, &
                                   TauCoeff, &
-				  Title = TRIM(Title), &
-				  History = TRIM(History_all), &
-				  Sensor_Name = SenName, &
-				  Platform_Name = SatName, &
-				  Comment = TRIM(Comment_all), &
-				  ID_Tag = ProfileTag )
+                                  Title = TRIM(Title), &
+                                  History = TRIM(History_all), &
+                                  Sensor_Name = SenName, &
+                                  Platform_Name = SatName, &
+                                  Comment = TRIM(Comment_all), &
+                                  ID_Tag = ProfileTag )
 
     if ( Error_Status /= SUCCESS ) then
       CALL display_message( ROUTINE_NAME,    &
@@ -160,7 +160,7 @@ module WriteTransTable
                             Error_Status  )    
       stop 90
       
-    endif				      
+    endif      
 
 
     !--- write atmos pred availability flags set 1 for selected
@@ -203,7 +203,7 @@ module WriteTransTable
                             Error_Status )    
       stop 90
       
-    endif				      
+    endif      
 
   end subroutine Write_TransTable_netCDF
 

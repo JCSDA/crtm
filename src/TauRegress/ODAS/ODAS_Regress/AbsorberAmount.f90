@@ -97,10 +97,10 @@ module AbsorberAmount
       select case(Iabsorber)
         case(1) 
           absamount_lev(:, 1, Iatm) = absorber(:, 2) !dry case
-	case(2)
-	  absamount_lev(:, 1, Iatm) = absorber(:, 1) !wet case
-	case(3)
-	  absamount_lev(:, 1, Iatm) = absorber(:, 3) !ozo case
+        case(2)
+          absamount_lev(:, 1, Iatm) = absorber(:, 1) !wet case
+        case(3)
+          absamount_lev(:, 1, Iatm) = absorber(:, 3) !ozo case
       end select
 
    end do

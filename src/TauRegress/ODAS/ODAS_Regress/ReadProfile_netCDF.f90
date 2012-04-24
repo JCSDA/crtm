@@ -35,7 +35,7 @@ module ReadProfile_netCDF
   Public  Read_TransProf
 
 
-  logical,save        :: Flag_OzoneTrans	! False: no ozone trans
+  logical,save        :: Flag_OzoneTrans ! False: no ozone trans
 
 
  contains

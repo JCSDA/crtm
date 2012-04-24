@@ -165,7 +165,7 @@ program GenTransCoef
   use PredAbsCoefTransTemp
   use CalcStatTransTemp
   use WriteTransTable
-  use Units_Conversion
+  use MR_PPMV 
   use AtmProfile_Define
   use AtmProfile_netCDF_IO
 
@@ -467,7 +467,7 @@ program GenTransCoef
     q_lay(:,:) = AtmProfile%Layer_Absorber(:,IabsWet_AtmosProf,:)                       
   else   
     do Iatm = 1, Natm
-     q_lay(:,Iatm) = ppmv_to_mr( AtmProfile%Layer_Absorber(:,IabsWet_AtmosProf,Iatm), Molecule_ID=1 )
+     CALL ppmv_to_mr( AtmProfile%Layer_Absorber(:,IabsWet_AtmosProf,Iatm), q_lay(:,Iatm), Molecule_ID=1 )
     enddo      
   endif                                                                                                           
   o3_lay(:,:) =  AtmProfile%Layer_Absorber(:,IabsOzn_AtmosProf,:)

@@ -190,7 +190,7 @@ CONTAINS
 !================================================================  
  
   subroutine DGELS_LAPACK(Nsample, Nel, x, y, coef, residual)
-		    
+    
     integer, intent(in) :: Nsample   ! number of samples
     integer, intent(in) :: Nel       ! number of predictors
     real(fp_kind), intent(in) :: x(Nsample,Nel)  ! Predictors matrix

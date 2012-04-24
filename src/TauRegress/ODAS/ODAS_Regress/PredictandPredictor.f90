@@ -337,8 +337,8 @@ module PredictandPredictor
       Absorber(0:Nlay,1) = absamount_lev (0:Nlay,Iang,Iatm)
       call Compute_Predictors(p_lay, t_lay(:,Iatm), &
                               q_lay(:,Iatm), &
-			      Absorber, &
-			      atmpred_lay (:,:,Iang,Iatm) )
+                              Absorber, &
+                              atmpred_lay (:,:,Iang,Iatm) )
 
     enddo
     enddo
@@ -386,8 +386,8 @@ module PredictandPredictor
     atmpred_lay( 8,1:Nlay) = atmpred_lay(3,1:Nlay)*atmpred_lay(4,1:Nlay)
     atmpred_lay(15,1:Nlay) =  q_lay(1:Nlay)
 
-    atmpred_lay(16,1:Nlay) = q_lay (1:Nlay) / (t_lay(1:Nlay)**2)	! for H2O continuum
-    atmpred_lay(17,1:Nlay) = sqrt(sqrt( p_lay(1:Nlay) ))	! for ozo & wet(high peak)
+    atmpred_lay(16,1:Nlay) = q_lay (1:Nlay) / (t_lay(1:Nlay)**2)! for H2O continuum
+    atmpred_lay(17,1:Nlay) = sqrt(sqrt( p_lay(1:Nlay) ))! for ozo & wet(high peak)
 
     !--- integrated predictors
 

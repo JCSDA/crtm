@@ -45,11 +45,11 @@ module ChanType
 
     !--- interface
 
-    real(fp_kind),intent(in) :: wavenum		! wave number (cm^-1)
-    real(fp_kind),intent(in) :: freq		! frequency (GHz)
-    integer                  :: chtype		! channel type
+    real(fp_kind),intent(in) :: wavenum! wave number (cm^-1)
+    real(fp_kind),intent(in) :: freq   ! frequency (GHz)
+    integer                  :: chtype ! channel type
                                                 ! 1:dry 2:dominated by H2O abs line 3:ozone
-						! 4:typically called dry but dominated by H2O continuum
+                                                ! 4:typically called dry but dominated by H2O continuum
 
     !--- infrared
     

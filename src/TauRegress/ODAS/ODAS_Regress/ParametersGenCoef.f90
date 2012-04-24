@@ -153,7 +153,7 @@ module ParametersGenCoef
   integer      ,parameter   :: Nlay_max   = 100                 ! max # of atmospheric profile layers
   integer      ,parameter   :: Nangle_max = 7                   ! max # of incidence angles to be processed
 
-  logical                   :: Flag_netCDF_file         	! T) read netCDF profile data, F) CIMSS3246 binary data file
+  logical                   :: Flag_netCDF_file                 ! T) read netCDF profile data, F) CIMSS3246 binary data file
 
 
   !--- parameters for generating trans coef
@@ -162,7 +162,7 @@ module ParametersGenCoef
 
   real(fp_kind),parameter :: MinTrans_SenseCheck = 0.001_fp_kind  ! min trans to check atmos pred set sensitivity
   real(fp_kind),parameter :: Criterion_AtmPredSensitivity(Nabsorber) &
-                                  	= (/ 3._fp_kind, &      ! criterion for the check the sensitivity (dry)
+                                        = (/ 3._fp_kind, &      ! criterion for the check the sensitivity (dry)
                                              2._fp_kind, &      ! criterion for the check the sensitivity (wet)
                                              3._fp_kind /)      ! criterion for the check the sensitivity (ozo)
 !                                            4._fp_kind /)      ! criterion for the check the sensitivity (ozo)
@@ -188,7 +188,7 @@ module ParametersGenCoef
   integer,allocatable :: channel_list(:)        ! ch ID list
   integer,allocatable :: channel_type(:)        ! channel type
                                                 ! 1:dry 2:dominated by wet abs line 3:ozone
-						! +10:affected by wet continuum
+                                                ! +10:affected by wet continuum
 
   integer             :: Ichan_top              ! top seq ch # to be processed
   integer             :: Ichan_last             ! last seq ch # to be processed
@@ -202,10 +202,10 @@ module ParametersGenCoef
   ! --- history information
   
 !  integer, parameter 		:: History_strlen = 2048
-  integer, parameter 		:: History_strlen = 3000
+  integer, parameter :: History_strlen = 3000
   character(len=History_strlen) :: History_all           ! history information 
 
-  character(len=80)   		:: ProfileTag   	 ! tag of dependent profile set
+  character(len=80) :: ProfileTag    ! tag of dependent profile set
   
   !--- in file names and seq #
 
