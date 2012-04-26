@@ -22,7 +22,7 @@ MODULE CRTM_MW_Land_SfcOptics
   ! -----------------
   ! Module use
   USE Type_Kinds,               ONLY: fp
-  USE Message_Handler,          ONLY: SUCCESS
+  USE Message_Handler,          ONLY: SUCCESS, FAILURE, Display_Message
   USE CRTM_Parameters,          ONLY: ZERO, ONE, MAX_N_ANGLES
   USE CRTM_SpcCoeff,            ONLY: SC
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
@@ -51,6 +51,59 @@ MODULE CRTM_MW_Land_SfcOptics
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message length
+  INTEGER, PARAMETER :: ML = 256
+  ! Valid type indices for the microwave land emissivity model
+  ! ...The soil types
+  INTEGER, PARAMETER :: N_VALID_SOIL_TYPES = 8
+  INTEGER, PARAMETER :: INVALID_SOIL    =  0
+  INTEGER, PARAMETER :: COARSE          =  1
+  INTEGER, PARAMETER :: MEDIUM          =  2
+  INTEGER, PARAMETER :: FINE            =  3
+  INTEGER, PARAMETER :: COARSE_MEDIUM   =  4
+  INTEGER, PARAMETER :: COARSE_FINE     =  5
+  INTEGER, PARAMETER :: MEDIUM_FINE     =  6
+  INTEGER, PARAMETER :: COARSE_MED_FINE =  7
+  INTEGER, PARAMETER :: ORGANIC         =  8
+  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_SOIL_TYPES ) :: &
+    SOIL_TYPE_NAME = (/ 'Invalid soil type', &
+                        'Coarse           ', &
+                        'Medium           ', &
+                        'Fine             ', &
+                        'Coarse-Medium    ', &
+                        'Coarse-Fine      ', &
+                        'Medium-Fine      ', &
+                        'Coarse-Med-Fine  ', &
+                        'Organic          ' /)
+  ! ...The vegetation types
+  INTEGER, PARAMETER :: N_VALID_VEGETATION_TYPES       = 12
+  INTEGER, PARAMETER :: INVALID_VEGETATION             =  0
+  INTEGER, PARAMETER :: BROADLEAF_EVERGREEN_TREES      =  1
+  INTEGER, PARAMETER :: BROADLEAF_DECIDUOUS_TREES      =  2
+  INTEGER, PARAMETER :: BROADLEAF_NEEDLELEAF_TREES     =  3
+  INTEGER, PARAMETER :: NEEDLELEAF_EVERGREEN_TREES     =  4
+  INTEGER, PARAMETER :: NEEDLELEAF_DECIDUOUS_TREES     =  5
+  INTEGER, PARAMETER :: BROADLEAF_TREES_GROUNDCOVER    =  6
+  INTEGER, PARAMETER :: GROUNDCOVER                    =  7
+  INTEGER, PARAMETER :: GROADLEAF_SHRUBS_GROUNDCOVER   =  8
+  INTEGER, PARAMETER :: BROADLEAF_SHRUBS_BARE_SOIL     =  9
+  INTEGER, PARAMETER :: DWARF_TREES_SHRUBS_GROUNDCOVER = 10
+  INTEGER, PARAMETER :: BARE_SOIL                      = 11
+  INTEGER, PARAMETER :: CULTIVATIONS                   = 12
+  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_VEGETATION_TYPES ) :: &
+    VEGETATION_TYPE_NAME=(/'Invalid vegetation surface type         ', &
+                           'Broadleaf-Evergreen Trees               ', &
+                           'Broadleaf-Deciduous Trees               ', &
+                           'Broadleaf & Needleleaf Trees            ', &
+                           'Needleleaf-Evergreen Trees              ', &
+                           'Needleleaf-Deciduous Trees              ', &
+                           'Broadleaf Trees with Groundcover        ', &
+                           'Groundcover only                        ', &
+                           'Broadlead Shrubs + Perennial Groundcover', &
+                           'Broadlead Shrubs with Bare Soil         ', &
+                           'Dwarf Trees & Shrubs with Groundcover   ', &
+                           'Bare Soil                               ', &
+                           'Cultivations                            ' /)
 
 
   ! --------------------------------------
@@ -164,11 +217,30 @@ CONTAINS
     REAL(fp),     PARAMETER :: FREQUENCY_CUTOFF   = 80.0_fp  ! GHz
     REAL(fp),     PARAMETER :: DEFAULT_EMISSIVITY = 0.95_fp
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: i
 
 
     ! Set up
     err_stat = SUCCESS
+    ! ...Check the soil type...
+    IF ( Surface%Soil_Type < 1 .OR. &
+         Surface%Soil_Type > N_VALID_SOIL_TYPES ) THEN
+      SfcOptics%Emissivity   = ZERO
+      SfcOptics%Reflectivity = ZERO
+      err_stat = FAILURE
+      msg = 'Invalid soil type index specified'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
+    ! ...and the vegetation type
+    IF ( Surface%Vegetation_Type < 1 .OR. &
+         Surface%Vegetation_Type > N_VALID_VEGETATION_TYPES ) THEN
+      SfcOptics%Emissivity   = ZERO
+      SfcOptics%Reflectivity = ZERO
+      err_stat = FAILURE
+      msg = 'Invalid vegetation type index specified'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
 
 
     ! Compute the surface optical parameters

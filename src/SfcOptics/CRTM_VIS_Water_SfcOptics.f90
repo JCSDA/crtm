@@ -176,56 +176,39 @@ real(fp) :: wavelength
     err_stat = SUCCESS
     frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
 
-
-    ! Compute Lambertian surface emissivity
-    err_stat = SEcategory_Emissivity( &
-                 VISwaterC         , &  ! Input
-                 frequency         , &  ! Input
-                 Surface%Water_Type, &  ! Input
-                 emissivity        , &  ! Output
-                 iVar%sevar          )  ! Internal variable output
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error occurred in SEcategory_Emissivity()'
-      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
-    END IF
-
-
-    ! Solar direct component
-    SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
-
-
-    ! Fill the return emissivity and reflectivity arrays
-    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
-    DO j = 1, SfcOptics%n_Angles
-      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE-emissivity)*SfcOptics%Weight(j)
-    END DO
-
-
-
-    wavelength = Inverse_cm_to_Micron(SC(SensorIndex)%Wavenumber(ChannelIndex))
+!
+!    ! Compute Lambertian surface emissivity
+!    err_stat = SEcategory_Emissivity( &
+!                 VISwaterC         , &  ! Input
+!                 frequency         , &  ! Input
+!                 Surface%Water_Type, &  ! Input
+!                 emissivity        , &  ! Output
+!                 iVar%sevar          )  ! Internal variable output
+!    IF ( err_stat /= SUCCESS ) THEN
+!      msg = 'Error occurred in SEcategory_Emissivity()'
+!      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+!    END IF
+!
+!
+!    ! Solar direct component
+!    SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
+!
+!
+!    ! Fill the return emissivity and reflectivity arrays
+!    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
+!    DO j = 1, SfcOptics%n_Angles
+!      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE - SfcOptics%Emissivity(j,1))*SfcOptics%Weight(j)
+!    END DO
 
 
-
-    ! -------------------------------------------------------
-    ! Compute Lambertian surface emissivity
-    !
-    ! The call below is uses a set offset for the water surface
-    ! type based on those defined in the CRTM_Surface_Define.
-    ! -------------------------------------------------------
-    CALL Surface_IR_Emissivity( Wavelength, &
-                                Emissivity, &
-                                1)
-    ! ----------------------
-    ! Solar direct component
-    ! ----------------------
-      SfcOptics%Direct_Reflectivity(:,1) = ONE-Emissivity
-    ! --------------------------------------------------
-    ! Fill the return emissivity and reflectivity arrays
-    ! --------------------------------------------------
-    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = Emissivity
-    DO j = 1, SfcOptics%n_Angles
-      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE-Emissivity)*SfcOptics%Weight(j)
-    END DO
+!old methodology
+wavelength = inverse_cm_to_micron(sc(sensorindex)%wavenumber(channelindex))
+call surface_ir_emissivity( wavelength, emissivity, 1 )
+sfcoptics%direct_reflectivity(:,1) = one-emissivity
+sfcoptics%emissivity(1:sfcoptics%n_angles,1) = emissivity
+do j = 1, sfcoptics%n_angles
+  sfcoptics%reflectivity(j,1,j,1) = (one-sfcoptics%emissivity(j,1))*sfcoptics%weight(j)
+end do
 
   END FUNCTION Compute_VIS_Water_SfcOptics
 
