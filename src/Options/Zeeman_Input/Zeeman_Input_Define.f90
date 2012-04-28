@@ -552,7 +552,6 @@ real(fp), parameter :: big_number = 1.0e+09_fp
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    INTEGER :: n_channels
     TYPE(Zeeman_Input_type) :: dummy
 
     ! Setup
