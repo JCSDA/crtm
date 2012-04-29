@@ -1,0 +1,11 @@
+Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Options_Define.o : CRTM_Options_Define.f90 Zeeman_Input_Define.o SSU_Input_Define.o CRTM_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+CRTM_Options_Inspect.o : CRTM_Options_Inspect.f90 CRTM_Options_Define.o Message_Handler.o File_Utility.o 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+SSU_Input_Define.o : SSU_Input_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Type_Kinds.o : Type_Kinds.f90 
+Zeeman_Input_Define.o : Zeeman_Input_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
