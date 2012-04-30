@@ -70,97 +70,6 @@ MODULE CRTM_Surface_Define
   PUBLIC :: ICE_SURFACE
   PUBLIC :: N_VALID_SURFACE_TYPES
   PUBLIC :: SURFACE_TYPE_NAME
-  ! ...Land surface parameters
-  PUBLIC :: N_VALID_LAND_TYPES
-  PUBLIC :: INVALID_LAND
-  PUBLIC :: COMPACTED_SOIL
-  PUBLIC :: TILLED_SOIL
-  PUBLIC :: SAND
-  PUBLIC :: ROCK
-  PUBLIC :: IRRIGATED_LOW_VEGETATION
-  PUBLIC :: MEADOW_GRASS
-  PUBLIC :: SCRUB
-  PUBLIC :: BROADLEAF_FOREST
-  PUBLIC :: PINE_FOREST
-  PUBLIC :: TUNDRA
-  PUBLIC :: GRASS_SOIL
-  PUBLIC :: BROADLEAF_PINE_FOREST
-  PUBLIC :: GRASS_SCRUB
-  PUBLIC :: SOIL_GRASS_SCRUB
-  PUBLIC :: URBAN_CONCRETE
-  PUBLIC :: PINE_BRUSH
-  PUBLIC :: BROADLEAF_BRUSH
-  PUBLIC :: WET_SOIL
-  PUBLIC :: SCRUB_SOIL
-  PUBLIC :: BROADLEAF70_PINE30
-  PUBLIC :: LAND_TYPE_NAME
-  ! Soil surface parameters
-  PUBLIC :: N_VALID_SOIL_TYPES
-  PUBLIC :: INVALID_SOIL
-  PUBLIC :: COARSE
-  PUBLIC :: MEDIUM
-  PUBLIC :: FINE
-  PUBLIC :: COARSE_MEDIUM
-  PUBLIC :: COARSE_FINE
-  PUBLIC :: MEDIUM_FINE
-  PUBLIC :: COARSE_MED_FINE
-  PUBLIC :: ORGANIC
-  PUBLIC :: GLACIAL_LAND_ICE
-  PUBLIC :: SOIL_TYPE_NAME
-  ! Vegetation surface parameters
-  PUBLIC :: N_VALID_VEGETATION_TYPES
-  PUBLIC :: INVALID_VEGETATION
-  PUBLIC :: BROADLEAF_EVERGREEN_TREES
-  PUBLIC :: BROADLEAF_DECIDUOUS_TREES
-  PUBLIC :: BROADLEAF_NEEDLELEAF_TREES
-  PUBLIC :: NEEDLELEAF_EVERGREEN_TREES
-  PUBLIC :: NEEDLELEAF_DECIDUOUS_TREES
-  PUBLIC :: BROADLEAF_TREES_GROUNDCOVER
-  PUBLIC :: GROUNDCOVER
-  PUBLIC :: GROADLEAF_SHRUBS_GROUNDCOVER
-  PUBLIC :: BROADLEAF_SHRUBS_BARE_SOIL
-  PUBLIC :: DWARF_TREES_SHRUBS_GROUNDCOVER
-  PUBLIC :: BARE_SOIL
-  PUBLIC :: CULTIVATIONS
-  PUBLIC :: GLACIAL_ICE
-  PUBLIC :: VEGETATION_TYPE_NAME
-  ! ...Water surface parameters
-  PUBLIC :: N_VALID_WATER_TYPES
-  PUBLIC :: INVALID_WATER
-  PUBLIC :: SEA_WATER
-  PUBLIC :: FRESH_WATER
-  PUBLIC :: WATER_TYPE_NAME
-  ! ...Snow surface parameters
-  PUBLIC :: N_VALID_SNOW_TYPES
-  PUBLIC :: INVALID_SNOW
-  PUBLIC :: WET_SNOW
-  PUBLIC :: GRASS_AFTER_SNOW
-  PUBLIC :: RS_SNOW_A
-  PUBLIC :: POWDER_SNOW
-  PUBLIC :: RS_SNOW_B
-  PUBLIC :: RS_SNOW_C
-  PUBLIC :: RS_SNOW_D
-  PUBLIC :: THIN_CRUST_SNOW
-  PUBLIC :: RS_SNOW_E
-  PUBLIC :: BOTTOM_CRUST_SNOW_A
-  PUBLIC :: SHALLOW_SNOW
-  PUBLIC :: DEEP_SNOW
-  PUBLIC :: CRUST_SNOW
-  PUBLIC :: MEDIUM_SNOW
-  PUBLIC :: BOTTOM_CRUST_SNOW_B
-  PUBLIC :: THICK_CRUST_SNOW
-  PUBLIC :: NEW_SNOW
-  PUBLIC :: OLD_SNOW
-  PUBLIC :: SNOW_TYPE_NAME
-  ! ...Ice surface parameters
-  PUBLIC :: N_VALID_ICE_TYPES
-  PUBLIC :: INVALID_ICE
-  PUBLIC :: FRESH_ICE
-  PUBLIC :: FIRST_YEAR_SEA_ICE
-  PUBLIC :: MULTI_YEAR_SEA_ICE
-  PUBLIC :: ICE_FLOE
-  PUBLIC :: ICE_RIDGE
-  PUBLIC :: ICE_TYPE_NAME
   ! ...Structures
   PUBLIC :: CRTM_Surface_type
   ! ...Procedures
@@ -194,6 +103,11 @@ MODULE CRTM_Surface_Define
   ! -----------------
   ! Module parameters
   ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
   ! The gross surface types. These are used for
   ! cross-checking with the coverage fractions
   ! of each gross surface types.
@@ -225,209 +139,33 @@ MODULE CRTM_Surface_Define
                            'Land + water + snow + ice' /)
 
 
-  ! For land, the land types
-  INTEGER, PARAMETER :: N_VALID_LAND_TYPES = 20
-  INTEGER, PARAMETER :: INVALID_LAND             =  0
-  INTEGER, PARAMETER :: COMPACTED_SOIL           =  1
-  INTEGER, PARAMETER :: TILLED_SOIL              =  2
-  INTEGER, PARAMETER :: SAND                     =  3
-  INTEGER, PARAMETER :: ROCK                     =  4
-  INTEGER, PARAMETER :: IRRIGATED_LOW_VEGETATION =  5
-  INTEGER, PARAMETER :: MEADOW_GRASS             =  6
-  INTEGER, PARAMETER :: SCRUB                    =  7
-  INTEGER, PARAMETER :: BROADLEAF_FOREST         =  8
-  INTEGER, PARAMETER :: PINE_FOREST              =  9
-  INTEGER, PARAMETER :: TUNDRA                   = 10
-  INTEGER, PARAMETER :: GRASS_SOIL               = 11
-  INTEGER, PARAMETER :: BROADLEAF_PINE_FOREST    = 12
-  INTEGER, PARAMETER :: GRASS_SCRUB              = 13
-  INTEGER, PARAMETER :: SOIL_GRASS_SCRUB         = 14
-  INTEGER, PARAMETER :: URBAN_CONCRETE           = 15
-  INTEGER, PARAMETER :: PINE_BRUSH               = 16
-  INTEGER, PARAMETER :: BROADLEAF_BRUSH          = 17
-  INTEGER, PARAMETER :: WET_SOIL                 = 18
-  INTEGER, PARAMETER :: SCRUB_SOIL               = 19
-  INTEGER, PARAMETER :: BROADLEAF70_PINE30       = 20
-    CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_LAND_TYPES ) :: &
-    LAND_TYPE_NAME = (/ 'Invalid land surface type', &
-                        'Compacted soil           ', &
-                        'Tilled soil              ', &
-                        'Sand                     ', &
-                        'Rock                     ', &
-                        'Irrigated low vegetation ', &
-                        'Meadow grass             ', &
-                        'Scrub                    ', &
-                        'Broadleaf forest         ', &
-                        'Pine forest              ', &
-                        'Tundra                   ', &
-                        'Grass-soil               ', &
-                        'Broadleaf-pine forest    ', &
-                        'Grass-scrub              ', &
-                        'Soil-grass-scrub         ', &
-                        'Urban concrete           ', &
-                        'Pine brush               ', &
-                        'Broadleaf brush          ', &
-                        'Wet soil                 ', &
-                        'Scrub-soil               ', &
-                        'Broadleaf(70)-Pine(30)   ' /)
-
-  ! For land, the soil types
-  INTEGER, PARAMETER :: N_VALID_SOIL_TYPES = 9
-  INTEGER, PARAMETER :: INVALID_SOIL             =  0
-  INTEGER, PARAMETER :: COARSE                   =  1
-  INTEGER, PARAMETER :: MEDIUM                   =  2
-  INTEGER, PARAMETER :: FINE                     =  3
-  INTEGER, PARAMETER :: COARSE_MEDIUM            =  4
-  INTEGER, PARAMETER :: COARSE_FINE              =  5
-  INTEGER, PARAMETER :: MEDIUM_FINE              =  6
-  INTEGER, PARAMETER :: COARSE_MED_FINE          =  7
-  INTEGER, PARAMETER :: ORGANIC                  =  8
-  INTEGER, PARAMETER :: GLACIAL_LAND_ICE         =  9
-    CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_SOIL_TYPES ) :: &
-    SOIL_TYPE_NAME = (/ 'Invalid soil surface type', &
-                        'Coarse                   ', &
-                        'Medium                   ', &
-                        'Fine                     ', &
-                        'Coarse-Medium            ', &
-                        'Coarse-Fine              ', &
-                        'Medium-Fine              ', &
-                        'Coarse-Med-Fine          ', &
-                        'Organic                  ', &
-                        'Glacial Land Ice         ' /)
-
-  ! For land, the vegetation types
-  INTEGER, PARAMETER :: N_VALID_VEGETATION_TYPES       = 13
-  INTEGER, PARAMETER :: INVALID_VEGETATION             =  0
-  INTEGER, PARAMETER :: BROADLEAF_EVERGREEN_TREES      =  1
-  INTEGER, PARAMETER :: BROADLEAF_DECIDUOUS_TREES      =  2
-  INTEGER, PARAMETER :: BROADLEAF_NEEDLELEAF_TREES     =  3
-  INTEGER, PARAMETER :: NEEDLELEAF_EVERGREEN_TREES     =  4
-  INTEGER, PARAMETER :: NEEDLELEAF_DECIDUOUS_TREES     =  5
-  INTEGER, PARAMETER :: BROADLEAF_TREES_GROUNDCOVER    =  6
-  INTEGER, PARAMETER :: GROUNDCOVER                    =  7
-  INTEGER, PARAMETER :: GROADLEAF_SHRUBS_GROUNDCOVER   =  8
-  INTEGER, PARAMETER :: BROADLEAF_SHRUBS_BARE_SOIL     =  9
-  INTEGER, PARAMETER :: DWARF_TREES_SHRUBS_GROUNDCOVER = 10
-  INTEGER, PARAMETER :: BARE_SOIL                      = 11
-  INTEGER, PARAMETER :: CULTIVATIONS                   = 12
-  INTEGER, PARAMETER :: GLACIAL_ICE                    = 13
-    CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_VEGETATION_TYPES ) :: &
-    VEGETATION_TYPE_NAME=(/'Invalid vegetation surface type         ', &
-                           'Broadleaf-Evergreen Trees               ', &
-                           'Broadleaf-Deciduous Trees               ', &
-                           'Broadleaf & Needleleaf Trees            ', &
-                           'Needleleaf-Evergreen Trees              ', &
-                           'Needleleaf-Deciduous Trees              ', &
-                           'Broadleaf Trees with Groundcover        ', &
-                           'Groundcover only                        ', &
-                           'Broadlead Shrubs + Perennial Groundcover', &
-                           'Broadlead Shrubs with Bare Soil         ', &
-                           'Dwarf Trees & Shrubs with Groundcover   ', &
-                           'Bare Soil                               ', &
-                           'Cultivations                            ', &
-                           'Glacial-Ice                             ' /)
-
-  ! For water, the water types
-  INTEGER, PARAMETER :: N_VALID_WATER_TYPES = 2
-  INTEGER, PARAMETER :: INVALID_WATER  =  0
-  INTEGER, PARAMETER :: SEA_WATER      =  1
-  INTEGER, PARAMETER :: FRESH_WATER    =  2
-    CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_WATER_TYPES ) :: &
-    WATER_TYPE_NAME = (/ 'Invalid water surface type', &
-                         'Sea water                 ', &
-                         'Fresh water               ' /)
-
-  ! For snow, the snow types.
-  INTEGER, PARAMETER :: N_VALID_SNOW_TYPES = 16
-  INTEGER, PARAMETER :: INVALID_SNOW        =  0
-  INTEGER, PARAMETER :: WET_SNOW            =  1
-  INTEGER, PARAMETER :: GRASS_AFTER_SNOW    =  2
-  INTEGER, PARAMETER :: RS_SNOW_A           =  3
-  INTEGER, PARAMETER :: POWDER_SNOW         =  4
-  INTEGER, PARAMETER :: RS_SNOW_B           =  5
-  INTEGER, PARAMETER :: RS_SNOW_C           =  6
-  INTEGER, PARAMETER :: RS_SNOW_D           =  7
-  INTEGER, PARAMETER :: THIN_CRUST_SNOW     =  8
-  INTEGER, PARAMETER :: RS_SNOW_E           =  9
-  INTEGER, PARAMETER :: BOTTOM_CRUST_SNOW_A = 10
-  INTEGER, PARAMETER :: SHALLOW_SNOW        = 11
-  INTEGER, PARAMETER :: DEEP_SNOW           = 12
-  INTEGER, PARAMETER :: CRUST_SNOW          = 13
-  INTEGER, PARAMETER :: MEDIUM_SNOW         = 14
-  INTEGER, PARAMETER :: BOTTOM_CRUST_SNOW_B = 15
-  INTEGER, PARAMETER :: THICK_CRUST_SNOW    = 16
-  INTEGER, PARAMETER :: NEW_SNOW = POWDER_SNOW
-  INTEGER, PARAMETER :: OLD_SNOW = THICK_CRUST_SNOW
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_SNOW_TYPES ) :: &
-    SNOW_TYPE_NAME = (/ 'Invalid snow surface type', &
-                        'Wet snow                 ', &
-                        'Grass after snow         ', &
-                        'RS snow(A)               ', &
-                        'Powder snow              ', &
-                        'RS snow(B)               ', &
-                        'RS snow(C)               ', &
-                        'RS snow(D)               ', &
-                        'Thin Crust snow          ', &
-                        'RS snow(E)               ', &
-                        'Bottom crust snow(A)     ', &
-                        'Shallow snow             ', &
-                        'Deep snow                ', &
-                        'Crust snow               ', &
-                        'Medium snow              ', &
-                        'Bottom crust snow(B)     ', &
-                        'Thick crust snow         ' /)
-
-  ! For ice, the ice types.
-  INTEGER, PARAMETER :: N_VALID_ICE_TYPES = 5
-  INTEGER, PARAMETER :: INVALID_ICE        =  0
-  INTEGER, PARAMETER :: FRESH_ICE          =  1
-  INTEGER, PARAMETER :: FIRST_YEAR_SEA_ICE =  2
-  INTEGER, PARAMETER :: MULTI_YEAR_SEA_ICE =  3
-  INTEGER, PARAMETER :: ICE_FLOE           =  4
-  INTEGER, PARAMETER :: ICE_RIDGE          =  5
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_ICE_TYPES ) :: &
-     ICE_TYPE_NAME = (/ 'Invalid ice surface type ', &
-                        'Fresh ice                ', &
-                        'First year sea ice       ', &
-                        'Multiple year sea ice    ', &
-                        'Ice floe                 ', &
-                        'Ice ridge                '/)
-
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
-  ! Message string length
-  INTEGER, PARAMETER :: ML = 256
-
-
   ! ------------------------
   ! Default value parameters
   ! ------------------------
   ! Land surface type data
-  INTEGER,  PARAMETER :: DEFAULT_LAND_TYPE             = GRASS_SOIL
+  INTEGER,  PARAMETER :: DEFAULT_LAND_TYPE             = 1         ! First item in list
   REAL(fp), PARAMETER :: DEFAULT_LAND_TEMPERATURE      = 283.0_fp  ! K
   REAL(fp), PARAMETER :: DEFAULT_SOIL_MOISTURE_CONTENT = 0.05_fp   ! g/cm^3
   REAL(fp), PARAMETER :: DEFAULT_CANOPY_WATER_CONTENT  = 0.05_fp   ! g/cm^3
   REAL(fp), PARAMETER :: DEFAULT_VEGETATION_FRACTION   = 0.3_fp    ! 30%
   REAL(fp), PARAMETER :: DEFAULT_SOIL_TEMPERATURE      = 283.0_fp  ! K
-  REAL(fp), PARAMETER :: DEFAULT_LAI                   = 3.5       ! LAI
-  INTEGER,  PARAMETER :: DEFAULT_SOIL_TYPE             = MEDIUM
-  INTEGER,  PARAMETER :: DEFAULT_VEGETATION_TYPE       = GROUNDCOVER
-
+  REAL(fp), PARAMETER :: DEFAULT_LAI                   = 3.5
+  INTEGER,  PARAMETER :: DEFAULT_SOIL_TYPE             = 1         ! First item in list
+  INTEGER,  PARAMETER :: DEFAULT_VEGETATION_TYPE       = 1         ! First item in list
   ! Water type data
-  INTEGER,  PARAMETER :: DEFAULT_WATER_TYPE        = SEA_WATER
+  INTEGER,  PARAMETER :: DEFAULT_WATER_TYPE        = 1          ! First item in list
   REAL(fp), PARAMETER :: DEFAULT_WATER_TEMPERATURE = 283.0_fp   ! K
   REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED        = 5.0_fp     ! m/s
   REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
   REAL(fp), PARAMETER :: DEFAULT_SALINITY          = 33.0_fp    ! ppmv
   ! Snow surface type data
-  INTEGER,  PARAMETER :: DEFAULT_SNOW_TYPE        = NEW_SNOW
+  INTEGER,  PARAMETER :: DEFAULT_SNOW_TYPE        = 1          ! First item in list
   REAL(fp), PARAMETER :: DEFAULT_SNOW_TEMPERATURE = 263.0_fp   ! K
   REAL(fp), PARAMETER :: DEFAULT_SNOW_DEPTH       = 50.0_fp    ! mm
   REAL(fp), PARAMETER :: DEFAULT_SNOW_DENSITY     = 0.2_fp     ! g/cm^3
   REAL(fp), PARAMETER :: DEFAULT_SNOW_GRAIN_SIZE  = 2.0_fp     ! mm
   ! Ice surface type data
-  INTEGER,  PARAMETER :: DEFAULT_ICE_TYPE        = FRESH_ICE
+  INTEGER,  PARAMETER :: DEFAULT_ICE_TYPE        = 1         ! First item in list
   REAL(fp), PARAMETER :: DEFAULT_ICE_TEMPERATURE = 263.0_fp  ! K
   REAL(fp), PARAMETER :: DEFAULT_ICE_THICKNESS   = 10.0_fp   ! mm
   REAL(fp), PARAMETER :: DEFAULT_ICE_DENSITY     = 0.9_fp    ! g/cm^3
@@ -455,10 +193,9 @@ MODULE CRTM_Surface_Define
     REAL(fp) :: Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
     REAL(fp) :: Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
     REAL(fp) :: Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
-    REAL(fp) :: Lai                   = DEFAULT_LAI
+    REAL(fp) :: LAI                   = DEFAULT_LAI
     INTEGER  :: Soil_Type             = DEFAULT_SOIL_TYPE
     INTEGER  :: Vegetation_Type       = DEFAULT_VEGETATION_TYPE
-
     ! Water type data
     INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
     REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE
@@ -1143,7 +880,7 @@ CONTAINS
     sfcsum%Canopy_Water_Content  = sfcsum%Canopy_Water_Content  + sfc2%Canopy_Water_Content 
     sfcsum%Vegetation_Fraction   = sfcsum%Vegetation_Fraction   + sfc2%Vegetation_Fraction  
     sfcsum%Soil_Temperature      = sfcsum%Soil_Temperature      + sfc2%Soil_Temperature 
-    sfcsum%Lai                   = sfcsum%Lai                   + sfc2%Lai
+    sfcsum%LAI                   = sfcsum%LAI                   + sfc2%LAI
     sfcsum%Water_Temperature     = sfcsum%Water_Temperature     + sfc2%Water_Temperature
     sfcsum%Wind_Speed            = sfcsum%Wind_Speed            + sfc2%Wind_Speed       
     sfcsum%Wind_Direction        = sfcsum%Wind_Direction        + sfc2%Wind_Direction   
@@ -1210,7 +947,7 @@ CONTAINS
     sfcdiff%Canopy_Water_Content  = sfcdiff%Canopy_Water_Content  - sfc2%Canopy_Water_Content 
     sfcdiff%Vegetation_Fraction   = sfcdiff%Vegetation_Fraction   - sfc2%Vegetation_Fraction  
     sfcdiff%Soil_Temperature      = sfcdiff%Soil_Temperature      - sfc2%Soil_Temperature 
-    sfcdiff%Lai                   = sfcdiff%Lai                   - sfc2%Lai
+    sfcdiff%LAI                   = sfcdiff%LAI                   - sfc2%LAI
     sfcdiff%Water_Temperature     = sfcdiff%Water_Temperature     - sfc2%Water_Temperature
     sfcdiff%Wind_Speed            = sfcdiff%Wind_Speed            - sfc2%Wind_Speed       
     sfcdiff%Wind_Direction        = sfcdiff%Wind_Direction        - sfc2%Wind_Direction   
@@ -1252,7 +989,7 @@ CONTAINS
     Sfc%Canopy_Water_Content  = ZERO
     Sfc%Vegetation_Fraction   = ZERO
     Sfc%Soil_Temperature      = ZERO
-    Sfc%Lai                   = ZERO
+    Sfc%LAI                   = ZERO
   END SUBROUTINE CRTM_LandSurface_Zero
 
   
@@ -1276,7 +1013,7 @@ CONTAINS
          Sfc%Canopy_Water_Content  < ZERO .OR. &
          Sfc%Vegetation_Fraction   < ZERO .OR. &
          Sfc%Soil_Temperature      < ZERO .OR. &
-         Sfc%Lai                   < ZERO      ) THEN
+         Sfc%LAI                   < ZERO      ) THEN
       msg = 'Invalid Land Surface data'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -1293,7 +1030,7 @@ CONTAINS
     WRITE(*, '(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content 
     WRITE(*, '(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction  
     WRITE(*, '(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature     
-    WRITE(*, '(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%Lai
+    WRITE(*, '(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%LAI
     WRITE(*, '(3x,"Soil type index      :",1x,i0)') Sfc%Soil_Type
     WRITE(*, '(3x,"Vegetation type index:",1x,i0)') Sfc%Vegetation_Type
   END SUBROUTINE CRTM_LandSurface_Inspect
@@ -1325,7 +1062,7 @@ CONTAINS
          (.NOT. Compares_Within_Tolerance(x%Canopy_Water_Content ,y%Canopy_Water_Content ,n)) .OR. &
          (.NOT. Compares_Within_Tolerance(x%Vegetation_Fraction  ,y%Vegetation_Fraction  ,n)) .OR. &
          (.NOT. Compares_Within_Tolerance(x%Soil_Temperature     ,y%Soil_Temperature     ,n)) .OR. &
-         (.NOT. Compares_Within_Tolerance(x%Lai                  ,y%Lai                  ,n)) ) RETURN
+         (.NOT. Compares_Within_Tolerance(x%LAI                  ,y%LAI                  ,n)) ) RETURN
 
     ! If we get here, the structures are comparable
     is_comparable = .TRUE.
@@ -1342,7 +1079,7 @@ CONTAINS
                  (x%Canopy_Water_Content  .EqualTo. y%Canopy_Water_Content ) .AND. &
                  (x%Vegetation_Fraction   .EqualTo. y%Vegetation_Fraction  ) .AND. &
                  (x%Soil_Temperature      .EqualTo. y%Soil_Temperature     ) .AND. &
-                 (x%Lai                   .EqualTo. y%Lai                  ) .AND. &
+                 (x%LAI                   .EqualTo. y%LAI                  ) .AND. &
                  (x%Soil_Type                ==     y%Soil_Type            ) .AND. &
                  (x%Vegetation_Type          ==     y%Vegetation_Type      )       )
   END FUNCTION CRTM_LandSurface_Equal
@@ -1572,9 +1309,6 @@ CONTAINS
 
   SUBROUTINE CRTM_IceSurface_Inspect( Sfc )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    INTEGER :: lType
-    lType = Sfc%Ice_Type
-    IF ( lType < 1 .OR. lType > N_VALID_ICE_TYPES ) lType = INVALID_ICE
     WRITE(*, '(3x,"Ice Type index :",1x,i0)') Sfc%Ice_Type
     WRITE(*, '(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
     WRITE(*, '(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness  

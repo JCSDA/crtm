@@ -20,8 +20,6 @@ MODULE CRTM_Surface_IO
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
   USE CRTM_Surface_Define, ONLY: SURFACE_TYPE_NAME, &
-                                 N_VALID_LAND_TYPES, N_VALID_WATER_TYPES, &
-                                 N_VALID_SNOW_TYPES, N_VALID_ICE_TYPES, &
                                  CRTM_Surface_type, &
                                  CRTM_Surface_Associated, &
                                  CRTM_Surface_Destroy, &
@@ -970,11 +968,6 @@ CONTAINS
       WRITE( msg,'("Error reading land surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Record_Cleanup(); RETURN
     END IF
-    ! ...Check the type
-    IF ( sfc%Land_Type < 0 .OR. sfc%Land_Type > N_VALID_LAND_TYPES ) THEN
-      msg = 'Invalid land surface type'
-      CALL Read_Record_Cleanup(); RETURN
-    END IF
 
 
     ! Read the water surface type data
@@ -984,11 +977,6 @@ CONTAINS
                                sfc%Salinity
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading water surface type data. IOSTAT = ",i0)' ) io_stat
-      CALL Read_Record_Cleanup(); RETURN
-    END IF
-    ! ...Check the type
-    IF ( sfc%Water_Type < 0 .OR. sfc%Water_Type > N_VALID_WATER_TYPES ) THEN
-      msg = 'Invalid water surface type'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
@@ -1003,11 +991,6 @@ CONTAINS
       WRITE( msg,'("Error reading snow surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Record_Cleanup(); RETURN
     END IF
-    ! ...Check the type
-    IF ( sfc%Snow_Type < 0 .OR. sfc%Snow_Type > N_VALID_SNOW_TYPES ) THEN
-      msg = 'Invalid snow surface type'
-      CALL Read_Record_Cleanup(); RETURN
-    END IF
 
 
     ! Read the ice surface type data
@@ -1018,11 +1001,6 @@ CONTAINS
                                sfc%Ice_Roughness
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading ice surface type data. IOSTAT = ",i0)' ) io_stat
-      CALL Read_Record_Cleanup(); RETURN
-    END IF
-    ! ...Check the type
-    IF ( sfc%Ice_Type < 0 .OR. sfc%Ice_Type > N_VALID_ICE_TYPES ) THEN
-      msg = 'Invalid ice surface type'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
