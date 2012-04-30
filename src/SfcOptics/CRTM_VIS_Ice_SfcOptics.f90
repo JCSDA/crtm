@@ -28,11 +28,6 @@ MODULE CRTM_VIS_Ice_SfcOptics
   USE CRTM_SEcategory          , ONLY: SEVar_type => iVar_type, &
                                        SEcategory_Emissivity
   USE CRTM_VISiceCoeff         , ONLY: VISiceC
-
-
-use crtm_surface_ir_emissivity
-
-
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -170,47 +165,34 @@ CONTAINS
     CHARACTER(ML) :: msg
     INTEGER  :: j
     REAL(fp) :: frequency, emissivity
-real(fp) :: wavelength
-integer :: new_ice
 
     ! Set up
     err_stat = SUCCESS
     frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
 
-!
-!    ! Compute Lambertian surface emissivity
-!    err_stat = SEcategory_Emissivity( &
-!                 VISiceC         , &  ! Input
-!                 frequency       , &  ! Input
-!                 Surface%Ice_Type, &  ! Input
-!                 emissivity      , &  ! Output
-!                 iVar%sevar        )  ! Internal variable output
-!    IF ( err_stat /= SUCCESS ) THEN
-!      msg = 'Error occurred in SEcategory_Emissivity()'
-!      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
-!    END IF
-!
-!
-!    ! Solar direct component
-!    SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
-!
-!
-!    ! Fill the return emissivity and reflectivity arrays
-!    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
-!    DO j = 1, SfcOptics%n_Angles
-!      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
-!    END DO
+
+    ! Compute Lambertian surface emissivity
+    err_stat = SEcategory_Emissivity( &
+                 VISiceC         , &  ! Input
+                 frequency       , &  ! Input
+                 Surface%Ice_Type, &  ! Input
+                 emissivity      , &  ! Output
+                 iVar%sevar        )  ! Internal variable output
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error occurred in SEcategory_Emissivity()'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
 
 
- !old methodology
- new_ice = 24
- wavelength = inverse_cm_to_micron(sc(sensorindex)%wavenumber(channelindex))
- call surface_ir_emissivity( wavelength, emissivity, new_ice )
- sfcoptics%direct_reflectivity(:,1) = one-emissivity
- sfcoptics%emissivity(1:sfcoptics%n_angles,1) = emissivity
- do j = 1, sfcoptics%n_angles
-   sfcoptics%reflectivity(j,1,j,1) = one-sfcoptics%emissivity(j,1)
- end do
+    ! Solar direct component
+    SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
+
+
+    ! Fill the return emissivity and reflectivity arrays
+    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
+    DO j = 1, SfcOptics%n_Angles
+      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
+    END DO
 
   END FUNCTION Compute_VIS_Ice_SfcOptics
 

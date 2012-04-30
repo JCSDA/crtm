@@ -32,8 +32,6 @@ MODULE CRTM_IR_Snow_SfcOptics
   USE CRTM_SEcategory          , ONLY: SEVar_type => iVar_type, &
                                        SEcategory_Emissivity
   USE CRTM_IRsnowCoeff         , ONLY: IRsnowC
-
-use crtm_surface_ir_emissivity, only: surface_ir_emissivity
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -175,54 +173,36 @@ CONTAINS
     CHARACTER(ML) :: msg
     INTEGER :: j
     REAL(fp) :: frequency, emissivity
-real(fp) :: wavelength
-integer :: type_map(16) ! currently defined n_valid_snow_types
 
     ! Set up
     err_stat = SUCCESS
     frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
 
-!
-!    ! Compute Lambertian surface emissivity
-!    err_stat = SEcategory_Emissivity( &
-!                 IRsnowC          , &  ! Input
-!                 frequency        , &  ! Input
-!                 Surface%Snow_Type, &  ! Input
-!                 emissivity       , &  ! Output
-!                 iVar%sevar         )  ! Internal variable output
-!    IF ( err_stat /= SUCCESS ) THEN
-!      msg = 'Error occurred in SEcategory_Emissivity()'
-!      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
-!    END IF
-!
-!
-!    ! Solar direct component
-!    IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
-!      SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
-!    END IF
-!
-!
-!    ! Fill the return emissivity and reflectivity arrays
-!    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
-!    DO j = 1, SfcOptics%n_Angles
-!      SfcOptics%Reflectivity(j,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
-!    END DO
+
+    ! Compute Lambertian surface emissivity
+    err_stat = SEcategory_Emissivity( &
+                 IRsnowC          , &  ! Input
+                 frequency        , &  ! Input
+                 Surface%Snow_Type, &  ! Input
+                 emissivity       , &  ! Output
+                 iVar%sevar         )  ! Internal variable output
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error occurred in SEcategory_Emissivity()'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
 
 
-! old methodology
-type_map = (/ 2, 2, 3, 3, & ! map the snow surface types defined in the
-              2, 2, 2, 2, & ! crtm_surface_define module to the two snow
-              3, 3, 3, 2, & ! surface types (2 - old snow; 3 - fresh snow)
-              2, 3, 2, 2 /) ! used in this model
-wavelength = inverse_cm_to_micron(sc(sensorindex)%wavenumber(channelindex))
-call surface_ir_emissivity( wavelength, emissivity, type_map(surface%snow_type))
-if ( spccoeff_issolar(sc(sensorindex), channelindex=channelindex) ) then
-  sfcoptics%direct_reflectivity(:,1) = one-emissivity
-end if
-sfcoptics%emissivity(1:sfcoptics%n_angles,1) = emissivity
-do j = 1, sfcoptics%n_angles
-  sfcoptics%reflectivity(j,1,j,1) = one-sfcoptics%emissivity(j,1)
-end do
+    ! Solar direct component
+    IF ( SpcCoeff_IsSolar(SC(SensorIndex), ChannelIndex=ChannelIndex) ) THEN
+      SfcOptics%Direct_Reflectivity(:,1) = ONE - emissivity
+    END IF
+
+
+    ! Fill the return emissivity and reflectivity arrays
+    SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
+    DO j = 1, SfcOptics%n_Angles
+      SfcOptics%Reflectivity(j,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
+    END DO
 
   END FUNCTION Compute_IR_Snow_SfcOptics
 

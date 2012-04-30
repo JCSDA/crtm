@@ -173,7 +173,6 @@ CONTAINS
     INTEGER :: j
     REAL(fp) :: frequency, emissivity
 
-
     ! Set up
     err_stat = SUCCESS
     frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
