@@ -1056,7 +1056,8 @@ CONTAINS
 !       Currently the only absorbers available are water vapour and ozone.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Get_Model_Profile( Pressure   , &
+!       CALL CRTM_Get_Model_Profile( Absorber_Id, &
+!                                    Pressure   , &
 !                                    Temperature, &
 !                                    Absorber   , &
 !                                    Model=Model  )
