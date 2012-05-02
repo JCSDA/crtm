@@ -175,7 +175,9 @@ CONTAINS
 
 
     ! Get the extra layer profiles
-    CALL CRTM_Get_Model_Profile( iAtm%pl, iAtm%tl, iAtm%al, Model=Atm_In%Climatology )
+    CALL CRTM_Get_Model_Profile( Atm_In%Absorber_Id, &
+                                 iAtm%pl, iAtm%tl, iAtm%al, &
+                                 Model=Atm_In%Climatology )
 
 
     ! First interpolate the extra levels to the user top pressure
