@@ -1,20 +1,17 @@
 #==============================================================================
 #
-# Makefile for EmisCoeff_NC2BIN program
+# Makefile for IRwaterCoeff_oldNC2newBIN program
 #
 #==============================================================================
 
-# -------------
 # Define macros
-# -------------
 include $(CRTM_SOURCE_ROOT)/make.macros
 
 # This makefile
 MAKE_FILE = Makefile
 
 # Executable files
-EXE_FILE = EmisCoeff_NC2BIN
-SCRIPT_FILE = run_$(EXE_FILE).sh
+EXE_FILE = IRwaterCoeff_oldNC2newBIN
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -27,35 +24,28 @@ SRC_FILES = Type_Kinds.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
             netCDF_Attribute_Utility.f90 \
-            SignalFile_Utility.f90 \
             EmisCoeff_Define.f90 \
             EmisCoeff_Binary_IO.f90 \
-            EmisCoeff_netCDF_IO.f90
+            EmisCoeff_netCDF_IO.f90 \
+            IRwaterCoeff_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+INCLUDES = -I$(HOME)/local/include
+LIBRARIES = -L$(HOME)/local/lib -lnetcdf
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source file link creation and removal
-create_links:
+create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
+remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
-
-# Script install target
-install_script:
-	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
-
-# Squeaky clean target
-realclean: remove_links clean
 
 # Source dependency lists
 include make.dependencies
