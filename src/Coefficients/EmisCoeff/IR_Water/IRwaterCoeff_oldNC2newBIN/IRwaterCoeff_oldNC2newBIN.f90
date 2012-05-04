@@ -113,10 +113,6 @@ PROGRAM EmisCoeff_NC2BIN
   irwatercoeff(1)%Frequency  = EmisCoeff%Frequency
   irwatercoeff(1)%Wind_Speed = EmisCoeff%Wind_Speed
   irwatercoeff(1)%Emissivity = EmisCoeff%Emissivity
-  ! ...Have a lookee...
-  CALL IRwaterCoeff_Inspect(irwatercoeff(1))
-  WRITE( *,'(/3x,"Press <RETURN> to continue...")' )
-  READ(*,*)
 
 
   ! Get attributes for output file
