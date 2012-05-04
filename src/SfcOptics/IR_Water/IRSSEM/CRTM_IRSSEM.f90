@@ -1,13 +1,13 @@
 !
 ! CRTM_IRSSEM
 !
-! Module containing function to invoke the CRTM Spectral Infrared
+! Module containing function to invoke the CRTM Infrared
 ! Sea Surface Emissivity Model (IRSSEM).
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 22-Jun-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 22-Jun-2005
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE CRTM_IRSSEM
@@ -29,7 +29,7 @@ MODULE CRTM_IRSSEM
                                 Interp_3D_TL, &
                                 LPoly_AD, &
                                 Interp_3D_AD
-  USE CRTM_EmisCoeff,     ONLY: EmisC
+  USE CRTM_IRwaterCoeff,  ONLY: IRwaterC
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -39,13 +39,13 @@ MODULE CRTM_IRSSEM
   ! Everything private by default
   PRIVATE
   ! Derived type
-  PUBLIC :: IRSSEM_type
-  ! Procedures  
+  PUBLIC :: iVar_type
+  ! Procedures
   PUBLIC :: CRTM_Compute_IRSSEM
   PUBLIC :: CRTM_Compute_IRSSEM_TL
   PUBLIC :: CRTM_Compute_IRSSEM_AD
-  
-  
+
+
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -54,8 +54,8 @@ MODULE CRTM_IRSSEM
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
-  
-  
+
+
   ! -------------------------------
   ! Structure definition to hold
   ! forward interpolating variables
@@ -91,16 +91,16 @@ MODULE CRTM_IRSSEM
   END TYPE Einterp_type
 
   ! The main internal variable structure
-  TYPE :: IRSSEM_type
+  TYPE :: iVar_type
     PRIVATE
     ! The interpolation data
     TYPE(Einterp_type) :: ei
-  END TYPE IRSSEM_type
+  END TYPE iVar_type
 
 
 CONTAINS
 
-  
+
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -122,10 +122,10 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_IRSSEM( Wind_Speed, &  ! Input
-!                                           Frequency,  &  ! Input 
-!                                           Angle,      &  ! Input 
+!                                           Frequency,  &  ! Input
+!                                           Angle,      &  ! Input
 !                                           Emissivity, &  ! Output
-!                                           EVar        )  ! Internal Variable Output     
+!                                           iVar        )  ! Internal Variable Output
 !
 ! INPUTS:
 !       Wind_Speed:     Wind speed.
@@ -147,19 +147,19 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       Emissivity:     Sea surface emissivities for the 
+!       Emissivity:     Sea surface emissivities for the
 !                       requested wind speed, frequency, and angles.
 !                       UNITS:      N/A
 !                       TYPE:       REAL(fp)
 !                       DIMENSION:  Same as input ANGLE argument.
 !                       ATTRIBUTES: INTENT(OUT)
 !
-!       EVar:           Structure containing internal variables required for
+!       iVar:           Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
 !                       outside of the CRTM_IRSSEM module.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(IRSSEM_type)
+!                       TYPE:       iVar_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(OUT)
 !
@@ -180,14 +180,14 @@ CONTAINS
     Frequency , &  ! Input
     Angle     , &  ! Input
     Emissivity, &  ! Output
-    EVar      ) &  ! Internal variable output
+    iVar      ) &  ! Internal variable output
   RESULT( Error_Status )
     ! Arguments
-    REAL(fp)         , INTENT(IN)  :: Wind_Speed     ! v
-    REAL(fp)         , INTENT(IN)  :: Frequency      ! f
-    REAL(fp)         , INTENT(IN)  :: Angle(:)       ! a
-    REAL(fp)         , INTENT(OUT) :: Emissivity(:)
-    TYPE(IRSSEM_type), INTENT(OUT) :: EVar
+    REAL(fp)       , INTENT(IN)  :: Wind_Speed     ! v
+    REAL(fp)       , INTENT(IN)  :: Frequency      ! f
+    REAL(fp)       , INTENT(IN)  :: Angle(:)       ! a
+    REAL(fp)       , INTENT(OUT) :: Emissivity(:)
+    TYPE(iVar_type), INTENT(OUT) :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -195,7 +195,7 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n_Angles, i
-    
+
     ! Set up
     Error_Status = SUCCESS
     ! ...Check dimensions
@@ -207,57 +207,57 @@ CONTAINS
       RETURN
     END IF
     ! ...Allocate interpolation variable structure
-    CALL Einterp_Create( EVar%ei, NPTS, n_Angles )
-    IF ( .NOT. Einterp_Associated( EVar%ei ) ) THEN
+    CALL Einterp_Create( iVar%ei, NPTS, n_Angles )
+    IF ( .NOT. Einterp_Associated( iVar%ei ) ) THEN
       Error_Status = FAILURE
       msg = 'Error allocating interpolation variable structure.'
       CALL Display_Message( ROUTINE_NAME, msg, Error_Status )
       RETURN
     END IF
-    
+
 
     ! Compute the wind speed interpolating polynomial
     ! ...Find the LUT indices and check if input is out of bounds
-    EVar%ei%v_int = Wind_Speed 
-    CALL find_index(EmisC%Wind_Speed, EVar%ei%v_int, EVar%ei%k1, EVar%ei%k2, EVar%ei%v_outbound)
-    EVar%ei%v = EmisC%Wind_Speed(EVar%ei%k1:EVar%ei%k2)
+    iVar%ei%v_int = Wind_Speed
+    CALL find_index(IRwaterC%Wind_Speed, iVar%ei%v_int, iVar%ei%k1, iVar%ei%k2, iVar%ei%v_outbound)
+    iVar%ei%v = IRwaterC%Wind_Speed(iVar%ei%k1:iVar%ei%k2)
     ! ...Compute the polynomial
-    CALL LPoly( EVar%ei%v    , & ! Input
-                EVar%ei%v_int, & ! Input
-                EVar%ei%ylp    ) ! Output            
+    CALL LPoly( iVar%ei%v    , & ! Input
+                iVar%ei%v_int, & ! Input
+                iVar%ei%ylp    ) ! Output
 
 
     ! Compute the frequency interpolating polynomial
     ! ...Find the LUT indices and check if input is out of bounds
-    EVar%ei%f_int = Frequency
-    CALL find_index(EmisC%Frequency, EVar%ei%f_int, EVar%ei%j1, EVar%ei%j2, EVar%ei%f_outbound)
-    EVar%ei%f = EmisC%Frequency(EVar%ei%j1:EVar%ei%j2)
+    iVar%ei%f_int = Frequency
+    CALL find_index(IRwaterC%Frequency, iVar%ei%f_int, iVar%ei%j1, iVar%ei%j2, iVar%ei%f_outbound)
+    iVar%ei%f = IRwaterC%Frequency(iVar%ei%j1:iVar%ei%j2)
     ! ...Compute the polynomial
-    CALL LPoly( EVar%ei%f    , & ! Input
-                EVar%ei%f_int, & ! Input
-                EVar%ei%xlp    ) ! Output
+    CALL LPoly( iVar%ei%f    , & ! Input
+                iVar%ei%f_int, & ! Input
+                iVar%ei%xlp    ) ! Output
 
 
     ! Compute the angle interpolating polynomials
     DO i = 1, n_Angles
 
       ! ...Find the LUT indices and check if input is out of bounds
-      EVar%ei%a_int(i) = ABS(Angle(i))
-      CALL find_index(EmisC%Angle, EVar%ei%a_int(i), EVar%ei%i1(i), EVar%ei%i2(i), EVar%ei%a_outbound(i))
-      EVar%ei%a(:,i) = EmisC%Angle(EVar%ei%i1(i):EVar%ei%i2(i))  
+      iVar%ei%a_int(i) = ABS(Angle(i))
+      CALL find_index(IRwaterC%Angle, iVar%ei%a_int(i), iVar%ei%i1(i), iVar%ei%i2(i), iVar%ei%a_outbound(i))
+      iVar%ei%a(:,i) = IRwaterC%Angle(iVar%ei%i1(i):iVar%ei%i2(i))
       ! ...Compute the polynomial
-      CALL LPoly( EVar%ei%a(:,i)  , & ! Input
-                  EVar%ei%a_int(i), & ! Input
-                  EVar%ei%wlp(i)    ) ! Output
-      
-      
+      CALL LPoly( iVar%ei%a(:,i)  , & ! Input
+                  iVar%ei%a_int(i), & ! Input
+                  iVar%ei%wlp(i)    ) ! Output
+
+
       ! Compute the interpolated emissivity
-      CALL Interp_3D( EmisC%Emissivity( EVar%ei%i1(i):EVar%ei%i2(i), &
-                                        EVar%ei%j1   :EVar%ei%j2   , &
-                                        EVar%ei%k1   :EVar%ei%k2     ), & ! Input
-                      EVar%ei%wlp(i), & ! Input
-                      EVar%ei%xlp   , & ! Input
-                      EVar%ei%ylp   , & ! Input
+      CALL Interp_3D( IRwaterC%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                           iVar%ei%j1   :iVar%ei%j2   , &
+                                           iVar%ei%k1   :iVar%ei%k2     ), & ! Input
+                      iVar%ei%wlp(i), & ! Input
+                      iVar%ei%xlp   , & ! Input
+                      iVar%ei%ylp   , & ! Input
                       Emissivity(i)   ) ! Output
 
     END DO
@@ -277,12 +277,12 @@ CONTAINS
 !
 !       This function must be called *after* the forward model function,
 !       CRTM_Compute_IRSSEM, has been called. The forward model function
-!       populates the internal variable structure argument, EVar.
+!       populates the internal variable structure argument, iVar.
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_IRSSEM_TL( Wind_Speed_TL, &  ! Input
 !                                              Emissivity_TL, &  ! Output
-!                                              EVar           )  ! Internal variable input
+!                                              iVar           )  ! Internal variable input
 ! INPUTS:
 !       Wind_Speed_TL:  The tangent-linear wind speed.
 !                       UNITS:      metres per second (m.s^-1)
@@ -290,12 +290,12 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
-!       EVar:           Structure containing internal variables required for
+!       iVar:           Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
 !                       outside of the CRTM_IRSSEM module.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(IRSSEM_type)
+!                       TYPE:       iVar_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -321,12 +321,12 @@ CONTAINS
   FUNCTION CRTM_Compute_IRSSEM_TL( &
     Wind_Speed_TL, &  ! Input
     Emissivity_TL, &  ! Output
-    EVar         ) &  ! Internal Variable
+    iVar         ) &  ! Internal Variable
   RESULT ( Error_Status )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Wind_Speed_TL
-    REAL(fp), DIMENSION(:), INTENT(OUT) :: Emissivity_TL
-    TYPE(IRSSEM_type),      INTENT(IN)  :: EVar
+    REAL(fp),        INTENT(IN)  :: Wind_Speed_TL
+    REAL(fp),        INTENT(OUT) :: Emissivity_TL(:)
+    TYPE(iVar_type), INTENT(IN)  :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -335,27 +335,27 @@ CONTAINS
     CHARACTER(ML) :: msg
     INTEGER  :: i
     REAL(fp) :: v_TL(NPTS)
-    REAL(fp) :: e_TL(NPTS,NPTS,NPTS) 
+    REAL(fp) :: e_TL(NPTS,NPTS,NPTS)
     TYPE(LPoly_Type) :: ylp_TL, xlp_TL, wlp_TL
 
     ! Set up
     Error_Status = SUCCESS
-    ! ...Check internal variable allocation 
-    IF ( .NOT. Einterp_Associated( EVar%ei ) ) THEN
+    ! ...Check internal variable allocation
+    IF ( .NOT. Einterp_Associated( iVar%ei ) ) THEN
       Error_Status = FAILURE
       msg = 'Internal structure ei is not allocated'
       CALL Display_Message( ROUTINE_NAME, msg, Error_Status )
       RETURN
     END IF
     ! ...Check dimensions
-    IF ( SIZE( Emissivity_TL ) /= EVar%ei%n_Angles ) THEN
+    IF ( SIZE( Emissivity_TL ) /= iVar%ei%n_Angles ) THEN
       Error_Status = FAILURE
       msg = 'Input Emissivity_TL array dimensions inconsistent with number of angles.'
       CALL Display_Message( ROUTINE_NAME, msg, Error_Status )
       RETURN
     END IF
     ! ...No TL if wind speed is out of bounds
-    IF ( EVar%ei%v_outbound ) THEN
+    IF ( iVar%ei%v_outbound ) THEN
       Emissivity_TL = ZERO
       RETURN
     END IF
@@ -366,27 +366,27 @@ CONTAINS
     CALL Clear_LPoly(xlp_TL)
 
 
-    ! Calculate the TL interpolating 
+    ! Calculate the TL interpolating
     ! polynomials for wind speed
-    CALL LPoly_TL( EVar%ei%v, EVar%ei%v_int, & ! FWD Input
-                   EVar%ei%ylp,              & ! FWD Input
+    CALL LPoly_TL( iVar%ei%v, iVar%ei%v_int, & ! FWD Input
+                   iVar%ei%ylp,              & ! FWD Input
                    v_TL, Wind_Speed_TL,      & ! TL  Input
                    ylp_TL                    ) ! TL  Output
 
-    
+
     ! Begin loop over angles
-    DO i = 1, EVar%ei%n_Angles
+    DO i = 1, iVar%ei%n_Angles
 
       ! Perform interpolation
-      CALL interp_3D_TL(EmisC%Emissivity(EVar%ei%i1(i):EVar%ei%i2(i), &
-                                         EVar%ei%j1   :EVar%ei%j2   , & 
-                                         EVar%ei%k1   :EVar%ei%k2     ), & ! FWD Emissivity input
-                        EVar%ei%wlp(i), & ! FWD polynomial input 
-                        EVar%ei%xlp   , & ! FWD polynomial input
-                        EVar%ei%ylp   , & ! FWD polynomial input
+      CALL interp_3D_TL(IRwaterC%Emissivity(iVar%ei%i1(i):iVar%ei%i2(i), &
+                                            iVar%ei%j1   :iVar%ei%j2   , &
+                                            iVar%ei%k1   :iVar%ei%k2     ), & ! FWD Emissivity input
+                        iVar%ei%wlp(i), & ! FWD polynomial input
+                        iVar%ei%xlp   , & ! FWD polynomial input
+                        iVar%ei%ylp   , & ! FWD polynomial input
                         e_TL, wlp_TL, xlp_TL, ylp_TL, & ! TL input
                         Emissivity_TL(i)              ) ! Output
-                 
+
     END DO
 
   END FUNCTION CRTM_Compute_IRSSEM_TL
@@ -404,12 +404,12 @@ CONTAINS
 !
 !       This function must be called *after* the forward model function,
 !       CRTM_Compute_IRSSEM, has been called. The forward model function
-!       populates the internal variable structure argument, EVar.
+!       populates the internal variable structure argument, iVar.
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Compute_IRSSEM_AD( Emissivity_AD, &  ! Input
 !                                              Wind_Speed_AD, &  ! Output
-!                                              EVar           )  ! Internal Variable Input
+!                                              iVar           )  ! Internal Variable Input
 !
 ! INPUTS:
 !       Emissivity_AD:  Adjoint sea surface emissivity.
@@ -419,12 +419,12 @@ CONTAINS
 !                       DIMENSION:  Rank-1 (n_Angles)
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
-!       EVar:           Structure containing internal variables required for
+!       iVar:           Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
 !                       outside of the CRTM_IRSSEM module.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(IRSSEM_type)
+!                       TYPE:       iVar_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -451,12 +451,12 @@ CONTAINS
   FUNCTION CRTM_Compute_IRSSEM_AD( &
     Emissivity_AD, & ! Input
     Wind_Speed_AD, & ! Output
-    EVar         ) & ! Internal Variable Input
+    iVar         ) & ! Internal Variable Input
   RESULT ( Error_Status )
     ! Arguments
-    REAL(fp),          INTENT(IN OUT) :: Emissivity_AD(:)
-    REAL(fp),          INTENT(IN OUT) :: Wind_Speed_AD
-    TYPE(IRSSEM_type), INTENT(IN)     :: EVar
+    REAL(fp),        INTENT(IN OUT) :: Emissivity_AD(:)
+    REAL(fp),        INTENT(IN OUT) :: Wind_Speed_AD
+    TYPE(iVar_type), INTENT(IN)     :: iVar
     ! Function result
     INTEGER :: Error_Status
     ! Local parameters
@@ -467,61 +467,61 @@ CONTAINS
     REAL(fp) :: e_AD(NPTS,NPTS,NPTS)
     REAL(fp) :: v_AD(NPTS)
     TYPE(LPoly_Type) :: wlp_AD, xlp_AD, ylp_AD
-    
+
     ! Set Up
     Error_Status = SUCCESS
     e_AD = ZERO
     v_AD = ZERO
     ! ...Check internal variable allocation
-    IF ( .NOT. Einterp_Associated( EVar%ei ) ) THEN
+    IF ( .NOT. Einterp_Associated( iVar%ei ) ) THEN
       Error_Status = FAILURE
       msg = 'Internal structure ei is not allocated'
       CALL Display_Message( ROUTINE_NAME, msg, Error_Status )
       RETURN
     END IF
     ! ...Check dimensions
-    IF ( SIZE(Emissivity_AD) /= EVar%ei%n_Angles ) THEN
+    IF ( SIZE(Emissivity_AD) /= iVar%ei%n_Angles ) THEN
       Error_Status = FAILURE
       msg = 'Input Emissivity_AD array dimensions inconsistent with number of angles.'
       CALL Display_Message( ROUTINE_NAME, msg, Error_Status )
       RETURN
-    END IF 
+    END IF
     ! ...No AD if wind speed is out of bounds
-    IF ( EVar%ei%v_outbound ) THEN
+    IF ( iVar%ei%v_outbound ) THEN
       Wind_Speed_AD = ZERO
       RETURN
     END IF
-    ! ...Initialize local variables    
+    ! ...Initialize local variables
     CALL Clear_LPoly(wlp_AD)
     CALL Clear_LPoly(xlp_AD)
     CALL Clear_LPoly(ylp_AD)
 
     ! Loop over emissivity calculation angles
-    DO i = 1, EVar%ei%n_Angles
-      
+    DO i = 1, iVar%ei%n_Angles
+
       ! Get the adjoint interpoalting polynomial for wind speed
-      CALL Interp_3D_AD(EmisC%Emissivity( EVar%ei%i1(i):EVar%ei%i2(i), &
-                                          EVar%ei%j1   :EVar%ei%j2   , &
-                                          EVar%ei%k1   :EVar%ei%k2     ), & ! FWD Input 
-                        EVar%ei%wlp(i)  , & ! FWD Input 
-                        EVar%ei%xlp     , & ! FWD Input
-                        EVar%ei%ylp     , & ! FWD Input
+      CALL Interp_3D_AD(IRwaterC%Emissivity( iVar%ei%i1(i):iVar%ei%i2(i), &
+                                             iVar%ei%j1   :iVar%ei%j2   , &
+                                             iVar%ei%k1   :iVar%ei%k2     ), & ! FWD Input
+                        iVar%ei%wlp(i)  , & ! FWD Input
+                        iVar%ei%xlp     , & ! FWD Input
+                        iVar%ei%ylp     , & ! FWD Input
                         Emissivity_AD(i), & ! AD Input
-                        e_AD, wlp_AD, xlp_AD, ylp_AD ) ! AD Output 
-                                                
+                        e_AD, wlp_AD, xlp_AD, ylp_AD ) ! AD Output
+
       ! Set adjoint emissivity to zero
       Emissivity_AD(i) = ZERO
-      
+
     END DO
-    
+
     ! Compute the wind speed adjoint
-    CALL Lpoly_AD(EVar%ei%v    , & ! FWD Input
-                  EVar%ei%v_int, & ! FWD Input
-                  EVar%ei%ylp  , & ! FWD Input
+    CALL Lpoly_AD(iVar%ei%v    , & ! FWD Input
+                  iVar%ei%v_int, & ! FWD Input
+                  iVar%ei%ylp  , & ! FWD Input
                   ylp_AD       , & ! AD  Input
                   v_AD         , & ! AD  Output
                   Wind_Speed_AD  ) ! AD  Output
-                         
+
   END FUNCTION CRTM_Compute_IRSSEM_AD
 
 
@@ -548,7 +548,7 @@ CONTAINS
     ei%n_Pts    = 0
     ei%Is_Allocated = .FALSE.
   END SUBROUTINE Einterp_Destroy
-    
+
   ELEMENTAL SUBROUTINE Einterp_Create( ei, n_Pts, n_Angles )
     TYPE(Einterp_type), INTENT(OUT) :: ei
     INTEGER,            INTENT(IN)  :: n_Pts

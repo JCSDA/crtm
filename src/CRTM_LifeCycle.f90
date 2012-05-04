@@ -33,7 +33,8 @@ MODULE CRTM_LifeCycle
   USE CRTM_CloudCoeff        , ONLY: CRTM_CloudCoeff_Load, &
                                      CRTM_CloudCoeff_Destroy
   ! ...Infrared surface emissivities
-  USE CRTM_EmisCoeff
+  USE CRTM_IRwaterCoeff      , ONLY: CRTM_IRwaterCoeff_Load, &
+                                     CRTM_IRwaterCoeff_Destroy
   USE CRTM_IRlandCoeff       , ONLY: CRTM_IRlandCoeff_Load, &
                                      CRTM_IRlandCoeff_Destroy
   USE CRTM_IRsnowCoeff       , ONLY: CRTM_IRsnowCoeff_Load, &
@@ -49,6 +50,7 @@ MODULE CRTM_LifeCycle
                                      CRTM_VISsnowCoeff_Destroy
   USE CRTM_VISiceCoeff       , ONLY: CRTM_VISiceCoeff_Load, &
                                      CRTM_VISiceCoeff_Destroy
+  ! ...Microwave surface emissivities
   USE CRTM_MWwaterCoeff      , ONLY: CRTM_MWwaterCoeff_Load, &
                                      CRTM_MWwaterCoeff_Destroy
   ! Disable all implicit typing
@@ -93,7 +95,7 @@ CONTAINS
 !                                 ChannelInfo                          , &
 !                                 CloudCoeff_File   = CloudCoeff_File  , &
 !                                 AerosolCoeff_File = AerosolCoeff_File, &
-!                                 EmisCoeff_File    = EmisCoeff_File   , &
+!                                 EmisCoeff_File    = EmisCoeff_File   , &  ! *** DEPRECATED. Delete in next release
 !                                 File_Path         = File_Path        , &
 !                                 Load_CloudCoeff   = Load_CloudCoeff  , &
 !                                 Load_AerosolCoeff = Load_AerosolCoeff, &
@@ -143,6 +145,8 @@ CONTAINS
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!
+! *** DEPRECATED. Delete in next release
 !       EmisCoeff_File:     Name of the CRTM Binary format EmisCoeff file
 !                           containing the IRSSEM coefficient data. If not
 !                           specified the default filename is "EmisCoeff.bin".
@@ -150,6 +154,8 @@ CONTAINS
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
+! *** DEPRECATED. Delete in next release
+!
 !
 !       File_Path:          Character string specifying a file path for the
 !                           input data files. If not specified, the current
@@ -232,7 +238,8 @@ CONTAINS
     ChannelInfo       , &  ! Output
     CloudCoeff_File   , &  ! Optional input
     AerosolCoeff_File , &  ! Optional input
-    EmisCoeff_File    , &  ! Optional input
+    EmisCoeff_File    , &  ! Optional input  ! *** DEPRECATED. Delete in next release
+    IRwaterCoeff_File , &  ! Optional input
     IRlandCoeff_File  , &  ! Optional input
     IRsnowCoeff_File  , &  ! Optional input
     IRiceCoeff_File   , &  ! Optional input
@@ -253,7 +260,8 @@ CONTAINS
     TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File  ! *** DEPRECATED. Delete in next release
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnowCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRiceCoeff_File
@@ -276,7 +284,7 @@ CONTAINS
     CHARACTER(ML) :: msg, pid_msg
     CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_AerosolCoeff_File
-    CHARACTER(SL) :: Default_EmisCoeff_File
+    CHARACTER(SL) :: Default_IRwaterCoeff_File
     CHARACTER(SL) :: Default_IRlandCoeff_File
     CHARACTER(SL) :: Default_IRsnowCoeff_File
     CHARACTER(SL) :: Default_IRiceCoeff_File
@@ -328,19 +336,20 @@ CONTAINS
     ! ...Default filenames
     Default_CloudCoeff_File    = 'CloudCoeff.bin'
     Default_AerosolCoeff_File  = 'AerosolCoeff.bin'
-    Default_EmisCoeff_File     = 'EmisCoeff.bin'
-    Default_IRlandCoeff_File     = 'NPOESS.IRland.EmisCoeff.bin'
-    Default_IRsnowCoeff_File     = 'NPOESS.IRsnow.EmisCoeff.bin'
-    Default_IRiceCoeff_File      = 'NPOESS.IRice.EmisCoeff.bin'
-    Default_VISwaterCoeff_File   = 'NPOESS.VISwater.EmisCoeff.bin'
-    Default_VISlandCoeff_File    = 'NPOESS.VISland.EmisCoeff.bin'
-    Default_VISsnowCoeff_File    = 'NPOESS.VISsnow.EmisCoeff.bin'
-    Default_VISiceCoeff_File     = 'NPOESS.VISice.EmisCoeff.bin'
-    Default_MWwaterCoeff_File    = 'FASTEM5.MWwater.EmisCoeff.bin'
+    Default_IRwaterCoeff_File  = 'Nalli.IRwater.EmisCoeff.bin'
+    Default_IRlandCoeff_File   = 'NPOESS.IRland.EmisCoeff.bin'
+    Default_IRsnowCoeff_File   = 'NPOESS.IRsnow.EmisCoeff.bin'
+    Default_IRiceCoeff_File    = 'NPOESS.IRice.EmisCoeff.bin'
+    Default_VISwaterCoeff_File = 'NPOESS.VISwater.EmisCoeff.bin'
+    Default_VISlandCoeff_File  = 'NPOESS.VISland.EmisCoeff.bin'
+    Default_VISsnowCoeff_File  = 'NPOESS.VISsnow.EmisCoeff.bin'
+    Default_VISiceCoeff_File   = 'NPOESS.VISice.EmisCoeff.bin'
+    Default_MWwaterCoeff_File  = 'FASTEM5.MWwater.EmisCoeff.bin'
     ! ...Were other filenames specified?
     IF ( PRESENT(CloudCoeff_File   ) ) Default_CloudCoeff_File    = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(AerosolCoeff_File ) ) Default_AerosolCoeff_File  = TRIM(ADJUSTL(AerosolCoeff_File))
-    IF ( PRESENT(EmisCoeff_File    ) ) Default_EmisCoeff_File     = TRIM(ADJUSTL(EmisCoeff_File))
+    IF ( PRESENT(EmisCoeff_File    ) ) Default_IRwaterCoeff_File  = TRIM(ADJUSTL(EmisCoeff_File))  ! *** DEPRECATED. Delete in next release
+    IF ( PRESENT(IRwaterCoeff_File ) ) Default_IRwaterCoeff_File  = TRIM(ADJUSTL(IRwaterCoeff_File))
     IF ( PRESENT(IRlandCoeff_File  ) ) Default_IRlandCoeff_File   = TRIM(ADJUSTL(IRlandCoeff_File))
     IF ( PRESENT(IRsnowCoeff_File  ) ) Default_IRsnowCoeff_File   = TRIM(ADJUSTL(IRsnowCoeff_File))
     IF ( PRESENT(IRiceCoeff_File   ) ) Default_IRiceCoeff_File    = TRIM(ADJUSTL(IRiceCoeff_File))
@@ -353,7 +362,7 @@ CONTAINS
     IF ( PRESENT(File_Path) ) THEN
       Default_CloudCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
       Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
-      Default_EmisCoeff_File     = TRIM(ADJUSTL(File_Path)) // TRIM(Default_EmisCoeff_File)
+      Default_IRwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRwaterCoeff_File)
       Default_IRlandCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRlandCoeff_File)
       Default_IRsnowCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRsnowCoeff_File)
       Default_IRiceCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRiceCoeff_File)
@@ -434,13 +443,13 @@ CONTAINS
       RETURN
     END IF
     ! ...IR Water
-    err_stat = CRTM_Load_EmisCoeff( &
-                 Default_EmisCoeff_File, &
-                 Quiet             = iQuiet           , &  ! *** Use of iQuiet temporary
+    err_stat = CRTM_IRwaterCoeff_Load( &
+                 Default_IRwaterCoeff_File, &
+                 Quiet             = Quiet            , &
                  Process_ID        = Process_ID       , &
                  Output_Process_ID = Output_Process_ID  )
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading IR Water EmisCoeff data from '//TRIM(Default_EmisCoeff_File)
+      msg = 'Error loading IRwaterCoeff data from '//TRIM(Default_IRwaterCoeff_File)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
@@ -680,17 +689,17 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
+    Destroy_Status = CRTM_IRwaterCoeff_Destroy( Process_ID = Process_ID )
+    IF ( Destroy_Status /= SUCCESS ) THEN
+      err_stat = Destroy_Status
+      msg = 'Error deallocating shared IRwaterCoeff data structure'//TRIM(pid_msg)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+    END IF
+
     Destroy_Status = CRTM_IRlandCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status
       msg = 'Error deallocating shared IRlandCoeff data structure'//TRIM(pid_msg)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-    END IF
-
-    Destroy_Status = CRTM_Destroy_EmisCoeff( Process_ID = Process_ID )
-    IF ( Destroy_Status /= SUCCESS ) THEN
-      err_stat = Destroy_Status
-      msg = 'Error deallocating shared EmisCoeff data structure'//TRIM(pid_msg)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
@@ -722,7 +731,6 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
     END IF
 
-    ! Destroy the shared data structure
     Destroy_Status = CRTM_MWwaterCoeff_Destroy( Process_ID = Process_ID )
     IF ( Destroy_Status /= SUCCESS ) THEN
       err_stat = Destroy_Status

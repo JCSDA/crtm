@@ -28,7 +28,11 @@ MODULE CRTM_IR_Water_SfcOptics
   USE CRTM_Surface_Define,      ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type
   USE CRTM_SfcOptics_Define,    ONLY: CRTM_SfcOptics_type
-  USE CRTM_IRSSEM
+  USE CRTM_IRSSEM,              ONLY: IRSSEM_type=>iVar_type, &
+                                      CRTM_Compute_IRSSEM, &
+                                      CRTM_Compute_IRSSEM_TL, &
+                                      CRTM_Compute_IRSSEM_AD
+
   ! Disable implicit typing
   IMPLICIT NONE
 

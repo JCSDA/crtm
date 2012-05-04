@@ -42,8 +42,8 @@
 # Common definitions
 COMMON_COEFF_FILES = AerosolCoeff.bin \
                      CloudCoeff.bin \
-                     Wu-Smith.CM-PDF.HQS_HQS-RefInd.EmisCoeff.bin \
-                     Nalli.EK-PDF.W_W-RefInd.EmisCoeff.bin \
+                     WuSmith.IRwater.EmisCoeff.bin \
+                     Nalli.IRwater.EmisCoeff.bin \
                      NPOESS.IRland.EmisCoeff.bin \
                      NPOESS.IRland.EmisCoeff.bin \
                      NPOESS.IRsnow.EmisCoeff.bin \

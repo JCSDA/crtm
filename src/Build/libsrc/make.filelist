@@ -26,7 +26,7 @@ NOCPP_FILES = \
   AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
   CRTM_Options_Define.f90 \
   CRTM_AOD_Module.f90 \
-  EmisCoeff_Define.f90 EmisCoeff_Binary_IO.f90 \
+  IRwaterCoeff_Define.f90 \
   SEcategory_Define.f90 \
   LSEatlas_Define.f90 \
   MWwaterCoeff_Define.f90 \
@@ -52,8 +52,7 @@ NOCPP_FILES = \
   CRTM_TauCoeff.f90 TauCoeff_Define.f90 \
   CRTM_AerosolCoeff.f90 \
   CRTM_CloudCoeff.f90 \
-  CRTM_EmisCoeff.f90 \
-  CRTM_IRlandCoeff.f90 CRTM_IRsnowCoeff.f90 CRTM_IRiceCoeff.f90 \
+  CRTM_IRlandCoeff.f90 CRTM_IRwaterCoeff.f90 CRTM_IRsnowCoeff.f90 CRTM_IRiceCoeff.f90 \
   CRTM_VISlandCoeff.f90 CRTM_VISwaterCoeff.f90 CRTM_VISsnowCoeff.f90 CRTM_VISiceCoeff.f90 \
   CRTM_MWwaterCoeff.f90 \
   CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 \
