@@ -18,6 +18,7 @@ NOCPP_FILES = \
   Fundamental_Constants.f90 \
   Hyperbolic_Step.f90 \
   Spectral_Units_Conversion.f90 \
+  UnitTest_Define.f90 \
   SensorInfo_Parameters.f90 \
   Subset_Define.f90 \
   SpcCoeff_Define.f90 ACCoeff_Define.f90 NLTECoeff_Define.f90 \
