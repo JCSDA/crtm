@@ -108,7 +108,8 @@ else
   LINKFILES=$(find ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | grep ${FILTER_DIR})
 fi
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Find command failed!"
+  echo "${SCRIPT_NAME}: Find command failed for:"
+  echo ${FINDFILE_LIST}
   exit ${FAILURE}
 fi
 
@@ -116,7 +117,8 @@ fi
 # Link in the files found
 ${LINK} ${LINKFILES} .
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Link command failed!"
+  echo "${SCRIPT_NAME}: Link command failed for:"
+  echo ${FINDFILE_LIST}
   exit ${FAILURE}
 fi
 
