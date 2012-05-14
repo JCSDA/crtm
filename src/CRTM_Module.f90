@@ -21,7 +21,6 @@ MODULE CRTM_Module
   USE CRTM_RTSolution_Define
   USE CRTM_Options_Define
   USE CRTM_AncillaryInput_Define
-  USE CRTM_IRlandCoeff
 
   ! Parameter definition module
   USE CRTM_Parameters
