@@ -134,7 +134,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 57
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 58
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -151,7 +151,7 @@ MODULE MW_SensorData_Define
     'mwri_fy3b           ','mwhs_fy3a           ','mwhs_fy3b           ','mwts_fy3a           ',&
     'mwts_fy3b           ','tmi_trmm            ','gmi_gpm             '                       ,&
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
-    'madras_meghat       ','saphir_meghat       '/)
+    'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ' /)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -174,7 +174,8 @@ MODULE MW_SensorData_Define
      282, INVALID_WMO_SATELLITE_ID, &                       ! TRMM TMI; GPM GMI
      285, 286, &                                            ! DMSP-17,18
      INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! DMSP-19,20
-     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID /)  ! Megha-Tropiques MADRAS; SAPHIR
+     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! Megha-Tropiques MADRAS; SAPHIR
+     INVALID_WMO_SATELLITE_ID /)                            ! GCOM-W1 AMSR2
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -193,8 +194,8 @@ MODULE MW_SensorData_Define
      365, INVALID_WMO_SENSOR_ID, &                   ! TRMM TMI; GPM GMI
      908, 908, &                                     ! DMSP-17,18 SSMIS
      908, 908, &                                     ! DMSP-19,20 SSMIS
-     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID /) ! Megha-Tropiques MADRAS; SAPHIR
-
+     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID, & ! Megha-Tropiques MADRAS; SAPHIR
+     INVALID_WMO_SENSOR_ID /)                        ! GCOM-W1 AMSR2
 
   !#----------------------------------------------------------------------------#
   !                             Sensor channel data
@@ -220,6 +221,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_GMI_CHANNELS     = 13
   INTEGER, PARAMETER :: N_MADRAS_CHANNELS  =  9
   INTEGER, PARAMETER :: N_SAPHIR_CHANNELS  =  6
+  INTEGER, PARAMETER :: N_AMSR2_CHANNELS   = 14
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -247,8 +249,8 @@ MODULE MW_SensorData_Define
        N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-19,20 SSMIS
-       N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS/)                             ! Megha-Tropiques MADRAS; SAPHIR
-
+       N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS, &                            ! Megha-Tropiques MADRAS; SAPHIR
+       N_AMSR2_CHANNELS /)                                               ! GCOM-W1 AMSR2
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
   INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)    =(/(i,i=1,N_AMSUA_CHANNELS  )/)
@@ -267,8 +269,9 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MWTS_SENSOR_CHANNEL(N_MWTS_CHANNELS)      =(/(i,i=1,N_MWTS_CHANNELS   )/)
   INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/(i,i=1,N_TMI_CHANNELS    )/)
   INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/(i,i=1,N_GMI_CHANNELS    )/)
-  INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS )    =(/(i,i=1,N_MADRAS_CHANNELS )/)
-  INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS )    =(/(i,i=1,N_SAPHIR_CHANNELS )/)
+  INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS ) =(/(i,i=1,N_MADRAS_CHANNELS )/)
+  INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS ) =(/(i,i=1,N_SAPHIR_CHANNELS )/)
+  INTEGER, PARAMETER :: AMSR2_SENSOR_CHANNEL(N_AMSR2_CHANNELS)    =(/(i,i=1,N_AMSR2_CHANNELS  )/)
 
 
   !#----------------------------------------------------------------------------#
@@ -308,7 +311,8 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS) = 1
   INTEGER, PARAMETER :: MADRAS_N_SIDEBANDS(N_MADRAS_CHANNELS) = 1
   INTEGER, PARAMETER :: SAPHIR_N_SIDEBANDS(N_SAPHIR_CHANNELS) = 1
-
+  INTEGER, PARAMETER :: AMSR2_N_SIDEBANDS(N_AMSR2_CHANNELS)    =1
+ 
 
   !#----------------------------------------------------------------------------#
   !                          Zeeman-affected channel flag
@@ -890,6 +894,43 @@ MODULE MW_SensorData_Define
                 0.000_fp, 1.500_fp, ZERO, ZERO, &     ! 89.0GHz vertical pol.
                 0.000_fp, 1.500_fp, ZERO, ZERO /), &  ! 89.0GHz horizontal pol.
              (/ 2, MAX_N_SIDEBANDS, N_AMSRE_CHANNELS /) )
+
+  ! GCOM-W1 AMSR2
+  ! Frequency information taken from 
+  ! Norimasa Ito January 18, 2012 "GCOM-W1 Status"
+  ! Slide 6
+  
+  ! It is assumed there are no stopbands in the same manner
+  ! as other microwave instruments with no sidebands so f1
+  ! values are all 0.000.
+  !
+  ! Note each frequency is listed twice. This is for separate
+  ! channels with vertical and horizontal polarisations.
+  ! -------------------------------------------------------
+  ! AMSR2 central frequencies in GHz
+  REAL(fp), PARAMETER :: AMSR2_GCOMW1_F0( N_AMSR2_CHANNELS ) = &
+    (/ 6.925_fp,  6.925_fp,  7.300_fp,  7.300_fp, &
+      10.650_fp, 10.650_fp, 18.700_fp, 18.700_fp, &
+      23.800_fp, 23.800_fp, 36.500_fp, 36.500_fp, &
+      89.000_fp, 89.000_fp /)
+
+  ! AMSR2 I/F band limits in GHz.
+  REAL(fp), PARAMETER :: AMSR2_GCOMW1_IF_BAND( 2, MAX_N_SIDEBANDS, N_AMSR2_CHANNELS ) = &
+    RESHAPE( (/ 0.000_fp, 0.175_fp, ZERO, ZERO, &     ! 6.925GHz vertical pol.
+                0.000_fp, 0.175_fp, ZERO, ZERO, &     ! 6.925GHz horizontal pol.
+                0.000_fp, 0.175_fp, ZERO, ZERO, &     ! 7.3GHz vertical pol.
+                0.000_fp, 0.175_fp, ZERO, ZERO, &     ! 7.3GHz horizontal pol.
+                0.000_fp, 0.050_fp, ZERO, ZERO, &     ! 10.65GHz vertical pol.
+                0.000_fp, 0.050_fp, ZERO, ZERO, &     ! 10.65GHz horizontal pol.
+                0.000_fp, 0.100_fp, ZERO, ZERO, &     ! 18.7GHz vertical pol.
+                0.000_fp, 0.100_fp, ZERO, ZERO, &     ! 18.7GHz horizontal pol.
+                0.000_fp, 0.200_fp, ZERO, ZERO, &     ! 23.8GHz vertical pol.
+                0.000_fp, 0.200_fp, ZERO, ZERO, &     ! 23.8GHz horizontal pol.
+                0.000_fp, 0.500_fp, ZERO, ZERO, &     ! 36.5GHz vertical pol.
+                0.000_fp, 0.500_fp, ZERO, ZERO, &     ! 36.5GHz horizontal pol.
+                0.000_fp, 1.500_fp, ZERO, ZERO, &     ! 89.0GHz vertical pol.
+                0.000_fp, 1.500_fp, ZERO, ZERO /), &  ! 89.0GHz horizontal pol.
+             (/ 2, MAX_N_SIDEBANDS, N_AMSR2_CHANNELS /) )
 
 
   ! NOAA-18 AMSU-A
@@ -1616,6 +1657,24 @@ MODULE MW_SensorData_Define
      HL_POLARIZATION, &  ! AMSR-E ch10
      VL_POLARIZATION, &  ! AMSR-E ch11
      HL_POLARIZATION /)  ! AMSR-E ch12
+
+  ! GCOMW1 AMSR2
+  ! -----------
+  INTEGER, PARAMETER :: AMSR2_GCOMW1_POLARIZATION( N_AMSR2_CHANNELS ) = &
+  (/ VL_POLARIZATION, &  ! AMSR2 ch1
+     HL_POLARIZATION, &  ! AMSR2 ch2
+     VL_POLARIZATION, &  ! AMSR2 ch3
+     HL_POLARIZATION, &  ! AMSR2 ch4
+     VL_POLARIZATION, &  ! AMSR2 ch5
+     HL_POLARIZATION, &  ! AMSR2 ch6
+     VL_POLARIZATION, &  ! AMSR2 ch7
+     HL_POLARIZATION, &  ! AMSR2 ch8
+     VL_POLARIZATION, &  ! AMSR2 ch9
+     HL_POLARIZATION, &  ! AMSR2 ch10
+     VL_POLARIZATION, &  ! AMSR2 ch11
+     HL_POLARIZATION, &  ! AMSR2 ch12
+     VL_POLARIZATION, &  ! AMSR2 ch13
+     HL_POLARIZATION /)  ! AMSR2 ch14
 
   ! MHS (needs verification)
   ! ------------------------
@@ -2415,6 +2474,13 @@ CONTAINS
         MW_SensorData%Polarization      = AMSRE_AQUA_POLARIZATION
         MW_SensorData%n_Sidebands       = AMSRE_N_SIDEBANDS
         MW_SensorData%IF_Band           = AMSRE_AQUA_IF_BAND
+
+      CASE ('amsr2_gcom-w1')
+        MW_SensorData%Sensor_Channel    = AMSR2_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = AMSR2_GCOMW1_F0
+        MW_SensorData%Polarization      = AMSR2_GCOMW1_POLARIZATION
+        MW_SensorData%n_Sidebands       = AMSR2_N_SIDEBANDS
+        MW_SensorData%IF_Band           = AMSR2_GCOMW1_IF_BAND
 
       CASE ('amsua_n18')
         MW_SensorData%Sensor_Channel    = AMSUA_SENSOR_CHANNEL
