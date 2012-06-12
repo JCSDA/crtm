@@ -17,7 +17,9 @@ MODULE CRTM_AtmOptics_Define
   ! Module use
   USE Type_Kinds           , ONLY: fp, Long, Double
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
-  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Compare_Float_Numbers, ONLY: DEFAULT_N_SIGFIG, &
+                                   OPERATOR(.EqualTo.), &
+                                   Compares_Within_Tolerance
   USE File_Utility         , ONLY: File_Open, File_Exists
   USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
                                    WriteGAtts_Binary_File, &
@@ -35,6 +37,7 @@ MODULE CRTM_AtmOptics_Define
   PUBLIC :: CRTM_AtmOptics_type
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_AtmOptics_Associated
   PUBLIC :: CRTM_AtmOptics_Destroy
@@ -44,6 +47,7 @@ MODULE CRTM_AtmOptics_Define
   PUBLIC :: CRTM_AtmOptics_ValidRelease
   PUBLIC :: CRTM_AtmOptics_Info
   PUBLIC :: CRTM_AtmOptics_DefineVersion
+  PUBLIC :: CRTM_AtmOptics_Compare
   PUBLIC :: CRTM_AtmOptics_InquireFile
   PUBLIC :: CRTM_AtmOptics_ReadFile
   PUBLIC :: CRTM_AtmOptics_WriteFile
@@ -56,6 +60,14 @@ MODULE CRTM_AtmOptics_Define
     MODULE PROCEDURE CRTM_AtmOptics_Equal
   END INTERFACE OPERATOR(==)
 
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_AtmOptics_Subtract
+  END INTERFACE OPERATOR(-)
+
+  INTERFACE CRTM_AtmOptics_Inspect
+    MODULE PROCEDURE Scalar_Inspect
+    MODULE PROCEDURE Rank1_Inspect
+  END INTERFACE CRTM_AtmOptics_Inspect
 
   ! -----------------
   ! Module parameters
@@ -63,7 +75,7 @@ MODULE CRTM_AtmOptics_Define
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Release and version
-  INTEGER, PARAMETER :: ATMOPTICS_RELEASE = 2  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: ATMOPTICS_RELEASE = 4  ! This determines structure and file formats.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Literal constants
@@ -73,7 +85,7 @@ MODULE CRTM_AtmOptics_Define
   INTEGER,  PARAMETER :: ML = 256 ! Message length
   INTEGER,  PARAMETER :: SL =  80 ! String length
 
-  
+
   ! ------------------------------
   ! AtmOptics data type definition
   ! ------------------------------
@@ -92,8 +104,9 @@ MODULE CRTM_AtmOptics_Define
     INTEGER :: Max_Legendre_Terms = 0  ! Ic-Max dimension
     INTEGER :: Max_Phase_Elements = 0  ! Ip-Max dimension
     ! Scalar components
-    LOGICAL :: Include_Scattering = .TRUE.    
-    INTEGER :: lOffset = 0   ! Start position in array for Legendre coefficients 
+    LOGICAL  :: Include_Scattering = .TRUE.
+    INTEGER  :: lOffset = 0   ! Start position in array for Legendre coefficients
+    REAL(fp) :: Scattering_Optical_Depth = ZERO
     ! Array components
     REAL(fp), ALLOCATABLE :: Optical_Depth(:)         ! K-Max
     REAL(fp), ALLOCATABLE :: Single_Scatter_Albedo(:) ! K-Max
@@ -156,7 +169,7 @@ CONTAINS
     status = self%Is_Allocated
   END FUNCTION CRTM_AtmOptics_Associated
 
-  
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -252,9 +265,9 @@ CONTAINS
     n_Phase_Elements  )  ! Input
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: self
-    INTEGER                  , INTENT(IN)     :: n_Layers                
-    INTEGER                  , INTENT(IN)     :: n_Legendre_Terms        
-    INTEGER                  , INTENT(IN)     :: n_Phase_Elements             
+    INTEGER                  , INTENT(IN)     :: n_Layers
+    INTEGER                  , INTENT(IN)     :: n_Legendre_Terms
+    INTEGER                  , INTENT(IN)     :: n_Phase_Elements
     ! Local variables
     INTEGER :: alloc_stat
 
@@ -282,7 +295,7 @@ CONTAINS
     END IF
 
     ! Initialise dimensions (but not arrays!)
-    self%n_Layers         = n_Layers        
+    self%n_Layers         = n_Layers
     self%n_Legendre_Terms = n_Legendre_Terms
     self%n_Phase_Elements = n_Phase_Elements
 
@@ -290,7 +303,7 @@ CONTAINS
     self%Is_Allocated = .TRUE.
 
   CONTAINS
-  
+
     PURE SUBROUTINE AtmOptics_Allocate(self,alloc_stat)
       TYPE(CRTM_AtmOptics_type), INTENT(OUT) :: self
       INTEGER                  , INTENT(OUT) :: alloc_stat
@@ -303,11 +316,11 @@ CONTAINS
                 STAT = alloc_stat )
       IF ( alloc_stat /= 0 ) RETURN
       ! Set maximum dimension values
-      self%Max_Layers         = n_Layers        
+      self%Max_Layers         = n_Layers
       self%Max_Legendre_Terms = n_Legendre_Terms
       self%Max_Phase_Elements = n_Phase_Elements
     END SUBROUTINE AtmOptics_Allocate
-    
+
   END SUBROUTINE CRTM_AtmOptics_Create
 
 
@@ -316,16 +329,16 @@ CONTAINS
 !
 ! NAME:
 !       CRTM_AtmOptics_Zero
-! 
+!
 ! PURPOSE:
-!       Elemental subroutine to initialise the array components of an AtmOptics
+!       Elemental subroutine to initialise the components of an AtmOptics
 !       object to a value of zero.
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_AtmOptics_Zero( AtmOptics )
 !
 ! OBJECTS:
-!       AtmOptics:   AtmOptics object which is to have its array component
+!       AtmOptics:   AtmOptics object which is to have its components
 !                    set to a zero value.
 !                    UNITS:      N/A
 !                    TYPE:       CRTM_AtmOptics_type
@@ -337,10 +350,11 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE CRTM_AtmOptics_Zero( self )
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: self
+    self%Scattering_Optical_Depth = ZERO
     IF ( .NOT. CRTM_AtmOptics_Associated( self ) ) RETURN
     self%Optical_Depth         = ZERO
-    self%Single_Scatter_Albedo = ZERO 
-    self%Asymmetry_Factor      = ZERO 
+    self%Single_Scatter_Albedo = ZERO
+    self%Asymmetry_Factor      = ZERO
     self%Delta_Truncation      = ZERO
     self%Phase_Coefficient     = ZERO
   END SUBROUTINE CRTM_AtmOptics_Zero
@@ -368,16 +382,17 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_AtmOptics_Inspect( self)
+  SUBROUTINE Scalar_Inspect(self)
     TYPE(CRTM_AtmOptics_type), INTENT(IN) :: self
     INTEGER :: ip, k
-    WRITE(*,'(1x,"CRTM AtmOptics OBJECT")')
+    WRITE(*,'(1x,"AtmOptics OBJECT")')
     ! Release/version info
     WRITE(*,'(3x,"Release          : ",i0)') self%Release
     ! Dimensions
-    WRITE(*,'(3x,"n_Layers         : ",i0," (",i0,")")') self%n_Layers        , self%Max_Layers
-    WRITE(*,'(3x,"n_Legendre_Terms : ",i0," (",i0,")")') self%n_Legendre_Terms, self%Max_Legendre_Terms
-    WRITE(*,'(3x,"n_Phase_Elements : ",i0," (",i0,")")') self%n_Phase_Elements, self%Max_Phase_Elements
+    WRITE(*,'(3x,"n_Layers         : ",i0," (of max. ",i0,")")') self%n_Layers        , self%Max_Layers
+    WRITE(*,'(3x,"n_Legendre_Terms : ",i0," (of max. ",i0,")")') self%n_Legendre_Terms, self%Max_Legendre_Terms
+    WRITE(*,'(3x,"n_Phase_Elements : ",i0," (of max. ",i0,")")') self%n_Phase_Elements, self%Max_Phase_Elements
+    WRITE(*,'(3x,"Scattering Optical Depth : ",es13.6)') self%Scattering_Optical_Depth
     IF ( .NOT. CRTM_AtmOptics_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Optical_Depth :")')
@@ -396,7 +411,18 @@ CONTAINS
       END DO
       WRITE(*,*)
     END DO
-  END SUBROUTINE CRTM_AtmOptics_Inspect
+  END SUBROUTINE Scalar_Inspect
+
+  SUBROUTINE Rank1_Inspect( self )
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: self(:)
+    INTEGER :: n, n_objects
+
+    n_objects = SIZE(self)
+    DO n = 1, n_objects
+      WRITE(*, FMT='(1x,"OBJECT INDEX:",i0," - ")', ADVANCE='NO') n
+      CALL Scalar_Inspect(self(n))
+    END DO
+  END SUBROUTINE Rank1_Inspect
 
 
 !----------------------------------------------------------------------------------
@@ -507,13 +533,12 @@ CONTAINS
 
     ! Write the required data to the local string
     WRITE( Long_String, &
-           '(a,1x,"AtmOptics RELEASE: ",i2,a,3x, &
+           '(a,1x,"AtmOptics RELEASE: ",i2,3x, &
            &"N_LAYERS=",i0,2x,&
            &"N_LEGENDRE_TERMS=",i0,2x,&
            &"N_PHASE_ELEMENTS=",i0 )' ) &
            ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
            self%Release, &
-           ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
            self%n_Layers, &
            self%n_Legendre_Terms, &
            self%n_Phase_Elements
@@ -554,6 +579,109 @@ CONTAINS
   END SUBROUTINE CRTM_AtmOptics_DefineVersion
 
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       CRTM_AtmOptics_Compare
+!
+! PURPOSE:
+!       Elemental function to compare two CRTM_AtmOptics objects to within
+!       a user specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!       is_comparable = CRTM_AtmOptics_Compare( x, y, n_SigFig=n_SigFig )
+!
+! OBJECTS:
+!       x, y:          Two CRTM AtmOptics objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_AtmOptics_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       n_SigFig:      Number of significant figures to compare floating point
+!                      components.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_AtmOptics_Compare( &
+    x, &
+    y, &
+    n_SigFig ) &
+  RESULT( is_comparable )
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: x, y
+    INTEGER,         OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: ic, ip, k
+    INTEGER :: n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
+    END IF
+
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_AtmOptics_Associated(x)) .OR. &
+         (.NOT. CRTM_AtmOptics_Associated(y))      ) RETURN
+
+    ! Check dimensions
+    IF ( (x%n_Layers         /= y%n_Layers        ) .OR. &
+         (x%n_Legendre_Terms /= y%n_Legendre_Terms) .OR. &
+         (x%n_Phase_Elements /= y%n_Phase_Elements)      ) RETURN
+
+    ! Check scalar components
+    IF ( (x%Include_Scattering .NEQV. y%Include_Scattering ) .OR. &
+         (x%lOffset             /=    y%lOffset            ) .OR. &
+         (.NOT. Compares_Within_Tolerance(x%Scattering_Optical_Depth,&
+                                          y%Scattering_Optical_Depth, n)) ) RETURN
+
+
+    ! Check floating point arrays
+    k  = x%n_Layers
+    ip = x%n_Phase_Elements
+    ic = x%n_Legendre_Terms
+    IF ( (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Optical_Depth(1:k), &
+                      y%Optical_Depth(1:k), &
+                      n                      ))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Single_Scatter_Albedo(1:k), &
+                      y%Single_Scatter_Albedo(1:k), &
+                      n                      ))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Asymmetry_Factor(1:k), &
+                      y%Asymmetry_Factor(1:k), &
+                      n                      ))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Delta_Truncation(1:k), &
+                      y%Delta_Truncation(1:k), &
+                      n                      ))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance( &
+                      x%Phase_Coefficient(0:ic,1:ip,1:k), &
+                      y%Phase_Coefficient(0:ic,1:ip,1:k), &
+                      n                      ))) ) RETURN
+
+
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+
+  END FUNCTION CRTM_AtmOptics_Compare
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -565,11 +693,9 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AtmOptics_InquireFile( &
-!                        Filename                           , &
-!                        n_Layers         = n_Layers        , &
-!                        n_Legendre_Terms = n_Legendre_Terms, &
-!                        n_Phase_Elements = n_Phase_Elements, &
-!                        Release          = Release           )
+!                        Filename             , &
+!                        n_Objects = n_Objects, &
+!                        Release   = Release    )
 !
 ! INPUTS:
 !       Filename:           Character string specifying the name of the
@@ -580,20 +706,7 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL OUTPUTS:
-!       n_Layers:           Number of atmospheric layers.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Legendre_Terms:   Number of terms in the Legendre polynomial 
-!                           expansion of the scattering phase function.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
-!       n_Phase_Elements:   Number of phase matrix elements.
+!       n_Objects:          Number of AtmOptics objects contained in the file.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
@@ -620,20 +733,16 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_AtmOptics_InquireFile( &
-    Filename        , &  ! Input
-    n_Layers        , &  ! Optional output
-    n_Legendre_Terms, &  ! Optional output
-    n_Phase_Elements, &  ! Optional output
-    Release         , &  ! Optional output
-    Title           , &  ! Optional output
-    History         , &  ! Optional output
-    Comment         ) &  ! Optional output
+    Filename , &  ! Input
+    n_Objects, &  ! Optional output
+    Release  , &  ! Optional output
+    Title    , &  ! Optional output
+    History  , &  ! Optional output
+    Comment  ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers        
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Phase_Elements
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Objects
     INTEGER     , OPTIONAL, INTENT(OUT) :: Release
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
@@ -647,7 +756,8 @@ CONTAINS
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     INTEGER :: fid
-    TYPE(CRTM_AtmOptics_type) :: AtmOptics
+    INTEGER :: n
+    TYPE(CRTM_AtmOptics_type) :: atmoptics
 
 
     ! Setup
@@ -669,7 +779,7 @@ CONTAINS
 
     ! Read the release
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Release
+      atmoptics%Release
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Release - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -680,13 +790,10 @@ CONTAINS
     END IF
 
 
-    ! Read the dimensions
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%n_Layers        , &
-      AtmOptics%n_Legendre_Terms, &
-      AtmOptics%n_Phase_Elements
+    ! Read the number of objects
+    READ( fid, IOSTAT=io_stat,IOMSG=io_msg ) n
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading dimension values from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -712,21 +819,17 @@ CONTAINS
 
 
     ! Assign the return arguments
-    IF ( PRESENT(n_Layers        ) ) n_Layers         = AtmOptics%n_Layers        
-    IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = AtmOptics%n_Legendre_Terms
-    IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = AtmOptics%n_Phase_Elements
-    IF ( PRESENT(Release         ) ) Release          = AtmOptics%Release
+    IF ( PRESENT(n_Objects) ) n_Objects = n
+    IF ( PRESENT(Release  ) ) Release   = AtmOptics%Release
 
   CONTAINS
 
     SUBROUTINE Inquire_CleanUp()
-      ! Close file if necessary
       IF ( File_Open(fid) ) THEN
         CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      ! Set error status and print error message
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
@@ -751,11 +854,11 @@ CONTAINS
 !                        Quiet    = Quiet     )
 !
 ! OBJECTS:
-!       AtmOptics:      AtmOptics object containing the data read from file.
+!       AtmOptics:      AtmOptics object array containing the data read from file.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_AtmOptics_type
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
+!                       DIMENSION:  Rank-1
+!                       ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! INPUTS:
 !       Filename:       Character string specifying the name of a
@@ -810,27 +913,30 @@ CONTAINS
     Debug    ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    TYPE(CRTM_AtmOptics_type), INTENT(OUT) :: AtmOptics
-    CHARACTER(*),              INTENT(IN)  :: Filename
-    LOGICAL,         OPTIONAL, INTENT(IN)  :: No_Close
-    LOGICAL,         OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*),    OPTIONAL, INTENT(OUT) :: Title
-    CHARACTER(*),    OPTIONAL, INTENT(OUT) :: History
-    CHARACTER(*),    OPTIONAL, INTENT(OUT) :: Comment
-    LOGICAL,         OPTIONAL, INTENT(IN)  :: Debug
+    TYPE(CRTM_AtmOptics_type), ALLOCATABLE, INTENT(OUT) :: AtmOptics(:)
+    CHARACTER(*),                           INTENT(IN)  :: Filename
+    LOGICAL,                      OPTIONAL, INTENT(IN)  :: No_Close
+    LOGICAL,                      OPTIONAL, INTENT(IN)  :: Quiet
+    CHARACTER(*),                 OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*),                 OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*),                 OPTIONAL, INTENT(OUT) :: Comment
+    LOGICAL,                      OPTIONAL, INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_ReadFile'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: count_msg
     CHARACTER(ML) :: io_msg
     LOGICAL :: close_file
     LOGICAL :: noisy
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
     INTEGER :: fid
+    INTEGER :: n, n_objects
     TYPE(CRTM_AtmOptics_type) :: dummy
-    
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check No_Close argument
@@ -844,7 +950,7 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( Filename ) ) THEN
       ! ...Inquire for the logical unit number
@@ -877,28 +983,23 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     IF ( .NOT. CRTM_AtmOptics_ValidRelease( dummy ) ) THEN
-      msg = 'AtmOptics Release check failed.'
+      msg = 'Release check failed.'
       CALL Read_Cleanup(); RETURN
     END IF
 
 
-    ! Read the dimensions
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      dummy%n_Layers        , &
-      dummy%n_Legendre_Terms, &
-      dummy%n_Phase_Elements
+    ! Read the number of objects
+    READ( fid, IOSTAT=io_stat,IOMSG=io_msg ) n_objects
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading data dimensions - '//TRIM(io_msg)
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Allocate the object
-    CALL CRTM_AtmOptics_Create( &
-           AtmOptics            , &
-           dummy%n_Layers        , &        
-           dummy%n_Legendre_Terms, &        
-           dummy%n_Phase_Elements  )                  
-    IF ( .NOT. CRTM_AtmOptics_Associated( AtmOptics ) ) THEN
-      msg = 'AtmOptics object allocation failed.'
+
+
+    ! Allocate the output array
+    ALLOCATE( AtmOptics(n_objects), STAT=alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating output object array'
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -915,26 +1016,66 @@ CONTAINS
     END IF
 
 
-    ! Read the data
-    ! ...Read the profile data
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Optical_Depth(1:AtmOptics%n_Layers)        , &
-      AtmOptics%Single_Scatter_Albedo(1:AtmOptics%n_Layers), &
-      AtmOptics%Asymmetry_Factor(1:AtmOptics%n_Layers)     , &
-      AtmOptics%Delta_Truncation(1:AtmOptics%n_Layers)     
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading profile data - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
-    ! ...Read the scattering phase matrix coefficients
-    READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Phase_Coefficient(0:AtmOptics%n_Legendre_Terms, &
-                                  1:AtmOptics%n_Phase_Elements, &
-                                  1:AtmOptics%n_Layers)
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading phase matrix coefficients - '//TRIM(io_msg)
-      CALL Read_Cleanup(); RETURN
-    END IF
+    ! Loop over all the objects
+    Read_Loop: DO n = 1, n_objects
+
+
+      ! Generate count message for error output
+      WRITE(count_msg,'("for object (",i0,")")') n
+
+
+      ! Read the dimensions
+      READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        dummy%n_Layers        , &
+        dummy%n_Legendre_Terms, &
+        dummy%n_Phase_Elements
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error reading dimensions '//TRIM(count_msg)//' from '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
+      ! ...Allocate the object
+      CALL CRTM_AtmOptics_Create( &
+             AtmOptics(n)          , &
+             dummy%n_Layers        , &
+             dummy%n_Legendre_Terms, &
+             dummy%n_Phase_Elements  )
+      IF ( .NOT. CRTM_AtmOptics_Associated( AtmOptics(n) ) ) THEN
+        msg = 'Allocation failed '//TRIM(count_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
+
+
+      ! Read the data
+      ! ...Read the scalar data
+      READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Scattering_Optical_Depth
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error reading scalar data '//TRIM(count_msg)//' from '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
+      ! ...Read the profile data
+      READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Optical_Depth        , &
+        AtmOptics(n)%Single_Scatter_Albedo, &
+        AtmOptics(n)%Asymmetry_Factor     , &
+        AtmOptics(n)%Delta_Truncation
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error reading profile data '//TRIM(count_msg)//' from '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
+      ! ...Read the scattering phase matrix coefficients
+      READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Phase_Coefficient
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error reading phase matrix coefficients '//TRIM(count_msg)//' from '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Read_Cleanup(); RETURN
+      END IF
+
+    END DO Read_Loop
 
 
     ! Close the file
@@ -948,23 +1089,27 @@ CONTAINS
 
 
     ! Output an info message
-     IF ( noisy ) THEN
-       CALL CRTM_AtmOptics_Info( AtmOptics, msg )
-       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
-     END IF
+    IF ( noisy ) THEN
+      WRITE( msg,'("Number of objects read from ",a,": ",i0)' ) TRIM(Filename), n_objects
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+    END IF
 
-   CONTAINS
-   
-     SUBROUTINE Read_Cleanup()
-       IF ( File_Open(Filename) ) THEN
-         CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
-         IF ( io_stat /= 0 ) &
-           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
-       END IF
-       CALL CRTM_AtmOptics_Destroy( AtmOptics )
-       err_stat = FAILURE
-       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
-     END SUBROUTINE Read_CleanUp
+  CONTAINS
+
+    SUBROUTINE Read_Cleanup()
+      IF ( File_Open(Filename) ) THEN
+        CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
+        IF ( io_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
+      END IF
+      IF ( ALLOCATED(AtmOptics) ) THEN
+        DEALLOCATE( AtmOptics, STAT=alloc_stat )
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating object array during error cleanup'
+      END IF
+      err_stat = FAILURE
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+    END SUBROUTINE Read_CleanUp
 
   END FUNCTION CRTM_AtmOptics_ReadFile
 
@@ -986,10 +1131,10 @@ CONTAINS
 !                        Quiet    = Quiet     )
 !
 ! OBJECTS:
-!       AtmOptics:      AtmOptics object containing the data to write to file.
+!       AtmOptics:      AtmOptics object array containing the data to write to file.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_AtmOptics_type
-!                       DIMENSION:  Scalar
+!                       DIMENSION:  Rank-1
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! INPUTS:
@@ -1036,35 +1181,37 @@ CONTAINS
 
   FUNCTION CRTM_AtmOptics_WriteFile( &
     AtmOptics, &  ! Input
-    Filename   , &  ! Input
-    No_Close   , &  ! Optional input
-    Quiet      , &  ! Optional input
-    Title      , &  ! Optional input
-    History    , &  ! Optional input
-    Comment    , &  ! Optional input
-    Debug      ) &  ! Optional input (Debug output control)
+    Filename , &  ! Input
+    No_Close , &  ! Optional input
+    Quiet    , &  ! Optional input
+    Title    , &  ! Optional input
+    History  , &  ! Optional input
+    Comment  , &  ! Optional input
+    Debug    ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: AtmOptics
-    CHARACTER(*),           INTENT(IN) :: Filename
-    LOGICAL,      OPTIONAL, INTENT(IN) :: No_Close
-    LOGICAL,      OPTIONAL, INTENT(IN) :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: History
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Comment
-    LOGICAL,      OPTIONAL, INTENT(IN) :: Debug
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: AtmOptics(:)
+    CHARACTER(*),              INTENT(IN) :: Filename
+    LOGICAL,         OPTIONAL, INTENT(IN) :: No_Close
+    LOGICAL,         OPTIONAL, INTENT(IN) :: Quiet
+    CHARACTER(*),    OPTIONAL, INTENT(IN) :: Title
+    CHARACTER(*),    OPTIONAL, INTENT(IN) :: History
+    CHARACTER(*),    OPTIONAL, INTENT(IN) :: Comment
+    LOGICAL,         OPTIONAL, INTENT(IN) :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_WriteFile'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: count_msg
     CHARACTER(ML) :: io_msg
     LOGICAL :: close_file
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    
+    INTEGER :: n, n_objects
+
 
     ! Setup
     err_stat = SUCCESS
@@ -1079,12 +1226,13 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
     ! ...Check there is data to write
-    IF ( .NOT. CRTM_AtmOptics_Associated( AtmOptics ) ) THEN
-      msg = 'AtmOptics object is empty.'
+    IF ( .NOT. ALL(CRTM_AtmOptics_Associated( AtmOptics )) ) THEN
+      msg = 'Unassociated objects in input array.'
       CALL Write_Cleanup(); RETURN
     END IF
+    n_objects= SIZE(AtmOptics)
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( FileName ) ) THEN
       ! ...Inquire for the logical unit number
@@ -1105,21 +1253,17 @@ CONTAINS
 
 
     ! Write the release
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Release
+    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) ATMOPTICS_RELEASE
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing Release - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
 
-    ! Write the dimensions
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%n_Layers        , &
-      AtmOptics%n_Legendre_Terms, &
-      AtmOptics%n_Phase_Elements
+    ! Write the number of objects
+    WRITE( fid, IOSTAT=io_stat,IOMSG=io_msg ) SIZE(AtmOptics)
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing data dimensions - '//TRIM(io_msg)
+      msg = 'Error writing dimensions to '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -1137,26 +1281,58 @@ CONTAINS
     END IF
 
 
-    ! Write the data
-    ! ...Write the profile data
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Optical_Depth(1:AtmOptics%n_Layers)        , &
-      AtmOptics%Single_Scatter_Albedo(1:AtmOptics%n_Layers), &
-      AtmOptics%Asymmetry_Factor(1:AtmOptics%n_Layers)     , &
-      AtmOptics%Delta_Truncation(1:AtmOptics%n_Layers)     
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing profile data - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
-    ! ...Write the scattering phase matrix coefficients
-    WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
-      AtmOptics%Phase_Coefficient(0:AtmOptics%n_Legendre_Terms, &
-                                  1:AtmOptics%n_Phase_Elements, &
-                                  1:AtmOptics%n_Layers)
-    IF ( io_stat /= 0 ) THEN
-      msg = 'Error writing phase matrix coefficients - '//TRIM(io_msg)
-      CALL Write_Cleanup(); RETURN
-    END IF
+    ! Loop over all the objects
+    Write_Loop: DO n = 1, n_objects
+
+
+      ! Generate count message for error output
+      WRITE(count_msg,'("for object (",i0,")")') n
+
+
+      ! Write the dimensions
+      WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%n_Layers        , &
+        AtmOptics(n)%n_Legendre_Terms, &
+        AtmOptics(n)%n_Phase_Elements
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error writing dimensions '//TRIM(count_msg)//' to '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
+
+
+      ! Write the data
+      ! ...Write the scalar data
+      WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Scattering_Optical_Depth
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error writing scalar data '//TRIM(count_msg)//' to '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
+      ! ...Write the profile data
+      WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Optical_Depth(1:AtmOptics(n)%n_Layers)        , &
+        AtmOptics(n)%Single_Scatter_Albedo(1:AtmOptics(n)%n_Layers), &
+        AtmOptics(n)%Asymmetry_Factor(1:AtmOptics(n)%n_Layers)     , &
+        AtmOptics(n)%Delta_Truncation(1:AtmOptics(n)%n_Layers)
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error writing profile data '//TRIM(count_msg)//' to '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
+      ! ...Write the scattering phase matrix coefficients
+      WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
+        AtmOptics(n)%Phase_Coefficient(0:AtmOptics(n)%n_Legendre_Terms, &
+                                       1:AtmOptics(n)%n_Phase_Elements, &
+                                       1:AtmOptics(n)%n_Layers)
+      IF ( io_stat /= 0 ) THEN
+        msg = 'Error writing phase matrix coefficients '//TRIM(count_msg)//' to '//&
+              TRIM(Filename)//' - '//TRIM(io_msg)
+        CALL Write_Cleanup(); RETURN
+      END IF
+
+    END DO Write_Loop
 
 
     ! Close the file
@@ -1171,12 +1347,12 @@ CONTAINS
 
     ! Output an info message
      IF ( noisy ) THEN
-       CALL CRTM_AtmOptics_Info( AtmOptics, msg )
-       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
+      WRITE( msg,'("Number of objects written to ",a,": ",i0)' ) TRIM(Filename), n_objects
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Write_Cleanup()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1189,7 +1365,7 @@ CONTAINS
 
   END FUNCTION CRTM_AtmOptics_WriteFile
 
-  
+
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -1237,7 +1413,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-   
+
     ! Check the object association status
     IF ( (.NOT. CRTM_AtmOptics_Associated(x)) .OR. &
          (.NOT. CRTM_AtmOptics_Associated(y))      ) RETURN
@@ -1249,15 +1425,86 @@ CONTAINS
     IF ( (x%n_Layers         /= y%n_Layers        ) .OR. &
          (x%n_Legendre_Terms /= y%n_Legendre_Terms) .OR. &
          (x%n_Phase_Elements /= y%n_Phase_Elements) ) RETURN
-    ! ...Arrays
-    IF ( ALL(x%Optical_Depth(1:x%n_Layers)         .EqualTo. y%Optical_Depth(1:y%n_Layers)        ) .AND. &
-         ALL(x%Single_Scatter_Albedo(1:x%n_Layers) .EqualTo. y%Single_Scatter_Albedo(1:y%n_Layers)) .AND. &
-         ALL(x%Asymmetry_Factor(1:x%n_Layers)      .EqualTo. y%Asymmetry_Factor(1:y%n_Layers)     ) .AND. &
-         ALL(x%Delta_Truncation(1:x%n_Layers)      .EqualTo. y%Delta_Truncation(1:y%n_Layers)     ) .AND. &
-         ALL(x%Phase_Coefficient(0:x%n_Legendre_Terms, 1:x%n_Phase_Elements, 1:x%n_Layers) .EqualTo. &
-             y%Phase_Coefficient(0:y%n_Legendre_Terms, 1:y%n_Phase_Elements, 1:y%n_Layers) )) &
+    ! ...Scalar data
+    IF ( x%Scattering_Optical_Depth .EqualTo. y%Scattering_Optical_Depth ) &
       is_equal = .TRUE.
+    ! ...Array data
+    is_equal = is_equal .AND. &
+               ALL(x%Optical_Depth(1:x%n_Layers)         .EqualTo. y%Optical_Depth(1:y%n_Layers)        ) .AND. &
+               ALL(x%Single_Scatter_Albedo(1:x%n_Layers) .EqualTo. y%Single_Scatter_Albedo(1:y%n_Layers)) .AND. &
+               ALL(x%Asymmetry_Factor(1:x%n_Layers)      .EqualTo. y%Asymmetry_Factor(1:y%n_Layers)     ) .AND. &
+               ALL(x%Delta_Truncation(1:x%n_Layers)      .EqualTo. y%Delta_Truncation(1:y%n_Layers)     ) .AND. &
+               ALL(x%Phase_Coefficient(0:x%n_Legendre_Terms, 1:x%n_Phase_Elements, 1:x%n_Layers) .EqualTo. &
+                   y%Phase_Coefficient(0:y%n_Legendre_Terms, 1:y%n_Phase_Elements, 1:y%n_Layers) )
 
   END FUNCTION CRTM_AtmOptics_Equal
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_AtmOptics_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM AtmOptics objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       aodiff = CRTM_AtmOptics_Subtract( ao1, ao2 )
+!
+!         or
+!
+!       aodiff = ao1 - ao2
+!
+!
+! INPUTS:
+!       ao1, ao2: The AtmOptics objects to difference.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_AtmOptics_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       aodiff:    AtmOptics object containing the differenced components.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_AtmOptics_type
+!                   DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_AtmOptics_Subtract( ao1, ao2 ) RESULT( aodiff )
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: ao1, ao2
+    TYPE(CRTM_AtmOptics_type) :: aodiff
+    INTEGER :: ic, ip, k
+
+    ! Check input
+    ! ...If input structures not allocated, do nothing
+    IF ( (.NOT. CRTM_AtmOptics_Associated(ao1)) .OR. &
+         (.NOT. CRTM_AtmOptics_Associated(ao2))      ) RETURN
+    ! ...If input structure for different sizes, do nothing
+    IF ( ao1%n_Layers         /= ao2%n_Layers         .OR. &
+         ao1%n_Legendre_Terms /= ao2%n_Legendre_Terms .OR. &
+         ao1%n_Phase_Elements /= ao2%n_Phase_Elements ) RETURN
+    ! ...If input structure for different scattering setup, do nothing
+    IF ( (ao1%Include_Scattering .NEQV. ao2%Include_Scattering ) .AND. &
+         (ao1%lOffset             /=    ao2%lOffset            ) ) RETURN
+
+    ! Copy the first structure
+    aodiff = ao1
+
+    ! And subtract the second one's components from it
+    ! ...The scalar values
+    aodiff%Scattering_Optical_Depth = aodiff%Scattering_Optical_Depth - ao2%Scattering_Optical_Depth
+    ! ...The arrays
+    k  = aodiff%n_Layers
+    ip = aodiff%n_Phase_Elements
+    ic = aodiff%n_Legendre_Terms
+    aodiff%Optical_Depth(1:k)               = aodiff%Optical_Depth(1:k)               - ao2%Optical_Depth(1:k)
+    aodiff%Single_Scatter_Albedo(1:k)       = aodiff%Single_Scatter_Albedo(1:k)       - ao2%Single_Scatter_Albedo(1:k)
+    aodiff%Asymmetry_Factor(1:k)            = aodiff%Asymmetry_Factor(1:k)            - ao2%Asymmetry_Factor(1:k)
+    aodiff%Delta_Truncation(1:k)            = aodiff%Delta_Truncation(1:k)            - ao2%Delta_Truncation(1:k)
+    aodiff%Phase_Coefficient(0:ic,1:ip,1:k) = aodiff%Phase_Coefficient(0:ic,1:ip,1:k) - ao2%Phase_Coefficient(0:ic,1:ip,1:k)
+
+  END FUNCTION CRTM_AtmOptics_Subtract
 
 END MODULE CRTM_AtmOptics_Define

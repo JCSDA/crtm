@@ -2,7 +2,7 @@
 ! CRTM_IRlandCoeff
 !
 ! Module containing the shared CRTM infrared land surface emissivity
-! data and their load/destruction routines. 
+! data and their load/destruction routines.
 !
 ! PUBLIC DATA:
 !   IRlandC:  Data structure containing the infrared land surface
@@ -47,6 +47,7 @@ MODULE CRTM_IRlandCoeff
   PUBLIC :: CRTM_IRlandCoeff_Load
   PUBLIC :: CRTM_IRlandCoeff_Destroy
   PUBLIC :: CRTM_IRlandCoeff_IsLoaded
+  PUBLIC :: CRTM_IRlandCoeff_Classification
 
 
   ! -----------------
@@ -125,7 +126,7 @@ CONTAINS
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
 !                           the passed Process_ID value agrees with this value
-!                           the INFORMATION messages are output. 
+!                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
@@ -160,7 +161,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
-    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
@@ -172,7 +173,7 @@ CONTAINS
     CHARACTER(ML) :: IRlandCoeff_File
     LOGICAL :: noisy
 
-    ! Setup 
+    ! Setup
     err_stat = SUCCESS
     ! ...Assign the filename to local variable
     IRlandCoeff_File = ADJUSTL(Filename)
@@ -191,8 +192,8 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
-    
-    
+
+
     ! Read the IR land SEcategory file
     err_stat = SEcategory_ReadFile( &
                  IRlandC, &
@@ -205,7 +206,7 @@ CONTAINS
 
 
    CONTAINS
-   
+
      SUBROUTINE Load_CleanUp()
        CALL SEcategory_Destroy( IRlandC )
        err_stat = FAILURE
@@ -285,7 +286,33 @@ CONTAINS
 
   END FUNCTION CRTM_IRlandCoeff_Destroy
 
-  
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_IRlandCoeff_Classification
+!
+! PURPOSE:
+!       Function to return the classification name of the public
+!       IRlandC structure
+!
+! CALLING SEQUENCE:
+!       Classification = CRTM_IRlandCoeff_Classification()
+!
+! FUNCTION RESULT:
+!   Classification:       The classification name field of IRlandC
+!                         UNITS:      N/A
+!                         TYPE:       CHARACTER(*)
+!                         DIMENSION:  Scalar
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  PURE FUNCTION CRTM_IRlandCoeff_Classification() RESULT( Classification )
+    CHARACTER(LEN(IRlandC%Classification_Name)) :: Classification
+    Classification = IRlandC%Classification_Name
+  END FUNCTION
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !

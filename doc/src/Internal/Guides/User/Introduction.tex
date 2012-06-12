@@ -1,93 +1,147 @@
 \chapter{Introduction}
 %=====================
 
+
 \section{Conventions}
 %====================
 \label{sec:conventions}
 The following are conventions that have been adhered to in the current release of the CRTM framework. They are guidelines intended to make understanding the code at a glance easier, to provide a recognisable ``look and feel'', and to minimise name space clashes.
 
+
+
 \subsection{Naming of Structure Types and Instances of Structures}
 %-----------------------------------------------------------------
+
 The derived data type, or structure\footnote{The terms ``derived type'' and ``structure'' are used interchangably in this document.} type, naming convention adopted for use in the CRTM is, 
 
 \hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_type} 
 
 where \textit{name} is an identifier that indicates for what a structure is to be used. All structure type names are suffixed with ``\f{\_type}'' and CRTM-specific structure types are prefixed with ``\f{CRTM\_}''. Some examples are,
+
 \begin{alltt}
   \hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}
   \hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}\end{alltt}
+
 An instance of a structure is then referred to via its \textit{name}, or some sort of derivate of its \textit{name}. Some structure declarations examples are,
+
 \begin{alltt}
   TYPE(\hyperref[sec:atmosphere_structure]{CRTM_Atmosphere_type}) :: atm, atm_K
   TYPE(\hyperref[sec:rtsolution_structure]{CRTM_RTSolution_type}) :: rts, rts_K\end{alltt}
+
 where the K-matrix structure variables are identified with a ``\f{\_K}'' suffix. Similarly, tangent-linear and adjoint variables are suffixed with ``\f{\_TL}'' or ``\f{\_AD}'' respectively.
+
+
 
 \subsection{Naming of Definition Modules}
 %----------------------------------------
-Modules containing structure type definitions are termed \textit{definition modules}. These modules contain the actual structure definitions as well as various utility procedures to allocate, destroy, copy etc. structures of the designated type. The naming convention adopted for definition modules in the CRTM is, 
+
+Modules containing structure type definitions are termed \textit{definition modules}. These modules contain the actual structure definitions as well as various utility procedures that operate on the structure of the designated type. The naming convention adopted for definition modules in the CRTM is, 
 
 \hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Define} 
 
 where, as with the structure type names, all definition module names are suffixed with ``\f{\_Define}'' and CRTM-specific definition modules are prefixed with ``\f{CRTM\_}''. Some examples are,
+
 \begin{alltt}
   CRTM_Atmosphere_Define
   CRTM_RTSolution_Define\end{alltt}
+
 The actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
+
+
+
+\subsection{Standard Definition Module Procedures}
+%-------------------------------------------------
+
+The definition modules for the user-accessible CRTM structures (\Atmosphere, \Cloud, \Aerosol, \Surface, \Geometry, \RTSolution, and \Options) contain a standard set of procedures for use with the structure being defined. The naming convention for these procedures is,
+
+\hspace{0.5cm}\f{CRTM\_}\textit{name}\f{\_}\textit{action}
+
+where the available default actions for each procedure are listed in table \ref{tab:definition_module_default_procedures}. This is not an exhaustive list but procedures for the actions listed in table \ref{tab:definition_module_default_procedures} are guaranteed to be present.
+
+Note, however, that the \ChannelInfo structure does \emph{not} have any I/O procedures available for it. This is to ensure that the \ChannelInfo structure can only be populated during initialization of the CRTM.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{r c l}
+    \hline\\[-0.1cm]
+    \sffamily\textbf{Action} & \sffamily\textbf{Type} & \sffamily\textbf{Description} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{OPERATOR(==)}             & Elemental function   & Tests the equality of two structures. \\
+    \texttt{Associated}               & Elemental function   & Tests if the structure components have been allocated. \\
+    \texttt{Destroy}                  & Elemental subroutine & Deallocates any allocated structure components. \\
+    \texttt{Create}                   & Elemental subroutine & Allocates any allocatable structure components. \\
+    \texttt{Inspect}                  & Subroutine           & Displays structure contents to \texttt{stdout}. \\
+    \texttt{InquireFile}$^{\dagger}$  & Function             & Inquires an existing file for dimensions. \\
+    \texttt{WriteFile}$^{\dagger}$    & Function             & Write an instance of a structure to file. \\
+    \texttt{ReadFile}$^{\dagger}$     & Function             & Loads an instance of a structure with data read from file. \\
+  \hline
+  \end{tabular}
+  \caption{Default action procedures available in structure definition modules. $^{\dagger}$ I/O functions not available for \ChannelInfo structure.}
+  \label{tab:definition_module_default_procedures}
+\end{table}
+
+Some examples of these procedure names are,
+
+\begin{alltt}
+  CRTM_Atmosphere_Associated
+  CRTM_Surface_Inspect
+  CRTM_Geometry_WriteFile
+  CRTM_RTsolution_Destroy\end{alltt}
+
+The relational operator, \f{==}, is implemented via an overloaded \f{Equal} action procedure, as is shown below for the \f{Atmosphere} structure,
+
+\begin{alltt}
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE CRTM_Atmosphere_Equal
+  END INTERFACE OPERATOR(==)\end{alltt}
+
+For a complete list of the definition module procedures for use with the publicly available structures, see section \ref{sec:structure_and_interface_definition}.
+
 
 
 \subsection{Naming of Application Modules}
 %-----------------------------------------
+
 Modules containing the routines that perform the calculations for the various components of the CRTM are termed \textit{application modules}. The naming convention adopted for application modules in the CRTM is, 
 
 \hspace{0.5cm}\f{CRTM\_}\textit{name}
 
 Some examples are,
+
 \begin{alltt}
   CRTM_AtmAbsorption
   CRTM_SfcOptics
   CRTM_RTSolution\end{alltt}
+
 However, in this case, \textit{name} does not necessarilty refer just to a structure type. Separate application modules are used as required to split up tasks in manageable (and easily maintained) chunks. For example, separate modules have been provided to contain the cloud and aerosol optical property retrieval; similarly separate modules handle different surface types for different instrument types in computing surface optics.
 
-Again, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix. Note that not all definition modules have a corresponding application module since some structures (e.g. SpcCoeff structures) are simply data containers.
+Again, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix. Note that not all definition modules have a corresponding application module since some structures (e.g. \SpcCoeff{} structures) are simply data containers.
 
-
-\subsection{Naming of I/O Modules}
-%---------------------------------
-Modules containing routines that read and write data from and to files are, naturally, termed I/O modules. Not all data structures have associated I/O modules. The naming convention adopted for these modules in the CRTM is, 
-
-\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_Binary\_IO}
-
-or just
-
-\hspace{0.5cm}\f{[CRTM\_]}\textit{name}\f{\_IO}
-
-Some examples are,
-\begin{alltt}
-  CRTM_Atmosphere_IO
-  CRTM_RTSolution_IO\end{alltt}
-As with the other module types, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
-
-In the context of the CRTM, the term ``Binary'' is a euphemisn for sequential, unformatted I/O in Fortran.
 
 
 \section{Components}
 %===================
+
 The CRTM is designed around three broad categories: atmospheric optics, surface optics and radiative transfer.
+
+
 
 \subsection{Atmospheric Optics}
 %------------------------------
+
 (\AtmOptics) This category includes computation of the absorption by atmospheric gases (\AtmAbsorption) and scattering and absorption by both clouds (\CloudScatter) and aerosols (\AerosolScatter).
 
-The gaseous absorption component computes the optical depth of the absorbing constituents in the atmosphere given the pressure, temperature, water vapour, and ozone concentration\footnote{Additional trace gas absorption capabilities are being added.} profiles.
+The gaseous absorption component computes the optical depth of the absorbing constituents in the atmosphere given the pressure, temperature, water vapour, ozone, and -- for the hyperspectral infrared sensors -- trace gas\footnote{CO\subscript{2}, CH\subscript{4}, CO, and N\subscript{2}O} profiles.
 
-The scattering component simply interpolates look-up-tables (LUTs) of optical properties -- such as mass extinction coefficient and single scatter albedo -- for cloud and aerosol types that are then used in the radiative transfer component. See tables \ref{tab:cloud_type} and \ref{tab:aerosol_type} for the valid cloud and aerosol types, respectively, that are valid in the CRTM.
+The scattering component simply interpolates look-up-tables (LUTs) of optical properties -- such as mass extinction coefficient and single scatter albedo -- for cloud and aerosol types that are then used in the radiative transfer component. See tables \ref{tab:cloud_type} and \ref{tab:aerosol_type} for the current valid cloud and aerosol types, respectively, that are valid in the CRTM.
+
 
 
 \subsection{Surface Optics}
 %------------------------------
-(\SfcOptics) This category includes the computation of surface emissivity and reflectivity for four gross surface types (land, water, snow, and ice). Each gross surface type has a specified number of specific surface types associated with it. See tables \ref{tab:surface_land_type}, \ref{tab:surface_water_type}, \ref{tab:surface_snow_type}, and \ref{tab:surface_ice_type} for the land, water, snow, and ice surface types, respectively, that are valid in the CRTM.
 
-The CRTM utilises separate models for each gross surface type for each spectral type (infrared and microwave). These models can be either physical models or database/LUT type of models.
+(\SfcOptics) This category includes the computation of surface emissivity and reflectivity for four main surface categories (land, water, snow, and ice). The surface optics models are implemented differently for different surface categories based upon the spectral region of a sensor. Thus, each surface category may have a number of surface types associated with it. This is fully discussed in section \ref{sec:fill_step-surface}.
+
 
 
 \subsection{Radiative Transfer Solution}

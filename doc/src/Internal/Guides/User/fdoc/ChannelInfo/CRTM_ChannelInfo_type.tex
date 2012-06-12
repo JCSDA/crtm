@@ -10,12 +10,14 @@
     INTEGER :: n_Channels = 0  ! L dimension
     ! Scalar data
     CHARACTER(STRLEN) :: Sensor_ID        = ''
+    INTEGER           :: Sensor_Type      = INVALID_SENSOR
     INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     INTEGER           :: Sensor_Index     = 0
     ! Array data
-    INTEGER, ALLOCATABLE :: Sensor_Channel(:)  ! L
-    INTEGER, ALLOCATABLE :: Channel_Index(:)   ! L
+    LOGICAL, ALLOCATABLE :: Process_Channel(:)  ! L
+    INTEGER, ALLOCATABLE :: Sensor_Channel(:)   ! L
+    INTEGER, ALLOCATABLE :: Channel_Index(:)    ! L
   END TYPE CRTM_ChannelInfo_type
     \end{alltt}
   \end{minipage}

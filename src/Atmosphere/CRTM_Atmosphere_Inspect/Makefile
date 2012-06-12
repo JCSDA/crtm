@@ -21,8 +21,7 @@ SRC_FILES = Type_Kinds.f90 \
             Binary_File_Utility.f90 \
             Endian_Utility.f90 \
             CRTM_Parameters.f90 \
-            CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 \
-            CRTM_Atmosphere_IO.f90 CRTM_Cloud_IO.f90 CRTM_Aerosol_IO.f90 
+            CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

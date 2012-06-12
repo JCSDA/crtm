@@ -36,7 +36,7 @@ PROGRAM CRTM_AtmOptics_Inspect
   ! ---------
   INTEGER :: err_stat
   CHARACTER(256) :: msg, filename
-  TYPE(CRTM_AtmOptics_type) :: C
+  TYPE(CRTM_AtmOptics_type), ALLOCATABLE :: C(:)
 
   ! Output program header
   CALL Program_Message( PROGRAM_NAME, &

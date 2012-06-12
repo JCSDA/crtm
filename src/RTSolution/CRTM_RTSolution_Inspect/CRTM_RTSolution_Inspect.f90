@@ -18,8 +18,8 @@ PROGRAM CRTM_RTSolution_Inspect
   USE File_Utility          , ONLY: File_Exists
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, Program_Message, Display_Message
   USE CRTM_RTSolution_Define, ONLY: CRTM_RTSolution_type, CRTM_RTSolution_Destroy, &
-                                    Inspect => CRTM_RTSolution_Inspect
-  USE CRTM_RTSolution_IO    , ONLY: CRTM_RTSolution_InquireFile, &
+                                    Inspect => CRTM_RTSolution_Inspect, &
+                                    CRTM_RTSolution_InquireFile, &
                                     CRTM_RTSolution_ReadFile
   ! Disable implicit typing
   IMPLICIT NONE
@@ -36,7 +36,7 @@ PROGRAM CRTM_RTSolution_Inspect
   ! ---------
   INTEGER :: err_stat, alloc_stat
   CHARACTER(256) :: filename, msg
-  INTEGER :: n_channels, n_profiles, l, m
+  INTEGER :: n_channels, n_profiles
   TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)
 
   ! Output program header
@@ -82,12 +82,7 @@ PROGRAM CRTM_RTSolution_Inspect
 
 
   ! Display the contents
-  DO m = 1, n_profiles
-    DO l = 1, n_channels
-      WRITE(*, FMT='(1x,"CHANNEL,PROFILE INDICES:",i0,",",i0," - ")', ADVANCE='NO') l, m
-      CALL Inspect( rts(l,m) )
-    END DO
-  END DO
+  CALL Inspect( rts )
 
 
   ! Clean up

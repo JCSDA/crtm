@@ -20,9 +20,11 @@ MODULE CRTM_Options_Define
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   USE File_Utility         , ONLY: File_Open, File_Exists
-  USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
-                                   WriteGAtts_Binary_File, &
-                                   ReadGAtts_Binary_File
+  USE Binary_File_Utility  , ONLY: Open_Binary_File        , &
+                                   WriteGAtts_Binary_File  , &
+                                   ReadGAtts_Binary_File   , &
+                                   WriteLogical_Binary_File, &
+                                   ReadLogical_Binary_File
   USE CRTM_Parameters      , ONLY: RT_ADA
   USE SSU_Input_Define     , ONLY: SSU_Input_type, &
                                    OPERATOR(==), &
@@ -754,7 +756,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Options_WriteFile( Filename     , &
-!                                              Options   , &
+!                                              Options      , &
 !                                              Quiet = Quiet  )
 !
 ! INPUTS:
@@ -1037,25 +1039,25 @@ CONTAINS
 
     ! Read the optional values
     ! ...Input checking logical
-    err_stat = Read_Logical_Integer( fid, opt%Check_Input )
+    err_stat = ReadLogical_Binary_File( fid, opt%Check_Input )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading input checking option'
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...Old MWSSEM logical
-    err_stat = Read_Logical_Integer( fid, opt%Use_Old_MWSSEM )
+    err_stat = ReadLogical_Binary_File( fid, opt%Use_Old_MWSSEM )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading old MW water emissivity algorithm switch option'
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...Antenna correction logical
-    err_stat = Read_Logical_Integer( fid, opt%Use_Antenna_Correction )
+    err_stat = ReadLogical_Binary_File( fid, opt%Use_Antenna_Correction )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading antenna correction option'
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...NLTE correction logical
-    err_stat = Read_Logical_Integer( fid, opt%Apply_NLTE_Correction )
+    err_stat = ReadLogical_Binary_File( fid, opt%Apply_NLTE_Correction )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading NLTE correction option'
       CALL Read_Record_Cleanup(); RETURN
@@ -1073,7 +1075,7 @@ CONTAINS
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...Number of RT streams options
-    err_stat = Read_Logical_Integer( fid, opt%Use_n_Streams )
+    err_stat = ReadLogical_Binary_File( fid, opt%Use_n_Streams )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading n_Streams option'
       CALL Read_Record_Cleanup(); RETURN
@@ -1084,7 +1086,7 @@ CONTAINS
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...Scattering options
-    err_stat = Read_Logical_Integer( fid, opt%Include_Scattering )
+    err_stat = ReadLogical_Binary_File( fid, opt%Include_Scattering )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading include scattering option'
       CALL Read_Record_Cleanup(); RETURN
@@ -1095,7 +1097,7 @@ CONTAINS
     IF ( emissivity_data_present ) THEN
       ! Read the emissivity option
       ! ...The switch...
-      err_stat = Read_Logical_Integer( fid, opt%Use_Emissivity )
+      err_stat = ReadLogical_Binary_File( fid, opt%Use_Emissivity )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading emissivity option'
         CALL Read_Record_Cleanup(); RETURN
@@ -1109,7 +1111,7 @@ CONTAINS
 
       ! Read the direct reflectivity option
       ! ...The switch...
-      err_stat = Read_Logical_Integer( fid, opt%Use_Direct_Reflectivity )
+      err_stat = ReadLogical_Binary_File( fid, opt%Use_Direct_Reflectivity )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error reading direct reflectivity option'
         CALL Read_Record_Cleanup(); RETURN
@@ -1205,25 +1207,25 @@ CONTAINS
 
     ! Write the optional values
     ! ...Input checking logical
-    err_stat = Write_Logical_Integer( fid, opt%Check_Input )
+    err_stat = WriteLogical_Binary_File( fid, opt%Check_Input )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing input checking option'
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...Old MWSSEM logical
-    err_stat = Write_Logical_Integer( fid, opt%Use_Old_MWSSEM )
+    err_stat = WriteLogical_Binary_File( fid, opt%Use_Old_MWSSEM )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing old MW water emissivity algorithm switch option'
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...Antenna correction logical
-    err_stat = Write_Logical_Integer( fid, opt%Use_Antenna_Correction )
+    err_stat = WriteLogical_Binary_File( fid, opt%Use_Antenna_Correction )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing antenna correction option'
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...NLTE correction logical
-    err_stat = Write_Logical_Integer( fid, opt%Apply_NLTE_Correction )
+    err_stat = WriteLogical_Binary_File( fid, opt%Apply_NLTE_Correction )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing NLTE correction option'
       CALL Write_Record_Cleanup(); RETURN
@@ -1241,7 +1243,7 @@ CONTAINS
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...Number of RT streams options
-    err_stat = Write_Logical_Integer( fid, opt%Use_n_Streams )
+    err_stat = WriteLogical_Binary_File( fid, opt%Use_n_Streams )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing n_Streams option'
       CALL Write_Record_Cleanup(); RETURN
@@ -1252,7 +1254,7 @@ CONTAINS
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...Scattering options
-    err_stat = Write_Logical_Integer( fid, opt%Include_Scattering )
+    err_stat = WriteLogical_Binary_File( fid, opt%Include_Scattering )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing include scattering option'
       CALL Write_Record_Cleanup(); RETURN
@@ -1263,7 +1265,7 @@ CONTAINS
     IF ( CRTM_Options_Associated(opt) ) THEN
       ! Write the emissivity option
       ! ...The switch...
-      err_stat = Write_Logical_Integer( fid, opt%Use_Emissivity )
+      err_stat = WriteLogical_Binary_File( fid, opt%Use_Emissivity )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error writing emissivity option'
         CALL Write_Record_Cleanup(); RETURN
@@ -1277,7 +1279,7 @@ CONTAINS
 
       ! Write the direct reflectivity option
       ! ...The switch...
-      err_stat = Write_Logical_Integer( fid, opt%Use_Direct_Reflectivity )
+      err_stat = WriteLogical_Binary_File( fid, opt%Use_Direct_Reflectivity )
       IF ( err_stat /= SUCCESS ) THEN
         msg = 'Error writing direct reflectivity option'
         CALL Write_Record_Cleanup(); RETURN
@@ -1327,97 +1329,5 @@ CONTAINS
     END SUBROUTINE Write_Record_Cleanup
 
   END FUNCTION Write_Record
-
-
-  !
-  ! NAME:
-  !   Read_Logical_Integer
-  !
-  ! PURPOSE:
-  !   Utility function to read an integer "logical" value from file
-  !
-
-  FUNCTION Read_Logical_Integer( &
-    fid, &
-    logical_option ) &
-  RESULT( err_stat )
-    ! Arguments
-    INTEGER, INTENT(IN)  :: fid
-    LOGICAL, INTENT(OUT) :: logical_option
-    ! Function result
-    INTEGER :: err_stat
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Options_ReadFile(Logical)'
-    ! Function variables
-    CHARACTER(ML) :: msg
-    CHARACTER(ML) :: io_msg
-    INTEGER :: io_stat
-    INTEGER(Long) :: logical_integer
-
-    ! Setup
-    err_stat = SUCCESS
-
-    ! Read the integer
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
-    IF ( io_stat /= 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Error reading logical integer - '//TRIM(io_msg)
-      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
-      RETURN
-    END IF
-
-    ! Convert integer to a logical value
-    logical_option = (logical_integer == TRUE)
-
-  END FUNCTION Read_Logical_Integer
-
-
-  !
-  ! NAME:
-  !   Write_Logical_Integer
-  !
-  ! PURPOSE:
-  !   Utility function to write an integer "logical" value to file
-  !
-
-  FUNCTION Write_Logical_Integer( &
-    fid, &
-    logical_option ) &
-  RESULT( err_stat )
-    ! Arguments
-    INTEGER, INTENT(IN) :: fid
-    LOGICAL, INTENT(IN) :: logical_option
-    ! Function result
-    INTEGER :: err_stat
-    ! Function parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Options_WriteFile(Logical)'
-    ! Function variables
-    CHARACTER(ML) :: msg
-    CHARACTER(ML) :: io_msg
-    INTEGER :: io_stat
-    INTEGER(Long) :: logical_integer
-
-    ! Setup
-    err_stat = SUCCESS
-
-
-    ! Convert the logical to an integer value
-    IF ( logical_option ) THEN
-      logical_integer = TRUE
-    ELSE
-      logical_integer = FALSE
-    END IF
-
-
-    ! Write the integer
-    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
-    IF ( io_stat /= 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Error writing logical integer - '//TRIM(io_msg)
-      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
-      RETURN
-    END IF
-
-  END FUNCTION Write_Logical_Integer
 
 END MODULE CRTM_Options_Define

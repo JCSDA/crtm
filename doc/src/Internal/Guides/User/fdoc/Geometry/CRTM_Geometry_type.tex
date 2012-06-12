@@ -5,7 +5,7 @@
     \begin{alltt}
   TYPE :: CRTM_Geometry_type
     ! Allocation indicator
-    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Field of view index (1-nFOV)
     INTEGER  :: iFOV = 0
     ! Earth location
@@ -15,7 +15,7 @@
     ! Sensor angle information
     REAL(fp) :: Sensor_Scan_Angle    = ZERO
     REAL(fp) :: Sensor_Zenith_Angle  = ZERO
-    REAL(fp) :: Sensor_Azimuth_Angle = ZERO 
+    REAL(fp) :: Sensor_Azimuth_Angle = 999.9_fp  ! Invalid marker
     ! Source angle information
     REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
     REAL(fp) :: Source_Azimuth_Angle = ZERO

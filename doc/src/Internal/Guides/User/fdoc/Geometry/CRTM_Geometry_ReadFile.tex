@@ -12,6 +12,7 @@
         Error_Status = CRTM_Geometry_ReadFile( Filename               , &
                                                Geometry               , &
                                                Quiet      = Quiet     , &
+                                               No_Close   = No_Close  , &
                                                n_Profiles = n_Profiles  )
  
   INPUTS:
@@ -35,6 +36,15 @@
                       messages being printed to stdout
                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+                      If not specified, default is .FALSE.
+                      UNITS:      N/A
+                      TYPE:       LOGICAL
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        No_Close:     Set this logical argument to NOT close the file upon exit.
+                      If == .FALSE., the input file is closed upon exit [DEFAULT]
+                         == .TRUE.,  the input file is NOT closed upon exit.
                       If not specified, default is .FALSE.
                       UNITS:      N/A
                       TYPE:       LOGICAL

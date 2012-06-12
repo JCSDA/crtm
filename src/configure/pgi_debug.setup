@@ -14,7 +14,7 @@ export FC_FLAGS="\
  -c \
  -g \
  -byteswapio \
- -Ktrap=ovf,divz \
+ -Ktrap=ovf,divz -Mdaz \
  -Mbounds \
  -Mchkstk \
  -Mdclchk \

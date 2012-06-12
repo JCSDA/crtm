@@ -7,7 +7,7 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 22-Jul-2009
 !                       paul.vandelst@noaa.gov
- 
+
 MODULE oSRF_Define
 
   ! -----------------
@@ -25,7 +25,7 @@ MODULE oSRF_Define
                                        MICROWAVE_SENSOR        , &
                                        INFRARED_SENSOR         , &
                                        VISIBLE_SENSOR          , &
-                                       ULTRAVIOLET_SENSOR      , &  
+                                       ULTRAVIOLET_SENSOR      , &
                                        SENSOR_TYPE_NAME
   USE PtrArr_Define            , ONLY: PtrArr_type      , &
                                        OPERATOR(==)     , &
@@ -59,11 +59,11 @@ MODULE oSRF_Define
 !  PUBLIC :: INVALID_WMO_SATELLITE_ID
 !  PUBLIC :: INVALID_WMO_SENSOR_ID
 !  PUBLIC :: N_SENSOR_TYPES
-!  PUBLIC :: INVALID_SENSOR  
+!  PUBLIC :: INVALID_SENSOR
 !  PUBLIC :: MICROWAVE_SENSOR
-!  PUBLIC :: INFRARED_SENSOR 
-!  PUBLIC :: VISIBLE_SENSOR  
-!  PUBLIC :: ULTRAVIOLET_SENSOR  
+!  PUBLIC :: INFRARED_SENSOR
+!  PUBLIC :: VISIBLE_SENSOR
+!  PUBLIC :: ULTRAVIOLET_SENSOR
 !  PUBLIC :: SENSOR_TYPE_NAME
   ! Procedures
   PUBLIC :: oSRF_Associated
@@ -91,7 +91,7 @@ MODULE oSRF_Define
   PUBLIC :: oSRF_IsVisibleSensor    , oSRF_SetVisibleSensor
   PUBLIC :: oSRF_IsUltravioletSensor, oSRF_SetUltravioletSensor
   PUBLIC :: oSRF_ClearSensor
-  
+
 
 
   ! -------------------
@@ -100,8 +100,8 @@ MODULE oSRF_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE oSRF_Equal
   END INTERFACE OPERATOR(==)
-  
-  
+
+
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -230,7 +230,7 @@ CONTAINS
 !
 ! NAME:
 !       oSRF_Destroy
-! 
+!
 ! PURPOSE:
 !       Pure subroutine to re-initialize oSRF objects.
 !
@@ -259,7 +259,7 @@ CONTAINS
 !
 ! NAME:
 !       oSRF_Create
-! 
+!
 ! PURPOSE:
 !       Pure subroutine to create an instance of the oSRF object.
 !
@@ -275,7 +275,7 @@ CONTAINS
 !
 ! INPUTS:
 !       n_Points:     The array of the number of data points to which the
-!                     oSRF band data arrays are to be allocated. The number 
+!                     oSRF band data arrays are to be allocated. The number
 !                     of oSRF bands is taken from the size of the n_Points
 !                     array. Each element must be > 0.
 !                     UNITS:      N/A
@@ -296,8 +296,8 @@ CONTAINS
 
     ! Check dimension inputs
     IF ( ANY(n_Points < 1) ) RETURN
-    
-    
+
+
     ! Set the number of oSRF bands
     n_Bands = SIZE(n_Points)
 
@@ -337,7 +337,7 @@ CONTAINS
 
     ! Set the allocation flag
     self%Is_Allocated = .TRUE.
-     
+
   END SUBROUTINE oSRF_Create
 
 
@@ -517,22 +517,22 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type),        INTENT(IN OUT) :: self
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Band                
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Version             
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Sensor_Id           
-    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Satellite_Id    
-    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Sensor_Id       
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Sensor_Type         
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Channel             
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Integral            
-    INTEGER,      OPTIONAL, INTENT(IN)     :: Flags               
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: f0                  
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Band
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Version
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Sensor_Id
+    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Satellite_Id
+    INTEGER,      OPTIONAL, INTENT(IN)     :: WMO_Sensor_Id
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Sensor_Type
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Channel
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Integral
+    INTEGER,      OPTIONAL, INTENT(IN)     :: Flags
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f0
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Planck_Coeffs(SIZE(self%Planck_Coeffs))
     REAL(fp),     OPTIONAL, INTENT(IN)     :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: f1                  
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: f2                  
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Frequency(:)           
-    REAL(fp),     OPTIONAL, INTENT(IN)     :: Response(:)            
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f1
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: f2
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Frequency(:)
+    REAL(fp),     OPTIONAL, INTENT(IN)     :: Response(:)
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -540,11 +540,11 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_Band
-    
+
     ! Set up
     err_stat = SUCCESS
-    
-    
+
+
     ! Check band argument
     l_Band = 1
     IF ( PRESENT(Band) ) THEN
@@ -557,19 +557,19 @@ CONTAINS
 
 
     ! Set data with defined sizes
-    IF ( PRESENT(Version             ) ) self%Version              = Version  
-    IF ( PRESENT(Sensor_Id           ) ) self%Sensor_Id            = Sensor_Id       
+    IF ( PRESENT(Version             ) ) self%Version              = Version
+    IF ( PRESENT(Sensor_Id           ) ) self%Sensor_Id            = Sensor_Id
     IF ( PRESENT(WMO_Satellite_Id    ) ) self%WMO_Satellite_Id     = WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id       ) ) self%WMO_Sensor_Id        = WMO_Sensor_Id   
-    IF ( PRESENT(Sensor_Type         ) ) self%Sensor_Type          = Sensor_Type     
-    IF ( PRESENT(Channel             ) ) self%Channel              = Channel         
-    IF ( PRESENT(Integral            ) ) self%Integral             = Integral        
-    IF ( PRESENT(Flags               ) ) self%Flags                = Flags           
-    IF ( PRESENT(f0                  ) ) self%f0                   = f0              
-    IF ( PRESENT(Planck_Coeffs       ) ) self%Planck_Coeffs        = Planck_Coeffs                       
-    IF ( PRESENT(Polychromatic_Coeffs) ) self%Polychromatic_Coeffs = Polychromatic_Coeffs                
-    IF ( PRESENT(f1                  ) ) self%f1(l_Band)           = f1            
-    IF ( PRESENT(f2                  ) ) self%f2(l_Band)           = f2            
+    IF ( PRESENT(WMO_Sensor_Id       ) ) self%WMO_Sensor_Id        = WMO_Sensor_Id
+    IF ( PRESENT(Sensor_Type         ) ) self%Sensor_Type          = Sensor_Type
+    IF ( PRESENT(Channel             ) ) self%Channel              = Channel
+    IF ( PRESENT(Integral            ) ) self%Integral             = Integral
+    IF ( PRESENT(Flags               ) ) self%Flags                = Flags
+    IF ( PRESENT(f0                  ) ) self%f0                   = f0
+    IF ( PRESENT(Planck_Coeffs       ) ) self%Planck_Coeffs        = Planck_Coeffs
+    IF ( PRESENT(Polychromatic_Coeffs) ) self%Polychromatic_Coeffs = Polychromatic_Coeffs
+    IF ( PRESENT(f1                  ) ) self%f1(l_Band)           = f1
+    IF ( PRESENT(f2                  ) ) self%f2(l_Band)           = f2
 
 
     ! Set frequency data
@@ -583,8 +583,8 @@ CONTAINS
       self%f1(l_Band) = Frequency(1)
       self%f2(l_Band) = Frequency(SIZE(Frequency))
     END IF
-    
-    
+
+
     ! Set Response data
     IF ( PRESENT(Response) ) THEN
       err_stat = PtrArr_SetValue( self%Response(l_Band), Arr=Response )
@@ -593,16 +593,16 @@ CONTAINS
         CALL CleanUp(); RETURN
       END IF
     END IF
-    
+
   CONTAINS
-  
+
     SUBROUTINE CleanUp()
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME,msg,err_stat )
-    END SUBROUTINE CleanUp    
-    
+    END SUBROUTINE CleanUp
+
   END FUNCTION oSRF_SetValue
-  
+
 
 
 
@@ -636,7 +636,7 @@ CONTAINS
 !                        f1                     = f1                    , &
 !                        f2                     = f2                    , &
 !                        Frequency              = Frequency             , &
-!                        Response               = Response                )  
+!                        Response               = Response                )
 !
 ! OBJECT:
 !       oSRF:                   oSRF object that is to have its properties
@@ -808,25 +808,25 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type),        INTENT(IN)  :: self
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Band                
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Version             
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id           
-    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id       
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Sensor_Type         
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Channel             
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral            
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Flags               
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: f0                  
+    INTEGER,      OPTIONAL, INTENT(IN)  :: Band
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id
+    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
+    INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Sensor_Id
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Sensor_Type
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Channel
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Integral
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Flags
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f0
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Planck_Coeffs
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Polychromatic_Coeffs
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))       
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: f1                  
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: f2                  
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Frequency(:)           
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: Response(:)            
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f1
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: f2
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Frequency(:)
+    REAL(fp),     OPTIONAL, INTENT(OUT) :: Response(:)
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -834,11 +834,11 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: l_Band
-    
+
     ! Set up
     err_stat = SUCCESS
-    
-    
+
+
     ! Check band argument
     l_Band = 1
     IF ( PRESENT(Band) ) THEN
@@ -851,22 +851,22 @@ CONTAINS
 
 
     ! Get data with defined sizes
-    IF ( PRESENT(Version               ) ) Version                = self%Version  
-    IF ( PRESENT(Sensor_Id             ) ) Sensor_Id              = self%Sensor_Id       
+    IF ( PRESENT(Version               ) ) Version                = self%Version
+    IF ( PRESENT(Sensor_Id             ) ) Sensor_Id              = self%Sensor_Id
     IF ( PRESENT(WMO_Satellite_Id      ) ) WMO_Satellite_Id       = self%WMO_Satellite_Id
-    IF ( PRESENT(WMO_Sensor_Id         ) ) WMO_Sensor_Id          = self%WMO_Sensor_Id   
-    IF ( PRESENT(Sensor_Type           ) ) Sensor_Type            = self%Sensor_Type     
-    IF ( PRESENT(Channel               ) ) Channel                = self%Channel         
-    IF ( PRESENT(Integral              ) ) Integral               = self%Integral        
-    IF ( PRESENT(Flags                 ) ) Flags                  = self%Flags           
-    IF ( PRESENT(f0                    ) ) f0                     = self%f0              
-    IF ( PRESENT(n_Planck_Coeffs       ) ) n_Planck_Coeffs        = N_PLANCK_COEFFS                       
-    IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = DEFAULT_N_POLYCHROMATIC_COEFFS                
-    IF ( PRESENT(Planck_Coeffs         ) ) Planck_Coeffs          = self%Planck_Coeffs                   
-    IF ( PRESENT(Polychromatic_Coeffs  ) ) Polychromatic_Coeffs   = self%Polychromatic_Coeffs            
-    IF ( PRESENT(n_Points              ) ) n_Points               = self%n_Points(l_Band)    
-    IF ( PRESENT(f1                    ) ) f1                     = self%f1(l_Band)    
-    IF ( PRESENT(f2                    ) ) f2                     = self%f2(l_Band)    
+    IF ( PRESENT(WMO_Sensor_Id         ) ) WMO_Sensor_Id          = self%WMO_Sensor_Id
+    IF ( PRESENT(Sensor_Type           ) ) Sensor_Type            = self%Sensor_Type
+    IF ( PRESENT(Channel               ) ) Channel                = self%Channel
+    IF ( PRESENT(Integral              ) ) Integral               = self%Integral
+    IF ( PRESENT(Flags                 ) ) Flags                  = self%Flags
+    IF ( PRESENT(f0                    ) ) f0                     = self%f0
+    IF ( PRESENT(n_Planck_Coeffs       ) ) n_Planck_Coeffs        = N_PLANCK_COEFFS
+    IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = DEFAULT_N_POLYCHROMATIC_COEFFS
+    IF ( PRESENT(Planck_Coeffs         ) ) Planck_Coeffs          = self%Planck_Coeffs
+    IF ( PRESENT(Polychromatic_Coeffs  ) ) Polychromatic_Coeffs   = self%Polychromatic_Coeffs
+    IF ( PRESENT(n_Points              ) ) n_Points               = self%n_Points(l_Band)
+    IF ( PRESENT(f1                    ) ) f1                     = self%f1(l_Band)
+    IF ( PRESENT(f2                    ) ) f2                     = self%f2(l_Band)
 
 
     ! Get frequency data
@@ -877,8 +877,8 @@ CONTAINS
         CALL CleanUp(); RETURN
       END IF
     END IF
-    
-    
+
+
     ! Get Response data
     IF ( PRESENT(Response) ) THEN
       err_stat = PtrArr_GetValue( self%Response(l_Band), Arr=Response )
@@ -887,16 +887,16 @@ CONTAINS
         CALL CleanUp(); RETURN
       END IF
     END IF
-    
+
   CONTAINS
-  
+
     SUBROUTINE CleanUp()
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE CleanUp
-    
+
   END FUNCTION oSRF_GetValue
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -925,22 +925,22 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN) :: self
     ! Local arguments
     INTEGER :: n
-    ! Output the oSRF components     
+    ! Output the oSRF components
     WRITE(*,'(1x,"oSRF OBJECT")')
     ! Dimensions
     WRITE(*,'(3x,"n_Bands              :",1x,i0)') self%n_Bands
     ! Scalar data
     WRITE(*,'(3x,"Release              : ",i0)'            ) self%Release
-    WRITE(*,'(3x,"Version              : ",i0)'            ) self%Version  
-    WRITE(*,'(3x,"Sensor_Id            : ", a)'            ) self%Sensor_Id       
+    WRITE(*,'(3x,"Version              : ",i0)'            ) self%Version
+    WRITE(*,'(3x,"Sensor_Id            : ", a)'            ) self%Sensor_Id
     WRITE(*,'(3x,"WMO_Satellite_Id     : ",i0)'            ) self%WMO_Satellite_Id
-    WRITE(*,'(3x,"WMO_Sensor_Id        : ",i0)'            ) self%WMO_Sensor_Id   
+    WRITE(*,'(3x,"WMO_Sensor_Id        : ",i0)'            ) self%WMO_Sensor_Id
     WRITE(*,'(3x,"Sensor_Type          : ", a)'            ) SENSOR_TYPE_NAME(self%Sensor_Type)
-    WRITE(*,'(3x,"Channel              : ",i0)'            ) self%Channel         
-    WRITE(*,'(3x,"Integral             : ",es13.6)'        ) self%Integral        
-    WRITE(*,'(3x,"Flags                : ",i0)'            ) self%Flags           
-    WRITE(*,'(3x,"f0                   : ",es13.6)'        ) self%f0              
-    WRITE(*,'(3x,"Planck_Coeffs        : ",2(es13.6,1x))'  ) self%Planck_Coeffs       
+    WRITE(*,'(3x,"Channel              : ",i0)'            ) self%Channel
+    WRITE(*,'(3x,"Integral             : ",es13.6)'        ) self%Integral
+    WRITE(*,'(3x,"Flags                : ",i0)'            ) self%Flags
+    WRITE(*,'(3x,"f0                   : ",es13.6)'        ) self%f0
+    WRITE(*,'(3x,"Planck_Coeffs        : ",2(es13.6,1x))'  ) self%Planck_Coeffs
     WRITE(*,'(3x,"Polychromatic_Coeffs : ",3(es13.6,:,1x))') self%Polychromatic_Coeffs
     ! Band data
     DO n = 1, self%n_Bands
@@ -1000,8 +1000,8 @@ CONTAINS
     ! Setup
     Info = ' '
     IF ( .NOT. oSRF_Associated(self) ) RETURN
-    
-    
+
+
     ! Write the required data to the local string
     WRITE( LongString,'(a,1x,"oSRF RELEASE.VERSION: ",i0,".",i2.2,2x,a,1x,&
                        &"CHANNEL:",i0,2x,&
@@ -1084,7 +1084,7 @@ CONTAINS
 
     ! Sum up band integrals
     Band_Loop: DO n = 1, self%n_Bands
-    
+
       ! Get band response
       ! ...Number of band points
       err_stat = oSRF_GetValue( self, n, n_Points=n_Points )
@@ -1108,7 +1108,7 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME,msg,err_stat )
         RETURN
       END IF
-      
+
       ! Integrate the band
       err_stat = Integral(f, r, Int_Band)
       IF ( err_stat /= SUCCESS ) THEN
@@ -1116,15 +1116,15 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME,msg,err_stat )
         RETURN
       END IF
-      
+
       ! Accumulate
       Int_SRF = Int_SRF + Int_Band
-      
+
       ! Clean up
       DEALLOCATE( f, r )
-      
+
     END DO Band_Loop
-    
+
     ! Save the integrated value
     err_stat = oSRF_SetValue( self, Integral=Int_SRF )
     IF ( err_stat /= SUCCESS ) THEN
@@ -1134,8 +1134,8 @@ CONTAINS
     CALL oSRF_SetIntegrated( self )
 
   END FUNCTION oSRF_Integrate
-  
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1154,7 +1154,7 @@ CONTAINS
 !                      TYPE:       TYPE(oSRF_type)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN OUT)
-!      
+!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1168,7 +1168,7 @@ CONTAINS
 !       The Planck Coefficient components are set in oSRF.
 !
 !:sdoc-:
-!------------------------------------------------------------------------------    
+!------------------------------------------------------------------------------
 
   FUNCTION oSRF_Planck_Coefficients( self ) RESULT( err_stat )
     ! Arguments
@@ -1199,25 +1199,25 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    
+
     ! Convert to inverse cm for the microwave
     IF ( oSRF_IsFrequencyGHz( self ) ) THEN
       f0 = GHz_to_inverse_cm(self%f0)
     ELSE
       f0 = self%f0
     END IF
-    
+
     ! Compute the Planck coefficients
     Planck_Coeffs(1) = C1_SCALE_FACTOR * C_1 * ( f0**3 )
-    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   f0 
+    Planck_Coeffs(2) = C2_SCALE_FACTOR * C_2 *   f0
 
     ! Save the computed Planck coefficients
     err_stat = oSRF_SetValue( self, Planck_Coeffs = Planck_Coeffs )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error occurred saving the oSRF Planck Coefficients'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
-    END IF  
-      
+    END IF
+
   END FUNCTION oSRF_Planck_Coefficients
 
 
@@ -1239,7 +1239,7 @@ CONTAINS
 !                      TYPE:       TYPE(oSRF_type)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN OUT)
-!      
+!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1254,8 +1254,8 @@ CONTAINS
 !       bit flag is set to 1.
 !
 !:sdoc-:
-!------------------------------------------------------------------------------    
-  
+!------------------------------------------------------------------------------
+
   FUNCTION oSRF_Central_Frequency( self ) RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type), INTENT(IN OUT) :: self
@@ -1282,7 +1282,7 @@ CONTAINS
       msg = 'Error convolving oSRF with frequency'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-    
+
     ! Save the central frequency value
     err_stat = oSRF_SetValue( self, f0 = f0 )
     IF ( err_stat /= SUCCESS ) THEN
@@ -1290,10 +1290,10 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     CALL oSRF_SetF0Computed( self )
-    
+
   END FUNCTION oSRF_Central_Frequency
-  
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1321,13 +1321,13 @@ CONTAINS
 !                      DIMENSION:  Rank-1
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT:    
+! OUTPUT:
 !      y:              Convolved quantity
 !                      UNITS:      N/A
 !                      TYPE:       REAL(fp)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(OUT)
-!      
+!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1337,8 +1337,8 @@ CONTAINS
 !                     TYPE:       INTEGER
 !                     DIMENSION:  Scalar
 !:sdoc-:
-!------------------------------------------------------------------------------  
-  
+!------------------------------------------------------------------------------
+
   FUNCTION oSRF_Convolve( self, p, y ) RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type)  , INTENT(IN OUT) :: self
@@ -1377,12 +1377,12 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    
+
 
     ! Sum up band integrals
     y = ZERO
     Band_Loop: DO n = 1, self%n_Bands
-    
+
       ! Get band response
       ! ...Number of band points
       err_stat = oSRF_GetValue( self, n, n_Points=n_Points )
@@ -1409,23 +1409,23 @@ CONTAINS
         WRITE( msg,'("Error occurred retrieving band#",i0," data")' ) n
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
-      
+
       ! Integrate the band
       err_stat = Integral(f, (p(n)%arr * r), Int_Band)
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error integrating band#",i0," response")' ) n
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
-      
+
       ! Accumulate
       y = y + Int_Band
-      
+
       ! Clean up
       DEALLOCATE( f, r, STAT=alloc_stat )
-      
+
     END DO Band_Loop
-    
-    
+
+
     ! Normalise the integrated value
     err_stat = oSRF_GetValue( self, Integral=Int_SRF )
     IF ( err_stat /= SUCCESS ) THEN
@@ -1435,8 +1435,8 @@ CONTAINS
     y = y / Int_SRF
 
   END FUNCTION oSRF_Convolve
-  
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1455,7 +1455,7 @@ CONTAINS
 !                      TYPE:       TYPE(oSRF_type)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN OUT)
-!      
+!
 ! FUNCTION RESULT:
 !       Error_Status: The return value is an integer defining the error status.
 !                     The error codes are defined in the Message_Handler module.
@@ -1469,7 +1469,7 @@ CONTAINS
 !
 !:sdoc-:
 !------------------------------------------------------------------------------
-  
+
   FUNCTION oSRF_Polychromatic_Coefficients( self ) RESULT( err_stat )
     ! Arguments
     TYPE(oSRF_type), INTENT(IN OUT) :: self
@@ -1485,11 +1485,11 @@ CONTAINS
     INTEGER  :: i, n
     REAL(fp) :: Convolved_Radiance
     REAL(fp) :: x_Temperature(N_TEMPERATURES)
-    REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES) 
+    REAL(fp) :: y_Effective_Temperature(N_TEMPERATURES)
     REAL(fp) :: PolyChromatic_Coeffs(DEFAULT_N_POLYCHROMATIC_COEFFS)
     TYPE(PtrArr_type) :: Radiance(self%n_Bands)
     TYPE(oSRF_type)   :: new
-    
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check object contains something
@@ -1506,17 +1506,17 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    
-    
+
+
     ! Copy the input oSRF
     new = self
-    
+
     ! Perform conversions to units of inverse centimetres if necessary
     IF ( oSRF_IsFrequencyGHz( new ) ) THEN
       ! ...Convert frequency arrays
       DO n = 1, new%n_Bands
         new%Frequency(n)%Arr = GHz_to_inverse_cm( new%Frequency(n)%Arr )
-      END DO      
+      END DO
       ! ...Clear the frequency units flag to indicate cm-1
       CALL oSRF_ClearFrequencyGHz( new )
       ! ...Recompute the integral
@@ -1533,35 +1533,29 @@ CONTAINS
       END IF
     END IF
 
-    
+
     ! Generate the monochromatic temperatures
     x_Temperature = (/(REAL(i-1,fp),i=1,N_TEMPERATURES)/) / REAL(N_TEMPERATURES-1,fp)
     x_Temperature = (x_Temperature * ( MAX_TEMPERATURE-MIN_TEMPERATURE )) + MIN_TEMPERATURE
-    
+
 
     ! Allocate the radiance dimensions for each band
     DO n = 1, new%n_Bands
       CALL PtrArr_Create(Radiance(n), new%n_Points(n))
     END DO
 
-    
+
     ! Generate the polychromatic temperatures
-    Temperature_Loop: DO i = 1, N_TEMPERATURES 
-    
+    Temperature_Loop: DO i = 1, N_TEMPERATURES
+
       ! Compute monochromatic radiances
       Band_Loop: DO n = 1, new%n_Bands
-        err_stat = Planck_Radiance( new%Frequency(n)%Arr, &
-                                    x_Temperature(i), &
-                                    Radiance(n)%Arr   )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error calculating radiances at T = ",f5.1," K.")' ) &
-                          x_Temperature(i)
-          CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
-          RETURN
-        END IF    
+        CALL Planck_Radiance( new%Frequency(n)%Arr, &
+                              x_Temperature(i), &
+                              Radiance(n)%Arr   )
       END DO Band_Loop
-      
-      
+
+
       ! Convolve the monochromatic radiances
       err_stat = oSRF_Convolve( new, Radiance, Convolved_Radiance )
       IF ( err_stat /= SUCCESS ) THEN
@@ -1569,20 +1563,14 @@ CONTAINS
                         x_Temperature(i)
         CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
         RETURN
-      END IF    
-      
-      
+      END IF
+
+
       ! Compute the effective temperature
-      err_stat = Planck_Temperature( new%f0, &
-                                     Convolved_Radiance, &
-                                     y_Effective_Temperature(i) )
-      IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error calculating the polychromatic temperature at T = ",f5.1," K.")' ) &
-                        x_Temperature(i)
-        CALL Display_Message( ROUTINE_NAME, msg, FAILURE )
-        RETURN
-      END IF 
-      
+      CALL Planck_Temperature( new%f0, &
+                               Convolved_Radiance, &
+                               y_Effective_Temperature(i) )
+
     END DO Temperature_Loop
 
 
@@ -1598,7 +1586,7 @@ CONTAINS
       RETURN
     END IF
 
-    
+
     ! Save the polychromatic coefficients
     err_stat = oSRF_SetValue( self, Polychromatic_Coeffs = Polychromatic_Coeffs )
     IF ( err_stat /= SUCCESS ) THEN
@@ -1606,10 +1594,10 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,msg,err_stat )
       RETURN
     END IF
-    
+
   END FUNCTION oSRF_Polychromatic_Coefficients
 
-    
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1668,7 +1656,7 @@ CONTAINS
       CALL oSRF_ClearFlag( oSRF, n )
     END DO
   END SUBROUTINE oSRF_ClearAllFlags
-  
+
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
@@ -1715,7 +1703,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsFlagSet(oSRF, INTERPOLATED_FLAG)
   END FUNCTION oSRF_IsInterpolated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1753,7 +1741,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsFlagSet(oSRF, INTEGRATED_FLAG)
   END FUNCTION oSRF_IsIntegrated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1791,7 +1779,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsFlagSet(oSRF, F0COMPUTED_FLAG)
   END FUNCTION oSRF_IsF0Computed
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1829,7 +1817,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsFlagSet(oSRF, FREQUENCYGHZ_FLAG)
   END FUNCTION oSRF_IsFrequencyGHz
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1857,7 +1845,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetFlag(oSRF, INTERPOLATED_FLAG)
   END SUBROUTINE oSRF_SetInterpolated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1885,7 +1873,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetFlag(oSRF, INTEGRATED_FLAG)
   END SUBROUTINE oSRF_SetIntegrated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1914,7 +1902,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetFlag(oSRF, F0COMPUTED_FLAG)
   END SUBROUTINE oSRF_SetF0Computed
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1943,7 +1931,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetFlag(oSRF, FREQUENCYGHZ_FLAG)
   END SUBROUTINE oSRF_SetFrequencyGHz
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1971,7 +1959,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_ClearFlag( oSRF, INTERPOLATED_FLAG )
   END SUBROUTINE oSRF_ClearInterpolated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1999,7 +1987,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_ClearFlag( oSRF, INTEGRATED_FLAG )
   END SUBROUTINE oSRF_ClearIntegrated
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2028,7 +2016,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_ClearFlag( oSRF, F0COMPUTED_FLAG )
   END SUBROUTINE oSRF_ClearF0Computed
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2058,7 +2046,7 @@ CONTAINS
     CALL oSRF_ClearFlag( oSRF, FREQUENCYGHZ_FLAG )
   END SUBROUTINE oSRF_ClearFrequencyGHz
 
-  
+
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
 ! NOTE: The following sensor check and set procedures were generated
@@ -2104,7 +2092,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsSensor(oSRF, MICROWAVE_SENSOR)
   END FUNCTION oSRF_IsMicrowaveSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2142,7 +2130,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsSensor(oSRF, INFRARED_SENSOR)
   END FUNCTION oSRF_IsInfraredSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2180,7 +2168,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsSensor(oSRF, VISIBLE_SENSOR)
   END FUNCTION oSRF_IsVisibleSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2218,7 +2206,7 @@ CONTAINS
     LOGICAL :: Is_Set
     Is_Set = oSRF_IsSensor(oSRF, ULTRAVIOLET_SENSOR)
   END FUNCTION oSRF_IsUltravioletSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2247,7 +2235,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetSensor(oSRF, MICROWAVE_SENSOR)
   END SUBROUTINE oSRF_SetMicrowaveSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2276,7 +2264,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetSensor(oSRF, INFRARED_SENSOR)
   END SUBROUTINE oSRF_SetInfraredSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2305,7 +2293,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetSensor(oSRF, VISIBLE_SENSOR)
   END SUBROUTINE oSRF_SetVisibleSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2334,7 +2322,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     CALL oSRF_SetSensor(oSRF, ULTRAVIOLET_SENSOR)
   END SUBROUTINE oSRF_SetUltravioletSensor
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2362,7 +2350,7 @@ CONTAINS
     TYPE(oSRF_type), INTENT(IN OUT) :: oSRF
     oSRF%Sensor_Type = INVALID_SENSOR
   END SUBROUTINE oSRF_ClearSensor
-  
+
 
 !##################################################################################
 !##################################################################################
@@ -2383,21 +2371,21 @@ CONTAINS
     Is_Set = BTEST(self%Flags,flag)
   END FUNCTION oSRF_IsFlagSet
 
- 
+
   ELEMENTAL SUBROUTINE oSRF_SetFlag(self, flag)
     TYPE(oSRF_type), INTENT(IN OUT) :: self
     INTEGER        , INTENT(IN)     :: flag
     self%Flags = IBSET(self%Flags,flag)
   END SUBROUTINE oSRF_SetFlag
- 
+
 
   ELEMENTAL SUBROUTINE oSRF_ClearFlag(self, flag)
     TYPE(oSRF_type), INTENT(IN OUT) :: self
     INTEGER        , INTENT(IN)     :: flag
     self%Flags = IBCLR(self%Flags,flag)
   END SUBROUTINE oSRF_ClearFlag
-  
-  
+
+
   ! -----------------------
   ! Generic sensor routines
   ! -----------------------
@@ -2458,7 +2446,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-    
+
     ! Check the structure association status
     IF ( (.NOT. oSRF_Associated(x)) .OR. &
          (.NOT. oSRF_Associated(y))      ) RETURN
@@ -2486,9 +2474,9 @@ CONTAINS
     is_equal = is_equal .AND. &
                ALL(x%Frequency == y%Frequency) .AND. &
                ALL(x%Response  == y%Response )
-    
+
   END FUNCTION oSRF_Equal
- 
+
 
 !--------------------------------------------------------------------------------
 !
@@ -2496,7 +2484,7 @@ CONTAINS
 !       Least_Squares_Linear_Fit
 !
 ! PURPOSE:
-!       Function to perform a least squares linear fit on the input 
+!       Function to perform a least squares linear fit on the input
 !       polychromatic and monochromatic temperature data.
 !
 ! CALLING SEQUENCE:
@@ -2564,7 +2552,7 @@ CONTAINS
 !
 !       MSE:             The residual mean square of the fit to the
 !                        input data,
-!                                
+!
 !                                 SSE
 !                          MSE = -----
 !                                 N-2
@@ -2615,7 +2603,7 @@ CONTAINS
     REAL(fp) :: sum_dx2
     REAL(fp) :: yCalculated(SIZE(y))
     REAL(fp) :: Residual_Sum_of_Squares
-    REAL(fp) :: Residual_Mean_Square   
+    REAL(fp) :: Residual_Mean_Square
 
 
     ! Set up
@@ -2672,7 +2660,7 @@ CONTAINS
     IF ( PRESENT(MSE)  ) MSE  = Residual_Mean_Square
 
   END FUNCTION Least_Squares_Linear_Fit
-    
+
 END MODULE oSRF_Define
 
- 
+

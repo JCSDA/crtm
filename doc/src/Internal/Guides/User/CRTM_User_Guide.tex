@@ -2,7 +2,7 @@
 \input{preamble}
 
 % Define included documents
-\includeonly{New,New2.0.1,New2.0.2,New2.0.4,Introduction,Get,Build,Use,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
+\includeonly{New,Introduction,Get,Build,Use,Interface,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
 
 % Define fixed font for the various component names
 \newcommand{\Atmosphere}{\texttt{Atmosphere}}
@@ -45,7 +45,7 @@
 \SVN $Revision$
 
 % Title info
-\title{v2.0 User Guide}
+\title{v2.1 User Guide}
 \date{\SVNDate ; rev\SVNRevision}
 
 
@@ -55,7 +55,7 @@
 \begin{document}
 \maketitle
 
-%\draftwatermark
+\draftwatermark
 
 % The front matter
 %=================
@@ -65,21 +65,11 @@
   {\sffamily\Large\bfseries Change History}
   \begin{table}[htp]
     \centering
-    \begin{tabular}{|p{2cm}|p{3cm}|p{8cm}|}
-      \hline
-      \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
-      \hline\hline
-      2009-01-30 & P.van Delst & Initial release.\\
-      \hline
-      2009-02-03 & P.van Delst & Updated chapter 2 with descriptions of the example code and coefficient tarballs. Added explanation of layering convention in chapter 4.\\
-      \hline
-      2010-03-12 & P.van Delst & Updated for v2.0.\\
-      \hline
-      2010-05-18 & P.van Delst & Updated for v2.0.1.\\
-      \hline
-      2010-06-01 & P.van Delst & Updated for v2.0.2.\\
-      \hline
-      2011-09-23 & P.van Delst & Updated for v2.0.4.\\
+    \begin{tabular}{ p{2cm} p{3cm} p{8cm} }
+      \hline\\[-0.1cm]
+      \tblhd{Date} & \tblhd{Author} & \tblhd{Change}\\
+      \hline\hline\\[-0.2cm]
+      2012-06-11 & P.van Delst & Draft release.\\
       \hline
     \end{tabular}
   \end{table}
@@ -94,9 +84,6 @@
   \listoffigures\newpage
   \listoftables\newpage
   \include{New}
-  \include{New2.0.1}
-  \include{New2.0.2}
-  \include{New2.0.4}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -108,6 +95,7 @@
 \include{Get}
 \include{Build}
 \include{Use}
+\include{Interface}
 
 
 % The references section

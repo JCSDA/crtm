@@ -44,7 +44,7 @@ MODULE CRTM_Adjoint_Module
   USE CRTM_Options_Define,        ONLY: CRTM_Options_type, &
                                         CRTM_Options_IsValid
   USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers, &
-                                        CRTM_Atmosphere_AddLayers_AD 
+                                        CRTM_Atmosphere_AddLayers_AD
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type, &
                                         CRTM_GeometryInfo_SetValue, &
                                         CRTM_GeometryInfo_GetValue
@@ -107,18 +107,18 @@ MODULE CRTM_Adjoint_Module
 
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
                                         CRTM_Planck_Temperature_AD
-  
+
   ! Internal variable definition modules
   ! ...CloudScatter
   USE CSvar_Define, ONLY: CSvar_type, &
                           CSvar_Associated, &
                           CSvar_Destroy   , &
-                          CSvar_Create    
+                          CSvar_Create
   ! ...AerosolScatter
   USE ASvar_Define, ONLY: ASvar_type, &
                           ASvar_Associated, &
                           ASvar_Destroy   , &
-                          ASvar_Create    
+                          ASvar_Create
 
 
   ! -----------------------
@@ -333,6 +333,7 @@ CONTAINS
     ! NLTE correction term predictors
     TYPE(NLTE_Predictor_type)   :: NLTE_Predictor, NLTE_Predictor_AD
 
+
     ! ------
     ! SET UP
     ! ------
@@ -479,7 +480,7 @@ CONTAINS
         ! Set NLTE correction option
         Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
 
-    
+
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
@@ -744,6 +745,7 @@ CONTAINS
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
               AtmOptics%n_Legendre_Terms = 4
+              AtmOptics_AD%n_Legendre_Terms = AtmOptics%n_Legendre_Terms
               RTSolution(ln,m)%Scattering_FLAG = .TRUE.
               RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
             END IF
@@ -804,9 +806,10 @@ CONTAINS
 
 
           ! Compute the combined atmospheric optical properties
-          IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
-          END IF
+          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          ! ...Save vertically integrated scattering optical depth for output
+          RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
+
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed
@@ -1005,11 +1008,9 @@ CONTAINS
           ! ###################################################
 
 
-
           ! Compute the adjoint of the combined atmospheric optical properties
-          IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOV )
-          END IF
+          CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOV )
+
 
           ! Compute the adjoint aerosol absorption/scattering properties
           IF ( Atm%n_Aerosols > 0 ) THEN

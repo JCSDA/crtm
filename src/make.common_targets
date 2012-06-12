@@ -79,6 +79,12 @@ install::
 	fi
 
 
+# ---------------------
+# Build for timing runs
+# ---------------------
+timing::
+	$(MAKE) clean; $(MAKE) EXTRA_FC_FLAGS="-DTIMING"
+
 
 # ----------------------
 # Specific build targets

@@ -1,31 +1,37 @@
-\chapter*{What's New in v2.0}
+\chapter*{What's New in v2.1}
 %===========================
-\addcontentsline{toc}{chapter}{What's New in v2.0}
+\addcontentsline{toc}{chapter}{What's New in v2.1}
 
 \section*{New Science}
 %---------------------
 \addcontentsline{toc}{section}{New Science}
 
 \begin{description}
-\item[Multiple transmittance algorithms] There are now two transmittance models available for use in the CRTM: ODAS (Optical Depth in Absorber Space), which is equivalent to the previous CompactOPTRAN algorithm; and ODPS (Optical Depth in Pressure Space) which is similar to the RTTOV-type of transmittance algorithm, except here OPTRAN is used for water vapor line absorption.
+\item[Updated microwave sea surface emissivity model] The FASTEM4/5 microwave sea surface emissivity models have been implemented. FASTEM5 is the default (via a file loaded during initialisation) and FASTEM4 \citep{QLiu_2011} can be selected by specifying the appropriate data file during CRTM initialisation. The previous model, a combination of FASTEM1 \citep{Fastem1} and a low frequency model \citep{Kazumori_2008}, can still be invoked via the options input to the CRTM functions.
 
-The algorithm is selectable by the user via the transmittance coefficient (\f{TauCoeff}) data file used to initialise the CRTM. This method, rather than a switch argument in the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function, was chosen to allow users to ``mix-and-match'' transmittance algorithms for different sensors in the same initialisation call.
+\item[Non-LTE for hyperspectral infrared sensors] A model to correct daytime radiances for the non-LTE effect in the shortwave infrared channels has been implemented. Currently the correction is applied only to the hyperspectral infrared sensors; AIRS (Aqua), IASI (MetOp-A/B), and CrIS (Suomi NPP).
 
-\item[SSU-specific transmittance model] Similar to the multiple transmittance algorithm approach, a separate algorithm \emph{just} for the SSU instrument has been constructed. The algorithm is based on the ODAS approach, but with elements to account for the time-dependence of the SSU CO\subscript{2} cell pressures.
+\item[Successive Order of Interaction (SOI) radiative transfer algorithm] An alternative radiative transfer (RT) solution algorithm \citep{SOI_1} has been implemented and can be selected for use via the options input to the CRTM functions. The default RT solver still remains the Advanced Doubling-Adding (ADA) method (REF!!!).
 
-\item[Zeeman-splitting transmittance model for SSMIS upper-level channels] A separate algorithm is available to account for the change in absorption at very low pressures due to the Zeeman-splitting of absorption lines. Currently this algorithm has only been applied to the affected channels in the SSMIS instrument, 19-22.
+\end{description}
 
-\item[Visible sensor capability] The CRTM now supports radiative transfer for visible instruments/channels. The treatment of visible channels was handled in the CRTM framework by considering them separate instruments. The sensor identifier for these instruments/channels are differentiated from their infrared counterparts by a ``\f{v.}'' prefix. For example, while \f{modis\_aqua} is the sensor identifier for the infrared channels, \f{v.modis\_aqua} identifies the visible channels.
 
-\item[Inclusion of Matrix Operator Method (MOM) in radiaitve transfer] To handle visible wavelength radiative transfer in the prescence of aerosols, the Advanced Doubling-Adding (ADA) algorithm was adapted to use the MOM technique \citep{Liu_1996}.
+\section*{New Functionality}
+%---------------------------
+\addcontentsline{toc}{section}{New Functionality}
 
-\item[Inclusion of additional infrared sea surface emissivity model] Files containing the emissivity data (\f{EmisCoeff}) for the \citet{Nalli_2008a} model are provided. Previously, only the \f{EmisCoeff} files for the \citet{WuSmith_1997} model were provided. Users can now select between the \citet{Nalli_2008a} or \citet{WuSmith_1997} models by specifying the requisite filename in the call to \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}}.
+\begin{description}
+\item[Aerosol optical depth functions] Separate functions to compute just the aerosol optical depth have been implemented. The new main level forward, tangent-linear, adjoint, and K-matrix functions are \texttt{CRTM\_AOD()}, \texttt{CRTM\_AOD\_TL()}, \texttt{CRTM\_AOD\_AD()}, and \texttt{CRTM\_AOD\_K()} respectively. See section(REF!!) for the function interfaces.
 
-\item[Surface BRDF for solar-affected shortwave IR channels] A bi-directional reflectance distribution function (BRDF) has been added to account for reflected solar in affected shortware infrared channels \citep{Breon_1993}.
+\item[Channel subsetting] To allow users to select which channels of a sensor will be processed, a channel subsetting function has been added. This subsetting operates on the \ChannelInfo structure and is invoked by passing the list of required channel numbers to a new \texttt{CRTM\_ChannelInfo\_Subset()} function. See section (REF!!) for the function interface and section (REF!!) for usage examples.
 
-\item[Reflectivity for downwelling infrared over water] The reflectivity for downwelling infrared  radiation over water surface has been changed from Lambertian to specular.
+\item[Number of streams option] For scattering atmospheres the current method to determine the number of streams to be employed in the radiative transfer calculation is based upon the Mie parameter. Generally this methodology yields a higher number of streams than is necessary. A better ``stream selection'' method is under development and is slated for the v2.2 CRTM release. Part of this work led to the implementation of an \texttt{n\_Streams} option - that is, the user can explicitly state the number of streams they wish to use for scattering calculations and override any value determined internally. The user-define number of streams is set via the options input to the CRTM functions.
 
-\item[Aerosol type changes] To account for changes in the handling of GOCART \citep{Chin_2002} aerosol model output, additional sea salt coarse modes were added to the list of allowed aerosol types. Also, the separate dry and wet types for organic and black carbon aerosols were combined, with a relatvie humidity of 0\% used to indicate the previous ``dry'' aerosol type. See table \ref{tab:aerosol_type} for the new list of accepted aerosol types.
+\item[Scattering switch option for clouds and aerosols] This implements a user-selectable switch to ``skip'' the scattering computations and only compute the cloud and aerosol absorption component when clouds and aerosols are present. The scattering switch is set via the options input to the CRTM functions.
+
+\item[Aircraft instrument capability] The ability to simulate an aircraft instrument has been implemented in the CRTM. The user indicates that the calculation is for an aircraft instrument by specifying the flight level pressure in the options input to the CRTM functions. Note, however, that no spectral or transmittance coefficients are available for aircraft instruments. If you wish to run the CRTM for a particular aircraft sensor (microwave, infrared or visible) email the CRTM developers at \href{mailto:ncep.list.emc.jcsda_crtm.support@noaa.gov}{ncep.list.emc.jcsda\_crtm.support@noaa.gov}.
+
+\item[Options structure I/O] Previously, the CRTM \Options structure was different from the other user accessible CRTM structures (e.g. \Atmosphere, \Surface, \Geometry, etc) in that there were no means to write and read the structure to/from file. This oversight has been corrected. See section(REF!!) for the function interfaces.
 
 \end{description}
 
@@ -36,27 +42,19 @@ The algorithm is selectable by the user via the transmittance coefficient (\f{Ta
 \label{sec:new_interface_changes}
 
 \begin{description}
-\item[CRTM Initialisation function] The changes to the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} interface were relatively minor but do require calling codes to be modified:
-  \begin{itemize}
-  \item The \f{Sensor\_Id} argument is now mandatory. This argument is used to construct the sensor-specific \f{SpcCoeff} and \f{TauCoeff} filename and in the past was optional to allow for ``generic'' filenames. This is no longer allowed and generic \f{SpcCoeff} and \f{TauCoeff} files are no longer used.
-  \item The loading of the \f{CloudCoeff} and \f{AerosolCoeff} datafiles containing the optical properties of cloud and aerosol particulates is no longer mandatory. For cloud-free CRTM runs, the load of the \f{CloudCoeff} and \f{AerosolCoeff} datafiles can be disabled via the optional \f{Load\_CloudCoeff} and \f{Load\_AerosolCoeff} arguments which are logical switches (true or false).
-  \end{itemize}
+\item[Surface type specification changes] The specification of surface type in the CRTM surface structure was previously hardwired to use the NPOESS land surface classification scheme (infrared and visible spectral regions only). For users that employed a different land surface classification scheme, in particular those from USGS or IGBP, it meant there was a classification scheme remapping that was required to assign the ``correct'' NPOESS surface type for a particular USGS or IGBP surface type. To avoid the need to do this remapping, the land surface reflectivity data has now been provided in terms of three surface classification schemes: NPOESS (the default), USGS, and IGBP. These are loaded into the CRTM during the initialization stage.
 
-\item[User accessible structures] The structures are defined as those that are used in the argument lists of the main CRTM functions (e.g. initialisation; the forward, tangent-linear, adjoint, and K-matrix models; and destruction). Changes were made to both the structure definitions and their procedures. To mitigate the possibility of memory leaks, the definitions of array members of structures have had their \f{POINTER} attribute replaced with \f{ALLOCATABLE}. This was a first step in preparation for use of Fortran2003 Object Oriented features in the CRTM (once Fortran2003 compiler become widely available), where the derived type structure definitions will be reclassified as objects and their procedures will be type-bound. To delineate this change from previous versions of CRTM the interfaces of the derived type procedures have been altered by:
-  \begin{itemize}
-  \item changing the procedure names to use the convention \f{CRTM\_}\textit{object}\f{\_}\textit{action} where an \textit{object} can be any of the user accessible CRTM derived types (e.g. \f{CRTM\_Atmosphere\_type}, \f{CRTM\_RTSolution\_type} etc), and the \textit{action} can be those defined operations for the structure (e.g. \f{Create}, \f{Destroy}, \f{Inspect}, etc).
-  \item making the first dummy argument of the definition module procedures the derived type itself. This will eventually allow the procedures to be called via an instance of the derived type\footnote{Interested readers can investigate the \f{PASS} attribute that can be used in the \f{PROCEDURE} statement within derived type definitions in Fortran2003.}\footnote{The I/O functions do not yet follow this convention, since they are considered secondary to the definition module procedures used to manipulate the derived types.}
-  \end{itemize}
-  All of the current derived type definitions and their associated procedures and interfaces are shown in appendix \ref{sec:structure_and_interface_definition}.
+Previously land surface type parameters such as \texttt{SCRUB} or \texttt{BROADLEAF\_FOREST} were available to refer to a unique surface type index that was used to reference a look up table of spectral reflectances. Now, however, the list of allowable surface types can be different based on the classification scheme with which the CRTM was initialized, and thus the numeric index for a surface type in the list is no longer unique to that surface type. This means there can no longer be a list of pre-specified parameterized surface types like there was with v2.0.x of the CRTM.
 
-\item[\GeometryInfo{} to \Geometry{} structure name change] Previously, the \GeometryInfo{} structure held both the user input to the CRTM as well as the internally computed geometry data. To separate these two sets of quantities, the name of the geometry information structure that is passed into the CRTM functions was changed from \f{CRTM\_GeometryInfo\_type} to \f{CRTM\_Geometry\_type}. This means that \emph{all} of the user input structures are now strictly \f{INTENT(IN)} arguments.
+Tables \ref{tab:npoess_surface_type_classifications}, \ref{tab:usgs_surface_type_classifications}, and \ref{tab:igbp_surface_type_classifications} show the surface types, and their index, available for the NPOESS, USGS, and IGBP land surface classification schemes respectively.
 
-\item[\Options{} structure specific changes] The additional changes made to the \hyperref[sec:options_structure]{\f{CRTM\_Options\_type}} definition:
-  \begin{itemize}
-  \item all usage on/off switches have been changed from integers (0/1) to logicals (true/false),
-  \item a logical switch to control input checking, \f{Check\_Input}, has been added.
-  \item structure components for \hyperref[sec:ssu_input_structure]{SSU-specific} and \hyperref[sec:zeeman_input_structure]{Zeeman model} input have been added.
-  \end{itemize}
+
+
+\item[Emissivity model initialisation file changes] words
+
 \end{description}
 
-To migrate from the CRTM v1.2.x calling structures to those implemented in v2.0.x, see Appendix \ref{sec:migration_path}, ``\hyperref[sec:migration_path]{Migration Path from REL-1.2 to REL-2.0}.''
+
+To migrate from the CRTM v2.0.x initialisation and surface type specification to that implemented in v2.1, see Appendix \ref{sec:migration_path}, ``\hyperref[sec:migration_path]{Migration Path from REL-2.0 to REL-2.1}.''
+
+

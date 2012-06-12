@@ -7,7 +7,7 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 17-Aug-2011
 !                       paul.vandelst@noaa.gov
- 
+
 MODULE SEcategory_Define
 
   ! -----------------
@@ -18,9 +18,11 @@ MODULE SEcategory_Define
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   USE File_Utility         , ONLY: File_Open, File_Exists
-  USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
-                                   WriteGAtts_Binary_File, &
-                                   ReadGAtts_Binary_File
+  USE Binary_File_Utility  , ONLY: Open_Binary_File        , &
+                                   WriteGAtts_Binary_File  , &
+                                   ReadGAtts_Binary_File   , &
+                                   WriteLogical_Binary_File, &
+                                   ReadLogical_Binary_File
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -69,7 +71,7 @@ MODULE SEcategory_Define
   ! Datatype information
   CHARACTER(*), PARAMETER :: SECATEGORY_DATATYPE = 'SEcategory'
   ! Release and version
-  INTEGER, PARAMETER :: SECATEGORY_RELEASE = 2  ! This determines structure and file formats.
+  INTEGER, PARAMETER :: SECATEGORY_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: SECATEGORY_VERSION = 1  ! This is just the default data version.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
@@ -100,10 +102,12 @@ MODULE SEcategory_Define
     INTEGER(Long) :: n_Frequencies   = 0  ! L dim.
     INTEGER(Long) :: n_Surface_Types = 0  ! N dim.
     ! Dimensional vectors
-    REAL(Double),  ALLOCATABLE :: Frequency(:)      ! Lx1
-    CHARACTER(SL), ALLOCATABLE :: Surface_Type(:)   ! Nx1
+    REAL(Double),  ALLOCATABLE :: Frequency(:)             ! Lx1
+    CHARACTER(SL), ALLOCATABLE :: Surface_Type(:)          ! Nx1
+    ! Surface type validity array
+    LOGICAL,       ALLOCATABLE :: Surface_Type_IsValid(:)  ! Nx1
     ! Reflectance LUT data
-    REAL(Double),  ALLOCATABLE :: Reflectance(:,:)  ! LxN
+    REAL(Double),  ALLOCATABLE :: Reflectance(:,:)         ! LxN
   END TYPE SEcategory_type
   !:tdoc-:
 
@@ -160,7 +164,7 @@ CONTAINS
     Status = self%Is_Allocated
   END FUNCTION SEcategory_Associated
 
-  
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -202,8 +206,8 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL SEcategory_Create( SEcategory     , &
-!                               n_Frequencies  , &     
-!                               n_Surface_Types  )         
+!                               n_Frequencies  , &
+!                               n_Surface_Types  )
 !
 ! OBJECTS:
 !       SEcategory:         SEcategory object structure.
@@ -238,8 +242,8 @@ CONTAINS
     n_Surface_Types  )  ! Input
     ! Arguments
     TYPE(SEcategory_type), INTENT(OUT) :: self
-    INTEGER              , INTENT(IN)  :: n_Frequencies          
-    INTEGER              , INTENT(IN)  :: n_Surface_Types             
+    INTEGER              , INTENT(IN)  :: n_Frequencies
+    INTEGER              , INTENT(IN)  :: n_Surface_Types
     ! Local variables
     INTEGER :: alloc_stat
 
@@ -247,9 +251,10 @@ CONTAINS
     IF ( n_Frequencies   < 1 .OR. &
          n_Surface_Types < 1 ) RETURN
 
-   
+
     ! Perform the allocation
-    ALLOCATE( self%Frequency( n_Frequencies ), &
+    ALLOCATE( self%Surface_Type_IsValid( n_Surface_Types ), &
+              self%Frequency( n_Frequencies ), &
               self%Surface_Type( n_Surface_Types ), &
               self%Reflectance( n_Frequencies, n_Surface_Types ), &
               STAT = alloc_stat )
@@ -258,12 +263,13 @@ CONTAINS
 
     ! Initialise
     ! ...Dimensions
-    self%n_Frequencies   = n_Frequencies  
+    self%n_Frequencies   = n_Frequencies
     self%n_Surface_Types = n_Surface_Types
     ! ...Arrays
-    self%Frequency    = ZERO
-    self%Surface_Type = ''
-    self%Reflectance  = ZERO
+    self%Surface_Type_IsValid = .TRUE.
+    self%Frequency            = ZERO
+    self%Surface_Type         = ''
+    self%Reflectance          = ZERO
 
     ! Set allocation indicator
     self%Is_Allocated = .TRUE.
@@ -308,8 +314,10 @@ CONTAINS
     ! Dimension arrays
     WRITE(*,'(3x,"Frequency :")')
     WRITE(*,'(5(1x,es13.6,:))') self%Frequency
-    WRITE(*,'(3x,"Surface_Type :")')
-    WRITE(*,'(a)') self%Surface_Type
+    WRITE(*,'(3x,"Surface_Type - (IsValid) :")')
+    DO n = 1, self%n_Surface_Types
+      WRITE(*,'(5x,a," - (",l1,")")') TRIM(self%Surface_Type(n)), self%Surface_Type_IsValid(n)
+    END DO
     ! Reflectance array
     WRITE(*,'(3x,"Reflectance :")')
     DO n = 1, self%n_Surface_Types
@@ -438,14 +446,14 @@ CONTAINS
            TRIM(self%Classification_Name), &
            self%n_Frequencies, &
            self%n_Surface_Types
-                       
+
     ! Trim the output based on the
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE SEcategory_Info
- 
- 
+
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -456,7 +464,7 @@ CONTAINS
 !       Pure function to return the datatype name of an SEcategory object.
 !
 ! CALLING SEQUENCE:
-!       datatype_name = SEcategory_Name( SEcategory )         
+!       datatype_name = SEcategory_Name( SEcategory )
 !
 ! OBJECTS:
 !       SEcategory:   SEcategory object structure.
@@ -480,7 +488,7 @@ CONTAINS
     TYPE(SEcategory_type), INTENT(IN) :: self
     ! Function result
     CHARACTER(LEN(self%Datatype_Name)) :: datatype_name
-    
+
     datatype_name = self%Datatype_Name
 
   END FUNCTION SEcategory_Name
@@ -539,9 +547,9 @@ CONTAINS
     INTEGER :: i
 
     ! Setup
-    idx = 0     
+    idx = 0
     IF ( .NOT. SEcategory_Associated(self) ) RETURN
-   
+
     ! Match surface type and assign
     DO i = 1, self%n_Surface_Types
       IF ( self%Surface_Type(i) == Surface_Type ) THEN
@@ -551,7 +559,7 @@ CONTAINS
     END DO
 
   END FUNCTION SEcategory_Index
- 
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -594,11 +602,12 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL SEcategory_SetValue( SEcategory, &
-!                                 Version             = Version            , &
-!                                 Classification_Name = Classification_Name, &
-!                                 Frequency           = Frequency          , &
-!                                 Surface_Type        = Surface_Type       , &
-!                                 Reflectance         = Reflectance          )
+!                                 Version              = Version             , &
+!                                 Classification_Name  = Classification_Name , &
+!                                 Frequency            = Frequency           , &
+!                                 Surface_Type         = Surface_Type        , &
+!                                 Surface_Type_IsValid = Surface_Type_IsValid, &
+!                                 Reflectance          = Reflectance           )
 !
 ! OBJECTS:
 !       SEcategory:           Valid, allocated SEcategory object for which
@@ -642,6 +651,13 @@ CONTAINS
 !                             DIMENSION:  Rank-1 (N)
 !                             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Surface_Type_IsValid: Logical array to specify if a particular surface type is
+!                             valid for the context in which it is to be used.
+!                             UNITS:      N/A
+!                             TYPE:       LOGICAL
+!                             DIMENSION:  Rank-1 (N)
+!                             ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !       Reflectance:          Real array to which the Reflectance component of the
 !                             SEcategory object is to be set. The size of the
 !                             input must match the allocated size of the component,
@@ -655,25 +671,27 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE SEcategory_SetValue( &
-    self               , &  ! Input
-    Version            , &  ! Optional input
-    Classification_Name, &  ! Optional input
-    Frequency          , &  ! Optional input
-    Surface_Type       , &  ! Optional input
-    Reflectance          )  ! Optional input
+    self                , &  ! Input
+    Version             , &  ! Optional input
+    Classification_Name , &  ! Optional input
+    Frequency           , &  ! Optional input
+    Surface_Type        , &  ! Optional input
+    Surface_Type_IsValid, &  ! Optional input
+    Reflectance           )  ! Optional input
     ! Arguments
     TYPE(SEcategory_type) , INTENT(IN OUT) :: self
     INTEGER     , OPTIONAL, INTENT(IN)     :: Version
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Classification_Name
     REAL(fp)    , OPTIONAL, INTENT(IN)     :: Frequency(:)
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Surface_Type(:)
+    LOGICAL     , OPTIONAL, INTENT(IN)     :: Surface_Type_IsValid(:)
     REAL(fp)    , OPTIONAL, INTENT(IN)     :: Reflectance(:,:)
-   
+
     IF ( .NOT. SEcategory_Associated(self) ) RETURN
 
     IF ( PRESENT(Version) ) self%Version = Version
     IF ( PRESENT(Classification_Name) ) self%Classification_Name = Classification_Name
-    
+
     IF ( PRESENT(Frequency) ) THEN
       IF ( SIZE(Frequency) == self%n_Frequencies ) THEN
         self%Frequency = Frequency
@@ -681,7 +699,7 @@ CONTAINS
         self%Frequency = ZERO
       END IF
     END IF
-   
+
     IF ( PRESENT(Surface_Type) ) THEN
       IF ( SIZE(Surface_Type) == self%n_Surface_Types ) THEN
         self%Surface_Type = Surface_Type
@@ -689,7 +707,15 @@ CONTAINS
         self%Surface_Type = ''
       END IF
     END IF
-   
+
+    IF ( PRESENT(Surface_Type_IsValid) ) THEN
+      IF ( SIZE(Surface_Type_IsValid) == self%n_Surface_Types ) THEN
+        self%Surface_Type_IsValid = Surface_Type_IsValid
+      ELSE
+        self%Surface_Type_IsValid = .FALSE.
+      END IF
+    END IF
+
     IF ( PRESENT(Reflectance) ) THEN
       IF ( SIZE(Reflectance,DIM=1) == self%n_Frequencies .AND. &
            SIZE(Reflectance,DIM=2) == self%n_Surface_Types ) THEN
@@ -698,9 +724,9 @@ CONTAINS
         self%Reflectance = ZERO
       END IF
     END IF
-   
+
   END SUBROUTINE SEcategory_SetValue
- 
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -713,15 +739,16 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL SEcategory_GetValue( SEcategory, &
-!                                 Surface_Type_ToGet  = Surface_Type_ToGet , &
-!                                 Version             = Version            , &
-!                                 Classification_Name = Classification_Name, &
-!                                 n_Frequencies       = n_Frequencies      , &
-!                                 n_Surface_Types     = n_Surface_Types    , &
-!                                 Frequency           = Frequency          , &
-!                                 Surface_Type        = Surface_Type       , &
-!                                 Reflectance         = Reflectance        , &
-!                                 Surface_Reflectance = Surface_Reflectance  )
+!                                 Surface_Type_ToGet   = Surface_Type_ToGet  , &
+!                                 Version              = Version             , &
+!                                 Classification_Name  = Classification_Name , &
+!                                 n_Frequencies        = n_Frequencies       , &
+!                                 n_Surface_Types      = n_Surface_Types     , &
+!                                 Frequency            = Frequency           , &
+!                                 Surface_Type         = Surface_Type        , &
+!                                 Surface_Type_IsValid = Surface_Type_IsValid, &
+!                                 Reflectance          = Reflectance         , &
+!                                 Surface_Reflectance  = Surface_Reflectance   )
 !
 ! OBJECTS:
 !       SEcategory:              Valid, allocated SEcategory object from which
@@ -776,6 +803,13 @@ CONTAINS
 !                                DIMENSION:  Rank-1 (N)
 !                                ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
+!       Surface_Type_IsValid:    Logical array that specifies if a particular surface
+!                                type is valid for the context in which it is to be used.
+!                                UNITS:      N/A
+!                                TYPE:       LOGICAL
+!                                DIMENSION:  Rank-1 (N)
+!                                ATTRIBUTES: INTENT(IN), OPTIONAL, ALLOCATABLE
+!
 !       Reflectance:             Real array to which the Reflectance component of the
 !                                SEcategory object will be assigned. The actual
 !                                argument must be declared as allocatable.
@@ -804,16 +838,17 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE SEcategory_GetValue( &
-    self               , &  ! Input
-    Surface_Type_ToGet , &  ! Optional input
-    Version            , &  ! Optional output
-    Classification_Name, &  ! Optional output
-    n_Frequencies      , &  ! Optional output
-    n_Surface_Types    , &  ! Optional output
-    Frequency          , &  ! Optional output
-    Surface_Type       , &  ! Optional output
-    Reflectance        , &  ! Optional output
-    Surface_Reflectance  )  ! Optional output
+    self                , &  ! Input
+    Surface_Type_ToGet  , &  ! Optional input
+    Version             , &  ! Optional output
+    Classification_Name , &  ! Optional output
+    n_Frequencies       , &  ! Optional output
+    n_Surface_Types     , &  ! Optional output
+    Frequency           , &  ! Optional output
+    Surface_Type        , &  ! Optional output
+    Surface_Type_IsValid, &  ! Optional output
+    Reflectance         , &  ! Optional output
+    Surface_Reflectance   )  ! Optional output
     ! Arguments
     TYPE(SEcategory_type),               INTENT(IN)  :: self
     CHARACTER(*),              OPTIONAL, INTENT(IN)  :: Surface_Type_ToGet
@@ -823,13 +858,14 @@ CONTAINS
     INTEGER     ,              OPTIONAL, INTENT(OUT) :: n_Surface_Types
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Frequency(:)
     CHARACTER(*), ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Type(:)
+    LOGICAL     , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Type_IsValid(:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Reflectance(:,:)
     REAL(fp)    , ALLOCATABLE, OPTIONAL, INTENT(OUT) :: Surface_Reflectance(:)
     ! Local variables
     INTEGER :: i
-     
+
     IF ( .NOT. SEcategory_Associated(self) ) RETURN
-   
+
     IF ( PRESENT(Version            ) ) Version             = self%Version
     IF ( PRESENT(Classification_Name) ) Classification_Name = self%Classification_Name
     IF ( PRESENT(n_Frequencies      ) ) n_Frequencies       = self%n_Frequencies
@@ -845,11 +881,16 @@ CONTAINS
       Surface_Type = self%Surface_Type
     END IF
 
+    IF ( PRESENT(Surface_Type_IsValid) ) THEN
+      ALLOCATE(Surface_Type_IsValid(self%n_Surface_Types))
+      Surface_Type_IsValid = self%Surface_Type_IsValid
+    END IF
+
     IF ( PRESENT(Reflectance) ) THEN
       ALLOCATE(Reflectance(self%n_Frequencies, self%n_Surface_Types))
       Reflectance = self%Reflectance
     END IF
-    
+
     IF ( PRESENT(Surface_Type_ToGet) .AND. PRESENT(Surface_Reflectance) ) THEN
       ! Match surface type and assign
       i = SEcategory_Index(self,Surface_Type_ToGet)
@@ -860,7 +901,7 @@ CONTAINS
     END IF
 
   END SUBROUTINE SEcategory_GetValue
- 
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -932,8 +973,8 @@ CONTAINS
 
   FUNCTION SEcategory_InquireFile( &
     Filename       , &  ! Input
-    n_Frequencies  , &  ! Optional output  
-    n_Surface_Types, &  ! Optional output  
+    n_Frequencies  , &  ! Optional output
+    n_Surface_Types, &  ! Optional output
     Release        , &  ! Optional output
     Version        , &  ! Optional output
     Title          , &  ! Optional output
@@ -942,13 +983,13 @@ CONTAINS
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Frequencies  
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Frequencies
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Surface_Types
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release        
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version        
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -960,7 +1001,7 @@ CONTAINS
     INTEGER :: fid
     TYPE(SEcategory_type) :: SEcategory
 
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check that the file exists
@@ -1035,13 +1076,13 @@ CONTAINS
 
 
     ! Assign the return arguments
-    IF ( PRESENT(n_Frequencies  ) ) n_Frequencies   = SEcategory%n_Frequencies  
-    IF ( PRESENT(n_Surface_Types) ) n_Surface_Types = SEcategory%n_Surface_Types    
-    IF ( PRESENT(Release        ) ) Release         = SEcategory%Release        
-    IF ( PRESENT(Version        ) ) Version         = SEcategory%Version        
-    
+    IF ( PRESENT(n_Frequencies  ) ) n_Frequencies   = SEcategory%n_Frequencies
+    IF ( PRESENT(n_Surface_Types) ) n_Surface_Types = SEcategory%n_Surface_Types
+    IF ( PRESENT(Release        ) ) Release         = SEcategory%Release
+    IF ( PRESENT(Version        ) ) Version         = SEcategory%Version
+
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp()
       ! Close file if necessary
       IF ( File_Open(fid) ) THEN
@@ -1053,7 +1094,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
-    
+
   END FUNCTION SEcategory_InquireFile
 
 
@@ -1153,7 +1194,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     TYPE(SEcategory_type) :: dummy
-    
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check No_Close argument
@@ -1167,7 +1208,7 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( Filename ) ) THEN
       ! ...Inquire for the logical unit number
@@ -1202,7 +1243,7 @@ CONTAINS
       msg = SECATEGORY_DATATYPE//' datatype name check failed.'
       CALL Read_Cleanup(); RETURN
     END IF
-    
+
 
     ! Read and check the release and version
     READ( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1229,15 +1270,15 @@ CONTAINS
     ! ...Allocate the object
     CALL SEcategory_Create( &
            SEcategory          , &
-           dummy%n_Frequencies  , &        
-           dummy%n_Surface_Types  )                  
+           dummy%n_Frequencies  , &
+           dummy%n_Surface_Types  )
     IF ( .NOT. SEcategory_Associated( SEcategory ) ) THEN
       msg = 'SEcategory object allocation failed.'
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Explicitly assign the version number
     SEcategory%Version = dummy%Version
-        
+
 
     ! Read the global attributes
     err_stat = ReadGAtts_Binary_File( &
@@ -1266,6 +1307,12 @@ CONTAINS
       SEcategory%Surface_Type
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading surface type names - '//TRIM(io_msg)
+      CALL Read_Cleanup(); RETURN
+    END IF
+    ! ...Read the surface type validity array
+    err_stat = ReadLogical_Binary_file( fid, SEcategory%Surface_Type_IsValid )
+    IF ( err_stat /= SUCCESs ) THEN
+      msg = 'Error reading surface type validity array'
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Read the dimensional vectors
@@ -1301,7 +1348,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Read_CleanUp()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1411,7 +1458,7 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    
+
 
     ! Setup
     err_stat = SUCCESS
@@ -1431,7 +1478,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( FileName ) ) THEN
       ! ...Inquire for the logical unit number
@@ -1464,7 +1511,7 @@ CONTAINS
       msg = 'Error writing Datatype_Name - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
-    
+
 
     ! Write the release and version
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
@@ -1516,6 +1563,12 @@ CONTAINS
       msg = 'Error writing surface type names - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
+    ! ...Write the surface type validity array
+    err_stat = WriteLogical_Binary_file( fid, SEcategory%Surface_Type_IsValid )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing surface type validity array'
+      CALL Write_Cleanup(); RETURN
+    END IF
     ! ...Write the dimensional vectors
     WRITE( fid, IOSTAT=io_stat, IOMSG=io_msg ) &
       SEcategory%Frequency
@@ -1549,7 +1602,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Write_Cleanup()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -1562,7 +1615,7 @@ CONTAINS
 
   END FUNCTION SEcategory_WriteFile
 
-  
+
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -1610,7 +1663,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-   
+
     ! Check the object association status
     IF ( (.NOT. SEcategory_Associated(x)) .OR. &
          (.NOT. SEcategory_Associated(y))      ) RETURN
@@ -1640,7 +1693,7 @@ CONTAINS
     INTEGER     , INTENT(IN)  :: fid
     CHARACTER(*), INTENT(OUT) :: datatype_name
     ! Function result
-    INTEGER :: err_stat    
+    INTEGER :: err_stat
     ! Local variables
     CHARACTER(1), ALLOCATABLE :: dummy(:)
     INTEGER :: i, strlen
@@ -1654,7 +1707,7 @@ CONTAINS
     ! Get the string length
     READ( fid, IOSTAT=io_stat ) strlen
     IF ( io_stat /= 0 ) RETURN
-    
+
     ! Allocate dummy string array
     ALLOCATE( dummy(strlen), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -1671,5 +1724,5 @@ CONTAINS
     ! Done
     err_stat = SUCCESS
   END FUNCTION Read_Datatype
-  
+
 END MODULE SEcategory_Define

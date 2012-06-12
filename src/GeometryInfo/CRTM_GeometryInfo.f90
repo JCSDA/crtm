@@ -104,17 +104,18 @@ CONTAINS
   ELEMENTAL SUBROUTINE CRTM_GeometryInfo_Compute( gInfo )
     TYPE(CRTM_GeometryInfo_type), INTENT(IN OUT) :: gInfo
     
-    REAL(fp) :: COSv
+    REAL(fp) :: cosv
 
     ! Compute the derived values
     ! ...Derived sensor angles
     gInfo%Sensor_Scan_Radian    = DEGREES_TO_RADIANS * gInfo%user%Sensor_Scan_Angle
     gInfo%Sensor_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Sensor_Zenith_Angle
     gInfo%Sensor_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Sensor_Azimuth_Angle
-    gInfo%Secant_Sensor_Zenith  = ONE / COS(gInfo%Sensor_Zenith_Radian)
-    ! ... Check user zenith angle. If it is larger than the transmittance algorithms' limit
-    !     then use the limiting value in the algorithms.  The optical depths will be scalled 
-    !     back to the those at the user zenith angle.
+    gInfo%Cosine_Sensor_Zenith  = COS(gInfo%Sensor_Zenith_Radian)
+    gInfo%Secant_Sensor_Zenith  = ONE / gInfo%Cosine_Sensor_Zenith
+    ! ...Check user zenith angle. If it is larger than the transmittance algorithms' limit
+    !    then use the limiting value in the algorithms.  The optical depths will be scaled 
+    !    back to the those at the user zenith angle.
     IF( gInfo%user%Sensor_Zenith_Angle > MAX_TRANS_ZENITH_ANGLE )THEN
       gInfo%Trans_Zenith_Radian = DEGREES_TO_RADIANS * MAX_TRANS_ZENITH_ANGLE
       gInfo%Secant_Trans_Zenith = ONE / COS(gInfo%Trans_Zenith_Radian)
@@ -129,12 +130,12 @@ CONTAINS
     ! ...Derived source angles
     gInfo%Source_Zenith_Radian  = DEGREES_TO_RADIANS * gInfo%user%Source_Zenith_Angle
     gInfo%Source_Azimuth_Radian = DEGREES_TO_RADIANS * gInfo%user%Source_Azimuth_Angle
-    COSv = COS(gInfo%Source_Zenith_Radian)
-    IF( COSv /= ZERO )THEN
-      gInfo%Secant_Source_Zenith = ONE / COSv
+    cosv = COS(gInfo%Source_Zenith_Radian)
+    IF( cosv /= ZERO )THEN
+      gInfo%Secant_Source_Zenith = ONE / cosv
     ELSE
-      ! set to a large number with the sign of the original value, but not an infinity
-      gInfo%Secant_Source_Zenith = HUGE(COSv) * COSv/ABS(COSv)
+      ! ...Set to a large number with the sign of the original value
+      gInfo%Secant_Source_Zenith = HUGE(cosv) * cosv/ABS(cosv)  ! SIGN(HUGE(cosv),cosv) ?
     ENDIF
       
     ! ...Derived flux angles

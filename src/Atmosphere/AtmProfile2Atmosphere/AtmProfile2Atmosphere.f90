@@ -23,7 +23,6 @@ PROGRAM AtmProfile2Atmosphere
   USE AtmProfile_Define
   USE AtmProfile_netCDF_IO
   USE CRTM_Atmosphere_Define
-  USE CRTM_Atmosphere_IO
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -77,7 +76,7 @@ PROGRAM AtmProfile2Atmosphere
     message = 'Error allocating the AtmProfile structure array.'
     CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
   END IF
-  ! ...Read the data  
+  ! ...Read the data
   Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, &
                                          AtmProfile, &
                                          Reverse = .TRUE. )

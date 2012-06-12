@@ -4,7 +4,7 @@
 ! Module containing routines to combine separate AtmOptics objects
 !
 ! CREATION HISTORY:
-!       Written by:     Quanhua Liu,    quanhua.liu@noaa.gov  
+!       Written by:     Quanhua Liu,    quanhua.liu@noaa.gov
 !                       Yong Han,       yong.han@noaa.gov
 !                       Paul van Delst, paul.vandelst@noaa.gov
 !                       08-Jun-2005
@@ -43,7 +43,7 @@ MODULE CRTM_AtmOptics
   ! Module parameters
   ! ---------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'        
+  '$Id$'
 
 
   ! ------------------------------------
@@ -51,9 +51,10 @@ MODULE CRTM_AtmOptics
   ! variables across FWD, TL, and AD calls
   ! ------------------------------------
   TYPE :: CRTM_AOVariables_type
+    PRIVATE
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs           
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: w            
+    REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs
+    REAL(fp), DIMENSION(MAX_N_LAYERS) :: w
   END TYPE CRTM_AOVariables_type
 
 
@@ -112,8 +113,13 @@ CONTAINS
     ! Local variables
     INTEGER :: i, k, l
 
+    ! Initialise scattering optical depth sum
+    AtmOptics%Scattering_Optical_Depth = ZERO
+
+
     ! No scattering case
-    IF( AtmOptics%n_Legendre_Terms == 0 ) RETURN
+    IF( (.NOT. AtmOptics%Include_Scattering) .OR. &
+        AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
 
     ! Loop over atmospheric layers
@@ -138,8 +144,8 @@ CONTAINS
           END DO
           ! ...Normalization requirement for energy conservation
           AtmOptics%Phase_Coefficient(0,i,k) = POINT_5
-        END DO           
-        AtmOptics%Delta_Truncation(k) = AtmOptics%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)        
+        END DO
+        AtmOptics%Delta_Truncation(k) = AtmOptics%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)
 
 
         ! Redfine the total optical depth and single scattering
@@ -151,7 +157,13 @@ CONTAINS
 
       END IF Significant_Scattering
 
+
+      ! Compute the vertically integrated scattering optical depth
+      AtmOptics%Scattering_Optical_Depth = AtmOptics%Scattering_Optical_Depth + &
+                                           (AOV%w(k) * AOV%Optical_Depth(k))
+
     END DO Layer_Loop
+
 
   END SUBROUTINE CRTM_Combine_AtmOptics
 
@@ -164,8 +176,8 @@ CONTAINS
 !       CRTM_Combine_AtmOptics_TL
 !
 ! PURPOSE:
-!       Subroutine to compute the tangent-linear form of the optical properties
-!       from AtmAbsorption, CloudScatter, and AerosolScatter calculations.
+!       Subroutine to combine the tangent-linear optical properties from
+!       AtmAbsorption, CloudScatter, and AerosolScatter calculations.
 !
 ! CALLING SEQUENCE:
 !       CALL CRTM_Combine_AtmOptics_TL( AtmOptics   , &
@@ -188,7 +200,7 @@ CONTAINS
 !                          ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUT:
-!       AtmOptics_TL:      Tangent linear combined atmospheric optical properties.
+!       AtmOptics_TL:      Tangent-linear combined atmospheric optical properties.
 !                          UNITS:      N/A
 !                          TYPE:       CRTM_AtmOptics_type
 !                          DIMENSION:  Scalar
@@ -209,15 +221,27 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_TL'
     ! Local variables
     INTEGER :: i, k, l
+    REAL(fp) :: optical_depth_TL
     REAL(fp) :: w_TL
 
 
+    ! Initialise tangent-linear scattering optical depth sum
+    AtmOptics_TL%Scattering_Optical_Depth = ZERO
+
+
     ! No scattering case
-    IF( AtmOptics%n_Legendre_Terms == 0 ) RETURN
+    IF( (.NOT. AtmOptics%Include_Scattering) .OR. &
+        AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
 
     ! Loop over atmospheric layers
     Layer_Loop: DO k = 1, AtmOptics%n_Layers
+
+
+      ! Save the unmodified optical parameters
+      optical_depth_TL = AtmOptics_TL%Optical_Depth(k)
+      ! ...Initialise scattering dependent terms
+      w_TL = ZERO
 
 
       ! Only proceed if the total optical depth is significant
@@ -230,11 +254,11 @@ CONTAINS
           DO l = 1, AtmOptics%n_Legendre_Terms
              AtmOptics_TL%Phase_Coefficient(l,i,k) = &
                ( AtmOptics_TL%Phase_Coefficient(l,i,k) - &
-                 (AtmOptics%Phase_Coefficient(l,i,k) * AtmOptics_TL%Single_Scatter_Albedo(k)) ) / AOV%bs(k)             
+                 (AtmOptics%Phase_Coefficient(l,i,k) * AtmOptics_TL%Single_Scatter_Albedo(k)) ) / AOV%bs(k)
           END DO
           ! ...Normalization requirement for energy conservation
           AtmOptics_TL%Phase_Coefficient(0,i,k) = ZERO
-        END DO           
+        END DO
         AtmOptics_TL%Delta_Truncation(k) = AtmOptics_TL%Phase_Coefficient(AtmOptics%n_Legendre_Terms,1,k)
 
 
@@ -243,8 +267,8 @@ CONTAINS
         !
         ! The expressions below are ordered to make the adjoint
         ! form easy to determine from the TL form.
-        
-        
+
+
         !  The optical depth
         !
         !    tau = ( 1 - d.w ) . tau
@@ -262,13 +286,13 @@ CONTAINS
 
 
         !  The single scatter albedo, SSA
-        ! 
+        !
         !         (1 - d).w
         !  SSA = -----------
         !          1 - d.w
-        ! 
+        !
         !  so,
-        ! 
+        !
         !            ( 1 - d + SSA.d )              ( SSA - 1 ).w
         !  SSA_TL = ------------------- . w_TL  +  --------------- . d_TL
         !                1 - d.w                       1 - d.w
@@ -281,8 +305,14 @@ CONTAINS
 
       END IF Significant_Scattering
 
+
+      ! Compute the tangent-linear vertically integrated scattering optical depth
+      AtmOptics_TL%Scattering_Optical_Depth = AtmOptics_TL%Scattering_Optical_Depth + &
+                                              (AOV%w(k) * optical_depth_TL) + &
+                                              (AOV%Optical_Depth(k) * w_TL)
+
     END DO Layer_Loop
-                                      
+
   END SUBROUTINE CRTM_Combine_AtmOptics_TL
 
 
@@ -344,17 +374,21 @@ CONTAINS
     ! Local variables
     INTEGER :: i, k, l
     REAL(fp) :: w_AD
+    REAL(fp) :: optical_depth_AD
+
 
     ! No scattering case
-    IF( AtmOptics%n_Legendre_Terms == 0 ) RETURN
+    IF( (.NOT. AtmOptics%Include_Scattering) .OR. &
+        AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
 
     ! Begin layer loop
     Layer_Loop: DO k = AtmOptics%n_Layers, 1, -1
 
 
-      ! Initialise local, layer independent adjoint variables
-      w_AD = ZERO
+      ! Compute the adjoint of the vertically integrated scattering optical depth
+      optical_depth_AD = AtmOptics_AD%Scattering_Optical_Depth * AOV%w(k)
+      w_AD             = AtmOptics_AD%Scattering_Optical_Depth * AOV%Optical_Depth(k)
 
 
       ! Only proceed if the scattering is significant
@@ -365,20 +399,20 @@ CONTAINS
         ! scattering albedo for the delta function adjustment
 
         !  The tangent-linear single scatter albedo, SSA_TL
-        ! 
+        !
         !              ( 1 - d + SSA.d )              ( SSA - 1 ).w
         !    SSA_TL = ------------------- . w_TL  +  --------------- . d_TL
         !                   1 - d.w                      1 - d.w
-        ! 
+        !
         !  so,
         !                    ( SSA - 1 ).w
         !    d_AD = d_AD + ---------------- . SSA_AD
         !                       1 - d.w
-        ! 
-        !                   ( 1 - d + SSA.d ) 
+        !
+        !                   ( 1 - d + SSA.d )
         !    w_AD = w_AD + ------------------- . SSA_AD
-        !                        1 - d.w     
-        ! 
+        !                        1 - d.w
+        !
         !    SSA_AD = 0
 
         AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
@@ -394,17 +428,17 @@ CONTAINS
 
 
         !  The tangent-linear optical depth, tau_TL
-        ! 
+        !
         !    tau_TL = ( 1 - d.w ).tau_TL - d.tau.w_TL - w.tau.d_TL
-        ! 
+        !
         !  so,
-        ! 
+        !
         !    d_AD = d_AD - w.tau.tau_AD
-        ! 
+        !
         !    w_AD = w_AD - d.tau.tau_AD
-        ! 
+        !
         !    tau_AD = ( 1 - d.w ).tau_AD
-        ! 
+        !
         !  Note that the optical depth from the AOV structure is
         !  used on the RHS of the above expressions.
 
@@ -432,10 +466,10 @@ CONTAINS
           AtmOptics_AD%Phase_Coefficient(0,i,k) = ZERO
           DO l = 1, AtmOptics%n_Legendre_Terms
              AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) - &
-               AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) 
+               AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k)
              AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) )
           END DO
-        END DO           
+        END DO
 
         AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) + &
                                                 w_AD / AOV%Optical_Depth(k)

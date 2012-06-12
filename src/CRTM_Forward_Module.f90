@@ -92,12 +92,12 @@ MODULE CRTM_Forward_Module
   USE CSvar_Define, ONLY: CSvar_type, &
                           CSvar_Associated, &
                           CSvar_Destroy   , &
-                          CSvar_Create    
+                          CSvar_Create
   ! ...AerosolScatter
   USE ASvar_Define, ONLY: ASvar_type, &
                           ASvar_Associated, &
                           ASvar_Destroy   , &
-                          ASvar_Create    
+                          ASvar_Create
 
 
   ! -----------------------
@@ -382,7 +382,7 @@ CONTAINS
         ! Set NLTE correction option
         Apply_NLTE_Correction = Options(m)%Apply_NLTE_Correction
         ! Set aircraft pressure altitude
-        Aircraft_Pressure = Options(m)%Aircraft_Pressure  
+        Aircraft_Pressure = Options(m)%Aircraft_Pressure
 
         ! Copy over ancillary input
         AncillaryInput%SSU    = Options(m)%SSU
@@ -609,7 +609,7 @@ CONTAINS
 
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
-  
+
           ! Determine the number of streams (n_Full_Streams) in up+downward directions
           IF ( User_N_Streams ) THEN
             n_Full_Streams = Options(m)%n_Streams
@@ -705,14 +705,10 @@ CONTAINS
 
 
           ! Compute the combined atmospheric optical properties
-          IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
-          END IF
-          
-          ! ------------------------------------------------------
-          ! Compute vertically integrated scattering optical depth
-          ! ------------------------------------------------------
-          RTSolution(ln,m)%sod = SUM( AOV%w * AOV%Optical_Depth )
+          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          ! ...Save vertically integrated scattering optical depth fro output
+          RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
+
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
           ! ...Indicate SfcOptics ARE to be computed

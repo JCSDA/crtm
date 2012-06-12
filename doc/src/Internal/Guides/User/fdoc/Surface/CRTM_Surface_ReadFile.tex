@@ -9,11 +9,11 @@
         Function to read CRTM Surface object files.
  
   CALLING SEQUENCE:
-        Error_Status = CRTM_Surface_ReadFile( Filename                , &
-                                              Surface                 , &
-                                              Quiet      = Quiet      , &
-                                              n_Channels = n_Channels , &
-                                              n_Profiles = n_Profiles , &
+        Error_Status = CRTM_Surface_ReadFile( Filename               , &
+                                              Surface                , &
+                                              Quiet      = Quiet     , &
+                                              n_Channels = n_Channels, &
+                                              n_Profiles = n_Profiles  )
  
   INPUTS:
         Filename:     Character string specifying the name of an
@@ -35,7 +35,7 @@
                       Rank-2: L channels  x  M profiles
                               Channel and profile data are to be read in.
                               The file contains both channel and profile
-                              information. The first dimension of the 
+                              information. The first dimension of the
                               structure is the CHANNEL dimension, the second
                               is the PROFILE dimension. This is to allow
                               K-matrix structures to be read in with the

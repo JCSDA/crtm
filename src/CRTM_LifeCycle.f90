@@ -91,17 +91,25 @@ CONTAINS
 !       Function to initialise the CRTM.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Init( Sensor_ID                            , &
-!                                 ChannelInfo                          , &
-!                                 CloudCoeff_File   = CloudCoeff_File  , &
-!                                 AerosolCoeff_File = AerosolCoeff_File, &
-!                                 EmisCoeff_File    = EmisCoeff_File   , &  ! *** DEPRECATED. Delete in next release
-!                                 File_Path         = File_Path        , &
-!                                 Load_CloudCoeff   = Load_CloudCoeff  , &
-!                                 Load_AerosolCoeff = Load_AerosolCoeff, &
-!                                 Quiet             = Quiet            , &
-!                                 Process_ID        = Process_ID       , &
-!                                 Output_Process_ID = Output_Process_ID  )
+!       Error_Status = CRTM_Init( Sensor_ID  , &
+!                                 ChannelInfo, &
+!                                 CloudCoeff_File    = CloudCoeff_File   , &
+!                                 AerosolCoeff_File  = AerosolCoeff_File , &
+!                                 Load_CloudCoeff    = Load_CloudCoeff   , &
+!                                 Load_AerosolCoeff  = Load_AerosolCoeff , &
+!                                 IRwaterCoeff_File  = IRwaterCoeff_File , &
+!                                 IRlandCoeff_File   = IRlandCoeff_File  , &
+!                                 IRsnowCoeff_File   = IRsnowCoeff_File  , &
+!                                 IRiceCoeff_File    = IRiceCoeff_File   , &
+!                                 VISwaterCoeff_File = VISwaterCoeff_File, &
+!                                 VISlandCoeff_File  = VISlandCoeff_File , &
+!                                 VISsnowCoeff_File  = VISsnowCoeff_File , &
+!                                 VISiceCoeff_File   = VISiceCoeff_File  , &
+!                                 MWwaterCoeff_File  = MWwaterCoeff_File , &
+!                                 File_Path          = File_Path         , &
+!                                 Quiet              = Quiet             , &
+!                                 Process_ID         = Process_ID        , &
+!                                 Output_Process_ID  = Output_Process_ID   )
 !
 ! INPUTS:
 !       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
@@ -128,38 +136,19 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUTS:
-!       CloudCoeff_File:    Name of the CRTM Binary format CloudCoeff file
-!                           containing the scattering coefficient data. If not
-!                           specified the default filename is "CloudCoeff.bin".
+!       CloudCoeff_File:    Name of the data file containing the cloud optical
+!                           properties data for scattering calculations.
+!                           Available datafiles:
+!                           - CloudCoeff.bin  [DEFAULT]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       AerosolCoeff_File:  Name of the CRTM Binary format AerosolCoeff file
-!                           containing the aerosol absorption and scattering
-!                           coefficient data. If not specified the default
-!                           filename is "AerosolCoeff.bin".
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!
-! *** DEPRECATED. Delete in next release
-!       EmisCoeff_File:     Name of the CRTM Binary format EmisCoeff file
-!                           containing the IRSSEM coefficient data. If not
-!                           specified the default filename is "EmisCoeff.bin".
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
-! *** DEPRECATED. Delete in next release
-!
-!
-!       File_Path:          Character string specifying a file path for the
-!                           input data files. If not specified, the current
-!                           directory is the default.
+!       AerosolCoeff_File:  Name of the data file containing the aerosol optical
+!                           properties data for scattering calculations.
+!                           Available datafiles:
+!                           - AerosolCoeff.bin  [DEFAULT]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -182,6 +171,112 @@ CONTAINS
 !                           If not specified, default is .TRUE. (will be loaded)
 !                           UNITS:      N/A
 !                           TYPE:       LOGICAL
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       MWwaterCoeff_File:  Name of the data file containing the coefficient
+!                           data for the microwave water emissivity model.
+!                           Available datafiles:
+!                           - FASTEM5.MWwater.EmisCoeff.bin  [DEFAULT]
+!                           - FASTEM4.MWwater.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       IRwaterCoeff_File:  Name of the data file containing the coefficient
+!                           data for the infrared water emissivity model.
+!                           Available datafiles:
+!                           - Nalli.IRwater.EmisCoeff.bin  [DEFAULT]
+!                           - WuSmith.IRwater.EmisCoeff.bin
+!                           If not specified the Nalli datafile is read.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       IRlandCoeff_File:   Name of the data file containing the coefficient
+!                           data for the infrared land emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.IRland.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.IRland.EmisCoeff.bin
+!                           - USGS.IRland.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       IRsnowCoeff_File:   Name of the data file containing the coefficient
+!                           data for the infrared snow emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.IRsnow.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.IRsnow.EmisCoeff.bin
+!                           - USGS.IRsnow.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       IRiceCoeff_File:    Name of the data file containing the coefficient
+!                           data for the infrared ice emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.IRice.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.IRice.EmisCoeff.bin
+!                           - USGS.IRice.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       VISwaterCoeff_File: Name of the data file containing the coefficient
+!                           data for the visible water emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.VISwater.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.VISwater.EmisCoeff.bin
+!                           - USGS.VISwater.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       VISlandCoeff_File:  Name of the data file containing the coefficient
+!                           data for the visible land emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.VISland.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.VISland.EmisCoeff.bin
+!                           - USGS.VISland.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       VISsnowCoeff_File:  Name of the data file containing the coefficient
+!                           data for the visible snow emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.VISsnow.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.VISsnow.EmisCoeff.bin
+!                           - USGS.VISsnow.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       VISiceCoeff_File:   Name of the data file containing the coefficient
+!                           data for the visible ice emissivity model.
+!                           Available datafiles:
+!                           - NPOESS.VISice.EmisCoeff.bin  [DEFAULT]
+!                           - IGBP.VISice.EmisCoeff.bin
+!                           - USGS.VISice.EmisCoeff.bin
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       File_Path:          Character string specifying a file path for the
+!                           input data files. If not specified, the current
+!                           directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -238,7 +333,7 @@ CONTAINS
     ChannelInfo       , &  ! Output
     CloudCoeff_File   , &  ! Optional input
     AerosolCoeff_File , &  ! Optional input
-    EmisCoeff_File    , &  ! Optional input  ! *** DEPRECATED. Delete in next release
+    EmisCoeff_File    , &  ! Optional input  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     IRwaterCoeff_File , &  ! Optional input
     IRlandCoeff_File  , &  ! Optional input
     IRsnowCoeff_File  , &  ! Optional input
@@ -260,7 +355,7 @@ CONTAINS
     TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File  ! *** DEPRECATED. Delete in next release
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRsnowCoeff_File
@@ -520,6 +615,7 @@ CONTAINS
       RETURN
     END IF
 
+
     ! Load the emissivity model coefficients
     ! ...MW water
     err_stat = CRTM_MWwaterCoeff_Load( &
@@ -532,6 +628,7 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
+
 
     ! Load the ChannelInfo structure
     DO n = 1, n_Sensors

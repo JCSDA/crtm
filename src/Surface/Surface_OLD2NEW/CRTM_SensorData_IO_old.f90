@@ -10,7 +10,7 @@
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE CRTM_SensorData_IO
+MODULE CRTM_SensorData_IO_old
 
   ! ------------------
   ! Environment set up
@@ -19,7 +19,7 @@ MODULE CRTM_SensorData_IO
   USE File_Utility          , ONLY: File_Open, File_Exists
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility   , ONLY: Open_Binary_File
-  USE CRTM_SensorData_Define, ONLY: CRTM_SensorData_type, &
+  USE CRTM_SensorData_Define_old, ONLY: CRTM_SensorData_type, &
                                     CRTM_SensorData_Associated, &
                                     CRTM_SensorData_Destroy, &
                                     CRTM_SensorData_Create
@@ -136,19 +136,19 @@ CONTAINS
              TRIM(Filename), io_stat
       CALL Inquire_Cleanup(Close_File=.TRUE.); RETURN
     END IF
-    
+
     ! Close the file
     CLOSE( fid, IOSTAT=io_stat )
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
-    
+
     ! Set the return arguments
     IF ( PRESENT(n_DataSets) ) n_DataSets = n
 
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp( Close_File )
       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
@@ -211,7 +211,7 @@ CONTAINS
 !
 !       No_Close:       Set this logical argument to NOT close the file upon exit.
 !                       If == .FALSE., the input file is closed upon exit [DEFAULT]
-!                          == .TRUE.,  the input file is NOT closed upon exit. 
+!                          == .TRUE.,  the input file is NOT closed upon exit.
 !                       If not specified, default is .FALSE.
 !                       UNITS:      N/A
 !                       TYPE:       LOGICAL
@@ -277,7 +277,7 @@ CONTAINS
       IF ( Debug ) Noisy = .TRUE.
     END IF
 
-    
+
     ! Check if the file is open
     IF ( File_Open( FileName ) ) THEN
       ! Yes, the file is already open
@@ -293,7 +293,7 @@ CONTAINS
       IF ( .NOT. File_Exists( Filename ) ) THEN
         msg = 'File '//TRIM(Filename)//' not found.'
         CALL Read_Cleanup(); RETURN
-      END IF 
+      END IF
       ! ...Open the file
       err_stat = Open_Binary_File( Filename, fid )
       IF ( err_stat /= SUCCESS ) THEN
@@ -338,12 +338,12 @@ CONTAINS
         CALL Read_Cleanup(); RETURN
       END IF
     END IF
-    
-    
+
+
     ! Set the optional return values
     IF ( PRESENT(n_DataSets) ) n_DataSets = n
 
- 
+
     ! Output an info message
     IF ( Noisy ) THEN
       WRITE( msg,'("Number of datasets read from ",a,": ",i0)' ) TRIM(Filename), n
@@ -351,7 +351,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_CleanUp( Close_File )
       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
@@ -368,7 +368,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Read_CleanUp
-  
+
   END FUNCTION CRTM_SensorData_ReadFile
 
 
@@ -414,7 +414,7 @@ CONTAINS
 !
 !       No_Close:       Set this logical argument to NOT close the file upon exit.
 !                       If == .FALSE., the input file is closed upon exit [DEFAULT]
-!                          == .TRUE.,  the input file is NOT closed upon exit. 
+!                          == .TRUE.,  the input file is NOT closed upon exit.
 !                       If not specified, default is .FALSE.
 !                       UNITS:      N/A
 !                       TYPE:       LOGICAL
@@ -463,7 +463,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: i, n
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
@@ -478,7 +478,7 @@ CONTAINS
     END IF
 
     ! Check the SensorData structure dimensions
-    IF ( ANY(SensorData%n_Channels < 1) ) THEN 
+    IF ( ANY(SensorData%n_Channels < 1) ) THEN
       msg = 'Dimensions of SensorData structures are < or = 0.'
       CALL Write_Cleanup(); RETURN
     END IF
@@ -503,7 +503,7 @@ CONTAINS
 
 
     ! Write the number of SensorDatas dimension
-    n = SIZE(SensorData)    
+    n = SIZE(SensorData)
     WRITE( fid,IOSTAT=io_stat) n
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing dataset dimensions to ",a,". IOSTAT = ",i0)' ) &
@@ -540,7 +540,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_CleanUp( Close_File )
       LOGICAL, OPTIONAL, INTENT(IN) :: Close_File
       ! Close file if necessary
@@ -680,7 +680,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_Record_Cleanup()
       ! Deallocate SensorData structure if necessary
       CALL CRTM_SensorData_Destroy( SensorData )
@@ -745,7 +745,7 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     INTEGER :: io_stat
- 
+
     ! Setup
     err_stat = SUCCESS
     IF ( .NOT. CRTM_SensorData_Associated( SensorData ) ) THEN
@@ -774,7 +774,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_Record_Cleanup()
       ! Close and delete output file
       CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
@@ -784,7 +784,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Write_Record_Cleanup
-    
+
   END FUNCTION Write_Record
 
-END MODULE CRTM_SensorData_IO
+END MODULE CRTM_SensorData_IO_old

@@ -1,318 +1,98 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       CRTM_SensorData_Define
 !
-! PURPOSE:
-!       Module defining the CRTM SensorData SensorData structure and containing
-!       routines to manipulate it.
-!       
-! CATEGORY:
-!       CRTM : Surface : Sensor Data
+! CRTM_SensorData_Define
 !
-! LANGUAGE:
-!       Fortran-95
+! Module defining the CRTM SensorData structure and containing
+! routines to manipulate it.
 !
-! CALLING SEQUENCE:
-!       USE SensorData_Define
-!
-! MODULES:
-!       Type_Kinds:          Module containing definitions for kinds
-!                            of variable types.
-!
-!       Message_Handler:     Module to define simple error codes and
-!                            handle error conditions
-!                            USEs: FILE_UTILITY module
-!
-!       CRTM_Parameters:     Module of parameter definitions for the CRTM.
-!                            USEs: TYPE_KINDS module
-!
-! CONTAINS:
-!       CRTM_Associated_SensorData:  Function to test the association status
-!                                    of the pointer members of a SensorData
-!                                    structure.
-!
-!       CRTM_Destroy_SensorData:     Function to re-initialize an SensorData
-!                                    structure.
-!
-!       CRTM_Allocate_SensorData:    Function to allocate the pointer members
-!                                    of a SensorData structure.
-!
-!       CRTM_Assign_SensorData:      Function to copy an SensorData structure.
-!
-!
-! DERIVED TYPES:
-!       CRTM_SensorData_type
-!       --------------------
-!         Definition of the CRTM SensorData data structure.
-!         Fields are...
-!
-!         n_Channels:              Number of channels dimension.
-!                                  This is the "L" dimension.
-!                                  Note: Can be = 0 (i.e. no sensor data)
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Scalar
-!
-!         Sensor_ID:               The WMO code for identifying a satelite
-!                                  sensor. Taken from the WMO common
-!                                  code tables at:
-!                                    http://www.wmo.ch/web/ddbs/Code-tables.html
-!                                  The Sensor ID is from Common Code
-!                                  table C-8, or code table 0 02 019 in BUFR
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Scalar
-!
-!         Tb:                      The brightness temperature observation for
-!                                  the specified channel.
-!                                  UNITS:      Kelvin (K)
-!                                  TYPE:       REAL( Double )
-!                                  DIMENSION:  Rank-1, n_Channels
-!
-!             
-!
-!         NCEP_Sensor_ID:          An "in-house" value used at NOAA/NCEP/EMC 
-!                                  to identify a satellite/sensor combination.
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Rank-1, n_Channels
-!                                  ATTRIBUTES: POINTER
-!
-!         WMO_Satellite_ID:        The WMO code for identifying satellite
-!                                  platforms. Taken from the WMO common
-!                                  code tables at:
-!                                    http://www.wmo.ch/web/ddbs/Code-tables.html
-!                                  The Satellite ID is from Common Code
-!                                  table C-5, or code table 0 01 007 in BUFR
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Rank-1, n_Channels
-!                                  ATTRIBUTES: POINTER
-!
-!         WMO_Sensor_ID:           The WMO code for identifying a satelite
-!                                  sensor. Taken from the WMO common
-!                                  code tables at:
-!                                    http://www.wmo.ch/web/ddbs/Code-tables.html
-!                                  The Sensor ID is from Common Code
-!                                  table C-8, or code table 0 02 019 in BUFR
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Rank-1, n_Channels
-!                                  ATTRIBUTES: POINTER
-!
-!         Sensor_Channel:          This is the sensor channel number associated
-!                                  with the data in the coefficient file. Helps
-!                                  in identifying channels where the numbers are
-!                                  not contiguous (e.g. AIRS).
-!                                  UNITS:      N/A
-!                                  TYPE:       INTEGER
-!                                  DIMENSION:  Rank-1, n_Channels
-!                                  ATTRIBUTES: POINTER
-!
-!
-!       *!IMPORTANT!*
-!       -------------
-!       Note that the CRTM_SensorData_type is PUBLIC and its members are
-!       not encapsulated; that is, they can be fully accessed outside the
-!       scope of this module. This makes it possible to manipulate
-!       the structure and its data directly rather than, for e.g., via
-!       get() and set() functions. This was done to eliminate the
-!       overhead of the get/set type of structure access in using the
-!       structure. *But*, it is recommended that the user destroy,
-!       allocate, and assign the structure using only the routines
-!       in this module where possible to eliminate -- or at least
-!       minimise -- the possibility of memory leakage since most
-!       of the structure members are pointers.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 23-Jul-2004
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 23-Jul-2004
+!                       paul.vandelst@noaa.gov
 !
-!  Copyright (C) 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE CRTM_SensorData_Define_old
 
-
-  ! ----------
+  ! -----------------
+  ! Environment setup
+  ! -----------------
   ! Module use
-  ! ----------
-
-  USE Type_Kinds
-  USE Message_Handler
-
-  USE CRTM_Parameters, ONLY: INVALID_NCEP_SENSOR_ID, &
-                             INVALID_WMO_SATELLITE_ID, &
-                             INVALID_WMO_SENSOR_ID   
-
-
-  ! -----------------------
+  USE Type_Kinds           , ONLY: fp
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers, ONLY: DEFAULT_N_SIGFIG, &
+                                   OPERATOR(.EqualTo.), &
+                                   Compares_Within_Tolerance
+  USE CRTM_Parameters      , ONLY: ZERO, ONE, SET, STRLEN, &
+                                   INVALID_WMO_SATELLITE_ID, &
+                                   INVALID_WMO_SENSOR_ID
   ! Disable implicit typing
-  ! -----------------------
-
   IMPLICIT NONE
 
 
   ! ------------
   ! Visibilities
   ! ------------
-
+  ! Everything private by default
   PRIVATE
+  ! Parameters
+  PUBLIC :: INVALID_WMO_SATELLITE_ID
+  PUBLIC :: INVALID_WMO_SENSOR_ID
+  ! Datatypes
+  PUBLIC :: CRTM_SensorData_type
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(+)
+  ! Procedures
+  PUBLIC :: CRTM_SensorData_Associated
+  PUBLIC :: CRTM_SensorData_Destroy
+  PUBLIC :: CRTM_SensorData_Create
+  PUBLIC :: CRTM_SensorData_Zero
+  PUBLIC :: CRTM_SensorData_IsValid
+  PUBLIC :: CRTM_SensorData_Inspect
+  PUBLIC :: CRTM_SensorData_DefineVersion
+  PUBLIC :: CRTM_SensorData_Compare
 
-  PUBLIC :: CRTM_Associated_SensorData
-  PUBLIC :: CRTM_Destroy_SensorData
-  PUBLIC :: CRTM_Allocate_SensorData
-  PUBLIC :: CRTM_Assign_SensorData
 
+  ! ---------------------
+  ! Procedure overloading
+  ! ---------------------
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE CRTM_SensorData_Equal
+  END INTERFACE OPERATOR(==)
 
-  ! -------------------------
-  ! PRIVATE Module parameters
-  ! -------------------------
+  INTERFACE OPERATOR(+)
+    MODULE PROCEDURE CRTM_SensorData_Add
+  END INTERFACE OPERATOR(+)
 
-  ! -- RCS Id for the module
-  CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_SensorData_Define.f90,v 1.7 2006/05/02 14:58:35 dgroff Exp $'
-
-  ! -- SensorData scalar member invalid value
-  INTEGER,         PRIVATE, PARAMETER :: INVALID = -1
-  REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO    = 0.0_fp_kind
-
-  ! -- Keyword set value
-  INTEGER, PRIVATE, PARAMETER :: SET = 1
-
+  ! -----------------
+  ! Module parameters
+  ! -----------------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id: CRTM_SensorData_Define.f90 7521 2010-04-23 18:37:49Z david.groff@noaa.gov $'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! -------------------------------
-  ! SensorData data type definition
+  ! SensorData structure definition
   ! -------------------------------
-
-  TYPE, PUBLIC :: CRTM_SensorData_type
-    INTEGER :: n_Allocates = 0
-
-    ! -- Dimension values
-    INTEGER :: n_Channels = 0 ! L dimension
-
-    ! -- WMO sensor ID for the sensor providing the following measurements
-    INTEGER :: Sensor_ID = INVALID
-
-    ! -- The sensor brightness temperatures
-    REAL( fp_kind ), DIMENSION( : ), POINTER :: Tb => NULL() ! L
-
-
-    ! -- The sensor ID and channels
-    INTEGER, DIMENSION( : ), POINTER :: NCEP_Sensor_ID   => NULL() ! L
-    INTEGER, DIMENSION( : ), POINTER :: WMO_Satellite_ID => NULL() ! L
-    INTEGER, DIMENSION( : ), POINTER :: WMO_Sensor_ID    => NULL() ! L
-    INTEGER, DIMENSION( : ), POINTER :: Sensor_Channel   => NULL() ! L
-
-
+  !:tdoc+:
+  TYPE :: CRTM_SensorData_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Dimension values
+    INTEGER :: n_Channels = 0  ! L
+    ! The data sensor IDs
+    CHARACTER(STRLEN) :: Sensor_Id        = ' '
+    INTEGER           :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
+    INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
+    ! The sensor channels and brightness temperatures
+    INTEGER , ALLOCATABLE :: Sensor_Channel(:)   ! L
+    REAL(fp), ALLOCATABLE :: Tb(:)               ! L
   END TYPE CRTM_SensorData_type
+  !:tdoc-:
 
 
 CONTAINS
-
-
-
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
-
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       CRTM_Clear_SensorData
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a CRTM SensorData structure.
-!
-! CATEGORY:
-!       CRTM : Surface : SensorData
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Clear_SensorData( SensorData) ! Output
-!
-! INPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       SensorData:  SensorData structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       CRTM_SensorData_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!       
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 23-Jul-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
-!----------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Clear_SensorData( SensorData )
-
-    TYPE( CRTM_SensorData_type ), INTENT( IN OUT ) :: SensorData
-
-    SensorData%n_Channels = 0
-
-  END SUBROUTINE CRTM_Clear_SensorData
-
-
-
 
 
 !################################################################################
@@ -324,1024 +104,533 @@ CONTAINS
 !################################################################################
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
-!       CRTM_Associated_SensorData
+!       CRTM_SensorData_Associated
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       CRTM_SensorData structure.
-!
-! CATEGORY:
-!       CRTM : Surface : SensorData
-!
-! LANGUAGE:
-!       Fortran-95
+!       Elemental function to test the status of the allocatable components
+!       of a CRTM SensorData object.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = CRTM_Associated_SensorData( SensorData,         &  ! Input
-!                                                        ANY_Test = Any_Test )  ! Optional input
+!       Status = CRTM_SensorData_Associated( SensorData )
 !
-! INPUT ARGUMENTS:
-!       SensorData:  SensorData structure which is to have its pointer
-!                    member's association status tested.
+! OBJECTS:
+!       SensorData:  SensorData structure which is to have its member's
+!                    status tested.
 !                    UNITS:      N/A
 !                    TYPE:       CRTM_SensorData_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:    Set this argument to test if ANY of the
-!                    SensorData structure pointer members are associated.
-!                    The default is to test if ALL the pointer members
-!                    are associated.
-!                    If ANY_Test = 0, test if ALL the pointer members
-!                                     are associated.  (DEFAULT)
-!                       ANY_Test = 1, test if ANY of the pointer members
-!                                     are associated.
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
+!                    DIMENSION:  Scalar or any rank
+!                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            association status of the SensorData pointer
-!                            members.
-!                            .TRUE.  - if ALL the SensorData pointer members
-!                                      are associated, or if the ANY_Test argument
-!                                      is set and ANY of the SensorData
-!                                      pointer members are associated.
-!                            .FALSE. - some or all of the SensorData pointer
-!                                      members are NOT associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!       Status:      The return value is a logical value indicating the
+!                    status of the SensorData members.
+!                      .TRUE.  - if the array components are allocated.
+!                      .FALSE. - if the array components are not allocated.
+!                    UNITS:      N/A
+!                    TYPE:       LOGICAL
+!                    DIMENSION:  Same as input SensorData argument
 !
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Associated_SensorData( SensorData, & ! Input
-                                       ANY_Test )  & ! Optional input
-                                     RESULT( Association_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    TYPE( CRTM_SensorData_type ), INTENT( IN ) :: SensorData
-
-    ! -- Optional input
-    INTEGER,            OPTIONAL, INTENT( IN ) :: ANY_Test
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    LOGICAL :: Association_Status
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    LOGICAL :: ALL_Test
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                           -- CHECK INPUT --                              #
-    !#--------------------------------------------------------------------------#
-
-    ! -- Default is to test ALL the pointer members
-    ! -- for a true association status....
-    ALL_Test = .TRUE.
-
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test == SET ) ALL_Test = .FALSE.
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#           -- TEST THE STRUCTURE POINTER MEMBER ASSOCIATION --            #
-    !#--------------------------------------------------------------------------#
-
-    Association_Status = .FALSE.
-
-    IF ( ALL_Test ) THEN
-
-      IF ( ASSOCIATED( SensorData%NCEP_Sensor_ID   ) .AND. &
-           ASSOCIATED( SensorData%WMO_Satellite_ID ) .AND. &
-           ASSOCIATED( SensorData%WMO_Sensor_ID    ) .AND. &
-           ASSOCIATED( SensorData%Sensor_Channel   ) .AND. &
-           ASSOCIATED( SensorData%Tb               )       ) THEN
-        Association_Status = .TRUE.
-      END IF
-
-    ELSE
-
-      IF ( ASSOCIATED( SensorData%NCEP_Sensor_ID   ) .OR. &
-           ASSOCIATED( SensorData%WMO_Satellite_ID ) .OR. &
-           ASSOCIATED( SensorData%WMO_Sensor_ID    ) .OR. &
-           ASSOCIATED( SensorData%Sensor_Channel   ) .OR. &
-           ASSOCIATED( SensorData%Tb               )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-
-    END IF
-
-  END FUNCTION CRTM_Associated_SensorData
-
-
+  ELEMENTAL FUNCTION CRTM_SensorData_Associated( SensorData ) RESULT( Status )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
+    LOGICAL :: Status
+    Status = SensorData%Is_Allocated
+  END FUNCTION CRTM_SensorData_Associated
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
-!       CRTM_Destroy_SensorData
-! 
+!       CRTM_SensorData_Destroy
+!
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of SensorData
-!       data structures.
-!
-! CATEGORY:
-!       CRTM : Surface : SensorData
-!
-! LANGUAGE:
-!       Fortran-95
+!       Elemental subroutine to re-initialize CRTM SensorData objects.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Destroy_SensorData( SensorData,               &  ! Output
-!                                               RCS_Id      = RCS_Id,     &  ! Revision control
-!                                               Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_SensorData_Destroy( SensorData )
 !
-! INPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
+! OBJECTS:
 !       SensorData:   Re-initialized SensorData structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_SensorData_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN OUT )
+!                     DIMENSION:  Scalar OR any rank
+!                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       CRTM_Clear_SensorData:       Subroutine to clear the scalar members of a
-!                                    CRTM SensorData structure.
-!
-!       CRTM_Associated_SensorData:  Function to test the association status of
-!                                    the pointer members of a CRTM_SensorData
-!                                    structure.
-!
-!       Display_Message:             Subroutine to output messages
-!                                    SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!       
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 23-Jul-2004
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Destroy_SensorData( SensorData,   &  ! Output
-                                    No_Clear,     &  ! Optional input
-                                    RCS_Id,       &  ! Revision control
-                                    Message_Log ) &  ! Error messaging
-                                  RESULT( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Output
-    TYPE( CRTM_SensorData_type ), INTENT( IN OUT ) :: SensorData
-
-    ! -- Optional input
-    INTEGER,            OPTIONAL, INTENT( IN )     :: No_Clear
-
-    ! -- Revision control
-    CHARACTER( * ),     OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! - Error messaging
-    CHARACTER( * ),     OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Destroy_SensorData'
-
-
-    ! ---------------
-    ! Local variables
-    ! ---------------
-
-    CHARACTER( 256 ) :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- SET SUCCESSFUL RETURN STATUS --                    #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                      -- CHECK OPTIONAL ARGUMENTS --                      #
-    !#--------------------------------------------------------------------------#
-
-    ! -- Default is to clear scalar members...
-    Clear = .TRUE.
-    ! -- ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear == SET ) Clear = .FALSE.
-    END IF
-
-
-    
-    !#--------------------------------------------------------------------------#
-    !#                       -- PERFORM REINITIALISATION --                     #
-    !#--------------------------------------------------------------------------#
-
-    ! -----------------------------
-    ! Initialise the scalar members
-    ! -----------------------------
-
-    IF ( Clear ) CALL CRTM_Clear_SensorData( SensorData )
-
-
-    ! -----------------------------------------------------
-    ! If ALL pointer members are NOT associated, do nothing
-    ! -----------------------------------------------------
-
-    IF ( .NOT. CRTM_Associated_SensorData( SensorData ) ) RETURN
-
-
-    ! ------------------------------
-    ! Deallocate the pointer members
-    ! ------------------------------
-
-    ! -- Deallocate the SensorData NCEP_Sensor_ID member
-    IF ( ASSOCIATED( SensorData%NCEP_Sensor_ID ) ) THEN
-
-      DEALLOCATE( SensorData%NCEP_Sensor_ID, STAT = Allocate_Status )
-
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_SensorData NCEP_Sensor_ID ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-    ! -- Deallocate the SensorData WMO_Satellite_ID member
-    IF ( ASSOCIATED( SensorData%WMO_Satellite_ID ) ) THEN
-
-      DEALLOCATE( SensorData%WMO_Satellite_ID, STAT = Allocate_Status )
-
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_SensorData WMO_Satellite_ID ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-    ! -- Deallocate the SensorData WMO_Sensor_ID member
-    IF ( ASSOCIATED( SensorData%WMO_Sensor_ID ) ) THEN
-
-      DEALLOCATE( SensorData%WMO_Sensor_ID, STAT = Allocate_Status )
-
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_SensorData WMO_Sensor_ID ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-    ! -- Deallocate the SensorData Sensor_Channel member
-    IF ( ASSOCIATED( SensorData%Sensor_Channel ) ) THEN
-
-      DEALLOCATE( SensorData%Sensor_Channel, STAT = Allocate_Status )
-
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_SensorData Sensor_Channel ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-    ! -- Deallocate the SensorData Tb member
-    IF ( ASSOCIATED( SensorData%Tb ) ) THEN
-
-      DEALLOCATE( SensorData%Tb, STAT = Allocate_Status )
-
-      IF ( Allocate_Status /= 0 ) THEN
-        Error_Status = FAILURE
-        WRITE( Message, '( "Error deallocating CRTM_SensorData Tb ", &
-                          &"member. STAT = ", i5 )' ) &
-                        Allocate_Status
-        CALL Display_Message( ROUTINE_NAME,    &
-                              TRIM( Message ), &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#               -- DECREMENT AND TEST ALLOCATION COUNTER --                #
-    !#--------------------------------------------------------------------------#
-
-    SensorData%n_Allocates = SensorData%n_Allocates - 1
-
-    IF ( SensorData%n_Allocates /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Allocation counter /= 0, Value = ", i5 )' ) &
-                      SensorData%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION CRTM_Destroy_SensorData
-
-
-
-
-
-!------------------------------------------------------------------------------
-!S+
+  ELEMENTAL SUBROUTINE CRTM_SensorData_Destroy( SensorData )
+    TYPE(CRTM_SensorData_type), INTENT(OUT) :: SensorData
+    SensorData%Is_Allocated = .FALSE.
+  END SUBROUTINE CRTM_SensorData_Destroy
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
 ! NAME:
-!       CRTM_Allocate_SensorData
-! 
+!       CRTM_SensorData_Create
+!
 ! PURPOSE:
-!       Function to allocate the pointer members of a CRTM SensorData
-!       data structure.
-!
-! CATEGORY:
-!       CRTM : SensorData
-!
-! LANGUAGE:
-!       Fortran-95
+!       Elemental subroutine to create an instance of the CRTM SensorData object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Allocate_SensorData( n_Channels,               &  ! Input
-!                                                SensorData,               &  ! Output
-!                                                RCS_Id = RCS_Id,          &  ! Revision control
-!                                                Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_SensorData_Create( SensorData, n_Channels )
 !
-! INPUT ARGUMENTS:
-!       n_Channels:   The number of channels in the SensorData structure.
+! OBJECTS:
+!       SensorData:   SensorData structure.
+!                     UNITS:      N/A
+!                     TYPE:       CRTM_SensorData_type
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
+!       n_Channels:   Number of sensor channels.
 !                     Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN )
+!                     DIMENSION:  Same as SensorData object
+!                     ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER( * )
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       SensorData:   SensorData structure with allocated pointer members
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_SensorData_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN OUT )
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the structure pointer allocations were
-!                                   successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       CRTM_Associated_SensorData:  Function to test the association status
-!                                     of the pointer members of a CRTM
-!                                     SensorData structure.
-!
-!       CRTM_Destroy_SensorData:     Function to re-initialize a SensorData
-!                                     structure.
-!
-!       Display_Message:              Subroutine to output messages
-!                                     SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!       
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
-!                       paul.vandelst@ssec.wisc.edu
-!S-
-!------------------------------------------------------------------------------
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Allocate_SensorData( n_Channels,   &  ! Input
-                                     SensorData,   &  ! Output
-                                     RCS_Id,       &  ! Revision control
-                                     Message_Log ) &  ! Error messaging
-                                   RESULT( Error_Status )
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
-
-    ! ---------
+  ELEMENTAL SUBROUTINE CRTM_SensorData_Create( SensorData, n_Channels )
     ! Arguments
-    ! ---------
-
-    ! -- Input
-    INTEGER,                      INTENT( IN )     :: n_Channels
-
-    ! -- Output
-    TYPE( CRTM_SensorData_type ), INTENT( IN OUT ) :: SensorData
-
-    ! -- Revision control
-    CHARACTER( * ),     OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! - Error messaging
-    CHARACTER( * ),     OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Allocate_SensorData'
-
-
-    ! ---------------
+    TYPE(CRTM_SensorData_type), INTENT(OUT) :: SensorData
+    INTEGER,                    INTENT(IN)  :: n_Channels
     ! Local variables
-    ! ---------------
+    INTEGER :: alloc_stat
 
-    CHARACTER( 256 ) :: Message
+    ! Check input
+    IF ( n_Channels < 1 ) RETURN
 
-    INTEGER :: Allocate_Status
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                    -- SET SUCCESSFUL RETURN STATUS --                    #
-    !#--------------------------------------------------------------------------#
-
-    Error_Status = SUCCESS
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                            -- CHECK INPUT --                             #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------------------
-    ! The number of channels
-    ! ----------------------
-
-    IF ( n_Channels < 0 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input n_Channels must be > or = 0.', &
-                            Error_Status, &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    ! --------------------------------------------
-    ! Check if ANY pointers are already associated
-    ! --------------------------------------------
-
-    IF ( CRTM_Associated_SensorData( SensorData, ANY_Test = SET ) ) THEN
-
-      Error_Status = CRTM_Destroy_SensorData( SensorData, &
-                                              Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating CRTM_SensorData pointer members.', &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-        RETURN
-      END IF
-
-    END IF
-
-
-    ! -----------------------------------------------
-    ! If the number of channels is 0, then we're done
-    ! -----------------------------------------------
-
-    IF ( n_Channels == 0 ) RETURN
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                       -- PERFORM THE ALLOCATION --                       #
-    !#--------------------------------------------------------------------------#
-
-    ALLOCATE( SensorData%NCEP_Sensor_ID( n_Channels ), &
-              SensorData%WMO_Satellite_ID( n_Channels ), &
-              SensorData%WMO_Sensor_ID( n_Channels ), &
-              SensorData%Sensor_Channel( n_Channels ), &
+    ! Perform the allocation
+    ALLOCATE( SensorData%Sensor_Channel( n_Channels ), &
               SensorData%Tb( n_Channels ), &
-              STAT = Allocate_Status )
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
 
-    IF ( Allocate_Status /= 0 ) THEN
-      Error_Status = FAILURE
-      WRITE( Message, '( "Error allocating CRTM_SensorData data arrays. STAT = ", i5 )' ) &
-                      Allocate_Status
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( Message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-      RETURN
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#        -- ASSIGN THE n_Channels DIMENSION AND INITALISE ARRAYS --        #
-    !#--------------------------------------------------------------------------#
-
+    ! Initialise
+    ! ...Dimensions
     SensorData%n_Channels = n_Channels
+    ! ...Arrays
+    SensorData%Sensor_Channel = 0
+    SensorData%Tb             = ZERO
 
-    SensorData%NCEP_Sensor_ID    = INVALID_NCEP_SENSOR_ID
-    SensorData%WMO_Satellite_ID  = INVALID_WMO_SATELLITE_ID
-    SensorData%WMO_Sensor_ID     = INVALID_WMO_SENSOR_ID
-    SensorData%Sensor_Channel    = INVALID
-    SensorData%Tb                = ZERO
+    ! Set allocation indicator
+    SensorData%Is_Allocated = .TRUE.
 
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- INCREMENT AND TEST ALLOCATION COUNTER --               #
-    !#--------------------------------------------------------------------------#
-
-    SensorData%n_Allocates = SensorData%n_Allocates + 1
-
-    IF ( SensorData%n_Allocates /= 1 ) THEN
-      Error_Status = WARNING
-      WRITE( Message, '( "Allocation counter /= 1, Value = ", i5 )' ) &
-                      SensorData%n_Allocates
-      CALL Display_Message( ROUTINE_NAME,    &
-                            TRIM( message ), &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
-    END IF
-
-  END FUNCTION CRTM_Allocate_SensorData
-
-
-
+  END SUBROUTINE CRTM_SensorData_Create
 
 
 !--------------------------------------------------------------------------------
-!S+
+!:sdoc+:
+!
 ! NAME:
-!       CRTM_Assign_SensorData
+!       CRTM_SensorData_Zero
 !
 ! PURPOSE:
-!       Function to copy valid SensorData structures.
-!
-! CATEGORY:
-!       CRTM : Surface : SensorData
-!
-! LANGUAGE:
-!       Fortran-95
+!       Elemental subroutine to zero out the data arrays in a
+!       CRTM SensorData object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Assign_SensorData( SensorData_in,  &  ! Input
-!                                              SensorData_out, &  ! Output
-!                                              RCS_Id = RCS_Id,          &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
+!       CALL CRTM_SensorData_Zero( SensorData )
 !
-! INPUT ARGUMENTS:
-!       SensorData_in:   SensorData structure which is to be copied.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_SensorData_type
-!                        DIMENSION:  Scalar OR Rank-1
-!                        ATTRIBUTES: INTENT( IN )
+! OBJECTS:
+!       SensorData:    CRTM SensorData structure in which the data arrays are
+!                      to be zeroed out.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SensorData_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       SensorData_out:  Copy of the input structure, SensorData_in.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_SensorData_type
-!                        DIMENSION:  Same as SensorData_in
-!                        ATTRIBUTES: INTENT( IN OUT )
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:          Character string containing the Revision Control
-!                        System Id field for the module.
-!                        UNITS:      N/A
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
-!                        If == SUCCESS the structure assignment was successful
-!                           == FAILURE an error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! CALLS:
-!       CRTM_Associated_SensorData:  Function to test the association status
-!                                    of the pointer members of a CRTM
-!                                    SensorData structure.
-!
-!
-!       CRTM_Allocate_SensorData:    Function to allocate the pointer members
-!                                    of a CRTM SensorData structure.
-!
-!       Display_Message:             Subroutine to output messages
-!                                    SOURCE: ERROR_HANDLER module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!       
 ! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!       - The dimension components of the structure are *NOT* set to zero.
+!       - The SensorData sensor id and channel components are *NOT* reset.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 23-Jul-2004
-!                       paul.vandelst@ssec.wisc.edu
-!S-
+!:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION CRTM_Assign_SensorData( SensorData_in,  &  ! Input
-                                   SensorData_out, &  ! Output
-                                   RCS_Id,         &  ! Revision control
-                                   Message_Log )   &  ! Error messaging
-                                 RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE CRTM_SensorData_Zero( SensorData )
+    TYPE(CRTM_SensorData_type), INTENT(IN OUT) :: SensorData
+    ! Do nothing if structure is unused
+    IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) RETURN
+    ! Only zero out the data arrays
+    SensorData%Tb = ZERO
+  END SUBROUTINE CRTM_SensorData_Zero
 
 
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_SensorData_IsValid
+!
+! PURPOSE:
+!       Non-pure function to perform some simple validity checks on a
+!       CRTM SensorData object.
+!
+!       If invalid data is found, a message is printed to stdout.
+!
+! CALLING SEQUENCE:
+!       result = CRTM_SensorData_IsValid( SensorData )
+!
+!         or
+!
+!       IF ( CRTM_SensorData_IsValid( SensorData ) ) THEN....
+!
+! OBJECTS:
+!       SensorData:    CRTM SensorData object which is to have its
+!                      contents checked.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SensorData_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:        Logical variable indicating whether or not the input
+!                      passed the check.
+!                      If == .FALSE., SensorData object is unused or contains
+!                                     invalid data.
+!                         == .TRUE.,  SensorData object can be used in CRTM.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-    !#--------------------------------------------------------------------------#
-    !#                        -- TYPE DECLARATIONS --                           #
-    !#--------------------------------------------------------------------------#
+  FUNCTION CRTM_SensorData_IsValid( SensorData ) RESULT( IsValid )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
+    LOGICAL :: IsValid
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_SensorData_IsValid'
+    CHARACTER(ML) :: msg
 
-    ! ---------
-    ! Arguments
-    ! ---------
-
-    ! -- Input
-    TYPE( CRTM_SensorData_type ), INTENT( IN )     :: SensorData_in
-
-    ! -- Output
-    TYPE( CRTM_SensorData_type ), INTENT( IN OUT ) :: SensorData_out
-
-    ! -- Revision control
-    CHARACTER( * ),     OPTIONAL, INTENT( OUT )    :: RCS_Id
-
-    ! - Error messaging
-    CHARACTER( * ),     OPTIONAL, INTENT( IN )     :: Message_Log
-
-
-    ! ---------------
-    ! Function result
-    ! ---------------
-
-    INTEGER :: Error_Status
-
-
-    ! ----------------
-    ! Local parameters
-    ! ----------------
-
-    CHARACTER( * ), PARAMETER :: ROUTINE_NAME = 'CRTM_Assign_SensorData'
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                -- SET THE RCS ID ARGUMENT IF SUPPLIED --                 #
-    !#--------------------------------------------------------------------------#
-
-    IF ( PRESENT( RCS_Id ) ) THEN
-      RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#           -- TEST THE STRUCTURE ARGUMENT POINTER ASSOCIATION --          #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------------------------------------------
-    ! ALL *input* pointers must be associated.
-    !
-    ! If this test succeeds, then some or all of the
-    ! input pointers are NOT associated, so destroy
-    ! the output structure and return.
-    ! ----------------------------------------------
-
-    IF ( .NOT. CRTM_Associated_SensorData( SensorData_In ) ) THEN
-
-      Error_Status = CRTM_Destroy_SensorData( SensorData_Out, &
-                                              Message_Log = Message_Log )
-
-      IF ( Error_Status /= SUCCESS ) THEN
-        CALL Display_Message( ROUTINE_NAME,    &
-                              'Error deallocating output CRTM_SensorData pointer members.', &
-                              Error_Status,    &
-                              Message_Log = Message_Log )
-      END IF
-
+    ! Setup
+    IsValid = .FALSE.
+    ! ...Check if structure is used
+    IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) THEN
+      msg = 'SensorData structure not allocated'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
-
-    END IF
-
-
-
-    !#--------------------------------------------------------------------------#
-    !#                       -- PERFORM THE ASSIGNMENT --                       #
-    !#--------------------------------------------------------------------------#
-
-    ! ----------------------
-    ! Allocate the structure
-    ! ----------------------
-
-    Error_Status = CRTM_Allocate_SensorData( SensorData_in%n_Channels, &
-                                             SensorData_out, &
-                                             Message_Log = Message_Log )
-
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME,    &
-                            'Error allocating output CRTM_SensorData arrays.', &
-                            Error_Status,    &
-                            Message_Log = Message_Log )
+    ENDIF
+    IF ( SensorData%n_channels < 1 ) THEN
+      msg = 'SensorData structure dimension invalid'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
+    ENDIF
+
+    ! Check data
+    ! ...Change default so all entries can be checked
+    IsValid = .TRUE.
+    ! ...Data sensor ids
+    IF ( LEN_TRIM(SensorData%Sensor_Id) == 0 ) THEN
+      msg = 'Invalid Sensor Id found'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID ) THEN
+      msg = 'Invalid WMO Satellite Id found'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
+      msg = 'Invalid WMO Sensor Id'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    ! ...Listed sensor channels
+    IF ( ANY(SensorData%Sensor_Channel < 1) ) THEN
+      msg = 'Invalid Sensor Channel found'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    ! ...Data
+    IF ( ALL(SensorData%Tb < ZERO ) ) THEN
+      msg = 'All input SensorData brightness temperatures are negative'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+
+  END FUNCTION CRTM_SensorData_IsValid
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_SensorData_Inspect
+!
+! PURPOSE:
+!       Subroutine to print the contents of a CRTM SensorData object to stdout.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_SensorData_Inspect( SensorData )
+!
+! INPUTS:
+!       SensorData:    CRTM SensorData object to display.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SensorData_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_SensorData_Inspect( SensorData )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
+    WRITE(*, '(1x,"SENSORDATA OBJECT")')
+    ! Dimensions
+    WRITE(*, '(3x,"n_Channels:",1x,i0)') SensorData%n_Channels
+    ! Scalar components
+    WRITE(*, '(3x,"Sensor Id       :",1x,a)') SensorData%Sensor_Id
+    WRITE(*, '(3x,"WMO Satellite Id:",1x,i0)') SensorData%WMO_Satellite_Id
+    WRITE(*, '(3x,"WMO Sensor Id   :",1x,i0)') SensorData%WMO_Sensor_Id
+    IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) RETURN
+    ! Array components
+    WRITE(*, '(3x,"Sensor channels:")')
+    WRITE(*, '(10(1x,i5))') SensorData%Sensor_Channel
+    WRITE(*, '(3x,"Brightness temperatures:")')
+    WRITE(*, '(10(1x,es13.6))') SensorData%Tb
+  END SUBROUTINE CRTM_SensorData_Inspect
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_SensorData_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_SensorData_DefineVersion( Id )
+!
+! OUTPUT ARGUMENTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_SensorData_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_SensorData_DefineVersion
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+! NAME:
+!       CRTM_SensorData_Compare
+!
+! PURPOSE:
+!       Elemental function to compare two CRTM_SensorData objects to within
+!       a user specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!       is_comparable = CRTM_SensorData_Compare( x, y, n_SigFig=n_SigFig )
+!
+! OBJECTS:
+!       x, y:          Two CRTM SensorData objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SensorData_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       n_SigFig:      Number of significant figure to compare floating point
+!                      components.
+!                      UNITS:      N/A
+!                      TYPE:       INTEGER
+!                      DIMENSION:  Scalar or same as input
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SensorData_Compare( &
+    x, &
+    y, &
+    n_SigFig ) &
+  RESULT( is_comparable )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: x, y
+    INTEGER,          OPTIONAL, INTENT(IN) :: n_SigFig
+    LOGICAL :: is_comparable
+    ! Variables
+    INTEGER :: l, n
+
+    ! Set up
+    is_comparable = .FALSE.
+    IF ( PRESENT(n_SigFig) ) THEN
+      n = ABS(n_SigFig)
+    ELSE
+      n = DEFAULT_N_SIGFIG
     END IF
 
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_SensorData_Associated(x)) .OR. &
+         (.NOT. CRTM_SensorData_Associated(y)) ) RETURN
 
-    ! -----------------
-    ! Assign array data
-    ! -----------------
+    ! Check scalars
+    IF ( (x%n_Channels       /= y%n_Channels      ) .OR. &
+         (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) ) RETURN
 
-    SensorData_out%NCEP_Sensor_ID    = SensorData_in%NCEP_Sensor_ID
-    SensorData_out%WMO_Sensor_ID     = SensorData_in%WMO_Sensor_ID
-    SensorData_out%WMO_Satellite_ID  = SensorData_in%WMO_Satellite_ID
-    SensorData_out%Sensor_Channel    = SensorData_in%Sensor_Channel
-    SensorData_out%Tb                = SensorData_in%Tb
+    ! Check arrays
+    l = x%n_Channels
+    IF ( ANY(x%Sensor_Channel(1:l) /= y%Sensor_Channel(1:l)) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance(x%Tb(1:l),y%Tb(1:l),n))) ) RETURN
 
-  END FUNCTION CRTM_Assign_SensorData
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+
+  END FUNCTION CRTM_SensorData_Compare
+
+
+!##################################################################################
+!##################################################################################
+!##                                                                              ##
+!##                          ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                              ##
+!##################################################################################
+!##################################################################################
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SensorData_Equal
+!
+! PURPOSE:
+!       Elemental function to test the equality of two CRTM_SensorData objects.
+!       Used in OPERATOR(==) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = CRTM_SensorData_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two CRTM SensorData objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SensorData_type
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SensorData_Equal( x, y ) RESULT( is_equal )
+    TYPE(CRTM_SensorData_type) , INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
+    ! Variables
+    INTEGER :: n
+
+    ! Set up
+    is_equal = .FALSE.
+
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_SensorData_Associated(x)) .OR. &
+         (.NOT. CRTM_SensorData_Associated(y))      ) RETURN
+
+    ! Check contents
+    ! ...Scalars
+    IF ( (x%n_Channels       /= y%n_Channels      ) .OR. &
+         (x%Sensor_Id        /= y%Sensor_Id       ) .OR. &
+         (x%WMO_Satellite_ID /= y%WMO_Satellite_ID) .OR. &
+         (x%WMO_Sensor_ID    /= y%WMO_Sensor_ID   ) ) RETURN
+    ! ...Arrays
+    n = x%n_Channels
+    IF ( ALL(x%Sensor_Channel(1:n) == y%Sensor_Channel(1:n)  ) .AND. &
+         ALL(x%Tb(1:n) .EqualTo. y%Tb(1:n)) ) &
+      is_equal = .TRUE.
+
+  END FUNCTION CRTM_SensorData_Equal
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SensorData_Add
+!
+! PURPOSE:
+!       Pure function to add two CRTM SensorData objects.
+!       Used in OPERATOR(+) interface block.
+!
+! CALLING SEQUENCE:
+!       sDatasum = CRTM_SensorData_Add( sData1, sData2 )
+!
+!         or
+!
+!       sDatasum = sData1 + sData2
+!
+!
+! INPUTS:
+!       sData1, sData2: The SensorData objects to add.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SensorData_type
+!                       DIMENSION:  Scalar or any rank
+!                       ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sDatasum:       SensorData structure containing the added components.
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_SensorData_type
+!                       DIMENSION:  Same as input
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SensorData_Add( sData1, sData2 ) RESULT( sDatasum )
+    TYPE(CRTM_SensorData_type), INTENT(IN) :: sData1, sData2
+    TYPE(CRTM_SensorData_type) :: sDatasum
+    ! Variables
+    INTEGER :: n
+
+    ! Check input
+    ! ...If input structures not used, do nothing
+    IF ( .NOT. CRTM_SensorData_Associated( sData1 ) .OR. &
+         .NOT. CRTM_SensorData_Associated( sData2 )      ) RETURN
+    ! ...If input structure for different sensors, or sizes, do nothing
+    IF ( sData1%n_Channels         /= sData2%n_Channels        .OR. &
+         sData1%Sensor_Id          /= sData2%Sensor_Id         .OR. &
+         sData1%WMO_Satellite_ID   /= sData2%WMO_Satellite_ID  .OR. &
+         sData1%WMO_Sensor_ID      /= sData2%WMO_Sensor_ID     .OR. &
+         ANY(sData1%Sensor_Channel /= sData2%Sensor_Channel) ) RETURN
+
+    ! Copy the first structure
+    sDatasum = sData1
+
+    ! And add its components to the second one
+    n = sData1%n_Channels
+    sDatasum%Tb(1:n) = sDatasum%Tb(1:n) + sData2%Tb(1:n)
+
+  END FUNCTION CRTM_SensorData_Add
 
 END MODULE CRTM_SensorData_Define_old
-
-
-!---------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!---------------------------------------------------------------------------------
-!
-! $Id: CRTM_SensorData_Define.f90,v 1.7 2006/05/02 14:58:35 dgroff Exp $
-!
-! $Date: 2006/05/02 14:58:35 $
-!
-! $Revision: 1.7 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: CRTM_SensorData_Define.f90,v $
-! Revision 1.7  2006/05/02 14:58:35  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 1.6  2005/10/19 14:11:35  paulv
-! - Shortened non-standard, too-long comment line in modification history.
-!   It was causing compiler warning messages.
-!
-! Revision 1.5  2005/08/22 13:37:49  yhan
-! - Add a scalar variable Sensor_ID to CRTM_SensorData_Type to hold a
-!   WMO_Sensor_ID set by the user.  It is used in CRTM to identify the
-!   the surface emissivity routine for the sensor channels.
-!
-! Revision 1.4  2005/02/16 15:42:14  paulv
-! - Initialization of arrays after allocation changed from an "invalid" value
-!   to zero.
-!
-! Revision 1.3  2004/11/05 15:47:27  paulv
-! - Upgraded to Fortran-95
-! - Structure initialisation is now performed in the structure type
-!   declaration. Removed Init() subroutine.
-! - Made Associated() function PUBLIC.
-! - Intent of output structures in the Clear(), Allocate(), and Assign()
-!   routines changed from (OUT) to (IN OUT) to prevent memory leaks.
-! - Allocate() function now destroys the output structure if any pointer
-!   members are defined upon input.
-! - Updated documentation.
-! - Now USEing CRTM_Parameters module for invalid sensor ID values.
-! - Altered the way the Assign() function handles unassociated input. Previously
-!   an error was issued:
-!     IF ( .NOT. CRTM_Associated_SensorData( SensorData_In ) ) THEN
-!       Error_Status = FAILURE
-!       RETURN
-!     END IF
-!   Now, rather than returning an error, the output structure is destroyed
-!   (in case it is defined upon input), and a successful status is returned,
-!     IF ( .NOT. CRTM_Associated_SensorData( SensorData_In ) ) THEN
-!       Error_Status = CRTM_Destroy_SensorData( SensorData_Out, &
-!                                               Message_Log = Message_Log )
-!       RETURN
-!     END IF
-!
-! Revision 1.2  2004/07/27 14:30:33  paulv
-! - Changed structure components from pointers to arrays to simple scalars.
-!   Now each structure is associated with a single channel rather than
-!   grouping all the channel data together.
-!
-! Revision 1.1  2004/07/23 21:20:08  paulv
-! Initial checkin.
-!
-!
-!
-!
-!

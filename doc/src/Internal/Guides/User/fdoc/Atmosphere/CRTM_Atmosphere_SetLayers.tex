@@ -1,0 +1,41 @@
+\subsection{\texttt{CRTM\_Atmosphere\_SetLayers} interface}
+  \label{sec:CRTM_Atmosphere_SetLayers_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Atmosphere_SetLayers
+ 
+  PURPOSE:
+        Elemental subroutine to set the working number of layers to use
+        in a CRTM Atmosphere object.
+ 
+  CALLING SEQUENCE:
+       CALL CRTM_Atmosphere_SetLayers( Atmosphere, n_Layers )
+ 
+  OBJECT:
+        Atmosphere:   CRTM Atmosphere object which is to have its working number
+                      of layers updated.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Atmosphere_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+  INPUTS:
+        n_Layers:     The value to set the n_Layers component of the
+                      Atmosphere object.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Atmosphere_type
+                      DIMENSION:  Conformable with the Atmosphere object argument
+                      ATTRIBUTES: INTENT(IN)
+ 
+  COMMENTS:
+        - The object is zeroed upon output.
+ 
+        - If n_Layers <= Atmosphere%Max_Layers, then only the n_Layers dimension
+          value of the object, as well as any contained objects, is changed.
+ 
+        - If n_Layers > Atmosphere%Max_Layers, then the object is reallocated
+          to the required number of layers. No other dimensions of the object
+          or contained objects are altered.
+ 
+  \end{alltt}

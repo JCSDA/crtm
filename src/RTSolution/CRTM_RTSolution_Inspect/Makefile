@@ -22,8 +22,7 @@ SRC_FILES = Type_Kinds.f90 \
             Endian_Utility.f90 \
             SensorInfo_Parameters.f90 \
             CRTM_Parameters.f90 \
-            CRTM_RTSolution_Define.f90 \
-            CRTM_RTSolution_IO.f90
+            CRTM_RTSolution_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \

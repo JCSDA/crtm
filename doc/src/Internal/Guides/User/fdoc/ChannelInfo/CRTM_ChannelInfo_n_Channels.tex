@@ -6,26 +6,25 @@
         CRTM_ChannelInfo_n_Channels
  
   PURPOSE:
-        Function to return the number of channels defined in a ChannelInfo
-        structure or structure array
+        Elemental function to return the number of channels flagged for 
+        processing in a ChannelInfo object.
  
   CALLING SEQUENCE:
         n_Channels = CRTM_ChannelInfo_n_Channels( ChannelInfo )
  
-  INPUTS:
-        ChannelInfo: ChannelInfo structure or structure which is to have its
+  OBJECTS:
+        ChannelInfo: ChannelInfo object which is to have its processed 
                      channels counted.
                      UNITS:      N/A
                      TYPE:       TYPE(CRTM_ChannelInfo_type)
-                     DIMENSION:  Scalar
-                                   or
-                                 Rank-1
+                     DIMENSION:  Scalar or any rank
                      ATTRIBUTES: INTENT(IN)
  
   FUNCTION RESULT:
-        n_Channels:   The number of defined channels in the input argument.
+        n_Channels:  The number of channels to be processed in the ChannelInfo
+                     object.
                      UNITS:      N/A
                      TYPE:       INTEGER
-                     DIMENSION:  Scalar
+                     DIMENSION:  Same as input ChannelInfo argument.
  
   \end{alltt}

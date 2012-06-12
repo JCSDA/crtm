@@ -6,8 +6,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 12-Jun-2000
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE Binary_File_Utility
@@ -31,6 +31,22 @@ MODULE Binary_File_Utility
   PUBLIC :: Open_Binary_File
   PUBLIC :: WriteGAtts_Binary_File
   PUBLIC :: ReadGAtts_Binary_File
+  PUBLIC :: WriteLogical_Binary_File
+  PUBLIC :: ReadLogical_Binary_File
+
+
+  ! -------------------
+  ! Procedure overloads
+  ! -------------------
+  INTERFACE WriteLogical_Binary_File
+    MODULE PROCEDURE WriteLogical_Scalar
+    MODULE PROCEDURE WriteLogical_Rank1
+  END INTERFACE WriteLogical_Binary_File
+
+  INTERFACE ReadLogical_Binary_File
+    MODULE PROCEDURE ReadLogical_Scalar
+    MODULE PROCEDURE ReadLogical_Rank1
+  END INTERFACE ReadLogical_Binary_File
 
 
   ! ----------
@@ -40,6 +56,9 @@ MODULE Binary_File_Utility
   '$Id$'
   ! Magic number header value for byte-swap checks
   INTEGER(Long), PARAMETER :: MAGIC_NUMBER = 123456789_Long
+  ! Integer "logicals" for I/O
+  INTEGER(Long), PARAMETER :: FALSE = 0_Long
+  INTEGER(Long), PARAMETER :: TRUE  = 1_Long
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! For messages
   INTEGER, PARAMETER :: GL = 5000  ! For local global attribute values
@@ -361,7 +380,7 @@ CONTAINS
 
 
 
-  ! Function to read global attributes from an LSEcategory file.
+  ! Function to read standard global attributes from a Binary file.
 
   FUNCTION ReadGAtts_Binary_File( &
     fid         , &  ! Input
@@ -456,6 +475,174 @@ CONTAINS
     END SUBROUTINE ReadGAtts_Cleanup
     
   END FUNCTION ReadGAtts_Binary_File
+
+
+
+
+  !
+  ! NAME:
+  !   ReadLogical_Binary_File
+  !
+  ! PURPOSE:
+  !   Utility function to read an integer "logical" value from file
+  !
+
+  FUNCTION ReadLogical_Scalar( &
+    fid, &
+    logical_value ) &
+  RESULT( err_stat )
+    ! Arguments
+    INTEGER, INTENT(IN)  :: fid
+    LOGICAL, INTENT(OUT) :: logical_value
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadLogical_Binary_File(Scalar)'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    INTEGER :: io_stat
+    INTEGER(Long) :: logical_integer
+
+    ! Setup
+    err_stat = SUCCESS
+
+    ! Read the integer
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error reading logical integer value - '//TRIM(io_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+    ! Convert integer to a logical value
+    logical_value = (logical_integer == TRUE)
+
+  END FUNCTION ReadLogical_Scalar
+
+  FUNCTION ReadLogical_Rank1( &
+    fid, &
+    logical_value ) &
+  RESULT( err_stat )
+    ! Arguments
+    INTEGER, INTENT(IN)  :: fid
+    LOGICAL, INTENT(OUT) :: logical_value(:)
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'ReadLogical_Binary_File(Rank-1)'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    INTEGER :: io_stat
+    INTEGER(Long) :: logical_integer(SIZE(logical_value)) 
+
+    ! Setup
+    err_stat = SUCCESS
+
+    ! Read the integer
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error reading logical integer rank-1 array - '//TRIM(io_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+    ! Convert integer to a logical value
+    logical_value = (logical_integer == TRUE)
+
+  END FUNCTION ReadLogical_Rank1
+
+
+  !
+  ! NAME:
+  !   WriteLogical_Binary_File
+  !
+  ! PURPOSE:
+  !   Utility function to write an integer "logical" value to file
+  !
+
+  FUNCTION WriteLogical_Scalar( &
+    fid, &
+    logical_value ) &
+  RESULT( err_stat )
+    ! Arguments
+    INTEGER, INTENT(IN) :: fid
+    LOGICAL, INTENT(IN) :: logical_value
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteLogical_Binary_File(Scalar)'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    INTEGER :: io_stat
+    INTEGER(Long) :: logical_integer
+
+    ! Setup
+    err_stat = SUCCESS
+
+
+    ! Convert the logical to an integer value
+    IF ( logical_value ) THEN
+      logical_integer = TRUE
+    ELSE
+      logical_integer = FALSE
+    END IF
+
+
+    ! Write the integer
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error writing logical integer - '//TRIM(io_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+  END FUNCTION WriteLogical_Scalar
+
+  FUNCTION WriteLogical_Rank1( &
+    fid, &
+    logical_value ) &
+  RESULT( err_stat )
+    ! Arguments
+    INTEGER, INTENT(IN) :: fid
+    LOGICAL, INTENT(IN) :: logical_value(:)
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'WriteLogical_Binary_File(Rank-1)'
+    ! Function variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    INTEGER :: io_stat
+    INTEGER(Long) :: logical_integer(SIZE(logical_value)) 
+
+    ! Setup
+    err_stat = SUCCESS
+
+
+    ! Convert the logical to an integer value
+    WHERE ( logical_value )
+      logical_integer = TRUE
+    ELSEWHERE
+      logical_integer = FALSE
+    END WHERE
+
+
+    ! Write the integer
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) logical_integer
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error writing logical integer rank-1 array - '//TRIM(io_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+  END FUNCTION WriteLogical_Rank1
 
 
 

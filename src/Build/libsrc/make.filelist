@@ -57,13 +57,11 @@ NOCPP_FILES = \
   CRTM_VISlandCoeff.f90 CRTM_VISwaterCoeff.f90 CRTM_VISsnowCoeff.f90 CRTM_VISiceCoeff.f90 \
   CRTM_MWwaterCoeff.f90 \
   CRTM_Atmosphere_Define.f90 CRTM_Cloud_Define.f90 CRTM_Aerosol_Define.f90 \
-  CRTM_Atmosphere_IO.f90 CRTM_Cloud_IO.f90 CRTM_Aerosol_IO.f90 \
   CRTM_Surface_Define.f90 CRTM_SensorData_Define.f90 \
-  CRTM_Surface_IO.f90 CRTM_SensorData_IO.f90 \
   CRTM_SensorInfo.f90 \
   CRTM_ChannelInfo_Define.f90 \
-  CRTM_Geometry_Define.f90 CRTM_Geometry_IO.f90 \
-  CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo_IO.f90 CRTM_GeometryInfo.f90 \
+  CRTM_Geometry_Define.f90 \
+  CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo.f90 \
   CRTM_Atmosphere.f90 iAtm_Define.f90 \
   CRTM_Model_Profiles.f90 \
   CRTM_AtmAbsorption.f90 \
@@ -93,7 +91,6 @@ NOCPP_FILES = \
   Emission_Module.f90 \
   CRTM_RTSolution_Define.f90 \
   Common_RTSolution.f90 \
-  CRTM_RTSolution_IO.f90 \
   CRTM_RTSolution.f90 \
   CRTM_AntennaCorrection.f90 \
   CRTM_AncillaryInput_Define.f90 \

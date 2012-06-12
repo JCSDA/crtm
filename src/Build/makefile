@@ -63,7 +63,7 @@ test/update      \
 :
 	@subdir=`echo $@ | sed 's,/.*,,'`; \
 	target=`echo $@ | sed 's,.*/,,'`; \
-	$(MAKE) -s SUBDIR=$$subdir TARGET=$$target subdir_target
+	$(MAKE) SUBDIR=$$subdir TARGET=$$target subdir_target
 
 
 subdir_target:
@@ -71,7 +71,7 @@ subdir_target:
 	@cd $(SUBDIR) && \
 	    echo "Making \`$(TARGET)' in directory `pwd`" && \
 	    echo "" && \
-	    $(MAKE) -s $(TARGET) || exit 1
+	    $(MAKE) $(TARGET) || exit 1
 	@echo ""
 	@echo "Returning to directory `pwd`"
 	@echo ""

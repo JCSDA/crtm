@@ -22,11 +22,11 @@ SRC_FILES = Type_Kinds.f90 \
             Binary_File_Utility.f90 \
             CRTM_Parameters.f90 \
             CRTM_Surface_Define.f90 \
-            CRTM_SensorData_Define.f90 \
-            CRTM_Surface_Binary_IO.f90
+            CRTM_SensorData_Define.f90
 OLD_SRC_FILES = CRTM_Surface_Define_old.f90 \
+                CRTM_Surface_IO_old.f90 \
                 CRTM_SensorData_Define_old.f90 \
-                CRTM_Surface_Binary_IO_old.f90
+                CRTM_SensorData_IO_old.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -37,14 +37,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Source dependency lists
 include make.dependencies

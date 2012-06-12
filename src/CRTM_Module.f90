@@ -21,11 +21,12 @@ MODULE CRTM_Module
   USE CRTM_RTSolution_Define
   USE CRTM_Options_Define
   USE CRTM_AncillaryInput_Define
+  USE CRTM_IRlandCoeff          , ONLY: CRTM_IRlandCoeff_Classification
 
   ! Parameter definition module
   USE CRTM_Parameters
   USE SensorInfo_Parameters
-  
+
   ! The main function modules
   USE CRTM_LifeCycle
   USE CRTM_Forward_Module
@@ -35,13 +36,7 @@ MODULE CRTM_Module
   ! ...The aerosol optical depth tool
   USE CRTM_AOD_Module
 
-  ! Structure I/O modules
-  USE CRTM_Atmosphere_IO
-  USE CRTM_Surface_IO
-  USE CRTM_Geometry_IO
-  USE CRTM_RTSolution_IO
-  
-  
+
   ! Visibility
   ! ----------
   PUBLIC

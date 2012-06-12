@@ -25,9 +25,6 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Atmosphere_Define.f90 \
             CRTM_Cloud_Define.f90 \
             CRTM_Aerosol_Define.f90 \
-            CRTM_Atmosphere_IO.f90 \
-            CRTM_Cloud_IO.f90 \
-            CRTM_Aerosol_IO.f90 \
             netCDF_Utility.f90 \
             netCDF_Dimension_Utility.f90 \
             netCDF_Variable_Utility.f90 \
@@ -40,7 +37,7 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Library and include macros
-NETCDF_LIB = $(HOME)/local/netcdf
+NETCDF_LIB = $(HOME)/local
 INCLUDES = -I$(NETCDF_LIB)/include
 LIBRARIES = -L$(NETCDF_LIB)/lib -lnetcdf
 

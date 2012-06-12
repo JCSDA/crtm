@@ -3,14 +3,14 @@
 !
 ! Module containing routines to inquire, read, and write CRTM
 ! Surface object datafiles.
-!       
+!
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 21-Jul-2004
 !                       paul.vandelst@noaa.gov
 !
 
-MODULE CRTM_Surface_IO
+MODULE CRTM_Surface_IO_old
 
   ! -----------------
   ! Environment setup
@@ -19,7 +19,9 @@ MODULE CRTM_Surface_IO
   USE File_Utility       , ONLY: File_Open, File_Exists
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
   USE Binary_File_Utility, ONLY: Open_Binary_File
-  USE CRTM_Surface_Define, ONLY: SURFACE_TYPE_NAME, &
+  USE CRTM_Surface_Define_old, ONLY: SURFACE_TYPE_NAME, &
+                                 N_VALID_LAND_TYPES, N_VALID_WATER_TYPES, &
+                                 N_VALID_SNOW_TYPES, N_VALID_ICE_TYPES, &
                                  CRTM_Surface_type, &
                                  CRTM_Surface_Associated, &
                                  CRTM_Surface_Destroy, &
@@ -28,7 +30,7 @@ MODULE CRTM_Surface_IO
                                  CRTM_Surface_IsCoverageValid, &
                                  CRTM_SensorData_Associated, &
                                  CRTM_SensorData_Create
-  USE CRTM_SensorData_IO , ONLY: CRTM_SensorData_ReadFile, &
+  USE CRTM_SensorData_IO_old , ONLY: CRTM_SensorData_ReadFile, &
                                  CRTM_SensorData_WriteFile
   ! Disable implicit typing
   IMPLICIT NONE
@@ -51,12 +53,12 @@ MODULE CRTM_Surface_IO
     MODULE PROCEDURE Read_Surface_Rank1
     MODULE PROCEDURE Read_Surface_Rank2
   END INTERFACE CRTM_Surface_ReadFile
-  
+
   INTERFACE CRTM_Surface_WriteFile
     MODULE PROCEDURE Write_Surface_Rank1
     MODULE PROCEDURE Write_Surface_Rank2
   END INTERFACE CRTM_Surface_WriteFile
-  
+
 
   ! -----------------
   ! Module parameters
@@ -147,7 +149,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, m
- 
+
     ! Set up
     err_stat = SUCCESS
     ! Check that the file exists
@@ -183,7 +185,7 @@ CONTAINS
     IF ( PRESENT(n_Profiles) ) n_Profiles = m
 
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp()
       ! Close file if necessary
       IF ( File_Open( Filename ) ) THEN
@@ -235,7 +237,7 @@ CONTAINS
 !                     Rank-2: L channels  x  M profiles
 !                             Channel and profile data are to be read in.
 !                             The file contains both channel and profile
-!                             information. The first dimension of the 
+!                             information. The first dimension of the
 !                             structure is the CHANNEL dimension, the second
 !                             is the PROFILE dimension. This is to allow
 !                             K-matrix structures to be read in with the
@@ -310,7 +312,7 @@ CONTAINS
     INTEGER :: fid
     INTEGER :: n_File_Channels, n_File_Profiles
     INTEGER :: m, n_Input_Profiles
- 
+
 
     ! Set up
     err_stat = SUCCESS
@@ -336,7 +338,7 @@ CONTAINS
     END IF
 
 
-    ! Read the dimensions     
+    ! Read the dimensions
     READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
@@ -394,7 +396,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_CleanUp()
       IF ( File_Open( Filename ) ) THEN
         CLOSE( fid,IOSTAT=io_stat )
@@ -405,7 +407,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Read_CleanUp
-  
+
   END FUNCTION Read_Surface_Rank1
 
 
@@ -435,7 +437,7 @@ CONTAINS
     INTEGER :: fid
     INTEGER :: l, n_File_Channels, n_Input_Channels
     INTEGER :: m, n_File_Profiles, n_Input_Profiles
- 
+
 
     ! Set up
     err_stat = SUCCESS
@@ -526,7 +528,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_CleanUp()
       IF ( File_Open( Filename ) ) THEN
         CLOSE( fid,IOSTAT=io_stat )
@@ -537,7 +539,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
     END SUBROUTINE Read_CleanUp
-  
+
   END FUNCTION Read_Surface_Rank2
 
 
@@ -574,7 +576,7 @@ CONTAINS
 !                     Rank-2: L channels  x  M profiles
 !                             Channel and profile data are to be read in.
 !                             The file contains both channel and profile
-!                             information. The first dimension of the 
+!                             information. The first dimension of the
 !                             array is the CHANNEL dimension, the second
 !                             is the PROFILE dimension. This is to allow
 !                             K-matrix structures to be read in with the
@@ -633,7 +635,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: m, n_Output_Profiles
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
@@ -663,7 +665,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-    
+
     ! Write the data
     Profile_Loop: DO m = 1, n_Output_Profiles
       err_stat = Write_Record( fid, Surface(m), &
@@ -692,7 +694,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_CleanUp()
       IF ( File_Open( Filename ) ) THEN
         CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
@@ -728,7 +730,7 @@ CONTAINS
     INTEGER :: fid
     INTEGER :: l, n_Output_Channels
     INTEGER :: m, n_Output_Profiles
- 
+
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
@@ -791,7 +793,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_CleanUp()
       IF ( File_Open( Filename ) ) THEN
         CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
@@ -962,10 +964,14 @@ CONTAINS
                                sfc%Soil_Moisture_Content, &
                                sfc%Canopy_Water_Content , &
                                sfc%Vegetation_Fraction, &
-                               sfc%Soil_Temperature, &
-                               sfc%Lai
+                               sfc%Soil_Temperature
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading land surface type data. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+    ! ...Check the type
+    IF ( sfc%Land_Type < 0 .OR. sfc%Land_Type > N_VALID_LAND_TYPES ) THEN
+      msg = 'Invalid land surface type'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
@@ -977,6 +983,11 @@ CONTAINS
                                sfc%Salinity
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading water surface type data. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+    ! ...Check the type
+    IF ( sfc%Water_Type < 0 .OR. sfc%Water_Type > N_VALID_WATER_TYPES ) THEN
+      msg = 'Invalid water surface type'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
@@ -991,6 +1002,11 @@ CONTAINS
       WRITE( msg,'("Error reading snow surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Record_Cleanup(); RETURN
     END IF
+    ! ...Check the type
+    IF ( sfc%Snow_Type < 0 .OR. sfc%Snow_Type > N_VALID_SNOW_TYPES ) THEN
+      msg = 'Invalid snow surface type'
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
 
 
     ! Read the ice surface type data
@@ -1001,6 +1017,11 @@ CONTAINS
                                sfc%Ice_Roughness
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading ice surface type data. IOSTAT = ",i0)' ) io_stat
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+    ! ...Check the type
+    IF ( sfc%Ice_Type < 0 .OR. sfc%Ice_Type > N_VALID_ICE_TYPES ) THEN
+      msg = 'Invalid ice surface type'
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
@@ -1019,7 +1040,7 @@ CONTAINS
         msg = 'Error creating SensorData object.'
         CALL Read_Record_Cleanup(); RETURN
       END IF
-      READ( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &  
+      READ( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &
                                  sfc%SensorData%WMO_Satellite_ID    , &
                                  sfc%SensorData%WMO_Sensor_ID       , &
                                  sfc%SensorData%Sensor_Channel      , &
@@ -1031,7 +1052,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_Record_Cleanup()
       CALL CRTM_Surface_Destroy( sfc )
       CLOSE( fid,IOSTAT=io_stat )
@@ -1150,8 +1171,7 @@ CONTAINS
                                 sfc%Soil_Moisture_Content, &
                                 sfc%Canopy_Water_Content, &
                                 sfc%Vegetation_Fraction, &
-                                sfc%Soil_Temperature, &
-                                sfc%Lai
+                                sfc%Soil_Temperature
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing land surface type data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Record_Cleanup(); RETURN
@@ -1214,7 +1234,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_Record_Cleanup()
       CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
       IF ( io_stat /= SUCCESS ) &
@@ -1225,4 +1245,4 @@ CONTAINS
 
   END FUNCTION Write_Record
 
-END MODULE CRTM_Surface_IO
+END MODULE CRTM_Surface_IO_old

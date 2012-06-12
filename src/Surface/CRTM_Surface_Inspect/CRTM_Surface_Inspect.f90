@@ -18,8 +18,8 @@ PROGRAM CRTM_Surface_Inspect
   USE File_Utility       , ONLY: File_Exists
   USE Message_Handler    , ONLY: SUCCESS, FAILURE, Program_Message, Display_Message
   USE CRTM_Surface_Define, ONLY: CRTM_Surface_type, CRTM_Surface_Destroy, &
-                                 Inspect => CRTM_Surface_Inspect
-  USE CRTM_Surface_IO    , ONLY: CRTM_Surface_InquireFile, &
+                                 Inspect => CRTM_Surface_Inspect, &
+                                 CRTM_Surface_InquireFile, &
                                  CRTM_Surface_ReadFile
   ! Disable implicit typing
   IMPLICIT NONE
@@ -62,7 +62,7 @@ PROGRAM CRTM_Surface_Inspect
     msg = 'Error inquiring CRTM Surface file '//TRIM(filename)
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
-  
+
   ! Display the data file appropriately
   IF ( n_channels == 0 ) THEN
 
@@ -85,9 +85,9 @@ PROGRAM CRTM_Surface_Inspect
     END DO
     ! ...Clean up
     DEALLOCATE( r1_sfc, STAT=alloc_stat )
-  
+
   ELSE
-  
+
     ! ...Allocate channel x profile array
     ALLOCATE( r2_sfc(n_channels,n_profiles), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
@@ -109,7 +109,7 @@ PROGRAM CRTM_Surface_Inspect
     END DO
     ! ...Clean up
     DEALLOCATE( r2_sfc, STAT=alloc_stat )
-  
+
   END IF
 
 END PROGRAM CRTM_Surface_Inspect

@@ -2,19 +2,23 @@
 %======================================================
 \label{sec:structure_and_interface_definition}
 
+
+
 \clearpage
 \section{\ChannelInfo{} Structure}
 %=================================
 \label{sec:channelinfo_structure}
-
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_type}
 
 % ChannelInfo structure methods
 %-----------------------------
+\clearpage
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_Associated}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_Channels}
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_DefineVersion}
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_Destroy}
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_Inspect}
+\input{fdoc/ChannelInfo/CRTM_ChannelInfo_Subset}
 \input{fdoc/ChannelInfo/CRTM_ChannelInfo_n_Channels}
 
 
@@ -23,79 +27,8 @@
 \section{\Atmosphere{} Structure}
 %================================
 \label{sec:atmosphere_structure}
-
 \input{fdoc/Atmosphere/CRTM_Atmosphere_type}
 
-% Climatology table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l}
-    \hline
-    \sffamily\textbf{Climatology Type} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-             Tropical          &  \texttt{TROPICAL}\\              
-        Midlatitude summer     &  \texttt{MIDLATITUDE\_SUMMER}\\
-        Midlatitude winter     &  \texttt{MIDLATITUDE\_WINTER}\\
-         Subarctic summer      &  \texttt{SUBARCTIC\_SUMMER}\\
-         Subarctic winter      &  \texttt{SUBARCTIC\_WINTER}\\
-     U.S. Standard Atmosphere  &  \texttt{US\_STANDARD\_ATMOSPHERE}\\
-    \hline 
-  \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Climatology} definitions. The same set as defined for LBLRTM is used.}
-  \label{tab:climatology}
-\end{table}
-
-% Absorber id table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{ c l c c l }
-    \hline
-    \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter} & \hspace{0.5cm} & \sffamily\textbf{Molecule} & \sffamily\textbf{Parameter}\\
-    \hline\hline
-     H\subscript{2}O  & \texttt{H2O\_ID}  & \hspace{0.5cm} & HI                           & \texttt{HI\_ID}    \\
-     CO\subscript{2}  & \texttt{CO2\_ID}  & \hspace{0.5cm} & ClO                          & \texttt{ClO\_ID}   \\
-     O\subscript{3}   & \texttt{O3\_ID}   & \hspace{0.5cm} & OCS                          & \texttt{OCS\_ID}   \\
-     N\subscript{2}O  & \texttt{N2O\_ID}  & \hspace{0.5cm} & H\subscript{2}CO             & \texttt{H2CO\_ID}  \\
-     CO               & \texttt{CO\_ID}   & \hspace{0.5cm} & HOCl                         & \texttt{HOCl\_ID}  \\
-     CH\subscript{4}  & \texttt{CH4\_ID}  & \hspace{0.5cm} & N\subscript{2}               & \texttt{N2\_ID}    \\
-     O\subscript{2}   & \texttt{O2\_ID}   & \hspace{0.5cm} & HCN                          & \texttt{HCN\_ID}   \\
-     NO               & \texttt{NO\_ID}   & \hspace{0.5cm} & CH\subscript{3}l             & \texttt{CH3l\_ID}  \\
-     SO\subscript{2}  & \texttt{SO2\_ID}  & \hspace{0.5cm} & H\subscript{2}O\subscript{2} & \texttt{H2O2\_ID}  \\
-     NO\subscript{2}  & \texttt{NO2\_ID}  & \hspace{0.5cm} & C\subscript{2}H\subscript{2} & \texttt{C2H2\_ID}  \\
-     NH\subscript{3}  & \texttt{NH3\_ID}  & \hspace{0.5cm} & C\subscript{2}H\subscript{6} & \texttt{C2H6\_ID}  \\
-     HNO\subscript{3} & \texttt{HNO3\_ID} & \hspace{0.5cm} & PH\subscript{3}              & \texttt{PH3\_ID}   \\
-     OH               & \texttt{OH\_ID}   & \hspace{0.5cm} & COF\subscript{2}             & \texttt{COF2\_ID}  \\
-     HF               & \texttt{HF\_ID}   & \hspace{0.5cm} & SF\subscript{6}              & \texttt{SF6\_ID}   \\
-     HCl              & \texttt{HCl\_ID}  & \hspace{0.5cm} & H\subscript{2}S              & \texttt{H2S\_ID}   \\
-     HBr              & \texttt{HBr\_ID}  & \hspace{0.5cm} & HCOOH                        & \texttt{HCOOH\_ID} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
-  \label{tab:absorber_id}
-\end{table}
-
-% Absorber units table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l}
-    \hline
-    \sffamily\textbf{Units} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-     Volume mixing ratio, ppmv                       & \texttt{VOLUME\_MIXING\_RATIO\_UNITS} \\
-     Number density, cm$^{-3}$                       & \texttt{NUMBER\_DENSITY\_UNITS} \\
-     Mass mixing ratio, g/kg                         & \texttt{MASS\_MIXING\_RATIO\_UNITS} \\
-     Mass density, g.m$^{-3}$                        & \texttt{MASS\_DENSITY\_UNITS} \\
-     Partial pressure, hPa                           & \texttt{PARTIAL\_PRESSURE\_UNITS} \\
-     Dewpoint temperature, K  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_K\_UNITS} \\
-     Dewpoint temperature, C  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_C\_UNITS} \\
-     Relative humidity, \%    \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{RELATIVE\_HUMIDITY\_UNITS} \\
-     Specific amount, g/g                            & \texttt{SPECIFIC\_AMOUNT\_UNITS} \\
-     Integrated path, mm                             & \texttt{INTEGRATED\_PATH\_UNITS} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
-  \label{tab:absorber_units}
-\end{table}
 
 % Atmosphere structure methods
 %-----------------------------
@@ -106,40 +39,24 @@
 \input{fdoc/Atmosphere/CRTM_Atmosphere_Create}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_DefineVersion}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_Destroy}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_Inspect}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_IsValid}
-\input{fdoc/Atmosphere/CRTM_Atmosphere_Zero}
-\input{fdoc/Atmosphere/CRTM_Atmosphere_IOVersion}
-\input{fdoc/Atmosphere/CRTM_Atmosphere_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_SetLayers}
 \input{fdoc/Atmosphere/CRTM_Atmosphere_WriteFile}
+\input{fdoc/Atmosphere/CRTM_Atmosphere_Zero}
+\input{fdoc/Atmosphere/CRTM_Get_AbsorberIdx}
+\input{fdoc/Atmosphere/CRTM_Get_PressureLevelIdx}
+
 
 
 \newpage
 \section{\Cloud{} Structure}
 %================================
 \label{sec:cloud_structure}
-
 \input{fdoc/Atmosphere/CRTM_Cloud_type}
 
-% Cloud type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{cc l}
-    \hline
-    \sffamily\textbf{Cloud Type} & \hspace{0.5cm} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-     Water   & \hspace{0.5cm} & \texttt{WATER\_CLOUD}\\
-     Ice     & \hspace{0.5cm} & \texttt{ICE\_CLOUD}\\
-     Rain    & \hspace{0.5cm} & \texttt{RAIN\_CLOUD}\\
-     Snow    & \hspace{0.5cm} & \texttt{SNOW\_CLOUD}\\
-     Graupel & \hspace{0.5cm} & \texttt{GRAUPEL\_CLOUD}\\
-     Hail    & \hspace{0.5cm} & \texttt{HAIL\_CLOUD}\\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Cloud{} structure valid \texttt{Type} definitions.}
-  \label{tab:cloud_type}
-\end{table}
 
 % Cloud structure methods
 %------------------------
@@ -150,42 +67,22 @@
 \input{fdoc/Atmosphere/CRTM_Cloud_Create}
 \input{fdoc/Atmosphere/CRTM_Cloud_DefineVersion}
 \input{fdoc/Atmosphere/CRTM_Cloud_Destroy}
+\input{fdoc/Atmosphere/CRTM_Cloud_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Cloud_Inspect}
 \input{fdoc/Atmosphere/CRTM_Cloud_IsValid}
-\input{fdoc/Atmosphere/CRTM_Cloud_Zero}
-\input{fdoc/Atmosphere/CRTM_Cloud_IOVersion}
-\input{fdoc/Atmosphere/CRTM_Cloud_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Cloud_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Cloud_SetLayers}
 \input{fdoc/Atmosphere/CRTM_Cloud_WriteFile}
+\input{fdoc/Atmosphere/CRTM_Cloud_Zero}
+
 
 
 \clearpage
 \section{\Aerosol{} Structure}
 %=============================
 \label{sec:aerosol_structure}
-
 \input{fdoc/Atmosphere/CRTM_Aerosol_type}
 
-% Aerosol type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l r@{ - }l}
-    \hline
-    \sffamily\textbf{Aerosol Type} & \sffamily\textbf{Parameter}  & \multicolumn{2}{c}{$r_{eff}$ \sffamily\textbf{Range} (\micron)} \\
-    \hline\hline
-    Dust           & \texttt{DUST\_AEROSOL}            & 0.01  & 8 \\
-    Sea salt SSAM  & \texttt{SEASALT\_SSAM\_AEROSOL}   & 0.3   & 1.45 \\
-    Sea salt SSCM1 & \texttt{SEASALT\_SSCM1\_AEROSOL}  & 1.0   & 4.8  \\
-    Sea salt SSCM2 & \texttt{SEASALT\_SSCM2\_AEROSOL}  & 3.25  & 17.3 \\
-    Sea salt SSCM3 & \texttt{SEASALT\_SSCM3\_AEROSOL}  & 7.5   & 89\\
-    Organic carbon & \texttt{ORGANIC\_CARBON\_AEROSOL} & 0.09  & 0.21 \\
-    Black carbon   & \texttt{BLACK\_CARBON\_AEROSOL}   & 0.036 & 0.074 \\
-    Sulfate        & \texttt{SULFATE\_AEROSOL}         & 0.24  & 0.8 \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions and effective radii. SSAM $\equiv$ Sea Salt Accumulation Mode, SSCM $\equiv$ Sea Salt Coarse Mode.}
-  \label{tab:aerosol_type}
-\end{table}
 
 % Aerosol structure methods
 %--------------------------
@@ -196,13 +93,13 @@
 \input{fdoc/Atmosphere/CRTM_Aerosol_Create}
 \input{fdoc/Atmosphere/CRTM_Aerosol_DefineVersion}
 \input{fdoc/Atmosphere/CRTM_Aerosol_Destroy}
+\input{fdoc/Atmosphere/CRTM_Aerosol_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Aerosol_Inspect}
 \input{fdoc/Atmosphere/CRTM_Aerosol_IsValid}
-\input{fdoc/Atmosphere/CRTM_Aerosol_Zero}
-\input{fdoc/Atmosphere/CRTM_Aerosol_IOVersion}
-\input{fdoc/Atmosphere/CRTM_Aerosol_InquireFile}
 \input{fdoc/Atmosphere/CRTM_Aerosol_ReadFile}
+\input{fdoc/Atmosphere/CRTM_Aerosol_SetLayers}
 \input{fdoc/Atmosphere/CRTM_Aerosol_WriteFile}
+\input{fdoc/Atmosphere/CRTM_Aerosol_Zero}
 
 
 
@@ -210,193 +107,8 @@
 \section{\Surface{} Structure}
 %=============================
 \label{sec:surface_structure}
-
 \input{fdoc/Surface/CRTM_Surface_type}
 
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Sensors} & The number of sensors for which data is provided inside the SensorData structure & N/A & Scalar \\
-    \hline
-    \texttt{Land\_Coverage}  & Fraction of the FOV that is land surface & N/A & Scalar \\
-    \texttt{Water\_Coverage} & Fraction of the FOV that is water surface & N/A & Scalar \\
-    \texttt{Snow\_Coverage}  & Fraction of the FOV that is snow surface & N/A & Scalar \\
-    \texttt{Ice\_Coverage}   & Fraction of the FOV that is ice surface & N/A & Scalar \\
-    \hline
-    \texttt{Wind\_Speed}     & Surface wind speed & m.s$^{-1}$ & Scalar \\
-    \texttt{Wind\_Direction} & Surface wind direction & deg. E from N & Scalar \\
-    \hline
-    \texttt{Land\_Type}              & Land surface type & N/A & Scalar \\
-    \texttt{Land\_Temperature}       & Land surface temperature & Kelvin & Scalar \\
-    \texttt{Soil\_Moisture\_Content} & Volumetric water content of the soil & g.cm$^{-3}$ & Scalar \\
-    \texttt{Canopy\_Water\_Content}  & Gravimetric water content of the canopy & g.cm$^{-3}$ & Scalar \\
-    \texttt{Vegetation\_Fraction}    & Vegetation fraction of the surface & \% & Scalar \\
-    \texttt{Soil\_Temperature}       & Soil temperature & Kelvin & Scalar \\
-    \hline
-    \texttt{Water\_Type}        & Water surface type & N/A & Scalar \\
-    \texttt{Water\_Temperature} & Water surface temperature & Kelvin & Scalar \\
-    \texttt{Salinity}           & Water salinity & \textperthousand & Scalar \\
-    \hline
-    \texttt{Snow\_Type}        & Snow surface type & N/A & Scalar \\ 
-    \texttt{Snow\_Temperature} & Snow surface temperature & Kelvin & Scalar \\ 
-    \texttt{Snow\_Depth}       & Snow depth & mm & Scalar \\ 
-    \texttt{Snow\_Density}     & Snow density & g.m$^{-3}$ & Scalar \\ 
-    \texttt{Snow\_Grain\_Size} & Snow grain size & mm & Scalar \\ 
-    \hline
-    \texttt{Ice\_Type}        & Ice surface type & N/A & Scalar \\ 
-    \texttt{Ice\_Temperature} & Ice surface temperature & Kelvin & Scalar \\ 
-    \texttt{Ice\_Thickness}   & Thickness of ice & mm & Scalar \\ 
-    \texttt{Ice\_Density}     & Density of ice & g.m$^{-3}$ & Scalar \\ 
-    \texttt{Ice\_Roughness}   & Measure of the surface roughness of the ice & N/A & Scalar \\ 
-    \hline
-    \texttt{SensorData} & Satellite sensor data required for some surface emissivity algorithms & N/A & Scalar \\ 
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure component description.}
-  \label{tab:surface_structure}
-\end{table}
-
-% Default surface value table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l c c}
-    \hline
-    \sffamily\textbf{Parameter} & \sffamily\textbf{Value}  & \sffamily\textbf{Units} \\
-    \hline\hline
-    \multicolumn{3}{c}{\textsf{Surface type independent data}}\\
-    \hline
-    \texttt{DEFAULT\_WIND\_SPEED}             & 5.0        & m.s$^{-1}$\\
-    \texttt{DEFAULT\_WIND\_DIRECTION}         & 0.0        & deg. E from N\\[0.2cm]
-    \multicolumn{3}{c}{\textsf{Land surface type data}}\\
-    \hline
-    \texttt{DEFAULT\_LAND\_TYPE}              & \texttt{GRASS\_SOIL}& N/A \\
-    \texttt{DEFAULT\_LAND\_TEMPERATURE}       & 283.0      & K\\
-    \texttt{DEFAULT\_SOIL\_MOISTURE\_CONTENT} & 0.05       & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_CANOPY\_WATER\_CONTENT}  & 0.05       & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_VEGETATION\_FRACTION}    & 0.3        & 30\%\\
-    \texttt{DEFAULT\_SOIL\_TEMPERATURE}       & 283.0      & K\\[0.2cm]
-    \multicolumn{3}{c}{\textsf{Water type data}}\\
-    \hline
-    \texttt{DEFAULT\_WATER\_TYPE}             & \texttt{SEA\_WATER} & N/A\\
-    \texttt{DEFAULT\_WATER\_TEMPERATURE}      & 283.0      & K\\
-    \texttt{DEFAULT\_SALINITY}                & 33.0       & ppmv\\[0.2cm]
-    \multicolumn{3}{c}{\textsf{Snow surface type data}}\\
-    \hline
-    \texttt{DEFAULT\_SNOW\_TYPE}              & \texttt{NEW\_SNOW}  & N/A\\
-    \texttt{DEFAULT\_SNOW\_TEMPERATURE}       & 263.0      & K\\
-    \texttt{DEFAULT\_SNOW\_DEPTH}             & 50.0       & mm\\
-    \texttt{DEFAULT\_SNOW\_DENSITY}           & 0.2        & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_SNOW\_GRAIN\_SIZE}       & 2.0        & mm\\[0.2cm]
-    \multicolumn{3}{c}{\textsf{Ice surface type data}}\\
-    \hline
-    \texttt{DEFAULT\_ICE\_TYPE}               & \texttt{FRESH\_ICE} & N/A\\
-    \texttt{DEFAULT\_ICE\_TEMPERATURE}        & 263.0      & K\\
-    \texttt{DEFAULT\_ICE\_THICKNESS}          & 10.0       & mm\\
-    \texttt{DEFAULT\_ICE\_DENSITY}            & 0.9        & g.cm$^{-3}$\\
-    \texttt{DEFAULT\_ICE\_ROUGHNESS}          & 0.0        & N/A\\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure default values.}
-  \label{tab:surface_default}
-\end{table}
-
-% Land surface type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l}
-    \hline
-    \sffamily\textbf{Land Type} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-          Compacted soil      & \texttt{COMPACTED\_SOIL} \\
-            Tilled soil       & \texttt{TILLED\_SOIL} \\
-              Sand            & \texttt{SAND} \\
-              Rock            & \texttt{ROCK} \\
-     Irrigated low vegetation & \texttt{IRRIGATED\_LOW\_VEGETATION} \\
-           Meadow grass       & \texttt{MEADOW\_GRASS} \\
-              Scrub           & \texttt{SCRUB} \\
-         Broadleaf forest     & \texttt{BROADLEAF\_FOREST} \\
-           Pine forest        & \texttt{PINE\_FOREST} \\
-             Tundra           & \texttt{TUNDRA} \\
-           Grass-soil         & \texttt{GRASS\_SOIL} \\
-       Broadleaf-pine forest  & \texttt{BROADLEAF\_PINE\_FOREST} \\
-           Grass scrub        & \texttt{GRASS\_SCRUB} \\
-         Soil-grass-scrub     & \texttt{SOIL\_GRASS\_SCRUB} \\
-          Urban concrete      & \texttt{URBAN\_CONCRETE} \\
-            Pine brush        & \texttt{PINE\_BRUSH} \\
-          Broadleaf brush     & \texttt{BROADLEAF\_BRUSH} \\
-             Wet soil         & \texttt{WET\_SOIL} \\
-            Scrub-soil        & \texttt{SCRUB\_SOIL} \\
-      Broadleaf(70)-Pine(30)  & \texttt{BROADLEAF70\_PINE30} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure valid \texttt{Land\_Type} definitions.}
-  \label{tab:surface_land_type}
-\end{table}
-
-% Water surface type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{cc l}
-    \hline
-    \sffamily\textbf{Water Type} & \hspace{0.5cm} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-      Sea water  & \hspace{0.5cm} &  \texttt{SEA\_WATER} \\     
-     Fresh water & \hspace{0.5cm} &  \texttt{FRESH\_WATER} \\   
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure valid \texttt{Water\_Type} definitions.}
-  \label{tab:surface_water_type}
-\end{table}
-
-% Snow surface type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l}
-    \hline
-    \sffamily\textbf{Snow Type} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-         Wet snow          &   \texttt{WET\_SNOW} \\           
-      Grass after snow     &   \texttt{GRASS\_AFTER\_SNOW} \\   
-        Powder snow        &   \texttt{POWDER\_SNOW} \\        
-         RS snow(A)        &   \texttt{RS\_SNOW\_A} \\          
-         RS snow(B)        &   \texttt{RS\_SNOW\_B} \\          
-         RS snow(C)        &   \texttt{RS\_SNOW\_C} \\          
-         RS snow(D)        &   \texttt{RS\_SNOW\_D} \\          
-         RS snow(E)        &   \texttt{RS\_SNOW\_E} \\          
-      Thin Crust snow      &   \texttt{THIN\_CRUST\_SNOW} \\    
-      Thick crust snow     &   \texttt{THICK\_CRUST\_SNOW } \\  
-        Shallow snow       &   \texttt{SHALLOW\_SNOW} \\       
-         Deep snow         &   \texttt{DEEP\_SNOW} \\          
-        Crust snow         &   \texttt{CRUST\_SNOW} \\         
-        Medium snow        &   \texttt{MEDIUM\_SNOW} \\        
-     Bottom crust snow(A)  &   \texttt{BOTTOM\_CRUST\_SNOW\_A} \\
-     Bottom crust snow(B)  &   \texttt{BOTTOM\_CRUST\_SNOW\_B} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure valid \texttt{Snow\_Type} definitions.}
-  \label{tab:surface_snow_type}
-\end{table}
-
-% Ice surface type table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{c l}
-    \hline
-    \sffamily\textbf{Ice Type} & \sffamily\textbf{Parameter} \\
-    \hline\hline
-            Fresh ice        &   \texttt{FRESH\_ICE} \\       
-        First year sea ice   &   \texttt{FIRST\_YEAR\_SEA\_ICE} \\
-      Multiple year sea ice  &   \texttt{MULTI\_YEAR\_SEA\_ICE} \\
-            Ice floe         &   \texttt{ICE\_FLOE} \\            
-            Ice ridge        &   \texttt{ICE\_RIDGE} \\           
-    \hline
-  \end{tabular}
-  \caption{CRTM \Surface{} structure valid \texttt{Ice\_Type} definitions.}
-  \label{tab:surface_ice_type}
-\end{table}
 
 % Surface structure methods
 %--------------------------
@@ -407,14 +119,13 @@
 \input{fdoc/Surface/CRTM_Surface_Create}
 \input{fdoc/Surface/CRTM_Surface_DefineVersion}
 \input{fdoc/Surface/CRTM_Surface_Destroy}
+\input{fdoc/Surface/CRTM_Surface_InquireFile}
 \input{fdoc/Surface/CRTM_Surface_Inspect}
 \input{fdoc/Surface/CRTM_Surface_IsCoverageValid}
 \input{fdoc/Surface/CRTM_Surface_IsValid}
-\input{fdoc/Surface/CRTM_Surface_Zero}
-\input{fdoc/Surface/CRTM_Surface_IOVersion}
-\input{fdoc/Surface/CRTM_Surface_InquireFile}
 \input{fdoc/Surface/CRTM_Surface_ReadFile}
 \input{fdoc/Surface/CRTM_Surface_WriteFile}
+\input{fdoc/Surface/CRTM_Surface_Zero}
 
 
 
@@ -422,156 +133,59 @@
 \section{\SensorData{} Structure}
 %=============================
 \label{sec:sensordata_structure}
-
 \input{fdoc/Surface/CRTM_SensorData_type}
 
-% SensorData component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Channels}        & Number of channels to use in SfcOptics emissivty algorithms (\texttt{L}) & N/A    & Scalar \\
-    \texttt{Sensor\_Id}         & The sensor id                                                            & N/A    & Scalar \\
-    \texttt{WMO\_Satellite\_Id} & The WMO satellite Id                                                     & N/A    & Scalar \\
-    \texttt{WMO\_Sensor\_Id}    & The WMO sensor Id                                                        & N/A    & Scalar \\
-    \texttt{Sensor\_Channel}    & The channel numbers                                                      & N/A    & \texttt{L} \\
-    \texttt{Tb}                 & The brightness temperature measurements for each channel                 & Kelvin & \texttt{L} \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \SensorData{} structure component description.}
-  \label{tab:sensordata_structure}
-\end{table}
 
-% Surface structure methods
-%--------------------------
+% SensorData structure methods
+%-----------------------------
 \clearpage
 \input{fdoc/Surface/CRTM_SensorData_Associated}
 \input{fdoc/Surface/CRTM_SensorData_Compare}
 \input{fdoc/Surface/CRTM_SensorData_Create}
 \input{fdoc/Surface/CRTM_SensorData_DefineVersion}
 \input{fdoc/Surface/CRTM_SensorData_Destroy}
+\input{fdoc/Surface/CRTM_SensorData_InquireFile}
 \input{fdoc/Surface/CRTM_SensorData_Inspect}
 \input{fdoc/Surface/CRTM_SensorData_IsValid}
-\input{fdoc/Surface/CRTM_SensorData_Zero}
-\input{fdoc/Surface/CRTM_SensorData_IOVersion}
-\input{fdoc/Surface/CRTM_SensorData_InquireFile}
 \input{fdoc/Surface/CRTM_SensorData_ReadFile}
 \input{fdoc/Surface/CRTM_SensorData_WriteFile}
+\input{fdoc/Surface/CRTM_SensorData_Zero}
+
 
 
 \clearpage
 \section{\Geometry{} Structure}
 %==============================
 \label{sec:geometry_structure}
-
 \input{fdoc/Geometry/CRTM_Geometry_type}
 
-% Geometry component description table
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{iFOV}                    & The scan line FOV index & N/A & Scalar \\
-    \texttt{Longitude}               & Earth longitude & deg. E (0$\rightarrow$360) & Scalar \\
-    \texttt{Latitude}                & Earth latitude  & deg. N (-90$\rightarrow$+90) & Scalar \\
-    \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & Scalar \\
-    \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:geo_sensor_scan_angle} & degrees & Scalar \\
-    \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:geo_sensor_zenith_angle} & degrees & Scalar \\
-    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_sensor_azimuth_angle} & deg. from N & Scalar \\
-    \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:geo_source_zenith_angle} & degrees & Scalar \\
-    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_source_azimuth_angle} & deg. from N & Scalar \\
-    \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degrees & Scalar \\
-    \texttt{Year}                    & The year in 4-digit format       & N/A & Scalar \\
-    \texttt{Month}                   & The month of year (1-12)         & N/A & Scalar \\
-    \texttt{Day}                     & The day of month (1-28/29/30/31) & N/A & Scalar \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Geometry{} structure component description.}
-  \label{tab:geometry_structure}
-\end{table}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/geo/sensor_scan_angle.pstex_t}
-  \caption{Definition of \Geometry{} sensor scan angle component.}
-  \label{fig:geo_sensor_scan_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/geo/sensor_zenith_angle.pstex_t}
-  \caption{Definition of \Geometry{} sensor zenith angle component.}
-  \label{fig:geo_sensor_zenith_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/geo/sensor_azimuth_angle.pstex_t}
-  \caption{Definition of \Geometry{} sensor azimuth angle component.}
-  \label{fig:geo_sensor_azimuth_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/geo/source_zenith_angle.pstex_t}
-  \caption{Definition of \Geometry{} source zenith angle component.}
-  \label{fig:geo_source_zenith_angle}
-\end{figure}
-
-\begin{figure}[htp]
-  \centering
-  \input{graphics/geo/source_azimuth_angle.pstex_t}
-  \caption{Definition of \Geometry{} source azimuth angle component.}
-  \label{fig:geo_source_azimuth_angle}
-\end{figure}
 
 % Geometry structure methods
 %--------------------------
 \clearpage
+\input{fdoc/Geometry/CRTM_Geometry_Associated}
+\input{fdoc/Geometry/CRTM_Geometry_Compare}
+\input{fdoc/Geometry/CRTM_Geometry_Create}
 \input{fdoc/Geometry/CRTM_Geometry_DefineVersion}
 \input{fdoc/Geometry/CRTM_Geometry_Destroy}
 \input{fdoc/Geometry/CRTM_Geometry_GetValue}
+\input{fdoc/Geometry/CRTM_Geometry_InquireFile}
 \input{fdoc/Geometry/CRTM_Geometry_Inspect}
 \input{fdoc/Geometry/CRTM_Geometry_IsValid}
-\input{fdoc/Geometry/CRTM_Geometry_SetValue}
-\input{fdoc/Geometry/CRTM_Geometry_IOVersion}
-\input{fdoc/Geometry/CRTM_Geometry_InquireFile}
 \input{fdoc/Geometry/CRTM_Geometry_ReadFile}
+\input{fdoc/Geometry/CRTM_Geometry_ReadRecord}
+\input{fdoc/Geometry/CRTM_Geometry_SetValue}
 \input{fdoc/Geometry/CRTM_Geometry_WriteFile}
+\input{fdoc/Geometry/CRTM_Geometry_WriteRecord}
+
 
 
 \clearpage
 \section{\RTSolution{} Structure}
 %==================================
 \label{sec:rtsolution_structure}
-
 \input{fdoc/RTSolution/CRTM_RTSolution_type}
 
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{n\_Layers}    & Number of atmospheric profile layers (\texttt{K}) & N/A & Scalar \\
-    \texttt{Surface\_Emissivity      }  & The computed surface emissivity & N/A & Scalar \\
-    \texttt{Up\_Radiance             }  & The atmospheric portion of the upwelling radiance & \radunit & Scalar \\
-    \texttt{Down\_Radiance           }  & The atmospheric portion of the downwelling radiance & \radunit & Scalar \\
-    \texttt{Down\_Solar\_Radiance    }  & The downwelling direct solar radiance & \radunit & Scalar \\
-    \texttt{Surface\_Planck\_Radiance}  & The surface radiance & \radunit & Scalar \\
-    \texttt{Upwelling\_Radiance      }  & The upwelling radiance profile, including the reflected downwelling and surface contributions. & \radunit & \texttt{K} \\
-    \texttt{Layer\_Optical\_Depth    }  & The layer optical depth profile & N/A & \texttt{K} \\
-    \texttt{Radiance                 }  & The sensor radiance & \radunit & Scalar \\
-    \texttt{Brightness\_Temperature  }  & The sensor brightness temperature & Kelvin & Scalar \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \RTSolution{} structure component description}
-  \label{tab:rtsolution_structure}
-\end{table}
 
 % RTSolution structure methods
 %--------------------------
@@ -581,61 +195,20 @@
 \input{fdoc/RTSolution/CRTM_RTSolution_Create}
 \input{fdoc/RTSolution/CRTM_RTSolution_DefineVersion}
 \input{fdoc/RTSolution/CRTM_RTSolution_Destroy}
-\input{fdoc/RTSolution/CRTM_RTSolution_Inspect}
-\input{fdoc/RTSolution/CRTM_RTSolution_IOVersion}
 \input{fdoc/RTSolution/CRTM_RTSolution_InquireFile}
+\input{fdoc/RTSolution/CRTM_RTSolution_Inspect}
 \input{fdoc/RTSolution/CRTM_RTSolution_ReadFile}
 \input{fdoc/RTSolution/CRTM_RTSolution_WriteFile}
+\input{fdoc/RTSolution/CRTM_RTSolution_Zero}
+
 
 
 \clearpage
 \section{\Options{} Structure}
 %=============================
 \label{sec:options_structure}
-
 \input{fdoc/Options/CRTM_Options_type}
 
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{8.5cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{Check\_Input}                 & Logical switch to enable or disable input data checking. If:
-
-    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: No input data check.
-    
-                 \hspace{0.5cm}\texttt{.TRUE. }: Input data \emph{is} checked {\footnotesize [DEFAULT]}.}
-     & N/A & Scalar \\
-    \texttt{n\_Channels}                  & Number of sensor channels (\texttt{L}). & N/A & Scalar \\
-    \texttt{Channel}                      & Index into channel-specific components. & N/A & Scalar \\
-    \texttt{Use\_Emissivity}              & Logical switch to apply user-defined surface emissivity. If:
-
-    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: Calculate emissivity {\footnotesize [DEFAULT]}.
-    
-                 \hspace{0.5cm}\texttt{.TRUE. }: Use user-defined emissivity}
-     & N/A & Scalar \\
-    \texttt{Emissivity}                   & User-defined surface emissivity for each sensor channel. & N/A & \texttt{L} \\
-    \texttt{Use\_Direct\_Reflectivity}   & Logical switch to apply user-defined reflectivity for downwelling source (e.g. solar). This switch is ignored unless the \texttt{Use\_Emissivity} switch is also set. If:
-
-    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: Calculate reflectivity {\footnotesize [DEFAULT]}.
-    
-                 \hspace{0.5cm}\texttt{.TRUE. }: Use user-defined reflectivity}
-     & N/A & Scalar \\
-    \texttt{Direct\_Reflectivity}         & User-defined direct reflectivity for downwelling source for each sensor channel. & N/A & \texttt{L} \\
-    \texttt{Use\_Antenna\_Correction}     & Logical switch to apply antenna correction for the AMSU-A, AMSU-B, and MHS sensors. Note that for this switch to be effective in the CRTM call, the FOV field of the input \Geometry{} structure must be set and the antenna correction coefficients must be present in the sensor \SpcCoeff{} datafile. If:
-
-    \parbox{7cm}{\hspace{0.5cm}\texttt{.FALSE.}: No correction {\footnotesize [DEFAULT]}.
-    
-                 \hspace{0.5cm}\texttt{.TRUE. }: Apply antenna correction.}
-     & N/A & Scalar \\
-    \texttt{SSU}                          & Structure component containing optional SSU sensor-specific input. See section \ref{sec:ssu_input_structure}. & N/A & Scalar \\
-    \texttt{Zeeman}                       & Structure component containing optional input for those sensors where Zeeman-splitting is an issue for high-peaking channels. See section \ref{sec:zeeman_input_structure}. & N/A & Scalar \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \Options{} structure component description}
-  \label{tab:options_structure}
-\end{table}
 
 % Options structure methods
 %--------------------------
@@ -644,65 +217,55 @@
 \input{fdoc/Options/CRTM_Options_Create}
 \input{fdoc/Options/CRTM_Options_DefineVersion}
 \input{fdoc/Options/CRTM_Options_Destroy}
+\input{fdoc/Options/CRTM_Options_InquireFile}
 \input{fdoc/Options/CRTM_Options_Inspect}
 \input{fdoc/Options/CRTM_Options_IsValid}
+\input{fdoc/Options/CRTM_Options_ReadFile}
+\input{fdoc/Options/CRTM_Options_WriteFile}
+
 
 
 \clearpage
 \section{\SSUInput{} Structure}
-%=============================
+%==============================
 \label{sec:ssu_input_structure}
 The \SSUInput{} structure is a component of the \Options{} input structure. Note in figure \ref{fig:SSU_Input_type_structure} that the structure is declared as \texttt{PRIVATE}. As such, the only way to set values in, or get values from, the structure is via the \hyperref[sec:SSU_Input_SetValue_interface]{\texttt{SSU\_Input\_SetValue}} or \hyperref[sec:SSU_Input_GetValue_interface]{\texttt{SSU\_Input\_GetValue}} subroutines respectively.
 
 \input{fdoc/Options/SSU_Input_type}
 
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{Time}           & Time in decimal year corresponding to SSU observation. & N/A & Scalar \\
-    \texttt{Cell\_Pressure} & The SSU CO\subscript{2} cell pressures. & hPa & \texttt{MAX\_N\_CHANNELS} (3) \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \SSUInput{} structure component description}
-  \label{tab:ssu_input_structure}
-\end{table}
 
+% SSU_Input structure methods
+%----------------------------
+\clearpage
 \input{fdoc/Options/SSU_Input_CellPressureIsSet}
 \input{fdoc/Options/SSU_Input_DefineVersion}
 \input{fdoc/Options/SSU_Input_GetValue}
 \input{fdoc/Options/SSU_Input_Inspect}
 \input{fdoc/Options/SSU_Input_IsValid}
+\input{fdoc/Options/SSU_Input_ReadFile}
 \input{fdoc/Options/SSU_Input_SetValue}
+\input{fdoc/Options/SSU_Input_ValidRelease}
+\input{fdoc/Options/SSU_Input_WriteFile}
+
+
 
 \clearpage
 \section{\ZeemanInput{} Structure}
-%=============================
+%=================================
 \label{sec:zeeman_input_structure}
 The \ZeemanInput{} structure is a component of the \Options{} input structure. Note in figure \ref{fig:Zeeman_Input_type_structure} that the structure is declared as \texttt{PRIVATE}. As such, the only way to set values in, or get values from, the structure is via the \hyperref[sec:Zeeman_Input_SetValue_interface]{\texttt{Zeeman\_Input\_SetValue}} or \hyperref[sec:Zeeman_Input_GetValue_interface]{\texttt{Zeeman\_Input\_GetValue}} subroutines respectively.
 
 \input{fdoc/Options/Zeeman_Input_type}
 
-\begin{table}[htp]
-  \centering
-  \begin{tabular}{l p{7cm} c c}
-    \hline
-    \sffamily\textbf{Component} & \sffamily\textbf{Description} & \sffamily\textbf{Units} & \sffamily\textbf{Dimensions} \\
-    \hline\hline
-    \texttt{Be}           & Earth magnetic field strength. & Gauss & Scalar \\
-    \texttt{Cos\_ThetaB}  & Cosine of the angle between the Earth magnetic field and wave propagation direction. & N/A & Scalar \\
-    \texttt{Cos\_PhiB}    & Cosine of the azimuth angle of the $\mathbf{B}_e$ vector in the $(\mathbf{v}, \mathbf{h}, \mathbf{k})$ coordinates system, where $\mathbf{v}$, $\mathbf{h}$ and $\mathbf{k}$ comprise a right-hand orthogonal system, similar to the $(\mathbf{x}, \mathbf{y}, \mathbf{z})$ Cartesian coordinates. The $\mathbf{h}$ vector is normal to the plane containing the $\mathbf{k}$ and $\mathbf{z}$ vectors, where $\mathbf{k}$ points to the wave propagation direction and $\mathbf{z}$ points to the zenith. $\mathbf{h} = (\mathbf{z} \times \mathbf{k})/|\mathbf{z} \times \mathbf{k}|$. The azimuth angle is the angle on the $(\mathbf{v}, \mathbf{h})$ plane from the positive $\mathbf{v}$ axis to the projected line of the $\mathbf{B}_e$ vector on this plane, positive counterclockwise. & N/A & Scalar \\
-    \texttt{Doppler\_Shift}  & Doppler frequency shift caused by Earth-rotation (positive towards sensor). A zero value means no frequency shift. & KHz & Scalar \\
-    \hline
-  \end{tabular}
-  \caption{CRTM \ZeemanInput{} structure component description}
-  \label{tab:zeeman_input_structure}
-\end{table}
 
+% Zeeman_Input structure methods
+%-------------------------------
+\clearpage
 \input{fdoc/Options/Zeeman_Input_DefineVersion}
 \input{fdoc/Options/Zeeman_Input_GetValue}
 \input{fdoc/Options/Zeeman_Input_Inspect}
 \input{fdoc/Options/Zeeman_Input_IsValid}
+\input{fdoc/Options/Zeeman_Input_ReadFile}
 \input{fdoc/Options/Zeeman_Input_SetValue}
+\input{fdoc/Options/Zeeman_Input_ValidRelease}
+\input{fdoc/Options/Zeeman_Input_WriteFile}

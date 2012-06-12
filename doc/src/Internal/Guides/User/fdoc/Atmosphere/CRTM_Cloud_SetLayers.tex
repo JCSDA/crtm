@@ -1,0 +1,40 @@
+\subsection{\texttt{CRTM\_Cloud\_SetLayers} interface}
+  \label{sec:CRTM_Cloud_SetLayers_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Cloud_SetLayers
+ 
+  PURPOSE:
+        Elemental subroutine to set the working number of layers to use
+        in a CRTM Cloud object.
+ 
+  CALLING SEQUENCE:
+       CALL CRTM_Cloud_SetLayers( Cloud, n_Layers )
+ 
+  OBJECT:
+        Cloud:        CRTM Cloud object which is to have its working number
+                      of layers updated.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Cloud_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+  INPUTS:
+        n_Layers:     The value to set the n_Layers component of the
+                      Cloud object.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Cloud_type
+                      DIMENSION:  Conformable with the Cloud object argument
+                      ATTRIBUTES: INTENT(IN)
+ 
+  COMMENTS:
+        - The object is zeroed upon output.
+ 
+        - If n_Layers <= Cloud%Max_Layers, then only the dimension value
+          of the object is changed.
+ 
+        - If n_Layers > Cloud%Max_Layers, then the object is reallocated
+          to the required number of layers.
+ 
+  \end{alltt}

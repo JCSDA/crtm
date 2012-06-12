@@ -4,10 +4,6 @@
   \begin{minipage}[b]{6.5in}
     \begin{alltt}
   TYPE :: CRTM_Surface_type
-    ! Allocation indicator
-    LOGICAL :: Is_Allocated = .TRUE.  ! Placeholder for future expansion
-    ! Dimension values
-    ! ...None yet
     ! Gross type of surface determined by coverage
     REAL(fp) :: Land_Coverage  = ZERO
     REAL(fp) :: Water_Coverage = ZERO
@@ -20,6 +16,9 @@
     REAL(fp) :: Canopy_Water_Content  = DEFAULT_CANOPY_WATER_CONTENT
     REAL(fp) :: Vegetation_Fraction   = DEFAULT_VEGETATION_FRACTION
     REAL(fp) :: Soil_Temperature      = DEFAULT_SOIL_TEMPERATURE
+    REAL(fp) :: LAI                   = DEFAULT_LAI
+    INTEGER  :: Soil_Type             = DEFAULT_SOIL_TYPE
+    INTEGER  :: Vegetation_Type       = DEFAULT_VEGETATION_TYPE
     ! Water type data
     INTEGER  :: Water_Type        = DEFAULT_WATER_TYPE
     REAL(fp) :: Water_Temperature = DEFAULT_WATER_TEMPERATURE

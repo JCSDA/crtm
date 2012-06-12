@@ -25,7 +25,7 @@ MODULE IRVISlandCoeff_Module
   ! ----------
   PRIVATE
   PUBLIC :: IRVISlandCoeff_CreateFile
-  
+
 
   ! ----------
   ! Parameters
@@ -36,8 +36,8 @@ MODULE IRVISlandCoeff_Module
   CHARACTER(*), PARAMETER :: MODULE_NAME = 'IRVIS'//SURFACE_TYPE_NAME//'Coeff_Module'
   INTEGER , PARAMETER :: ML = 256
   REAL(dp), PARAMETER :: IR_CUTOFF_WAVELENGTH  = 3.0_dp
-  REAL(dp), PARAMETER :: VIS_CUTOFF_WAVELENGTH = 4.0_dp  
-  
+  REAL(dp), PARAMETER :: VIS_CUTOFF_WAVELENGTH = 4.0_dp
+
   ! The NPOESS surface type indices
   INTEGER, PARAMETER :: INVALID = 0
   INTEGER, PARAMETER :: COMPACTED_SOIL           =  1
@@ -84,19 +84,19 @@ CONTAINS
     CALL Load_NPOESS_Data(npoess, Visible=visible)
     CALL Load_USGS_Data(npoess,usgs)
     CALL Load_IGBP_Data(npoess,igbp)
-  
+
     ! Write data to file
     CALL Write_File(npoess, Visible=visible)
     CALL Write_File(usgs, Visible=visible)
     CALL Write_File(igbp, Visible=visible)
-  
+
     ! Cleanup
     CALL SEcategory_Destroy( npoess )
     CALL SEcategory_Destroy( usgs )
     CALL SEcategory_Destroy( igbp )
 
   END SUBROUTINE IRVISlandCoeff_CreateFile
-  
+
 
 !################################################################################
 !################################################################################
@@ -117,7 +117,7 @@ CONTAINS
     INTEGER :: err_stat
     LOGICAL :: infrared
     TYPE(SEcategory_type) :: sec_copy
-    
+
     ! Setup
     infrared = .TRUE.
     IF ( PRESENT(Visible) ) infrared = .NOT. Visible
@@ -159,8 +159,8 @@ CONTAINS
       msg = TRIM(sec%Classification_Name)//' structure read from file is different!'
     END IF
     CALL Display_Message( MODULE_NAME//','//ROUTINE_NAME, msg, INFORMATION )
-  
-  
+
+
     ! Clean up
     CALL SEcategory_Destroy( sec_copy )
 
@@ -195,7 +195,29 @@ CONTAINS
         'broadleaf_brush         ', &
         'wet_soil                ', &
         'scrub_soil              ', &
-        'broadleaf70_pine30      ' /)    
+        'broadleaf70_pine30      ' /)
+    ! ...The valid surface type indicators (all TRUE for NPOESS)
+    LOGICAL, PARAMETER :: SURFACE_TYPE_ISVALID(N_SURFACE_TYPES) = &
+     (/ .TRUE., &  ! compacted_soil
+        .TRUE., &  ! tilled_soil
+        .TRUE., &  ! sand
+        .TRUE., &  ! rock
+        .TRUE., &  ! irrigated_low_vegetation
+        .TRUE., &  ! meadow_grass
+        .TRUE., &  ! scrub
+        .TRUE., &  ! broadleaf_forest
+        .TRUE., &  ! pine_forest
+        .TRUE., &  ! tundra
+        .TRUE., &  ! grass_soil
+        .TRUE., &  ! broadleaf_pine_forest
+        .TRUE., &  ! grass_scrub
+        .TRUE., &  ! soil_grass_scrub
+        .TRUE., &  ! urban_concrete
+        .TRUE., &  ! pine_brush
+        .TRUE., &  ! broadleaf_brush
+        .TRUE., &  ! wet_soil
+        .TRUE., &  ! scrub_soil
+        .TRUE. /)  ! broadleaf70_pine30
     ! ...The spectral dimension
     INTEGER , PARAMETER :: N_WAVELENGTHS = 74
     REAL(dp), PARAMETER :: WAVELENGTH(N_WAVELENGTHS) = &
@@ -212,7 +234,7 @@ CONTAINS
     ! ...The reflectance data
     REAL(dp) :: reflectance(N_WAVELENGTHS, N_SURFACE_TYPES)
     INTEGER :: i
-    ! ...compacted_soil               
+    ! ...compacted_soil
     DATA (reflectance(i,COMPACTED_SOIL),i=1,N_WAVELENGTHS)/ &
     0.024_dp, 0.024_dp, 0.024_dp, 0.024_dp, 0.024_dp, 0.024_dp, 0.024_dp, 0.024_dp, &
     0.024_dp, 0.025_dp, 0.030_dp, 0.037_dp, 0.050_dp, 0.089_dp, 0.102_dp, 0.122_dp, &
@@ -457,7 +479,7 @@ CONTAINS
     LOGICAL :: infrared
     INTEGER :: n, n_points
     INTEGER, ALLOCATABLE :: idx(:)
-        
+
     ! Setup
     infrared = .TRUE.
     IF ( PRESENT(Visible) ) infrared = .NOT. Visible
@@ -495,7 +517,8 @@ CONTAINS
 
 
     ! Assign the data to the structure
-    npoess%Surface_Type = SURFACE_TYPE
+    npoess%Surface_Type         = SURFACE_TYPE
+    npoess%Surface_Type_IsValid = SURFACE_TYPE_ISVALID
     DO n = 1, N_SURFACE_TYPES
       npoess%Reflectance(:,n) = reflectance(idx,n)
     END DO
@@ -503,7 +526,7 @@ CONTAINS
 
     ! Clean up
     DEALLOCATE(idx)
-    
+
   END SUBROUTINE Load_NPOESS_Data
 
 
@@ -543,40 +566,69 @@ CONTAINS
         'playa                                       ', &
         'lava                                        ', &
         'white_sand                                  ' /)
+    ! ...The valid surface type indicators (FALSE for non-land types)
+    LOGICAL, PARAMETER :: SURFACE_TYPE_ISVALID(N_SURFACE_TYPES) = &
+     (/ .TRUE.,  &  ! urban_and_built-up_land
+        .TRUE.,  &  ! dryland_cropland_and_pasture
+        .TRUE.,  &  ! irrigated_cropland_and_pasture
+        .TRUE.,  &  ! mixed_dryland/irrigated_cropland_and_pasture
+        .TRUE.,  &  ! cropland/grassland_mosaic
+        .TRUE.,  &  ! cropland/woodland_mosaic
+        .TRUE.,  &  ! grassland
+        .TRUE.,  &  ! shrubland
+        .TRUE.,  &  ! mixed_shrubland/grassland
+        .TRUE.,  &  ! savanna
+        .TRUE.,  &  ! deciduous_broadleaf_forest
+        .TRUE.,  &  ! deciduous_needleleaf_forest
+        .TRUE.,  &  ! evergreen_broadleaf_forest
+        .TRUE.,  &  ! evergreen_needleleaf_forest
+        .TRUE.,  &  ! mixed_forest
+        .FALSE., &  ! water_bodies (empty)
+        .TRUE.,  &  ! herbaceous_wetland
+        .TRUE.,  &  ! wooded_wetland
+        .TRUE.,  &  ! barren_or_sparsely_vegetated
+        .TRUE.,  &  ! herbaceous_tundra
+        .TRUE.,  &  ! wooded_tundra
+        .TRUE.,  &  ! mixed_tundra
+        .TRUE.,  &  ! bare_ground_tundra
+        .FALSE., &  ! snow_or_ice (empty)
+        .TRUE.,  &  ! playa
+        .TRUE.,  &  ! lava
+        .TRUE.  /)  ! white_sand
     ! ...The NPOESS->USGS mapping
     INTEGER, PARAMETER :: NPOESS_TO_USGS(N_SURFACE_TYPES) = &
-      (/ URBAN_CONCRETE          , &  ! urban_and_built-up_land                     
-         COMPACTED_SOIL          , &  ! dryland_cropland_and_pasture                
-         IRRIGATED_LOW_VEGETATION, &  ! irrigated_cropland_and_pasture              
+      (/ URBAN_CONCRETE          , &  ! urban_and_built-up_land
+         COMPACTED_SOIL          , &  ! dryland_cropland_and_pasture
+         IRRIGATED_LOW_VEGETATION, &  ! irrigated_cropland_and_pasture
          GRASS_SOIL              , &  ! mixed_dryland/irrigated_cropland_and_pasture
-         MEADOW_GRASS            , &  ! cropland/grassland_mosaic                   
-         MEADOW_GRASS            , &  ! cropland/woodland_mosaic                    
-         MEADOW_GRASS            , &  ! grassland                                   
-         SCRUB                   , &  ! shrubland                                   
-         GRASS_SCRUB             , &  ! mixed_shrubland/grassland                   
-         MEADOW_GRASS            , &  ! savanna                                     
-         BROADLEAF_FOREST        , &  ! deciduous_broadleaf_forest                  
-         PINE_FOREST             , &  ! deciduous_needleleaf_forest                 
-         BROADLEAF_FOREST        , &  ! evergreen_broadleaf_forest                  
-         PINE_FOREST             , &  ! evergreen_needleleaf_forest                 
-         BROADLEAF_PINE_FOREST   , &  ! mixed_forest                                
-         INVALID                 , &  ! water_bodies (empty)                        
-         WET_SOIL                , &  ! herbaceous_wetland                          
-         WET_SOIL                , &  ! wooded_wetland                              
-         IRRIGATED_LOW_VEGETATION, &  ! barren_or_sparsely_vegetated                
-         TUNDRA                  , &  ! herbaceous_tundra                           
-         TUNDRA                  , &  ! wooded_tundra                               
-         TUNDRA                  , &  ! mixed_tundra                                
-         TUNDRA                  , &  ! bare_ground_tundra                          
-         INVALID                 , &  ! snow_or_ice (empty)                         
-         COMPACTED_SOIL          , &  ! playa                              
-         ROCK                    , &  ! lava                               
-         SAND                     /)  ! white_sand                         
-    ! Local variables         
+         MEADOW_GRASS            , &  ! cropland/grassland_mosaic
+         MEADOW_GRASS            , &  ! cropland/woodland_mosaic
+         MEADOW_GRASS            , &  ! grassland
+         SCRUB                   , &  ! shrubland
+         GRASS_SCRUB             , &  ! mixed_shrubland/grassland
+         MEADOW_GRASS            , &  ! savanna
+         BROADLEAF_FOREST        , &  ! deciduous_broadleaf_forest
+         PINE_FOREST             , &  ! deciduous_needleleaf_forest
+         BROADLEAF_FOREST        , &  ! evergreen_broadleaf_forest
+         PINE_FOREST             , &  ! evergreen_needleleaf_forest
+         BROADLEAF_PINE_FOREST   , &  ! mixed_forest
+         INVALID                 , &  ! water_bodies (empty)
+         WET_SOIL                , &  ! herbaceous_wetland
+         WET_SOIL                , &  ! wooded_wetland
+         IRRIGATED_LOW_VEGETATION, &  ! barren_or_sparsely_vegetated
+         TUNDRA                  , &  ! herbaceous_tundra
+         TUNDRA                  , &  ! wooded_tundra
+         TUNDRA                  , &  ! mixed_tundra
+         TUNDRA                  , &  ! bare_ground_tundra
+         INVALID                 , &  ! snow_or_ice (empty)
+         COMPACTED_SOIL          , &  ! playa
+         ROCK                    , &  ! lava
+         SAND                     /)  ! white_sand
+    ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
-    
-         
+
+
     ! Create structure
     CALL SEcategory_Create( &
            usgs, &
@@ -594,9 +646,10 @@ CONTAINS
 
 
     ! Assign the data to the structure
-    usgs%Surface_Type = SURFACE_TYPE
+    usgs%Surface_Type         = SURFACE_TYPE
+    usgs%Surface_Type_IsValid = SURFACE_TYPE_ISVALID
     DO n = 1, N_SURFACE_TYPES
-      IF ( NPOESS_TO_USGS(n) /= INVALID ) THEN
+      IF ( SURFACE_TYPE_ISVALID(n) ) THEN
         usgs%Reflectance(:,n) = npoess%Reflectance(:,NPOESS_TO_USGS(n))
       ELSE
         usgs%Reflectance(:,n) = -1.0_dp
@@ -635,33 +688,55 @@ CONTAINS
         'wooded_tundra                     ', &
         'mixed_tundra                      ', &
         'bare_ground_tundra                ' /)
+    ! ...The valid surface type indicators (FALSE for non-land types)
+    LOGICAL, PARAMETER :: SURFACE_TYPE_ISVALID(N_SURFACE_TYPES) = &
+     (/ .TRUE.,  &  ! evergreen_needleleaf_forest
+        .TRUE.,  &  ! evergreen_broadleaf_forest
+        .TRUE.,  &  ! deciduous_needleleaf_forest
+        .TRUE.,  &  ! deciduous_broadleaf_forest
+        .TRUE.,  &  ! mixed_forests
+        .TRUE.,  &  ! closed_shrublands
+        .TRUE.,  &  ! open_shrublands
+        .TRUE.,  &  ! woody_savannas
+        .TRUE.,  &  ! savannas
+        .TRUE.,  &  ! grasslands
+        .TRUE.,  &  ! permanent_wetlands
+        .TRUE.,  &  ! croplands
+        .TRUE.,  &  ! urban_and_built-up
+        .TRUE.,  &  ! cropland/natural_vegetation_mosaic
+        .FALSE., &  ! snow_and_ice (empty)
+        .TRUE.,  &  ! barren_or_sparsely_vegetated
+        .FALSE., &  ! water (empty)
+        .TRUE.,  &  ! wooded_tundra
+        .TRUE.,  &  ! mixed_tundra
+        .TRUE.  /)  ! bare_ground_tundra
     ! ...The NPOESS->IGBP mapping
     INTEGER, PARAMETER :: NPOESS_TO_IGBP(N_SURFACE_TYPES) = &
-      (/ PINE_FOREST          , &  ! evergreen_needleleaf_forest       
-         BROADLEAF_FOREST     , &  ! evergreen_broadleaf_forest        
-         PINE_FOREST          , &  ! deciduous_needleleaf_forest       
-         BROADLEAF_FOREST     , &  ! deciduous_broadleaf_forest        
-         BROADLEAF_PINE_FOREST, &  ! mixed_forests                     
-         SCRUB                , &  ! closed_shrublands                 
-         SCRUB_SOIL           , &  ! open_shrublands                   
-         BROADLEAF_BRUSH      , &  ! woody_savannas                    
-         BROADLEAF_BRUSH      , &  ! savannas                          
-         SCRUB                , &  ! grasslands                        
-         BROADLEAF_BRUSH      , &  ! permanent_wetlands                
-         TILLED_SOIL          , &  ! croplands                         
-         URBAN_CONCRETE       , &  ! urban_and_built-up                
+      (/ PINE_FOREST          , &  ! evergreen_needleleaf_forest
+         BROADLEAF_FOREST     , &  ! evergreen_broadleaf_forest
+         PINE_FOREST          , &  ! deciduous_needleleaf_forest
+         BROADLEAF_FOREST     , &  ! deciduous_broadleaf_forest
+         BROADLEAF_PINE_FOREST, &  ! mixed_forests
+         SCRUB                , &  ! closed_shrublands
+         SCRUB_SOIL           , &  ! open_shrublands
+         BROADLEAF_BRUSH      , &  ! woody_savannas
+         BROADLEAF_BRUSH      , &  ! savannas
+         SCRUB                , &  ! grasslands
+         BROADLEAF_BRUSH      , &  ! permanent_wetlands
+         TILLED_SOIL          , &  ! croplands
+         URBAN_CONCRETE       , &  ! urban_and_built-up
          TILLED_SOIL          , &  ! cropland/natural_vegetation_mosaic
-         INVALID              , &  ! snow_and_ice (empty)              
-         COMPACTED_SOIL       , &  ! barren_or_sparsely_vegetated      
-         INVALID              , &  ! water (empty)                     
-         TUNDRA               , &  ! wooded_tundra                     
-         TUNDRA               , &  ! mixed_tundra                      
-         TUNDRA                /)  ! bare_ground_tundra                
-    ! Local variables         
+         INVALID              , &  ! snow_and_ice (empty)
+         COMPACTED_SOIL       , &  ! barren_or_sparsely_vegetated
+         INVALID              , &  ! water (empty)
+         TUNDRA               , &  ! wooded_tundra
+         TUNDRA               , &  ! mixed_tundra
+         TUNDRA                /)  ! bare_ground_tundra
+    ! Local variables
     CHARACTER(ML) :: msg
     INTEGER :: n
-         
-         
+
+
     ! Create structure
     CALL SEcategory_Create( &
            igbp, &
@@ -679,9 +754,10 @@ CONTAINS
 
 
     ! Assign the data to the structure
-    igbp%Surface_Type = SURFACE_TYPE
+    igbp%Surface_Type         = SURFACE_TYPE
+    igbp%Surface_Type_IsValid = SURFACE_TYPE_ISVALID
     DO n = 1, N_SURFACE_TYPES
-      IF ( NPOESS_TO_IGBP(n) /= INVALID ) THEN
+      IF ( SURFACE_TYPE_ISVALID(n) ) THEN
         igbp%Reflectance(:,n) = npoess%Reflectance(:,NPOESS_TO_IGBP(n))
       ELSE
         igbp%Reflectance(:,n) = -1.0_dp

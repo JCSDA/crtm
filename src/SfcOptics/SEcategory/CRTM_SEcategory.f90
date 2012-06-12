@@ -167,11 +167,20 @@ CONTAINS
 
     ! Setup
     err_stat = SUCCESS
+    ! ...Check surface type valid range
     IF ( Surface_Type < 1 .OR. &
          Surface_Type > SEcategory%n_Surface_Types ) THEN
       Emissivity = ZERO
       err_stat = FAILURE
       msg = 'Invalid surface type index specified'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
+    END IF
+    ! ...Check surface type valid for classification
+    IF ( .NOT. SEcategory%Surface_Type_IsValid(Surface_Type) ) THEN
+      Emissivity = ZERO
+      err_stat = FAILURE
+      msg = 'Invalid surface type index specified for '//&
+            TRIM(SEcategory%Classification_Name)//' classification'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
     
