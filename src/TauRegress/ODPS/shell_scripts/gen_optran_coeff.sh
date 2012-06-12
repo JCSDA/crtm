@@ -396,19 +396,20 @@ EOF
 
       Error_file_id=${SatSen}.${GasName}.ch${TopSeqCh}
 
-      echo "#!/bin/sh" > ${jobScript}
-      echo "#@ job_name = optranC_run" >> ${jobScript}
-#      echo "#@ output = \$(job_name).\$(jobid).out" >> ${jobScript}
-      echo "#@ error  = \$(job_name).${Error_file_id}.err" >> ${jobScript}
-      echo "#@ notification = error" >> ${jobScript}
-      echo "#@ job_type = serial" >> ${jobScript}
-      echo "#@ wall_clock_limit = 01:00:00" >> ${jobScript}
-      echo "#@ class = jcsda" >> ${jobScript}
-#      echo "#@ class = 1" >> ${jobScript}
-      echo "#@ group = jcsda" >> ${jobScript}
-      echo "#@ account_no = JCSDA001-RES" >> ${jobScript}
-      echo "#@ resources = ConsumableCpus(1) ConsumableMemory(100 MB)" >> ${jobScript}
-      echo "#@ queue" >> ${jobScript}
+      echo "#!/bin/sh --login" > ${jobScript}
+      echo "#PBS -N optranC_run" >> ${jobScript}
+      echo "#PBS -o \$(job_name).\$(jobid).out" >> ${jobScript}
+      echo "#PBS -e \$(job_name).${Error_file_id}.err" >> ${jobScript}
+      echo "#PBS -M ${USER}@noaa.gov" >> ${jobScript}
+      echo "#PBS -m a" >> ${jobScript}
+#      echo "#PBS -q batch" >> ${jobScript}
+      echo "#PBS -l walltime =01:00:00" >> ${jobScript}
+      echo "#PBS -A ada" >> ${jobScript}
+      echo "#PBS -l mem=100M" >> ${jobScript}
+      echo "# " >> ${jobScript}
+      echo "# Load required modules" >> ${jobScript}
+      echo "module load intel/12-12.0.4.191" >> ${jobScript}
+      echo "module load netcdf/4.1.3-intel" >> ${jobScript}
       echo "# " >> ${jobScript}
       echo "# go to the execution directory" >> ${jobScript}
       echo "cd ${RunDir}" >> ${jobScript}
@@ -426,7 +427,7 @@ EOF
       # -- execute the job script
 
       chmod 700 $jobScript
-      llsubmit $jobScript
+      qsub $jobScript
 
       #--- put the execution directory in a file
 
