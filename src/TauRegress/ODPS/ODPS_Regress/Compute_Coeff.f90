@@ -91,7 +91,7 @@ PROGRAM Compute_Coeff
   ! ---------
  
   CHARACTER( 256 ) :: Message
-  TYPE( AtmProfile_type ) :: AtmProfile
+  TYPE( AtmProfile_type ), ALLOCATABLE :: AtmProfile(:)
   TYPE( Predictor_type )  :: Predictor
 
   INTEGER, ALLOCATABLE    :: Absorber_id(:)        
@@ -228,21 +228,40 @@ PROGRAM Compute_Coeff
   !=======================================================================
   !--- read atmospheric profiles, and obtain the reference profile
   !=======================================================================
-  
-  Error_Status = Read_AtmProfile_netCDF( TRIM( inFileName_atmProfile ), &
-                                         AtmProfile, Reverse = 1 ) 
-
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message(  PROGRAM_NAME, &
-                          'Error reading AtmProfile file '//TRIM(inFileName_atmProfile), &
-                          Error_Status ) 
-    STOP 
+ 
+  ! Inquire the AtmProfile file for the dimensions
+  error_status = Inquire_AtmProfile_netCDF( &
+                   inFileName_atmProfile, &
+                   n_Layers    = Nlay, &
+                   n_Absorbers = Nabs, &
+                   n_Profiles  = Natm ) 
+  IF ( error_status /= SUCCESS ) THEN
+    message = 'Error inquiring '//TRIM(inFileName_atmProfile)//' for dimensions.'
+    CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
   END IF 
-   
-  AtmProfile%LEVEL_ALTITUDE = AtmProfile%LEVEL_ALTITUDE * 0.001  ! convert to km
+
+  ! Allocate the AtmProfile array
+  ALLOCATE( atmprofile(Natm), STAT=allocate_status )
+  IF ( allocate_status /= 0 ) THEN
+    message = 'Error allocating AtmProfile array.'
+    CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
+  END IF 
+
+  ! Read the AtmProfile file
+  error_status = Read_AtmProfile_netCDF( &
+                   inFileName_atmProfile, &
+                   AtmProfile, &
+                   Reverse = .TRUE. ) 
+  IF ( error_status /= SUCCESS ) THEN
+    message = 'Error reading '//TRIM(inFileName_atmProfile)//' data.'
+    CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
+  END IF 
+
+  ! Convert altitudes from metres to kilometres
+  DO m = 1, Natm
+    AtmProfile(m)%LEVEL_ALTITUDE = AtmProfile(m)%LEVEL_ALTITUDE * 0.001_fp_kind
+  END DO
   
-  Nlay = AtmProfile%n_Layers 
-  Natm = AtmProfile%n_Profiles 
   Nabs = Get_n_Absorbers(This_Group)
   NsensorChan = SpcCoeff%n_Channels
   n_predictors_max = Get_max_n_Predicotrs(This_Group)
@@ -269,8 +288,8 @@ PROGRAM Compute_Coeff
   !#--------------------------------------------------------------------------#  
   DO i = 1, Nabs
    absorber_id(i) = Get_Absorber_ID(i, This_Group)
-   absorber_index(i:i) = PACK( (/(j, j = 1, AtmProfile%n_Absorbers)/), &
-                     AtmProfile%Absorber_ID == absorber_id(i) )
+   absorber_index(i:i) = PACK( (/(j, j = 1, AtmProfile(1)%n_Absorbers)/), &
+                               AtmProfile(1)%Absorber_ID == absorber_id(i) )
    ! save index for water vapor
    IF(absorber_id(i) == H2O_ID)THEN
      H2O_idx = absorber_index(i)
@@ -305,17 +324,34 @@ PROGRAM Compute_Coeff
   END IF
 
   ! Calculating the reference profiles
-  ! ------------------------------------------------------------
-  Ref_Level_Pressure(0) = SUM(AtmProfile%Level_Pressure(1, :) ) / Natm
-  DO k = 1, Nlay
-    Ref_Level_Pressure(k) = SUM(AtmProfile%Level_Pressure(k+1, :) ) / Natm
-    Ref_Temperature(k) = SUM(AtmProfile%Layer_Temperature(k, :) ) / Natm 
-    DO j = 1, Nabs
-      Ref_absorber(k,j) = SUM(AtmProfile%Layer_Absorber(k,absorber_index(j),:) ) / Natm  
-      Min_absorber(k,j) = MINVAL(AtmProfile%Layer_Absorber(k,absorber_index(j),:))   
-      Max_absorber(k,j) = MAXVAL(AtmProfile%Layer_Absorber(k,absorber_index(j),:))   
+  ! ----------------------------------
+  ! Initialise summation and min/max variables
+  ref_level_pressure = ZERO
+  ref_temperature    = ZERO
+  ref_absorber       = ZERO
+  min_absorber       =  1.0e+10_fp_kind
+  max_absorber       = -1.0e+10_fp_kind
+
+  ! Begin summation loop
+  Ref_Sum_Loop: DO m = 1, Natm
+    Ref_Level_Pressure(0) = ref_level_pressure(0) + AtmProfile(m)%Level_Pressure(1)
+    DO k = 1, Nlay
+      Ref_Level_Pressure(k) = ref_level_pressure(k) + AtmProfile(m)%Level_Pressure(k+1)
+      Ref_Temperature(k)    = ref_temperature(k)    + AtmProfile(m)%Layer_Temperature(k)
+      DO j = 1, Nabs
+        Ref_absorber(k,j) = ref_absorber(k,j) + AtmProfile(m)%Layer_Absorber(k,absorber_index(j))
+        Min_absorber(k,j) = MIN(min_absorber(k,j),AtmProfile(m)%Layer_Absorber(k,absorber_index(j)))   
+        Max_absorber(k,j) = MAX(max_absorber(k,j),AtmProfile(m)%Layer_Absorber(k,absorber_index(j)))   
+      END DO
     END DO
-  END DO
+  END DO Ref_Sum_Loop
+
+  ! Compute average values for reference
+  ref_level_pressure = ref_level_pressure / REAL(Natm,fp_kind)
+  ref_temperature    = ref_temperature    / REAL(Natm,fp_kind)
+  ref_absorber       = ref_absorber       / REAL(Natm,fp_kind)
+
+
 
   ! Get TauProfile array dimensions
 
@@ -449,32 +485,26 @@ PROGRAM Compute_Coeff
   !=======================================================================
   ! Compute the atmos predictors (all predictors in the pool for each absorber) 
   !=======================================================================
-  DO m = 1, Natm
-    Temperature = AtmProfile%Layer_Temperature(:, m)
+  Compute_Predictor_Loop: DO m = 1, Natm
+    Temperature = AtmProfile(m)%Layer_Temperature
     DO j = 1, Nabs
-      Absorber(:,j) = AtmProfile%Layer_Absorber(:,absorber_index(j),m)  
+      Absorber(:,j) = AtmProfile(m)%Layer_Absorber(:,absorber_index(j))  
     END DO
-
-     H_top = AtmProfile%LEVEL_ALTITUDE(1, m)
-
+    H_top = AtmProfile(m)%LEVEL_ALTITUDE(1)
     DO i = 1, n_Angles
-          
       CALL Compute_Predictor(This_Group, Temperature, Absorber,   &
                              Ref_Level_Pressure, Ref_Temperature, &
                              Ref_Absorber, Geometric_Angle(:,i,m), &
                              Predictor)
-
       n_predictors = Predictor%n_CP(icom)                                           
       Predictors(:, 1:n_predictors, i, m) = Predictor%X(:, 1:n_predictors,icom)    
-             
     END DO
-                           
-  END DO
+  END DO Compute_Predictor_Loop
+
 
   ALLOCATE( Coeff(n_predictors, Nlay), &
             predSubIndex(n_predictors), &
             STAT = Allocate_Status )
-  
   IF ( Allocate_Status /= 0 ) THEN
     WRITE( Message, '( "Error allocating coeff array. STAT = ", i5 )' ) &
                     Allocate_Status
@@ -623,10 +653,10 @@ PROGRAM Compute_Coeff
     ENDWHERE
 
    
-    !--- calculate Tb from LBL trans								    ! 
+!**** PvD: Not sure the dimension changes here will work!!! ****
+    !--- calculate Tb from LBL trans
     CALL Compute_BrightTemp(ichan, n_angles, Natm, &
-                            TauTotal, AtmProfile%Layer_Temperature, &
-                            AtmProfile%Level_Temperature(Nlay+1, :),&
+                            TauTotal, AtmProfile, &
                             VirtEmiss, SpcCoeff, &
                             tb_lbl)
 
@@ -648,10 +678,10 @@ PROGRAM Compute_Coeff
       ENDDO
     ENDDO
 
-    !--- calculate Tb from LBL trans								    ! 
+!**** PvD: Not sure the dimension changes here will work!!! ****
+    !--- calculate Tb from LBL trans
     CALL Compute_BrightTemp(ichan, n_angles, Natm, &
-                            TauTotalPred, AtmProfile%Layer_Temperature, &
-                            AtmProfile%Level_Temperature(Nlay+1, :),&
+                            TauTotalPred, AtmProfile, &
                             VirtEmiss, SpcCoeff, &
                             tb_pred)
 
@@ -803,7 +833,6 @@ PROGRAM Compute_Coeff
 
   ! deallocate the AtmProfile profile data structure
   Error_Status = Destroy_AtmProfile( AtmProfile)  
-  
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error deallocating AtmProfile structure.', & 
@@ -812,7 +841,6 @@ PROGRAM Compute_Coeff
 
   ! deallocate the SpcCoeff data structure
   CALL SpcCoeff_Destroy( SpcCoeff )  
-  
   IF ( Error_Status /= SUCCESS ) THEN 
      CALL Display_Message( PROGRAM_NAME, &
                            'Error deallocating SpcCoeff structure.', & 
@@ -833,8 +861,8 @@ PROGRAM Compute_Coeff
             absorber,            &
             Coeff,               &
             predSubIndex,        &
+            atmprofile,          &
             STAT = Allocate_Status )
-
   IF ( Allocate_Status /= 0 ) THEN
     WRITE( Message, '( "Error deallocating arrays. STAT = ", i5 )' ) &
                     Allocate_Status
@@ -1016,8 +1044,7 @@ CONTAINS
 
     !--- calculate Tb from LBL trans								    ! 
     CALL Compute_BrightTemp(ichan, Nangle_regression, Natm, &
-                            TauTotalPred, AtmProfile%Layer_Temperature, &
-                            AtmProfile%Level_Temperature(Nlay+1, :),&
+                            TauTotalPred, AtmProfile, &
                             VirtEmiss, SpcCoeff, &
                             tb_pred)
 
@@ -1041,27 +1068,28 @@ CONTAINS
 
   END subroutine DoRegression
   
-  SUBROUTINE Compute_BrightTemp(ichan, n_angles, n_profiles, tau, tk,  &
-                                ts, emi, SpcCoeff, tb)
+  SUBROUTINE Compute_BrightTemp(ichan, n_angles, n_profiles, tau, &
+                                atmprofile, &
+                                emi, SpcCoeff, tb)
     integer, intent(in)        :: ichan
     integer, intent(in)        :: n_angles  
     integer, intent(in)        :: n_profiles  
     real(fp_kind), intent(in)  :: tau(0:, :, :)  ! dimension n_layers x n_angles x n_profiles
-    real(fp_kind), intent(in)  :: tk(:, :)       ! dimension n_layers x n_profiles
-    real(fp_kind), intent(in)  :: ts(:)          ! surface temperature, dimension n_profiles
+    type(atmprofile_type), intent(in) :: atmprofile(:)    ! dimension n_profiles
     real(fp_kind), intent(in)  :: emi            ! surface emissivity
     TYPE(SpcCoeff_type)        :: SpcCoeff
     real(fp_kind), intent(out) :: tb(:,:)        ! dimension n_angles x n_profiles
 
     ! local
-    integer :: i, m
+    integer :: i, m, n_levels
 
     DO i = 1,  n_Angles     ! Loop over scan angles
       DO m= 1, n_profiles   ! Loop over profiles   
+        n_levels = atmprofile(m)%n_Levels
         tb(i,m) = Pred_BrightTemp(Ichan,         & 
                                   tau(0:, i,m),  & 
-                                  tk(:, m),      & 
-                                  ts(m), &         
+                                  atmprofile(m)%layer_temperature,      & 
+                                  atmprofile(m)%level_temperature(n_levels), &         
                                   emi, SpcCoeff )
       ENDDO
     ENDDO 
