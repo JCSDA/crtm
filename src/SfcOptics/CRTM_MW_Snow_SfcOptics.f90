@@ -17,6 +17,8 @@
 !       Modified by:    Banghua Yan, 03-Oct-2007
 !                       Banghua.Yan@noaa.gov
 !
+!       Modified by:    Yong Chen. 09-Jul-212
+!                       Yong.Chen@noaa.gov
 
 MODULE CRTM_MW_Snow_SfcOptics
 
@@ -38,13 +40,15 @@ MODULE CRTM_MW_Snow_SfcOptics
                                         WMO_SSMI , &
                                         WMO_MSU  , &
                                         WMO_MHS  , &
-                                        WMO_SSMIS
+                                        WMO_SSMIS, &
+					WMO_ATMS
   USE NESDIS_LandEM_Module,       ONLY: NESDIS_LandEM
   USE NESDIS_AMSU_SNOWEM_Module,  ONLY: NESDIS_AMSU_SNOWEM
   USE NESDIS_SSMI_SNOWEM_Module,  ONLY: NESDIS_SSMI_SnowEM
   USE NESDIS_AMSRE_SNOWEM_Module, ONLY: NESDIS_AMSRE_SNOW
   USE NESDIS_MHS_SNOWEM_Module,   ONLY: NESDIS_SNOWEM_MHS
   USE NESDIS_SSMIS_SnowEM_Module, ONLY: NESDIS_SSMIS_SnowEM
+  USE NESDIS_ATMS_SnowEM_Module,  ONLY: NESDIS_ATMS_SNOWEM
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -190,6 +194,7 @@ CONTAINS
     INTEGER,  PARAMETER :: AMSRE_H_INDEX(6) = (/2, 4, 6, 8, 10, 12/) ! AMSRE channels with H pol.
     INTEGER,  PARAMETER :: AMSUA_INDEX(4)   = (/1, 2, 3, 15/)
     INTEGER,  PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
+    INTEGER,  PARAMETER :: ATMS_INDEX(5)    = (/1, 2, 3, 16,17/)          ! With mixed polarisations
     ! Local variables
     INTEGER :: i
     REAL(fp) :: Sensor_Zenith_Angle
@@ -203,6 +208,20 @@ CONTAINS
 
     ! Compute the surface emissivities
     Sensor_Type: SELECT CASE( Surface%SensorData%WMO_Sensor_ID )
+
+      ! ATMSemissivity model
+      CASE( WMO_ATMS )    
+         DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_ATMS_SNOWEM( Sensor_Zenith_Angle,                     &  ! Input, Degree           
+                                   SfcOptics%Angle(i),                      &  ! Input, Degree           
+                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
+                                   Surface%SensorData%Tb(ATMS_INDEX),       &  ! Input, ATMS           
+                                   Surface%Snow_Temperature,                &  ! Input, K                
+                                   Surface%Snow_Depth,                      &  ! Input, mm               
+                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component      
+                                   SfcOptics%Emissivity(i,1)   )               ! Output, V component 
+         END DO                                                                                           
+
 
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )
