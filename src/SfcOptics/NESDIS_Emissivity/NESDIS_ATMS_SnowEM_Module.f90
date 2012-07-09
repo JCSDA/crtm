@@ -4,8 +4,8 @@
 !       NESDIS_ATMS_SnowEM_Module
 !
 ! PURPOSE:
-!       Module containing the snow-typing algorithms. A general interface is used to call one of the 
-!       snow-typing algorithms in !terms of the input arguments. This Module is used together with 
+!       Module containing the snow-typing algorithms. A general interface is used to call one of the
+!       snow-typing algorithms in !terms of the input arguments. This Module is used together with
 !       NESDIS_SnowEM_ATMS_Parameters Module to implement the library-based snow emissivity  model.
 !
 ! REFERENCES:
@@ -38,23 +38,23 @@
 !
 !
 ! PRIVATE SUBPROGRAMS:
-!       These subroutines are used to determine the snow types from the brightness temperatures(TB) 
+!       These subroutines are used to determine the snow types from the brightness temperatures(TB)
 !       of five ATMS window channels( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz, 165.5 GHz) and/or
-!       surface temperature plus snow depth. The five channels are further divided into two 
-!       groups: Group-1 ( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz) and Group-2 (88.2 GHz, 165.5GHz), 
+!       surface temperature plus snow depth. The five channels are further divided into two
+!       groups: Group-1 ( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz) and Group-2 (88.2 GHz, 165.5GHz),
 !       corresponding to the window channels of AMSU-A and AMSU-B, respectively.
 !       Different combinations of available ATMS window-channel and surface observations result
-!       in differenet snow-typing algotrithms:   
+!       in differenet snow-typing algotrithms:
 !
-!       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels 
-!       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels 
-!       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels 
+!       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels
+!       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels
+!       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels
 !       ATMS_SNOW_ByTBTs_A    : by ATMS TBs of Group-1 channels and surface temperature
 !       ATMS_SNOW_ByTBTs_B    : by ATMS TBs of Group-2 channels and surface temperature
 !       ATMS_SNOW_ByTBTs      : by the TBs  of all the five ATMS channels and surface temperature (regression-based)
 !       ATMS_SNOW_ByTBTs_D    : by the TBs  of all the five ATMS channels and surface temperature (diagnosis-based)
 !       ATMS_SNOW_ByTypes     : bydefault surface type (4)
-!       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values 
+!       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values
 !       em_initialization     : Subroutine to initialization snow emissivity
 !       em_interpolate        : Subroutine to perform frequency interpolation of snow emissivity
 !
@@ -99,9 +99,9 @@ MODULE NESDIS_ATMS_SnowEM_Module
   IMPLICIT NONE
 
 ! Visibilities
-  PRIVATE 
+  PRIVATE
   PUBLIC  :: NESDIS_ATMS_SNOWEM
-  
+
 
 CONTAINS
 
@@ -229,14 +229,14 @@ CONTAINS
    !                   -999: ATMS measurements are not available or over non-snow conditions
    !
    ! CALLS:
-   !       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels 
-   !       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels 
-   !       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels 
+   !       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels
+   !       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels
+   !       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels
    !       ATMS_SNOW_ByTBTs_A    : by ATMS TBs of Group-1 channels and surface temperature
    !       ATMS_SNOW_ByTBTs_B    : by ATMS TBs of Group-2 channels and surface temperature
    !       ATMS_SNOW_ByTBTs      : by the TBs  of all the five ATMS channels and surface temperature
    !       ATMS_SNOW_ByTypes     : bydefault surface type (4)
-   !       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values 
+   !       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values
    !       em_initialization     : Subroutine to initialization snow emissivity
    !       NESDIS_LandEM         : EM physical model for angular interpolations
    !
@@ -252,8 +252,8 @@ CONTAINS
    !       input. To prevent memory leaks, the IN OUT INTENT is a must.
    !
    ! CREATION HISTORY:
-   !       Written by: 
-   !                       Ming Chen, IMSG Inc., ming.chen@noaa.gov (04-28-2012)                           
+   !       Written by:
+   !                       Ming Chen, IMSG Inc., ming.chen@noaa.gov (04-28-2012)
    !                       Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
    !
    !
@@ -285,21 +285,21 @@ CONTAINS
 
 
      IMPLICIT NONE
-  
-     INTEGER(ip), PARAMETER :: nch = N_FREQ_ATMS, nwch = 5
+
+     INTEGER, PARAMETER :: nch = N_FREQ_ATMS, nwch = 5
      REAL(fp),INTENT(IN) :: Satellite_Angle,User_Angle,Frequency
      REAL(fp),INTENT(IN),  OPTIONAL  :: Tbs(:), Tss, Snow_Depth
      REAL(fp),INTENT(OUT)            :: Emissivity_H,Emissivity_V
      REAL(fp) :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
      REAL(fp) :: Ts = 273.15 ! default skin-surface temperature
-     INTEGER(ip) :: Snow_Type = 4 ! default snow type
-     INTEGER(ip) :: i, k
+     INTEGER :: Snow_Type = 4 ! default snow type
+     INTEGER :: i, k
 
      LOGICAL  :: VALID_SNOW_DEPTH = .FALSE.
-     INTEGER(KIND=1) :: input_type = ZERO
-     
+     INTEGER  :: input_type = ZERO
+
    ! Analyze the input types and determine which algorithms to be used
-   
+
      IF (PRESENT(Snow_Depth) .AND. PRESENT(Tss) ) THEN
        VALID_SNOW_DEPTH = .TRUE.
        IF ((Snow_Depth < 0.0_fp) .OR. (Snow_Depth >= 3000.0_fp)) &
@@ -311,8 +311,8 @@ CONTAINS
         IF (SIZE(Tbs) >= 5) input_type=IBSET(input_type, 1)
         DO i=1,SIZE(Tbs)
           IF ((Tbs(i) <= 100.0_fp) .OR. (Tbs(i) >= 290.0_fp) ) THEN
-   	     IF (i <= 4) input_type=IBCLR(input_type, 0)
-   	     IF (i >= 4) input_type=IBCLR(input_type, 1)
+            IF (i <= 4) input_type=IBCLR(input_type, 0)
+            IF (i >= 4) input_type=IBCLR(input_type, 1)
           ENDIF
         END DO
      ENDIF
@@ -325,13 +325,13 @@ CONTAINS
            VALID_SNOW_DEPTH = .FALSE.
         ENDIF
      ENDIF
-  
+
 
    ! Initialization
      CALL em_initialization(frequency,em_vector)
      SELECT CASE (input_type)
         CASE (1)
-           CALL ATMS_SNOW_ByTB_A(Frequency,Tbs(1:4),Snow_Type,em_vector)    
+           CALL ATMS_SNOW_ByTB_A(Frequency,Tbs(1:4),Snow_Type,em_vector)
         CASE (2)
            CALL ATMS_SNOW_ByTB_B(Frequency,Tbs(4:5),Snow_Type,em_vector)
         CASE (3)
@@ -342,26 +342,26 @@ CONTAINS
            CALL ATMS_SNOW_ByTBTs_B(Frequency,Tbs(4:5),Ts,Snow_Type,em_vector)
         CASE (7)
            CALL ATMS_SNOW_ByTBTs(Frequency,Tbs,Ts,Snow_Type,em_vector)
-        CASE DEFAULT	
+        CASE DEFAULT
            IF (VALID_SNOW_DEPTH) THEN
-   	     CALL ATMS_ALandEM_Snow(Satellite_Angle,Frequency,Snow_Depth,Ts,&
-   	                   Snow_Type,em_vector)
-   	   ELSE
-	     !Use Default Snow type (4) for ATMS
-   	     CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
-   	   ENDIF
+             CALL ATMS_ALandEM_Snow(Satellite_Angle,Frequency,Snow_Depth,Ts,&
+                   Snow_Type,em_vector)
+           ELSE
+             !Use Default Snow type (4) for ATMS
+             CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
+           ENDIF
      END SELECT
-   ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing 
+   ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing
      CALL ATMS_SNOW_ByTBTs_D(Frequency,Tbs,Ts,Snow_Type,em_vector)
 
    ! Get the emissivity angle dependence
-     CALL NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,2.0_fp,esh1,esv1)
-     CALL NESDIS_LandEM(User_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,2.0_fp,esh2,esv2)
+     CALL NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp_kind,9,13,2.0_fp,esh1,esv1)
+     CALL NESDIS_LandEM(User_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp_kind,9,13,2.0_fp,esh2,esv2)
 
      desh = esh1 - esh2
      desv = esv1 - esv2
      dem = ( desh + desv ) * 0.5_fp
-  
+
    ! Emissivity at User's Angle
      Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
 
@@ -393,7 +393,7 @@ CONTAINS
    !----------------------------------------------------------------------------------------------------------!
    !$$$  subprogram documentation block
    !
-   ! subprogram:  calculate emissivity by snow_type 
+   ! subprogram:  calculate emissivity by snow_type
    !
    !
    ! abstract: 1. look up the snow emissivity spectrum of the specified snow type
@@ -437,7 +437,7 @@ CONTAINS
 
    ! Sixteen candidate snow emissivity spectra
      IF (snow_type == INVALID_SNOW_TYPE)snow_type = 4
-  
+
      em = TRANSPOSE(SNOW_EMISS_ATMS_LIB)
      freq = FREQUENCY_ATMS
      emis=em(snow_type,:)
@@ -467,7 +467,7 @@ CONTAINS
 
      em_vector(1) = emissivity
      em_vector(2) = emissivity
-  
+
    END SUBROUTINE ATMS_SNOW_ByTypes
 
 
@@ -479,7 +479,7 @@ CONTAINS
    !
    !
    ! abstract:
-   !   Diagnose the snow type, and use the emissivity spectrum of the snow type as the first-guess to diagnose 
+   !   Diagnose the snow type, and use the emissivity spectrum of the snow type as the first-guess to diagnose
    !   the magnitude of necessary adjustment with respect to window-channel TBs and surface temperature Ts. Perfrom
    !   necessary interpolation/extrapolation a required frequency and user angle.
    !
@@ -525,20 +525,20 @@ CONTAINS
      REAL(fp) :: theta,deg2rad,sinthetas,costhetas
      INTEGER  :: ipols(nch)=(/1,1,0,0,0,0,0,0,0,0,0,1,1/) ! polarisation at nadir 1-vertical 0-horizontal
      INTEGER  :: windex(nwch)=(/1,2,3,11,12/)             ! window channel index of the library spectrum
-     ! Coefficients of quadratic equations used to estimate the emissivity difference 
-     ! between Ch-31.4GHz and 88.2GHZ   
+     ! Coefficients of quadratic equations used to estimate the emissivity difference
+     ! between Ch-31.4GHz and 88.2GHZ
      REAL(fp) :: coe1(6)=(/ -0.837001E+00, 0.954882E-02, -0.271471E-04, &
                              -0.536112E-02, 0.144279E-04, 0.218317E-02/)
-     ! between Ch-31.4GHz and 165.5GHZ   
+     ! between Ch-31.4GHz and 165.5GHZ
      REAL(fp) :: coe2(6)=(/ -0.854226E+00, 1.203220E-02, -0.216043E-04, &
                              -0.887216E-02, 0.118303E-04, 0.263699E-02/)
      ! Quadratic EQ terms (1.0,tb(4),tb(4)^2,tb(5),tb(5)^2,Ts)
-     REAL(fp) :: coe3(6) 
-     
+     REAL(fp) :: coe3(6)
+
    ! Sixteen candidate snow emissivity spectra
      em = SNOW_EMISS_ATMS_LIB
      freq = FREQUENCY_ATMS
-     
+
      deg2rad = pi/180.0_fp
      sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
      sinthetas = sinthetas*sinthetas
@@ -548,15 +548,15 @@ CONTAINS
       ! em(i,:)=(ipols(i)*costhetas+(one-ipols(i))*sinthetas)*SNOW_EMISS_ATMS_V(i,:) +&
       !     ((one-ipols(i))*costhetas+ipols(i)*sinthetas)*SNOW_EMISS_ATMS_H(i,:)
      END DO
-    
+
      minlc =minloc(ABS(freq-frequency)); freq_idx=minlc(1)
- 
+
    !*** IDENTIFY SNOW TYPE
      snow_type = 4 !default
-     ediff=abs(Tb(1)/em(1,:)-Tb(2)/em(2,:))+abs(Tb(2)/em(2,:)-Tb(4)/em(11,:)) 
+     ediff=abs(Tb(1)/em(1,:)-Tb(2)/em(2,:))+abs(Tb(2)/em(2,:)-Tb(4)/em(11,:))
      minlc = minloc(ediff) ; snow_type=minlc(1)
 
-   !*** adjustment from the library values    
+   !*** adjustment from the library values
      emw=em(windex,snow_type)
      X=1.0/emw ; Y=LOG(Tb/(Ts*emw))
      IF(frequency >100_fp) THEN
@@ -565,7 +565,7 @@ CONTAINS
        del=XY/XX
        deltb=Tb(3)-Tb(5)
      ELSE
-       XX=DOT_PRODUCT(X((/1,2,4/)),X((/1,2,4/))) 
+       XX=DOT_PRODUCT(X((/1,2,4/)),X((/1,2,4/)))
        XY=DOT_PRODUCT(X((/1,2,4/)),Y((/1,2,4/)))
        del=XY/XX
        deltb=Tb(3)-Tb(4)
@@ -588,11 +588,11 @@ CONTAINS
        IF(del<-0.13)del=-0.13
        IF(frequency <= 100.0_fp )THEN
          dem2=del-SUM(coe1*coe3)
-       ELSE  
-	 dem2=del-SUM(coe2*coe3)
+       ELSE
+         dem2=del-SUM(coe2*coe3)
        ENDIF
      ENDIF
-   
+
      emissivity = em(freq_idx,snow_type)+(dem+dem2)/2.0
      IF (emissivity >  1.0_fp )emissivity = 1.0_fp
      IF (emissivity <= 0.3_fp )emissivity = 0.3_fp
@@ -822,14 +822,14 @@ CONTAINS
      IF (discriminator(4) .GT. discriminator(2)) THEN
         discriminator(4) = discriminator(2) + (150.0_fp - 89.0_fp)*  &
           (discriminator(5) - discriminator(2))/ (150.0_fp - 31.4_fp)
-	ENDIF
+     ENDIF
 
    ! Quality control at 50.3 GHz
      IF ((discriminator(3) .GT. discriminator(2)) .OR.  &
         (discriminator(3) .LT. discriminator(4)))  THEN
         discriminator(3) = discriminator(2) + (89.0_fp - 50.3_fp)*   &
           (discriminator(4) - discriminator(2))/(89.0_fp - 31.4_fp)
-	ENDIF
+     ENDIF
 
      CALL em_interpolate(frequency,discriminator,emissivity,snow_type)
 
@@ -1000,6 +1000,21 @@ CONTAINS
 
      DATA  nmodel/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/
 
+   ! Fitting coefficients for emissivity index at 31.4 GHz
+     DATA  LI_coe/ &
+          7.963632e-001_fp,  7.215580e-003_fp,  &
+         -2.015921e-005_fp, -1.508286e-003_fp,  &
+          1.731405e-005_fp, -4.105358e-003_fp/
+
+   ! Fitting coefficients for emissivity index at 150 GHz
+     DATA  HI_coe/ &
+          1.012160e+000_fp,  6.100397e-003_fp, &
+         -1.774347e-005_fp, -4.028211e-003_fp, &
+          1.224470e-005_fp,  2.345612e-003_fp, &
+         -5.376814e-006_fp, -2.795332e-003_fp, &
+          8.072756e-006_fp,  3.529615e-003_fp, &
+          1.955293e-006_fp, -4.942230e-003_fp/
+
    ! Fitting coefficients for five discriminators
      DI_coe(1,0:ncoe-1)=(/  3.285557e-002_fp, 2.677179e-005_fp,  &
           4.553101e-003_fp, 5.639352e-005_fp,-1.825188e-004_fp,  &
@@ -1017,20 +1032,6 @@ CONTAINS
          -1.790933e-004_fp,-1.986887e-004_fp, 5.495115e-004_fp,  &
          -5.871732e-004_fp, 4.517280e-003_fp, 7.204695e-004_fp/)
 
-   ! Fitting coefficients for emissivity index at 31.4 GHz
-     DATA  LI_coe/ &
-          7.963632e-001_fp,  7.215580e-003_fp,  &
-         -2.015921e-005_fp, -1.508286e-003_fp,  &
-          1.731405e-005_fp, -4.105358e-003_fp/
-
-   ! Fitting coefficients for emissivity index at 150 GHz
-     DATA  HI_coe/ &
-          1.012160e+000_fp,  6.100397e-003_fp, &
-         -1.774347e-005_fp, -4.028211e-003_fp, &
-          1.224470e-005_fp,  2.345612e-003_fp, &
-         -5.376814e-006_fp, -2.795332e-003_fp, &
-          8.072756e-006_fp,  3.529615e-003_fp, &
-          1.955293e-006_fp, -4.942230e-003_fp/
 
    ! Six thresholds for sixteen candidate snow types
    ! Note: some snow type contains several possible
@@ -1297,7 +1298,7 @@ CONTAINS
           -3.757061e-005_fp,  6.434187e-003_fp, &
            6.190403e-007_fp, -2.944785e-003_fp/)
 
- 
+
 
    ! Calculate emissivity discriminators at five ATMS window channels
      DO ich = 1, nwch
@@ -1361,9 +1362,7 @@ CONTAINS
    !   language: f90
    !   machine:  ibm rs/6000 sp
    !
-   !-------------------------------------------------------------------------------------------------------!     USE type_kinds, ONLY: fp
-     IMPLICIT NONE
-
+   !-------------------------------------------------------------------------------------------------------!
      INTEGER,PARAMETER:: nch =10,nwch = 3,ncoe = 5
      REAL(fp)    :: tbb(:)
      REAL(fp)    :: em_vector(:),emissivity,ts,frequency,ed0(nwch),discriminator(5)
@@ -1397,7 +1396,7 @@ CONTAINS
      IF (ed0(2) .GT. ed0(1))  THEN
         ed0(2) = ed0(1) + (150.0_fp - 89.0_fp)*(ed0(3) - ed0(1)) / &
                 (150.0_fp - 31.4_fp)
-	ENDIF
+     ENDIF
 
    ! Match the format of the input variable
    ! Missing value at 23.8 GHz
@@ -1476,13 +1475,13 @@ CONTAINS
 
      snow_type = -999
 
-     CALL NESDIS_LandEM(theta, frequency,0.0_fp,0.0_fp,ts,ts,snow_depth,esh0,esv0)
+     CALL NESDIS_LandEM(theta, frequency,0.0_fp,0.0_fp,ts,ts,0.0_fp_kind,9,13,snow_depth,esh0,esv0)
 
      theta0 = theta
      DO ich = 1, nw_ind
         freq =freq_3w(ich)
         theta = theta0
-        CALL NESDIS_LandEM(theta, freq,0.0_fp,0.0_fp,ts,ts,snow_depth,esh,esv)
+        CALL NESDIS_LandEM(theta, freq,0.0_fp,0.0_fp,ts,ts,0.0_fp_kind,9,13,snow_depth,esh,esv)
         esv_3w(ich) = esv
         esh_3w(ich) = esh
      END DO
@@ -1533,7 +1532,7 @@ CONTAINS
    !----------------------------------------------------------------------------------------------------------!
 
      IMPLICIT NONE
-  
+
      INTEGER,PARAMETER :: nch = N_FREQ_ATMS,ncand=N_SNOW_TYPES
      REAL(fp) :: frequency,em_vector(:),freq(nch)
      REAL(fp) :: em(ncand,nch)
@@ -1648,13 +1647,13 @@ CONTAINS
      IF (discriminator(4) > discriminator(2))  THEN
          discriminator(4) = discriminator(2) +(discriminator(5) - discriminator(2))*  &
              (150.0_fp - 89.0_fp)/(150.0_fp - 31.4_fp)
-	ENDIF
+     ENDIF
      IF ( (discriminator(3) /= -999.9_fp) .AND.       &
         ( ((discriminator(3)-0.01_fp) > discriminator(2)) .OR.     &
         ((discriminator(3)-0.01_fp) < discriminator(4)))    ) THEN
         discriminator(3) = discriminator(2) +  (discriminator(4) - discriminator(2))* &
       (89.0_fp - 50.3_fp) / (89.0_fp - 31.4_fp)
-	ENDIF
+     ENDIF
 
    ! Find a snow emissivity spectrum
      IF (snow_type .EQ. -999) THEN
