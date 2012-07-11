@@ -41,7 +41,7 @@ MODULE CRTM_MW_Snow_SfcOptics
                                         WMO_MSU  , &
                                         WMO_MHS  , &
                                         WMO_SSMIS, &
-					WMO_ATMS
+                                        WMO_ATMS
   USE NESDIS_LandEM_Module,       ONLY: NESDIS_LandEM
   USE NESDIS_AMSU_SNOWEM_Module,  ONLY: NESDIS_AMSU_SNOWEM
   USE NESDIS_SSMI_SNOWEM_Module,  ONLY: NESDIS_SSMI_SnowEM
