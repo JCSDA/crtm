@@ -300,14 +300,10 @@ PROGRAM Create_SpcCoeff
       ! The Zeeman flag
       IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff)
       ! The CBR
-      err_stat = Planck_Radiance( &
+      CALL Planck_Radiance( &
         SpcCoeff%Wavenumber(l)                , &
         COSMIC_BACKGROUND_TEMPERATURE         , &
         SpcCoeff%Cosmic_Background_Radiance(l)  )
-      IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error computing CBR for ",a," channel ",i0)' ) TRIM(sensor_id), channel
-        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-      END IF
     END IF
     
     
