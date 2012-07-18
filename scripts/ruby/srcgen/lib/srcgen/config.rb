@@ -25,11 +25,17 @@ module SrcGen
       @type_name  = "#{@name}_type"
       @release    = extract_value("type/release")
       @version    = extract_value("type/version")
-      @dimensions = extract_group("type/dimensions/dim",SrcGen::Dimensions).sort_by! {|d| d[:index]}
-      @dimvectors = extract_group("type/dimvectors/array",SrcGen::DimVectors).sort_by! {|v| v[:dimindex]}
+      @dimensions = extract_group("type/dimensions/dim",SrcGen::Dimensions).sort_by {|d| d[:index]}
+      @dimvectors = extract_group("type/dimvectors/array",SrcGen::DimVectors).sort_by {|v| v[:dimindex]}
       @scalardata = extract_group("type/scalardata/scalar",SrcGen::ScalarData)
       @arraydata  = extract_group("type/arraydata/array",SrcGen::ArrayData)
-puts @dimensions.inspect
+
+      if debug
+        puts("\n---BEGIN-DEBUG-OUTPUT---")
+        puts("\n#{self.class} initialize method output:")
+        puts("\n#{@dimensions.inspect}")
+        puts("\n----END-DEBUG-OUTPUT----")
+      end
     end
 
     def max_dim_name_length
@@ -81,7 +87,7 @@ puts @dimensions.inspect
         @xml = REXML::Document.new(File.open(config_file))
         if debug
           puts("\n---BEGIN-DEBUG-OUTPUT---")
-          puts("\n#{self.class} #{__method__} method output:")
+          puts("\n#{self.class} load method output:")
           puts("\n#{@xml.elements["*"]}")
           puts("\n----END-DEBUG-OUTPUT----")
         end
