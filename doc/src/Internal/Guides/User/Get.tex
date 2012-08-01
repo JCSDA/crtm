@@ -1,5 +1,8 @@
 \chapter{How to obtain the CRTM}
 %===============================
+%===============================
+\label{chapter:get}
+
 
 \section{CRTM ftp download site}
 %===============================
@@ -16,7 +19,7 @@ Also note that additional releases, e.g. beta or experimental branches, may also
 
 \section{Coefficient Data}
 %=========================
-All of the transmittance, spectral, cloud, aerosol, and emissivity coefficient data needed by the CRTM are available in the \texttt{fix/}\footnote{The directory name "\texttt{fix}" is an NCEP standard name for a location containing files that do not change (frequently), i.e. they are "fixed".} subdirectory. The coefficient directory structure is organised by coefficient and format type as shown in figure \ref{fig:crtm_coefficients_dir}.
+All of the transmittance, spectral, cloud, aerosol, and emissivity coefficient data needed by the CRTM are available in the \texttt{fix/}\footnote{The directory name ``\texttt{fix}'' is an NCEP standard name for a location containing files that do not change (frequently), i.e. they are ``fixed''.} subdirectory. The coefficient directory structure is organised by coefficient and format type as shown in figure \ref{fig:crtm_coefficients_dir}.
 
 \begin{figure}[htb]
   \centering
@@ -25,6 +28,6 @@ All of the transmittance, spectral, cloud, aerosol, and emissivity coefficient d
   \label{fig:crtm_coefficients_dir}
 \end{figure}
 
-Both big- and little-endian format files are provided to save users the trouble of switching what they use for their system\footnote{All of the supplied configurations for little-endian platforms described in Section \ref{sec:build} use compiler switches to default to big-endian format.}. Note in the TauCoeff directory there are two subdirectories: ODAS and ODPS. These directories correspond to the coefficient files for the different transmittance model algorithms. The user can select which algorithm to use by using the corresponding TauCoeff file.
+Both big- and little-endian format files are provided to save users the trouble of switching what they use for their system\footnote{All of the supplied configurations for little-endian platforms described in Section \ref{chapter:build} use compiler switches to default to big-endian format.}. Note in the TauCoeff directory there are two subdirectories: ODAS and ODPS. These directories correspond to the coefficient files for the different transmittance model algorithms. The user can select which algorithm to use by using the corresponding TauCoeff file.
 
 To run the CRTM, all the required coefficient files need to be in the same path (see the  \hyperref[sec:CRTM_Init_interface]{CRTM initialisation function} description) so users will have to move/link the datafiles as required.

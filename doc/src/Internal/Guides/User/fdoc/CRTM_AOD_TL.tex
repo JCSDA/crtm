@@ -1,0 +1,77 @@
+\subsection{\texttt{CRTM\_AOD\_TL} interface}
+  \label{sec:CRTM_AOD_TL_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_AOD_TL
+ 
+  PURPOSE:
+        Function that calculates tangent-linear layer total optical depth.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_AOD_TL( Atmosphere       , &
+                                    Atmosphere_TL    , &
+                                    ChannelInfo      , &
+                                    RTSolution       , &
+                                    RTSolution_TL    , &
+                                    Options = Options  )
+ 
+  INPUTS:
+        Atmosphere:     Structure containing the Atmosphere data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Rank-1 (n_Profiles)
+                        ATTRIBUTES: INTENT(IN)
+ 
+        Atmosphere_TL:  Structure containing the tangent-linear Atmosphere data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN)
+ 
+        ChannelInfo:    Structure returned from the CRTM_Init() function
+                        that contains the satellite/sensor channel index
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_ChannelInfo_type
+                        DIMENSION:  Rank-1 (n_Sensors)
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUTS:
+        RTSolution:     Structure containing the layer aerosol optical
+                        profile for the given inputs.
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Rank-2 (n_Channels x n_Profiles)
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        RTSolution_TL:  Structure containing the tangent-linear aerosol
+                        optical depth profile for the given inputs.
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Same as RTSolution output
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUTS:
+        Options:        Options structure containing the optional arguments
+                        for the CRTM.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Options_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS the computation was sucessful
+                           == FAILURE an unrecoverable error occurred
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  COMMENTS:
+        - Many of the components of the Options optional input structure
+          are not used in this function. Consult the CRTM User Guide for
+          which Options components are usable for AOD calculations.
+ 
+  \end{alltt}

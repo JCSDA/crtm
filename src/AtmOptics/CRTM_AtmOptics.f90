@@ -374,21 +374,16 @@ CONTAINS
     ! Local variables
     INTEGER :: i, k, l
     REAL(fp) :: w_AD
-    REAL(fp) :: optical_depth_AD
 
 
     ! No scattering case
     IF( (.NOT. AtmOptics%Include_Scattering) .OR. &
         AtmOptics%n_Legendre_Terms == 0 ) RETURN
 
-
     ! Begin layer loop
     Layer_Loop: DO k = AtmOptics%n_Layers, 1, -1
 
-
-      ! Compute the adjoint of the vertically integrated scattering optical depth
-      optical_depth_AD = AtmOptics_AD%Scattering_Optical_Depth * AOV%w(k)
-      w_AD             = AtmOptics_AD%Scattering_Optical_Depth * AOV%Optical_Depth(k)
+      w_AD  =  ZERO
 
 
       ! Only proceed if the scattering is significant

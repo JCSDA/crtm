@@ -730,10 +730,6 @@ CONTAINS
     END IF
 
 
-    ! Do nothing if CRTM not initialised
-    IF ( .NOT. CRTM_IsInitialized(ChannelInfo) ) RETURN
-
-
     ! Destroy all the ChannelInfo structures
     CALL CRTM_ChannelInfo_Destroy( ChannelInfo )
     IF ( ANY(CRTM_ChannelInfo_Associated(ChannelInfo)) ) THEN

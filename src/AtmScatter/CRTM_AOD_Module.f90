@@ -1392,7 +1392,7 @@ CONTAINS
 !       Subroutine to return the module version information.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Forward_Version( Id )
+!       CALL CRTM_AOD_Version( Id )
 !
 ! OUTPUTS:
 !       Id:            Character string containing the version Id information

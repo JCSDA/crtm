@@ -1,6 +1,7 @@
 \chapter{How to build the CRTM library}
 %======================================
-\label{sec:build}
+%======================================
+\label{chapter:build}
 
 \section{Build Files}
 %====================
@@ -29,18 +30,18 @@ The build makefiles now assumes that environment variables (envars) will be defi
 Several shell source files are provided for the build environment definitions for the compilers to which we have access and have tested here at the JCSDA. These shell source files are in the \f{configure} subdirectory of the tarball. The configuration files provided are shown in table \ref{tab:supplied_configurations}. Both ``production'' and debug configurations are supplied, with the former using compiler switches to produce fast code and the latter using compiler switches to turn on all the available debugging capabilities. Note that the debug configurations will produce executables much slower than the production builds. 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{clr@{.}lr@{.}l}
+  \caption{Supplied configuration files for the CRTM library and test/example program build.}
+  \begin{tabular}{p{2cm} p{3cm} r@{.}l r@{.}l}
     \hline
     \sffamily\textbf{Platform} & \sffamily\textbf{Compiler} & \multicolumn{2}{c}{\sffamily\textbf{Production}} & \multicolumn{2}{c}{\sffamily\textbf{Debug}} \\
     \hline\hline
     \multirow{4}{*}{Linux} & GNU gfortran          & \texttt{gfortran}&\texttt{setup} & \texttt{gfortran\_debug}&\texttt{setup}\\
                            & Intel ifort           & \texttt{intel}&\texttt{setup}    & \texttt{intel\_debug}&\texttt{setup}   \\
                            & PGI pgf95             & \texttt{pgi}&\texttt{setup}      & \texttt{pgi\_debug}&\texttt{setup}     \\
-                           & g95                   & \texttt{g95}&\texttt{setup}      & \texttt{g95\_debug}&\texttt{setup}     \\[0.2cm]
+                           & g95                   & \texttt{g95}&\texttt{setup}      & \texttt{g95\_debug}&\texttt{setup}     \\[0.3cm]
     IBM                    & AIX xlf95             & \texttt{xlf}&\texttt{setup}      & \texttt{xlf\_debug}&\texttt{setup}     \\
   \hline
   \end{tabular}
-  \caption{Supplied configuration files for the CRTM library and test/example program build.}
   \label{tab:supplied_configurations}
 \end{table}
 

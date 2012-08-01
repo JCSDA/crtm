@@ -1,10 +1,11 @@
 \chapter{How to use the CRTM library}
 %====================================
 %====================================
+\label{chapter:use}
 
 This section will hopefully get you started using the CRTM library as quickly as possible. Refer to the following sections for more information about the structures and interfaces.
 
-There are many variations in what information is known ahead of time (and by ``ahead of time'' we mean at compile-time of your code), so we'll approach this via examples where pretty much all the dimensional information is unknown. It's a little more effort to set up, but makes for more flexible aplications. Of course, for simplicity, one can choose to hardwire dimensions (e.g. number of profiles, number of sensors, etc) in their calling code. It is left as an exercise to the reader to tailor calls to the CRTM in their application code according to their particular needs.
+There are many variations in what information is known ahead of time (and by ``ahead of time'' we mean at compile-time of your code), so we'll approach this via examples where pretty much all the dimensional information is unknown. It's a little more effort to set up, but makes for more flexible applications. Of course, for simplicity, one can choose to hardwire dimensions (e.g. number of profiles, number of sensors, etc) in their calling code. It is left as an exercise to the reader to tailor calls to the CRTM in their application code according to their particular needs.
 
 With regards to sensor identification, the CRTM uses a character string -- refered to as the \f{Sensor\_Id} -- to distinguish sensors and platforms. The lists of currently supported sensors, along with their associated \f{Sensor\_Id}'s, are shown in appendix \ref{sec:sensor_id}.
 
@@ -157,9 +158,10 @@ The data required for some of the surface emissivity models are also loaded via 
 
 \begin{table}[htp]
   \centering
-  \begin{tabular}{l c r}
+  \caption{Choices available for setup of the various emissivity/reflectivity models during CRTM initialisation. $^{\dagger}$Default file loaded if optional argument not specified. $^{\ddagger}$The same classification scheme file should be loaded for both the infrared and visible land surface emissivity model.}
+  \begin{tabular}{p{4cm} c r}
     \hline\\[-0.1cm]
-    \tblhd{Emissivity Model} & \tblhd{Optional argument} & \tblhd{Available files} \\
+    \tblhd{Emissivity or Reflectivity Model} & \tblhd{Optional argument} & \tblhd{Available files} \\
     \hline\hline\\[-0.2cm]
                                           &                         & \f{NPOESS.IRland.EmisCoeff.bin}$^{\dagger}$   \\
     \sffamily{Infrared Land}$^{\ddagger}$ &  \f{IRlandCoeff\_File}  & \f{USGS.IRland.EmisCoeff.bin}                 \\
@@ -173,7 +175,6 @@ The data required for some of the surface emissivity models are also loaded via 
                                           &                         & \f{IGBP.VISland.EmisCoeff.bin}                \\
   \hline
   \end{tabular}
-  \caption{Choices available for various emissivity model setup during CRTM initialisation. $^{\dagger}$Default file loaded if optional argument not specified. $^{\ddagger}$The same classification scheme file should be loaded for both the infrared and visible land surface emissivity model.}
   \label{tab:emiscoeff_file_choices}
 \end{table}
 
@@ -415,6 +416,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Atmosphere structure description table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Atmosphere{} structure component description.}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -438,7 +440,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
     \f{Aerosol(}1:\textit{nA}\f{)} & Aerosol species associatedwith the profile & N/A & N/A  \\
     \hline
   \end{tabular}
-  \caption{CRTM \Atmosphere{} structure component description.}
   \label{tab:atmosphere_structure}
 \end{table}
 
@@ -446,6 +447,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Cloud structure description table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Cloud{} structure component description.}
   \begin{tabular}{l p{8cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -454,11 +456,10 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 
     \f{Type} & The supported cloud type. See table \ref{tab:cloud_type}. & N/A & \f{INVALID\_CLOUD} \\[0.3cm]
 
-    \f{Effective\_Radius(}1:\textit{K}\f{)} & Cloud particle effective radius profile  & \micron  & N/A \\
-    \f{Water\_Content(}1:\textit{K}\f{)}    & Cloud water content profile              & kg.m$^2$ & N/A \\
+    \f{Effective\_Radius(}1:\textit{K}\f{)} & Cloud particle effective radius profile  & \micron     & N/A \\
+    \f{Water\_Content(}1:\textit{K}\f{)}    & Cloud water content profile              & kg.m$^{-2}$ & N/A \\
     \hline
   \end{tabular}
-  \caption{CRTM \Cloud{} structure component description.}
   \label{tab:cloud_structure}
 \end{table}
 
@@ -466,6 +467,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Aerosol structure description table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Aerosol{} structure component description.}
   \begin{tabular}{l p{8cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -475,10 +477,9 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
     \f{Type} & The supported aerosol type. See table \ref{tab:aerosol_type}. & N/A & \f{INVALID\_AEROSOL} \\[0.3cm]
 
     \f{Effective\_Radius(}1:\textit{K}\f{)} & Aerosol particle effective radius profile  & \micron  & N/A \\
-    \f{Concentration(}1:\textit{K}\f{)}     & Aerosol concentration profile              & kg.m$^2$ & N/A \\
+    \f{Concentration(}1:\textit{K}\f{)}     & Aerosol concentration profile              & kg.m$^{-2}$ & N/A \\
     \hline
   \end{tabular}
-  \caption{CRTM \Aerosol{} structure component description.}
   \label{tab:aerosol_structure}
 \end{table}
 
@@ -486,6 +487,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Climatology table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Climatology} definitions. The same set as defined for LBLRTM is used.}
   \begin{tabular}{c l}
     \hline\\[-0.1cm]
     \tblhd{Climatology Type} & \tblhd{Parameter} \\
@@ -498,7 +500,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
      U.S. Standard Atmosphere  &  \texttt{US\_STANDARD\_ATMOSPHERE}\\
     \hline
   \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Climatology} definitions. The same set as defined for LBLRTM is used.}
   \label{tab:climatology}
 \end{table}
 
@@ -506,6 +507,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Absorber id table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
   \begin{tabular}{ c l c c l c c l }
     \hline\\[-0.1cm]
     \tblhd{Molecule} & \tblhd{Parameter} & \hspace{0.5cm} & \tblhd{Molecule} & \tblhd{Parameter} & \hspace{0.5cm} & \tblhd{Molecule} & \tblhd{Parameter}\\
@@ -524,7 +526,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
      HNO\subscript{3} & \texttt{HNO3\_ID} & \hspace{0.5cm}  &   CH\subscript{3}l  & \texttt{CH3l\_ID} & \hspace{0.5cm} &                                                   \\
     \hline
   \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
   \label{tab:absorber_id}
 \end{table}
 
@@ -532,6 +533,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Absorber units table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
   \begin{tabular}{c l}
     \hline\\[-0.1cm]
     \tblhd{Absorber Units} & \tblhd{Parameter} \\
@@ -548,7 +550,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
      Integrated path, mm                             & \texttt{INTEGRATED\_PATH\_UNITS} \\
     \hline
   \end{tabular}
-  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
   \label{tab:absorber_units}
 \end{table}
 
@@ -556,6 +557,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Cloud type table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Cloud{} structure valid \texttt{Type} definitions.}
   \begin{tabular}{cc l}
     \hline\\[-0.1cm]
     \tblhd{Cloud Type} & \hspace{0.5cm} & \tblhd{Parameter} \\
@@ -568,7 +570,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
      Hail    & \hspace{0.5cm} & \texttt{HAIL\_CLOUD}\\
     \hline
   \end{tabular}
-  \caption{CRTM \Cloud{} structure valid \texttt{Type} definitions.}
   \label{tab:cloud_type}
 \end{table}
 
@@ -576,6 +577,7 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
 % Aerosol type table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions and effective radii, based on the GOCART model. SSAM $\equiv$ Sea Salt Accumulation Mode, SSCM $\equiv$ Sea Salt Coarse Mode.}
   \begin{tabular}{c l r@{ - }l}
     \hline\\[-0.1cm]
     \tblhd{Aerosol Type} & \tblhd{Parameter}  & \multicolumn{2}{c}{$r_{eff}$ \tblhd{Range} (\micron)} \\
@@ -590,7 +592,6 @@ The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, 
     Sulfate        & \texttt{SULFATE\_AEROSOL}         & 0.24  & 0.8 \\
     \hline
   \end{tabular}
-  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions and effective radii, based on the GOCART model. SSAM $\equiv$ Sea Salt Accumulation Mode, SSCM $\equiv$ Sea Salt Coarse Mode.}
   \label{tab:aerosol_type}
 \end{table}
 
@@ -714,6 +715,7 @@ The \hyperref[sec:surface_structure]{\Surface} structure is designed around four
 
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Surface{} structure component description.}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -754,7 +756,6 @@ The \hyperref[sec:surface_structure]{\Surface} structure is designed around four
     \texttt{SensorData} & Satellite sensor data required for empirical microwave snow and ice emissivity algorithms & N/A & N/A \\
     \hline
   \end{tabular}
-  \caption{CRTM \Surface{} structure component description.}
   \label{tab:surface_structure}
 \end{table}
 
@@ -773,6 +774,7 @@ Now we'll look at the specification of the subtypes of the main surface types, w
 
 \begin{table}[htp]
   \centering
+  \caption{Number of valid surface types available for the different surface and spectral categories. $^a$Same IR and VIS reflectivity source, NPOESS. $^b$Surface type reflectivities mapped from NPOESS classification. $^c$Different land classifications for IR and VIS defined at CRTM initialisation. $^d$These are specified separately from the generic surface type in the input \Surface structure and are used to index arrays containing various physical quantities for the soil/vegetation type -- \textbf{both} must be specified.}
   \begin{tabular}{c c c c c}
     \hline\\[-0.1cm]
     \tblhd{Spectral category} & \tblhd{Land}$^c$ & \tblhd{Water} & \tblhd{Snow} & \tblhd{Ice} \\
@@ -787,7 +789,6 @@ Now we'll look at the specification of the subtypes of the main surface types, w
                                           & IGBP(20)$^{a,b}$        &                &             &             \\
   \hline
   \end{tabular}
-  \caption{Number of valid surface types available for the different surface and spectral categories. $^a$Same IR and VIS reflectivity source, NPOESS. $^b$Surface type reflectivities mapped from NPOESS classification. $^c$Different land classifications for IR and VIS defined at CRTM initialisation. $^d$These are specified separately from the generic surface type in the input \Surface structure and are used to index arrays containing various physical quantities for the soil/vegetation type -- \textbf{both} must be specified.}
   \label{tab:valid_surface_types_for_categories}
 \end{table}
 
@@ -802,6 +803,7 @@ The downside of this change is that parameterised values of the surface subtypes
 
 \begin{table}[htp]
   \centering
+  \caption{Surface type names and their index value for the NPOESS land surface classification scheme. Applicable for infrared and visible spectral regions only.}
   \begin{tabular}{p{7cm} c}
     \hline\\[-0.1cm]
     \multicolumn{2}{c}{\tblhd{NPOESS Classification Scheme}} \\
@@ -829,12 +831,12 @@ The downside of this change is that parameterised values of the surface subtypes
     broadleaf70 pine30         & 20  \\
     \hline
   \end{tabular}
-  \caption{Surface type names and their index value for the NPOESS land surface classification scheme. Applicable for infrared and visible spectral regions only.}
   \label{tab:npoess_surface_type_classifications}
 \end{table}
 
 \begin{table}[htp]
   \centering
+  \caption{Surface type names and their index value for the USGS land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 16 and 24) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
   \begin{tabular}{p{7cm} c}
     \hline\\[-0.1cm]
     \multicolumn{2}{c}{\tblhd{USGS Classification Scheme}} \\
@@ -869,12 +871,12 @@ The downside of this change is that parameterised values of the surface subtypes
     white sand                                   & 27  \\
     \hline
   \end{tabular}
-  \caption{Surface type names and their index value for the USGS land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 16 and 24) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
   \label{tab:usgs_surface_type_classifications}
 \end{table}
 
 \begin{table}[htp]
   \centering
+  \caption{Surface type names and their index value for the IGBP land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 15 and 17) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
   \begin{tabular}{p{7cm} c}
     \hline\\[-0.1cm]
     \multicolumn{2}{c}{\tblhd{IGBP Classification Scheme}} \\
@@ -902,7 +904,6 @@ The downside of this change is that parameterised values of the surface subtypes
     bare ground tundra                  & 20 \\
     \hline
   \end{tabular}
-  \caption{Surface type names and their index value for the IGBP land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 15 and 17) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
   \label{tab:igbp_surface_type_classifications}
 \end{table}
 
@@ -933,6 +934,7 @@ For the land surface/microwave spectral region case, the situation is a little d
 
 \begin{table}[htp]
   \centering
+  \caption{Soil type textures and descriptions, along with their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
   \begin{tabular}{p{3.5cm} p{3.5cm} c}
     \hline\\[-0.1cm]
     \multicolumn{3}{c}{\tblhd{GFS Soil Type Classification Scheme}} \\
@@ -949,12 +951,12 @@ For the land surface/microwave spectral region case, the situation is a little d
     glacial land ice &  ice over land   &  9 \\
     \hline
   \end{tabular}
-  \caption{Soil type textures and descriptions, along with their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
   \label{tab:gfs_soil_type_classifications}
 \end{table}
 
 \begin{table}[htp]
   \centering
+  \caption{Vegetation type names and their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
   \begin{tabular}{p{7cm} c}
     \hline\\[-0.1cm]
     \multicolumn{2}{c}{\tblhd{GFS Vegetation Type Classification Scheme}} \\
@@ -975,7 +977,6 @@ For the land surface/microwave spectral region case, the situation is a little d
     glacial                                       & 13 \\
     \hline
   \end{tabular}
-  \caption{Vegetation type names and their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
   \label{tab:gfs_vegetation_type_classifications}
 \end{table}
 
@@ -996,6 +997,7 @@ The situation for the water, snow, and ice surface subtypes in the infrared and 
 
 \begin{table}[htp]
   \centering
+  \caption{Water, snow, and ice surface subtypes and their index value. Applicable for infrared and visible spectral regions only.}
   \begin{tabular}{p{3.5cm} p{3.5cm} c}
     \hline\\[-0.1cm]
     \multicolumn{3}{c}{\tblhd{IR/VIS Water, Snow, and Ice Classification Scheme}} \\
@@ -1007,7 +1009,6 @@ The situation for the water, snow, and ice surface subtypes in the infrared and 
     Ice                   &  new ice   &  1 \\
     \hline
   \end{tabular}
-  \caption{Water, snow, and ice surface subtypes and their index value. Applicable for infrared and visible spectral regions only.}
   \label{tab:ir-vis_water-snow-ice_type_classifications}
 \end{table}
 
@@ -1037,6 +1038,7 @@ Recall from table \ref{tab:valid_surface_types_for_categories} that the snow and
 % SensorData component description table
 \begin{table}[htp]
   \centering
+  \caption{CRTM \SensorData{} structure component description.}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -1049,7 +1051,6 @@ Recall from table \ref{tab:valid_surface_types_for_categories} that the snow and
     \f{Tb(}1:\textit{L}\f{)}              & The brightness temperature measurements for each channel & Kelvin & N/A \\
     \hline
   \end{tabular}
-  \caption{CRTM \SensorData{} structure component description.}
   \label{tab:sensordata_structure}
 \end{table}
 
@@ -1059,6 +1060,7 @@ The sensors for which empirical snow and ice emissivity models exist, along with
 
 \begin{table}[htp]
   \centering
+  \caption{Microwave sensors and their associated WMO sensor identifiers for which the CRTM has empirical snow and ice emissivity models.}
   \begin{tabular}{c c c c c c c c}
     \hline\\[-0.1cm]
     \tblhd{Sensor} & \tblhd{WMO Sensor Id} & \hspace{0.5cm} & \tblhd{Sensor} & \tblhd{WMO Sensor Id} & \hspace{0.5cm} & \tblhd{Sensor} & \tblhd{WMO Sensor Id} \\
@@ -1067,7 +1069,6 @@ The sensors for which empirical snow and ice emissivity models exist, along with
     AMSU-A & 570 & & MHS    & 203 & & SSM/I & 905 \\        
     \hline
   \end{tabular}
-  \caption{Microwave sensors and their associated WMO sensor identifiers for which the CRTM has empirical snow and ice emissivity models.}
   \label{tab:mw_sensors_empirical_emissivity}
 \end{table}
 
@@ -1121,13 +1122,14 @@ with the quantity definitions shown in figure \ref{fig:geo_sensor_zenith_scan_an
 
 \begin{table}[htp]
   \centering
+  \caption{CRTM \Geometry{} structure component description.}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
     \hline\hline\\[-0.2cm]
     \texttt{iFOV}                    & The scan line FOV index & N/A & 0 \\
-    \texttt{Longitude}               & Earth longitude & deg. E (0$\rightarrow$360) & 0.0 \\
-    \texttt{Latitude}                & Earth latitude  & deg. N (-90$\rightarrow$+90) & 0.0 \\
+    \texttt{Longitude}               & Earth longitude for FOV & deg. E (0$\rightarrow$360) & 0.0 \\
+    \texttt{Latitude}                & Earth latitude for FOV  & deg. N (-90$\rightarrow$+90) & 0.0 \\
     \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & 0.0 \\
     \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:geo_sensor_scan_angle} & degrees & 0.0 \\
     \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:geo_sensor_zenith_angle} & degrees & 0.0 \\
@@ -1140,7 +1142,6 @@ with the quantity definitions shown in figure \ref{fig:geo_sensor_zenith_scan_an
     \texttt{Day}                     & The day of month (1-28/29/30/31) & N/A & 1 \\
     \hline
   \end{tabular}
-  \caption{CRTM \Geometry{} structure component description.}
   \label{tab:geometry_structure}
 \end{table}
 
@@ -1260,20 +1261,20 @@ For the allocatable components, the modifier ``\f{(}1:\textit{L}\f{)}'' is an in
     
                  \hspace{0.5cm}\f{RT\_SOI}: Use SOI algorithm.\\}
      & N/A & \f{RT\_ADA} \\
-    \f{Aircraft\_Pressure}           & Real value specifying an aircraft flight level pressure.Integer switch to select the scattering radiative transfer model. If:
+    \f{Aircraft\_Pressure}           & Real value specifying an aircraft flight level pressure. If:
 
     \parbox{7cm}{\hspace{0.5cm}$<$\f{0.0}: Satellite simulation.
     
                  \hspace{0.5cm}$>$\f{0.0}: Aircraft simulation.\\}
      & hPa & \f{-1.0} \\
-    \f{Use\_n\_Streams}              & Logical switch to enable or disable the use of the defined number of RT streams for scattering calculations. If:
+    \f{Use\_n\_Streams}              & Logical switch to enable or disable the use of a user-defined number of RT streams for scattering calculations. If:
 
     \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Use internally calculated \f{n\_Streams}.
     
                  \hspace{0.5cm}\f{.TRUE. }: Use specified \f{n\_Streams}.\\}
      & N/A & \f{.FALSE.} \\
-    \f{n\_Streams}                   & Number of up+down streams to use for scattering calculations if the \f{Use\_n\_Streams} is set to \f{.TRUE.}
-     & N/A & \f{0} \\[0.3cm]
+    \f{n\_Streams}                   & Number of streams to use for scattering calculations if the \f{Use\_n\_Streams} is set to \f{.TRUE.}. Valid values for \f{n\_Streams} are 2, 4, 6, 8, and 16. 
+     & N/A & \f{0} \\[1.1cm]
     \f{Include\_Scattering}          & Logical switch to enable or disable scattering calculations for clouds and aerosols. If:
 
     \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Only cloud and/or aerosol absorption is computed.
@@ -1322,13 +1323,13 @@ The default microwave sea surface emissivity model implemented in this release i
   ! Use the old microwave sea surface emissivity model (MWSSEM) for profile #2
   opt(2)%\textcolor{red}{Use_Old_MWSSEM} = .TRUE.\end{alltt}
 
-The default radiative transfer algorithm used for scattering calculation is the Advanced Doubling-Adding (ADA) algorithm. To select an alternative algorithm, you can set the \f{RT\_Algorithm\_Id} option. Currently this is done by specifying a parameterised value identifying the algorithm. For example, to select the Successive Order of Interation (SOI) algorithm, the option is set to \f{RT\_SOI},
+The default radiative transfer algorithm used for scattering calculation is the Advanced Doubling-Adding (ADA) algorithm with the Matrix Operator Method (MOM) for calculating layer quantities. To select an alternative algorithm, you can set the \f{RT\_Algorithm\_Id} option. Currently this is done by specifying a parameterised value identifying the algorithm. For example, to select the Successive Order of Interation (SOI) algorithm, the option is set to the parameter \f{RT\_SOI},
 
 \begin{alltt}
   ! Use the SOI algorithm for all scattering RT
   opt%\textcolor{red}{RT_Algorithm_Id} = RT_SOI\end{alltt}
 
-To explcitly select the default RT algorithm, you can set the option to \f{RT\_ADA}. The use of a parameterised integer value rather than a logical switch is to accommodate the implementation of additional algorithms in future releases.
+To explicitly select the default RT algorithm, you can set the option to the parameter \f{RT\_ADA}. The use of a parameterised integer value rather than a logical switch is to accommodate the implementation of additional algorithms in future releases.
 
 If you wish to do simulations for aircraft instruments, you can enable this option by setting the aircraft flight level pressure,
 
@@ -1336,7 +1337,7 @@ If you wish to do simulations for aircraft instruments, you can enable this opti
   ! Specify an aircraft flight level pressure for profile #1
   opt(1)%\textcolor{red}{Aircraft_Pressure} = 325.0_fp\end{alltt}
 
-Of course, doing aircraft sensor simulations requires the various sensor and transmittance models coefficients to be available for your instrument. To get that process started, \href{mailto:ncep.list.emc.jcsda_crtm.support@noaa.gov}{contact CRTM Support}.
+Of course, doing aircraft sensor simulations requires the various sensor and transmittance models coefficients to be available for your instrument. To get that process started, \href{mailto:ncep.list.emc.jcsda_crtm.support@noaa.gov}{contact CRTM Support}\footnote{We'll need instrument information, e.g. spectral response or instrument line functions, to generate the CRTM transmittance coefficient data files.}
 
 This release of the CRTM also allows you to turn off cloud and aerosol scattering, performing only the absorption calculations, via the \f{Include\_Scattering} option,
 
@@ -1403,6 +1404,7 @@ The components of the \hyperref[sec:ssu_input_structure]{\SSUInput} data structu
 
 \begin{table}[htp]
   \centering
+  \caption{CRTM \SSUInput{} structure component description}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -1411,7 +1413,6 @@ The components of the \hyperref[sec:ssu_input_structure]{\SSUInput} data structu
     \texttt{Cell\_Pressure} & The SSU \carbondioxide{} cell pressures. & hPa & 0.0 \\
     \hline
   \end{tabular}
-  \caption{CRTM \SSUInput{} structure component description}
   \label{tab:ssu_input_structure}
 \end{table}
 
@@ -1430,6 +1431,7 @@ The contents of the \hyperref[sec:zeeman_input_structure]{\ZeemanInput} data str
 
 \begin{table}[htp]
   \centering
+  \caption{CRTM \ZeemanInput{} structure component description}
   \begin{tabular}{l p{7cm} c c}
     \hline\\[-0.1cm]
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -1440,7 +1442,6 @@ The contents of the \hyperref[sec:zeeman_input_structure]{\ZeemanInput} data str
     \texttt{Doppler\_Shift}  & Doppler frequency shift caused by Earth-rotation (positive towards sensor). A zero value means no frequency shift. & KHz & 0.0 \\
     \hline
   \end{tabular}
-  \caption{CRTM \ZeemanInput{} structure component description}
   \label{tab:zeeman_input_structure}
 \end{table}
 
@@ -1613,6 +1614,63 @@ Similarly to the forward model example, let's recast the call within a sensor-lo
 The \hyperref[sec:CRTM_Tangent_Linear_interface]{tangent-linear} and \hyperref[sec:CRTM_Adjoint_interface]{adjoint} models have similar call structures and will not be shown here. Refer to their interface descriptions for details.
 
 
+\subsection{The CRTM Aerosol Optical Depth (AOD) functions}
+%----------------------------------------------------------
+There is a separate module containing forward, tangent-linear, adjoint and K-matrix function to \emph{just} compute aerosol optical depths. The calling syntax for these functions are similar to the main function, but with fewer argument.
+
+The calling syntax for the CRTM forward AOD model is,
+
+\begin{alltt}
+  err_stat = \hyperref[sec:CRTM_AOD_interface]{CRTM_AOD}( atm        , & ! Input
+                       chInfo     , & ! Input
+                       rts        , & ! Output
+                       Options=opt  ) ! Optional input
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+A important note: the computed aerosol optical depth is stored in the \f{Layer\_Optical\_Depth} component of the \RTSolution{} output so you must allocate the internals of the \RTSolution{} structure. Using the call in the context of the sensor-loop example of section \ref{sec:alloc_array_step}, we would do,
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+    ....
+    ! Allocate channel-dependent arrays
+    ALLOCATE( rts(n_channels, n_profiles), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Allocate RTSolution structure to store optical depth output
+    \textcolor{red}{CALL CRTM_RTSolution_Create( rts, n_layers )}
+    IF ( .NOT. ALL(CRTM_RTSolution_Associated(rts)) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ...
+    ! Call the forward AOD model, processing ALL profiles at once.
+    \textcolor{red}{err_stat = \hyperref[sec:CRTM_AOD_interface]{CRTM_AOD}( atm        , & ! Input
+                         chinfo(n:n), & ! Input
+                         rts        , & ! Output
+                         Options=opt  ) ! Optional input}
+    IF ( err_stat /= SUCCESS ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Deallocate channel-dependent arrays
+    DEALLOCATE( rts, STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO Sensor_Loop\end{alltt}
+
+The aerosol optical depth \hyperref[sec:CRTM_AOD_TL_interface]{tangent-linear}, \hyperref[sec:CRTM_AOD_AD_interface]{adjoint}, and \hyperref[sec:CRTM_AOD_K_interface]{K-matrix} functions have call structures similar to the main function and will not be shown here. Refer to their interface descriptions for details.
+
+
 
 \section{Inspect the CRTM output structures}
 %===========================================
@@ -1622,6 +1680,7 @@ Regardless of whether you have called the forward or K-matrix model, you will wa
 
 \begin{table}[htp]
   \centering
+  \caption{CRTM \RTSolution{} structure component description. $^\dagger$Only defined for \emph{forward} radiative transfer computations.}
   \begin{tabular}{l p{5cm} c c}
     \hline
     \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
@@ -1644,7 +1703,6 @@ Regardless of whether you have called the forward or K-matrix model, you will wa
     \f{Brightness\_Temperature}   & The sensor brightness temperature                                  & Kelvin   & 0.0 \\   
     \hline
   \end{tabular}
-  \caption{CRTM \RTSolution{} structure component description. $^\dagger$Only defined for \emph{forward} radiative transfer computations.}
   \label{tab:rtsolution_structure}
 \end{table}
 

@@ -232,7 +232,11 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(Message), Error_Status )
       RETURN
     END IF
-             
+    
+    IF( RTV%Visible_Flag_true ) THEN
+      SfcOptics%Direct_Reflectivity(1:nZ,1) = SfcOptics%Direct_Reflectivity(1:nZ,1) * PI
+    END IF
+    
     ! ------------------------------
     ! Perform the radiative transfer
     ! ------------------------------
