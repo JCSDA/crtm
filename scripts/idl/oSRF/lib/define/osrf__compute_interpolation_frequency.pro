@@ -24,9 +24,10 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   @osrf_pro_err_handler
 
 
-  ; Copy original OSRF and deallocate
-  self->Assign, new, Debug=Debug
-  new->Destroy, /No_Clear, Debug=Debug
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Process keywords based on sensor type
@@ -70,6 +71,7 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   ; Allocate the new OSRF                 
   new->Allocate, n_Points, Debug=Debug
 
+;!!!! HERE COPY OVER THE OTHER, SCALAR, STUFF !!!!
 
   ; Fill each band frequency array
   FOR i = 0L, new.n_Bands-1L DO BEGIN

@@ -99,7 +99,8 @@ END
 PRO OSRF_Viewer_Display, ID, $
     FONT=Font, CHARSIZE=Charsize, THICK=Thick
 ;--------------------------------------------
-
+  @color_db
+  
   ; Get top level base info state
   OSRF_Viewer_GetState, ID, Info
 
@@ -120,7 +121,10 @@ PRO OSRF_Viewer_Display, ID, $
   ; Plot it
   oSRF->Plot, $
     Debug=Info.Debug, $
-    FONT=Font, CHARSIZE=Charsize, THICK=Thick
+    FONT=Font, CHARSIZE=Charsize, THICK=Thick, /NODATA
+  oSRF->Oplot, oSRF, $
+    Debug=Info.Debug, $
+    COLOR=RED, THICK=Thick
 
 END
 
@@ -158,6 +162,9 @@ PRO OSRF_Viewer_Load_File, File, ID
                   SET_VALUE = 1, $
                   SENSITIVE = 1
     
+  ; Reset the oSRF position
+  Info.Position = 0
+  
   ; Save top level base info state
   OSRF_Viewer_SetState, ID, Info
 

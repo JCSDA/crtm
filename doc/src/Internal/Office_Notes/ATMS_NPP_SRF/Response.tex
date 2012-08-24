@@ -3,7 +3,9 @@
 
 \subsection{Specified and measured responses}
 %--------------------------------------------
-The NPP ATMS specified central frequencies, sideband offsets and channel bandwidths, taken from table 9 of the CrIS EDR ATBD\cite{CrIS_EDR_ATBD}, are shown in table \ref{tab:atms_fo_sb_and_df}. Also shown are measured bandwidths taken from table 12-1 of the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog}. No measurements of the central frequencies are readily available \footnote{These values may be available in other ATMS reports, particularly: RE-13680 K/Ka Band Receiver Shelf Verification Report, RE-13658 W Band Receiver Shelf Verification Report, RE-13741 V Band Receiver Shelf Verification Report, and RE-13802 G Band Receiver Shelf Verification Report.}.
+The NPP ATMS specified central frequencies, sideband offsets and channel bandwidths, taken from table 9 of the CrIS EDR ATBD\cite{CrIS_EDR_ATBD}, are shown in table \ref{tab:atms_fo_sb_and_df}. Also shown are measured bandwidths taken from table 12-1 of the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog}. No measurements of the central frequencies are readily available \footnote{These values may be available in other ATMS reports, particularly: RE-13680 K/Ka Band Receiver Shelf Verification Report, RE-13658 W Band Receiver Shelf Verification Report, RE-13741 V Band Receiver Shelf Verification Report, and RE-13802 G Band Receiver Shelf Verification Report.}. These frequency parameters are used to construct the so-called ``boxcar'' spectral response functions. 
+
+Note that the bandpass information presented in Table VII of the ATMS Receiver Specification\cite{ATMS_Receiver_Spec} is not used here because the sideband frequency offset for channel 17 ($\pm$1500MHz) is incorrect. Because no supplemental passband information from the referenced Table VII\cite{ATMS_Receiver_Spec} was used, channels 10 and 17 appear as single passband channels in table \ref{tab:atms_fo_sb_and_df}.
 
 \begin{table}[htp]
   \centering
@@ -42,116 +44,185 @@ The NPP ATMS specified central frequencies, sideband offsets and channel bandwid
   \label{tab:atms_fo_sb_and_df}
 \end{table}
 
-In addition to the usual frequency parameters, the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} contains tables (12-2a to 12-2d) of the digitised filter responses (hereafter referred to as the spectral response functions, or SRFs). Apart from channels 1 and 2, these digitised SRFs are at the intermediate frequencies (IF) at which the measurements were made, not at the actual on-orbit channel frequencies. So, these IF SRFs need to be processed so as to represent the SRFs at the frequencies corresponding to the on-orbit channel radiance measurements. The procedures used to do this for the ``Table 12'' IF SRF are shown schemtatically in figure \ref{fig:r_and_s}. Two operations are performed: translation and reflection; how they are carried out depends on the ATMS channel:
 
-\begin{figure}[htp]
-  \centering
-  \input{graphics/schematics/r_and_s.pstex_t}
-  \caption{Schematic illustration of how the ATMS responses, measured at intermediate frequencies, were processed to SRFs at the measurement frequencies. \textbf{(a)} Single passband channels (3-5, 7-10, 16, 17). \textbf{(b)} Double passband channels (11, 18-22). \textbf{(c)} Quadruple passband channels (12-15). \textbf{(d)} Channel 6.}
-  \label{fig:r_and_s}
-\end{figure}
-
-\begin{description}
-  \item[Single Passband Channels, fig.\ref{fig:r_and_s}(a).] Channels 3-5,7-10,16,17. The measured IF SRFs are simply translated to the channel central frequency, $f_0$. The value of the IF central frequency, $f_{i,0}$, is obtained from the first moment of the SRF.
-  \item[Double Sideband Channels, fig.\ref{fig:r_and_s}(b).] Channels 11, 18-22. Here a single measured IF sideband is reflected about 0GHz (corresponding to $f_{i,0}$ in this case) and the two sidebands are then translated to the channel central frequency, $f_0$.
-  \item[Quadruple Sideband Channels, fig.\ref{fig:r_and_s}(c).] Channels 12-15. In this case two non-contiguous sidebands are reflected about 0GHz (again, corresponding to $f_{i,0}$) and all four sidebands are then translated to the channel central frequency. 
-  \item[Channel 6, fig.\ref{fig:r_and_s}(d).] This channel is mentioned separately since, while it is a double sideband channel, unlike the other double sideband channels the IF SRF data contains the contiguous measurement of both sidebands. Thus only translation is applied to the IR SRF. As with the single passband channels, the IF central frequency is the first moment of the SRF. Note that this leads to a different bandwidth for the two sidebands; a situation one doesn't get for for the typical case in fig. \ref{fig:r_and_s}(b). It does beg the question as to why the same procedure wasn't performed for the other multi-band channels.
-\end{description}
-
-A selection of four channels from the Table 12 ATMS SRF data, compared to the boxcar reponse, are shown in figure \ref{fig:srf_selection}. All of the channel SRF are shown in appendix \ref{app:srf}. Two channels were selected for display in figure \ref{fig:srf_selection} to highlight their significant difference from the boxcar response: channel 10 (fig.\ref{fig:srf_selection}(b)) because the spec. bandwidth is quite different from that measured by about a factor of two\footnote{Channel 17 suffers similarly; see figure \ref{fig:atms_npp.ch17.srf}}; and channel 19 (fig.\ref{fig:srf_selection}(d)) because, while the measured data does cover the specified bandwidth, the in-band SRF magnitudes appear to decrease anomalously.
+\subsection{Measured frequency filter responses}
+%-----------------------------------------------
+In addition to the usual frequency parameters, the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} contains tables (12-2a to 12-2d) of the digitised filter responses (hereafter referred to as spectral response functions, or SRFs). It should be noted that these ``Table 12'' SRFs are for the frequency filter response only and are not necessarily indicative of the system response. As such, none of the Table 12 SRFs were used in the analyses presented in this Office Note and are only mentioned here for the record. A selection of four channels from the Table 12 ATMS SRF data, compared to the boxcar response, is shown in figure \ref{fig:table12.srf_selection}. All of the channel Table 12 SRFs are shown in appendix \ref{app:srf.table12}.
 
 \begin{figure}[htp]
   \centering
   \begin{tabular}{c c}
     \textsf{\textbf{(a)} Channel 6} &
     \textsf{\textbf{(b)} Channel 10} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch6.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch10.srf.eps} \\\\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/table12/atms_npp.ch6.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/table12/atms_npp.ch10.osrf.eps} \\\\
 
     \textsf{\textbf{(c)} Channel 11} &
     \textsf{\textbf{(d)} Channel 19} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch11.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch19.srf.eps}
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/table12/atms_npp.ch11.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/table12/atms_npp.ch19.osrf.eps}
   \end{tabular}
-  \caption{Selection of NPP ATMS Table 12 SRF data from reference \cite{ATMS_PFM_CalLog} with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df} data.}
-  \label{fig:srf_selection}
+  \caption{Selection of NPP ATMS Table 12 SRF data from the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df} data. A representative brightness temperature spectrum is also shown. See Appendix \ref{app:srf.table12} for the Table 12 SRFs for all channels.}
+  \label{fig:table12.srf_selection}
 \end{figure}
 
 
 \subsection{Additional Digitised Responses}
 %------------------------------------------
-After a recent SOAT meeting\footnote{Sounding Operational Algorithm Team (SOAT) Meeting, CrIS/ATMS Cal/Val Team, Integrated Program Office, Silver Spring, Maryland, USA, 20-21 May 2009} where the NPP ATMS Table 12 SRF data was discussed, two of us (Chidester, SDL; and DeAmici, NGAS) separately digitised the graphical SRFs displayed in the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog}. The SDL dataset consisted of channels 1, 12, 13, 14, and 15; and the NGAS dataset consisted of channels 4, 5, 9, 13, and 14. These digitised SRFs, along with the corresponding boxcar and Table 12 SRFs, are shown in figures \ref{fig:sp_digitised_srfs} (single passband channels) and \ref{fig:qp_digitised_srfs} (quadruple passband channels).
+After the first NPOESS SOAT meeting\footnote{Sounding Operational Algorithm Team (SOAT) Meeting, CrIS/ATMS Cal/Val Team, Integrated Program Office, Silver Spring, Maryland, USA, 20-21 May 2009} where the NPP ATMS Table 12 SRF data was discussed, two of us (DeAmici, NGAS; Chidester, SDL) began digitizing the graphical SRFs displayed in the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog}. Different SRF datasets were digitized based upon the baseplate temperature (-10\textdegree{}C, 20\textdegree{}C, and 50\textdegree{}C) and the bias voltages supplied to the amplifiers, oscillators, and pre-amplifiers (low, nominal, and high). Additionally, separate digitizations for some temperature/voltage combinations were performed for both the low and high spectral resolution measurements displayed in \cite{ATMS_PFM_CalLog}.
+
+The difference between the low and high resolution SRFs in \cite{ATMS_PFM_CalLog} is that, for the former, a greater range of response data was plotted (typically extending below -40dB insertion loss) requiring a larger bandwidth and including the ``wings'' of the SRFs and, for the latter, the plots typically only displayed responses \emph{just} beyond the frequencies marking the -3dB insertion loss point (which corresponds roughly to the half-maximum of the SRF). The available digitized SRF datasets are shown in table \ref{tab:RESlow_datasets} for low spectral resolution, and table \ref{tab:RESlow_datasets} for high spectral resolution.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{c c c c }
+    \hline
+          & \textbf{V\subscript{low}} & \textbf{V\subscript{nom}} & \textbf{V\subscript{high}} \\
+    \hline\hline
+    \textbf{-10\textdegree{}C} &  x  & SDL &  x  \\
+    \textbf{ 20\textdegree{}C} & SDL & SDL & SDL \\
+    \textbf{ 50\textdegree{}C} &  x  & SDL &  x  \\
+     \hline
+  \end{tabular}
+  \caption{Low spectral resolution digitized SRF datasets.}
+  \label{tab:RESlow_datasets}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{c c c c }
+    \hline
+          & \textbf{V\subscript{low}} & \textbf{V\subscript{nom}} & \textbf{V\subscript{high}} \\
+    \hline\hline
+    \textbf{-10\textdegree{}C} &  x  & SDL  &  x  \\
+    \textbf{ 20\textdegree{}C} &  x  & NGAS & SDL \\
+    \textbf{ 50\textdegree{}C} &  x  &  x   &  x  \\
+     \hline
+  \end{tabular}
+  \caption{High spectral resolution digitized SRF datasets.}
+  \label{tab:REShi_datasets}
+\end{table}
+
+
+\subsection{Conversion of insertion loss to relative response}
+%-------------------------------------------------------------
+Convolution of line-by-line (LBL) radiance calculations with the SRFs to produce the channel radiance, $\overline{R}$, is done using
+\begin{equation}
+  \overline{R} = \frac{\displaystyle\int_{\nu_1}^{\nu_2}R(\nu)\phi(\nu)d\nu}{\displaystyle\int_{\nu_1}^{\nu_2}\phi(\nu)d\nu}
+  \label{eqn:radiance_convolution}
+\end{equation}
+where $R(\nu)$ is the LBL radiance at frequency $\nu$, $\phi(\nu)$ is the SRF relative response, and $\nu_1,\nu_2$ are the frequency bounds of the SRF in units of inverse centimetres (cm\superscript{-1}).
+
+The SRF magnitudes in the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} are described in terms of insertion loss in units of decibels, $L_{dB}$. The relationship between insertion loss and relative response is taken to be,
+\begin{equation}
+  L_{dB}(\nu) = 10\log_{10}\left(\displaystyle\frac{\phi(\nu)}{\phi_0}\right)
+  \label{eqn:response_to_db}
+\end{equation}
+where the ``reference'' relative response, $\phi_0$, is set to 1.0. Coupling this with a rearrangment of equation \ref{eqn:response_to_db} gives,
+\begin{equation}
+  \phi(\nu) = 10^{0.1L_{dB}(\nu)}
+  \label{eqn:db_to_response}
+\end{equation}
+
+
+\subsection{Comparison Datasets}
+%-------------------------------
+The comparison between the different SRF sets shown here will be split into three groups based on differences in temperature, voltage, and spectral resolution respectively, like so:
+
+\begin{description}
+  \item[Temperature comparison (Tset):] Low, nominal, and high base plate temperatures (-10\textdegree{}C, 20\textdegree{}C, 50\textdegree{}C) for nominal bias voltage (V\subscript{nom}) and low spectral resolution (R\subscript{low}).
+  \item[Voltage comparison (Vset):] Low, nominal, and high bias voltages (V\subscript{low}, V\subscript{nom}, V\subscript{high}) for nominal baseplate temperature (20\textdegree{}C) and low spectral resolution (R\subscript{low.}).
+  \item[Resolution comparison (Rset):] Low and ``effective'' high spectral resolution (R\subscript{low}, R\subscript{high}) for nominal baseplate temperature (20\textdegree{}C) and high bias voltage (V\subscript{high}). The high resolution  is listed as effective since the actual comparisons were done between the original low spectral resolution dataset, and a dataset derived from the low resolution data but truncated at -10dB (equivalent to a relative response of 0.1). Doing this removed the effect of digitization errors from the examination of the impact of the inclusion of the SRF wings.
+\end{description}
+
+As with the Table 12 responses shown in figure \ref{fig:table12.srf_selection}, the same selection of channels for the different SRF datasets described above are shown in figures \ref{fig:Tset.srf_selection},  \ref{fig:Vset.srf_selection}, and \ref{fig:Rset.srf_selection} for the Tset, Vset, and Rset comparisons respectively. It is clear from these selected channels that the various actual channel responses are relatively similar, but the all differ significantly from the ``boxcar'' response - in particular those seen for channel 19 (indeed, all the 183GHz channel SRFs exhibit large differences from a boxcar reposnse).
 
 \begin{figure}[htp]
   \centering
   \begin{tabular}{c c}
-    \textsf{\textbf{(a)} Channel 1} &
-    \textsf{\textbf{(b)} Channel 4} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch1.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch4.srf.eps} \\\\
+    \textsf{\textbf{(a)} Channel 6} &
+    \textsf{\textbf{(b)} Channel 10} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Tset/atms_npp.ch6.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Tset/atms_npp.ch10.osrf.eps} \\\\
 
-    \textsf{\textbf{(c)} Channel 5} &
-    \textsf{\textbf{(d)} Channel 9} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch5.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch9.srf.eps}
-  \end{tabular}
+    \textsf{\textbf{(c)} Channel 11} &
+    \textsf{\textbf{(d)} Channel 19} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Tset/atms_npp.ch11.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Tset/atms_npp.ch19.osrf.eps}
+  \end{tabular} \\
   % the hand-crafted legend
   \setlength{\unitlength}{1cm}
-  \begin{picture}(2.0,2.0)
+  \begin{picture}(8.0,1.0)
     \thicklines
-    \color{blue}
-    \put(0.0,0.2 ){\line(1,0){1}}
-    \put(1.1,0.05){\sffamily NGAS}
-    \color{green}
-    \put(0.0,0.7 ){\line(1,0){1}}
-    \put(1.1,0.55){\sffamily SDL}
     \color{red}
-    \put(0.0,1.2 ){\line(1,0){1}}
-    \put(1.1,1.05){\sffamily Table 12}
-    \color{black}
-    \put(0.0,1.7 ){\line(1,0){1}}
-    \put(1.1,1.55){\sffamily Boxcar}
+    \put(0.0,0.5){\line(1,0){1}}
+    \put(1.2,0.35){\sffamily -10\textdegree{}C}
+    \color{green}
+    \put(3.0,0.5){\line(1,0){1}}
+    \put(4.2,0.35){\sffamily 20\textdegree{}C}
+    \color{blue}
+    \put(6.0,0.5){\line(1,0){1}}
+    \put(7.2,0.35){\sffamily 50\textdegree{}C}
   \end{picture}
-  \caption{Single passband SDL and NGAS digitised NPP ATMS SRFs from reference \cite{ATMS_PFM_CalLog} with the corresponding boxcar and Table 12 response}
-  \label{fig:sp_digitised_srfs}
+  \caption{Selection of NPP ATMS SRF data from the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} for the baseplate temperature comparison dataset (Tset), along with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df} data. A representative brightness temperature spectrum is also shown. See Appendix \ref{app:Tset} for the Tset SRFs for all channels.}
+  \label{fig:Tset.srf_selection}
 \end{figure}
-
-For the single passband channels shown in figure \ref{fig:sp_digitised_srfs}, the SDL channel 1 digitisation of fig.\ref{fig:sp_digitised_srfs}(a) appears to be most like the Table 12 representation. For the NGAS digitisations, figs.\ref{fig:sp_digitised_srfs}(b)-(d), the outstanding feature is how very different the digitised data is from the Table 12 data. Lest readers think the digitisation procedures somehow went awry, they are referred to Appendix \ref{app:srf} -- in particular figures \ref{fig:atms_npp.ch1.srf}, \ref{fig:atms_npp.ch4.srf}, \ref{fig:atms_npp.ch5.srf}, and \ref{fig:atms_npp.ch9.srf} -- where the plots shown in \ref{fig:sp_digitised_srfs} are replicated at a larger size, but also with the corresponding filter response taken from the ATMS PFM Calibration Data Book \cite{ATMS_PFM_CalLog}. Comparison of these plots clearly show that the SDL and NGAS digitisations are more respresentative of the measurements displayed in \cite{ATMS_PFM_CalLog}.
 
 \begin{figure}[htp]
   \centering
   \begin{tabular}{c c}
-    \textsf{\textbf{(a)} Channel 12} &
-    \textsf{\textbf{(b)} Channel 13} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch12.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch13.srf.eps} \\\\
+    \textsf{\textbf{(a)} Channel 6} &
+    \textsf{\textbf{(b)} Channel 10} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Vset/atms_npp.ch6.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Vset/atms_npp.ch10.osrf.eps} \\\\
 
-    \textsf{\textbf{(c)} Channel 14} &
-    \textsf{\textbf{(d)} Channel 15} \\
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch14.srf.eps} &
-    \includegraphics[scale=0.5]{graphics/srf/atms_npp.ch15.srf.eps}
-  \end{tabular}
+    \textsf{\textbf{(c)} Channel 11} &
+    \textsf{\textbf{(d)} Channel 19} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Vset/atms_npp.ch11.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Vset/atms_npp.ch19.osrf.eps}
+  \end{tabular} \\
   % the hand-crafted legend
   \setlength{\unitlength}{1cm}
-  \begin{picture}(2.0,2.0)
+  \begin{picture}(8.0,1.0)
     \thicklines
-    \color{blue}
-    \put(0.0,0.2 ){\line(1,0){1}}
-    \put(1.1,0.05){\sffamily NGAS}
-    \color{green}
-    \put(0.0,0.7 ){\line(1,0){1}}
-    \put(1.1,0.55){\sffamily SDL}
     \color{red}
-    \put(0.0,1.2 ){\line(1,0){1}}
-    \put(1.1,1.05){\sffamily Table 12}
-    \color{black}
-    \put(0.0,1.7 ){\line(1,0){1}}
-    \put(1.1,1.55){\sffamily Boxcar}
+    \put(0.0,0.5){\line(1,0){1}}
+    \put(1.2,0.35){\sffamily Vlow}
+    \color{green}
+    \put(3.0,0.5){\line(1,0){1}}
+    \put(4.2,0.35){\sffamily Vnom}
+    \color{blue}
+    \put(6.0,0.5){\line(1,0){1}}
+    \put(7.2,0.35){\sffamily Vhigh}
   \end{picture}
-  \caption{Quadruple passband SDL and NGAS digitised NPP ATMS SRFs from reference \cite{ATMS_PFM_CalLog} with the corresponding boxcar and Table 12 response}
-  \label{fig:qp_digitised_srfs}
+  \caption{Selection of NPP ATMS SRF data from the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} for the bias voltage comparison dataset (Vset), along with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df} data. A representative brightness temperature spectrum is also shown. See Appendix \ref{app:Vset} for the Vset SRFs for all channels.}
+  \label{fig:Vset.srf_selection}
 \end{figure}
 
-Similarly, for the quadruple passband channels shown in figure \ref{fig:qp_digitised_srfs}, the SDL and NGAS digitisations are quite different from the Table 12 data. Of particular interest is the difference in relative magnitudes between the ``inner'' (\#2 and \#3) and ``outer'' (\#1 and \#4) bands for channels 13 and 14 in figs.\ref{fig:qp_digitised_srfs}(b) and (c). Comparison of the digitised data with that displayed in the ATMS PFM Calibration Data Book \cite{ATMS_PFM_CalLog} -- see figures \ref{fig:atms_npp.ch12.srf}, \ref{fig:atms_npp.ch13.srf}, \ref{fig:atms_npp.ch14.srf}, and \ref{fig:atms_npp.ch14.srf} -- again shows the SDL and NGAS digitisation to be more respresentative of the filter responses, in both shape and relative magnitude, than the Table 12 data. It should be pointed out that the vertical excursions for the relative response plots are more pronounced than for those where the y-axis is signal loss with units of decibels.
- 
+\begin{figure}[htp]
+  \centering
+  \begin{tabular}{c c}
+    \textsf{\textbf{(a)} Channel 6} &
+    \textsf{\textbf{(b)} Channel 10} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Rset/atms_npp.ch6.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Rset/atms_npp.ch10.osrf.eps} \\\\
 
+    \textsf{\textbf{(c)} Channel 11} &
+    \textsf{\textbf{(d)} Channel 19} \\
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Rset/atms_npp.ch11.osrf.eps} &
+    \includegraphics[bb=70 400 300 559,clip,scale=1.0]{graphics/srf/Rset/atms_npp.ch19.osrf.eps}
+  \end{tabular} \\
+  % the hand-crafted legend
+  \setlength{\unitlength}{1cm}
+  \begin{picture}(9.0,1.0)
+    \thicklines
+    \color{red}
+    \put(0.0,0.5){\line(1,0){1}}
+    \put(1.2,0.35){\sffamily SRF wings included}
+    \color{green}
+    \put(5.0,0.5){\line(1,0){1}}
+    \put(6.2,0.35){\sffamily SRF cutoff at -10dB}
+  \end{picture}
+  \caption{Selection of NPP ATMS SRF data from the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} for the 20\textdegree{}C, Vnominal spectral resolution dataset (Rset), along with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df} data. A representative brightness temperature spectrum is also shown. See Appendix \ref{app:Rset} for the Rset3 SRF for all channels.}
+  \label{fig:Rset.srf_selection}
+\end{figure}

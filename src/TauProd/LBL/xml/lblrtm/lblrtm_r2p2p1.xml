@@ -1,0 +1,6 @@
+<lblinput>
+  <!-- LBLRTM 2.2.1 record -->
+  <record name="r2p2p1" type="lblrtm" format="(7a10,(/,8a10))">
+    <entry name="xsname" dim="(MAX_N_XSECT_ABSORBERS)" type="CHARACTER(10)" value="''" desc="Name of the cross-section molecules"/>
+  </record>
+</lblinput>

@@ -26,6 +26,12 @@ PRO oSRF::Apply_Response_Threshold, $
   gRef = HASH()
 
 
+  ; Check if structure has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+  
   ; Extract dimension and info from oSRF
   self->Get_Property, Debug=Debug, $
     n_Bands = n_bands, $
@@ -138,23 +144,26 @@ PRO oSRF::Apply_Response_Threshold, $
   ENDFOR  ; Band loop
 
 
-  ; Load the truncated SRF data into the oSRF object
+  ; Load the truncated SRF data into a new oSRF object
+  new = oSRF()
   ; ...Reallocate the object to the new data size(s)
-  self->Allocate, n_points, Debug=Debug
+  new->Allocate, n_points, Debug=Debug
   ; ...Clear flags
-  self->Clear_Flag, $
+  new->Clear_Flag, $
     Debug=Debug, $
     /All
   ; ...Set the data values
   FOR n = 0, n_bands - 1 DO BEGIN
     band = n+1
-    f  = frequency.Remove(n)
-    r  = response.Remove(n)
-    self->Set_Property, $
+    f  = frequency[n]
+    r  = response[n]
+    new->Set_Property, $
       band, $
       Debug=Debug, $
       Frequency = f, $
       Response  = r
   ENDFOR
+  ; ...Copy new object to self
+  new->Assign, self, Debug=Debug
   
 END ; PRO OSRF::Apply_Response_Threshold

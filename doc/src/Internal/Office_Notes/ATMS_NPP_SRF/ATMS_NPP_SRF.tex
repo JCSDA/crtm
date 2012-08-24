@@ -1,7 +1,11 @@
 % The generic preamble
 \input{preamble}
 
-\includeonly{Introduction,Response,Radiative_Transfer,Conclusions,srf.app,dtb.app}
+\includeonly{Introduction,Response,Radiative_Transfer,Conclusions,srf.table12.app,Tset.app,Vset.app,Rset.app}
+
+% Subversion keywords
+\SVN $Date$
+\SVN $Revision$
 
 % Definitions for tables
 \newcommand{\frequency}[1]{\ensuremath{f_{#1}}}
@@ -20,8 +24,8 @@
         C.L. Chidester\email{Lynn.Chidester@sdl.usu.edu}\\Space Dynamics Laboratory, Utah State University\\[0.25in]
         G. De Amici\email{giovanni.deamici@ngc.com}\\Northrop Grumman Aerospace Systems\\[0.25in]
         S. Swadley\email{steve.swadley@nrlmry.navy.mil}\\Naval Research Laboratory}
-\date{July, 2009}
-\docnumber{(unassigned)}
+\date{\SVNDate ; rev\SVNRevision}
+\docnumber{ }
 \docseries{CRTM}
 
 
@@ -47,10 +51,19 @@
       \hline\hline
       2009-07-16 & P. van Delst & Initial release.\\
       \hline
+      2010-07-12 & P. van Delst & Update for all NGAS digitisations (from G. De Amici) as well as SDL/USU digitisations (from L. Chidester).\\
+      \hline
+      2010-10-25 & P. van Delst & Added plots for MonoRTM runs using surface emissivity and reflectivity of 0.6 and 0.4 respectively.\\
+      \hline
+      2010-10-26 & P. van Delst & Removed all but the nominal baseplate temperature and bias voltage plots from SRF resolution/wing inclusion appendix.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
 \clearpage
+\pagestyle{fancy}
+\fancyhead[LE,RO]{\sffamily \rightmark}
+\fancyhead[LO,RE]{\sffamily \leftmark}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -73,8 +86,10 @@
 % The appendices section
 %=======================
 \begin{appendix}
-  \include{srf.app}
-  \include{dtb.app}
+  \include{Tset.app}
+  \include{Vset.app}
+  \include{Rset.app}
+  \include{srf.table12.app}
 \end{appendix}
 
 \end{document}

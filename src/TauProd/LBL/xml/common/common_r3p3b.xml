@@ -1,0 +1,6 @@
+<lblinput>
+  <!-- Common 3.3b record -->
+  <record name="r3p3b" type="common" format="(8f10.3)">
+    <entry name="bnd" dim="(MAX_IBMAX)" type="REAL(fp)" value="0.0_fp" desc="Altitudes/pressures of layer boundaries"/>
+  </record>
+</lblinput>

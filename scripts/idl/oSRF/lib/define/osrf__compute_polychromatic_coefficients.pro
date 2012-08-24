@@ -7,9 +7,17 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ; ...Set up error handler
   @osrf_pro_err_handler
 
+
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+
   ; Get the sensor type
   self->Get_Property, $
     Sensor_Type=Sensor_Type
+
 
   ; Set min and max temps based on Sensor_Type
   IF ( Sensor_Type EQ VISIBLE_SENSOR ) THEN BEGIN
@@ -19,6 +27,7 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
     min_T = 150.0d0
     max_T = 340.0d0
   ENDELSE
+
   
   ; Compute the set of temperatures
   d_T   = 10.0d0
@@ -27,11 +36,14 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   T = T*(max_T-min_T) + min_T
   Teff = DBLARR(n_T)
 
+
   ; Compute the central frequency if necessary
-  IF ( NOT self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
+  IF ( ~ self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
+
   
   ; Copy the SRF
   self->Assign, new, Debug=Debug
+
   
   ; Perform conversions to units of inverse centimetres if necessary
   IF ( new->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN BEGIN

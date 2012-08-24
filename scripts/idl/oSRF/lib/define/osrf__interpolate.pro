@@ -9,8 +9,19 @@ PRO OSRF::Interpolate, $
   ; ...Set up error handler
   @osrf_pro_err_handler
  
+ 
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+
+  ; Process the sigma keyword
+  _sigma = 5.0d0
+  IF ( N_ELEMENTS(Sigma) GT 0 ) THEN _sigma = DOUBLE(ABS(Sigma[0]))
+
+  
   ; Perform the interpolation
-  IF ( NOT KEYWORD_SET(Sigma) ) THEN Sigma = 5.0d0
   FOR i = 0L, self.n_Bands-1L DO BEGIN
     f     = *(*self.Frequency)[i]
     r     = *(*self.Response)[i]
@@ -19,7 +30,7 @@ PRO OSRF::Interpolate, $
     IF ( self->Flag_Is_Set(INTERPOLATION_METHOD_FLAG) ) THEN BEGIN
       *(*int_OSRF.Response)[i] = INTERPOL( r, f, f_int )
     ENDIF ELSE BEGIN
-      *(*int_OSRF.Response)[i] = SPLINE( f, r, f_int, Sigma, /DOUBLE )
+      *(*int_OSRF.Response)[i] = SPLINE( f, r, f_int, _sigma, /DOUBLE )
     ENDELSE
   ENDFOR
   

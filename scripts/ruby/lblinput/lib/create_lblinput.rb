@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+#
+# == Synopsis
+#
+# create_lblinput.rb:: Using XML specification files, create Fortran95/2003 modules 
+#                      containing procedures to create LBLRTM and/or MonoRTM input files.
+#
+# == Usage
+#
+# create_lblinput.rb --help --lblrtm --monortm [--xml-dir <directory>]
+#
+# --help (-h):
+#    you're looking at it
+#
+# --lblrtm (-l)
+#    Set this option to create the LBLRTM modules.
+#
+# --monortm (-m)
+#    Set this option to create the MonoRTM modules.
+#
+# --xml-dir (-x) <directory>
+#    Use this option to specify the location of the XML specification files.
+#    Default is to search the current directory.
+#
+#
+# Written by:: Paul van Delst, paul.vandelst@noaa.gov
+#
+# $Id$
+#
+
+require 'getoptlong'
+require 'rdoc/usage'
+require 'lblinput'
+
+# Define the script name for messages
+script_name=File.basename($0)
+
+# Specify accepted options
+options=GetoptLong.new(
+  [ "--help"   , "-h", GetoptLong::NO_ARGUMENT], 
+  [ "--lblrtm" , "-l", GetoptLong::NO_ARGUMENT],
+  [ "--monortm", "-m", GetoptLong::NO_ARGUMENT],
+  [ "--xml-dir", "-x", GetoptLong::REQUIRED_ARGUMENT])
+ 
+# Parse the command line options
+lbl_dir = []
+xml_dir  = Dir.pwd
+begin
+  options.each do |opt, arg|
+    case opt
+      when "--lblrtm"
+        lbl_dir << "lblrtm"
+      when "--monortm"
+        lbl_dir << "monortm"
+      when "--xml-dir"
+        xml_dir = File.expand_path(arg)
+      when "--help"
+        RDoc::usage
+        exit(0)
+    end
+  end
+rescue StandardError => error_message
+  puts("ERROR: #{error_message}")
+  puts("Try \"#{script_name} --help\"\n ")
+  exit(1)
+end
+
+# If neither lblrtm or monortm specfied...
+if lbl_dir.empty? then
+  puts("WARNING: No LBL model specified. Nothing to do!")
+  puts("Try \"#{script_name} --help\"\n ")
+  exit(1)
+end
+lbl_dir << "common"
+
+# Loop over XML directories
+begin
+  lbl_dir.each do |d|
+    xml_files = Dir.glob("#{xml_dir}/#{d}/*.xml")
+    raise StandardError, "No XML files found in #{xml_dir}/#{d}" if xml_files.empty?
+    Dir.glob("#{xml_dir}/#{d}/*.xml").each do |xml|
+      input = LBLInput::Input.new(xml)
+      puts("\nThe xml input is:\n#{input.class}")
+      input.display
+      input.module_write
+    end
+  end
+rescue StandardError => error_message
+  puts("ERROR: #{error_message}")
+  exit(1)
+end

@@ -301,7 +301,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Geopotential_Height'
     ! Local variables
-    CHARACTER(256) :: Message
     LOGICAL :: Use_Gravity
     INTEGER :: n_Levels
     INTEGER :: k, k1, k2, dk

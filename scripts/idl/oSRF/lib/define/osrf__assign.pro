@@ -59,15 +59,15 @@ PRO OSRF::Assign, $
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
-  @osrf_pro_err_handler
+; @osrf_pro_err_handler
 
-  ; ...ALL *input* pointers must be associated
-  IF ( self->Associated(Debug=Debug) EQ FALSE ) THEN $
-    MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
+  ; ...ALL input data pointers must be associated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'Some or all input OSRF members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; ...Return argument must be present
-  IF ( NOT ARG_PRESENT(new) ) THEN $
+  IF ( ~ ARG_PRESENT(new) ) THEN $
     MESSAGE, 'No output object argument specified.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
              
@@ -93,7 +93,7 @@ PRO OSRF::Assign, $
   new->Allocate, *self.n_Points, Debug=Debug
 
 
-  ; Assign data components
+  ; Assign data components  
   new.Release = self.Release
   new.Version = self.Version
   
@@ -117,8 +117,5 @@ PRO OSRF::Assign, $
     *(*new.Response)[i]  = *(*self.Response)[i] 
     *(*new.Radiance)[i]  = *(*self.Radiance)[i] 
   ENDFOR
-  *new.xsysvar = *self.xsysvar
-  *new.ysysvar = *self.ysysvar
-  *new.psysvar = *self.psysvar
 
 END ; PRO OSRF::Assign

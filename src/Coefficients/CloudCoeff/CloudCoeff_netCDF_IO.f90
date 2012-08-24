@@ -1024,7 +1024,7 @@ CONTAINS
 !
 ! INPUTS:
 !       Filename:       Character string specifying the name of the
-!                       CloudCoeff data file to write.
+!                       CloudCoeff data file to read.
 !                       UNITS:      N/A
 !                       TYPE:       CHARACTER(*)
 !                       DIMENSION:  Scalar
@@ -1073,7 +1073,7 @@ CONTAINS
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
 !                       The error codes are defined in the Message_Handler module.
-!                       If == SUCCESS the data write was successful
+!                       If == SUCCESS the data read was successful
 !                          == FAILURE an unrecoverable error occurred.
 !                       UNITS:      N/A
 !                       TYPE:       INTEGER

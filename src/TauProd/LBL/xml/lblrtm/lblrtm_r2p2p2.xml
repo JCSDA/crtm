@@ -1,0 +1,10 @@
+<lblinput>
+  <!-- LBLRTM 2.2.2 record -->
+  <record name="r2p2p2" type="lblrtm" format="(1x,i1,i5,i5,f10.2,a)">
+    <entry name="ifrmx"  type="INTEGER"       value="0"    desc="Column amount format flag. If == 1, read data es15.7 format"/>
+    <entry name="nlayxs" type="INTEGER"       value="0"    desc="Number of layers (maximum of 200)"/>
+    <entry name="ixmol"  type="INTEGER"       value="7"    desc="Number of cross-sections"/>
+    <entry name="secntx" type="REAL(fp)"      value="ONE"  desc="Column amount scale factor. If +ve, looking up; if -ve looking down"/>
+    <entry name="hedxs"  type="CHARACTER(60)" value="''"   desc="User identification"/>
+  </record>
+</lblinput>

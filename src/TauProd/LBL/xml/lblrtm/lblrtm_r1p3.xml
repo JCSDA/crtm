@@ -1,0 +1,16 @@
+<lblinput>
+  <!-- LBLRTM 1.3 records -->
+  <record name="r1p3" type="lblrtm" format="(8(es10.3),4x,i1,5x,es10.3,3x,i2)">
+    <entry name="v1"         type="REAL(fp)" value="0.0_fp"  desc="Beginning wavenumber value for the calculation"/>
+    <entry name="v2"         type="REAL(fp)" value="0.0_fp"  desc="Ending wavenumber value for the calculation"/>
+    <entry name="sample"     type="REAL(fp)" value="4.0_fp"  desc="number of sample points per mean halfwidth (between 1 and 4)"/>
+    <entry name="dvset"      type="REAL(fp)" value="0.0_fp"  desc="Selected DV for the final monochromatic calculation"/>
+    <entry name="alfal0"     type="REAL(fp)" value="0.04_fp" desc="Average collision broadened halfwidth"/>
+    <entry name="avmass"     type="REAL(fp)" value="36.0_fp" desc="Average molecular mass (amu) for Doppler halfwidth"/>
+    <entry name="dptmin"     type="REAL(fp)" value="0.0_fp"  desc="Minimum molecular optical depth below which lines will be rejected"/>
+    <entry name="dptfac"     type="REAL(fp)" value="0.0_fp"  desc="Factor multiplying molecular continuum optical depth for rejection check"/>
+    <entry name="ilnflg"     type="INTEGER"  value="0"       desc="Flag for binary record of line rejection information"/>
+    <entry name="dvout"      type="REAL(fp)" value="0.0_fp"  desc="Selected DV grid for the optical depth 'monochromatic' output spacing"/>
+    <entry name="nmol_scal"  type="INTEGER"  value="0"       desc="Enables the scaling of the atmospheric profile for selected species"/>
+  </record>
+</lblinput>

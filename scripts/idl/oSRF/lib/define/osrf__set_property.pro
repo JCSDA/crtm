@@ -26,7 +26,8 @@
 ;         f1                   = f1                  , $  ; Input keyword
 ;         f2                   = f2                  , $  ; Input keyword
 ;         Frequency            = Frequency           , $  ; Input keyword
-;         Response             = Response                 ; Input keyword
+;         Response             = Response            , $  ; Input keyword
+;         Radiance             = Radiance                 ; Input keyword
 ;
 ; OPTIONAL INPUT ARGUMENTS:
 ;       Band:                  The 1-based band number for which the frequency and
@@ -152,6 +153,18 @@
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Radiance:              Radiance data for an SRF band.
+;                              NOTE: This component is automatically filled in the
+;                                oSRF::Compute_Planck_Radiance
+;                              and
+;                                oSRF::Compute_Polychromatic_Coefficients
+;                              methods.
+;                              Used in conjunction with the Band keyword argument.
+;                              UNITS:      N/A
+;                              TYPE:       REAL
+;                              DIMENSION:  n_Points
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -189,14 +202,20 @@ PRO OSRF::Set_Property, $
   f1                   = f1                  , $  ; Input keyword
   f2                   = f2                  , $  ; Input keyword
   Frequency            = Frequency           , $  ; Input keyword
-  Response             = Response                 ; Input keyword
-
+  Response             = Response            , $  ; Input keyword
+  Radiance             = Radiance                 ; Input keyword
 
   ; Set up
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
+
+
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
  
   
   ; Check band argument
@@ -234,10 +253,6 @@ PRO OSRF::Set_Property, $
   ; Set frequency data
   n_Points = N_ELEMENTS(Frequency)
   IF ( n_Points GT 0 ) THEN BEGIN
-    ; ...Check if structure has been allocated
-    IF ( NOT self->Associated(Debug=Debug) ) THEN $
-      MESSAGE, 'OSRF structure has not been allocated.', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; ...Check point numbering is consistent
     IF ( n_Points NE (*self.n_Points)[_Band] ) THEN $
       MESSAGE, 'Input frequency array different size from that allocated for band ' + $
@@ -253,10 +268,6 @@ PRO OSRF::Set_Property, $
   ; Set response data
   n_Points = N_ELEMENTS(Response)
   IF ( n_Points GT 0 ) THEN BEGIN
-    ; ...Check if structure has been allocated
-    IF ( NOT self->Associated(Debug=Debug) ) THEN $
-      MESSAGE, 'OSRF structure has not been allocated.', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; ...Check point numbering is consistent
     IF ( n_Points NE (*self.n_Points)[_Band] ) THEN $
       MESSAGE, 'Input response array different size from that allocated for band ' + $
@@ -264,6 +275,19 @@ PRO OSRF::Set_Property, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; ...Assign response data
     *(*self.Response)[_Band] = Response
+  ENDIF
+  
+  
+  ; Set radiance data
+  n_Points = N_ELEMENTS(Radiance)
+  IF ( n_Points GT 0 ) THEN BEGIN
+    ; ...Check point numbering is consistent
+    IF ( n_Points NE (*self.n_Points)[_Band] ) THEN $
+      MESSAGE, 'Input radiance array different size from that allocated for band ' + $
+               STRTRIM(_Band+1,2), $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    ; ...Assign radiance data
+    *(*self.Radiance)[_Band] = Radiance
   ENDIF
   
 END ; PRO OSRF::Set_Property

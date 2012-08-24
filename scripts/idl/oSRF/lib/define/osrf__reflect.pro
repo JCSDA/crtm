@@ -43,7 +43,7 @@ PRO OSRF::Reflect, $
  
  
   ; Check object
-  IF ( NOT self->Associated(Debug=Debug) ) THEN RETURN
+  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
   IF ( self.n_Bands LT 2 ) THEN RETURN
   IF ( (self.n_Bands MOD 2) NE 0 ) THEN BEGIN
     MESSAGE, 'Number of OSRF bands is odd! No reflection performed', /INFORMATIONAL

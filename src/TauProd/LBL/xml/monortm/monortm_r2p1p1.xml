@@ -1,0 +1,14 @@
+<lblinput>
+  <!-- MonoRTM 2.1.1 records -->
+  <record name="r2p1p1" type="monortm" format="(f10.4,f10.4,15x,1x,f7.2,f8.3,f7.2,f7.2,f8.3,f7.2,es15.7)">
+    <entry name="pave"   type="REAL(fp)"     value="0.0_fp" desc="Average pressure of layer"/>
+    <entry name="tave"   type="REAL(fp)"     value="0.0_fp" desc="Average temperature of layer"/>
+    <entry name="altzb"  type="REAL(fp)"     value="0.0_fp" desc="Altitude of BOTTOM of current layer"/>
+    <entry name="pzb"    type="REAL(fp)"     value="0.0_fp" desc="Pressure at BOTTOM of current layer"/>
+    <entry name="tzb"    type="REAL(fp)"     value="0.0_fp" desc="Temperature at BOTTOM of current layer"/>
+    <entry name="altz"   type="REAL(fp)"     value="0.0_fp" desc="Altitude of TOP of current layer"/>
+    <entry name="pz"     type="REAL(fp)"     value="0.0_fp" desc="Pressure at TOP of current layer"/>
+    <entry name="tz"     type="REAL(fp)"     value="0.0_fp" desc="Temperature at TOP of current layer"/>
+    <entry name="clw"    type="REAL(fp)"     value="0.0_fp" desc="Cloud liquid water amount (mm) of current layer"/>
+  </record>
+</lblinput>

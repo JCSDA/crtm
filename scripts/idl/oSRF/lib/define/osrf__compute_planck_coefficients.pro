@@ -1,3 +1,47 @@
+;+
+; NAME:
+;       OSRF::Compute_Planck_Coefficients
+;
+; PURPOSE:
+;       The OSRF::Compute_Planck_Coefficients procedure method computes the
+;       Planck function coefficients for the OSRF channel.
+;
+; CALLING SEQUENCE:
+;       Obj->[OSRF::]Compute_Planck_Coefficients, Debug = Debug
+;
+; INPUT KEYWORD PARAMETERS:
+;       Debug:                 Set this keyword for debugging.
+;                              If NOT SET => Error handler is enabled. (DEFAULT)
+;                                 SET     => Error handler is disabled; Routine
+;                                            traceback output is enabled.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+; INCLUDE FILES:
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
+;
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
+;
+; EXAMPLE:
+;       Given a valid OSRF object, x, the Planck coefficients are computed like so,
+;
+;         IDL> x->Compute_Planck_Coefficients
+;
+;       The coefficients can be obtained via the Get_Property method:
+;
+;         IDL> x->Get_Property, Planck_Coeffs = pc
+;         IDL> HELP, pc
+;         PC      DOUBLE    = Array[2]
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 17-Jun-2009
+;                       paul.vandelst@noaa.gov
+;
+;-
+
 PRO OSRF::Compute_Planck_Coefficients, $
   Debug=Debug
 
@@ -24,8 +68,14 @@ PRO OSRF::Compute_Planck_Coefficients, $
   C2_SCALE_FACTOR = 100.0d0
   
   
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+
   ; Compute the central frequency if necessary
-  IF ( NOT self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
+  IF ( ~ self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
   
 
   ; Check frequency units

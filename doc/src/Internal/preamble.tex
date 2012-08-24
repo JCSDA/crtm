@@ -109,9 +109,9 @@
 \docnumber{}
 
 
-% Define a command for a DRAFT watermark
+% Define command for watermarking, with a DRAFT specific one
 \usepackage{eso-pic}
-\newcommand{\draftwatermark}
+\newcommand{\watermark}[1]
 {
   \AddToShipoutPicture{%
     \definecolor{lightgray}{gray}{.85}
@@ -119,11 +119,12 @@
     \put(2.5,3.5){%
       \rotatebox{45}{%
         \resizebox{4in}{1in}{%
-          \textsf{\textcolor{lightgray}{DRAFT}}
+          \textsf{\textcolor{lightgray}{#1}}
         }
       }
     }
   }
 }
+\newcommand{\draftwatermark}{\watermark{DRAFT}}
 
 

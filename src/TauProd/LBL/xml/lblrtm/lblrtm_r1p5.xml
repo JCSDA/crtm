@@ -1,0 +1,6 @@
+<lblinput>
+  <!-- LBLRTM 1.5 records -->
+  <record name="r1p5" type="lblrtm" format="(i5)">
+    <entry name="nspcrt"  type="INTEGER"  value="1"  desc="Radiance Jacobian. -1 = esfc,Tsfc; 0 = Tatm; 1->Nmol = absorber"/>
+  </record>
+</lblinput>

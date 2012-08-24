@@ -1,0 +1,7 @@
+<lblinput>
+  <!-- Common 3.8.1 record -->
+  <record name="r3p8p1" type="common" format="(f10.3,5x,35a1)">
+    <entry name="zorp"                                type="REAL(fp)"     value="0.0_fp" desc="Boundary altitude or pressure."/>
+    <entry name="jchar" dim="(MAX_N_XSECT_ABSORBERS)" type="CHARACTER(1)" value="'+'"    desc="Flag for units for Xsection input"/>
+  </record>
+</lblinput>

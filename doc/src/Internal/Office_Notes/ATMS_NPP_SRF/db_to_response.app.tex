@@ -1,0 +1,18 @@
+\section{Conversion of SRF decibels to relative response}
+%========================================================
+\label{app:db_to_response}
+This appendix describes the procedure used to convert the ATMS digitised SRFs from units of insertion loss in decibels, $L_{dB}$, to the ``regular'' relative response, $R$, used when convolving high resolution spectra with the SRFs.
+
+\begin{equation}
+  L_{dB} = 10\log_{10}\left(\displaystyle\frac{R}{R_0}\right)
+  \label{eqn:response_to_db}
+\end{equation}
+
+In this context, the ``reference'' response, $R_0$, is set to 1.0. Coupling this with a rearrangment of equation \ref{eqn:response_to_db} gives,
+
+\begin{equation}
+  R = 10^{0.1L_{dB}}
+  \label{eqn:db_to_response}
+\end{equation}
+
+

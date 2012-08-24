@@ -4,9 +4,9 @@
   @atmprofile_parameters
   
   ; Global attribute names. Case sensitive
-  TITLE_GATTNAME          = 'title'
-  HISTORY_GATTNAME        = 'history'
-  COMMENT_GATTNAME        = 'comment'
+  TITLE_GATTNAME          = 'Title'
+  HISTORY_GATTNAME        = 'History'
+  COMMENT_GATTNAME        = 'Comment'
   RELEASE_GATTNAME        = 'Release'
   VERSION_GATTNAME        = 'Version'
   PROFILE_SET_ID_GATTNAME = 'Profile_Set_Id'

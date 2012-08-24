@@ -43,7 +43,7 @@ PRO OSRF::Shift, $
  
  
   ; Check object
-  IF ( NOT self->Associated(Debug=Debug) ) THEN RETURN
+  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
  
 
   ; Perform the shift on all bands

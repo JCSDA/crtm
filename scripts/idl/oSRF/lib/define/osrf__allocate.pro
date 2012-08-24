@@ -64,7 +64,6 @@ PRO OSRF::Allocate, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
- 
   ; ...Check dimension input
   n_Bands = N_ELEMENTS(n_Points)
   IF ( n_Bands EQ 0 ) THEN $
@@ -75,11 +74,8 @@ PRO OSRF::Allocate, $
       MESSAGE, 'Input N_POINTS for band '+STRTRIM(i+1,2)+'must be at least > 0.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDFOR
-  
-  ; ...Check if ANY pointers are already associated
-  ; ...If they are, deallocate them but leave scalars.
-  IF ( self->Associated(/ANY_Test, Debug=Debug) ) THEN $
-    self->Destroy, /No_Clear, Debug=Debug
+  ; ...Destroy object if already allocated
+  IF ( self->Associated(Debug=Debug) ) THEN self->Destroy, Debug=Debug
  
  
   ; Perform the allocations 
@@ -94,20 +90,16 @@ PRO OSRF::Allocate, $
     (*self.Response)[i]  = PTR_NEW(DBLARR(n_Points[i]))
     (*self.Radiance)[i]  = PTR_NEW(DBLARR(n_Points[i]))
   ENDFOR
-  ; ...The plotting structures
-  self.xsysvar = PTR_NEW(REPLICATE(!X,n_Bands))
-  self.ysysvar = PTR_NEW(REPLICATE(!Y,n_Bands))
-  self.psysvar = PTR_NEW(REPLICATE(!P,n_Bands))
- 
+  ; ...The plotting array
+  self.Plot_Reference = PTR_NEW(OBJARR(n_Bands))
+
+
   ; Assign the dimensions
   self.n_Bands   = n_Bands
   *self.n_Points = n_Points
  
  
-  ; Increment and test allocation counter
-  self.n_Allocates = self.n_Allocates + 1
-  IF ( self.n_Allocates NE 1 ) THEN $
-    MESSAGE, 'Allocation counter /= 1, Value = ' + STRTRIM(self.n_Allocates,2), $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; Set the allocation indicator
+  self.Is_Allocated = TRUE
  
 END ; PRO OSRF::Allocate

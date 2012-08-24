@@ -1,14 +1,32 @@
 ;+
-; OSRF object definition procedure
+; NAME:
+;       OSRF__Define
+;
+; PURPOSE:
+;       This is the OSRF object definition procedure.
+;
+; CALLING SEQUENCE:
+;       This definition procedure is not called directly, but during the
+;       creation of an object, e.g.
+; 
+;       Obj = OBJ_NEW( 'OSRF' )
+;
+; INCLUDE FILES:
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 22-May-2009
+;                       paul.vandelst@noaa.gov
+;
+;-
 
 PRO OSRF__Define
-
-;-
 
   @osrf_parameters
   
   void = { OSRF, $
-           n_Allocates         : 0L,                             $  ; Allocation counter
+           Is_Allocated        : 0L,                             $  ; Allocation indicator
            Release             : 0L,                             $  ; Release: this identified structure and file format
            Version             : 0L,                             $  ; Version: this is just the data version
            n_Bands             : 0L,                             $  ; Number of frequency bands,  nB
@@ -33,9 +51,9 @@ PRO OSRF__Define
            ; ...Variables for radiometric calculations
            Radiance            : PTR_NEW(),                      $  ; Array of radiances (nP x nB)
            ; ...Variables for plotting
-           xsysvar             : PTR_NEW(),                      $  ; X-axis system variable
-           ysysvar             : PTR_NEW(),                      $  ; Y-axis system variable
-           psysvar             : PTR_NEW()                       }  ; Plotting system variable
+           ;    These are not copied if the Assign() method is used.
+           Window_Reference    : PTR_NEW(),                      $  ; Graphics window
+           Plot_Reference      : PTR_NEW()                       }  ; Passband plots
 
 ; There is no expectation that each band will have the same number of points.
 ; How the Frequency, Response, B, and R components are structured for, e.g.,

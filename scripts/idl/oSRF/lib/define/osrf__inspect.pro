@@ -47,35 +47,60 @@ PRO OSRF::Inspect, $
 
   IF ( KEYWORD_SET(Verbose) ) THEN BEGIN
 
+    ; Get the number of bands
+    self->Get_Property, n_Bands = n_bands
+    PRINT, FORMAT='(/,"Number of passbands: ",i1)', n_bands
+
+    
     ; Channel coefficients
+    self->Get_Property, Planck_Coeffs        = planck_coeffs, $
+                        Polychromatic_Coeffs = polychromatic_coeffs
     PRINT, FORMAT='(/,"Coefficient data:")'
-    PRINT, FORMAT='("PLANCK_COEFFS:        ",99(1x,e13.6))', self.Planck_Coeffs
-    PRINT, FORMAT='("POLYCHROMATIC_COEFFS: ",99(1x,e13.6))', self.Polychromatic_Coeffs
+    PRINT, FORMAT='("PLANCK_COEFFS:        ",99(1x,e13.6))', planck_coeffs
+    PRINT, FORMAT='("POLYCHROMATIC_COEFFS: ",99(1x,e13.6))', polychromatic_coeffs
+
     
     ; The band definition data
-    IF ( PTR_VALID(self.f1       ) AND $
-         PTR_VALID(self.f2       ) AND $
-         PTR_VALID(self.n_Points )     ) THEN BEGIN
-      PRINT, FORMAT='(/,"Band definition data:")'
-      HELP, *self.f1       , $
-            *self.f2       , $
-            *self.n_Points
-      PRINT, FORMAT='("F1:       ",99(1x,e13.6))', *self.f1
-      PRINT, FORMAT='("F2:       ",99(1x,e13.6))', *self.f2
-      PRINT, FORMAT='("N_POINTS: ",99(1x,i13))', *self.n_Points
-    ENDIF
+    PRINT, FORMAT='(/,"Band definition data:")'
+    FOR n = 0, n_bands-1 DO BEGIN
+      band = n+1
+      self->Get_Property, $
+        band, $
+        f1       = f1      , $
+        f2       = f2      , $
+        n_Points = n_Points
+      PRINT, band, FORMAT='(2x,"Band ",i1," definition data:")'
+      PRINT, FORMAT='("F1:       ",e13.6)', f1
+      PRINT, FORMAT='("F2:       ",e13.6)', f2
+      PRINT, FORMAT='("N_POINTS: ",i13)', n_Points
+    ENDFOR
+
 
     ; The band response data
-    IF ( PTR_VALID(self.Frequency) AND $
-         PTR_VALID(self.Response )     ) THEN BEGIN
-      PRINT, FORMAT='(/,"Band response data:")'
-      HELP, *self.Frequency, $
-            *self.Response
-      FOR i = 0, self.n_Bands-1 DO BEGIN
-        PRINT, i+1, FORMAT='(2x,"Band ",i1," frequency and response:")'
-        HELP, *(*self.Frequency)[i], *(*self.Response)[i]
-      ENDFOR
-    ENDIF
+    PRINT, FORMAT='(/,"Band response data:")'
+    FOR n = 0, n_bands-1 DO BEGIN
+      band = n+1
+      self->Get_Property, $
+        band, $
+        Frequency = frequency, $
+        Response  = response
+      PRINT, band, FORMAT='(2x,"Band ",i1," frequency and response:")'
+      HELP, band, frequency, response
+    ENDFOR
+
+
+    ; The band radiance data
+    PRINT, FORMAT='(/,"Band radiance data:")'
+    FOR n = 0, n_bands-1 DO BEGIN
+      band = n+1
+      self->Get_Property, $
+        band, $
+        Frequency = frequency, $
+        Radiance  = radiance
+      PRINT, band, FORMAT='(2x,"Band ",i1," frequency and radiance:")'
+      HELP, band, frequency, radiance
+    ENDFOR
+
 
     ; The flag status
     PRINT, FORMAT='(/,"Flag settings:")'

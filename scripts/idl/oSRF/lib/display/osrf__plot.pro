@@ -42,8 +42,9 @@
 ;-
 
 PRO OSRF::Plot, $
-  Debug = Debug, $ ; Input keyword
-  _EXTRA = Extra
+  Normalize = Normalize, $ ; Input keyword
+  Debug     = Debug    , $ ; Input keyword
+  _EXTRA    = Extra
 
   ; Set up
   @color_db
@@ -69,6 +70,9 @@ PRO OSRF::Plot, $
   !X.OMARGIN = [10,0]
   charsize = (n_Bands GT 2) ? 2.0 : 1.0
 
+  w = WINDOW(WINDOW_TITLE=Sensor_Id+', channel '+STRTRIM(Channel,2), $
+             DIMENSIONS=[1000,500])
+  p = OBJARR(n_Bands)
 
   ; Begin band response plots
   FOR i = 0L, n_Bands-1L DO BEGIN
@@ -76,6 +80,8 @@ PRO OSRF::Plot, $
       i+1, $
       Frequency = f, $
       Response  = r
+    ; Normalise data if required
+    IF ( KEYWORD_SET(Normalize) ) THEN r = r/MAX(r)
     ; Only use a y-axis title and tickvalues for first plot.
     IF ( i EQ 0 ) THEN BEGIN
       ytitle = 'Relative response'
@@ -91,15 +97,16 @@ PRO OSRF::Plot, $
     title = STRTRIM(Sensor_Id,2)+'   Ch.'+STRTRIM(Channel,2)
     IF ( n_Bands GT 1 ) THEN title = title +', band #'+STRTRIM(i+1,2)
     ; Plot the band response
-    PLOT, f, r, $
-          TITLE=title, $
-          XTITLE='Frequency', $
-          YTITLE=ytitle, $
-          XMARGIN=[2,2], $
-          XRANGE=xrange,/XSTYLE, $
-          CHARSIZE=charsize, $
-          _EXTRA = Extra
-    self->Save_PlotVars, i
+    p[i] = PLOT(f, r, $
+                TITLE=title, $
+                XTITLE='Frequency', $
+                YTITLE=ytitle, $
+                XRANGE=xrange,/XSTYLE, $
+                LAYOUT=[n_Bands,1,i+1], $
+                CURRENT=w, $
+                COLOR='red', $
+                _EXTRA = Extra)
+    self->Save_PlotVars, w, p
   ENDFOR
 
   

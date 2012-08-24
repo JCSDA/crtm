@@ -1,0 +1,12 @@
+<lblinput>
+  <!-- Common 3.2 record -->
+  <record name="r3p2" type="common" format="(5f10.3,i5,5x,f10.3)">
+    <entry name="h1"    type="REAL(fp)" value="0.0_fp" desc="Observer altitude"/>
+    <entry name="h2"    type="REAL(fp)" value="0.0_fp" desc="Endpoint altitude, or tangent height"/>
+    <entry name="angle" type="REAL(fp)" value="0.0_fp" desc="Zenith angle at h1"/>
+    <entry name="range" type="REAL(fp)" value="0.0_fp" desc="Length of straight path from h1 to h2"/>
+    <entry name="beta"  type="REAL(fp)" value="0.0_fp" desc="Earth centred angle from h1 to h2"/>
+    <entry name="len"   type="INTEGER"  value="0"      desc="Short or long path"/>
+    <entry name="hobs"  type="REAL(fp)" value="0.0_fp" desc="Height of oberver, for info only"/>
+  </record>
+</lblinput>

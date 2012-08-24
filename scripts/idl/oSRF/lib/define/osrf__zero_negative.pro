@@ -60,9 +60,15 @@ PRO OSRF::Zero_Negative, $
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Check keywords
-  recalculate = NOT KEYWORD_SET(No_Recalculate)
+  recalculate = ~ KEYWORD_SET(No_Recalculate)
 
 
+  ; Check if object has been allocated
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'OSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+ 
+  
   ; Get the number of bands
   self->Get_Property, n_Bands=n_bands, Debug=Debug
 

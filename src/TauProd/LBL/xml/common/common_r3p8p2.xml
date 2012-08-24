@@ -1,0 +1,6 @@
+<lblinput>
+  <!-- Common 3.8.2 record -->
+  <record name="r3p8p2" type="common" format="(8es10.3)">
+    <entry name="denx" dim="(MAX_N_XSECT_ABSORBERS)" type="REAL(fp)" value="0.0_fp" desc="Xsection concentration"/>
+  </record>
+</lblinput>

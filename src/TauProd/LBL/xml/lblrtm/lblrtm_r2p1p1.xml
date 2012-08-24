@@ -1,0 +1,16 @@
+<lblinput>
+  <!-- LBLRTM 2.1.1 records -->
+  <record name="r2p1p1" type="lblrtm" format="(f10.4,f10.4,f10.4,a3,i2,1x,f7.2,f8.3,f7.2,f7.2,f8.3,f7.2)">
+    <entry name="pave"   type="REAL(fp)"     value="0.0_fp" desc="Average pressure of layer"/>
+    <entry name="tave"   type="REAL(fp)"     value="0.0_fp" desc="Average temperature of layer"/>
+    <entry name="secntk" type="REAL(fp)"     value="0.0_fp" desc="Column amount scale factor for layer"/>
+    <entry name="ityl"   type="CHARACTER(3)" value="''"     desc="Overrides control of DV ratio between layers"/>
+    <entry name="ipath"  type="INTEGER"      value="0"      desc="Merge direction"/>
+    <entry name="altzb"  type="REAL(fp)"     value="0.0_fp" desc="Altitude of BOTTOM of current layer"/>
+    <entry name="pzb"    type="REAL(fp)"     value="0.0_fp" desc="Pressure at BOTTOM of current layer"/>
+    <entry name="tzb"    type="REAL(fp)"     value="0.0_fp" desc="Temperature at BOTTOM of current layer"/>
+    <entry name="altz"   type="REAL(fp)"     value="0.0_fp" desc="Altitude of TOP of current layer"/>
+    <entry name="pz"     type="REAL(fp)"     value="0.0_fp" desc="Pressure at TOP of current layer"/>
+    <entry name="tz"     type="REAL(fp)"     value="0.0_fp" desc="Temperature at TOP of current layer"/>
+  </record>
+</lblinput>

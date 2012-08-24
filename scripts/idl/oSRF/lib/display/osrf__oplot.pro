@@ -20,7 +20,7 @@
 ;                    ATTRIBUTES: INTENT(IN)
 ;
 ; KEYWORDS:
-;       Along with any keywords accepted by the IDL OPLOT procedure, the 
+;       Along with any keywords accepted by the IDL PLOT procedure, the 
 ;       following keywords can be used with this method:
 ;
 ;       Normalize:   Set this keyword to scale the OSRF data plots
@@ -98,11 +98,12 @@ PRO OSRF::OPlot, $
   ENDELSE
   
   
-  ; Save current plotting sysvars
-  psave = !P
-  xsave = !X
-  ysave = !Y
-  
+  ; Restore plotting variables
+  self->Restore_PlotVars, wref, pref
+  IF ( N_ELEMENTS(pref) NE n_Bands ) THEN $
+    MESSAGE, 'Plot reference object array size different from the number of oSRF passbands.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
   
   ; Loop over bands
   FOR i = 0L, n_Bands-1L DO BEGIN
@@ -112,15 +113,10 @@ PRO OSRF::OPlot, $
       Frequency = f, $
       Response  = r
     ; Plot it
-    self->Restore_PlotVars, i
-    OPLOT, f, r/Max_r, $
-      _EXTRA = Extra
+    !NULL = OPLOT(f, r/Max_r, $
+                  _EXTRA = Extra, $
+                  CURRENT=wref, $
+                  OVERPLOT=pref[i] )
   ENDFOR
   
-  
-  ; Restore plotting sysvars
-  !P = psave
-  !X = xsave
-  !Y = ysave
-
 END ; PRO OSRF::OPlot

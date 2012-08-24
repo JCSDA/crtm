@@ -49,8 +49,8 @@
 ;-
 
 PRO OSRF::Average, $
-  iSRF           , $ ; Input data
-  Debug       = Debug  
+  iSRF, $ ; Input data
+  Debug = Debug  
   
   ; Set up
   ; ...oSRF parameters
@@ -63,16 +63,6 @@ PRO OSRF::Average, $
   
   ; Tolerance above frequency maximum for the average grid
   Tolerance_Above_Max = DOUBLE(1E-5)
-  
-  ; ...Assign non-averaging dependent metadata
-  isrf[0]->Get_Property, $
-      Channel     = channel    , $
-      Sensor_Type = sensor_type, $
-      Debug=Debug      
-  self->Set_Property, $
-      Channel     = channel    , $
-      Sensor_Type = sensor_type, $
-      Debug=Debug
   
   ; The number of SRFs to average
   n_sets = N_ELEMENTS(iSRF)
@@ -96,7 +86,7 @@ PRO OSRF::Average, $
   ENDFOR
 
   ; Average the band data, looping in opposite order
-  band_data = LIST(LENGTH=n_bands)
+  band_data = OBJARR(n_bands)
   n_points  = LONARR(n_bands)
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
@@ -126,19 +116,32 @@ PRO OSRF::Average, $
     ENDFOR ; iSRF set loop
     
     ; Save averaged data for this band
-    band_data[i] = LIST(frequency, response/DOUBLE(n_sets))
-    
+    band_data[i] = HASH('frequency', frequency, $
+                        'response' , response/DOUBLE(n_sets))
+
   ENDFOR ; Band loop
+
 
   ; Store the averaged data back into the object
   ; ...Reallocate the object
   self->Allocate, n_points, Debug=Debug
+  ; ...Assign non-averaging dependent metadata
+  isrf[0]->Get_Property, $
+      Channel     = channel    , $
+      Sensor_Type = sensor_type, $
+      Debug=Debug      
+  self->Set_Property, $
+      Channel     = channel    , $
+      Sensor_Type = sensor_type, $
+      Debug=Debug
   ; ...Set the SRF data
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
-    f = (band_data[i])[0]
-    r = (band_data[i])[1]
-    self->Set_Property, band, Frequency=f, Response=r, Debug=Debug
+    self->Set_Property, $
+      band, $
+      Frequency=(band_data[i])['frequency'], $
+      Response =(band_data[i])['response'], $
+      Debug=Debug
   ENDFOR
 
   ; Recompute the various SRF parameters

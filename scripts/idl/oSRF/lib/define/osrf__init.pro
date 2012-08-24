@@ -82,7 +82,7 @@ FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
   ; Set default values
   self.Release              = OSRF_RELEASE
   self.Version              = OSRF_VERSION
-  self.Sensor_Id            = ' '
+  self.Sensor_Id            = ''
   self.WMO_Satellite_Id     = INVALID_WMO_SATELLITE_ID
   self.WMO_Sensor_Id        = INVALID_WMO_SENSOR_ID
   self.Sensor_Type          = INVALID_SENSOR

@@ -4,7 +4,7 @@
 ;
 ; PURPOSE:
 ;       The OSRF::Save_PlotVars procedure method saves IDL plotting
-;       system variables.
+;       variables.
 ;
 ;       NOTE: This method should be considered PRIVATE to the class
 ;             and should not be invoked outside OSRF methods.
@@ -12,26 +12,32 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Save_PlotVars, $
-;         Band_Index, $
+;         Window_Reference, $
+;         Plot_Reference, $
 ;         Debug = Debug ; Input keyword
 ;
 ; INPUT ARGUMENTS:
-;       Band_Index:  The OSRF band for which the plotting system variables
-;                    are to be saved.
-;                    UNITS:      N/A
-;                    TYPE:       OSRF object
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN)
+;       Window_Reference:  The graphics window object reference for the plot.
+;                          UNITS:      N/A
+;                          TYPE:       GRAPHICSWIN object
+;                          DIMENSION:  Scalar
+;                          ATTRIBUTES: INTENT(IN)
+;
+;       Plot_Reference:    The graphics plot object references for the passbands.
+;                          UNITS:      N/A
+;                          TYPE:       PLOT object
+;                          DIMENSION:  Rank-1 (n_Passbands)
+;                          ATTRIBUTES: INTENT(IN)
 ;
 ; KEYWORDS:
-;       Debug:       Set this keyword for debugging.
-;                    If NOT SET => Error handler is enabled. (DEFAULT)
-;                       SET     => Error handler is disabled; Routine
-;                                  traceback output is enabled.
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN), OPTIONAL
+;       Debug:             Set this keyword for debugging.
+;                          If NOT SET => Error handler is enabled. (DEFAULT)
+;                             SET     => Error handler is disabled; Routine
+;                                        traceback output is enabled.
+;                          UNITS:      N/A
+;                          TYPE:       INTEGER
+;                          DIMENSION:  Scalar
+;                          ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
@@ -46,8 +52,9 @@
 ;-
 
 PRO OSRF::Save_PlotVars, $
-  Band_Index, $
-  Debug=Debug ; Input keyword
+  Window_Reference, $  ; Input
+  Plot_Reference  , $  ; Input
+  Debug=Debug          ; Input keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -61,8 +68,7 @@ PRO OSRF::Save_PlotVars, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-  (*self.psysvar)[Band_Index] = !P
-  (*self.xsysvar)[Band_Index] = !X
-  (*self.ysysvar)[Band_Index] = !Y
+  self.window_reference = PTR_NEW(Window_Reference)
+  self.plot_reference   = PTR_NEW(Plot_Reference)
 
 END ; PRO OSRF::Save_PlotVars

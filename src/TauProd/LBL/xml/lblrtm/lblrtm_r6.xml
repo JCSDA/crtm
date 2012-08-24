@@ -1,0 +1,18 @@
+<lblinput>
+  <!-- LBLRTM 6 record -->
+  <record name="r6" type="lblrtm" format="(3f10.3,3(3x,i2),f10.4,15x,2i5)">
+    <entry name="hwhm"   type="REAL(fp)"  value="0.0_fp" desc="Half Width Half Maximum"/>
+    <entry name="v1"     type="REAL(fp)"  value="0.0_fp" desc="Beginning wavenumber value for performing SCAN"/>
+    <entry name="v2"     type="REAL(fp)"  value="0.0_fp" desc="Ending wavenumber value for performing SCAN"/>
+    <entry name="jemit"  type="INTEGER"   value="0"      desc="Convolution flag. 0==transmittance; 1==radiance"/>
+    <entry name="jfn"    type="INTEGER"   value="0"      desc="Selects scanning function"/>
+    <entry name="jvar"   type="INTEGER"   value="0"      desc="Flag for variable HWHM. 0==no variation; 1==HWHM(vi)=HWHM(v1)*(vi/v1)"/>
+    <entry name="sampl"  type="REAL(fp)"  value="0.0_fp" desc="Number of sample points per half width"/>
+    <entry name="nnfile" type="INTEGER"   value="0"      desc="Unit number for scanned sequential output"/>
+    <entry name="npts"   type="INTEGER"   value="0"      desc="No. of values printed for begin&end of each panel"/>
+  </record>
+  <!-- LBLRTM 6.1 record -->
+  <record name="r6p1" type="lblrtm" format="(f10.8)">
+    <entry name="dircos" type="REAL(fp)"  value="0.0_fp" desc="Direction cosine of radiance computation for external calculation of fluxes"/>
+  </record>
+</lblinput>

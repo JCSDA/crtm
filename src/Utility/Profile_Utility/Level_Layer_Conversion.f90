@@ -314,7 +314,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Effective_Layer_TP'
     REAL(fp),     PARAMETER :: SCALE_FACTOR = 0.1_fp
     ! Local variables
-    CHARACTER(256) :: Message
     INTEGER :: n_Levels, n_Layers
     INTEGER :: k
     REAL(fp) :: MWair
@@ -1018,7 +1017,6 @@ CONTAINS
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrate_Sublevels'
     ! Local variables
-    CHARACTER( 256 ) :: Message
     INTEGER :: n_Sublevels
     INTEGER :: n_Layers
     INTEGER :: n_Absorbers

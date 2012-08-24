@@ -6,7 +6,7 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Jul-2002
+!       Written by:     Paul van Delst, 08-Jul-2002
 !                       paul.vandelst@noaa.gov
 !
 
@@ -16,9 +16,9 @@ MODULE AtmProfile_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds           , ONLY: fp, Long, Double
-  USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
-  USE Compare_Float_Numbers, ONLY: Compare_Float
+  USE Type_Kinds           , ONLY: Long, Double
+  USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -28,55 +28,39 @@ MODULE AtmProfile_Define
   ! ------------
   ! Everything private by default
   PRIVATE
+  ! Datatypes
+  PUBLIC :: AtmProfile_type
+  ! Operators
+  PUBLIC :: OPERATOR(==)
+  ! Procedures
+  PUBLIC :: AtmProfile_Associated
+  PUBLIC :: AtmProfile_Destroy
+  PUBLIC :: AtmProfile_Create
+  PUBLIC :: AtmProfile_Inspect
+  PUBLIC :: AtmProfile_ValidRelease
+  PUBLIC :: AtmProfile_Info
+  PUBLIC :: AtmProfile_DefineVersion  
   ! Parameters
   PUBLIC :: ATMPROFILE_N_ABSORBERS
   PUBLIC :: ATMPROFILE_N_ABSORBER_UNITS
   PUBLIC :: ATMPROFILE_ABSORBER_UNITS_ID
   PUBLIC :: ATMPROFILE_ABSORBER_UNITS_NAME
   PUBLIC :: ATMPROFILE_ABSORBER_UNITS_CHAR
-  PUBLIC :: ATMPROFILE_FP_INVALID
-  ! Data structure definition
-  PUBLIC :: AtmProfile_type
-  ! Structure procedures
-  PUBLIC :: Associated_AtmProfile
-  PUBLIC :: Destroy_AtmProfile
-  PUBLIC :: Allocate_AtmProfile
-  PUBLIC :: Assign_AtmProfile
-  PUBLIC :: Equal_AtmProfile
-  PUBLIC :: Info_AtmProfile
-  PUBLIC :: Inspect_AtmProfile
-  PUBLIC :: CheckRelease_AtmProfile
 
 
   ! -------------------
   ! Procedure overloads
   ! -------------------
-  INTERFACE Destroy_AtmProfile
-    MODULE PROCEDURE Destroy_Scalar
-    MODULE PROCEDURE Destroy_Rank1
-  END INTERFACE Destroy_AtmProfile
-
-  INTERFACE Allocate_AtmProfile
-    MODULE PROCEDURE Allocate_Scalar
-    MODULE PROCEDURE Allocate_Rank1
-  END INTERFACE Allocate_AtmProfile
-
-  INTERFACE Assign_AtmProfile
-    MODULE PROCEDURE Assign_Scalar
-    MODULE PROCEDURE Assign_Rank1
-  END INTERFACE Assign_AtmProfile
-
-  INTERFACE Equal_AtmProfile
-    MODULE PROCEDURE Equal_Scalar
-    MODULE PROCEDURE Equal_Rank1
-  END INTERFACE Equal_AtmProfile
-
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE AtmProfile_Equal
+  END INTERFACE OPERATOR(==)
+  
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
@@ -84,9 +68,10 @@ MODULE AtmProfile_Define
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
   ! String lengths
-  INTEGER, PARAMETER :: ML = 256  ! Message
-  INTEGER, PARAMETER :: PL = 512  ! Profile description
-  INTEGER, PARAMETER :: AL = 32   ! Absorber unit name
+  INTEGER, PARAMETER :: ML = 256  ! Message Length
+  INTEGER, PARAMETER :: PL = 512  ! Profile description Length
+  INTEGER, PARAMETER :: NL = 32   ! absorber unit Name Length
+  INTEGER, PARAMETER :: LL = 1    ! absorber unit LBL Length
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: ATMPROFILE_RELEASE = 2
   INTEGER, PARAMETER :: ATMPROFILE_VERSION = 1
@@ -117,8 +102,6 @@ MODULE AtmProfile_Define
        'F', &  ! Dew point (Kelvin) [H2O only]
        'G', &  ! Dew point (Celsius) [H2O only]
        'H' /)  ! Relative humidity (%) [H2O only]
-  ! Component invalid values
-  REAL(Double),  PARAMETER :: ATMPROFILE_FP_INVALID = -999.0_Double
 
 
   ! --------------------------
@@ -130,8 +113,9 @@ MODULE AtmProfile_Define
     ! Release and version information
     INTEGER(Long) :: Release = ATMPROFILE_RELEASE
     INTEGER(Long) :: Version = ATMPROFILE_VERSION
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
     ! Dimensions
-    INTEGER(Long) :: n_Levels    = 0 ! K+1
     INTEGER(Long) :: n_Layers    = 0 ! K
     INTEGER(Long) :: n_Absorbers = 0 ! J
     ! Profile metadata 
@@ -146,20 +130,20 @@ MODULE AtmProfile_Define
     REAL(Double)  :: Longitude          = ZERO
     REAL(Double)  :: Surface_Altitude   = ZERO
     ! Absorber information
-    INTEGER(Long), POINTER :: Absorber_ID(:)         => NULL() ! Dimension J
-    INTEGER(Long), POINTER :: Absorber_Units_ID(:)   => NULL() ! Dimension J
-    CHARACTER(AL), POINTER :: Absorber_Units_Name(:) => NULL() ! Dimension J
-    CHARACTER( 1), POINTER :: Absorber_Units_LBL(:)  => NULL() ! Dimension J
+    INTEGER(Long), ALLOCATABLE :: Absorber_ID(:)         ! Dimension J
+    INTEGER(Long), ALLOCATABLE :: Absorber_Units_ID(:)   ! Dimension J
+    CHARACTER(NL), ALLOCATABLE :: Absorber_Units_Name(:) ! Dimension J
+    CHARACTER(LL), ALLOCATABLE :: Absorber_Units_LBL(:)  ! Dimension J
     ! Profile LEVEL data
-    REAL(Double), POINTER :: Level_Pressure(:)    => NULL() ! Dimension K+1
-    REAL(Double), POINTER :: Level_Temperature(:) => NULL() ! Dimension K+1 
-    REAL(Double), POINTER :: Level_Absorber(:,:)  => NULL() ! Dimension K+1 x J
-    REAL(Double), POINTER :: Level_Altitude(:)    => NULL() ! Dimension K+1
+    REAL(Double), ALLOCATABLE :: Level_Pressure(:)     ! Dimension 0:K
+    REAL(Double), ALLOCATABLE :: Level_Temperature(:)  ! Dimension 0:K 
+    REAL(Double), ALLOCATABLE :: Level_Absorber(:,:)   ! Dimension 0:K x J
+    REAL(Double), ALLOCATABLE :: Level_Altitude(:)     ! Dimension 0:K
     ! Profile LAYER data
-    REAL(Double), POINTER :: Layer_Pressure(:)    => NULL()  ! Dimension K 
-    REAL(Double), POINTER :: Layer_Temperature(:) => NULL()  ! Dimension K 
-    REAL(Double), POINTER :: Layer_Absorber(:,:)  => NULL()  ! Dimension K x J 
-    REAL(Double), POINTER :: Layer_Delta_Z(:)     => NULL()  ! Dimension K 
+    REAL(Double), ALLOCATABLE :: Layer_Pressure(:)     ! Dimension K 
+    REAL(Double), ALLOCATABLE :: Layer_Temperature(:)  ! Dimension K 
+    REAL(Double), ALLOCATABLE :: Layer_Absorber(:,:)   ! Dimension K x J 
+    REAL(Double), ALLOCATABLE :: Layer_Delta_Z(:)      ! Dimension K 
   END TYPE AtmProfile_type
   !:tdoc-:
 
@@ -167,1138 +151,344 @@ MODULE AtmProfile_Define
 CONTAINS
 
 
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                         ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Associated_AtmProfile
+!       AtmProfile_Associated
 !
 ! PURPOSE:
-!       Function to test the association status of the pointer members of an
-!       AtmProfile structure.
+!       Elemental function to test the status of the allocatable components
+!       of a AtmProfile object.
 !
 ! CALLING SEQUENCE:
-!       Association_Status = Associated_AtmProfile( AtmProfile       , &  ! Input
-!                                                   ANY_Test=ANY_Test  )  ! Optional input
+!       Status = AtmProfile_Associated( AtmProfile )
 !
-! INPUT ARGUMENTS:
-!       AtmProfile:          AtmProfile structure which is to have its pointer
-!                            member's association status tested.
-!                            UNITS:      N/A
-!                            TYPE:       AtmProfile_type
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:            Set this logical argument to test if ANY of the
-!                            AtmProfile structure pointer members are associated.
-!                            The default is to test if ALL the pointer members
-!                            are associated.
-!                            If ANY_Test = .FALSE., test if ALL the pointer members
-!                                             are associated.  (DEFAULT)
-!                               ANY_Test = .TRUE.,  test if ANY of the pointer members
-!                                             are associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
-!                            ATTRIBUTES: INTENT(IN), OPTIONAL
+! OBJECTS:
+!       AtmProfile:  AtmProfile object which is to have its member's
+!                    status tested.
+!                    UNITS:      N/A
+!                    TYPE:       TYPE(AtmProfile_type)
+!                    DIMENSION:  Scalar or any rank
+!                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            association status of the AtmProfile pointer
-!                            members.
-!                            .TRUE.  - if ALL the AtmProfile pointer members
-!                                      are associated, or if the ANY_Test argument
-!                                      is set and ANY of the AtmProfile pointer
-!                                      members are associated.
-!                            .FALSE. - some or all of the AtmProfile pointer
-!                                      members are NOT associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
+!       Status:      The return value is a logical value indicating the
+!                    status of the AtmProfile members.
+!                    .TRUE.  - if ANY of the AtmProfile allocatable or
+!                              pointer members are in use.
+!                    .FALSE. - if ALL of the AtmProfile allocatable or
+!                              pointer members are not in use.
+!                    UNITS:      N/A
+!                    TYPE:       LOGICAL
+!                    DIMENSION:  Same as input AtmProfile argument
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Associated_AtmProfile( &
-    AtmProfile, &  ! Input          
-    ANY_Test  ) &  ! Optional input 
-  RESULT(Association_Status)      
-    ! Arguments
+  ELEMENTAL FUNCTION AtmProfile_Associated( AtmProfile ) RESULT( Status )
     TYPE(AtmProfile_type), INTENT(IN) :: AtmProfile
-    LOGICAL, OPTIONAL    , INTENT(IN) :: ANY_Test
-    ! Function result
-    LOGICAL :: Association_Status
-    ! Local variables
-    LOGICAL :: ALL_Test
-    
-    ! Default is to test ALL the pointer members
-    ! for a true association status....
-    ALL_Test = .TRUE.
-    ! ...unless the ANY_Test argument is set.
-    IF ( PRESENT( ANY_Test ) ) THEN
-      IF ( ANY_Test ) ALL_Test = .FALSE.
-    END IF
-    
-    ! Test the structure associations    
-    Association_Status = .FALSE.
-    IF (ALL_Test) THEN
-      IF ( ASSOCIATED(AtmProfile%Absorber_ID          ) .AND. &
-           ASSOCIATED(AtmProfile%Absorber_Units_ID    ) .AND. &
-           ASSOCIATED(AtmProfile%Absorber_Units_Name  ) .AND. &
-           ASSOCIATED(AtmProfile%Absorber_Units_LBL   ) .AND. &
-           ASSOCIATED(AtmProfile%Level_Pressure       ) .AND. &
-           ASSOCIATED(AtmProfile%Layer_Pressure       ) .AND. &
-           ASSOCIATED(AtmProfile%Level_Temperature    ) .AND. &
-           ASSOCIATED(AtmProfile%Level_Absorber       ) .AND. &
-           ASSOCIATED(AtmProfile%Level_Altitude       ) .AND. &
-           ASSOCIATED(AtmProfile%Layer_Temperature    ) .AND. &
-           ASSOCIATED(AtmProfile%Layer_Absorber       ) .AND. &
-           ASSOCIATED(AtmProfile%Layer_Delta_Z        )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    ELSE
-      IF ( ASSOCIATED(AtmProfile%Absorber_ID          ) .OR. &
-           ASSOCIATED(AtmProfile%Absorber_Units_ID    ) .OR. &
-           ASSOCIATED(AtmProfile%Absorber_Units_Name  ) .OR. &
-           ASSOCIATED(AtmProfile%Absorber_Units_LBL   ) .OR. &
-           ASSOCIATED(AtmProfile%Level_Pressure       ) .OR. &
-           ASSOCIATED(AtmProfile%Layer_Pressure       ) .OR. &
-           ASSOCIATED(AtmProfile%Level_Temperature    ) .OR. &
-           ASSOCIATED(AtmProfile%Level_Absorber       ) .OR. &
-           ASSOCIATED(AtmProfile%Level_Altitude       ) .OR. &
-           ASSOCIATED(AtmProfile%Layer_Temperature    ) .OR. &
-           ASSOCIATED(AtmProfile%Layer_Absorber       ) .OR. &
-           ASSOCIATED(AtmProfile%Layer_Delta_Z        )      ) THEN
-        Association_Status = .TRUE.
-      END IF
-    END IF
-  END FUNCTION Associated_AtmProfile
+    LOGICAL :: Status
+    Status = AtmProfile%Is_Allocated
+  END FUNCTION AtmProfile_Associated
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Destroy_AtmProfile
+!       AtmProfile_Destroy
 ! 
 ! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of AtmProfile
-!       data structures.
+!       Elemental subroutine to re-initialize AtmProfile objects.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Destroy_AtmProfile( AtmProfile             , &  ! Output
-!                                          Message_Log=Message_Log  )  ! Error messaging
+!       CALL AtmProfile_Destroy( AtmProfile )
 !
-! OUTPUT ARGUMENTS:
-!       AtmProfile:   Re-initialised AtmProfile structure.
+! OBJECTS:
+!       AtmProfile:   Re-initialized AtmProfile object.
 !                     UNITS:      N/A
-!                     TYPE:       AtmProfile_type
-!                     DIMENSION:  Scalar or Rank-1
+!                     TYPE:       TYPE(AtmProfile_type)
+!                     DIMENSION:  Scalar OR any rank
 !                     ATTRIBUTES: INTENT(OUT)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmProfile argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Destroy_Scalar( &
-    AtmProfile , &  ! Output
-    No_Clear   , &  ! Optional input
-    Message_Log) &  ! Error messaging
-  RESULT(Error_Status)
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    LOGICAL,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AtmProfile(Scalar)'
-    ! Local variables
-    CHARACTER(ML)  :: Message
-    LOGICAL :: Clear
-    INTEGER :: Allocate_Status
-    
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    
-    ! Reset the dimension indicators
-    AtmProfile%n_Levels    = 0
+  ELEMENTAL SUBROUTINE AtmProfile_Destroy( AtmProfile )
+    TYPE(AtmProfile_type), INTENT(OUT) :: AtmProfile
+    AtmProfile%Is_Allocated = .FALSE.
     AtmProfile%n_Layers    = 0
     AtmProfile%n_Absorbers = 0
-    
-
-    ! Default is to clear scalar members...
-    Clear = .TRUE.
-    ! ....unless the No_Clear argument is set
-    IF ( PRESENT( No_Clear ) ) THEN
-      IF ( No_Clear ) Clear = .FALSE.
-    END IF
-    IF ( Clear ) CALL Clear_AtmProfile(AtmProfile)
-    
-    ! If ALL pointer members are NOT associated, do nothing
-    IF ( .NOT. Associated_AtmProfile(AtmProfile) ) RETURN
-
-    
-    ! Deallocate the pointer members
-    ! ------------------------------
-    DEALLOCATE( AtmProfile%Absorber_ID        , &
-                AtmProfile%Absorber_Units_ID  , &
-                AtmProfile%Absorber_Units_Name, &
-                AtmProfile%Absorber_Units_LBL , &
-                AtmProfile%Level_Pressure     , &
-                AtmProfile%Level_Temperature  , &
-                AtmProfile%Level_Absorber     , &
-                AtmProfile%Level_Altitude     , &
-                AtmProfile%Layer_Pressure     , &
-                AtmProfile%Layer_Temperature  , &
-                AtmProfile%Layer_Absorber     , &
-                AtmProfile%Layer_Delta_Z      , &
-                STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      WRITE( Message, '("Error deallocating AtmProfile. STAT = ",i0)') &
-                      Allocate_Status
-      CALL Destroy_CleanUp(); RETURN
-    END IF
-
-
-    ! Decrement and test allocation counter
-    ! -------------------------------------
-    AtmProfile%n_Allocates = AtmProfile%n_Allocates - 1
-    IF ( AtmProfile%n_Allocates /= 0 ) THEN
-      WRITE( Message, '("Allocation counter /= 0, Value = ",i0)') &
-                      AtmProfile%n_Allocates
-      CALL Destroy_CleanUp(); RETURN
-    END IF
-    
-  CONTAINS
+  END SUBROUTINE AtmProfile_Destroy
   
-    SUBROUTINE Destroy_CleanUp()
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Destroy_CleanUp
-
-  END FUNCTION Destroy_Scalar
-
-  FUNCTION Destroy_Rank1( &
-    AtmProfile , &  ! Output
-    No_Clear   , &  ! Optional input
-    Message_Log) &  ! Error messaging
-  RESULT(Error_Status)
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
-    LOGICAL,      OPTIONAL, INTENT(IN)     :: No_Clear
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Destroy_AtmProfile(Rank-1)'
-    ! Local variables
-    CHARACTER(ML)  :: Message
-    INTEGER :: Scalar_Status
-    INTEGER :: m
-    
-    ! Set up
-    Error_Status = SUCCESS
-    
-    ! Loop over scalar function
-    DO m = 1, SIZE(AtmProfile)
-      Scalar_Status = Destroy_Scalar( AtmProfile(m), &
-                                      No_Clear    = No_Clear, &
-                                      Message_Log = Message_Log  )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        WRITE( Message,'("Error destroying AtmProfile array element at index ",i0)') m
-        Error_Status = Scalar_Status
-        CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-        RETURN                                                                 
-      END IF                            
-    END DO
-    
-  END FUNCTION Destroy_Rank1
-
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Allocate_AtmProfile
+!       AtmProfile_Create
 ! 
 ! PURPOSE:
-!       Function to allocate the pointer members of an AtmProfile data structure.
+!       Elemental subroutine to create an instance of a AtmProfile object.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Allocate_AtmProfile( n_Layers               , &  ! Input
-!                                           n_Absorbers            , &  ! Input
-!                                           AtmProfile             , &  ! Output
-!                                           Message_Log=Message_Log  )  ! Error messaging
+!       CALL AtmProfile_Create( AtmProfile , &
+!                               n_Layers   , &
+!                               n_Absorbers  )
 !
-! INPUT ARGUMENTS:
+! OBJECTS:
+!       AtmProfile:   AtmProfile object.
+!                     UNITS:      N/A
+!                     TYPE:       TYPE(AtmProfile_type)
+!                     DIMENSION:  Scalar or any rank
+!                     ATTRIBUTES: INTENT(OUT)
+!
+! INPUTS:
 !       n_Layers:     Number of atmospheric profile layers.
-!                     Must be > 0.
+!                     The "K" dimension. Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!                     DIMENSION:  Conformable with AtmProfile argument
 !                     ATTRIBUTES: INTENT(IN)
 !
 !       n_Absorbers:  Number of gaseous absorber species.
-!                     Must be > 0.
+!                     The "J" dimension. Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
+!                     DIMENSION:  Conformable with AtmProfile argument
 !                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       AtmProfile:   AtmProfile structure with allocated pointer members
-!                     UNITS:      N/A
-!                     TYPE:       AtmProfile_type
-!                     DIMENSION:  Scalar or Rank-1
-!                     ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     Messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output Messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the ERROR_HANDLER module.
-!                     If == SUCCESS the structure pointer allocations were successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmProfile argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Allocate_Scalar( &
-    n_Layers   , &  ! Input
-    n_Absorbers, &  ! Input
-    AtmProfile , &  ! Output
-    Message_Log) &  ! Error messaging
-  RESULT( Error_Status )
+  ELEMENTAL SUBROUTINE AtmProfile_Create( &
+    AtmProfile , &
+    n_Layers   , &
+    n_Absorbers  )
     ! Arguments
-    INTEGER,                INTENT(IN)     :: n_Layers
-    INTEGER,                INTENT(IN)     :: n_Absorbers
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
+    TYPE(AtmProfile_type) , INTENT(OUT) :: AtmProfile
+    INTEGER,                INTENT(IN)  :: n_Layers   
+    INTEGER,                INTENT(IN)  :: n_Absorbers
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AtmProfile(Scalar)'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AtmProfile_Create'
     ! Local variables
-    CHARACTER(ML) :: Message
-    INTEGER :: Allocate_Status
-    INTEGER :: n_Levels
-    
-    ! Set up
-    Error_Status = SUCCESS
-    ! ...Check dimensions
-    IF ( n_Layers    < 1 .OR. &
-         n_Absorbers < 1      ) THEN
-      Message = 'Input AtmProfile dimensions must all be > 0.'
-      CALL Allocate_CleanUp(); RETURN
-    END IF
-    n_Levels = n_Layers + 1
-    ! ...Check if ANY pointers are already associated.
-    IF ( Associated_AtmProfile( AtmProfile, ANY_Test=.TRUE. ) ) THEN
-      Error_Status = Destroy_AtmProfile( AtmProfile, &               
-                                         No_Clear=.TRUE., &            
-                                         Message_Log=Message_Log )
-      IF ( Error_Status /= SUCCESS ) THEN
-        Message = 'Error deallocating AtmProfile prior to allocation.'
-        CALL Allocate_CleanUp(); RETURN
-      END IF
-    END IF
+    INTEGER :: alloc_stat
 
-    
-    ! Perform the pointer allocation
+    ! Check input
+    IF ( n_Layers    < 1 .OR. &
+         n_Absorbers < 1      ) RETURN
+
+
+    ! Perform the allocation.
     ALLOCATE( AtmProfile%Absorber_ID(1:n_Absorbers)              , &
               AtmProfile%Absorber_Units_ID(1:n_Absorbers)        , &
               AtmProfile%Absorber_Units_Name(1:n_Absorbers)      , &
               AtmProfile%Absorber_Units_LBL(1:n_Absorbers)       , &
-              AtmProfile%Level_Pressure(1:n_Levels)              , &
-              AtmProfile%Level_Temperature(1:n_Levels)           , &
-              AtmProfile%Level_Absorber(1:n_Levels,1:n_Absorbers), &
-              AtmProfile%Level_Altitude(1:n_Levels)              , &
+              AtmProfile%Level_Pressure(0:n_Layers)              , &
+              AtmProfile%Level_Temperature(0:n_Layers)           , &
+              AtmProfile%Level_Absorber(0:n_Layers,1:n_Absorbers), &
+              AtmProfile%Level_Altitude(0:n_Layers)              , &
               AtmProfile%Layer_Pressure(1:n_Layers)              , &
               AtmProfile%Layer_Temperature(1:n_Layers)           , &
               AtmProfile%Layer_Absorber(1:n_Layers,1:n_Absorbers), &
               AtmProfile%Layer_Delta_Z(1:n_Layers)               , &
-              STAT = Allocate_Status )
-    IF ( Allocate_Status /= 0 ) THEN
-      WRITE(Message,'("Error allocating AtmProfile data arrays. STAT = ",i0)') Allocate_Status
-      CALL Allocate_CleanUp(); RETURN
-    END IF
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) RETURN
 
 
-    ! Assign the dimensions
-    AtmProfile%n_Levels    = n_Levels
+    ! Initialise
+    ! ...Dimensions
     AtmProfile%n_Layers    = n_Layers
     AtmProfile%n_Absorbers = n_Absorbers
-
-
-    ! Initialise the arrays
+    ! ...Arrays
     AtmProfile%Absorber_ID           = 0
     AtmProfile%Absorber_Units_ID     = 0
     AtmProfile%Absorber_Units_Name   = ATMPROFILE_ABSORBER_UNITS_NAME(0)
     AtmProfile%Absorber_Units_LBL    = ATMPROFILE_ABSORBER_UNITS_CHAR(0)
     
-    AtmProfile%Level_Pressure    = ATMPROFILE_FP_INVALID
-    AtmProfile%Level_Temperature = ATMPROFILE_FP_INVALID
-    AtmProfile%Level_Absorber    = ATMPROFILE_FP_INVALID
-    AtmProfile%Level_Altitude    = ATMPROFILE_FP_INVALID
-    AtmProfile%Layer_Pressure    = ATMPROFILE_FP_INVALID
-    AtmProfile%Layer_Temperature = ATMPROFILE_FP_INVALID
-    AtmProfile%Layer_Absorber    = ATMPROFILE_FP_INVALID
-    AtmProfile%Layer_Delta_Z     = ATMPROFILE_FP_INVALID
+    AtmProfile%Level_Pressure    = ZERO
+    AtmProfile%Level_Temperature = ZERO
+    AtmProfile%Level_Absorber    = ZERO
+    AtmProfile%Level_Altitude    = ZERO
+    AtmProfile%Layer_Pressure    = ZERO
+    AtmProfile%Layer_Temperature = ZERO
+    AtmProfile%Layer_Absorber    = ZERO
+    AtmProfile%Layer_Delta_Z     = ZERO
 
 
-    ! Increment and test the allocation counter
-    AtmProfile%n_Allocates = AtmProfile%n_Allocates + 1
-    IF ( AtmProfile%n_Allocates /= 1 ) THEN
-      WRITE( Message, '("Allocation counter /= 1, Value = ",i0)') AtmProfile%n_Allocates
-      CALL Allocate_CleanUp(); RETURN
-    END IF
+    ! Set allocation indicator
+    AtmProfile%Is_Allocated = .TRUE.
 
-  CONTAINS
-  
-    SUBROUTINE Allocate_CleanUp()
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(Message),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Allocate_CleanUp
-
-  END FUNCTION Allocate_Scalar
-
-
-  FUNCTION Allocate_Rank1( &
-    n_Layers   , &  ! Input
-    n_Absorbers, &  ! Input
-    AtmProfile , &  ! Output
-    Message_Log) &  ! Error messaging
-  RESULT( Error_Status )
-    ! Arguments
-    INTEGER,                INTENT(IN)     :: n_Layers
-    INTEGER,                INTENT(IN)     :: n_Absorbers
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile(:)
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Allocate_AtmProfile(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: m
-    
-    ! Set up
-    Error_Status = SUCCESS
-    
-    
-    ! Loop over scalar function
-    DO m = 1, SIZE(AtmProfile)
-      Error_Status = Allocate_Scalar( n_Layers, n_Absorbers, &
-                                      AtmProfile(m), &
-                                      Message_Log = Message_Log  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( msg,'("AtmProfile array element allocate failed at index ",i0)') m
-        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-        RETURN                                                                 
-      END IF                            
-    END DO
-    
-  END FUNCTION Allocate_Rank1
+  END SUBROUTINE AtmProfile_Create
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Assign_AtmProfile
+!       AtmProfile_Inspect
 !
 ! PURPOSE:
-!       Function to copy valid AtmProfile structures.
+!       Subroutine to print the contents of a AtmProfile object to stdout.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Assign_AtmProfile( AtmProfile_in          , &  ! Input
-!                                         AtmProfile_out         , &  ! Output
-!                                         Message_Log=Message_Log  )  ! Error messaging
+!       CALL AtmProfile_Inspect( AtmProfile )
 !
-! INPUT ARGUMENTS:
-!       AtmProfile_in:  AtmProfile structure which is to be copied.
-!                       UNITS:      N/A
-!                       TYPE:       AtmProfile_type
-!                       DIMENSION:  Scalar or Rank-1
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       AtmProfile_out: Copy of the input structure, AtmProfile_in.
-!                       UNITS:      N/A
-!                       TYPE:       AtmProfile_type
-!                       DIMENSION:  Same as AtmProfile_in argument.
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:    Character string specifying a filename in which any
-!                       Messages will be logged. If not specified, or if an
-!                       error occurs opening the log file, the default action
-!                       is to output Messages to standard output.
-!                       UNITS:      N/A
-!                       TYPE:       CHARACTER(*)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:   The return value is an integer defining the error status.
-!                       The error codes are defined in the ERROR_HANDLER module.
-!                       If == SUCCESS the structure assignment was successful
-!                          == FAILURE an error occurred
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmProfile argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+! INPUTS:
+!       AtmProfile:    AtmProfile object to display.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(AtmProfile_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Assign_Scalar( &
-    AtmProfile_in , &  ! Input
-    AtmProfile_out, &  ! Output
-    Message_Log   ) &  ! Error messaging
-  RESULT( Error_Status )
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)     :: AtmProfile_in
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile_out
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_AtmProfile(Scalar)'
-
-    ! Set up
-    Error_Status = SUCCESS
-    ! ...ALL *input* pointers must be associated
-    IF ( .NOT. Associated_AtmProfile( AtmProfile_in ) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Some or all INPUT AtmProfile_in pointer members are NOT associated.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-    
-    
-    ! Allocate data arrays
-    Error_Status = Allocate_AtmProfile( AtmProfile_in%n_Layers, &
-                                        AtmProfile_in%n_Absorbers, &
-                                        AtmProfile_out, &
-                                        Message_Log=Message_Log )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Error allocating output structure.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-
-    ! Copy scalar data
-    AtmProfile_out%Release           = AtmProfile_in%Release
-    AtmProfile_out%Version           = AtmProfile_in%Version
-    
-    AtmProfile_out%Profile           = AtmProfile_in%Profile
-    AtmProfile_out%Description       = AtmProfile_in%Description
-    AtmProfile_out%Climatology_Model = AtmProfile_in%Climatology_Model
-    AtmProfile_out%Year              = AtmProfile_in%Year
-    AtmProfile_out%Month             = AtmProfile_in%Month
-    AtmProfile_out%Day               = AtmProfile_in%Day
-    AtmProfile_out%Hour              = AtmProfile_in%Hour
-    AtmProfile_out%Latitude          = AtmProfile_in%Latitude
-    AtmProfile_out%Longitude         = AtmProfile_in%Longitude
-    AtmProfile_out%Surface_Altitude  = AtmProfile_in%Surface_Altitude
-
-
-    ! Copy array data
-    AtmProfile_out%Absorber_ID         = AtmProfile_in%Absorber_ID
-    AtmProfile_out%Absorber_Units_ID   = AtmProfile_in%Absorber_Units_ID
-    AtmProfile_out%Absorber_Units_Name = AtmProfile_in%Absorber_Units_Name
-    AtmProfile_out%Absorber_Units_LBL  = AtmProfile_in%Absorber_Units_LBL
-    ! ...Level data
-    AtmProfile_out%Level_Pressure    = AtmProfile_in%Level_Pressure
-    AtmProfile_out%Level_Temperature = AtmProfile_in%Level_Temperature
-    AtmProfile_out%Level_Absorber    = AtmProfile_in%Level_Absorber
-    AtmProfile_out%Level_Altitude    = AtmProfile_in%Level_Altitude
-    ! ...Layer data
-    AtmProfile_out%Layer_Pressure    = AtmProfile_in%Layer_Pressure
-    AtmProfile_out%Layer_Temperature = AtmProfile_in%Layer_Temperature
-    AtmProfile_out%Layer_Absorber    = AtmProfile_in%Layer_Absorber
-    AtmProfile_out%Layer_Delta_Z     = AtmProfile_in%Layer_Delta_Z
-
-  END FUNCTION Assign_Scalar
-
-  FUNCTION Assign_Rank1( &
-    AtmProfile_in , &  ! Input
-    AtmProfile_out, &  ! Output
-    Message_Log   ) &  ! Error messaging
-  RESULT( Error_Status )
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)     :: AtmProfile_in(:)
-    TYPE(AtmProfile_type) , INTENT(IN OUT) :: AtmProfile_out(:)
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Assign_AtmProfile(Rank-1)'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: m, n_Profiles
-    
-    ! Set up
-    Error_Status = SUCCESS
-    ! ...Check dimensions
-    n_Profiles = SIZE(AtmProfile_in)
-    IF ( SIZE(AtmProfile_out) /= n_Profiles ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'AtmProfile argument dimnensions are different', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN                                                                 
-    END IF
-    
-    
-    ! Loop over scalar function
-    DO m = 1, n_Profiles
-      Error_Status = Assign_Scalar( AtmProfile_in(m), &
-                                    AtmProfile_out(m), &
-                                    Message_Log = Message_Log  )
-      IF ( Error_Status /= SUCCESS ) THEN
-        WRITE( msg,'("AtmProfile array element assign failed at index ",i0)') m
-        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-        RETURN                                                                 
-      END IF                            
+  SUBROUTINE AtmProfile_Inspect( AtmProfile )
+    TYPE(AtmProfile_type), INTENT(IN) :: AtmProfile
+    INTEGER :: j
+    WRITE(*,'(1x,"AtmProfile OBJECT")')
+    ! Dimension info
+    WRITE(*,'(3x,"n_Layers   :",1x,i0)') AtmProfile%n_Layers   
+    WRITE(*,'(3x,"n_Absorbers:",1x,i0)') AtmProfile%n_Absorbers
+    IF ( .NOT. AtmProfile_Associated(AtmProfile) ) RETURN
+    ! Display metadata
+    WRITE(*,'(5x,"Description     : ",a)') TRIM(AtmProfile%Description)
+    WRITE(*,'(5x,"Climatology     : ",i0)') AtmProfile%Climatology_Model
+    WRITE(*,'(5x,"Date (YYYYMMDD) : ",i4,i2.2,i2.2)') AtmProfile%Year, &
+                                                      AtmProfile%Month, &
+                                                      AtmProfile%Day
+    WRITE(*,'(5x,"Latitude        : ",es13.6)') AtmProfile%Latitude
+    WRITE(*,'(5x,"Longitude       : ",es13.6)') AtmProfile%Longitude
+    WRITE(*,'(5x,"Surface altitude: ",es13.6)') AtmProfile%Surface_Altitude
+    ! Level data
+    WRITE(*,'(3x,"Level_Pressure:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Level_Pressure
+    WRITE(*,'(3x,"Level_Temperature:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Level_Temperature
+    WRITE(*,'(3x,"Level_Absorber:")')
+    DO j = 1, AtmProfile%n_Absorbers 
+      WRITE(*,'(5x,"Absorber Id: ",i0)') AtmProfile%Absorber_Id(j)
+      WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Level_Absorber(:,j)
     END DO
-    
-  END FUNCTION Assign_Rank1
-  
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Equal_AtmProfile
-!
-! PURPOSE:
-!       Function to test if two AtmProfile structures are equal.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Equal_AtmProfile( AtmProfile_LHS         , &  ! Input
-!                                        AtmProfile_RHS         , &  ! Input
-!                                        ULP_Scale  =ULP_Scale  , &  ! Optional input
-!                                        Check_All  =Check_All  , &  ! Optional input
-!                                        Message_Log=Message_Log  )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       AtmProfile_LHS:  AtmProfile structure to be compared; equivalent to the
-!                        left-hand side of a lexical comparison, e.g.
-!                          IF ( AtmProfile_LHS == AtmProfile_RHS ).
-!                        UNITS:      N/A
-!                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Scalar or Rank-1
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       AtmProfile_RHS:  AtmProfile structure to be compared to; equivalent to
-!                        right-hand side of a lexical comparison, e.g.
-!                          IF ( AtmProfile_LHS == AtmProfile_RHS ).
-!                        UNITS:      N/A
-!                        TYPE:       AtmProfile_type
-!                        DIMENSION:  Same as AtmProfile_LHS argument
-!                        ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ULP_Scale:       Unit of data precision used to scale the floating
-!                        point comparison. ULP stands for "Unit in the Last Place,"
-!                        the smallest possible increment or decrement that can be
-!                        made using a machine's floating point arithmetic.
-!                        Value must be positive - if a negative value is supplied,
-!                        the absolute value is used. If not specified, the default
-!                        value is 1.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Check_All:       Set this logical argument to check ALL the floating point
-!                        channel data of the AtmProfile structures. The default
-!                        action is return with a FAILURE status as soon as
-!                        any difference is found. This optional argument can
-!                        be used to get a listing of ALL the differences
-!                        between data in AtmProfile structures.
-!                        If == .FALSE., Return with FAILURE status as soon as
-!                                 ANY difference is found  (DEFAULT)
-!                           == .TRUE.,  Set FAILURE status if ANY difference is
-!                                 found, but continue to check ALL data.
-!                        UNITS:      N/A
-!                        TYPE:       LOGICAL
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-!       Message_Log:     Character string specifying a filename in which any
-!                        messages will be logged. If not specified, or if an
-!                        error occurs opening the log file, the default action
-!                        is to output messages to standard output.
-!                        UNITS:      None
-!                        TYPE:       CHARACTER(*)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the ERROR_HANDLER module.
-!                        If == SUCCESS the structures were equal
-!                           == FAILURE - an error occurred, or
-!                                      - the structures were different.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  FUNCTION Equal_Scalar( &
-    AtmProfile_LHS, &  ! Input
-    AtmProfile_RHS, &  ! Input
-    ULP_Scale     , &  ! Optional input
-    Check_All     , &  ! Optional input
-    Message_Log   ) &  ! Error messaging
-  RESULT( Error_Status )
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS
-    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_AtmProfile(scalar)'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: ULP
-    LOGICAL :: Check_Once
-    INTEGER :: j, k
-
-    ! Set up
-    Error_Status = SUCCESS
-    ! ...Set precision
-    ULP = 1
-    IF ( PRESENT( ULP_Scale ) ) THEN
-      IF ( ULP_Scale > 0 ) ULP = ULP_Scale
-    END IF
-    ! ...Set return action
-    Check_Once = .TRUE.
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All ) Check_Once = .FALSE.
-    END IF
-    ! ...Check the structure association status
-    IF ( .NOT. Associated_AtmProfile( AtmProfile_LHS ) ) THEN
-      msg = 'Some or all INPUT AtmProfile_LHS pointer members are NOT associated.'
-      CALL Equal_CleanUp(); RETURN
-    END IF
-    IF ( .NOT. Associated_AtmProfile( AtmProfile_RHS ) ) THEN
-      msg = 'Some or all INPUT AtmProfile_RHS pointer members are NOT associated.'
-      CALL Equal_CleanUp(); RETURN
-    END IF
-    ! ...Check dimensions
-    IF ( AtmProfile_LHS%n_Levels    /= AtmProfile_RHS%n_Levels    .OR. &
-         AtmProfile_LHS%n_Layers    /= AtmProfile_RHS%n_Layers    .OR. &
-         AtmProfile_LHS%n_Absorbers /= AtmProfile_RHS%n_Absorbers      ) THEN
-      msg = 'Structure dimensions are different'
-      CALL Equal_CleanUp(); RETURN
-    END IF
-
-
-    ! Check the array components
-    ! ...The absorber Ids
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_ID(j) /= AtmProfile_RHS%Absorber_ID(j) ) THEN
-        WRITE( msg,'("AtmProfile component Absorber_Id values ",&
-                    &"are different at index (",1(1x,i0),")")') j
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
+    WRITE(*,'(3x,"Level_Altitude:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Level_Altitude
+    ! Layer data
+    WRITE(*,'(3x,"Layer_Pressure:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Layer_Pressure
+    WRITE(*,'(3x,"Layer_Temperature:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Layer_Temperature
+    WRITE(*,'(3x,"Layer_Absorber:")') 
+    DO j = 1, AtmProfile%n_Absorbers 
+      WRITE(*,'(5x,"Absorber Id: ",i0)') AtmProfile%Absorber_Id(j)
+      WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Layer_Absorber(:,j)
     END DO
-    ! ...The absorber unit Ids
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_ID(j) /= AtmProfile_RHS%Absorber_Units_ID(j) ) THEN
-        WRITE( msg,'("AtmProfile component Absorber_Units_ID values ",&
-                    &"are different at index (",1(1x,i0),")")') j
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...The absorber unit names
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_Name(j) /= AtmProfile_RHS%Absorber_Units_Name(j) ) THEN
-        WRITE( msg,'("AtmProfile component Absorber_Units_Name values ",&
-                    &"are different at index (",1(1x,i0),")")') j
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...The LBL absorber unit identifiers
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      IF ( AtmProfile_LHS%Absorber_Units_LBL(j) /= AtmProfile_RHS%Absorber_Units_LBL(j) ) THEN
-        WRITE( msg,'("AtmProfile component Absorber_Units_LBL values ",&
-                    &"are different at index (",1(1x,i0),")")') j
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...Profile descriptor string    
-    IF ( AtmProfile_LHS%Description /= AtmProfile_RHS%Description ) THEN                       
-      msg = 'AtmProfile component Description values are different'
-      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-    END IF                                                                                         
-    ! ...Profile climatology model ID    
-    IF ( AtmProfile_LHS%Climatology_Model /= AtmProfile_RHS%Climatology_Model ) THEN           
-      msg = 'AtmProfile component Climatology_Model values are different'
-      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-    END IF                                                                                     
-    ! ...Profile Time information
-    IF ( AtmProfile_LHS%Year  /= AtmProfile_RHS%Year  .OR. &                                   
-         AtmProfile_LHS%Month /= AtmProfile_RHS%Month .OR. &                                   
-         AtmProfile_LHS%Day   /= AtmProfile_RHS%Day   .OR. &                                   
-         AtmProfile_LHS%Hour  /= AtmProfile_RHS%Hour       ) THEN                              
-      msg = 'AtmProfile component time information is different'
-      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-    END IF
-    ! ...Profile location   
-    IF ( .NOT. Compare_Float( AtmProfile_LHS%Latitude, &                                       
-                              AtmProfile_RHS%Latitude, &                                       
-                              ULP=ULP ) .OR. &                                                 
-         .NOT. Compare_Float( AtmProfile_LHS%Longitude, &                                      
-                              AtmProfile_RHS%Longitude, &                                      
-                              ULP=ULP ) .OR. &                                                 
-         .NOT. Compare_Float( AtmProfile_LHS%Surface_Altitude, &                               
-                              AtmProfile_RHS%Surface_Altitude, &                               
-                              ULP=ULP ) ) THEN                                                 
-      msg = 'AtmProfile component Location values are different'
-      CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-    END IF                                                                                     
-    ! ...Level pressures
-    DO k = 1, AtmProfile_LHS%n_Levels
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Pressure(k), &
-                                AtmProfile_RHS%Level_Pressure(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Level_Pressure values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...Level temperatures    
-    DO k = 1, AtmProfile_LHS%n_Levels
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Temperature(k), &
-                                AtmProfile_RHS%Level_Temperature(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Level_Temperature values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...Level absorbers
-    DO j = 1, AtmProfile_LHS%n_Absorbers
-      DO k = 1, AtmProfile_LHS%n_Levels
-        IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Absorber(k,j), &
-                                  AtmProfile_RHS%Level_Absorber(k,j), &
-                                  ULP=ULP ) ) THEN
-          WRITE( msg,'("AtmProfile array component Level_Absorber values ",&
-                      &"are different at indices (",2(1x,i0),")")') k, j
-          CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-        END IF
-      END DO
-    END DO    
-    ! ...Level altitudes    
-    DO k = 1, AtmProfile_LHS%n_Levels
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Level_Altitude(k), &
-                                AtmProfile_RHS%Level_Altitude(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Level_Altitude values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...Layer pressures
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Pressure(k), &
-                                AtmProfile_RHS%Layer_Pressure(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Layer_Pressure values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO                                                                                       
-    ! ...Layer temperatures    
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Temperature(k), &
-                                AtmProfile_RHS%Layer_Temperature(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Layer_Temperature values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO
-    ! ...Layer absorbers    
-    DO j = 1, AtmProfile_LHS%n_Absorbers                                                           
-      DO k = 1, AtmProfile_LHS%n_Layers                                                            
-        IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Absorber(k,j), &
-                                  AtmProfile_RHS%Layer_Absorber(k,j), &
-                                  ULP=ULP ) ) THEN
-          WRITE( msg,'("AtmProfile array component Layer_Absorber values ",&
-                      &"are different at indices (",2(1x,i0),")")') k, j
-          CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-        END IF
-      END DO                                                                                       
-    END DO
-    ! ...Layer thickness    
-    DO k = 1, AtmProfile_LHS%n_Layers                                                            
-      IF ( .NOT. Compare_Float( AtmProfile_LHS%Layer_Delta_Z(k), &
-                                AtmProfile_RHS%Layer_Delta_Z(k), &
-                                ULP=ULP ) ) THEN
-        WRITE( msg,'("AtmProfile array component Layer_Delta_Z values ",&
-                    &"are different at indices (",(1x,i0),")")') k
-        CALL Equal_CleanUp(); IF ( Check_Once ) RETURN
-      END IF
-    END DO                                                                                       
-    
-  CONTAINS
-  
-    SUBROUTINE Equal_CleanUp()
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-    END SUBROUTINE Equal_CleanUp
-
-  END FUNCTION Equal_Scalar
-  
-  FUNCTION Equal_Rank1( &
-    AtmProfile_LHS, &  ! Input
-    AtmProfile_RHS, &  ! Input
-    ULP_Scale     , &  ! Optional input
-    Check_All     , &  ! Optional input
-    Message_Log   ) &  ! Error messaging
-  RESULT( Error_Status )
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_LHS(:)
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile_RHS(:)
-    INTEGER     , OPTIONAL, INTENT(IN)  :: ULP_Scale
-    LOGICAL     , OPTIONAL, INTENT(IN)  :: Check_All
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
-    ! Function result
-    INTEGER :: Error_Status
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Equal_AtmProfile(scalar)'
-    ! Local variables
-    CHARACTER(ML) :: msg
-    INTEGER :: Scalar_Status
-    LOGICAL :: Return_on_Fail
-    INTEGER :: m, n_Profiles
-    
-    ! Set up
-    Error_Status = SUCCESS
-    ! ...Set return action
-    Return_on_Fail = .TRUE.
-    IF ( PRESENT( Check_All ) ) THEN
-      IF ( Check_All ) Return_on_Fail = .FALSE.
-    END IF
-    ! ...Check dimensions
-    n_Profiles = SIZE(AtmProfile_LHS)
-    IF ( SIZE(AtmProfile_RHS) /= n_Profiles ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'AtmProfile argument dimnensions are different', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN                                                                 
-    END IF
-    
-    
-    ! Loop over scalar function
-    DO m = 1, n_Profiles
-      Scalar_Status = Equal_Scalar( AtmProfile_LHS(m), &
-                                    AtmProfile_RHS(m), &
-                                    ULP_Scale   = ULP_Scale  , &
-                                    Check_All   = Check_All  , &
-                                    Message_Log = Message_Log  )
-      IF ( Scalar_Status /= SUCCESS ) THEN
-        WRITE( msg,'("AtmProfile array elements are different at index ",i0)') m
-        Error_Status = Scalar_Status
-        CALL Display_Message( ROUTINE_NAME,TRIM(msg),Error_Status,Message_Log=Message_Log )
-        IF ( Return_on_Fail ) RETURN                                                                 
-      END IF                            
-    END DO
-    
-  END FUNCTION Equal_Rank1
+    WRITE(*,'(3x,"Layer_Delta_Z:")') 
+    WRITE(*,'(5(1x,es13.6,:))') AtmProfile%Layer_Delta_Z
+  END SUBROUTINE AtmProfile_Inspect
 
 
 !----------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       CheckRelease_AtmProfile
+!       AtmProfile_ValidRelease
 !
 ! PURPOSE:
 !       Function to check the AtmProfile Release value.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CheckRelease_AtmProfile( AtmProfile             , &  ! Input
-!                                               Message_Log=Message_Log  )  ! Error messaging
+!       IsValid = AtmProfile_ValidRelease( AtmProfile )
 !
-! INPUT ARGUMENTS:
-!       AtmProfile:    AtmProfile structure for which the Release member
+! INPUTS:
+!       AtmProfile:    AtmProfile object for which the Release component
 !                      is to be checked.
 !                      UNITS:      N/A
-!                      TYPE:       AtmProfile_type
+!                      TYPE:       TYPE(AtmProfile_type)
 !                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!                      ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure Release value is valid.
-!                         == FAILURE the structure Release value is NOT valid
-!                                    and either a data file file or software
-!                                    update is required.
+!       IsValid:       Logical value defining the release validity.
 !                      UNITS:      N/A
-!                      TYPE:       INTEGER
+!                      TYPE:       LOGICAL
 !                      DIMENSION:  Scalar
 !
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
-  FUNCTION CheckRelease_AtmProfile( AtmProfile , &  ! Input
-                                    Message_Log) &  ! Error messaging
-                                  RESULT( Error_Status )
+  FUNCTION AtmProfile_ValidRelease( AtmProfile ) RESULT( IsValid )
     ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    TYPE(AtmProfile_type), INTENT(IN) :: AtmProfile
     ! Function result
-    INTEGER :: Error_Status
+    LOGICAL :: IsValid
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CheckRelease_AtmProfile'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AtmProfile_ValidRelease'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
 
     ! Set up
-    Error_Status = SUCCESS
+    IsValid = .TRUE.
+
 
     ! Check release is not too old
     IF ( AtmProfile%Release < ATMPROFILE_RELEASE ) THEN
-      WRITE( Message,'("An AtmProfile data update is needed. ",&
-                      &"AtmProfile release is ",i0,&
-                      &". Valid release is ",i0,"." )' ) &
-                      AtmProfile%Release, ATMPROFILE_RELEASE
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      IsValid = .FALSE.
+      WRITE( msg,'("A AtmProfile data update is needed. ", &
+                  &"AtmProfile release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  AtmProfile%Release, ATMPROFILE_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
+
 
     ! Check release is not too new
     IF ( AtmProfile%Release > ATMPROFILE_RELEASE ) THEN
-      WRITE( Message,'("An AtmProfile software update is needed. ",&
-                      &"AtmProfile release is ",i0,&
-                      &". Valid release is ",i0,"." )' ) &
-                      AtmProfile%Release, ATMPROFILE_RELEASE
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
+      IsValid = .FALSE.
+      WRITE( msg,'("A AtmProfile software update is needed. ", &
+                  &"AtmProfile release is ",i0, &
+                  &". Valid release is ",i0,"." )' ) &
+                  AtmProfile%Release, ATMPROFILE_RELEASE
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     END IF
 
-  END FUNCTION CheckRelease_AtmProfile
+  END FUNCTION AtmProfile_ValidRelease
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Info_AtmProfile
+!       AtmProfile_Info
 !
 ! PURPOSE:
-!       Subroutine to return a string containing information about the
-!       AtmProfile data structure.
+!       Subroutine to return a string containing version and dimension
+!       information about a AtmProfile object.
 !
 ! CALLING SEQUENCE:
-!       CALL Inf_AtmProfile( AtmProfile, &  ! Input
-!                            Info        )  ! Output
-! 
-! INPUT ARGUMENTS:
-!       AtmProfile:    Filled AtmProfile structure.
+!       CALL AtmProfile_Info( AtmProfile, Info )
+!
+! INPUTS:
+!       AtmProfile:    AtmProfile object about which info is required.
 !                      UNITS:      N/A
-!                      TYPE:       AtmProfile_type
+!                      TYPE:       TYPE(AtmProfile_type)
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
 !
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Info:          String containing version and dimension information
-!                      about the passed AtmProfile data structure.
+!                      about the passed AtmProfile object.
 !                      UNITS:      N/A
 !                      TYPE:       CHARACTER(*)
 !                      DIMENSION:  Scalar
@@ -1307,21 +497,19 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Info_AtmProfile( &
-    AtmProfile, &  ! Input
-    Info        )  ! Output
+  SUBROUTINE AtmProfile_Info( AtmProfile, Info )
     ! Arguments
     TYPE(AtmProfile_type), INTENT(IN)  :: AtmProfile
-    CHARACTER(*)         , INTENT(OUT) :: Info
+    CHARACTER(*),          INTENT(OUT) :: Info
     ! Parameters
     INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
     INTEGER, PARAMETER :: LINEFEED = 10
     ! Local variables
-    CHARACTER(256) :: FmtString
-    CHARACTER(512) :: LongString
+    CHARACTER(256)  :: Fmt_String
+    CHARACTER(2000) :: Long_String
 
     ! Create the format string
-    WRITE( FmtString,'("(a,",''" AtmProfile RELEASE.VERSION: "'',",i2,",''"."'',",i2.2,2x,", &
+    WRITE( Fmt_String,'("(a,",''" AtmProfile RELEASE.VERSION: "'',",i2,",''"."'',",i2.2,2x,", &
                       &''"N_LAYERS="'',",i0,2x,", &
                       &''"N_ABSORBERS="'',",i0,2x,",&
                       &"a,",''"     ABSORBER_IDs:   "'', ", ", i0, "i3,", &
@@ -1330,99 +518,49 @@ CONTAINS
 
 
     ! Write the required data to the local string
-    WRITE( LongString,FMT=FmtString ) ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                      AtmProfile%Release, AtmProfile%Version, &
-                                      AtmProfile%n_Layers, &
-                                      AtmProfile%n_Absorbers, &
-                                      ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                      AtmProfile%Absorber_ID, &
-                                      ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
-                                      AtmProfile%Absorber_Units_Name
+    WRITE( Long_String,FMT=Fmt_String ) ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                                        AtmProfile%Release, AtmProfile%Version, &
+                                        AtmProfile%n_Layers, &
+                                        AtmProfile%n_Absorbers, &
+                                        ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                                        AtmProfile%Absorber_ID, &
+                                        ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED), &
+                                        AtmProfile%Absorber_Units_Name
 
     ! Trim the output based on the
     ! dummy argument string length
-    Info = LongString(1:MIN( LEN(Info), LEN_TRIM(LongString) ))
+    Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
-  END SUBROUTINE Info_AtmProfile
-
-
+  END SUBROUTINE AtmProfile_Info
+  
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       Inspect_AtmProfile
+!       AtmProfile_DefineVersion
 !
 ! PURPOSE:
-!       Subroutine to display the contents of an AtmProfile structure
-!       to stdout.
+!       Subroutine to return the module version information.
 !
 ! CALLING SEQUENCE:
-!       CALL Inspect_AtmProfile( AtmProfile )
-! 
-! INPUT ARGUMENTS:
-!       AtmProfile:    Filled AtmProfile structure.
-!                      UNITS:      N/A
-!                      TYPE:       AtmProfile_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!       CALL AtmProfile_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:    Character string containing the version Id information
+!              for the module.
+!              UNITS:      N/A
+!              TYPE:       CHARACTER(*)
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(OUT)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Inspect_AtmProfile( AtmProfile )
-    ! Arguments
-    TYPE(AtmProfile_type) , INTENT(IN)  :: AtmProfile
-    ! Local variables
-    CHARACTER(512) :: Info
-    INTEGER :: j
-
-    ! Display structure info message
-    CALL Info_AtmProfile( AtmProfile, Info )
-    WRITE(*,'(a)') TRIM(Info)
-    
-    ! Display metadata
-    WRITE(*,'(5x,"DESCRIPTION: ",a)') TRIM(AtmProfile%Description)
-    WRITE(*,'(5x,"CLIMATOLOGY: ",i0)') AtmProfile%Climatology_Model
-    WRITE(*,'(5x,"DATE (YYYYMMDD): ",i4,i2.2,i2.2)') AtmProfile%Year, &
-                                                     AtmProfile%Month, &
-                                                     AtmProfile%Day
-    WRITE(*,'(5x,"LATITUDE : ",f8.3)') AtmProfile%Latitude
-    WRITE(*,'(5x,"LONGITUDE: ",f8.3)') AtmProfile%Longitude
-    WRITE(*,'(5x,"SURFACE ALTITUDE: ",es13.6)') AtmProfile%Surface_Altitude
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    
-    ! Display Level data
-    WRITE(*,'(5x,"LEVEL PRESSURE: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Pressure
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    WRITE(*,'(5x,"LEVEL TEMPERATURE: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Temperature
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    DO j = 1, AtmProfile%n_Absorbers
-      WRITE(*,'(5x,"ABSORBER #",i0," LEVEL AMOUNT: ")') j
-      WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Absorber(:,j)
-      WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    END DO
-    WRITE(*,'(5x,"LEVEL ALTITUDE: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Level_Altitude
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    
-    ! Display Layer data
-    WRITE(*,'(5x,"LAYER PRESSURE: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Pressure
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    WRITE(*,'(5x,"LAYER TEMPERATURE: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Temperature
-    WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    DO j = 1, AtmProfile%n_Absorbers
-      WRITE(*,'(5x,"ABSORBER #",i0," LAYER AMOUNT: ")') j
-      WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Absorber(:,j)
-      WRITE(*,'(/5x,"Press <ENTER> to continue...")'); READ(*,*)
-    END DO
-    WRITE(*,'(5x,"LAYER THICKNESS: ")')
-    WRITE(*,'(5(1x,es13.6))') AtmProfile%Layer_Delta_Z
-
-  END SUBROUTINE Inspect_AtmProfile
+  SUBROUTINE AtmProfile_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE AtmProfile_DefineVersion
 
 
 !##################################################################################
@@ -1433,23 +571,79 @@ CONTAINS
 !##################################################################################
 !##################################################################################
 
-  SUBROUTINE Clear_AtmProfile( AtmProfile )
-    TYPE(AtmProfile_type), INTENT(IN OUT) :: AtmProfile
-    TYPE(AtmProfile_type) :: dummy
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       AtmProfile_Equal
+!
+! PURPOSE:
+!       Elemental function to test the equality of two AtmProfile objects.
+!       Used in OPERATOR(==) interface block.
+!
+! CALLING SEQUENCE:
+!       is_equal = AtmProfile_Equal( x, y )
+!
+!         or
+!
+!       IF ( x == y ) THEN
+!         ...
+!       END IF
+!
+! OBJECTS:
+!       x, y:          Two AtmProfile objects to be compared.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(AtmProfile_type)
+!                      DIMENSION:  Scalar or any rank
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       is_equal:      Logical value indicating whether the inputs are equal.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
 
-    AtmProfile%Release            = dummy%Release
-    AtmProfile%Version            = dummy%Version
-    AtmProfile%Profile            = dummy%Profile          
-    AtmProfile%Description        = dummy%Description      
-    AtmProfile%Climatology_Model  = dummy%Climatology_Model
-    AtmProfile%Year               = dummy%Year             
-    AtmProfile%Month              = dummy%Month            
-    AtmProfile%Day                = dummy%Day              
-    AtmProfile%Hour               = dummy%Hour             
-    AtmProfile%Latitude           = dummy%Latitude         
-    AtmProfile%Longitude          = dummy%Longitude        
-    AtmProfile%Surface_Altitude   = dummy%Surface_Altitude 
+  ELEMENTAL FUNCTION AtmProfile_Equal( x, y ) RESULT( is_equal )
+    TYPE(AtmProfile_type), INTENT(IN)  :: x, y
+    LOGICAL :: is_equal
 
-  END SUBROUTINE Clear_AtmProfile
+    ! Set up
+    is_equal = .FALSE.
+    
+    ! Check the object association status
+    IF ( (.NOT. AtmProfile_Associated(x)) .OR. &
+         (.NOT. AtmProfile_Associated(y))      ) RETURN
 
+    ! Check contents
+    ! ...Dimensions
+    IF ( (x%n_Layers    /= y%n_Layers   ) .OR. &
+         (x%n_Absorbers /= y%n_Absorbers) ) RETURN
+    ! ...Data
+    IF ( (x%Profile              ==     y%Profile          ) .AND. &
+         (x%Description          ==     y%Description      ) .AND. &
+         (x%Climatology_Model    ==     y%Climatology_Model) .AND. &
+         (x%Year                 ==     y%Year             ) .AND. &
+         (x%Month                ==     y%Month            ) .AND. &
+         (x%Day                  ==     y%Day              ) .AND. &
+         (x%Hour                 ==     y%Hour             ) .AND. &
+         (x%Latitude          .EqualTo. y%Latitude         ) .AND. &
+         (x%Longitude         .EqualTo. y%Longitude        ) .AND. &
+         (x%Surface_Altitude  .EqualTo. y%Surface_Altitude ) .AND. &
+         ALL(x%Absorber_ID            ==     y%Absorber_ID        ) .AND. &
+         ALL(x%Absorber_Units_ID      ==     y%Absorber_Units_ID  ) .AND. &
+         ALL(x%Absorber_Units_Name    ==     y%Absorber_Units_Name) .AND. &
+         ALL(x%Absorber_Units_LBL     ==     y%Absorber_Units_LBL ) .AND. &
+         ALL(x%Level_Pressure      .EqualTo. y%Level_Pressure     ) .AND. &
+         ALL(x%Level_Temperature   .EqualTo. y%Level_Temperature  ) .AND. &
+         ALL(x%Level_Absorber      .EqualTo. y%Level_Absorber     ) .AND. &
+         ALL(x%Level_Altitude      .EqualTo. y%Level_Altitude     ) .AND. &
+         ALL(x%Layer_Pressure      .EqualTo. y%Layer_Pressure     ) .AND. &
+         ALL(x%Layer_Temperature   .EqualTo. y%Layer_Temperature  ) .AND. &
+         ALL(x%Layer_Absorber      .EqualTo. y%Layer_Absorber     ) .AND. &
+         ALL(x%Layer_Delta_Z       .EqualTo. y%Layer_Delta_Z      )       ) &
+      is_equal = .TRUE.
+
+  END FUNCTION AtmProfile_Equal
+  
 END MODULE AtmProfile_Define

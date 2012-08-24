@@ -13,20 +13,9 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Destroy, $
-;         No_Clear=No_Clear, $  ; Input keyword
 ;         Debug=Debug           ; Input keyword
 ;
 ; INPUT KEYWORD PARAMETERS:
-;       No_Clear:    Set this keyword to NOT reinitialise the scalar
-;                    components to their default values. The default
-;                    is to also clear the scalar values.
-;                    If NOT SET => scalar components are reinitialised (DEFAULT)
-;                       SET,    => scalar components are NOT reinitialised
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN), OPTIONAL
-;
 ;       Debug:       Set this keyword for debugging.
 ;                    If NOT SET => Error handler is enabled. (DEFAULT)
 ;                       SET     => Error handler is disabled; Routine
@@ -62,7 +51,6 @@
 ;-
 
 PRO OSRF::Destroy, $
-  No_Clear=No_Clear, $  ; Input keyword
   Debug=Debug           ; Input keyword
  
   ; Set up
@@ -73,26 +61,24 @@ PRO OSRF::Destroy, $
  
  
   ; Initialise the non-pointer members
-  IF ( NOT KEYWORD_SET(No_Clear) ) THEN BEGIN
-    self.Release              = OSRF_RELEASE
-    self.Version              = OSRF_VERSION
-    self.Sensor_Id            = ' '
-    self.WMO_Satellite_Id     = INVALID_WMO_SATELLITE_ID
-    self.WMO_Sensor_Id        = INVALID_WMO_SENSOR_ID
-    self.Sensor_Type          = INVALID_SENSOR
-    self.Channel              = INVALID
-    self.Integral             = ZERO
-    self.Flags                = 0L
-    self.f0                   = ZERO
-    self.Planck_Coeffs        = ZERO
-    self.Polychromatic_Coeffs = ZERO
-    self.Convolved_R          = ZERO
-    self.Convolved_T          = ZERO
-  ENDIF
+  self.Release              = OSRF_RELEASE
+  self.Version              = OSRF_VERSION
+  self.Sensor_Id            = ''
+  self.WMO_Satellite_Id     = INVALID_WMO_SATELLITE_ID
+  self.WMO_Sensor_Id        = INVALID_WMO_SENSOR_ID
+  self.Sensor_Type          = INVALID_SENSOR
+  self.Channel              = INVALID
+  self.Integral             = ZERO
+  self.Flags                = 0L
+  self.f0                   = ZERO
+  self.Planck_Coeffs        = ZERO
+  self.Polychromatic_Coeffs = ZERO
+  self.Convolved_R          = ZERO
+  self.Convolved_T          = ZERO
 
 
-  ; If ALL pointer members are NOT associated, do nothing
-  IF ( NOT self->Associated(Debug=Debug) ) THEN RETURN
+  ; If array members are NOT associated, do nothing
+  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
 
 
   ; Deallocate the pointer members and nullify
@@ -103,34 +89,29 @@ PRO OSRF::Destroy, $
       (*self.Radiance)[i]
   ENDFOR
   PTR_FREE, $
-    self.f1       , $
-    self.f2       , $
-    self.n_Points , $
-    self.Frequency, $
-    self.Response , $
-    self.Radiance , $
-    self.psysvar  , $
-    self.xsysvar  , $
-    self.ysysvar     
-  self.f1        = PTR_NEW()
-  self.f2        = PTR_NEW()
-  self.n_Points  = PTR_NEW()
-  self.Frequency = PTR_NEW()
-  self.Response  = PTR_NEW()
-  self.Radiance  = PTR_NEW()
-  self.psysvar   = PTR_NEW()
-  self.xsysvar   = PTR_NEW()
-  self.ysysvar   = PTR_NEW()
+    self.f1              , $
+    self.f2              , $
+    self.n_Points        , $
+    self.Frequency       , $
+    self.Response        , $
+    self.Radiance        , $
+    self.Window_Reference, $
+    self.Plot_Reference     
+  self.f1               = PTR_NEW()
+  self.f2               = PTR_NEW()
+  self.n_Points         = PTR_NEW()
+  self.Frequency        = PTR_NEW()
+  self.Response         = PTR_NEW()
+  self.Radiance         = PTR_NEW()
+  self.Window_Reference = PTR_NEW()
+  self.Plot_Reference   = PTR_NEW()
 
 
   ; Reinitialise the dimensions
   self.n_Bands = 0
 
 
-  ; Decrement and test allocation counter
-  self.n_Allocates = self.n_Allocates - 1
-  IF ( self.n_Allocates NE 0 ) THEN $
-    MESSAGE, 'Allocation counter /= 0, Value = ' + STRTRIM(self.n_Allocates, 2), $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; Set the allocation indicator
+  self.Is_Allocated = FALSE
 
 END ; PRO OSRF::Destroy

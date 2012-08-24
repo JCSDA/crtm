@@ -8,23 +8,9 @@
 ;
 ; CALLING SEQUENCE:
 ;       Result = Obj->[OSRF::]Associated( $
-;                  ANY_Test=ANY_Test, $  ; Input keyword
 ;                  Debug=Debug        )  ; Input keyword
 ;
 ; INPUT KEYWORD PARAMETERS:
-;       ANY_Test:    Set this keyword to test if ANY of the
-;                    OSRF pointer components are associated.
-;                    The default is to test if ALL the components
-;                    are associated.
-;                    If NOT SET => test if ALL the components
-;                                  are associated.  (DEFAULT)
-;                       SET,    => test if ANY of the components
-;                                  are associated.
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN), OPTIONAL
-;
 ;       Debug:       Set this keyword for debugging.
 ;                    If NOT SET => Error handler is enabled. (DEFAULT)
 ;                       SET     => Error handler is disabled; Routine
@@ -71,7 +57,6 @@
 ;-
 
 FUNCTION OSRF::Associated, $
-  ANY_Test=ANY_Test, $  ; Input keyword
   Debug=Debug           ; Input keyword
  
   ; Set up
@@ -89,34 +74,7 @@ FUNCTION OSRF::Associated, $
     ENDIF
     MsgSwitch = 1
   ENDELSE
-  ; ...Check keyword
-  ALL_Test = KEYWORD_SET(ANY_Test) ? FALSE : TRUE
 
-
-  ; Test association status
-  Association_Status = FALSE
-  IF ( ALL_Test ) THEN BEGIN
-    IF ( PTR_VALID( self.f1        ) AND $
-         PTR_VALID( self.f2        ) AND $
-         PTR_VALID( self.n_Points  ) AND $
-         PTR_VALID( self.Frequency ) AND $
-         PTR_VALID( self.Response  ) AND $
-         PTR_VALID( self.Radiance  ) AND $
-         PTR_VALID( self.xsysvar   ) AND $
-         PTR_VALID( self.ysysvar   ) AND $
-         PTR_VALID( self.psysvar   )     ) THEN Association_Status = TRUE
-  ENDIF ELSE BEGIN
-    IF ( PTR_VALID( self.f1        ) OR $
-         PTR_VALID( self.f2        ) OR $
-         PTR_VALID( self.n_Points  ) OR $
-         PTR_VALID( self.Frequency ) OR $
-         PTR_VALID( self.Response  ) OR $
-         PTR_VALID( self.Radiance  ) OR $
-         PTR_VALID( self.xsysvar   ) OR $
-         PTR_VALID( self.ysysvar   ) OR $
-         PTR_VALID( self.psysvar   )    ) THEN Association_Status = TRUE
-  ENDELSE
- 
-  RETURN, Association_Status
+  RETURN, self.Is_Allocated
  
 END ; FUNCTION OSRF::Associated

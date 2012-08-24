@@ -1,0 +1,19 @@
+<lblinput>
+  <!-- LBLRTM 7.1 record -->
+  <record name="r7p1" type="lblrtm" format="(f10.3,f10.4,3i5,10x,a35)">
+    <entry name="v1f"    type="REAL(fp)"      value="0.0_fp" desc="Wavenumber of initial filter value"/>
+    <entry name="dvf"    type="REAL(fp)"      value="0.0_fp" desc="Wavenumber increment between filter values"/>
+    <entry name="npts"   type="INTEGER"       value="0"      desc="Number of filter values"/>
+    <entry name="jemit"  type="INTEGER"       value="0"      desc="Integration flag. 0==transmittance; 1==radiance"/>
+    <entry name="nnfile" type="INTEGER"       value="0"      desc="Unit number for filtered sequential output"/>
+    <entry name="heddr"  type="CHARACTER(35)" value="''"     desc="User identification"/>
+  </record>
+  <!-- LBLRTM 7.2 record -->
+  <record name="r7p2" type="lblrtm" format="(a)">
+    <entry name="ivar" type="CHARACTER(80)" value="'(es13.6)'" desc="Format specification for reading filter values"/>
+  </record>
+  <!-- LBLRTM 7.3 record -->
+  <record name="r7p3" type="lblrtm" format="(es13.6)">
+    <entry name="xf" type="REAL(fp)" value="0.0_fp" desc="Value of filter function"/>
+  </record>
+</lblinput>
