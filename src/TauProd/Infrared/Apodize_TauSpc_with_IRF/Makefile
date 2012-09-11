@@ -28,6 +28,7 @@ SRC_FILES = Type_Kinds.f90 \
             LBLRTM_Parameters.f90 \
             LBLRTM_netCDF_IO.f90 \
             FFT_Spectral_Utility.f90 \
+            CrIS_Define.f90 \
             IASI_Define.f90 \
             TauProfile_Define.f90 \
             TauProfile_netCDF_IO.f90 \
@@ -39,23 +40,23 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Library and include macros
-NETCDF_LIB = $(HOME)/local/netcdf
+#NETCDF_LIB = $(HOME)/local/netcdf
 FFT_LIB = $(HOME)/local/FFT
-INCLUDES = -I$(NETCDF_LIB)/include -I$(FFT_LIB)/include
-LIBRARIES = -L$(NETCDF_LIB)/lib -lnetcdf -L$(FFT_LIB)/lib -lfft
+INCLUDES = -I$(NETCDF)/include -I$(FFT_LIB)/include
+LIBRARIES = -L$(NETCDF)/lib -lnetcdff -L$(FFT_LIB)/lib -lfft
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Squeaky clean target
-realclean: clean remove_links
+realclean:: clean remove_links
 
 # Source dependency lists
 include make.dependencies

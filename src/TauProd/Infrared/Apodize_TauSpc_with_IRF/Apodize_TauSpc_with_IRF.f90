@@ -6,13 +6,15 @@
 ! instrument response function (IRF) and then Fourier transform the result
 ! back into the spectral domain.
 !
-! Currently set-up for IASI processing only.
+! Currently set-up for IASI and CrIS processing only.
 !
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 27-Feb-2007
 !                       paul.vandelst@ssec.wisc.edu
-!
+!       Modified by:    Yong Chen, CIRA/JCSDA 23-Sep-2008
+!                       Yong.Chen@noaa.gov 
+!       
 
 PROGRAM Apodize_TauSpc_with_IRF
 
@@ -43,17 +45,28 @@ PROGRAM Apodize_TauSpc_with_IRF
                                        ComputeNSPC, &
                                        ComputeNIFG, &
                                        ComputeX
-  USE IASI_Define              , ONLY: IASI_MIN_FREQUENCY, &
-                                       IASI_MAX_FREQUENCY, &
-                                       IASI_D_FREQUENCY, &
-                                       IASI_RESAMPLE_MAXX, &
+  USE IASI_Define              , ONLY: IASI_MIN_FREQUENCY=>MIN_FREQUENCY, &
+                                       IASI_MAX_FREQUENCY=>MAX_FREQUENCY, &
+                                       IASI_D_FREQUENCY=>D_FREQUENCY, &
+                                       IASI_RESAMPLE_MAXX=>RESAMPLED_MAXX, &
                                        N_IASI_CHANNELS, &
                                        N_IASI_BANDS, &
-                                       IASI_BAND_F1, &
-                                       IASI_BAND_F2, &
+                                       IASI_BAND_F1=>BAND_F1, &
+                                       IASI_BAND_F2=>BAND_F2, &
                                        IASI_F, &
-                                       IASI_GFT, &
+                                       IASI_ApodFunction, &
                                        IASI_Channels
+  USE CRIS_Define              , ONLY: CRIS_MIN_FREQUENCY=>MIN_FREQUENCY, & 
+                                       CRIS_MAX_FREQUENCY=>MAX_FREQUENCY, & 
+                                       CRIS_D_FREQUENCY=>D_FREQUENCY, &   
+                                       CRIS_RESAMPLE_MAXX=>RESAMPLED_MAXX, & 
+                                       N_CRIS_CHANNELS, &    
+                                       N_CRIS_BANDS, &       
+                                       CRIS_BAND_F1=>BAND_F1, &       
+                                       CRIS_BAND_F2=>BAND_F2, &       
+                                       CRIS_F, &             
+                                       CrIS_ApodFunction, &           
+                                       CRIS_Channels         
   USE Tau_Production_Parameters, ONLY: N_LAYERS, &
                                        N_LEVELS, &
                                        LEVEL_PRESSURE, &
@@ -87,17 +100,39 @@ PROGRAM Apodize_TauSpc_with_IRF
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp
   ! Sensor id
-  CHARACTER(*), PARAMETER :: SENSOR_ID        = 'iasi_metop-a'
-  INTEGER,      PARAMETER :: WMO_SENSOR_ID    = 221
-  INTEGER,      PARAMETER :: WMO_SATELLITE_ID = 4
+!  CHARACTER(*), PARAMETER :: SENSOR_ID        = 'cris_npp'
+!  INTEGER,      PARAMETER :: WMO_SENSOR_ID    = 221
+!  INTEGER,      PARAMETER :: WMO_SATELLITE_ID = 4
   ! The spectral bandwidth, 0-f(Nyquist), definitions
-  REAL(fp), PARAMETER :: MASTER_F1 = ZERO
-  REAL(fp), PARAMETER :: MASTER_F2 = 6912.0_fp
-  REAL(fp), PARAMETER :: F_NYQUIST = MASTER_F2
+!  REAL(fp), PARAMETER :: MASTER_F1 = ZERO
+!  REAL(fp), PARAMETER :: MASTER_F2 = 6912.0_fp
+  ! relate to FFT in LBLRTM spectrum for df=0.001
+  ! No. of truncated IFG points for IFG->SPC should be Prime Factor
+  ! for CRIS band , resolution, IFG points, Prime Factors Decomposition  
+  !           1       0.625      20480      2^12 * 5
+  !           2       1.250      10240      2^11 * 5
+  !           3       2.500       5120      2^10 * 5
+!  REAL(fp), PARAMETER :: MASTER_F2 = 6400.0_fp
+!  REAL(fp), PARAMETER :: F_NYQUIST = MASTER_F2
+
   ! TauProfile version number
   INTEGER, PARAMETER :: TAUPROFILE_VERSION = 2
-  
 
+  INTEGER, PARAMETER :: N_SENSOR_SETS = 2
+
+  CHARACTER(*), PARAMETER,  DIMENSION(N_SENSOR_SETS) :: &
+                SENSOR_ID=(/'iasi_metop-a', & 
+                             'cris_npp    '/)
+  INTEGER,  PARAMETER,  DIMENSION(N_SENSOR_SETS) :: Sensor_idx = (/1, 2/)
+  INTEGER,  PARAMETER,  DIMENSION(N_SENSOR_SETS) :: WMO_SENSOR_ID    = (/221, 620/)
+  INTEGER,  PARAMETER,  DIMENSION(N_SENSOR_SETS) :: WMO_SATELLITE_ID = (/4, 224/)
+  REAL(fp), PARAMETER,  DIMENSION(N_SENSOR_SETS) :: MASTER_F1 = (/ZERO, ZERO/)
+  REAL(fp), PARAMETER,  DIMENSION(N_SENSOR_SETS) :: MASTER_F2 = (/6912.0_fp, 6400.0_fp/)
+  REAL(fp), PARAMETER,  DIMENSION(N_SENSOR_SETS) :: F_NYQUIST = MASTER_F2
+  INTEGER,  PARAMETER,  DIMENSION(N_SENSOR_SETS) :: N_BANDS = (/3, 3/)
+  
+ 
+ 
   ! ---------
   ! Variables
   ! ---------
@@ -109,8 +144,8 @@ PROGRAM Apodize_TauSpc_with_IRF
   CHARACTER(256) :: Message
   CHARACTER(256) :: LBL_Filename
   CHARACTER(256) :: TauProfile_Filename
-  CHARACTER(80)  :: cProfile, cAngle, cMolecule, cBand, cLayer
-  INTEGER  :: iProfile_Set, iMolecule, iProfile, iAngle, iDir, iBand, iLayer
+  CHARACTER(80)  :: cProfile, cAngle, cMolecule, cBand, sBand, cLayer
+  INTEGER  :: iProfile_Set, iMolecule, iProfile, iAngle, iDir, iBand, iLayer, iSensor
   INTEGER  :: Error_Status
   INTEGER  :: IO_Status
   INTEGER  :: Allocate_Status
@@ -118,7 +153,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   INTEGER  :: is1, is2
   INTEGER  :: if1, if2
   INTEGER  :: ib1, ib2
-  INTEGER  :: it1, it2
+  INTEGER  :: it1, it2, it0
   INTEGER  :: ic1, ic2
   INTEGER  :: n_filter
   INTEGER  :: n_ispc
@@ -141,6 +176,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   TYPE(TauProfile_type), TARGET  :: realTau, imagTau
   TYPE(TauProfile_type), POINTER :: TauProfile => NULL()
 
+  CHARACTER( 256 ) :: Signal_Filename
 
   ! ---------------------
   ! Output program header
@@ -304,24 +340,45 @@ PROGRAM Apodize_TauSpc_with_IRF
     STOP
   ENDIF
 
-  
-  ! Ask for the IASI band number
+  ! Ask for the sensor index
   ! ----------------------------
-  WRITE(*, FMT='(/5x,"Enter the IASI band number: ")', ADVANCE='NO')
-  READ(*,FMT='(i5)',IOSTAT=IO_Status) iBand
+  WRITE(*, FMT='(/5x,"Select the SENSOR INDEX SET")')
+  DO i = 1, N_SENSOR_SETS
+    WRITE(*,FMT='(10x,i2,") ",a," Sensor set")') i, TRIM(SENSOR_ID(i))
+  END DO
+  WRITE(*,FMT='(5x,"Enter choice: ")',ADVANCE='NO')
+  READ(*,FMT='(i1)',IOSTAT=IO_Status ) iSensor
   IF ( IO_Status /= 0 ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid IASI BAND input.', &
+                          'Invalid SENSOR SET identifier input.', &
                           FAILURE )
     STOP
   END IF
-  IF ( iBand < 1 .OR. iBand > N_IASI_BANDS ) THEN
+  IF ( iSensor < 1 .OR. iSensor > N_SENSOR_SETS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
-                          'Invalid IASI BAND value.', &
+                          'Invalid DEPENDENT PROFILE SET identifier value.', &
+                          FAILURE )
+    STOP
+  ENDIF
+   
+  ! Ask for the band number
+  ! ----------------------------
+  WRITE(*, FMT='(/5x,"Enter the band number: ")', ADVANCE='NO')
+  READ(*,FMT='(i5)',IOSTAT=IO_Status) iBand
+  IF ( IO_Status /= 0 ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Invalid BAND input.', &
+                          FAILURE )
+    STOP
+  END IF
+  IF ( iBand < 1 .OR. iBand > N_BANDS(iSensor) ) THEN
+    CALL Display_Message( PROGRAM_NAME, &
+                          'Invalid BAND value.', &
                           FAILURE )
     STOP
   ENDIF
   WRITE(cBand,'("band",i0)') iBand
+  WRITE(sBand,'("band",i3.3)') iBand
  
 
   ! ----------------------------------------
@@ -333,7 +390,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   WRITE(*,'(/5x,"Index positions of input SPC             : ",i0,",",i0)') is1, is2
 
   ! Compute the number of spectral points 
-  n_spc = ComputeNPoints(F_NYQUIST,df)
+  n_spc = ComputeNPoints(F_NYQUIST(iSensor),df)
   
   
   ! -------------------------------------------
@@ -375,24 +432,36 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! ---------------------------------------
   ! Compute the 0-f(Nyquist) frequency grid
   ! ---------------------------------------
-  f1 = MASTER_F1
+  f1 = MASTER_F1(iSensor)
   f2 = f1 + REAL(n_spc-1,fp)*df
   f = (/ (REAL(i,fp),i=0,n_spc-1) /) / REAL(n_spc-1,fp) 
   f = f*(f2-f1) + f1
-
+  write(*,*) 'f1, f2', f1, f2
 
   ! -----------------------------------
   ! Determine the IFG truncation points
   ! -----------------------------------
   ! Compute the optical delay grid
   x = computeX(f)
+  write (*, *) size(x), size(f)
   
   ! Get the truncation points
-  it1 = MINLOC(x, DIM=1, MASK=(x > -IASI_RESAMPLE_MAXX))
-  it2 = MAXLOC(x, DIM=1, MASK=(x <= IASI_RESAMPLE_MAXX))
-      
-  ! The number of truncated IFG and SPC points
+  Sensor_Select: SELECT CASE (iSensor)
+   CASE ( 1)
+    it0 = MINLOC(x, DIM=1, MASK=(x == ZERO ) )
+    it1 = MINLOC(x, DIM=1, MASK=(x > -IASI_RESAMPLE_MAXX(iBand)))
+    it2 = MAXLOC(x, DIM=1, MASK=(x <= IASI_RESAMPLE_MAXX(iBand)))
+   CASE ( 2 )
+    it0 = MINLOC(x, DIM=1, MASK=(x == ZERO ))
+    it1 = MINLOC(x, DIM=1, MASK=(x > -CRIS_RESAMPLE_MAXX(iBand)))
+    it2 = MAXLOC(x, DIM=1, MASK=(x <= CRIS_RESAMPLE_MAXX(iBand)))
+  END SELECT  Sensor_Select
+  write(*,*)it0,  it1, it2
+  write(*,*) x(it1), x(it1+1), x(it2)     
+  ! The number of truncated IFG and SPC points, and make sure n_tifg is an even number
+  if(  (it2-it1+1)/ 2 == (it2-it1) / 2)  it1 = it1 + 1
   n_tifg = it2-it1+1
+
   n_tspc = ComputeNSPC(n_tifg)
 
   WRITE(*,'( 5x,"No. of truncated IFG points for IFG->SPC : ",i0,&
@@ -438,17 +507,26 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! -------------------
   ! Compute the FTS IRF
   ! -------------------
-  irf = IASI_GFT(x)
+  SELECT CASE (iSensor)
+   CASE (1)
+    irf = IASI_ApodFunction(iBand,x)
+    ! --------------------------------------------
+    ! Determine the actual channel numbers to keep
+    ! --------------------------------------------
+    ic1 = INT((IASI_BAND_F1(iBand) - f1)/IASI_D_FREQUENCY(iBand) + ONEpointFIVE)
+    ic2 = INT((IASI_BAND_F2(iBand) - f1)/IASI_D_FREQUENCY(iBand) + ONEpointFIVE)
+   CASE (2)
+    irf = CrIS_ApodFunction(iBand,x)
+    ! --------------------------------------------
+    ! Determine the actual channel numbers to keep
+    ! --------------------------------------------
+    ic1 = INT((CRIS_BAND_F1(iBand) - f1)/CRIS_D_FREQUENCY(iBand) + ONEpointFIVE)
+    ic2 = INT((CRIS_BAND_F2(iBand) - f1)/CRIS_D_FREQUENCY(iBand) + ONEpointFIVE)
+  END SELECT   
   
-
-  ! --------------------------------------------
-  ! Determine the actual channel numbers to keep
-  ! --------------------------------------------
-  ic1 = INT((IASI_BAND_F1(iBand) - f1)/IASI_D_FREQUENCY + ONEpointFIVE)
-  ic2 = INT((IASI_BAND_F2(iBand) - f1)/IASI_D_FREQUENCY + ONEpointFIVE)
   n_cspc = ic2-ic1+1
   
-  WRITE( *,'(5x,"No. of output IASI band ",i1," points         : ",i0,/)') iBand, n_cspc
+  WRITE( *,'(5x,"No. of output band ",i1," points         : ",i0,/)') iBand, n_cspc
 
 
   ! --------------------------------
@@ -469,15 +547,22 @@ PROGRAM Apodize_TauSpc_with_IRF
   END IF
   
   ! Assign the dimension arrays
-  realTau%Sensor_ID        = SENSOR_ID
-  realTau%WMO_Satellite_ID = WMO_SATELLITE_ID
-  realTau%WMO_Sensor_ID    = WMO_SENSOR_ID   
+  realTau%Sensor_ID        = SENSOR_ID(iSensor)
+  realTau%WMO_Satellite_ID = WMO_SATELLITE_ID(iSensor)
+  realTau%WMO_Sensor_ID    = WMO_SENSOR_ID(iSensor)  
   IF ( dirn == UPWELLING_DIRECTION ) THEN
     realTau%Level_Pressure = LEVEL_PRESSURE(N_LEVELS:1:-1)
   ELSE
     realTau%Level_Pressure = LEVEL_PRESSURE
   END IF
-  realTau%Channel        = IASI_Channels(iBand)
+
+  SELECT CASE (iSensor)
+   CASE (1)
+   realTau%Channel        = IASI_Channels(iBand)
+   CASE (2)
+   realTau%Channel        = CRIS_Channels(iBand, .FALSE.)
+  END SELECT
+  
   realTau%Angle          = (/ZENITH_ANGLE_SECANT(iAngle)/)
   realTau%Profile        = (/iProfile/)
   realTau%Molecule_Set   = (/iMolecule/)
@@ -570,7 +655,7 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! --------------------------------------------------------
   WRITE( Comment, '("Input spectrum df=",f5.3,"cm-1, deltaf=",f8.3,"-",f8.3,"cm-1. ",&
                    &"FFT spectrum bandwidth=",f8.3,"-",f8.3,"cm-1.")') &
-                   df, bf, ef, MASTER_F1, MASTER_F2
+                   df, bf, ef, MASTER_F1(iSensor), MASTER_F2(iSensor)
                    
                    
   ! -----------------------------
@@ -606,7 +691,7 @@ PROGRAM Apodize_TauSpc_with_IRF
                                              WMO_Satellite_ID = TauProfile%WMO_Satellite_ID, &  ! Optional Input
                                              WMO_Sensor_ID    = TauProfile%WMO_Sensor_ID   , &  ! Optional Input
                                              ID_Tag      = TRIM(LBLRTM_ID_Tag)  , &  ! Optional input
-                                             Title       = 'IASI '//TRIM(cBand)//&
+                                             Title       = TRIM(SENSOR_ID(iSensor))//TRIM(cBand)//&
                                                            ' transmittance profiles', &  ! Optional input
                                              History     = PROGRAM_RCS_ID//'; '//&
                                                            TRIM(LBLRTM_History), &  ! Optional input
@@ -633,7 +718,12 @@ PROGRAM Apodize_TauSpc_with_IRF
     
     ! Create a signal file indicating successful completion
     ! -----------------------------------------------------
-    Error_Status = Create_Signal_File( TRIM(TauProfile_Filename) )
+!    Error_Status = Create_Signal_File( TRIM(TauProfile_Filename) )
+    WRITE( Signal_Filename, '( a, ".", a, ".", a )' ) &
+                            PROGRAM_NAME, &
+                            TRIM(cAngle)//'_'//TRIM(cMolecule)//'_'//TRIM(sBand), & 
+                            TRIM( DIRECTION_NAME(iDir ) )
+    Error_Status = Create_Signal_File( TRIM(Signal_Filename) )
 
   END DO
   
