@@ -16,6 +16,7 @@ SRC_FILES = crtm_env.sh \
             endian_wrapper.sh \
             linkfiles.sh \
             unlinkfiles.sh \
+            link_coeffs.sh \
             Link_SensorInfo \
             Link_Solar \
             Link_SRF \
