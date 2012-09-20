@@ -1697,7 +1697,7 @@ CONTAINS
     l=1
     DO l = l, self%n_Channels
 
-      CALL Create_Names( l, n_Bands_DimName = n_Bands_DimName, &
+      CALL Create_Names( self%oSRF(l)%channel, n_Bands_DimName = n_Bands_DimName, &
                          f1_Varname = f1_Varname, f2_Varname = f2_Varname )
       
       ! Define dimensions that
@@ -1748,7 +1748,7 @@ CONTAINS
       ! dimensions for the channel
       DO i = 1, self%oSRF(l)%n_Bands
       
-        CALL Create_Names( l, Band = i,                           &
+        CALL Create_Names( self%oSRF(l)%channel, Band = i,        &
                            n_Points_DimName = n_Points_DimName,   &
                            Frequency_Varname = Frequency_Varname, &
                            Response_Varname = Response_Varname    )
@@ -1998,7 +1998,7 @@ CONTAINS
       
       DO i = 1, self%oSRF(l)%n_Bands
       
-        CALL Create_Names( l, Band = i,                            &
+        CALL Create_Names( self%oSRF(l)%channel, Band = i,         &
                            f1_Varname        = f1_Varname,         &
                            f2_Varname        = f2_Varname,         &
                            Frequency_Varname = Frequency_Varname,  &
