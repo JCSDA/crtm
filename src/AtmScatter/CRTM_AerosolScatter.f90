@@ -272,19 +272,7 @@ CONTAINS
         IF( ASV%w(ka,n) >= ONE ) THEN
           ASV%w(ka,n) = ONE
         END IF        
-        ! Compute the volume scattering coefficient for the current
-        ! aerosol layer and accumulate it for the layer total for the
-        ! profile (i.e. all aerosols)
-        !   bs = rho.w.ke
-        ! where
-        !   bs  = volume scattering coefficient for a layer [dimensionless]
-        !   rho = integrated aerosol concentration for a layer (kg/m^2) [M.L^-2]
-        !   w   = single scatter albedo [dimensionless]
-        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
-        !  qliu
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) 
-        ASV%Total_bs(ka) = ASV%Total_bs(ka) + bs 
-        
+
         ! Compute the optical depth (absorption + scattering)
         !   tau = rho.ke
         ! where
@@ -301,13 +289,26 @@ CONTAINS
         ! compute the single scatter albedo in the Layer_loop below.
         AScat%Optical_Depth(ka) = AScat%Optical_Depth(ka) + &
                                   (ASV%ke(ka,n)*Atm%Aerosol(n)%Concentration(ka))
-        AScat%Single_Scatter_Albedo(ka) = AScat%Single_Scatter_Albedo(ka) + bs
 
         ! Compute the phase matrix coefficients
         ! p = p + p(LUT)*bs
         ! where
         !   p(LUT) = the phase coefficient from the LUT
         IF( AScat%n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
+        ! Compute the volume scattering coefficient for the current
+        ! aerosol layer and accumulate it for the layer total for the
+        ! profile (i.e. all aerosols)
+        !   bs = rho.w.ke
+        ! where
+        !   bs  = volume scattering coefficient for a layer [dimensionless]
+        !   rho = integrated aerosol concentration for a layer (kg/m^2) [M.L^-2]
+        !   w   = single scatter albedo [dimensionless]
+        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
+        !  qliu
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) 
+        ASV%Total_bs(ka) = ASV%Total_bs(ka) + bs  
+        AScat%Single_Scatter_Albedo(ka) = AScat%Single_Scatter_Albedo(ka) + bs
+  
           DO m = 1, AScat%n_Phase_Elements
             DO l = 0, AScat%n_Legendre_Terms
               AScat%Phase_Coefficient(l,m,ka) = AScat%Phase_Coefficient(l,m,ka) + &
@@ -477,6 +478,8 @@ CONTAINS
         ! Obtain bulk aerosol optical properties
         CALL Get_Aerosol_Opt_TL(AScat_TL                              , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
+                                ASV%ke(ka,n)                          , & ! Input
+                                ASV%w(ka,n)                           , & ! Input
                                 Atm_TL%Aerosol(n)%Effective_Radius(ka), & ! TL  Input
                                 ke_TL                                 , & ! TL  Output
                                 w_TL                                  , & ! TL  Output
@@ -495,12 +498,6 @@ CONTAINS
         IF( ASV%w(ka,n) >= ONE ) THEN
           w_TL  = ZERO
         END IF        
-        ! Compute the volume scattering coefficient
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n)  
-        bs_TL = (Atm_TL%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) ) + &
-                (Atm%Aerosol(n)%Concentration(ka) * ke_TL * ASV%w(ka,n) ) + &
-                (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * w_TL ) 
-        AScat_TL%Single_Scatter_Albedo(ka) = AScat_TL%Single_Scatter_Albedo(ka) + bs_TL
 
         ! Compute the optical depth (absorption + scattering)
         AScat_TL%Optical_Depth(ka) = AScat_TL%Optical_Depth(ka) + &
@@ -509,6 +506,13 @@ CONTAINS
 
         ! Compute the phase matrix coefficients
         IF( n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
+        ! Compute the volume scattering coefficient
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n)  
+        bs_TL = (Atm_TL%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) ) + &
+                (Atm%Aerosol(n)%Concentration(ka) * ke_TL * ASV%w(ka,n) ) + &
+                (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * w_TL ) 
+        AScat_TL%Single_Scatter_Albedo(ka) = AScat_TL%Single_Scatter_Albedo(ka) + bs_TL
+
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               AScat_TL%Phase_Coefficient(l,m,ka) = AScat_TL%Phase_Coefficient(l,m,ka) + &
@@ -689,19 +693,23 @@ CONTAINS
         ke_AD     = ZERO
         w_AD      = ZERO
         
-        ! Recompute the forward model volume scattering
-        ! coefficient for the current aerosol type ONLY
-        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n) 
-        
         ! Compute the adjoint of the
         ! phase matrix coefficients
         IF( n_Phase_Elements > 0 .and. AScat%Include_Scattering ) THEN
+        ! Recompute the forward model volume scattering
+        ! coefficient for the current aerosol type ONLY
+        bs = Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n) * ASV%w(ka,n)  
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               bs_AD = bs_AD + (ASV%pcoeff(l,m,ka,n) * AScat_AD%Phase_Coefficient(l,m,ka))
               pcoeff_AD(l,m) = pcoeff_AD(l,m) + (bs * AScat_AD%Phase_Coefficient(l,m,ka))
             END DO
           END DO
+        ! NOTE: bs_AD is not reinitialized after this
+        !       point since it is reinitialized at the
+        !       start of the Aerosol_Layer_loop
+        bs_AD = bs_AD + AScat_AD%Single_Scatter_Albedo(ka)
+        w_AD  = w_AD  + (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n)* bs_AD )
         END IF
             
         ! Compute the adjoint of the optical 
@@ -712,11 +720,7 @@ CONTAINS
         
         ! Compute the adjoint of the volume
         ! scattering coefficient.
-        ! NOTE: bs_AD is not reinitialized after this
-        !       point since it is reinitialized at the
-        !       start of the Aerosol_Layer_loop
-        bs_AD = bs_AD + AScat_AD%Single_Scatter_Albedo(ka)
-        w_AD  = w_AD  + (Atm%Aerosol(n)%Concentration(ka) * ASV%ke(ka,n)* bs_AD )
+
         ke_AD = ke_AD + (Atm%Aerosol(n)%Concentration(ka) * bs_AD * ASV%w(ka,n) )
         Atm_AD%Aerosol(n)%Concentration(ka) = Atm_AD%Aerosol(n)%Concentration(ka) + &
                                               ( bs_AD * ASV%ke(ka,n) * ASV%w(ka,n) )
@@ -749,6 +753,8 @@ CONTAINS
         ! Adjoint AScat interpolation routine
         CALL Get_Aerosol_Opt_AD(AScat_AD                              , & ! Input
                                 Atm%Aerosol(n)%Type                   , & ! Input
+                                ASV%ke(ka,n)                          , & ! Output
+                                ASV%w(ka,n)                           , & ! Output
                                 ke_AD                                 , & ! AD Input
                                 w_AD                                  , & ! AD Input
                                 pcoeff_AD                             , & ! AD Input
@@ -860,8 +866,7 @@ CONTAINS
       END DO      
     ELSE
       ! Absorption coefficient
-      ke = ke - w
-      w  = ZERO
+      ke = ke * (ONE- w)
     END IF
 
   END SUBROUTINE Get_Aerosol_Opt
@@ -877,6 +882,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_TL(AerosolScatter_TL, &  ! Input  AerosolScatterTL structure
                                 Aerosol_Type     , &  ! Input  see CRTM_Aerosol_Define.f90
+                                ke               , &  ! Input 
+                                w                , &  ! Input 
                                 Reff_TL          , &  ! Input  TL effective radius (mm)
                                 ke_TL            , &  ! Output TL extinction coefficient (=~ optical depth)
                                 w_TL             , &  ! Output TL single scattering albedo
@@ -886,7 +893,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AerosolScatter_TL
     INTEGER ,                  INTENT(IN)     :: Aerosol_Type
-    REAL(fp),                  INTENT(IN)     :: Reff_TL
+    REAL(fp),                  INTENT(IN)     :: w, ke, Reff_TL
     REAL(fp),                  INTENT(OUT)    :: ke_TL
     REAL(fp),                  INTENT(OUT)    :: w_TL
     REAL(fp),                  INTENT(IN OUT) :: pcoeff_TL(0:,:)
@@ -961,8 +968,11 @@ CONTAINS
       END DO
     ELSE
       ! Absorption coefficient
-      ke_TL = ke_TL - w_TL
-      w_TL  = ZERO 
+      IF( w < ONE ) THEN
+        ke_TL = ke_TL * (ONE - w) - ke/(ONE -w) * w_TL
+      ELSE
+        ke_TL = ZERO
+      END IF
     END IF
     NULLIFY(z)
     
@@ -979,6 +989,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Aerosol_Opt_AD( AerosolScatter_AD, & ! Input AerosolScatter AD structure
                                  Aerosol_Type     , & ! Input see CRTM_Aerosol_Define.f90
+                                 ke               , & ! Input
+                                 w                , & ! Input
                                  ke_AD            , & ! AD Input extinction cross section
                                  w_AD             , & ! AD Input single scatter albedo
                                  pcoeff_AD        , & ! AD Input spherical Legendre coefficients
@@ -987,6 +999,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AerosolScatter_AD
     INTEGER ,                  INTENT(IN)     :: Aerosol_Type
+    REAL(fp),                  INTENT(IN)     :: ke, w
     REAL(fp),                  INTENT(IN OUT) :: ke_AD            ! AD Input
     REAL(fp),                  INTENT(IN OUT) :: w_AD             ! AD Input
     REAL(fp),                  INTENT(IN OUT) :: pcoeff_AD(0:,:)  ! AD Input
@@ -1042,9 +1055,13 @@ CONTAINS
       pcoeff_AD(0,1) = ZERO
     ELSE
       ! Absorption coefficient
-      w_AD  = ZERO
-      w_AD = -ke_AD
-      ke_AD = ke_AD       
+      IF( w < ONE ) THEN
+        w_AD  = w_AD - ke/(ONE -w) * ke_AD
+        ke_AD = ke_AD * (ONE - w)
+      ELSE
+        ke_AD = ZERO
+      END IF
+
     END IF
     
     ! Single scatter albedo

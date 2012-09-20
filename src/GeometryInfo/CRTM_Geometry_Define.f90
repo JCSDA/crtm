@@ -1093,7 +1093,7 @@ CONTAINS
     LOGICAL :: yes_close
     INTEGER :: io_stat
     INTEGER :: fid
-    INTEGER :: m, ng
+    INTEGER :: m, n_file_geometries, n_input_geometries
  
 
     ! Set up
@@ -1134,21 +1134,25 @@ CONTAINS
 
 
     ! Read the dimensions     
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) ng
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_file_geometries
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check if output array large enough
-    IF ( ng > SIZE(Geometry) ) THEN
-      WRITE( msg,'("Number of geometry entries, ",i0," > size of the output ",&
-             &"Geometry object array, ",i0,".")' ) ng, SIZE(Geometry)
-      CALL Read_Cleanup(); RETURN
+    n_input_geometries = SIZE(Geometry)
+    IF ( n_file_geometries > n_input_geometries ) THEN
+      WRITE( msg,'("Number of geometry entries, ",i0," > size of the output ", &
+                  &"Geometry object array, ",i0,". Only the first ",i0, &
+                  &" entries will be read.")' ) &
+                  n_file_geometries, n_input_geometries, n_input_geometries
+      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
     END IF
+    n_input_geometries = MIN(n_input_geometries, n_file_geometries)
 
 
     ! Read the geometry data
-    Geometry_Loop: DO m = 1, ng
+    Geometry_Loop: DO m = 1, n_input_geometries
       err_stat = CRTM_Geometry_ReadRecord( fid, Geometry(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading Geometry element #",i0," from ",a)' ) m, TRIM(Filename)
@@ -1168,12 +1172,13 @@ CONTAINS
 
 
     ! Set the return values
-    IF ( PRESENT(n_Profiles) ) n_Profiles = ng
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_geometries
 
 
     ! Output an info message
     IF ( Noisy ) THEN
-      WRITE( msg,'("Number of Geometry entries read from ",a,": ",i0)' ) TRIM(Filename), ng
+      WRITE( msg,'("Number of Geometry entries read from ",a,": ",i0)' ) &
+             TRIM(Filename), n_input_geometries
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 

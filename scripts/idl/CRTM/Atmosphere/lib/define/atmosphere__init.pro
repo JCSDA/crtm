@@ -40,34 +40,30 @@
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
-;
-; INCLUDE FILES:
-;       atmosphere_parameters: Include file for atmosphere specific parameters.
-;
-;       atmosphere_func_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 10-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 FUNCTION Atmosphere::Init, Debug=Debug  ; Input keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
-  @atmosphere_parameters
   @atmosphere_func_err_handler
  
 
+  ; Create list objects
+  self.Absorber_ID     = LIST()      
+  self.Absorber_Units  = LIST()      
+  self.Level_Pressure  = LIST()      
+  self.Pressure        = LIST()      
+  self.Temperature     = LIST()     
+  self.Absorber        = LIST()    
+  self.Cloud           = LIST()    
+  self.Aerosol         = LIST()   
+  
+  ; Display in debug mode
+  IF ( KEYWORD_SET(Debug) ) THEN self->Inspect, Debug=Debug
+  
   ; Initialise
-  self.Is_Allocated = FALSE
-  self.n_Layers     = 0L
-  self.n_Absorbers  = 0L
-  self.n_Clouds     = 0L
-  self.n_Aerosols   = 0L
-  self.Climatology  = US_STANDARD_ATMOSPHERE
- 
+  self->Destroy, Debug=Debug
   RETURN, TRUE
  
 END

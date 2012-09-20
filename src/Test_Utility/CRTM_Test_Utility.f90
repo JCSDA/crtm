@@ -20,20 +20,20 @@ MODULE CRTM_Test_Utility
                                      CLIMATOLOGY_MODEL_NAME, &
                                      ABSORBER_ID_NAME, &
                                      CLOUD_TYPE_NAME, &
-                                     AEROSOL_TYPE_NAME
-  USE CRTM_Atmosphere_IO     , ONLY: CRTM_Atmosphere_WriteFile, &
-                                     CRTM_Atmosphere_ReadFile
+                                     AEROSOL_TYPE_NAME, &
+                                     CRTM_Atmosphere_ReadFile, &
+                                     CRTM_Atmosphere_WriteFile
   USE CRTM_Surface_Define    , ONLY: CRTM_Surface_type, &
                                      LAND_SURFACE, &
                                      WATER_SURFACE, &
                                      SNOW_SURFACE, &
                                      ICE_SURFACE, &
-                                     SURFACE_TYPE_NAME
-  USE CRTM_Surface_IO        , ONLY: CRTM_Surface_WriteFile, &
+                                     SURFACE_TYPE_NAME, &
+                                     CRTM_Surface_WriteFile, &
                                      CRTM_Surface_ReadFile
-  USE CRTM_RTSolution_Define , ONLY: CRTM_RTSolution_type
-  USE CRTM_RTSolution_IO     , ONLY: CRTM_RTSolution_WriteFile, &
-                                     CRTM_RTSolution_ReadFile
+  USE CRTM_RTSolution_Define , ONLY: CRTM_RTSolution_type, &
+                                     CRTM_RTSolution_ReadFile, &
+                                     CRTM_RTSolution_WriteFile
   ! Disable implicit typing
   IMPLICIT NONE
 

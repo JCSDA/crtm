@@ -43,6 +43,10 @@
                        'H2O2   ', 'C2H2   ', 'C2H6   ', 'PH3    ', $
                        'COF2   ', 'SF6    ', 'H2S    ', 'HCOOH  ' ]
 
+  ; The min/max number of absorbers
+  N_MIN_ABSORBERS = 2  ; H2O and O3 
+  N_MAX_ABSORBERS = N_VALID_ABSORBER_IDS
+
   ; The absorber units. Use LBLRTM definitions and then some.
   N_VALID_ABSORBER_UNITS = 10
   INVALID_ABSORBER_UNITS       =  0

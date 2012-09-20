@@ -806,7 +806,9 @@ CONTAINS
 
 
           ! Compute the combined atmospheric optical properties
-          CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          IF( AtmOptics%Include_Scattering ) THEN
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+          END IF
           ! ...Save vertically integrated scattering optical depth for output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
 
@@ -1009,8 +1011,9 @@ CONTAINS
 
 
           ! Compute the adjoint of the combined atmospheric optical properties
-          CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOV )
-
+          IF( AtmOptics%Include_Scattering ) THEN
+            CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOV )
+          END IF
 
           ! Compute the adjoint aerosol absorption/scattering properties
           IF ( Atm%n_Aerosols > 0 ) THEN

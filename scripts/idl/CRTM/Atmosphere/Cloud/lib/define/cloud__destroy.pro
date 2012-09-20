@@ -1,18 +1,13 @@
-
+;+
 ; NAME:
 ;       Cloud::Destroy
 ;
 ; PURPOSE:
 ;       The Cloud::Destroy procedure method reinitialises a Cloud object.
 ;
-;       NOTE: This method is called by the Cleanup procedure method, but
-;             this Destroy method *can* be called outside the context of
-;             object creation and destruction. That is, this is *not*
-;             a lifecycle method.
-;
 ; CALLING SEQUENCE:
 ;       Obj->[Cloud::]Destroy, $
-;         Debug=Debug           ; Input keyword
+;         Debug=Debug
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:       Set this keyword for debugging.
@@ -23,16 +18,6 @@
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-; INCLUDE FILES:
-;       cloud_parameters: Include file for cloud specific parameters.
-;
-;       cloud_pro_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 10-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 PRO Cloud::Destroy, $
@@ -42,14 +27,13 @@ PRO Cloud::Destroy, $
   @cloud_parameters
   @cloud_pro_err_handler
  
- 
-  ; Reinitialise
-  self.Is_Allocated       = FALSE
-  self.n_Layers           = 0L
-  self.Type               = INVALID_CLOUD
-  self.Effective_Radius   = LIST()
-  self.Effective_Variance = LIST()
-  self.Water_Content      = LIST()
 
- 
-END ; PRO Cloud::Destroy
+  ; Reinitialise
+  self.Is_Allocated = FALSE
+  self.n_Layers     = 0L
+  self.Type         = INVALID_CLOUD
+  IF ( OBJ_VALID(self.Effective_Radius  ) ) THEN self.Effective_Radius   -> REMOVE, /ALL
+  IF ( OBJ_VALID(self.Effective_Variance) ) THEN self.Effective_Variance -> REMOVE, /ALL
+  IF ( OBJ_VALID(self.Water_Content     ) ) THEN self.Water_Content      -> REMOVE, /ALL
+
+END

@@ -3,7 +3,6 @@
 
 PRO Atmosphere__Define
 
-;-
   COMPILE_OPT HIDDEN
   
   void = { Atmosphere, $
@@ -13,12 +12,14 @@ PRO Atmosphere__Define
            n_Clouds       : 0L, $
            n_Aerosols     : 0L, $
            Climatology    : 0L, $
-           Absorber_ID    : LIST(), $
-           Absorber_Units : LIST(), $
-           Level_Pressure : LIST(), $
-           Pressure       : LIST(), $
-           Temperature    : LIST(), $
-           Absorber       : LIST(), $
-           Cloud          : LIST(), $
-           Aerosol        : LIST()  }
+           Absorber_ID    : OBJ_NEW(), $
+           Absorber_Units : OBJ_NEW(), $
+           Level_Pressure : OBJ_NEW(), $
+           Pressure       : OBJ_NEW(), $
+           Temperature    : OBJ_NEW(), $
+           Absorber       : OBJ_NEW(), $
+           Cloud          : OBJ_NEW(), $
+           Aerosol        : OBJ_NEW()  }
 END
+
+;-

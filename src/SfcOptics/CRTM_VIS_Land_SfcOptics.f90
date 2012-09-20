@@ -191,7 +191,7 @@ CONTAINS
     ! Fill the return emissivity and reflectivity arrays
     SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = emissivity
     DO j = 1, SfcOptics%n_Angles
-      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = ONE - SfcOptics%Emissivity(j,1)
+      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE - SfcOptics%Emissivity(j,1))*SfcOptics%Weight(j)
     END DO
 
   END FUNCTION Compute_VIS_Land_SfcOptics

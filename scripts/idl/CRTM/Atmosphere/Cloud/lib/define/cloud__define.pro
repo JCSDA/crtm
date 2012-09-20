@@ -6,14 +6,15 @@
 
 PRO Cloud__Define
 
-;-
   COMPILE_OPT HIDDEN
   
   void = { Cloud, $
            Is_Allocated       : 0,  $
            n_Layers           : 0L, $
            Type               : 0L, $
-           Effective_Radius   : LIST(), $
-           Effective_Variance : LIST(), $
-           Water_Content      : LIST()  }
+           Effective_Radius   : OBJ_NEW(), $
+           Effective_Variance : OBJ_NEW(), $
+           Water_Content      : OBJ_NEW()  }
 END
+
+;-

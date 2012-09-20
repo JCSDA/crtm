@@ -15,6 +15,7 @@ NOCPP_FILES = \
   Binary_File_Utility.f90 \
   Sort_Utility.f90 \
   Search_Utility.f90 \
+  String_Utility.f90 \
   Fundamental_Constants.f90 \
   Hyperbolic_Step.f90 \
   Spectral_Units_Conversion.f90 \

@@ -1,4 +1,4 @@
-  ; CompTest procedure message handler
+  ; Cloud procedure message handler
   @error_codes
   IF ( KEYWORD_SET(Debug) ) THEN BEGIN
     MESSAGE, '--> Entered.', /INFORMATIONAL

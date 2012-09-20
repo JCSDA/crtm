@@ -135,6 +135,10 @@ intel_debug:
 intel:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_PROD)
 
+ifort_debug: intel_debug
+
+ifort: intel
+
 
 lahey_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_DEBUG)

@@ -222,7 +222,7 @@ CONTAINS
 !   Subroutine to print the contents of a Timing object to stdout.
 !
 ! CALLING SEQUENCE:
-!   CALL CRTM_Timing_Inspect( timing )
+!   CALL Timing_Inspect( timing )
 !
 ! OBJECTS:
 !   Timing:  Timing object to display.

@@ -295,17 +295,6 @@ CONTAINS
           CSV%w(kc,n) = ONE
         END IF                
  
-        ! Compute the volume scattering coefficient for the current
-        ! cloud layer and accumulate it for the layer total for the
-        ! profile (i.e. all clouds)
-        !   bs = rho.w.ke
-        ! where
-        !   bs  = volume scattering coefficient for a layer [dimensionless]
-        !   rho = integrated cloud water density for a layer (g/m^2) [M.L^-2]
-        !   w   = single scatter albedo [dimensionless]
-        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
-        bs = Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) 
-        CSV%Total_bs(kc) = CSV%Total_bs(kc) + bs
 
         ! Compute the optical depth (absorption + scattering)
         !   tau = rho.ke
@@ -323,12 +312,25 @@ CONTAINS
         ! compute the single scatter albedo in the Layer_loop below.
         CScat%Optical_Depth(kc) = CScat%Optical_Depth(kc) + &
                                   (CSV%ke(kc,n)*Atm%Cloud(n)%Water_Content(kc))
-        CScat%Single_Scatter_Albedo(kc) = CScat%Single_Scatter_Albedo(kc) + bs
+
         ! Compute the phase matrix coefficients
         !   p = p + p(LUT)*bs
         ! where
         !   p(LUT) = the phase coefficient from the LUT
         IF( CScat%n_Phase_Elements > 0  .and. CScat%Include_Scattering ) THEN
+        ! Compute the volume scattering coefficient for the current
+        ! cloud layer and accumulate it for the layer total for the
+        ! profile (i.e. all clouds)
+        !   bs = rho.w.ke
+        ! where
+        !   bs  = volume scattering coefficient for a layer [dimensionless]
+        !   rho = integrated cloud water density for a layer (g/m^2) [M.L^-2]
+        !   w   = single scatter albedo [dimensionless]
+        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+        bs = Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) 
+        CSV%Total_bs(kc) = CSV%Total_bs(kc) + bs
+        CScat%Single_Scatter_Albedo(kc) = CScat%Single_Scatter_Albedo(kc) + bs
+        
           DO m = 1, CScat%n_Phase_Elements       
             DO l = 1, CScat%n_Legendre_Terms
               CScat%Phase_Coefficient(l,m,kc) = CScat%Phase_Coefficient(l,m,kc) + &
@@ -501,6 +503,8 @@ CONTAINS
         IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
           CALL Get_Cloud_Opt_MW_TL(CScat_TL                            , & ! Input
                                    Atm%Cloud(n)%Type                   , & ! Input
+                                   CSV%ke(kc,n)                        , & ! Input
+                                   CSV%w(kc,n)                         , & ! Input
                                    Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
                                    Atm_TL%Temperature(kc)              , & ! TL  Input
                                    ke_TL                               , & ! TL  Output
@@ -511,6 +515,8 @@ CONTAINS
                   SpcCoeff_IsVisibleSensor( SC(SensorIndex))      ) THEN
           CALL Get_Cloud_Opt_IR_TL(CScat_TL                            , & ! Input
                                    Atm%Cloud(n)%Type                   , & ! Input
+                                   CSV%ke(kc,n)                        , & ! Input
+                                   CSV%w(kc,n)                         , & ! Input
                                    Atm_TL%Cloud(n)%Effective_Radius(kc), & ! TL  Input
                                    ke_TL                               , & ! TL  Output
                                    w_TL                                , & ! TL  Output
@@ -535,6 +541,12 @@ CONTAINS
           w_TL = ZERO
         END IF        
 
+        ! Compute the optical depth (absorption + scattering)
+        CScat_TL%Optical_Depth(kc) = CScat_TL%Optical_Depth(kc) + &
+                                     (ke_TL        * Atm%Cloud(n)%Water_Content(kc)) + &
+                                     (CSV%ke(kc,n) * Atm_TL%Cloud(n)%Water_Content(kc))
+        ! Compute the phase matrix coefficients
+        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
         ! Compute the volume scattering coefficient
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) 
         bs_TL = (Atm_TL%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) ) + &
@@ -542,12 +554,6 @@ CONTAINS
                 (Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * w_TL ) 
 
         CScat_TL%Single_Scatter_Albedo(kc) = CScat_TL%Single_Scatter_Albedo(kc) + bs_TL
-        ! Compute the optical depth (absorption + scattering)
-        CScat_TL%Optical_Depth(kc) = CScat_TL%Optical_Depth(kc) + &
-                                     (ke_TL        * Atm%Cloud(n)%Water_Content(kc)) + &
-                                     (CSV%ke(kc,n) * Atm_TL%Cloud(n)%Water_Content(kc))
-        ! Compute the phase matrix coefficients
-        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               CScat_TL%Phase_Coefficient(l,m,kc) = CScat_TL%Phase_Coefficient(l,m,kc) + &
@@ -727,21 +733,24 @@ CONTAINS
         ke_AD     = ZERO
         w_AD      = ZERO
 
-
+        ! Compute the adjoint of the
+        ! phase matrix coefficients
+        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
         ! Recompute the forward model volume scattering
         ! coefficient for the current cloud ONLY
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) 
 
-        ! Compute the adjoint of the
-        ! phase matrix coefficients
-        IF( n_Phase_Elements > 0 .and. CScat%Include_Scattering ) THEN
           DO m = 1, n_Phase_Elements
             DO l = 0, n_Legendre_Terms
               bs_AD = bs_AD + (CSV%pcoeff(l,m,kc,n) * CScat_AD%Phase_Coefficient(l,m,kc))
               pcoeff_AD(l,m) = pcoeff_AD(l,m) + (bs * CScat_AD%Phase_Coefficient(l,m,kc))
             END DO
           END DO
-          
+        ! NOTE: bs_AD is not reinitialised after this
+        !       point since it is reinitialised at the
+        !       start of the Cloud_Layer_loop.
+        bs_AD = bs_AD + CScat_AD%Single_Scatter_Albedo(kc)
+        w_AD  = w_AD  + (Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n)* bs_AD )          
         END IF
 
         ! Compute the adjoint of the optical 
@@ -752,11 +761,7 @@ CONTAINS
 
         ! Compute the adjoint of the volume
         ! scattering coefficient.
-        ! NOTE: bs_AD is not reinitialised after this
-        !       point since it is reinitialised at the
-        !       start of the Cloud_Layer_loop.
-        bs_AD = bs_AD + CScat_AD%Single_Scatter_Albedo(kc)
-        w_AD  = w_AD  + (Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n)* bs_AD )
+
         ke_AD = ke_AD + (Atm%Cloud(n)%Water_Content(kc) * bs_AD * CSV%w(kc,n) )
         Atm_AD%Cloud(n)%Water_Content(kc) = Atm_AD%Cloud(n)%Water_Content(kc) + &
                                               ( bs_AD * CSV%ke(kc,n) * CSV%w(kc,n) )
@@ -778,6 +783,8 @@ CONTAINS
         IF ( SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
           CALL Get_Cloud_Opt_MW_AD(CScat_AD                            , & ! Input
                                    Atm%Cloud(n)%Type                   , & ! Input
+                                   CSV%ke(kc,n)                        , & ! Input
+                                   CSV%w(kc,n)                         , & ! Input
                                    ke_AD                               , & ! AD  Input
                                    w_AD                                , & ! AD  Input
                                    pcoeff_AD                           , & ! AD  Input
@@ -788,6 +795,8 @@ CONTAINS
                   SpcCoeff_IsVisibleSensor( SC(SensorIndex))      ) THEN
           CALL Get_Cloud_Opt_IR_AD(CScat_AD                            , & ! Input
                                    Atm%Cloud(n)%Type                   , & ! Input
+                                   CSV%ke(kc,n)                        , & ! Input
+                                   CSV%w(kc,n)                         , & ! Input
                                    ke_AD                               , & ! AD  Input
                                    w_AD                                , & ! AD  Input
                                    pcoeff_AD                           , & ! AD  Input
@@ -886,8 +895,7 @@ CONTAINS
       END DO      
     ELSE
       ! Absorption coefficient
-      ke = ke - w
-      w  = ZERO    
+      ke = ke *(ONE - w) 
     END IF
     
   END SUBROUTINE Get_Cloud_Opt_IR
@@ -902,6 +910,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_TL( CloudScatter_TL, &  ! Input      CloudScatter TL structure
                                   cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
+                                  ke             , &  ! Input
+                                  w              , &  ! Input
                                   Reff_TL        , &  ! TL  Input  effective radius (mm)
                                   ke_TL          , &  ! TL  Output extinction coefficient (=~ optical depth for 1 mm water content)
                                   w_TL           , &  ! TL  Output single scattering albedo
@@ -910,7 +920,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_TL
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff_TL
+    REAL(fp),                   INTENT(IN)     :: ke, w, Reff_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_TL(0:,:)
@@ -992,8 +1002,11 @@ CONTAINS
       END DO
     ELSE    
       ! Absorption coefficient
-      ke_TL = ke_TL - w_TL
-      w_TL  = ZERO
+      IF( w < ONE ) THEN
+        ke_TL = ke_TL * (ONE - w) - ke/(ONE -w) * w_TL
+      ELSE
+        ke_TL = ZERO
+      END IF
     END IF
     NULLIFY(z)
     
@@ -1007,6 +1020,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_IR_AD( CloudScatter_AD, &  ! Input      CloudScatter AD structure
                                   cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90
+                                  ke             , &  ! Input
+                                  w              , &  ! Input
                                   ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
                                   w_AD           , &  ! AD  Input  single scattering albedo
                                   pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
@@ -1015,6 +1030,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_AD
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
+    REAL(fp),                   INTENT(IN)     :: ke, w
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
@@ -1075,8 +1091,12 @@ CONTAINS
       pcoeff_AD(0,1) = ZERO    
     ELSE
       ! Absorption coefficient
-      w_AD  = -ke_AD
-      ke_AD = ke_AD
+      IF( w < ONE ) THEN
+        w_AD  = w_AD - ke/(ONE -w) * ke_AD
+        ke_AD = ke_AD * (ONE - w) 
+      ELSE
+        ke_AD = ZERO
+      END IF
     END IF
     ! Single scatter albedo
     z => CloudC%w_IR(csi%i1:csi%i2,csi%j1:csi%j2,k)
@@ -1201,9 +1221,7 @@ CONTAINS
 
         ELSE
         ! Absorption coefficient
-          ke = ke - w
-          w  = ZERO
-        
+          ke = ke * (ONE - w)
         END IF
 
       ! Only 1-D interpolation of extinction coefficient as a
@@ -1235,8 +1253,7 @@ CONTAINS
 
         ELSE
         ! Absorption coefficient
-          ke = ke - w
-          w  = ZERO
+          ke = ke * (ONE - w)
         END IF
         
     END SELECT
@@ -1253,6 +1270,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW_TL( CloudScatter_TL, &  ! Input  CloudScatter TL structure
                                   cloud_type     , &  ! Input  see CRTM_Cloud_Define.f90
+                                  ke             , &  ! Input
+                                  w              , &  ! Input
                                   Reff_TL        , &  ! TL  Input  effective radius (mm)
                                   Temperature_TL , &  ! TL  Input  cloudy temperature
                                   ke_TL          , &  ! TL  Output extinction coefficient (=~ optical depth for 1 mm water content)
@@ -1262,7 +1281,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_TL
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
-    REAL(fp),                   INTENT(IN)     :: Reff_TL
+    REAL(fp),                   INTENT(IN)     :: ke, w, Reff_TL
     REAL(fp),                   INTENT(IN)     :: Temperature_TL
     REAL(fp),                   INTENT(OUT)    :: ke_TL
     REAL(fp),                   INTENT(OUT)    :: w_TL
@@ -1366,9 +1385,11 @@ CONTAINS
           END DO
         ELSE
         ! Absorption coefficient
-          ke_TL = ke_TL - w_TL
-          w_TL  = ZERO
-
+        IF( w < ONE ) THEN
+          ke_TL = ke_TL * (ONE - w) - ke/(ONE -w) * w_TL
+        ELSE
+          ke_TL = ZERO
+        END IF
         END IF
 
       ! No TL interpolation of extinction coefficient as it
@@ -1415,8 +1436,11 @@ CONTAINS
 
         ELSE
           ! Absorption coefficient
-          ke_TL = ke_TL - w_TL
-          w_TL  = ZERO
+        IF( w < ONE ) THEN
+          ke_TL = ke_TL * (ONE - w) - ke/(ONE -w) * w_TL
+        ELSE
+          ke_TL = ZERO
+        END IF
         END IF
     END SELECT
     NULLIFY(z2, z3)
@@ -1432,6 +1456,8 @@ CONTAINS
   ! ---------------------------------------------
   SUBROUTINE Get_Cloud_Opt_MW_AD(CloudScatter_AD, &  ! Input      CloudScatter AD structure
                                  cloud_type     , &  ! Input      see CRTM_Cloud_Define.f90 
+                                 ke             , &  ! Input
+                                 w              , &  ! Input
                                  ke_AD          , &  ! AD  Input  extinction coefficient (=~ optical depth for 1 mm water content)
                                  w_AD           , &  ! AD  Input  single scattering albedo
                                  pcoeff_AD      , &  ! AD  Input  spherical Legendre coefficients
@@ -1441,6 +1467,7 @@ CONTAINS
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: CloudScatter_AD
     INTEGER ,                   INTENT(IN)     :: Cloud_Type
+    REAL(fp),                   INTENT(IN)     :: ke, w
     REAL(fp),                   INTENT(IN OUT) :: ke_AD           ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: w_AD            ! AD  Input 
     REAL(fp),                   INTENT(IN OUT) :: pcoeff_AD(0:,:) ! AD  Input 
@@ -1538,9 +1565,12 @@ CONTAINS
 
         ELSE
         ! Absorption coefficient
-          w_AD  = -ke_AD
-          ke_AD = ke_AD
-          
+        IF( w < ONE ) THEN
+          w_AD  = w_AD - ke/(ONE -w) * ke_AD
+          ke_AD = ke_AD * (ONE - w) 
+        ELSE
+          ke_AD = ZERO
+        END IF
         END IF
         ! Single scatter albedo
         z3 => CloudC%w_L_MW(csi%i1:csi%i2,csi%j1:csi%j2,csi%k1:csi%k2)
@@ -1614,8 +1644,13 @@ CONTAINS
           pcoeff_AD(0,1) = ZERO 
         ELSE
           ! Absorption coefficient
-          w_AD  = -ke_AD
-          ke_AD = ke_AD
+        IF( w < ONE ) THEN
+          w_AD  = w_AD - ke/(ONE -w) * ke_AD
+          ke_AD = ke_AD * (ONE - w)
+        ELSE
+          ke_AD = ZERO
+        END IF
+
         END IF
         ! Single scatter albedo
         z2 => CloudC%w_S_MW(csi%i1:csi%i2,csi%j1:csi%j2,k)

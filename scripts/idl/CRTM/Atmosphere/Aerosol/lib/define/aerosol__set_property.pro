@@ -8,10 +8,10 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[Aerosol::]Set_Property, $
-;         Type             = Type            , $  ; Input keyword
-;         Effective_Radius = Effective_Radius, $  ; Input keyword
-;         Concentration    = Concentration   , $  ; Input keyword
-;         Debug            = Debug                ; Input keyword
+;         Type             = Type            , $
+;         Effective_Radius = Effective_Radius, $
+;         Concentration    = Concentration   , $
+;         Debug            = Debug             
 ;
 ; INPUT KEYWORDS:
 ;       Type:                  Integer flag specifying the aerosol type.
@@ -40,16 +40,6 @@
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-; INCLUDE FILES:
-;       aerosol_parameters: Include file for aerosol specific parameters.
-;
-;       aerosol_pro_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 09-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 PRO Aerosol::Set_Property, $
@@ -102,4 +92,4 @@ PRO Aerosol::Set_Property, $
     self.Type = _Type
   ENDIF
 
-END ; PRO Aerosol::Set_Property
+END

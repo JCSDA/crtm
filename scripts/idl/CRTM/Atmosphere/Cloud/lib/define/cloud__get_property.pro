@@ -8,12 +8,12 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[Cloud::]Get_Property, $
-;         Debug              = Debug             , $  ; Input keyword
-;         n_Layers           = n_Layers          , $  ; Output keyword
-;         Type               = Type              , $  ; Output keyword
-;         Effective_Radius   = Effective_Radius  , $  ; Output keyword
-;         Effective_Variance = Effective_Variance, $  ; Output keyword
-;         Water_Content      = Water_Content          ; Output keyword
+;         Debug              = Debug             , $
+;         n_Layers           = n_Layers          , $
+;         Type               = Type              , $
+;         Effective_Radius   = Effective_Radius  , $
+;         Effective_Variance = Effective_Variance, $
+;         Water_Content      = Water_Content        
 ;
 ; INPUT KEYWORDS:
 ;       Debug:                 Set this keyword for debugging.
@@ -57,16 +57,6 @@
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Rank-1
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
-;
-; INCLUDE FILES:
-;       cloud_parameters: Include file for cloud specific parameters.
-;
-;       cloud_pro_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 09-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 PRO Cloud::Get_Property, $
@@ -93,4 +83,4 @@ PRO Cloud::Get_Property, $
   IF ( ARG_PRESENT(Effective_Variance) ) THEN Effective_Variance = (self.Effective_Variance)[0]
   IF ( ARG_PRESENT(Water_Content     ) ) THEN Water_Content      = (self.Water_Content)[0]     
 
-END ; PRO Cloud::Get_Property
+END

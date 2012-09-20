@@ -7,7 +7,7 @@
 ;       components of a Aerosol object are associated with some data.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[Aerosol::]Associated( Debug=Debug )  ; Input keyword
+;       Result = Obj->[Aerosol::]Associated( Debug=Debug )
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:       Set this keyword for debugging.
@@ -28,14 +28,6 @@
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
-;
-; INCLUDE FILES:
-;       aerosol_func_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 09-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 FUNCTION Aerosol::Associated, $
@@ -48,4 +40,4 @@ FUNCTION Aerosol::Associated, $
   ; Test association status
   RETURN, self.Is_Allocated
  
-END ; FUNCTION Aerosol::Associated
+END

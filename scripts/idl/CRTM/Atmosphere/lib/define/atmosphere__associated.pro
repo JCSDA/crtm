@@ -1,13 +1,13 @@
 ;+
 ; NAME:
-;       Cloud::Associated
+;       Atmosphere::Associated
 ;
 ; PURPOSE:
-;       The Cloud::Associated function determies if the list
-;       components of a Cloud object are associated with some data.
+;       The Atmosphere::Associated function determies if the list
+;       components of a Atmosphere object are associated with some data.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[Cloud::]Associated( Debug=Debug )
+;       Result = Obj->[Atmosphere::]Associated( Debug=Debug )
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:       Set this keyword for debugging.
@@ -30,14 +30,24 @@
 ;                    DIMENSION:  Scalar
 ;-
 
-FUNCTION Cloud::Associated, $
+FUNCTION Atmosphere::Associated, $
   Debug=Debug           ; Input keyword
  
   ; Set up
-  @cloud_func_err_handler
+  @atmosphere_func_err_handler
 
-
+  
   ; Test association status
-  RETURN, self.Is_Allocated
+  status = self.Is_Allocated
+  ; ...Clouds
+  IF ( self.n_Clouds GT 0 ) THEN $
+    FOR i = 0L, self.n_Clouds-1L DO $
+      status = status AND (self.Cloud)[i]->Cloud::Associated( Debug=Debug )
+  ; ...Aerosols
+  IF ( self.n_Aerosols GT 0 ) THEN $
+    FOR i = 0L, self.n_Aerosols-1L DO $
+      status = status AND (self.Aerosol)[i]->Aerosol::Associated( Debug=Debug )
+ 
+  RETURN, status
  
 END

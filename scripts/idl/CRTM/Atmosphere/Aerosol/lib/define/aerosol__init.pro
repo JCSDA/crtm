@@ -35,21 +35,10 @@
 ;                    status. The error codes are defined in the error_codes
 ;                    include file.
 ;                    If == TRUE the object creation was sucessful
-;                       == FALSE an unrecoverable error occurred
-;                   
+;                       == FALSE an unrecoverable error occurred                  
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
-;
-; INCLUDE FILES:
-;       aerosol_parameters: Include file for aerosol specific parameters.
-;
-;       aerosol_func_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 09-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 FUNCTION Aerosol::Init, Debug=Debug  ; Input keyword
@@ -59,6 +48,13 @@ FUNCTION Aerosol::Init, Debug=Debug  ; Input keyword
   @aerosol_func_err_handler
  
 
+  ; Create list objects
+  self.Effective_Radius = LIST()
+  self.Concentration    = LIST()
+
+  ; Display in debug mode
+  IF ( KEYWORD_SET(Debug) ) THEN self->Inspect, Debug=Debug
+  
   ; Initialise
   self->Destroy, Debug = Debug
   RETURN, TRUE

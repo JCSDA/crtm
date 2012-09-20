@@ -8,11 +8,11 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[Aerosol::]Get_Property, $
-;         Debug            = Debug           , $  ; Input keyword
-;         n_Layers         = n_Layers        , $  ; Output keyword
-;         Type             = Type            , $  ; Output keyword
-;         Effective_Radius = Effective_Radius, $  ; Output keyword
-;         Concentration    = Concentration        ; Output keyword
+;         Debug            = Debug           , $
+;         n_Layers         = n_Layers        , $
+;         Type             = Type            , $
+;         Effective_Radius = Effective_Radius, $
+;         Concentration    = Concentration      
 ;
 ; INPUT KEYWORDS:
 ;       Debug:                 Set this keyword for debugging.
@@ -49,16 +49,6 @@
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Rank-1
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
-;
-; INCLUDE FILES:
-;       aerosol_parameters: Include file for aerosol specific parameters.
-;
-;       aerosol_pro_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 10-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 PRO Aerosol::Get_Property, $
@@ -83,4 +73,4 @@ PRO Aerosol::Get_Property, $
   IF ( ARG_PRESENT(Effective_Radius) ) THEN Effective_Radius = (self.Effective_Radius)[0]  
   IF ( ARG_PRESENT(Concentration   ) ) THEN Concentration    = (self.Concentration)[0]     
 
-END ; PRO Aerosol::Get_Property
+END

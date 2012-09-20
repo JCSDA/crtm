@@ -98,7 +98,7 @@ PRO RTS_File::Read, $
         Down_Solar_Radiance     = Down_Solar_Radiance    , $
         Surface_Planck_Radiance = Surface_Planck_Radiance
       READU, fileid, $
-;             SOD                    , $
+             SOD                    , $
              Surface_Emissivity     , $
              Up_Radiance            , $
              Down_Radiance          , $

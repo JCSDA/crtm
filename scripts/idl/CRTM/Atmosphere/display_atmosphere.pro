@@ -57,6 +57,7 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
 
   ; Plot the "regular" profile data
   ; ...Plot the temperature profile
+  !P.MULTI = 0
   PLOT, *a.temperature, p, $
         TITLE = Title + '!CTemperature', $
         XTITLE = 'Temperature (K)', $
@@ -71,28 +72,30 @@ PRO Display_Atmosphere, Atm              , $  ; Input. Output from CRTM_Read_Atm
 
   ; ...Determine the number of absorber plot loops
   n = a.n_Absorbers
-  nx = 2
+  nx = 3
   nPlots = (n MOD nx) EQ 0 ? n/nx : n/nx+1
   !P.MULTI = [0, nx, 1]
 
   ; ...Plot the absorber profiles
   FOR i = 0, a.n_Absorbers-1, nx DO BEGIN
-    FOR i2 = 0, 1 DO BEGIN
+    FOR i2 = 0, nx-1 DO BEGIN
       j = i+i2
-      PLOT, (*a.absorber)[*,j], p, $
-            TITLE = Title + '!CAbsorber #'+STRTRIM(j+1,2), $
-            XTITLE = 'Absorber Units', $
-            YTITLE = 'Pressure (hPa)', $
-            XLOG = xLog, $
-            XTICKFORMAT = xTickformat, $
-            YLOG = yLog, /YSTYLE, YRANGE = pRange, $
-            YTICKFORMAT = yTickformat, $
-            YMARGIN = [4,4], $
-            CHARSIZE = charSize, $
-            PSYM = pSym
-      IF ( NOT KEYWORD_SET(xLog) ) THEN $
-        OPLOT, [0,0], KEYWORD_SET(yLog) ? 10^!Y.CRANGE : !Y.CRANGE, $
-               LINESTYLE = 2
+      IF ( j LT n ) THEN BEGIN
+        PLOT, (*a.absorber)[*,j], p, $
+              TITLE = Title + '!CAbsorber #'+STRTRIM(j+1,2), $
+              XTITLE = 'Absorber Units', $
+              YTITLE = 'Pressure (hPa)', $
+              XLOG = xLog, $
+              XTICKFORMAT = xTickformat, $
+              YLOG = yLog, /YSTYLE, YRANGE = pRange, $
+              YTICKFORMAT = yTickformat, $
+              YMARGIN = [4,4], $
+              CHARSIZE = charSize, $
+              PSYM = pSym
+        IF ( NOT KEYWORD_SET(xLog) ) THEN $
+          OPLOT, [0,0], KEYWORD_SET(yLog) ? 10^!Y.CRANGE : !Y.CRANGE, $
+                 LINESTYLE = 2
+      ENDIF
     ENDFOR
     
     q = GET_KBRD(1)

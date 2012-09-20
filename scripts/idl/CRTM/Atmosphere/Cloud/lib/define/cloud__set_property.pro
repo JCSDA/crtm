@@ -8,11 +8,11 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[Cloud::]Set_Property, $
-;         Type               = Type              , $  ; Input keyword
-;         Effective_Radius   = Effective_Radius  , $  ; Input keyword
-;         Effective_Variance = Effective_Variance, $  ; Input keyword
-;         Water_Content      = Water_Content     , $  ; Input keyword
-;         Debug              = Debug                  ; Input keyword
+;         Type               = Type              , $
+;         Effective_Radius   = Effective_Radius  , $
+;         Effective_Variance = Effective_Variance, $
+;         Water_Content      = Water_Content     , $
+;         Debug              = Debug                
 ;
 ; INPUT KEYWORDS:
 ;       Type:                  Integer flag specifying the cloud type.
@@ -55,16 +55,6 @@
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-; INCLUDE FILES:
-;       cloud_parameters: Include file for cloud specific parameters.
-;
-;       cloud_pro_err_handler: Include file for error handling.
-;
-; CREATION HISTORY:
-;       Written by:     Paul van Delst, 09-Dec-2010
-;                       paul.vandelst@noaa.gov
-;
 ;-
 
 PRO Cloud::Set_Property, $
@@ -125,4 +115,4 @@ PRO Cloud::Set_Property, $
     self.Type = _Type
   ENDIF
 
-END ; PRO Cloud::Set_Property
+END

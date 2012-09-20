@@ -19,6 +19,9 @@
 #       include make.profile_data_targets
 #
 # REQUIRED MACRO DEFINITIONS:
+#       PROFILE_DATA_FILES
+#         Defines the list of profile data files to be linked in.
+#
 #       ENDIAN_TYPE
 #         Defines the byte-sex of the files to link in.
 #         Must be defined as either
@@ -41,13 +44,6 @@
 # $Id$
 #
 #------------------------------------------------------------------------------
-
-
-# Common definitions
-#PROFILE_DATA_FILES = Test.Atmosphere.Cloud.Aerosol.bin \
-#                     Test.Geometry.bin \
-#                     Test.Surface.bin
-PROFILE_DATA_FILES = ECMWF83.Atmosphere.bin
 
 # File link creation and removal
 # DO NOT CHANGE THESE TARGET NAMES
