@@ -1,0 +1,30 @@
+Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
+Integrate_Utility.o : Integrate_Utility.f90 Interpolate_Utility.o Compare_Float_Numbers.o Fundamental_Constants.o Message_Handler.o Type_Kinds.o 
+Interpolate_Utility.o : Interpolate_Utility.f90 Spline_Interpolation.o Polynomial_Interpolation.o Linear_Interpolation.o 
+IR_SRF2oSRF.o : IR_SRF2oSRF.f90 SensorInfo_Parameters.o SensorInfo_Define.o SensorInfo_LinkedList.o SensorInfo_IO.o oSRF_Define.o oSRF_File_Define.o CRTM_Parameters.o Message_Handler.o File_Utility.o Type_Kinds.o 
+Linear_Interpolation.o : Linear_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
+netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
+netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 
+oSRF_Define.o : oSRF_Define.f90 Spectral_Units_Conversion.o Fundamental_Constants.o Planck_Functions.o PtrArr_Define.o SensorInfo_Parameters.o Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+oSRF_File_Define.o : oSRF_File_Define.f90 oSRF_Define.o SensorInfo_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
+Planck_Functions.o : Planck_Functions.f90 Message_Handler.o Fundamental_Constants.o Type_Kinds.o 
+Polynomial_Interpolation.o : Polynomial_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+PtrArr_Define.o : PtrArr_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+Search_Utility.o : Search_Utility.f90 Message_Handler.o Type_Kinds.o 
+SensorInfo_Define.o : SensorInfo_Define.f90 SensorInfo_Parameters.o Message_Handler.o Type_Kinds.o 
+SensorInfo_IO.o : SensorInfo_IO.f90 SensorInfo_LinkedList.o SensorInfo_Define.o Message_Handler.o File_Utility.o 
+SensorInfo_LinkedList.o : SensorInfo_LinkedList.f90 SensorInfo_Define.o Message_Handler.o 
+SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
+Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o 
+Spectral_Units_Conversion.o : Spectral_Units_Conversion.f90 Fundamental_Constants.o Type_Kinds.o 
+Spline_Interpolation.o : Spline_Interpolation.f90 Search_Utility.o Message_Handler.o Type_Kinds.o 
+SRF_Define_old.o : SRF_Define_old.f90 Integrate_Utility.o Message_Handler.o Type_Kinds.o 
+SRF_netCDF_IO_old.o : SRF_netCDF_IO_old.f90 netCDF_Utility.o Message_Handler.o Type_Kinds.o 
+String_Utility.o : String_Utility.f90 
+Type_Kinds.o : Type_Kinds.f90 
