@@ -244,7 +244,8 @@ PROGRAM IR_SRF2oSRF
       DO i = 1, n_Bands
         oSRF_File%oSRF(l)%f1(i) = fi(1,i)
         oSRF_File%oSRF(l)%f2(i) = fi(2,i)
-        oSRF_File%oSRF(l)%Frequency(i)%Arr = fi(1, i) + (fi(2,i)-fi(1,i)) *(/ (REAL(m,fp),m=0,n_Points(l)-1) /) / REAL(n_Points(l)-1,fp)  
+        oSRF_File%oSRF(l)%Frequency(i)%Arr = fi(1, i) + (fi(2,i)-fi(1,i)) *(/ (REAL(m,fp),m=0,n_Points(l)-1) /) &
+                                             / REAL(n_Points(l)-1,fp)
         oSRF_File%oSRF(l)%Response(i)%Arr  = SRF_old%Response
       END DO
       
