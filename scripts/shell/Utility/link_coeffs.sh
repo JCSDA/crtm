@@ -82,6 +82,8 @@ type ${LINK_SCRIPT} >/dev/null 2>&1 || {
 # ...Define sensor independent coefficient files.
 COMMON_COEFF_FILES="AerosolCoeff.bin \
 CloudCoeff.bin \
+FASTEM4.MWwater.EmisCoeff.bin \
+FASTEM5.MWwater.EmisCoeff.bin \
 Nalli.IRwater.EmisCoeff.bin \
 WuSmith.IRwater.EmisCoeff.bin \
 NPOESS.IRice.EmisCoeff.bin \
