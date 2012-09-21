@@ -55,7 +55,7 @@ PROGRAM IR_SRF2oSRF
   TYPE( SensorInfo_List_type ) :: SensorInfo_List
   TYPE( oSRF_File_type ) :: oSRF_File
   TYPE( SensorInfo_type ) :: SensorInfo
-  INTEGER, ALLOCATABLE :: n_BPoints(:), n_Points(:), Channel_List(:)
+  INTEGER, ALLOCATABLE :: n_BPoints(:), n_Points(:)
   REAL(fp),ALLOCATABLE :: Begin_Frequency(:), End_Frequency(:)
   CHARACTER(256)  :: msg
   CHARACTER(2000) :: History=''
@@ -145,7 +145,7 @@ PROGRAM IR_SRF2oSRF
     oSRF_File%WMO_Sensor_Id    = SensorInfo%WMO_Sensor_Id
     oSRF_File%Sensor_Type      = INFRARED_SENSOR
     
-    ALLOCATE( n_Points(SensorInfo%n_Channels), Channel_List(SensorInfo%n_Channels), &
+    ALLOCATE( n_Points(SensorInfo%n_Channels), &
               Begin_Frequency(SensorInfo%n_Channels), &
               End_Frequency(SensorInfo%n_Channels), &
              STAT = alloc_stat )
@@ -157,7 +157,6 @@ PROGRAM IR_SRF2oSRF
          
     Error_Status =  Inquire_SRF_netCDF_old( SRF_Filename, &
                                             n_Points         = n_Points, &
-                                            Channel_List     = Channel_List, &
                                             Begin_Frequency  = Begin_Frequency,  &
                                             End_Frequency    = End_Frequency,    &
                                             Title            = Title,   &     
@@ -186,7 +185,7 @@ PROGRAM IR_SRF2oSRF
 
       ! read old srf
       Error_Status = Read_SRF_netCDF_old( SRF_Filename, &
-                                          Channel_List(l), &
+                                          SensorInfo%Sensor_Channel(l), &
                                           SRF_old)
 
       IF ( Error_Status /= SUCCESS ) THEN
@@ -292,7 +291,7 @@ PROGRAM IR_SRF2oSRF
     END DO Channel_Loop
     
      ! Deallocate Sideband points array                   
-     DEALLOCATE( n_Points, Channel_List,Begin_Frequency, End_Frequency, &
+     DEALLOCATE( n_Points, Begin_Frequency, End_Frequency, &
         STAT = alloc_stat )           
      IF ( alloc_stat /= 0 ) THEN                          
        msg = 'Error deallocating n_Points,Begin_Frequency, and End_Frequency array'         
