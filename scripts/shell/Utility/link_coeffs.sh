@@ -197,7 +197,7 @@ ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
 # ...Link the TauCoeff files
 echo; echo "...linking TauCoeff coefficient files..."
 TAUCOEFF_FILES=`ls ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE}/${ENDIAN_TYPE}`
-${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${TAUCOEFF_FILES}
+${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
 
 # ...Return to original directory
 cd ${CURRENT_DIR}
