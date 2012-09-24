@@ -45,7 +45,7 @@ PROGRAM IR_SRF2oSRF
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id: IR_SRF2oSRF.f90 14745 2012-09-19 17:19:22Z yong.chen@noaa.gov $'
+  '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'IR_SRF2oSRF'
 
   
@@ -75,7 +75,7 @@ PROGRAM IR_SRF2oSRF
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to construct oSRF files from SRF data' // &
                         ' for IR sensors.', &
-                        '$Revision: 14745 $'                             )
+                        '$Revision$'                             )
   
   
   ! Read the SensorInfo file
@@ -113,7 +113,6 @@ PROGRAM IR_SRF2oSRF
   ! =================
   Sensor_Loop: DO n = 1, n_Sensors 
     
-
     ! Get SensorInfo for sensor n
     Error_Status = GetFrom_SensorInfo_List( SensorInfo_List,     &  ! Input
                                             n,                   &  ! Input
@@ -124,11 +123,8 @@ PROGRAM IR_SRF2oSRF
       CYCLE Sensor_Loop
     END IF 
     
-
     ! Cycle if its not a infrared sensor
     IF ( .NOT. (SensorInfo%Sensor_Type==INFRARED_SENSOR) ) CYCLE Sensor_Loop
-
-
         
     SRF_Filename = TRIM( SensorInfo%Sensor_Id )//'.srf.nc'
 
@@ -164,19 +160,16 @@ PROGRAM IR_SRF2oSRF
                                             Comment          = Comment   )    
 
     IF ( Error_Status /= SUCCESS ) THEN
-       CALL display_message( PROGRAM_NAME, &
-                             'Error inquire old format SRF file '//&
-                             TRIM( SRF_Filename  ), &
-                             Error_Status )
-       STOP
-     END IF
-
+      CALL display_message( PROGRAM_NAME, &
+                            'Error inquire old format SRF file '//&
+                            TRIM( SRF_Filename  ), &
+                            Error_Status )
+      STOP
+    END IF
 
     oSRF_File%Title            = trim(Title) 
     oSRF_File%History          = PROGRAM_VERSION_ID//trim(History)
     oSRF_File%Comment          = 'Convert from old SRF to oSRF; ' //trim(Comment)   
-
-
 
     ! ==================
     ! Loop over channels 
@@ -206,8 +199,6 @@ PROGRAM IR_SRF2oSRF
       n_Bands = 1
       fi(1,1) = Begin_Frequency(l)
       fi(2,1) = End_Frequency(l) 
-       
-!      df = (fi(2,1) - fi(1,1)) /  REAL(n_Points(l)-1,fp)
       
       ! Fill the band points array for oSRF allocation
       ! ...Allocate band points array
@@ -226,8 +217,6 @@ PROGRAM IR_SRF2oSRF
           CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
           STOP     
       END SELECT
-
-
        
       ! Create an instance of oSRF in oSRF_File
       CALL oSRF_Create( oSRF_File%oSRF(l), n_BPoints )
@@ -247,8 +236,7 @@ PROGRAM IR_SRF2oSRF
                                              / REAL(n_Points(l)-1,fp)
         oSRF_File%oSRF(l)%Response(i)%Arr  = SRF_old%Response
       END DO
-      
- 
+       
       ! Fill the integrated and summation fields
       Error_Status = oSRF_Integrate( oSRF_File%oSRF(l) ) ! In/Output
       IF ( Error_Status /= SUCCESS ) THEN
@@ -312,7 +300,6 @@ PROGRAM IR_SRF2oSRF
       msg = 'Error writing the SRF data to file'
       CALL Display_Message( PROGRAM_NAME, msg, FAILURE )
     END IF                      
-
 
     ! Clean up  
     CALL oSRF_File_Destroy(oSRF_File)
