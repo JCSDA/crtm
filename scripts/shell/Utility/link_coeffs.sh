@@ -7,7 +7,9 @@
 script_id()
 {
   ID='$Id$'
-  echo ${ID}
+  REVISION='$Revision$'
+  LAST_CHANGED_DATE='$LastChangedDate$'
+  echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
   echo; echo `date`; echo
 }
 
