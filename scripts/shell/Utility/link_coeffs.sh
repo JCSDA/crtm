@@ -6,11 +6,12 @@
 
 script_id()
 {
-  ID='$Id$'
   REVISION='$Revision$'
   LAST_CHANGED_DATE='$LastChangedDate$'
+  echo
   echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
-  echo; echo `date`; echo
+  echo " "`date`
+  echo " Support email: NCEP.List.EMC.JCSDA_CRTM.Support@noaa.gov"
 }
 
 usage()
