@@ -46,12 +46,12 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
+  '$Id: Extract_AIRS_TauCoeff_Subset.f90 21313 2012-09-24 17:01:59Z yong.chen@noaa.gov $'
   
   INTEGER, PARAMETER :: SL = 256
 
   INTEGER,      PARAMETER :: GROUP_1_MAX_COMPONENTS  = 8     
-  INTEGER,      PARAMETER :: GROUP_2_MAX_COMPONENTS  = 5    
+  INTEGER,      PARAMETER :: GROUP_2_MAX_COMPONENTS  = 5     
   INTEGER,      PARAMETER :: GROUP_1_MAX_PREDS       = 91
   INTEGER,      PARAMETER :: GROUP_2_MAX_PREDS       = 52
   INTEGER,      PARAMETER :: N_PREDICTOR_USED_OPTRAN = 6
@@ -106,7 +106,7 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
                        'coefficient data from the individual module netCDF '//&
                        'ODPS files and write them to a separate netCDF '//&
                        'datafile.', &
-                       '$Revision$' )
+                       '$Revision: 21313 $' )
 
   ! Select a subset set
   ! -------------------
