@@ -1,8 +1,8 @@
 !
-! Extract_AIRS_ODPS_OPTRAN_Subset
+! Extract_AIRS_TauCoeff_Subset
 !
 ! Program to extract the AIRS channel subset from the individual
-! AIRS module netCDF format TauCoeff data files.
+! AIRS module netCDF format ODPS data files.
 !
 !
 ! CREATION HISTORY:
@@ -10,7 +10,7 @@
 !                       Yong.Chen@noaa.gov
 !       based on Paul van Delst's Extract_AIRS_TauCoeff_Subset.f90 
  
-PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
+PROGRAM Extract_AIRS_TauCoeff_Subset
 
   ! ------------------
   ! Environment set up
@@ -27,14 +27,16 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
   USE ODPS_netCDF_IO,        ONLY: Inquire_ODPS_netCDF, &
                                    Read_ODPS_netCDF, &
                                    Write_ODPS_netCDF
-  USE Channel_Subset_Define, ONLY: Channel_Subset_type, &
-                                   Destroy_Channel_Subset
-  USE AIRS_Define,           ONLY: N_AIRS_MODULES, &
+  USE Subset_Define,         ONLY: Subset_type, &
+                                   Subset_Destroy, &
+                                   Subset_GetValue
+  USE AIRS_Define,           ONLY: N_AIRS_BANDS, &
                                    N_AIRS_CHANNELS, &
-                                   AIRS_MODULE
+                                   AIRS_BandName
   USE AIRS_Subset,           ONLY: N_AIRS_SUBSET_281, AIRS_SUBSET_281, AIRS_SUBSET_281_COMMENT, &
                                    N_AIRS_SUBSET_324, AIRS_SUBSET_324, AIRS_SUBSET_324_COMMENT, &
-                                   Index_AIRS_Subset
+                                   N_AIRS_VALID_SUBSETS, AIRS_VALID_SUBSET_NAME, &
+                                   AIRS_Subset_Index
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -42,15 +44,12 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_ODPS_OPTRAN_Subset'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
   '$Id$'
   
-  INTEGER,      PARAMETER :: N_VALID_SETS = 4
-  CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = (/ '281 channel set', &
-                                                               '324 channel set', &
-                                                               'All channels   ', &
-                                                               'User specified ' /)
+  INTEGER, PARAMETER :: SL = 256
+
   INTEGER,      PARAMETER :: GROUP_1_MAX_COMPONENTS  = 8     
   INTEGER,      PARAMETER :: GROUP_2_MAX_COMPONENTS  = 5    
   INTEGER,      PARAMETER :: GROUP_1_MAX_PREDS       = 91
@@ -61,12 +60,13 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
   ! ---------
   ! Variables
   ! ---------
+  INTEGER :: err_stat   ;  CHARACTER(SL) :: err_msg
+  INTEGER :: io_stat    ;  CHARACTER(SL) :: io_msg
+  INTEGER :: alloc_stat ;  CHARACTER(SL) :: alloc_msg
   CHARACTER(256)  :: Message
   CHARACTER(256)  :: List_Filename
   CHARACTER(256)  :: In_Filename
   CHARACTER(256)  :: Out_Filename
-  CHARACTER(256)  :: WMO_Satellite_Id 
-  CHARACTER(256)  :: WMO_Sensor_Id  
   CHARACTER(256)  :: Profile_Set_Id 
   CHARACTER(5000) :: Title
   CHARACTER(5000) :: History
@@ -93,58 +93,50 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
   INTEGER :: lch, ls, js, n_Out_Coeffs, j0, np, jp, k
   INTEGER :: n_Subset_Coeffs, n_total_Pred
   INTEGER :: n_orders, n_Subset_OCoeffs, n_Out_OCoeffs, los
+  INTEGER :: n_values
+  INTEGER, ALLOCATABLE :: idx(:), nmbr(:)
   INTEGER, ALLOCATABLE :: Subset_List(:)
   TYPE(Integer_List_File_type) :: User_Subset_List
   TYPE(ODPS_type) :: In_ODPS, Out_ODPS, Out_ODPS_f
-  TYPE(Channel_Subset_type) :: Subset
+  TYPE(Subset_type) :: Subset
  
   ! Output program header
   CALL Program_Message(PROGRAM_NAME, &
                        'Program to extract the AIRS channel SUBSET transmittance '//&
                        'coefficient data from the individual module netCDF '//&
-                       'TauCoeff files and write them to a separate netCDF '//&
+                       'ODPS files and write them to a separate netCDF '//&
                        'datafile.', &
                        '$Revision$' )
 
   ! Select a subset set
   ! -------------------
   Select_Loop: DO
-
-    ! Prompt user to select a subset set 
+    ! ...Prompt user to select a subset set 
     WRITE( *,'(/5x,"Select an AIRS channel subset")' )
-    DO i = 1, N_VALID_SETS
-      WRITE( *,'(10x,i1,") ",a)' ) i, VALID_SET_NAME(i)
+    DO i = 1, N_AIRS_VALID_SUBSETS
+      WRITE( *,'(10x,i1,") ",a)' ) i, AIRS_VALID_SUBSET_NAME(i)
     END DO
     WRITE( *,FMT='(5x,"Enter choice: ")',ADVANCE='NO' )
-    READ( *,FMT='(i5)',IOSTAT=IO_Status ) Set
-
-    ! Check for I/O errors
-    IF ( IO_Status /= 0 ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Invalid input', &
-                            FAILURE )
-      STOP
+    READ( *,FMT='(i5)',IOSTAT=io_stat, IOMSG=io_msg ) set
+    ! ...Check for I/O errors
+    IF ( io_stat /= 0 ) THEN
+      err_msg = 'Invalid input - '//TRIM(io_msg)
+      CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
     END IF
-    
-    ! Check the input
-    IF ( Set < 1 .OR. Set > N_VALID_SETS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Invalid selection', &
-                            FAILURE )
-      STOP
+    ! ...Check the input
+    IF ( set < 1 .OR. set > N_AIRS_VALID_SUBSETS ) THEN
+      err_msg = 'Invalid selection'
+      CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
     ELSE
       EXIT Select_Loop
     END IF
-
   END DO Select_Loop
 
 
   ! Get the required channels list
-  ! ------------------------------
   SELECT CASE ( Set )
 
     ! The 281 channel subset
-    ! ----------------------
     CASE (1)
     
       ! Assign values
@@ -168,7 +160,6 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
 
     ! The 324 channel subset
-    ! ----------------------
     CASE (2)
     
       ! Assign values
@@ -193,7 +184,6 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
 
     ! All the channels
-    ! ----------------
     CASE(3)
     
       ! Assign values
@@ -213,11 +203,10 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
       ! Fill values
       Subset_List = (/(l,l=1,N_AIRS_CHANNELS)/)
-      Sensor_ID   = 'airs_aqua'
+      Sensor_ID   = 'airs2378_aqua'
 
 
     ! A user specified channel subset
-    ! -------------------------------
     CASE (4)
     
       ! Get a channel subset list filename
@@ -278,7 +267,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
       END DO
 
       ! Create the sensor id
-      WRITE( Sensor_ID,'("airs",i0,"USER_aqua")' ) n_Subset_Channels
+      WRITE( Sensor_ID,'("airs",i0,"_aqua")' ) n_Subset_Channels
 
   END SELECT
 
@@ -297,36 +286,36 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
   ! Loop over modules to extract subset channels
   ! --------------------------------------------
-  Module_Loop: DO l = 1, N_AIRS_MODULES
+  Module_Loop: DO l = 1, N_AIRS_BANDS
 
 
     ! Current module channel subset
     ! -----------------------------
     ! Determine the subset channel indices
     ! for the current module
-    Error_Status = Index_AIRS_Subset( l, Subset_List, Subset )
+    Error_Status = AIRS_Subset_Index( l, Subset_List, Subset )
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( PROGRAM_NAME, &
                             'Error extracting subset channel indices for module '//&
-                            TRIM(AIRS_MODULE(l)), &
+                            TRIM(AIRS_BandName(l)), &
                             Error_Status )
       STOP
     END IF
+    CALL Subset_GetValue( Subset, n_Values = n_values, Index = idx, Number = nmbr )
 
     ! Output the number of channels to extract
     WRITE( *,'(/10x,"There are ",i0," channels to be extracted from module ",a,":")' ) &
-             Subset%n_Channels, TRIM(AIRS_MODULE(l))
+             n_values, TRIM(AIRS_BandName(l))
 
 
     ! Read the input TauCoeff file if required
-    ! ----------------------------------------
-    Non_Zero_n_Channels: IF ( Subset%n_Channels > 0 ) THEN
+    Non_Zero_n_Channels: IF ( n_values > 0 ) THEN
 
       ! Output the list of channel numbers to extract
-      WRITE( *,'(10x,10i5)' ) Subset%Channel_Number
+      WRITE( *,'(10x,10i5)' )  nmbr 
 
       ! Define the filename
-      In_Filename = 'airs'//TRIM(AIRS_MODULE(l))//'_aqua.TauCoeff.nc'
+      In_Filename = 'airs'//TRIM(AIRS_BandName(l))//'_aqua.TauCoeff.nc'
 
 
       ! Get the file release/version info and
@@ -476,7 +465,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
         IF ( IN_ODPS%Group_Index /= Out_ODPS%Group_Index ) THEN
           Error_Status = FAILURE
           WRITE( Message, '( "Group_Index values are different for band ",a)' ) &
-                            TRIM(AIRS_MODULE(l)) 
+                            TRIM(AIRS_BandName(l)) 
           CALL Display_Message( PROGRAM_NAME, &   
                                 TRIM(Message), &  
                                 Error_Status )    
@@ -486,7 +475,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
         ! Check Sensor_Type
         IF ( IN_ODPS%Sensor_Type /= Out_ODPS%Sensor_Type ) THEN
           WRITE( Message,'("Sensor types are different for band ",a)' ) &
-                            TRIM(AIRS_MODULE(l)) 
+                            TRIM(AIRS_BandName(l)) 
           CALL Display_Message( PROGRAM_NAME, &   
                                 TRIM(Message), &  
                                 Error_Status )    
@@ -497,7 +486,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
         IF ( IN_ODPS%WMO_Satellite_ID /= Out_ODPS%WMO_Satellite_ID ) THEN
           Error_Status = FAILURE
           WRITE( Message,'("WMO_Satellite_ID values are different for band ",a)' ) &
-                            TRIM(AIRS_MODULE(l)) 
+                            TRIM(AIRS_BandName(l)) 
           CALL Display_Message( PROGRAM_NAME, &   
                                 TRIM(Message), &  
                                 Error_Status )    
@@ -508,7 +497,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
         IF ( IN_ODPS%WMO_Sensor_ID /= Out_ODPS%WMO_Sensor_ID ) THEN
           Error_Status = FAILURE
           WRITE( Message,'("WMO_Sensor_ID values are different for band ",a)' ) &
-                            TRIM(AIRS_MODULE(l)) 
+                            TRIM(AIRS_BandName(l)) 
           CALL Display_Message( PROGRAM_NAME, &   
                                 TRIM(Message), &  
                                 Error_Status )    
@@ -520,7 +509,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
           IF ( IN_ODPS%Component_ID(j) /= Out_ODPS%Component_ID(j) ) THEN
             Error_Status = FAILURE
             WRITE( Message,'("Component #",i2," ID values are different for band ",a)' ) &
-                           j, TRIM(AIRS_MODULE(l)) 
+                           j, TRIM(AIRS_BandName(l)) 
             CALL Display_Message( PROGRAM_NAME, &   
                                   TRIM(Message), &  
                                   Error_Status )    
@@ -533,7 +522,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
           IF ( In_ODPS%Absorber_ID(j) /= Out_ODPS%Absorber_ID(j) ) THEN
             Error_Status = FAILURE
             WRITE( Message, '( "Absorber #",i2," ID values are different for band ",a)' ) &
-                            j, TRIM(AIRS_MODULE(l))
+                            j, TRIM(AIRS_BandName(l))
             CALL Display_Message( PROGRAM_NAME, &
                                   TRIM(Message), &
                                   Error_Status )
@@ -546,7 +535,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( .NOT. Compare_Float( In_ODPS%Ref_Level_Pressure(k) , Out_ODPS%Ref_Level_Pressure(k)  ) ) THEN                  
            Error_Status = FAILURE                                                                
            WRITE( Message, '( "Ref_Level_Pressure #",i2," level values are different for band ",a)' ) &    
-                           k+1, TRIM(AIRS_MODULE(l))                                                 
+                           k+1, TRIM(AIRS_BandName(l))                                                 
            CALL Display_Message( PROGRAM_NAME, &                                                 
                                  TRIM(Message), &                                                
                                  Error_Status )                                                  
@@ -559,7 +548,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( .NOT. Compare_Float( In_ODPS%Ref_Pressure(k) , Out_ODPS%Ref_Pressure(k)  ) ) THEN                  
            Error_Status = FAILURE                                                                
            WRITE( Message, '( "Ref_Pressure #",i2," layer values are different for band ",a)' ) &    
-                           k, TRIM(AIRS_MODULE(l))                                                 
+                           k, TRIM(AIRS_BandName(l))                                                 
            CALL Display_Message( PROGRAM_NAME, &                                                 
                                  TRIM(Message), &                                                
                                  Error_Status )                                                  
@@ -572,7 +561,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( .NOT. Compare_Float( In_ODPS%Ref_Temperature(k) , Out_ODPS%Ref_Temperature(k)  ) ) THEN                  
            Error_Status = FAILURE                                                                
            WRITE( Message, '( "Ref_Temperature #",i2," layer values are different for band ",a)' ) &    
-                           k, TRIM(AIRS_MODULE(l))                                                 
+                           k, TRIM(AIRS_BandName(l))                                                 
            CALL Display_Message( PROGRAM_NAME, &                                                 
                                  TRIM(Message), &                                                
                                  Error_Status )                                                  
@@ -587,7 +576,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
           IF ( .NOT. Compare_Float( In_ODPS%Ref_Absorber(k,j) , Out_ODPS%Ref_Absorber(k,j)  ) ) THEN                 
             Error_Status = FAILURE                                                                
             WRITE( Message, '( "Ref_Absorber values are different for band ",a, " for index (", i3, 1x, i0, ")" )' ) &   
-                            TRIM(AIRS_MODULE(l)), k, j                                                 
+                            TRIM(AIRS_BandName(l)), k, j                                                 
             CALL Display_Message( PROGRAM_NAME, &                                                 
                                   TRIM(Message), &                                                
                                   Error_Status )                                                  
@@ -603,7 +592,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
           IF ( .NOT. Compare_Float( In_ODPS%Min_Absorber(k,j) , Out_ODPS%Min_Absorber(k,j)  ) ) THEN                 
             Error_Status = FAILURE                                                                
             WRITE( Message, '( "Min_Absorber values are different for band ",a, " for index (", i3, 1x, i0, ")" )' ) &   
-                            TRIM(AIRS_MODULE(l)), k, j                                                 
+                            TRIM(AIRS_BandName(l)), k, j                                                 
             CALL Display_Message( PROGRAM_NAME, &                                                 
                                   TRIM(Message), &                                                
                                   Error_Status )                                                  
@@ -619,7 +608,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
           IF ( .NOT. Compare_Float( In_ODPS%Max_Absorber(k,j) , Out_ODPS%Max_Absorber(k,j)  ) ) THEN                 
             Error_Status = FAILURE                                                                
             WRITE( Message, '( "Max_Absorber values are different for band ",a, " for index (", i3, 1x, i0, ")" )' ) &   
-                            TRIM(AIRS_MODULE(l)), k, j                                                 
+                            TRIM(AIRS_BandName(l)), k, j                                                 
             CALL Display_Message( PROGRAM_NAME, &                                                 
                                   TRIM(Message), &                                                
                                   Error_Status )                                                  
@@ -633,7 +622,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( IN_ODPS%Alpha /= Out_ODPS%Alpha ) THEN
            Error_Status = FAILURE
            WRITE( Message, '( "Alpha values are different for band ",a)' ) &
-                             TRIM(AIRS_MODULE(l)) 
+                             TRIM(AIRS_BandName(l)) 
            CALL Display_Message( PROGRAM_NAME, &   
                                  TRIM(Message), &  
                                  Error_Status )    
@@ -643,7 +632,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          ! Check Alpha_C1
          IF ( IN_ODPS%Alpha_C1 /= Out_ODPS%Alpha_C1 ) THEN
            WRITE( Message,'("Alpha_C1 values are different for band ",a)' ) &
-                             TRIM(AIRS_MODULE(l)) 
+                             TRIM(AIRS_BandName(l)) 
            CALL Display_Message( PROGRAM_NAME, &   
                                  TRIM(Message), &  
                                  Error_Status )    
@@ -654,7 +643,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( IN_ODPS%Alpha_C2 /= Out_ODPS%Alpha_C2 ) THEN
            Error_Status = FAILURE
            WRITE( Message,'("Alpha_C2 values are different for band ",a)' ) &
-                             TRIM(AIRS_MODULE(l)) 
+                             TRIM(AIRS_BandName(l)) 
            CALL Display_Message( PROGRAM_NAME, &   
                                  TRIM(Message), &  
                                  Error_Status )    
@@ -665,7 +654,7 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
          IF ( IN_ODPS%OComponent_Index /= Out_ODPS%OComponent_Index ) THEN
            Error_Status = FAILURE
            WRITE( Message,'("OComponent_Index values are different for band ",a)' ) &
-                             TRIM(AIRS_MODULE(l)) 
+                             TRIM(AIRS_BandName(l)) 
            CALL Display_Message( PROGRAM_NAME, &   
                                  TRIM(Message), &  
                                  Error_Status )    
@@ -678,17 +667,17 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
       ! Copy the required channel's data for particular components
       ! --------------------------------
-      l2 = l1 + Subset%n_Channels - 1
-      Out_ODPS%Sensor_Channel(l1:l2) = In_ODPS%Sensor_Channel(Subset%Channel_Index)
+      l2 = l1 + n_values - 1
+      Out_ODPS%Sensor_Channel(l1:l2) = In_ODPS%Sensor_Channel(idx)
 
-      DO lch = 1, Subset%n_Channels 
+      DO lch = 1, n_values 
         ls = ls + 1
         DO j = 1, Out_ODPS%n_Components
         
-         np = In_ODPS%n_Predictors(j,Subset%Channel_Index(lch))
+         np = In_ODPS%n_Predictors(j,idx(lch))
          Out_ODPS%n_Predictors(j, ls) = np 
         
-         j0 = In_ODPS%Pos_Index(j,Subset%Channel_Index(lch))
+         j0 = In_ODPS%Pos_Index(j,idx(lch))
 
          js = n_Out_Coeffs
          IF ( np > 0 ) THEN
@@ -712,15 +701,15 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
       END DO  
       
       IF ( OPTRAN ) THEN
-        Out_ODPS%OSignificance(l1:l2) = In_ODPS%OSignificance(Subset%Channel_Index)
-        Out_ODPS%Order(l1:l2)         = In_ODPS%Order(Subset%Channel_Index)
-        Out_ODPS%OP_Index(:,l1:l2)    = In_ODPS%OP_Index(:, Subset%Channel_Index)
+        Out_ODPS%OSignificance(l1:l2) = In_ODPS%OSignificance(idx)
+        Out_ODPS%Order(l1:l2)         = In_ODPS%Order(idx)
+        Out_ODPS%OP_Index(:,l1:l2)    = In_ODPS%OP_Index(:, idx)
         
-        DO lch = 1, Subset%n_Channels
+        DO lch = 1, n_values
           los = los + 1 
-          np       = In_ODPS%OP_Index(0, Subset%Channel_Index(lch))    
-          n_orders = In_ODPS%Order(Subset%Channel_Index(lch))          
-          j0 = In_ODPS%OPos_Index(Subset%Channel_Index(lch))
+          np       = In_ODPS%OP_Index(0, idx(lch))    
+          n_orders = In_ODPS%Order(idx(lch))          
+          j0 = In_ODPS%OPos_Index(idx(lch))
           
           Out_ODPS%OPos_Index(los) = n_Out_OCoeffs + 1 
 
@@ -759,22 +748,14 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
 
 
     ! Destroy the AIRS channel subset structure
-    ! -----------------------------------------
-    Error_Status = Destroy_Channel_Subset( Subset )
-    IF ( Error_Status /= SUCCESS ) THEN
-      CALL Display_Message( PROGRAM_NAME, &
-                            'Error destroying AIRS Channel Subset structure for input from '//&
-                            TRIM(In_Filename), &
-                            Error_Status )
-      STOP
-    END IF
-
+    CALL Subset_Destroy( Subset )
+ 
   END DO Module_Loop
 
   ! Write the output SpcCoeff file
   ! ------------------------------
   ! The output filename
-  Out_Filename = TRIM(Sensor_ID)//'.ODPS_OPTRAN.nc'
+  Out_Filename = TRIM(Sensor_ID)//'.TauCoeff.nc'
 
   ! Set the sensors ID
   Out_ODPS%Sensor_ID  = TRIM(Sensor_ID)
@@ -885,4 +866,4 @@ PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
                           Error_Status )
   END IF
 
-END PROGRAM Extract_AIRS_ODPS_OPTRAN_Subset
+END PROGRAM Extract_AIRS_TauCoeff_Subset
