@@ -176,7 +176,8 @@ PRO av_button_cloud_event, event
   ; Get the profile index
   WIDGET_CONTROL, $
     state['av_slider_profile_id'], $
-    GET_VALUE = profile_index
+    GET_VALUE = profile_number
+  profile_index = profile_number - 1
 
   ; Only sensitise the cloud slider if more than a single cloud
   WIDGET_CONTROL, $
@@ -205,7 +206,8 @@ PRO av_button_aerosol_event, event
   ; Get the profile index
   WIDGET_CONTROL, $
     state['av_slider_profile_id'], $
-    GET_VALUE = profile_index
+    GET_VALUE = profile_number
+  profile_index = profile_number - 1
 
   ; Only sensitise the aerosol slider if more than a single aerosol
   WIDGET_CONTROL, $
@@ -459,6 +461,23 @@ PRO av_load_file, file, id
   ENDELSE
 
 
+  ; Set/sensitise the main dimension slider widgets
+  ; ...Profile index
+  WIDGET_CONTROL, $
+    state['av_slider_profile_id'], $
+    SET_VALUE      = 1, $
+    SET_SLIDER_MIN = 1, $
+    SET_SLIDER_MAX = state['n_profiles'], $
+    SENSITIVE = (state['n_profiles'] GT 1)
+  ; ...Channel index
+  WIDGET_CONTROL, $
+    state['av_slider_channel_id'], $
+    SET_VALUE      = 1, $
+    SET_SLIDER_MIN = 1, $
+    SET_SLIDER_MAX = state['n_channels'], $
+    SENSITIVE = (state['n_channels'] GT 1)
+  
+
   ; Get some data info for the INITIAL (0'th) profile
   n_clouds   = av_n_clouds(state,0)
   n_aerosols = av_n_aerosols(state,0)
@@ -479,13 +498,7 @@ PRO av_load_file, file, id
     SENSITIVE = (n_aerosols GT 0)
 
 
-  ; Sensitise the slider widgets
-  WIDGET_CONTROL, $
-    state['av_slider_profile_id'], $
-    SET_VALUE      = 1, $
-    SET_SLIDER_MIN = 1, $
-    SET_SLIDER_MAX = state['n_profiles'], $
-    SENSITIVE = (state['n_profiles'] GT 1)
+  ; Set/Sensitise the remaining slider widgets
   ; ...For clouds, only if there are > 1 for INITIAL profile
   WIDGET_CONTROL, $
     state['av_slider_cloud_id'], $
@@ -500,13 +513,6 @@ PRO av_load_file, file, id
     SET_SLIDER_MIN = 1, $
     SET_SLIDER_MAX = n_aerosols, $
     SENSITIVE = (n_aerosols GT 1)
-  ; ...(De)Sensitise the channel slider appropriately
-  WIDGET_CONTROL, $
-    state['av_slider_channel_id'], $
-    SET_VALUE      = 1, $
-    SET_SLIDER_MIN = 1, $
-    SET_SLIDER_MAX = state['n_channels'], $
-    SENSITIVE = (state['n_channels'] GT 1)
   
   
   ; Save the state variable
@@ -720,7 +726,7 @@ PRO Atmosphere_Viewer, $
   ; Create a state variable
   state = HASH()
   ; ...Boolean states
-  state['debug'] = debug
+  state['debug'] = KEYWORD_SET(debug)
   ; ...Widget ids
   state['av_button_atmosphere_id'] = av_button_atmosphere_id
   state['av_button_cloud_id'     ] = av_button_cloud_id
