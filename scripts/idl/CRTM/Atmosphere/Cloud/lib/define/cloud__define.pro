@@ -14,7 +14,8 @@ PRO Cloud__Define
            Type               : 0L, $
            Effective_Radius   : OBJ_NEW(), $
            Effective_Variance : OBJ_NEW(), $
-           Water_Content      : OBJ_NEW()  }
+           Water_Content      : OBJ_NEW(), $
+           INHERITS IDL_Object  }
 END
 
 ;-
