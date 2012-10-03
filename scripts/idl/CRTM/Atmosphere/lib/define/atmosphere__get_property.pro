@@ -145,7 +145,7 @@ PRO Atmosphere::Get_Property, $
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Check the structure has been allocated
-  IF ( NOT self->Associated(Debug=Debug) ) THEN $
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
  

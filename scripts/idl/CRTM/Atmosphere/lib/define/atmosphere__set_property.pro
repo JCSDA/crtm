@@ -71,15 +71,15 @@
 ;                              DIMENSION:  Rank-2 (n_Layers x n_Absorbers)
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Cloud:                 A cloud object, or a list of cloud objects.
+;       Cloud:                 A list of cloud objects.
 ;                              UNITS:      Variable
-;                              TYPE:       OBJ(Cloud) or LIST
+;                              TYPE:       LIST
 ;                              DIMENSION:  N/A
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Aerosol:               An aerosol object, or a list of aerosol objects.
+;       Aerosol:               An list of aerosol objects.
 ;                              UNITS:      Variable
-;                              TYPE:       OBJ(Aerosol) or LIST
+;                              TYPE:       LIST
 ;                              DIMENSION:  N/A
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
@@ -121,7 +121,7 @@ PRO Atmosphere::Set_Property, $
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Check the structure has been allocated
-  IF ( NOT self->Associated(Debug=Debug) ) THEN $
+  IF ( ~ self->Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
  
@@ -150,7 +150,7 @@ PRO Atmosphere::Set_Property, $
   ENDIF
   n = N_ELEMENTS(Level_Pressure)
   IF ( n GT 0 ) THEN BEGIN
-    IF ( n NE n_layers ) THEN $
+    IF ( n NE n_layers+1L ) THEN $
       MESSAGE, 'Size of input Level_Pressure different from Atmosphere allocation.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     (self.Level_Pressure).Add, Level_Pressure
@@ -198,9 +198,14 @@ PRO Atmosphere::Set_Property, $
   ; And now the objects
   ; ...Clouds
   IF ( N_ELEMENTS(Cloud) GT 0 ) THEN BEGIN
+    ; Only accept list input
+    IF ( ~ ISA(Cloud,'List') ) THEN $
+      MESSAGE, 'Input Cloud must be a list containing individual cloud objects.', $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    ; Iterate over clouds
     FOREACH cld, Cloud DO BEGIN
       ; Ignore non-clouds
-      IF ( NOT ISA(Cloud,'Cloud') ) THEN CONTINUE
+      IF ( ~ OBJ_ISA(cld,'Cloud') ) THEN CONTINUE
       ; Check dimensions
       cld->Cloud::Get_Property, n_Layers=n_cloud_layers, Debug=Debug
       IF ( n_cloud_layers NE n_layers ) THEN $
@@ -213,15 +218,20 @@ PRO Atmosphere::Set_Property, $
   ENDIF
   ; ...Aerosols
   IF ( N_ELEMENTS(Aerosol) GT 0 ) THEN BEGIN
+    ; Only accept list input
+    IF ( ~ ISA(Aerosol,'List') ) THEN $
+      MESSAGE, 'Input Aerosol must be a list containing individual aerosol objects.', $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    ; Iterate over aerosols
     FOREACH aero, Aerosol DO BEGIN
       ; Ignore non-Aerosols
-      IF ( NOT ISA(Aerosol,'Aerosol') ) THEN CONTINUE
+      IF ( ~ OBJ_ISA(aero,'Aerosol') ) THEN CONTINUE
       ; Check dimensions
       aero->Aerosol::Get_Property, n_Layers=n_aerosol_layers, Debug=Debug
       IF ( n_aerosol_layers NE n_layers ) THEN $
         MESSAGE, 'Size of input Aerosol different from Atmosphere allocation.', $
                   NONAME=MsgSwitch, NOPRINT=MsgSwitch
-      ; Accumulate Aerosols
+      ; Accumulate aerosols
       (self.Aerosol).Add, aero
       self.n_Aerosols++
     ENDFOREACH

@@ -19,7 +19,8 @@ PRO Atmosphere__Define
            Temperature    : OBJ_NEW(), $
            Absorber       : OBJ_NEW(), $
            Cloud          : OBJ_NEW(), $
-           Aerosol        : OBJ_NEW()  }
+           Aerosol        : OBJ_NEW(), $
+           INHERITS IDL_Object  }
 END
 
 ;-
