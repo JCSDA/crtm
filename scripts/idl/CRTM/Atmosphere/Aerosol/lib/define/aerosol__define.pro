@@ -13,7 +13,8 @@ PRO Aerosol__Define
            n_Layers         : 0L, $
            Type             : 0L, $
            Effective_Radius : OBJ_NEW(), $
-           Concentration    : OBJ_NEW()  }
+           Concentration    : OBJ_NEW(), $
+           INHERITS IDL_Object }
 END
 
 ;-
