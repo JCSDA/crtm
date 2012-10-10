@@ -1,374 +1,455 @@
-;-------------------------------------------------
-PRO RTSolution_Viewer_Cleanup, ID
+;
+; $Id$
+;
 
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, ID, Info
+;--------------------------------------------
+PRO rv_get_dimensions, $
+  data, $
+  profile_index, $
+  n_Layers = n_layers
+  
+  COMPILE_OPT HIDDEN
 
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Cleanup'
-
-  ; Free the top level base info state
-  RTSolution_Viewer_FreeState, ID
-
+  ; Extract an object
+  rts = ((data['rtsolution'])[profile_index])[0]
+  
+  ; Extract the dimensions
+  rts -> RTSolution::Get_Property, $
+    n_Layers = n_layers
 END
 
 
 ;-------------------------------------------------
-PRO RTSolution_Viewer_Exit_Event, Event
-
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, Event.Top, Info
-
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Exit_Event'
-
-  ; Destroy the widget heirarchy
-  WIDGET_CONTROL, Event.Top, /DESTROY
-
+PRO rv_freestate, id
+  COMPILE_OPT HIDDEN
+  WIDGET_CONTROL, id, GET_UVALUE = state
+  OBJ_DESTROY, state
 END
 
 
 ;-------------------------------------------------
-PRO RTSolution_Viewer_Open_Event, Event
+PRO rv_getstate, id, state
+  COMPILE_OPT HIDDEN
+  WIDGET_CONTROL, id, GET_UVALUE = state
+END
 
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, Event.Top, Info
 
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Open_Event'
+;-------------------------------------------------
+PRO rv_setstate, id, state
+  COMPILE_OPT HIDDEN
+  WIDGET_CONTROL, id, SET_UVALUE = state
+END
 
-  ; Get an RTSolution filename
-  RTSolution_Filename = DIALOG_PICKFILE( TITLE = 'Select an RTSolution file', $
-                                         FILTER = '*.RTSolution.bin', $
-                                         /MUST_EXIST )
 
-  ; Do nothing if it's not valid
-  IF ( NOT Valid_String( RTSolution_Filename ) ) THEN RETURN
+;-------------------------------------------------
+PRO rv_cleanup, id
+  COMPILE_OPT HIDDEN
+  rv_getstate, id, state
+  debug = state['debug']
+  IF ( debug ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+  rv_freestate, ID
+  IF ( debug ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
+
+
+;-------------------------------------------------
+PRO rv_menu_exit_event, event
+  COMPILE_OPT HIDDEN
+  rv_getstate, event.Top, state
+  debug = state['debug']
+  IF ( debug ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+  WIDGET_CONTROL, event.Top, /DESTROY
+  IF ( debug ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
+
+
+;-------------------------------------------------
+PRO rv_menu_open_event, event
+  COMPILE_OPT HIDDEN
+  rv_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; Get the filename
+  filename = DIALOG_PICKFILE( $
+    TITLE = 'Select an RTSolution file', $
+    FILTER = '*RTSolution*', $
+    /MUST_EXIST )
+  IF ( ~ Valid_String(filename) ) THEN RETURN
 
   ; Get open "type" from event uvalue
-  WIDGET_CONTROL, Event.ID, GET_UVALUE = uvalue
-  CASE uvalue OF
-    "FileOpen"   : Info.Plot_Type = 0L
-    "CompareOpen": Info.Plot_Type = 1L
-  ENDCASE
-  
-  ; Save top level base info state
-  RTSolution_Viewer_SetState, Event.Top, Info
+  WIDGET_CONTROL, event.Id, GET_UVALUE = uvalue
+  state['plot_type'] = uvalue
+
+  ; Save state variable
+  rv_setstate, event.Top, state
 
   ; Load and display the data
-  RTSolution_Viewer_Load_File, RTSolution_Filename, Event.Top
+  rv_load_file, filename, event.Top
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
 END
 
 
 ;-------------------------------------------------
-PRO RTSolution_Viewer_Print_Event, Event
+PRO rv_menu_print_event, event
+  COMPILE_OPT HIDDEN
+  rv_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
 
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, Event.Top, Info
+print, '*** File->Print not implemented ***'
 
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Print_Event'
-
-  ; Output to file
-  pson, FILENAME=Info.Filename[0]+'.profile_'+STRTRIM(Info.Profile_Number,2)+'.ps'
-  RTSolution_Viewer_Display, Event.Top, $
-    FONT=1, CHARSIZE=1.5, THICK=3
-  psoff
-
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
 
 
 ;-------------------------------------------------
-FUNCTION RTSolution_Viewer_BGroup_Event, Event
+PRO rv_slider_profile_event, event
+  COMPILE_OPT HIDDEN
+  rv_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
 
-  @error_codes
+  rv_display, event.Top
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
+
+
+;-------------------------------------------------
+PRO rv_display_info, id
+  COMPILE_OPT HIDDEN
+  @rtsolution_viewer_parameters
+  rv_getstate, id, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; Get the data
+  data = state['data']
   
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, Event.Top, Info
-
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_BGroup_Event'
-
-  ; Get the channel data name
-  Info.Channel_Tag = Event.VALUE
-
-  ; Save top level base info state
-  RTSolution_Viewer_SetState, Event.Top, Info
-
-  ; Display the new profile data
-  RTSolution_Viewer_Display, Event.Top
-
-  RETURN, TRUE
-END
-
-
-;-------------------------------------------------
-PRO RTSolution_Viewer_Slider_Event, Event
-
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, Event.Top, Info
-
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Slider_Event'
-
-  ; Get the position number
-  WIDGET_CONTROL, Event.ID, GET_VALUE = n
-  Info.Profile_Number = n
-
-  ; Save top level base info state
-  RTSolution_Viewer_SetState, Event.Top, Info
-
-  ; Display the new profile data
-  RTSolution_Viewer_Display, Event.Top
-
-END
-
-
-;-------------------------------------------------
-PRO RTSolution_Viewer_Display, ID, $
-    FONT=Font, CHARSIZE=Charsize, THICK=Thick
-
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, ID, Info
-
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Display'
-
-  ; Get the current data
-  data = Info.RTS_File[0]->Get_Data( $
-    Info.Profile_Number, $
-    Info.Channel_Tag, $
-    Debug=Info.Debug )
-  desc = " "
-  IF ( Info.Plot_Type EQ 1 ) THEN BEGIN
-    d2 = Info.RTS_File[1]->Get_Data( $
-           Info.Profile_Number, $
-           Info.Channel_Tag, $
-           Debug=Info.Debug )
-    data = data - d2
-    desc = " difference "
+  ; Get the various indices
+  WIDGET_CONTROL, $
+    state['rv_slider_profile_id'], $
+    GET_VALUE = profile_number
+  profile_index = profile_number - 1
+  rv_get_dimensions, data[0], profile_index, n_layers = n_layers
+  
+  ; Construct text info string
+  c_profile_number = STRTRIM(profile_number,2)
+  finfo = 'Filename : ' + STRTRIM(FILE_BASENAME((data[0])['filename']),2)
+  IF ( state['plot_type'] EQ DIFFERENCE ) THEN BEGIN
+    finfo = $
+      [ finfo, $
+      'File #2  : ' + STRTRIM(FILE_BASENAME((data[1])['filename']),2) ]
   ENDIF
+  info = [ $
+    finfo, $
+    'No. of profiles : ' + STRTRIM((data[0])['n_profiles'],2), $
+    'Current profile : ' + c_profile_number, $
+    'No. of layers for profile #' + c_profile_number + ' : ' + STRTRIM(n_layers,2), $
+    'No. of channels : ' + STRTRIM((data[0])['n_channels'],2) ]
 
-  ; Save top level base info state
-  RTSolution_Viewer_SetState, ID, Info
+  
+  ; Set the text
+  WIDGET_CONTROL, $
+    state['rv_text_info_id'], $
+    SET_VALUE = info
+  
+  ; Display it
+  pbid = WIDGET_INFO(state['rv_text_info_id'], /PARENT)
+  WIDGET_CONTROL, pbid, /MAP
+  
+  ; Save state variable
+  rv_setstate, id, state
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+
+END
+
+
+;-------------------------------------------------
+PRO rv_display, id
+  COMPILE_OPT HIDDEN
+  @rtsolution_viewer_parameters
+  rv_getstate, id, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; Setup window for (re)display
+  state['rv_window_id'].Refresh, /DISABLE
+  state['rv_window_id'].Erase
+  
+  ; Get the profile index
+  WIDGET_CONTROL, $
+    state['rv_slider_profile_id'], $
+    GET_VALUE = profile_number
+  profile_index = profile_number - 1
+  
+  ; Select the required rtsolution
+  IF ( state['plot_type'] EQ DISPLAY ) THEN BEGIN
+    data = (state['data'])[0]
+    rts = (data['rtsolution'])[profile_index]
+  ENDIF ELSE BEGIN
+    data0 = (state['data'])[0]
+    data1 = (state['data'])[1]
+    rts = (data0['rtsolution'])[profile_index]
+    diff_input = (data1['rtsolution'])[profile_index]
+  ENDELSE
 
   ; Plot the data
-  PLOT, LINDGEN(N_ELEMENTS(data))+1L, data, $
-        TITLE = Info.Channel_Tag+desc+'for profile #' + $
-                STRTRIM(Info.Profile_Number,2)+' of '+Info.Filename[0], $
-        /YNOZERO, $
-        FONT=Font, CHARSIZE=Charsize, THICK=Thick
-  OPLOT, !X.CRANGE, [0,0], $
-         LINESTYLE = 2, THICK=Thick
+  rts.Channel_Plot, $
+    Diff_Input = diff_input, $
+    Owin = state['rv_window_id'], $
+    Debug = state['debug']
+
+  ; and display it
+  state['rv_window_id'].Refresh
+
+  ; Update text info
+  rv_display_info, id
+
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
 END
 
 
 ;--------------------------------------------
-PRO RTSolution_Viewer_Load_File, File, ID
-
+PRO rv_load_file, file, id
+  COMPILE_OPT HIDDEN
   @error_codes
-
-  ; Get top level base info state
-  RTSolution_Viewer_GetState, ID, Info
-
-  ; Print debug statement if required
-  IF ( Info.Debug EQ 1 ) THEN PRINT, 'RTSolution_Viewer_Load_File'
+  @rtsolution_viewer_parameters
+  rv_getstate, id, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
 
   WIDGET_CONTROL, /HOURGLASS
-
-  ; Save the filename
-  Info.Full_Filename[Info.Plot_Type] = File
-  FileParts = STRSPLIT( File, '/', COUNT = nParts, /EXTRACT )
-  Info.Filename[Info.Plot_Type] = FileParts[nParts-1]
-
-  ; Read the file
-  IF ( OBJ_VALID(Info.RTS_File[Info.Plot_Type]) ) THEN OBJ_DESTROY, Info.RTS_File[Info.Plot_Type]
-  Info.RTS_File[Info.Plot_Type] = OBJ_NEW("RTS_File", File, Debug=Info.Debug)
-  Info.RTS_File[Info.Plot_Type]->Read, Debug=Info.Debug
-
-  ; Make the comparison menu sensitive accordingly
-  WIDGET_CONTROL, Info.Compare_Menu_ID, $
-                  SENSITIVE = 1
-
-  ; Activate/reset the slider
-  IF ( Info.Plot_Type EQ 0 ) THEN BEGIN
-    Info.RTS_File[Info.Plot_Type]->Get_Property, $
-      Debug=Info.Debug, $
-      n_Profiles=n_Profiles
-    WIDGET_CONTROL, Info.Slider_ID, $
-                    SET_SLIDER_MIN = 1, $
-                    SET_SLIDER_MAX = n_Profiles, $
-                    SET_VALUE = 1
-    WIDGET_CONTROL, Info.Control_Base_ID, $
-                    SENSITIVE = 1
-    Info.Profile_Number = 1
-  ENDIF
   
-  ; Save top level base info state
-  RTSolution_Viewer_SetState, ID, Info
+  ; Read the file
+  MESSAGE, 'Loading RTSolution data file '+file+' for '+state['plot_type'], /INFORMATIONAL   
+  rtsolution_readfile, file, rtsolution, Quiet = ~ state['debug']
+
+
+  ; Save the data
+  index = state['plot_type'] EQ DISPLAY ? 0 : 1
+  data = (state['data'])[index]
+  data['filename'] = file
+  data['rtsolution'] = rtsolution
+  data['n_profiles'] = rtsolution.Count()
+  data['n_channels'] = (rtsolution[0]).Count()
+  (rtsolution[0])[0] -> Get_Property, $
+    Debug = debug, $
+    Sensor_Id = sensor_id
+  data['sensor_id'] = sensor_id
+
+
+  ; Check the data if differencing
+  IF ( state['plot_type'] EQ DIFFERENCE ) THEN BEGIN
+    initial_data = (state['data'])[0]
+    IF ( (initial_data['n_profiles'] NE data['n_profiles']) OR $
+         (initial_data['n_channels'] NE data['n_channels']) OR $
+         (initial_data['sensor_id']  NE data['sensor_id'] ) ) THEN BEGIN
+      MESSAGE, 'Comparison data sensor id and/or dimensions do not match initial input! Ignoring...', $
+               /INFORMATIONAL   
+      state['plot_type'] = DISPLAY
+    ENDIF  
+  ENDIF
+
+  ; Set/sensitise the main dimension slider widget
+  WIDGET_CONTROL, $
+    state['rv_slider_profile_id'], $
+    SET_VALUE      = 1, $
+    SET_SLIDER_MIN = 1, $
+    SET_SLIDER_MAX = data['n_profiles'], $
+    SENSITIVE = (data['n_profiles'] GT 1)
+  
+  
+  ; Sensitise the comparison menu
+  WIDGET_CONTROL, $
+    state['rv_compare_menu_id'], $
+    /SENSITIVE
+  
+  
+  ; Save the state variable
+  rv_setstate, id, state
 
   ; Display the new data
-  RTSolution_Viewer_Display, ID
+  rv_display, id
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
 END
 
 
-
 ;--------------------------------------------
-PRO RTSolution_Viewer, Debug = Debug
+PRO RTSolution_Viewer, $
+  Debug = debug
 
   ; Setup
+  @rtsolution_viewer_parameters
   ; ...Check arguments
-  IF ( NOT KEYWORD_SET( Debug ) ) THEN BEGIN
-    Debug = 0 
-  ENDIF ELSE BEGIN
-    Debug = 1
-    PRINT, 'RTSolution_Viewer'
-  ENDELSE
+  IF ( KEYWORD_SET(debug) ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
   ; ...Parameters
   MAXFILES = 11L
   ; ...Widget-y defaults
-  NoMap = 0
-  Map   = 1
+  nomap = 0
+  map   = 1
 
 
   ; Create the top level base
-  Top_Level_Base_ID = WIDGET_BASE( ROW=1, $
-                                   MAP = Map, $
-                                   MBAR = Menu_Bar_ID, $
-                                   TITLE = 'RTSolution_Viewer' )
-  WIDGET_CONTROL, Top_Level_Base_ID, UPDATE = 0
+  top_level_base_id = WIDGET_BASE( $
+    MAP    = map, $
+    MBAR   = menu_bar_id, $
+    COLUMN = 1, $
+    TITLE  = 'RTSolution_Viewer' )
+  WIDGET_CONTROL, $
+    top_level_base_id, $
+    UPDATE = 0
 
 
   ; Create the menu bar contents
   ; ...The file menu
-  File_Menu_ID = WIDGET_BUTTON( Menu_Bar_ID, $
-                                VALUE = 'File', $
-                                /MENU )
+  file_menu_id = WIDGET_BUTTON( $
+    menu_bar_id, $
+    VALUE = 'File', $
+    /MENU )
     ; ...File->Open
-    File_Open_ID = WIDGET_BUTTON( File_Menu_ID, $
-                                  VALUE = 'Open', $
-                                  EVENT_PRO = 'RTSolution_Viewer_Open_Event', $
-                                  UVALUE = 'FileOpen' )
+    file_open_id = WIDGET_BUTTON( $
+      file_menu_id, $
+      EVENT_PRO = 'rv_menu_open_event', $
+      UVALUE    = DISPLAY, $
+      VALUE     = 'Open' )
     ; ...File->Print
-    File_Print_ID = WIDGET_BUTTON( File_Menu_ID, $
-                                   VALUE = 'Print', $
-                                   EVENT_PRO = 'RTSolution_Viewer_Print_Event', $
-                                   UVALUE = 'FilePrint' )
+    file_print_id = WIDGET_BUTTON( $
+      file_menu_id, $
+      EVENT_PRO = 'rv_menu_print_event', $
+      VALUE     = 'Print', $
+      UVALUE    = 'FilePrint' )
     ; ...File->Exit
-    File_Exit_ID = WIDGET_BUTTON( File_Menu_ID, $
-                                  VALUE = 'Exit', $
-                                  EVENT_PRO = 'RTSolution_Viewer_Exit_Event', $
-                                  /SEPARATOR, $
-                                  UVALUE = 'FileExit' )
-
-  ; ...The conmpare menu
-  Compare_Menu_ID = WIDGET_BUTTON( Menu_Bar_ID, $
-                                   VALUE = 'Compare', $
-                                   SENSITIVE = 0, $
-                                   /MENU )
+    file_exit_id = WIDGET_BUTTON( $
+      file_menu_id, $
+      EVENT_PRO = 'rv_menu_exit_event', $
+      VALUE     = 'Exit', $
+      UVALUE    = 'FileExit', $
+      /SEPARATOR )
+  ; ...The compare menu
+  rv_compare_menu_id = WIDGET_BUTTON( $
+    menu_bar_id, $
+    VALUE     = 'Compare', $
+    SENSITIVE = 0, $
+    /MENU )
     ; ...Compare->Open
-    Compare_Open_ID = WIDGET_BUTTON( Compare_Menu_ID, $
-                                     VALUE = 'Open', $
-                                     EVENT_PRO = 'RTSolution_Viewer_Open_Event', $
-                                     UVALUE = 'CompareOpen' )
+    compare_open_id = WIDGET_BUTTON( $
+      rv_compare_menu_id, $
+      EVENT_PRO = 'rv_menu_open_event', $
+      UVALUE    = DIFFERENCE, $
+      VALUE     = 'Open' )
 
 
-  ; Create the left base for controls
-  Control_Base_ID = WIDGET_BASE( Top_Level_Base_ID, $
-                                 GROUP_LEADER = Top_Level_Base_ID, $
-                                 FRAME = 2, $
-                                 MAP = Map, $
-                                 COLUMN = 1, $
-                                 SENSITIVE = 0 )
+  ; Create the UPPER base for controls and plots
+  upper_base_id = WIDGET_BASE( $
+    top_level_base_id, $
+    GROUP_LEADER = top_level_base_id, $
+    FRAME        = 2, $
+    MAP          = map, $
+    ROW          = 1 )
+    ; ...Create the LEFT UPPER base for controls
+    left_upper_base_id = WIDGET_BASE( $
+      upper_base_id, $
+      GROUP_LEADER = top_level_base_id, $
+      MAP          = map, $
+      COLUMN       = 1 )
+      ; ...Create the slider base for data selection
+      slider_base_id = WIDGET_BASE( $
+        left_upper_base_id, $
+        GROUP_LEADER = top_level_base_id, $
+        MAP          = map, $
+        COLUMN       = 1 )
+        ; ...Create the profile slider
+        rv_slider_profile_id = WIDGET_SLIDER( $
+          slider_base_id, $
+          GROUP_LEADER = top_level_base_id, $
+          DRAG         = 0, $
+          EVENT_PRO    = 'rv_slider_profile_event', $
+          MINIMUM      = 0, $
+          MAXIMUM      = 1, $
+          SENSITIVE    = 0, $
+          TITLE        = 'Profile #', $
+          UVALUE       = 'profile' )
+    ; ...Create the RIGHT UPPER widget window for display
+    draw_id = WIDGET_WINDOW( $
+      upper_base_id, $
+      XSIZE = 700, $
+      YSIZE = 800, $
+      GROUP_LEADER = top_level_base_id, $
+      FRAME        = 2, $
+      SENSITIVE    = 0 )
 
-  ; ...Create the data list
-  excluded_data = ['N_ALLOCATES','N_LAYERS','SOD','UPWELLING_RADIANCE','LAYER_OPTICAL_DEPTH']
-  included_data = TAG_NAMES({RTS_Channel})
-  FOR i = 0, N_ELEMENTS(excluded_data)-1 DO BEGIN
-    idx = WHERE(included_data NE excluded_data[i])
-    included_data = included_data[idx]
-  ENDFOR
-  BGroup_ID = CW_BGROUP( Control_Base_ID, $
-                         included_data, $
-                         /COLUMN, $
-                         EVENT_FUNC = 'RTSolution_Viewer_BGroup_Event', $
-                         /EXCLUSIVE, $
-                         FRAME = 2, $
-                         /RETURN_NAME, $
-                         LABEL_TOP = 'Channel Data', $
-                         MAP = Map )
-
-  ; ...Create the profile slider
-  Slider_ID = WIDGET_SLIDER( Control_Base_ID, $
-                             GROUP_LEADER = Top_Level_Base_ID, $
-                             DRAG = 0, $
-                             EVENT_PRO = 'RTSolution_Viewer_Slider_Event', $
-                             FRAME = 2, $
-                             MINIMUM = 0, $
-                             MAXIMUM = 1, $
-                             TITLE = 'Profile count', $
-                             UVALUE = 'Profile' )
-
-
-  ; Create the right base for drawing
-  Draw_Base_ID = WIDGET_BASE( Top_Level_Base_ID, $
-                              GROUP_LEADER = Top_Level_Base_ID, $
-                              ROW = 1, $
-                              MAP = Map )
-  ; ...Create the draw widget
-  xSize = 800
-  ySize = 600
-  Draw_Widget_ID = WIDGET_DRAW( Draw_Base_ID, $
-                                GROUP_LEADER = Top_Level_Base_ID, $
-                                XSIZE = xSize, YSIZE = ySIZE )
-
-
-  ; Map, update and realise the widget heirarchy
-  WIDGET_CONTROL, Top_Level_Base_ID, MAP = Map, $
-                                     REALIZE = 1, $
-                                     UPDATE = 1
-
-
-  ; Obtain the draw widget window ID
-  WIDGET_CONTROL, Draw_Widget_ID, GET_VALUE = Draw_Window_ID
+      
+  ; Create the LOWER base for info output
+  lower_base_id = WIDGET_BASE( $
+    top_level_base_id, $
+    GROUP_LEADER = top_level_base_id, $
+    FRAME        = 2, $
+    MAP          = 0, $
+    ROW          = 1 )
+    ; ...Create the text widget for info
+    rv_text_info_id = WIDGET_TEXT( $
+      lower_base_id, $
+      XSIZE = 133, $
+      YSIZE = 6, $ ; Need to adjust this for more info output
+      GROUP_LEADER = top_level_base_id )
 
 
-  ; Load the information structure
-  Info = { Debug           : Debug, $
-           PMulti          : !P.MULTI, $
-           Compare_Menu_ID : Compare_Menu_ID, $
-           Control_Base_ID : Control_Base_ID, $
-           Draw_Widget_ID  : Draw_Widget_ID, $
-           Draw_Window_ID  : Draw_Window_ID, $
-           Slider_ID       : Slider_ID, $
-           Profile_Number  :  1, $
-           Channel_Tag     :  'BRIGHTNESS_TEMPERATURE', $
-           n_Files         : 0L, $
-           Plot_Type       : 0L, $
-           Full_Filename   : STRARR(2), $  ; File and Compare
-           Filename        : STRARR(2), $  ; File and Compare
-           RTS_File        : OBJARR(2)  }  ; File and Compare
-  InfoPtr = PTR_NEW( Info )
-  WIDGET_CONTROL, Top_Level_Base_ID, SET_UVALUE = InfoPtr
+  ; map, update and realise the widget heirarchy
+  WIDGET_CONTROL, $
+    top_level_base_id, $
+    MAP     = map, $
+    /REALIZE, $
+    /UPDATE
 
 
-  ; Display a file
-  XYOUTS, 0.5, 0.5, $
-          'Use File->Open to select a file', $
-          /NORM, ALIGNMENT = 0.5, $
-          CHARSIZE = 2.0
+  ; Obtain the widget window ID
+  WIDGET_CONTROL, $
+    draw_id, $
+    GET_VALUE = rv_window_id
 
 
+  ; Create a state variable
+  state = HASH()
+  ; ...Boolean states
+  state['debug'] = KEYWORD_SET(debug)
+  ; ...Widget ids
+  state['rv_compare_menu_id'] = rv_compare_menu_id
+  state['rv_slider_profile_id'] = rv_slider_profile_id
+  state['rv_text_info_id'] = rv_text_info_id
+  state['rv_window_id'] = rv_window_id
+  ; ...Object array to hold data
+  state['index'] = 0
+  data  = OBJARR(2)
+  FOR i = 0, 1 DO data[i] = HASH()
+  state['data'] = data
 
-  ;#----------------------------------------------------------------------------#
-  ;#                           -- START THE XMANAGER --                         #
-  ;#----------------------------------------------------------------------------#
+  
+  ; ...and save it
+  WIDGET_CONTROL, $
+    top_level_base_id, $
+    SET_UVALUE = state
 
-  XMANAGER, 'RTSolution_Viewer', Top_Level_Base_ID, $
-            CLEANUP = 'RTSolution_Viewer_Cleanup', $
-            GROUP_LEADER = Top_Level_Base_ID
 
-END ; RTSolution_Viewer
+  ; Display instructions
+  text = TEXT( $
+    0.5, 0.5, $
+    'Use File$\rightarrow$Open to select a file', $
+    /NORMAL, $
+    TARGET = rv_window_id, $
+    ALIGNMENT = 0.5, $
+    VERTICAL_ALIGNMENT = 0.5 )
+
+
+  ; Start the XManager
+  XMANAGER, $
+    'RTSolution_Viewer', $
+    top_level_base_id, $
+    CLEANUP = 'rv_cleanup', $
+    GROUP_LEADER = top_level_base_id
+
+  IF ( KEYWORD_SET(debug) ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+
+END
