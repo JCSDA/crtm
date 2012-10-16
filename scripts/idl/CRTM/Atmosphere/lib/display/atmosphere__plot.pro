@@ -137,28 +137,40 @@ PRO Atmosphere::Plot, $
   ENDFOR
 
 
-;  ; Plot the cloud data
-;  IF ( plot_clouds ) THEN BEGIN
-;    FOR n = 0, n_clouds-1 DO BEGIN
-;      cloud[n].Plot, $
-;        Pressure = y, $
-;        Title    = _title + '; Cloud #' + STRTRIM(n+1,2), $
-;        YNoLog   = ynolog  , $
-;        Png      = png     , $
-;        Debug    = debug      
-;    ENDFOR
-;  ENDIF
-;
-;  ; Plot the aerosol data
-;  IF ( plot_aerosols ) THEN BEGIN
-;    FOR n = 0, n_aerosols-1 DO BEGIN
-;      aerosol[n].Plot, $
-;        Pressure = y, $
-;        Title    = _title + '; Aerosol #' + STRTRIM(n+1,2), $
-;        YNoLog   = ynolog  , $
-;        Png      = png     , $
-;        Debug    = debug      
-;    ENDFOR
-;  ENDIF
+  ; Plot the cloud data
+  IF ( plot_clouds && (n_clouds GT 0) ) THEN BEGIN
+    ; ...Extract the data
+    self->Get_Property, Cloud = cloud, Debug = debug
+    IF ( plot_difference ) THEN diff_input->Get_Property, Cloud = diff_cloud, Debug = debug
+    ; ...Loop over clouds
+    FOR n = 0, n_clouds-1 DO BEGIN
+      IF ( plot_difference ) THEN diff_input = diff_cloud[n]
+      cloud[n].Plot, $
+        Pressure   = y, $
+        Diff_Input = diff_input, $
+        Title      = _title + '; Cloud #' + STRTRIM(n+1,2), $
+        YNoLog     = ynolog  , $
+        Png        = png     , $
+        Debug      = debug      
+    ENDFOR
+  ENDIF
+
+  ; Plot the aerosol data
+  IF ( plot_aerosols && (n_aerosols GT 0) ) THEN BEGIN
+    ; ...Extract the data
+    self->Get_Property, aerosol = aerosol, Debug = debug
+    IF ( plot_difference ) THEN diff_input->Get_Property, aerosol = diff_aerosol, Debug = debug
+    ; ...Loop over aerosols
+    FOR n = 0, n_aerosols-1 DO BEGIN
+      IF ( plot_difference ) THEN diff_input = diff_aerosol[n]
+      aerosol[n].Plot, $
+        Pressure   = y, $
+        Diff_Input = diff_input, $
+        Title      = _title + '; Aerosol #' + STRTRIM(n+1,2), $
+        YNoLog     = ynolog  , $
+        Png        = png     , $
+        Debug      = debug      
+    ENDFOR
+  ENDIF
   
 END
