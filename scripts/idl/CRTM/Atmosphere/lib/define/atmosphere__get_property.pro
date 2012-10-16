@@ -113,13 +113,13 @@
 ;
 ;       Cloud:                 The list of cloud objects.
 ;                              UNITS:      Variable
-;                              TYPE:       LIST
+;                              TYPE:       Cloud_List
 ;                              DIMENSION:  N/A
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Aerosol:               The list of aerosol objects.
 ;                              UNITS:      Variable
-;                              TYPE:       LIST
+;                              TYPE:       Aerosol_List
 ;                              DIMENSION:  N/A
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;-

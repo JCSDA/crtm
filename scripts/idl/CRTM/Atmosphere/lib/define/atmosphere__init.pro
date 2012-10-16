@@ -56,8 +56,8 @@ FUNCTION Atmosphere::Init, Debug=Debug  ; Input keyword
   self.Pressure        = LIST()      
   self.Temperature     = LIST()     
   self.Absorber        = LIST()    
-  self.Cloud           = LIST()    
-  self.Aerosol         = LIST()   
+  self.Cloud           = Cloud_List()    
+  self.Aerosol         = Aerosol_List()   
   
   ; Display in debug mode
   IF ( KEYWORD_SET(Debug) ) THEN self->Inspect, Debug=Debug

@@ -198,8 +198,8 @@ PRO Atmosphere::Set_Property, $
   ; And now the objects
   ; ...Clouds
   IF ( N_ELEMENTS(Cloud) GT 0 ) THEN BEGIN
-    ; Only accept list input
-    IF ( ~ ISA(Cloud,'List') ) THEN $
+    ; Only accept cloud list input
+    IF ( ~ ISA(Cloud,'Cloud_List') ) THEN $
       MESSAGE, 'Input Cloud must be a list containing individual cloud objects.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; Iterate over clouds
@@ -219,7 +219,7 @@ PRO Atmosphere::Set_Property, $
   ; ...Aerosols
   IF ( N_ELEMENTS(Aerosol) GT 0 ) THEN BEGIN
     ; Only accept list input
-    IF ( ~ ISA(Aerosol,'List') ) THEN $
+    IF ( ~ ISA(Aerosol,'Aerosol_List') ) THEN $
       MESSAGE, 'Input Aerosol must be a list containing individual aerosol objects.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; Iterate over aerosols
