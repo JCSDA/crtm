@@ -1,3 +1,7 @@
+  ; Literal constants
+  ZERO = 0.0d0
+  ONE  = 1.0d0
+  
   ; The absorber IDs. Use HITRAN definitions
   N_VALID_ABSORBER_IDS = 32
   INVALID_ABSORBER_ID =  0
