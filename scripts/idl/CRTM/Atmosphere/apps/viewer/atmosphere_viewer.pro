@@ -561,29 +561,43 @@ PRO av_profile_display, id
     END
 
     COMPONENT_CLOUD: BEGIN
-      atm.Get_Property, $
-        Debug = state['debug'], $
-        Cloud = cloud
       WIDGET_CONTROL, $
         state['av_slider_cloud_id'], $
         GET_VALUE = cloud_number
       cloud_index = cloud_number - 1
+      atm.Get_Property, $
+        Debug = state['debug'], $
+        Cloud = cloud
+      IF ( state['plot_type'] EQ PLOT_TYPE_DIFFERENCE ) THEN BEGIN
+        diff_input.Get_Property, $
+          Debug = state['debug'], $
+          Cloud = diff_cloud
+        diff_cloud = diff_cloud[cloud_index]
+      ENDIF
       cloud[cloud_index].Plot, $
         Pressure = pressure, $
+        Diff_Input = diff_cloud, $
         Owin = state['av_window_id'], $
         Debug = state['debug']
     END
 
     COMPONENT_AEROSOL: BEGIN
-      atm.Get_Property, $
-        Debug = state['debug'], $
-        Aerosol = aerosol
       WIDGET_CONTROL, $
         state['av_slider_aerosol_id'], $
         GET_VALUE = aerosol_number
       aerosol_index = aerosol_number - 1
+      atm.Get_Property, $
+        Debug = state['debug'], $
+        Aerosol = aerosol
+      IF ( state['plot_type'] EQ PLOT_TYPE_DIFFERENCE ) THEN BEGIN
+        diff_input.Get_Property, $
+          Debug = state['debug'], $
+          Aerosol = diff_aerosol
+        diff_aerosol = diff_aerosol[aerosol_index]
+      ENDIF
       aerosol[aerosol_index].Plot, $
         Pressure = pressure, $
+        Diff_Input = diff_aerosol, $
         Owin = state['av_window_id'], $
         Debug = state['debug']
     END
@@ -764,7 +778,9 @@ PRO av_load_file, file, id
     SET_VALUE      = 1, $
     SET_SLIDER_MIN = 1, $
     SET_SLIDER_MAX = data['n_channels'], $
-    SENSITIVE = ((data['n_channels'] GT 1) && (state['display_type'] EQ DISPLAY_TYPE_PROFILE))
+    SENSITIVE = ((data['n_channels'] GT 1) && $
+                 (data['data_type'] EQ DATA_TYPE_KMATRIX) && $
+                 (state['display_type'] EQ DISPLAY_TYPE_PROFILE))
     
     
   ; Set the main layer slider widget
