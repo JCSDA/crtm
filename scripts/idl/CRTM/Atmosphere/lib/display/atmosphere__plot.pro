@@ -1,5 +1,6 @@
 PRO Atmosphere::Plot, $
   Pressure   = pressure  , $  ; Input keyword
+  Diff_Input = diff_input, $  ; Input keyword
   Title      = title     , $  ; Input keyword
   NoAerosols = noaerosols, $  ; Input keyword
   NoClouds   = noclouds  , $  ; Input keyword
@@ -18,18 +19,13 @@ PRO Atmosphere::Plot, $
   ; ...Retrieve the atmosphere data
   self->Get_Property, $
     Debug = debug, $
-    n_Layers        = n_layers       , $
-    n_Absorbers     = n_absorbers    , $
-    n_Clouds        = n_clouds       , $
-    n_Aerosols      = n_aerosols     , $
-    Climatology     = climatology    , $
-    Absorber_ID     = absorber_id    , $
-    Absorber_Units  = absorber_units , $
-    Pressure        = _pressure      , $
-    Temperature     = temperature    , $
-    Absorber_Amount = absorber_amount, $
-    Cloud           = cloud          , $
-    Aerosol         = aerosol        
+    n_Layers        = n_layers      , $
+    n_Absorbers     = n_absorbers   , $
+    n_Clouds        = n_clouds      , $
+    n_Aerosols      = n_aerosols    , $
+    Absorber_ID     = absorber_id   , $
+    Absorber_Units  = absorber_units, $
+    Pressure        = _pressure      
   ; ...Process boolean keywords
   plot_clouds   = ~ KEYWORD_SET(noclouds)
   plot_aerosols = ~ KEYWORD_SET(noaerosols)
@@ -45,6 +41,29 @@ PRO Atmosphere::Plot, $
   n_row = CEIL(DOUBLE(n_absorbers+1)/n_col)
   
 
+  ; Check difference input keyword separately (coz it's unwieldy)
+  plot_difference = FALSE
+  IF ( N_ELEMENTS(diff_input) GT 0 ) THEN BEGIN
+    ; Must be an Atmosphere to start with
+    IF ( ISA(diff_input,'Atmosphere') ) THEN BEGIN
+      ; Must have the same dimensions as self
+      diff_input->Get_Property, $
+        Debug = debug, $
+        n_Layers    = diff_n_layers   , $
+        n_Absorbers = diff_n_absorbers, $
+        n_Clouds    = diff_n_clouds   , $
+        n_Aerosols  = diff_n_aerosols
+      IF ( (n_layers EQ diff_n_layers) && (n_absorbers EQ diff_n_absorbers) && $
+           (n_clouds EQ diff_n_clouds) && (n_aerosols EQ diff_n_aerosols)) THEN BEGIN
+        ; We can use this!
+        plot_difference = TRUE
+      ENDIF
+    ENDIF
+  ENDIF
+  ; ...Set title modifier
+  delta = plot_difference ? '$\Delta$' : ''
+  
+  
   ; Set the graphics window
   IF ( create_window ) THEN BEGIN
     xsize = 640
@@ -59,70 +78,87 @@ PRO Atmosphere::Plot, $
   index = 0
   
   
-  ; Plot the temperature
+  ; Display the temperature data
+  ; ...Extract the data
+  self->Get_Property, Temperature = x, Debug = debug
+  ; ...Process the difference data
+  IF ( plot_difference ) THEN BEGIN
+    ; Extract and difference the data
+    diff_input->Get_Property, Temperature = x2, Debug = debug
+    x  = x - x2
+  ENDIF
+  ; ...Create scaled x-data for pretty plotting
+  axis_scale, [MIN(x),MAX(x)], 'T (K)', xscale, xtitle
+  x = x * xscale
+  ; ...Plot the temperature
   index++
   pt = PLOT( $
-    temperature, y, $
+    x, y, $
     TITLE  = 'Temperature profile', $
-    XTITLE = 'T (K)', $
+    XTITLE = xtitle, $
     YTITLE = 'Pressure (hPa)', $
     YRANGE = yrange, $
     YLOG = ylog, $
     YTICKFORMAT = 'logticks', $
-    /NODATA, $
+    COLOR = 'red', $
     LAYOUT = [ n_col, n_row, index ], $
     CURRENT = owin )
-  !NULL = PLOT( $
-    temperature, y, $
-    OVERPLOT = pt, $
-    COLOR = 'red' )
     
   
-  ; Plot the absorber data
+  ; Display the absorber data
+  ; ...Extract the data
+  self->Get_Property, Absorber_Amount = x, Debug = debug
+  ; ...Process the difference data
+  IF ( plot_difference ) THEN BEGIN
+    ; Extract and difference the data
+    diff_input->Get_Property, Absorber_Amount = x2, Debug = debug
+    x  = x - x2
+  ENDIF
+  ; ...Plot the data
   FOR j = 0, n_absorbers-1 DO BEGIN
+    ; ...Create scaled x-data for pretty plotting
+    xa = x[*,j]
+    axis_scale, [MIN(xa),MAX(xa)], STRTRIM(ABSORBER_UNITS_NAME[absorber_units[j]],2), xscale, xtitle
+    xa = xa * xscale
+    ; ...Plot it
     index++
     absorber_name = STRTRIM(ABSORBER_ID_NAME[absorber_id[j]],2)
-    units_name    = STRTRIM(ABSORBER_UNITS_NAME[absorber_units[j]],2)
     pa = PLOT( $
-      absorber_amount[*,j], y, $
+      xa, y, $
       TITLE  = absorber_name + ' profile', $
-      XTITLE = 'Amount (' + units_name + ')', $
+      XTITLE = xtitle, $
       YTITLE = 'Pressure (hPa)', $
       YRANGE = yrange, $
       YLOG = ylog, $
       YTICKFORMAT = 'logticks', $
-      /NODATA, $
+      COLOR = 'red', $
       LAYOUT = [ n_col, n_row, index ], $
       CURRENT = owin )
-    !NULL = PLOT( $
-      absorber_amount[*,j], y, $
-      OVERPLOT = pa, $
-      COLOR = 'red' )
   ENDFOR
 
 
-  ; Plot the cloud data
-  IF ( plot_clouds ) THEN BEGIN
-    FOR n = 0, n_clouds-1 DO BEGIN
-      cloud[n].Plot, $
-        Pressure = y, $
-        Title    = _title + '; Cloud #' + STRTRIM(n+1,2), $
-        YNoLog   = ynolog  , $
-        Png      = png     , $
-        Debug    = debug      
-    ENDFOR
-  ENDIF
-
-  ; Plot the aerosol data
-  IF ( plot_aerosols ) THEN BEGIN
-    FOR n = 0, n_aerosols-1 DO BEGIN
-      aerosol[n].Plot, $
-        Pressure = y, $
-        Title    = _title + '; Aerosol #' + STRTRIM(n+1,2), $
-        YNoLog   = ynolog  , $
-        Png      = png     , $
-        Debug    = debug      
-    ENDFOR
-  ENDIF
+;  ; Plot the cloud data
+;  IF ( plot_clouds ) THEN BEGIN
+;    FOR n = 0, n_clouds-1 DO BEGIN
+;      cloud[n].Plot, $
+;        Pressure = y, $
+;        Title    = _title + '; Cloud #' + STRTRIM(n+1,2), $
+;        YNoLog   = ynolog  , $
+;        Png      = png     , $
+;        Debug    = debug      
+;    ENDFOR
+;  ENDIF
+;
+;  ; Plot the aerosol data
+;  IF ( plot_aerosols ) THEN BEGIN
+;    FOR n = 0, n_aerosols-1 DO BEGIN
+;      aerosol[n].Plot, $
+;        Pressure = y, $
+;        Title    = _title + '; Aerosol #' + STRTRIM(n+1,2), $
+;        YNoLog   = ynolog  , $
+;        Png      = png     , $
+;        Debug    = debug      
+;    ENDFOR
+;  ENDIF
   
 END
