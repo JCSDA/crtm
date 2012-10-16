@@ -1,30 +1,23 @@
 ;+
 ; NAME:
-;       Aerosol_WriteFile
+;       Aerosol_List::WriteFile
 ;
 ; PURPOSE:
-;       The Aerosol_WriteFile procedure writes a list of aerosol objects
+;       The Aerosol_List::WriteFile procedure method writes a list of Aerosol objects
 ;       to a data file.
 ;
 ; CALLING SEQUENCE:
-;       Aerosol_WriteFile, $
+;       Obj->[Aerosol_List::]WriteFile, $
 ;         Filename       , $
-;         Aerosols       , $
 ;         FileId = FileId, $
 ;         Swap   = Swap  , $
 ;         Quiet  = Quiet , $
-;         Debug  = Debug   )
+;         Debug  = Debug
 ;
 ; INPUTS:
 ;       Filename:       The name of the Aerosol object data file to write.
 ;                       UNITS:      N/A
 ;                       TYPE:       CHARACTER(*)
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(IN)
-;
-;       Aerosols:         List containing the Aerosol objects to write to file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
 ;
@@ -73,91 +66,76 @@
 ;                       ATTRIBUTES: INTENT(IN), OPTIONAL
 ;-
 
-PRO Aerosol_WriteFile, $
-  Filename       , $  ; Input
-  Aerosols       , $  ; Input
-  FileId = FileId, $  ; Optional input
-  Swap   = Swap  , $  ; Optional input
-  Quiet  = Quiet , $  ; Optional input
-  Debug  = Debug      ; Optional input
+PRO Aerosol_List::WriteFile, $
+  filename       , $  ; Input
+  FileId = fileid, $  ; Optional input
+  Swap   = swap  , $  ; Optional input
+  Quiet  = quiet , $  ; Optional input
+  Debug  = debug      ; Optional input
 
   ; Set up
   @aerosol_parameters
   @aerosol_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
+  noisy = ~(KEYWORD_SET(Quiet)) || KEYWORD_SET(debug)
   
 
   ; Process input
-  ; ...Check filename
-  IF ( NOT Valid_String(Filename) ) THEN $
-    MESSAGE, 'Must specify a filename', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; ...If no aerosols, do nothing
+  IF ( self.IsEmpty() ) THEN RETURN
   ; ...Check aerosol list
-  IF ( ~ OBJ_VALID(Aerosols) ) THEN $
-    MESSAGE, 'Aerosols input is not a valid object', $
+  IF ( ~ self->HasOnly_Aerosols(Debug = debug) ) THEN $
+    MESSAGE, 'Aerosol list contains non-aerosol objects!', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  IF ( ~ OBJ_ISA(Aerosols,'LIST') ) THEN $
-    MESSAGE, 'Aerosols input is not a LIST object', $
+  ; ...Check filename
+  IF ( ~ Valid_String(filename) ) THEN $
+    MESSAGE, 'Must specify a filename', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   
 
-  ; If no aerosols, do nothing
-  IF ( Aerosols.IsEmpty() ) THEN RETURN
-  
-  
   ; Check if file needs to be opened
   open_file = TRUE
-  IF ( N_ELEMENTS(FileId) GT 0 ) THEN BEGIN
-    fid   = FileId[0]
+  IF ( N_ELEMENTS(fileid) GT 0 ) THEN BEGIN
+    fid   = fileid[0]
     finfo = FSTAT(fid)
-    IF ( (finfo.NAME EQ Filename) AND finfo.OPEN AND finfo.WRITE ) THEN open_file = FALSE
+    IF ( (finfo.NAME EQ filename) && finfo.OPEN && finfo.WRITE ) THEN open_file = FALSE
   ENDIF
 
 
   ; Open the file if necessary
   IF ( open_file ) THEN BEGIN
-    fid = Open_Binary_File(Filename, /Write, Swap=Swap, Debug=Debug)
+    fid = Open_Binary_File(filename, /Write, Swap = swap, Debug = debug)
     IF ( fid < 0 ) THEN $
-      MESSAGE, 'Error opening file '+Filename, $
+      MESSAGE, 'Error opening file '+filename, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
 
 
   ; Write the file dimensions
-  n_aerosols = LONG(Aerosols.Count())
+  n_aerosols = LONG(self.Count())
   WRITEU, fid, n_aerosols
 
 
   ; Loop over the number of aerosols
-  FOR nc = 0L, n_aerosols-1L DO BEGIN
-
-    ; Check that current list element is actually an aerosol object
-    aerosol = Aerosols[nc]
-    IF ( ~ OBJ_VALID(aerosol) ) THEN $
-      MESSAGE, 'List element '+STRTRIM(nc,2)+' is not a valid object', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    IF ( ~ OBJ_ISA(aerosol,'AEROSOL') ) THEN $
-      MESSAGE, 'List element '+STRTRIM(nc,2)+' is not a AEROSOL object', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    
+  FOR na = 0L, n_aerosols-1L DO BEGIN
 
     ; Write the current aerosol data dimensions
-    aerosol->Aerosol::Get_Property, $
-      n_Layers=n_layers, $
-      Debug=Debug
+    self[na]->Aerosol::Get_Property, $
+      n_Layers = n_layers, $
+      Debug = debug
     WRITEU, fid, n_layers
 
 
     ; Write the aerosol data
-    aerosol->Aerosol::Get_Property, $
-      Type              =type              , $
-      Effective_Radius  =effective_radius  , $
-      concentration     =concentration     , $
+    self[na]->Aerosol::Get_Property, $
+      Type             = type              , $
+      Effective_Radius = effective_radius  , $
+      concentration    = concentration     , $
       Debug=Debug
-    WRITEU, fid, type, $
-                 effective_radius, $
-                 concentration
+    WRITEU, fid, $
+      type, $
+      effective_radius, $
+      concentration
 
   ENDFOR
 
@@ -168,6 +146,6 @@ PRO Aerosol_WriteFile, $
 
   ; Output an info message
   IF ( noisy ) THEN $
-    MESSAGE, 'Number of aerosols written to '+Filename+' : '+STRTRIM(nc,2), /INFORMATIONAL
+    MESSAGE, 'Number of aerosols written to '+filename+' : '+STRTRIM(n_aerosols,2), /INFORMATIONAL
 
 END
