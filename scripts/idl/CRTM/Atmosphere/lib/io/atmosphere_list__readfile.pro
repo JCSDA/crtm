@@ -1,18 +1,18 @@
 ;+
 ; NAME:
-;       Atmosphere_ReadFile
+;       Atmosphere_List::ReadFile
 ;
 ; PURPOSE:
-;       The Atmosphere_ReadFile procedure reads atmosphere object data files
-;       returning a list object of the Atmosphere data in the file
+;       The Atmosphere_List::ReadFile procedure method reads atmosphere object
+;       data files filling the Atmosphere_List object with the Atmosphere data
+;       in the file
 ;
 ; CALLING SEQUENCE:
-;       Atmosphere_ReadFile, $
+;       Obj->[Atmosphere_List::]ReadFile, $
 ;         Filename     , $
-;         Atmospheres  , $
 ;         Quiet = Quiet, $
 ;         Debug = Debug, $
-;         Count = Count  )
+;         Count = Count
 ;
 ; INPUTS:
 ;       Filename:       The name of the Atmosphere object data file to read.
@@ -20,13 +20,6 @@
 ;                       TYPE:       CHARACTER(*)
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
-;
-; OUTPUTS:
-;       Atmospheres:    List containing the Atmosphere objects read from file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(OUT)
 ;
 ; INPUT KEYWORDS:
 ;       Quiet:          Set this keyword to disable informational output
@@ -65,7 +58,7 @@ PRO Atmosphere::ReadRecord, $
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(quiet))
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
 
 
   ; Read the current atmosphere data dimensions
@@ -125,9 +118,9 @@ PRO Atmosphere::ReadRecord, $
 
   ; Read the cloud data
   IF ( n_clouds GT 0 ) THEN BEGIN
-    Cloud_ReadFile, $
+    clouds = Cloud_List()
+    clouds->Cloud_List::ReadFile, $
       filename      , $
-      clouds        , $
       FileId = fid  , $
       Quiet  = quiet, $
       Debug  = debug
@@ -139,9 +132,9 @@ PRO Atmosphere::ReadRecord, $
 
   ; Read the aerosol data
   IF ( n_aerosols GT 0 ) THEN BEGIN
-    Aerosol_ReadFile, $
+    aerosols = Aerosol_List()
+    aerosols->Aerosol_List::ReadFile, $
       filename      , $
-      aerosols      , $
       FileId = fid  , $
       Quiet  = quiet, $
       Debug  = debug
@@ -154,19 +147,20 @@ END
 
 
 ; The main script
-PRO Atmosphere_ReadFile, $
+PRO Atmosphere_List::ReadFile, $
   filename      , $  ; Input
-  atmospheres   , $  ; Output
-  Quiet  = Quiet, $  ; Optional input
-  Debug  = Debug, $  ; Optional input
-  Count  = Count     ; Optional output
+  Quiet  = quiet, $  ; Optional input
+  Debug  = debug, $  ; Optional input
+  Count  = count     ; Optional output
 
   ; Set up
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
-  Count = 0L
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
+  count = 0L
+  ; ...Ensure the list is empty
+  self.Remove, /ALL
 
 
   ; Process input
@@ -176,7 +170,7 @@ PRO Atmosphere_ReadFile, $
 
 
   ; Open the file
-  fid = Open_Binary_File(filename, Debug = Debug)
+  fid = Open_Binary_File(filename, Debug = debug)
   IF ( fid < 0 ) THEN $
     MESSAGE, 'Error opening file '+filename, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
@@ -186,10 +180,6 @@ PRO Atmosphere_ReadFile, $
   n_channels = 0L
   n_profiles = 0L
   READU, fid, n_channels, n_profiles
-
-
-  ; Create the atmosphere list
-  atmospheres = LIST()
 
 
   ; Loop over all the profiles
@@ -208,18 +198,18 @@ PRO Atmosphere_ReadFile, $
       ; ---------------------------
 
       ; Create a channel list
-      channels = LIST()
+      channels = Atmosphere_List()
 
       ; Loop over all the channels
       FOR l = 0, n_channels-1 DO BEGIN
 
         ; Read an atmosphere record
-        channel = Atmosphere(Debug=debug)
+        channel = Atmosphere(Debug = debug)
         channel->Atmosphere::ReadRecord, $
           filename, $
           fid, $
-          Quiet = Quiet, $
-          Debug = Debug
+          Quiet = quiet, $
+          Debug = debug
 
         ; Add the current channel to the list object
         channels.Add, channel
@@ -227,7 +217,7 @@ PRO Atmosphere_ReadFile, $
       ENDFOR
 
       ; Add the channel list to the output list object
-      atmospheres.Add, channels
+      self.Add, channels
 
 
     ENDIF ELSE BEGIN
@@ -236,15 +226,15 @@ PRO Atmosphere_ReadFile, $
       ; ------------------------------------
 
       ; Read an atmosphere record
-      atmosphere = Atmosphere(Debug=debug)
+      atmosphere = Atmosphere(Debug = debug)
       atmosphere->Atmosphere::ReadRecord, $
         filename, $
         fid, $
-        Quiet = Quiet, $
-        Debug = Debug
+        Quiet = quiet, $
+        Debug = debug
 
       ; Add the current atmosphere to the output list object
-      atmospheres.Add, atmosphere
+      self.Add, atmosphere
 
     ENDELSE
 
@@ -256,11 +246,11 @@ PRO Atmosphere_ReadFile, $
 
 
   ; Set the output keywords
-  Count = atmospheres.Count()
+  count = self.Count()
 
 
   ; Output an info message
   IF ( noisy ) THEN $
-    MESSAGE, 'Number of atmospheres read from '+filename+' : '+STRTRIM(Count,2), /INFORMATIONAL
+    MESSAGE, 'Number of atmospheres read from '+filename+' : '+STRTRIM(count,2), /INFORMATIONAL
 
 END

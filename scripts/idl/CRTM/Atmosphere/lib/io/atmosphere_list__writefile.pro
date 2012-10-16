@@ -1,31 +1,24 @@
 ;+
 ; NAME:
-;       Atmosphere_WriteFile
+;       Atmosphere_List::WriteFile
 ;
 ; PURPOSE:
-;       The Atmosphere_WriteFile procedure writes a list of atmosphere objects
-;       to a data file.
+;       The Atmosphere_List::WriteFile procedure method writes a list of
+;       atmosphere objectsto a data file.
 ;
 ;       Note: If the file already exists, it is overwritten.
 ;
 ; CALLING SEQUENCE:
-;       Atmosphere_WriteFile, $
+;       Obj->[Atmosphere_List::]WriteFile, $
 ;         Filename     , $
-;         Atmospheres  , $
 ;         Swap  = Swap , &
 ;         Quiet = Quiet, $
-;         Debug = Debug  )
+;         Debug = Debug
 ;
 ; INPUTS:
 ;       Filename:       The name of the Atmosphere object data file to write.
 ;                       UNITS:      N/A
 ;                       TYPE:       CHARACTER(*)
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(IN)
-;
-;       Atmospheres:    List containing the Atmosphere objects to write to file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
 ;
@@ -71,7 +64,7 @@ PRO Atmosphere::WriteRecord, $
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(quiet))
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
 
 
   ; Write the current atmosphere data dimensions
@@ -119,9 +112,8 @@ PRO Atmosphere::WriteRecord, $
     self->Atmosphere::Get_Property, $
       Debug = debug , $
       Cloud = clouds
-    Cloud_WriteFile, $
+    clouds->Cloud_List::WriteFile, $
       filename      , $
-      clouds        , $
       FileId = fid  , $
       Quiet  = quiet, $
       Debug  = debug
@@ -133,9 +125,8 @@ PRO Atmosphere::WriteRecord, $
     self->Atmosphere::get_Property, $
       Debug   = debug   , $
       Aerosol = aerosols
-    Aerosol_WriteFile, $
+    aerosols->Aerosol_List::WriteFile, $
       filename      , $
-      aerosols      , $
       FileId = fid  , $
       Quiet  = quiet, $
       Debug  = debug
@@ -145,9 +136,8 @@ END
 
 
 ; The main script
-PRO Atmosphere_WriteFile, $
+PRO Atmosphere_List::WriteFile, $
   filename      , $  ; Input
-  atmospheres   , $  ; Input
   Swap   = swap , $  ; Optional input
   Quiet  = quiet, $  ; Optional input
   Debug  = debug     ; Optional input
@@ -156,29 +146,19 @@ PRO Atmosphere_WriteFile, $
   @atmosphere_parameters
   @atmosphere_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(quiet))
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
   
 
   ; Process input
-  ; ...Check filename
-  IF ( ~ Valid_String(Filename) ) THEN $
-    MESSAGE, 'Must specify a filename', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ; ...Check atmosphere list
-  IF ( ~ OBJ_VALID(atmospheres) ) THEN $
-    MESSAGE, 'Atmospheres input is not a valid object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  IF ( ~ OBJ_ISA(atmospheres,'LIST') ) THEN $
-    MESSAGE, 'Atmospheres input is not a LIST object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  
-
-  ; If no atmospheres, do nothing
-  IF ( atmospheres.IsEmpty() ) THEN BEGIN
-    MESSAGE, 'Atmospheres input LIST is empty. Nothing to do.', $
-             /INFORMATIONAL
+  ; ...If no data, do nothing
+  IF ( self.IsEmpty() ) THEN BEGIN
+    MESSAGE, 'Atmosphere_List object is empty. Nothing to do.', /INFORMATIONAL
     RETURN
   ENDIF
+  ; ...Check filename
+  IF ( ~ Valid_String(filename) ) THEN $
+    MESSAGE, 'Must specify a filename', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
   
   
   ; Open the file
@@ -189,11 +169,11 @@ PRO Atmosphere_WriteFile, $
 
 
   ; Determine the list dimensions
-  n_profiles = LONG(atmospheres.Count())
+  n_profiles = LONG(self.Count())
   ; ...Does list contain channel data?
-  IF ( OBJ_ISA(atmospheres[0],'LIST') ) THEN $
+  IF ( OBJ_ISA(self[0],'LIST') ) THEN $
     ; YES - THIS IS K-MATRIX DATA
-    n_channels = LONG(atmospheres[0].Count()) $
+    n_channels = LONG(self[0].Count()) $
   ELSE $
     ; NO CHANNELS - THIS IS FWD/TL/AD DATA
     n_channels = 0L
@@ -222,7 +202,7 @@ PRO Atmosphere_WriteFile, $
       FOR l = 0L, n_channels-1 DO BEGIN
 
         ; Write an atmosphere record
-        (atmospheres[m])[l]->Atmosphere::WriteRecord, $
+        (self[m])[l]->Atmosphere::WriteRecord, $
           filename, $
           fid, $
           Quiet = quiet, $
@@ -236,7 +216,7 @@ PRO Atmosphere_WriteFile, $
       ; ------------------------------------
 
       ; Write an atmosphere record
-      atmospheres[m]->Atmosphere::WriteRecord, $
+      self[m]->Atmosphere::WriteRecord, $
         filename, $
         fid, $
         Quiet = quiet, $
