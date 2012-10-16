@@ -1,30 +1,23 @@
 ;+
 ; NAME:
-;       Cloud_WriteFile
+;       Cloud_List::WriteFile
 ;
 ; PURPOSE:
-;       The Cloud_WriteFile procedure writes a list of cloud objects
+;       The Cloud_List::WriteFile procedure method writes a list of cloud objects
 ;       to a data file.
 ;
 ; CALLING SEQUENCE:
-;       Cloud_WriteFile, $
+;       Obj->[Cloud_List::]WriteFile, $
 ;         Filename       , $
-;         Clouds         , $
 ;         FileId = FileId, $
 ;         Swap   = Swap  , $
 ;         Quiet  = Quiet , $
-;         Debug  = Debug   )
+;         Debug  = Debug
 ;
 ; INPUTS:
 ;       Filename:       The name of the Cloud object data file to write.
 ;                       UNITS:      N/A
 ;                       TYPE:       CHARACTER(*)
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(IN)
-;
-;       Clouds:         List containing the Cloud objects to write to file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
 ;
@@ -73,93 +66,79 @@
 ;                       ATTRIBUTES: INTENT(IN), OPTIONAL
 ;-
 
-PRO Cloud_WriteFile, $
-  Filename       , $  ; Input
-  Clouds         , $  ; Input
-  FileId = FileId, $  ; Optional input
-  Swap   = Swap  , $  ; Optional input
-  Quiet  = Quiet , $  ; Optional input
-  Debug  = Debug      ; Optional input
+PRO Cloud_List::WriteFile, $
+  filename       , $  ; Input
+  FileId = fileid, $  ; Optional input
+  Swap   = swap  , $  ; Optional input
+  Quiet  = quiet , $  ; Optional input
+  Debug  = debug      ; Optional input
 
   ; Set up
   @cloud_parameters
   @cloud_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
   
 
   ; Process input
+  ; ...If no clouds, do nothing
+  IF ( self.IsEmpty() ) THEN RETURN
+  ; ...Check cloud list
+  IF ( ~ self->HasOnly_Clouds(Debug = debug) ) THEN $
+    MESSAGE, 'Cloud list contains non-cloud objects!', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Check filename
-  IF ( NOT Valid_String(Filename) ) THEN $
+  IF ( ~ Valid_String(filename) ) THEN $
     MESSAGE, 'Must specify a filename', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ; ...Check cloud list
-  IF ( ~ OBJ_VALID(Clouds) ) THEN $
-    MESSAGE, 'Clouds input is not a valid object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  IF ( ~ OBJ_ISA(Clouds,'LIST') ) THEN $
-    MESSAGE, 'Clouds input is not a LIST object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  
-
-  ; If no clouds, do nothing
-  IF ( Clouds.IsEmpty() ) THEN RETURN
   
   
   ; Check if file needs to be opened
   open_file = TRUE
-  IF ( N_ELEMENTS(FileId) GT 0 ) THEN BEGIN
-    fid   = FileId[0]
+  IF ( N_ELEMENTS(fileid) GT 0 ) THEN BEGIN
+    fid   = fileid[0]
     finfo = FSTAT(fid)
-    IF ( (finfo.NAME EQ Filename) AND finfo.OPEN AND finfo.WRITE ) THEN open_file = FALSE
+    IF ( (finfo.NAME EQ filename) && finfo.OPEN && finfo.WRITE ) THEN open_file = FALSE
   ENDIF
 
 
   ; Open the file if necessary
   IF ( open_file ) THEN BEGIN
-    fid = Open_Binary_File(Filename, /Write, Swap=Swap, Debug=Debug)
+    fid = Open_Binary_File(filename, /Write, Swap = swap, Debug = debug)
     IF ( fid < 0 ) THEN $
-      MESSAGE, 'Error opening file '+Filename, $
+      MESSAGE, 'Error opening file '+filename, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
 
 
   ; Write the file dimensions
-  n_clouds = LONG(Clouds.Count())
+  n_clouds = LONG(self.Count())
   WRITEU, fid, n_clouds
 
 
   ; Loop over the number of clouds
   FOR nc = 0L, n_clouds-1L DO BEGIN
 
-    ; Check that current list element is actually a cloud object
-    cloud = Clouds[nc]
-    IF ( ~ OBJ_VALID(cloud) ) THEN $
-      MESSAGE, 'List element '+STRTRIM(nc,2)+' is not a valid object', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    IF ( ~ OBJ_ISA(cloud,'CLOUD') ) THEN $
-      MESSAGE, 'List element '+STRTRIM(nc,2)+' is not a CLOUD object', $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    
 
     ; Write the current cloud data dimensions
-    cloud->Cloud::Get_Property, $
-      n_Layers=n_layers, $
-      Debug=Debug
+    self[nc]->Cloud::Get_Property, $
+      n_Layers = n_layers, $
+      Debug = debug
     WRITEU, fid, n_layers
 
 
     ; Write the cloud data
-    cloud->Cloud::Get_Property, $
-      Type              =type              , $
-      Effective_Radius  =effective_radius  , $
-      Effective_Variance=effective_variance, $
-      Water_Content     =water_content     , $
-      Debug=Debug
-    WRITEU, fid, type, $
-                 effective_radius, $
-                 effective_variance, $
-                 water_content
+    self[nc]->Cloud::Get_Property, $
+      Type               = type              , $
+      Effective_Radius   = effective_radius  , $
+      Effective_Variance = effective_variance, $
+      Water_Content      = water_content     , $
+      Debug = debug
+    WRITEU, fid, $
+      type, $
+      effective_radius, $
+      effective_variance, $
+      water_content
 
   ENDFOR
 
@@ -170,6 +149,6 @@ PRO Cloud_WriteFile, $
 
   ; Output an info message
   IF ( noisy ) THEN $
-    MESSAGE, 'Number of clouds written to '+Filename+' : '+STRTRIM(nc,2), /INFORMATIONAL
+    MESSAGE, 'Number of clouds written to '+filename+' : '+STRTRIM(n_clouds,2), /INFORMATIONAL
 
 END

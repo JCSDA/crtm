@@ -1,18 +1,17 @@
 ;+
 ; NAME:
-;       Cloud_ReadFile
+;       Cloud_List::ReadFile
 ;
 ; PURPOSE:
-;       The Cloud_ReadFile procedure reads cloud object data files
-;       returning a list object of the Cloud data in the file
+;       The Cloud_List::ReadFile procedure method reads cloud object data files
+;       filling the Cloud_List object with the Cloud data in the file
 ;
 ; CALLING SEQUENCE:
-;       Cloud_ReadFile, $
+;       Obj->[Cloud_List::]ReadFile, $
 ;         Filename       , $
-;         Clouds         , $
 ;         FileId = FileId, $
 ;         Quiet  = Quiet , $
-;         Debug  = Debug   )
+;         Debug  = Debug
 ;
 ; INPUTS:
 ;       Filename:       The name of the Cloud object data file to read.
@@ -20,13 +19,6 @@
 ;                       TYPE:       CHARACTER(*)
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
-;
-; OUTPUTS:
-;       Clouds:         List containing the Cloud objects read from file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(OUT)
 ;
 ; INPUT KEYWORDS:
 ;       FileId:         The unit number for the Cloud object data file
@@ -67,42 +59,43 @@
 ;                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;-
 
-PRO Cloud_ReadFile, $
-  Filename       , $  ; Input
-  Clouds         , $  ; Output
-  FileId = FileId, $  ; Optional input
-  Quiet  = Quiet , $  ; Optional input
-  Debug  = Debug , $  ; Optional input
-  Count  = Count      ; Optional output
+PRO Cloud_List::ReadFile, $
+  filename       , $  ; Input
+  FileId = fileid, $  ; Optional input
+  Quiet  = quiet , $  ; Optional input
+  Debug  = debug , $  ; Optional input
+  Count  = count      ; Optional output
 
   ; Set up
   @cloud_parameters
   @cloud_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
-  Count = 0L
+  noisy = ~(KEYWORD_SET(quiet)) || KEYWORD_SET(debug)
+  count = 0L
+  ; ...Ensure the list is empty
+  self.Remove, /ALL
 
 
   ; Process input
-  IF ( NOT Valid_String(Filename) ) THEN $
+  IF ( ~ Valid_String(filename) ) THEN $
     MESSAGE, 'Must specify a filename', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Check if file needs to be opened
   open_file = TRUE
-  IF ( N_ELEMENTS(FileId) GT 0 ) THEN BEGIN
-    fid   = FileId[0]
+  IF ( N_ELEMENTS(fileid) GT 0 ) THEN BEGIN
+    fid   = fileid[0]
     finfo = FSTAT(fid)
-    IF ( (finfo.NAME EQ Filename) AND finfo.OPEN AND finfo.READ ) THEN open_file = FALSE
+    IF ( (finfo.NAME EQ Filename) && finfo.OPEN && finfo.READ ) THEN open_file = FALSE
   ENDIF
 
 
   ; Open the file if necessary
   IF ( open_file ) THEN BEGIN
-    fid = Open_Binary_File(Filename, Debug = Debug)
+    fid = Open_Binary_File(filename, Debug = debug)
     IF ( fid < 0 ) THEN $
-      MESSAGE, 'Error opening file '+Filename, $
+      MESSAGE, 'Error opening file '+filename, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
 
@@ -112,16 +105,12 @@ PRO Cloud_ReadFile, $
   READU, fid, n_clouds
 
 
-  ; Create the cloud list
-  Clouds = LIST()
-  
-  
   ; Loop over the number of clouds
   FOR nc = 0L, n_clouds-1L DO BEGIN
 
 
     ; Create the current Cloud object
-    cloud = OBJ_NEW('Cloud', Debug=Debug)
+    cloud = Cloud(Debug = debug)
 
 
     ; Read the current cloud data dimensions
@@ -130,8 +119,8 @@ PRO Cloud_ReadFile, $
 
 
     ; Create the structure
-    cloud->Create, n_layers, Debug = Debug
-    IF ( ~cloud->Associated(Debug = Debug) ) THEN $
+    cloud->Create, n_layers, Debug = debug
+    IF ( ~cloud->Associated(Debug = debug) ) THEN $
       MESSAGE, 'Cloud object allocation failed.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -141,22 +130,20 @@ PRO Cloud_ReadFile, $
     effective_radius   = DBLARR(n_layers)
     effective_variance = DBLARR(n_layers)
     water_content      = DBLARR(n_layers)
-    READU, fid, type, $
-                effective_radius, $
-                effective_variance, $
-                water_content
-
-
-    ; Load the cloud data into the object
-    cloud->Set_Property, Debug = Debug, $
+    READU, fid, $
+      type, $
+      effective_radius, $
+      effective_variance, $
+      water_content
+    cloud->Set_Property, Debug = debug, $
       Type               = type              , $
       Effective_Radius   = effective_radius  , $
       Effective_Variance = effective_variance, $
       Water_Content      = water_content
 
 
-    ; Add the current cloud to the file object
-    Clouds.Add, cloud
+    ; Add the current cloud to the output list object
+    self.Add, cloud
 
   ENDFOR
 
@@ -166,11 +153,11 @@ PRO Cloud_ReadFile, $
 
 
   ; Set the output keywords
-  Count = Clouds.Count()
+  count = self.Count()
   
 
   ; Output an info message
   IF ( noisy ) THEN $
-    MESSAGE, 'Number of clouds read from '+Filename+' : '+STRTRIM(Count,2), /INFORMATIONAL
+    MESSAGE, 'Number of clouds read from '+filename+' : '+STRTRIM(count,2), /INFORMATIONAL
 
 END
