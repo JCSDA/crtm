@@ -1214,7 +1214,7 @@ MODULE MW_SensorData_Define
        52.800575_fp, 53.596741_fp, 54.399710_fp, &
        54.939924_fp, 55.500450_fp, 57.290313_fp, &
        57.290313_fp, 57.290313_fp, 57.290313_fp, &
-       57.290313_fp, 57.290313_fp, 88.003000_fp /)
+       57.290313_fp, 57.290313_fp, 89.003000_fp /)
 
   ! AMSU-A I/F band limits in GHz. These are the 3dB bandpass
   ! filter frequencies from the AMSU-A2 and AMSU-A1 Aerojet
