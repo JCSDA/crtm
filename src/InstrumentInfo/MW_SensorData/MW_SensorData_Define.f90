@@ -134,7 +134,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 58
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 59
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -151,7 +151,7 @@ MODULE MW_SensorData_Define
     'mwri_fy3b           ','mwhs_fy3a           ','mwhs_fy3b           ','mwts_fy3a           ',&
     'mwts_fy3b           ','tmi_trmm            ','gmi_gpm             '                       ,&
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
-    'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ' /)
+    'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ','hamsr_grip          ' /)
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -175,7 +175,8 @@ MODULE MW_SensorData_Define
      285, 286, &                                            ! DMSP-17,18
      INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! DMSP-19,20
      INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! Megha-Tropiques MADRAS; SAPHIR
-     INVALID_WMO_SATELLITE_ID /)                            ! GCOM-W1 AMSR2
+     INVALID_WMO_SATELLITE_ID, &                            ! GCOM-W1 AMSR2
+     INVALID_WMO_SATELLITE_ID /)                            ! Hamsr-Grip, GRIP aircraft experiment
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -195,7 +196,8 @@ MODULE MW_SensorData_Define
      908, 908, &                                     ! DMSP-17,18 SSMIS
      908, 908, &                                     ! DMSP-19,20 SSMIS
      INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID, & ! Megha-Tropiques MADRAS; SAPHIR
-     INVALID_WMO_SENSOR_ID /)                        ! GCOM-W1 AMSR2
+     INVALID_WMO_SENSOR_ID, &                        ! GCOM-W1 AMSR2
+     INVALID_WMO_SENSOR_ID /)                        ! Hamsr-Grip, GRIP aircraft experiment
 
   !#----------------------------------------------------------------------------#
   !                             Sensor channel data
@@ -222,6 +224,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_MADRAS_CHANNELS  =  9
   INTEGER, PARAMETER :: N_SAPHIR_CHANNELS  =  6
   INTEGER, PARAMETER :: N_AMSR2_CHANNELS   = 14
+  INTEGER, PARAMETER :: N_HAMSR_CHANNELS   = 25
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -250,7 +253,8 @@ MODULE MW_SensorData_Define
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
        N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-19,20 SSMIS
        N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS, &                            ! Megha-Tropiques MADRAS; SAPHIR
-       N_AMSR2_CHANNELS /)                                               ! GCOM-W1 AMSR2
+       N_AMSR2_CHANNELS, &                                               ! GCOM-W1 AMSR2
+       N_HAMSR_CHANNELS /)                                               ! Hamsr-Grip, GRIP aircraft experiment
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
   INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)    =(/(i,i=1,N_AMSUA_CHANNELS  )/)
@@ -272,6 +276,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS ) =(/(i,i=1,N_MADRAS_CHANNELS )/)
   INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS ) =(/(i,i=1,N_SAPHIR_CHANNELS )/)
   INTEGER, PARAMETER :: AMSR2_SENSOR_CHANNEL(N_AMSR2_CHANNELS)    =(/(i,i=1,N_AMSR2_CHANNELS  )/)
+  INTEGER, PARAMETER :: HAMSR_SENSOR_CHANNEL(N_HAMSR_CHANNELS )   =(/(i,i=1,N_HAMSR_CHANNELS  )/)
 
 
   !#----------------------------------------------------------------------------#
@@ -312,6 +317,10 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: MADRAS_N_SIDEBANDS(N_MADRAS_CHANNELS) = 1
   INTEGER, PARAMETER :: SAPHIR_N_SIDEBANDS(N_SAPHIR_CHANNELS) = 1
   INTEGER, PARAMETER :: AMSR2_N_SIDEBANDS(N_AMSR2_CHANNELS)    =1
+  INTEGER, PARAMETER :: HAMSR_N_SIDEBANDS(N_HAMSR_CHANNELS)   = (/ 1, 1, 1, 1, 1, 1, &
+                                                                   1, 1, 1, 1, 1, 1, &
+                                                                   1, 1, 1, 1, 1, 1, &
+                                                                   1, 1, 1, 1, 1, 1, 1 /)
  
 
   !#----------------------------------------------------------------------------#
@@ -1504,6 +1513,47 @@ MODULE MW_SensorData_Define
                 9.00_fp, 13.0_fp, ZERO, ZERO /), & ! ch6
              (/ 2, MAX_N_SIDEBANDS, N_SAPHIR_CHANNELS /) )
 
+  ! Hamsr-Grip GRIP Aircraft experiment
+  ! -----------------------------------------------------------------
+  ! These were taken from ftp://ghrc.nasa.gov/pub/doc/grip/griphamsr/HAMSR_L1B_description.docx
+  
+  REAL(fp), PARAMETER :: HAMSR_GRIP_F0( N_HAMSR_CHANNELS ) = &
+    (/ 50.300_fp,  51.810_fp,  52.820_fp,  53.596_fp, &  
+       54.410_fp,  54.940_fp,  55.460_fp,  56.300_fp, &   !! channel 8 have problem to use boxcar
+      113.270_fp, 115.190_fp, 116.180_fp, 116.700_fp, &  
+      117.130_fp, 117.540_fp, 118.750_fp, 118.750_fp, &  
+      118.750_fp, 118.750_fp, 166.950_fp, 183.310_fp, &
+      183.310_fp, 183.310_fp, 183.310_fp, 183.310_fp, 183.310_fp/)
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: HAMSR_GRIP_IF_BAND( 2, MAX_N_SIDEBANDS, N_HAMSR_CHANNELS ) = &
+    RESHAPE( (/ 0.00000_fp, 0.09267_fp, ZERO, ZERO, &    ! ch1
+                0.00000_fp, 0.22813_fp, ZERO, ZERO, &    ! ch2
+                0.00000_fp, 0.22230_fp, ZERO, ZERO, &    ! ch3
+                0.03825_fp, 0.19175_fp, ZERO, ZERO, &    ! ch4
+                0.00000_fp, 0.22325_fp, ZERO, ZERO, &    ! ch5
+                0.00000_fp, 0.22146_fp, ZERO, ZERO, &    ! ch6
+                0.00000_fp, 0.18740_fp, ZERO, ZERO, &    ! ch7
+                0.18250_fp, 0.43750_fp, ZERO, ZERO, &    ! ch8
+                0.00000_fp, 0.50311_fp, ZERO, ZERO, &    ! ch9
+                0.00000_fp, 0.50301_fp, ZERO, ZERO, &    ! ch10
+                0.00000_fp, 0.25305_fp, ZERO, ZERO, &    ! ch11
+                0.00000_fp, 0.25217_fp, ZERO, ZERO, &    ! ch12
+                0.00000_fp, 0.21607_fp, ZERO, ZERO, &    ! ch13
+                0.00000_fp, 0.20948_fp, ZERO, ZERO, &    ! ch14
+                0.57900_fp, 1.02100_fp, ZERO, ZERO, &    ! ch15
+                0.29500_fp, 0.60500_fp, ZERO, ZERO, &    ! ch16
+                0.17000_fp, 0.30000_fp, ZERO, ZERO, &    ! ch17
+                0.07000_fp, 0.17000_fp, ZERO, ZERO, &    ! ch18
+                0.00000_fp, 1.90641_fp, ZERO, ZERO, &    ! ch19
+                8.95000_fp, 11.0500_fp, ZERO, ZERO, &    ! ch20
+                5.80000_fp, 8.20000_fp, ZERO, ZERO, &    ! ch21
+                3.42500_fp, 5.57500_fp, ZERO, ZERO, &    ! ch22
+                2.45000_fp, 3.55000_fp, ZERO, ZERO, &    ! ch23
+                1.24850_fp, 2.35150_fp, ZERO, ZERO, &    ! ch24
+                0.73120_fp, 1.26880_fp, ZERO, ZERO /), & ! ch25
+             (/ 2, MAX_N_SIDEBANDS, N_HAMSR_CHANNELS /) )
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polariztion data
   !#----------------------------------------------------------------------------#
@@ -1815,6 +1865,35 @@ MODULE MW_SensorData_Define
      VL_MIXED_POLARIZATION, &  ! SAPHIR ch5
      VL_MIXED_POLARIZATION /)  ! SAPHIR ch6
      
+  ! Hamsr-Grip 
+  ! -------
+  INTEGER, PARAMETER :: HAMSR_POLARIZATION( N_HAMSR_CHANNELS ) = &
+  (/ VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch1
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch2
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch3
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch4
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch5
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch6
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch7
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch8
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch9
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch10
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch11
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch12
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch13
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch14
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch15
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch16
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch17
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch18
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch19
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch20
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch21
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch22
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch23
+     VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch24
+     VL_MIXED_POLARIZATION /)  ! HAMSR  ! ch25
+                                        
 CONTAINS
 
 
@@ -2640,6 +2719,13 @@ CONTAINS
         MW_SensorData%Polarization      = SAPHIR_POLARIZATION
         MW_SensorData%n_Sidebands       = SAPHIR_N_SIDEBANDS
         MW_SensorData%IF_Band           = SAPHIR_MEGHAT_IF_BAND
+
+      CASE ('hamsr_grip')
+        MW_SensorData%Sensor_Channel    = HAMSR_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = HAMSR_GRIP_F0
+        MW_SensorData%Polarization      = HAMSR_POLARIZATION
+        MW_SensorData%n_Sidebands       = HAMSR_N_SIDEBANDS
+        MW_SensorData%IF_Band           = HAMSR_GRIP_IF_BAND
 
       ! No match! Should never get here!
       CASE DEFAULT
