@@ -2,12 +2,12 @@
 #
 # == Synopsis
 #
-# create_lblinput.rb:: Using XML specification files, create Fortran95/2003 modules 
-#                      containing procedures to create LBLRTM and/or MonoRTM input files.
+# lblinput:: Using XML specification files, create Fortran95/2003 modules 
+#            containing procedures to create LBLRTM and/or MonoRTM input files.
 #
 # == Usage
 #
-# create_lblinput.rb --help --lblrtm --monortm [--xml-dir <directory>]
+# lblinput --help --lblrtm --monortm [--xml-dir <directory>]
 #
 # --help (-h):
 #    you're looking at it
