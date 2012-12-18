@@ -1,0 +1,7 @@
+
+$Id$
+
+All of the various COMMON_*.f90, LBLRTM_*.f90, and MONORTM_*.f90 Fortran files
+were createrd using the lblinput ruby script. Calling sequence:
+
+  $CRTM_SCRIPTS_ROOT/ruby/lblinput/bin/lblinput --lblrtm --monortm
