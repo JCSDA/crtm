@@ -5,7 +5,7 @@
 #
 # Written by:: Paul van Delst, paul.vandelst@noaa.gov
 #
-# $Id$
+# $Id: lblinput 23697 2012-12-21 19:33:43Z paul.vandelst@noaa.gov $
 #
 
 require 'optparse'
