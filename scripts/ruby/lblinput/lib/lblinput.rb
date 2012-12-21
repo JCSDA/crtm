@@ -201,18 +201,40 @@ module LBLInput
     end
 
 
-    # Code output methods
+    # -------------------------------------------
+    # Methods to generate the Fortran95/2003 code
+    # -------------------------------------------
 
     PROCEDURES = ["Write"]
 
+    #
+    # module_root: Generate the module root name from the
+    #              record type (lblrtm, monortm, or common)
+    #              and name (e.g. r3p2 for Record 3.2)
+    #
+    # Calling sequence: module_root
+    #
     def module_root
       "#{@type.upcase}_#{@name}"
     end
 
+
+    #
+    # module_name: Generate the name of the Fortran module.
+    #
+    # Calling sequence: module_name
+    #
     def module_name
       "#{module_root}_Module"
     end
 
+
+    #
+    # module_doc_header: Generate the header documentation
+    #                    string for the Fortran module.
+    #
+    # Calling sequence: module_doc_header
+    #
     def module_doc_header
       str=<<-EOF
 !
@@ -229,11 +251,22 @@ module LBLInput
     end
 
 
+    #
+    # module_begin: Generate the opening MODULE statement.
+    #
+    # Calling sequence: module_begin
+    #
     def module_begin
       "\nMODULE #{module_name}"
     end
 
 
+    #
+    # module_environment: Generate the statements that define
+    #                     the module environment.MODULE statement.
+    #
+    # Calling sequence: module_environment
+    #
     def module_environment
       str=<<-EOF
 \n
@@ -252,11 +285,23 @@ module LBLInput
     end
 
 
+    #
+    # module_datatype_names: Generate the PUBLIC statements for the
+    #                        datatype defined in the module.
+    #
+    # Calling sequence: module_datatype_names
+    #
     def module_datatype_names
       "  PUBLIC :: #{module_root}_type"
     end
 
 
+    #
+    # module_procedure_names: Generate the PUBLIC statements for the
+    #                         procedures defined in the module.
+    #
+    # Calling sequence: module_procedures_names
+    #
     def module_procedure_names
       str=""
       PROCEDURES.each do |p|
@@ -266,6 +311,12 @@ module LBLInput
     end
 
 
+    #
+    # module_visibility: Generate code block defining the visibilities
+    #                    of entities in the module.
+    #
+    # Calling sequence: module_visibility
+    #
     def module_visibility
       str=<<-EOF
 \n
@@ -282,11 +333,23 @@ module LBLInput
     end
 
 
+    #
+    # module_fmt_parameter: Generate the name of the parameter used
+    #                       to define the record output format.
+    #
+    # Calling sequence: module_fmt_parameter
+    #
     def module_fmt_parameter
       "#{module_root.upcase}_FMT"
     end
 
 
+    #
+    # module_default_parameters: Generate the standard/default
+    #                            parameters used in the module.
+    #
+    # Calling sequence: module_default_parameters
+    #
     def module_default_parameters
       str=<<-EOF
 \n
@@ -303,6 +366,12 @@ module LBLInput
     end
 
 
+    #
+    # module_parameters: Generate a string containing user specified
+    #                    parameter definition..
+    #
+    # Calling sequence: module_parameters
+    #
     def module_parameters
       str=""
       @parameters.each {|p| str << p.type_definition} if @parameters
@@ -310,6 +379,12 @@ module LBLInput
     end
 
 
+    #
+    # module_datatype_defn_begin: Generate the opening TYPE statement
+    #                             for the record derived type definition.
+    #
+    # Calling sequence: module_datatype_defn_begin
+    #
     def module_datatype_defn_begin
       str=<<-EOF
 \n
@@ -320,31 +395,67 @@ module LBLInput
       EOF
     end
 
-    def module_datatype_defn_middle
+
+    #
+    # module_datatype_defn_body: Generate the body of the record
+    #                            derived type definition.
+    #
+    # Calling sequence: module_datatype_defn_body
+    #
+    def module_datatype_defn_body
       str=""
       @entries.each {|e| str << e.type_definition}
       str
     end
 
+
+    #
+    # module_datatype_defn_end: Generate the closing TYPE statement
+    #                           for the record derived type definition.
+    #
+    # Calling sequence: module_datatype_defn_end
+    #
     def module_datatype_defn_end
       "  END TYPE #{module_root}_type\n"
     end
 
 
+    #
+    # module_datatype_defn: Generate the record derived type definition.
+    #
+    # Calling sequence: module_datatype_defn
+    #
     def module_datatype_defn
-      module_datatype_defn_begin << module_datatype_defn_middle << module_datatype_defn_end
+      module_datatype_defn_begin << module_datatype_defn_body << module_datatype_defn_end
     end
 
 
+    #
+    # module_contains: Generate the module CONTAINS statement.
+    #
+    # Calling sequence: module_contains
+    #
     def module_contains
       "\n\nCONTAINS\n"
     end
 
 
+    #
+    # module_end: Generate the closing MODULE statement.
+    #
+    # Calling sequence: module_end
+    #
     def module_end
       "\nEND MODULE #{module_name}"
     end
 
+
+    #
+    # module_procedure_write: Generate a string containing the module
+    #                         procedure to write the record to file.
+    #
+    # Calling sequence: module_procedure_write
+    #
     def module_procedure_write
       procedure_name = "#{module_root}_Write"
       type = "TYPE(#{module_root}_type)"
@@ -362,6 +473,7 @@ module LBLInput
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = '#{procedure_name}'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
 
     ! Setup
@@ -373,9 +485,9 @@ module LBLInput
     END IF
 
     ! Write the record
-    WRITE( fid,FMT=#{module_fmt_parameter},IOSTAT=io_stat) #{@name}
+    WRITE( fid,FMT=#{module_fmt_parameter},IOSTAT=io_stat,IOMSG=io_msg) #{@name}
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing record. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing record - '//TRIM(io_msg)
       CALL Cleanup(); RETURN
     END IF
 
@@ -401,9 +513,9 @@ module LBLInput
     attr_reader :records
 
     # Constructor
-    def initialize(file)
+    def initialize(file,force=false)
+      @keep    = !force
       @xml     = REXML::Document.new(File.open(file)).root
-      puts @xml.inspect
       @records = extract_records
     end
 
@@ -431,6 +543,10 @@ module LBLInput
     def module_write
       @records.each do |r|
         file = "#{r.module_name}.f90"
+        if File.exists?(file) && @keep
+          puts("Module file #{file} already exists. Skipping...")
+          next
+        end
         File.open(file,'w') do |f|
           f << r.module_doc_header
           f << r.module_begin
