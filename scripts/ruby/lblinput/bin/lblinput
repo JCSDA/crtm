@@ -1,87 +1,98 @@
 #!/usr/bin/env ruby
 #
-# == Synopsis
-#
 # lblinput:: Using XML specification files, create Fortran95/2003 modules 
 #            containing procedures to create LBLRTM and/or MonoRTM input files.
-#
-# == Usage
-#
-# lblinput --help --lblrtm --monortm [--xml-dir <directory>]
-#
-# --help (-h):
-#    you're looking at it
-#
-# --lblrtm (-l)
-#    Set this option to create the LBLRTM modules.
-#
-# --monortm (-m)
-#    Set this option to create the MonoRTM modules.
-#
-# --xml-dir (-x) <directory>
-#    Use this option to specify the location of the XML specification files.
-#    Default is to search the current directory.
-#
 #
 # Written by:: Paul van Delst, paul.vandelst@noaa.gov
 #
 # $Id$
 #
 
-require 'getoptlong'
-require 'rdoc/usage'
+require 'optparse'
 require 'lblinput'
 
 # Define the script name for messages
 script_name=File.basename($0)
 
-# Specify accepted options
-options=GetoptLong.new(
-  [ "--help"   , "-h", GetoptLong::NO_ARGUMENT], 
-  [ "--lblrtm" , "-l", GetoptLong::NO_ARGUMENT],
-  [ "--monortm", "-m", GetoptLong::NO_ARGUMENT],
-  [ "--xml-dir", "-x", GetoptLong::REQUIRED_ARGUMENT])
- 
-# Parse the command line options
-lbl_dir = []
-xml_dir  = Dir.pwd
-begin
-  options.each do |opt, arg|
-    case opt
-      when "--lblrtm"
-        lbl_dir << "lblrtm"
-      when "--monortm"
-        lbl_dir << "monortm"
-      when "--xml-dir"
-        xml_dir = File.expand_path(arg)
-      when "--help"
-        RDoc::usage
-        exit(0)
-    end
+
+# Command line option processing
+options = {}
+# ...Specify the options
+opts = OptionParser.new do |opts|
+  opts.banner = "Usage: lblinput [options]\n$Revision$"
+  # Simple switch to create the LBLRTM modules.
+  options[:lblrtm] = false
+  opts.on("-l", "--lblrtm", "Set this option to create the LBLRTM modules") do
+    options[:lblrtm] = true
   end
-rescue StandardError => error_message
-  puts("ERROR: #{error_message}")
-  puts("Try \"#{script_name} --help\"\n ")
+  # Simple switch to create the MonoRTM modules.
+  options[:monortm] = false
+  opts.on("-m", "--monortm", "Set this option to create the MonoRTM modules") do
+    options[:monortm] = true
+  end
+  # Switch with mandatory parameter to specify the XML directory.
+  options[:xmldir] = Dir.pwd
+  opts.on("-x", "--xml-dir DIR", "Set this option to the location of the XML specification files") do |x|
+    options[:xmldir] = x
+  end
+  # Simple switch to force overwrite of existing modules.
+  options[:force] = false
+  opts.on("-f", "--force", "Set this option to force overwrite of existing modules") do
+    options[:force] = true
+  end
+  # Simple switch for verbose output.
+  options[:verbose] = false
+  opts.on("-v", "--verbose", "Set this option to output parsed XML data during processing") do
+    options[:verbose] = true
+  end
+  # The help screen
+  opts.on_tail("-h", "--help", "Show this message") do
+    puts(opts)
+    exit(0)
+  end
+end
+# ...Parse the options
+begin
+  opts.parse! ARGV
+rescue OptionParser::ParseError => error_message
+  puts("ERROR --> #{error_message}")
+  puts(opts)
   exit(1)
 end
 
-# If neither lblrtm or monortm specfied...
-if lbl_dir.empty? then
-  puts("WARNING: No LBL model specified. Nothing to do!")
-  puts("Try \"#{script_name} --help\"\n ")
+
+# Now perform some checking of options
+# ...Check that at XML directory exists
+unless File.directory?(options[:xmldir])
+  puts("ERROR: XML directory, #{options[:xmldir]}, not found!")
   exit(1)
 end
-lbl_dir << "common"
+# ...Check that at least one type of LBL form was specified
+unless (options[:lblrtm] || options[:monortm])
+  puts("ERROR: No LBL model specified. Nothing to do!\n")
+  puts(opts)
+  exit(1)
+end
+
+
+# Specify the LBL directories to use
+lbl_dir = ["common"]
+lbl_dir << "lblrtm"  if options[:lblrtm]
+lbl_dir << "monortm" if options[:monortm]
+
 
 # Loop over XML directories
 begin
   lbl_dir.each do |d|
-    xml_files = Dir.glob("#{xml_dir}/#{d}/*.xml")
-    raise StandardError, "No XML files found in #{xml_dir}/#{d}" if xml_files.empty?
-    Dir.glob("#{xml_dir}/#{d}/*.xml").each do |xml|
-      input = LBLInput::Input.new(xml)
-      puts("\nThe xml input is:\n#{input.class}")
-      input.display
+    dir = "#{options[:xmldir]}/#{d}"
+    files = Dir.glob("#{dir}/*.xml")
+    raise StandardError, "No XML files found in #{dir}" if files.empty?
+    files.each do |xml|
+      input = LBLInput::Input.new(xml,force=options[:force])
+      if options[:verbose]
+        puts("\nThe xml input is:\n#{input.class}")
+        input.display
+      end
       input.module_write
     end
   end
