@@ -18,7 +18,6 @@
   <!-- LBLRTM 11.3 record -->
   <record name="r11p3" type="lblrtm" format="<input>">
     <!-- output format is passed in. Value from r11p2. Use a different tag? -->
-    <entry name="xf" dim="(:)" attributes="ALLOCATABLE" 
-           type="REAL(fp)" value="0.0_fp" desc="SRF/filter data"/>
+    <entry name="xf" dim="(:)" type="REAL(fp), ALLOCATABLE" value="" desc="SRF/filter data"/>
   </record>
 </lblinput>
