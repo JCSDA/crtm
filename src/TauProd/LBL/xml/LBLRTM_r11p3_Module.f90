@@ -5,7 +5,7 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:   Paul van Delst, 20-Dec-2012
+!       Written by:   Paul van Delst, 24-Dec-2012
 !                     paul.vandelst@noaa.gov
 !
 
@@ -50,7 +50,7 @@ MODULE LBLRTM_r11p3_Module
   ! Derived types
   ! -------------
   TYPE :: LBLRTM_r11p3_type
-    REAL(fp) :: xf(:) = 0.0_fp  !  SRF/filter data
+    REAL(fp), ALLOCATABLE :: xf(:)     !  SRF/filter data
   END TYPE LBLRTM_r11p3_type
 
 
@@ -68,6 +68,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'LBLRTM_r11p3_Write'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
 
     ! Setup
@@ -79,9 +80,9 @@ CONTAINS
     END IF
 
     ! Write the record
-    WRITE( fid,FMT=LBLRTM_R11P3_FMT,IOSTAT=io_stat) r11p3
+    WRITE( fid,FMT=LBLRTM_R11P3_FMT,IOSTAT=io_stat,IOMSG=io_msg) r11p3
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing record. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing record - '//TRIM(io_msg)
       CALL Cleanup(); RETURN
     END IF
 

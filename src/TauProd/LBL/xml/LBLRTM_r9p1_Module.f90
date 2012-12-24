@@ -5,7 +5,7 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:   Paul van Delst, 20-Dec-2012
+!       Written by:   Paul van Delst, 24-Dec-2012
 !                     paul.vandelst@noaa.gov
 !
 
@@ -77,6 +77,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'LBLRTM_r9p1_Write'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
 
     ! Setup
@@ -88,9 +89,9 @@ CONTAINS
     END IF
 
     ! Write the record
-    WRITE( fid,FMT=LBLRTM_R9P1_FMT,IOSTAT=io_stat) r9p1
+    WRITE( fid,FMT=LBLRTM_R9P1_FMT,IOSTAT=io_stat,IOMSG=io_msg) r9p1
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing record. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing record - '//TRIM(io_msg)
       CALL Cleanup(); RETURN
     END IF
 
