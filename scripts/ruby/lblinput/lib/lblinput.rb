@@ -102,7 +102,9 @@ module LBLInput
     attr_reader :type, :name, :dim, :value, :desc
     attr_accessor :type_fmt, :name_fmt, :value_fmt
 
-    # Constructor
+    # Constructor.
+    # - For additional entry attributes, add a class variable for it.
+    # - The class variable name should be the same as the attribute name.
     def initialize(xml)
       @xml = xml
       @name  = nil
@@ -111,6 +113,7 @@ module LBLInput
       @value = nil
       @desc  = nil
       set_instance_variables
+      @is_allocatable = @dim =~ /[:]+/  # Does dim contain
     end
 
 
@@ -125,8 +128,9 @@ module LBLInput
 
     def type_definition
       if @dim
-        name = "#{@name}#{@dim}"
-        "    #{@type_fmt%@type} :: #{@name_fmt%name} = #{@value_fmt%@value}  !  #{@desc}\n"
+        value = @is_allocatable ? "  #{@value_fmt%''}" : "= #{@value_fmt%@value}"
+        name  = "#{@name}#{@dim}"
+        "    #{@type_fmt%@type} :: #{@name_fmt%name} #{value}  !  #{@desc}\n"
       else
         "    #{@type_fmt%@type} :: #{@name_fmt%@name} = #{@value_fmt%@value}  !  #{@desc}\n"
       end
