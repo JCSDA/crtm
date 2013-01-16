@@ -67,7 +67,6 @@ NOCPP_FILES = \
   CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo.f90 \
   CRTM_Atmosphere.f90 iAtm_Define.f90 \
   CRTM_Model_Profiles.f90 \
-  CRTM_AtmAbsorption.f90 \
   CRTM_AerosolScatter.f90 ASvar_Define.f90 \
   CRTM_CloudScatter.f90 CSvar_Define.f90 \
   CRTM_MoleculeScatter.f90 \
@@ -106,6 +105,9 @@ NOCPP_FILES = \
   CRTM_Adjoint_Module.f90 \
   CRTM_K_Matrix_Module.f90 \
   CRTM_Module.f90 \
+  CRTM_AtmAbsorption.f90 \
+  CRTM_Predictor.f90 \
+  CRTM_Predictor_Define.f90 \
   ODAS_AtmAbsorption.f90 \
   ODAS_Predictor.f90 \
   ODAS_Predictor_Define.f90 \
@@ -115,6 +117,7 @@ NOCPP_FILES = \
   ODPS_AtmAbsorption.f90 \
   ODPS_Predictor.f90 \
   ODPS_Predictor_Define.f90 \
+    PAFV_Define.f90 \
   ODPS_Binary_IO.f90 \
   ODPS_Define.f90 \
   ODPS_TauCoeff.f90 \

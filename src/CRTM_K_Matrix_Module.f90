@@ -49,15 +49,16 @@ MODULE CRTM_K_Matrix_Module
                                         CRTM_GeometryInfo_SetValue, &
                                         CRTM_GeometryInfo_GetValue
   USE CRTM_GeometryInfo,          ONLY: CRTM_GeometryInfo_Compute
-  USE CRTM_AtmAbsorption,         ONLY: CRTM_AAVariables_type        , &
-                                        CRTM_Compute_AtmAbsorption   , &
-                                        CRTM_Compute_AtmAbsorption_AD, &
-                                        CRTM_Destroy_Predictor     , &
-                                        CRTM_Allocate_Predictor    , &
+  USE CRTM_Predictor_Define,      ONLY: CRTM_Predictor_type      , &
+                                        CRTM_Predictor_Associated, &
+                                        CRTM_Predictor_Destroy   , &
+                                        CRTM_Predictor_Create
+  USE CRTM_Predictor,             ONLY: CRTM_PVar_type => iVar_type, &
                                         CRTM_Compute_Predictors    , &
-                                        CRTM_Compute_Predictors_AD , &
-                                        CRTM_Predictor_type        , &
-                                        CRTM_APVariables_type
+                                        CRTM_Compute_Predictors_AD
+  USE CRTM_AtmAbsorption,         ONLY: CRTM_AAvar_type => iVar_type , &
+                                        CRTM_Compute_AtmAbsorption   , &
+                                        CRTM_Compute_AtmAbsorption_AD
   USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type      , &
                                         CRTM_AtmOptics_Associated, &
                                         CRTM_AtmOptics_Create    , &
@@ -70,41 +71,31 @@ MODULE CRTM_K_Matrix_Module
   USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type    , &
                                         CRTM_Combine_AtmOptics   , &
                                         CRTM_Combine_AtmOptics_AD
-
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
                                         CRTM_SfcOptics_Associated, &
                                         CRTM_SfcOptics_Create    , &
                                         CRTM_SfcOptics_Destroy
   USE CRTM_SfcOptics,             ONLY: CRTM_Compute_SurfaceT   , &
                                         CRTM_Compute_SurfaceT_AD
-
   USE CRTM_RTSolution,            ONLY: CRTM_RTSolution_type      , &
                                         CRTM_Compute_nStreams     , &
                                         CRTM_Compute_RTSolution   , &
                                         CRTM_Compute_RTSolution_AD
-  USE RTV_Define,                 ONLY: RTV_type      , &
-                                        RTV_Associated, &
-                                        RTV_Destroy   , &
-                                        RTV_Create
   USE CRTM_AntennaCorrection,     ONLY: CRTM_Compute_AntCorr, &
                                         CRTM_Compute_AntCorr_AD
   USE CRTM_MoleculeScatter,       ONLY: CRTM_Compute_MoleculeScatter, &
                                         CRTM_Compute_MoleculeScatter_AD
   USE CRTM_AncillaryInput_Define, ONLY: CRTM_AncillaryInput_type
-
   USE CRTM_CloudCoeff,            ONLY: CRTM_CloudCoeff_IsLoaded
   USE CRTM_AerosolCoeff,          ONLY: CRTM_AerosolCoeff_IsLoaded
-
   USE CRTM_NLTECorrection,        ONLY: NLTE_Predictor_type       , &
                                         NLTE_Predictor_IsActive   , &
                                         Compute_NLTE_Predictor    , &
                                         Compute_NLTE_Predictor_AD , &
                                         Compute_NLTE_Correction   , &
                                         Compute_NLTE_Correction_AD
-
   USE ACCoeff_Define,             ONLY: ACCoeff_Associated
   USE NLTECoeff_Define,           ONLY: NLTECoeff_Associated
-
   USE CRTM_Planck_Functions,      ONLY: CRTM_Planck_Temperature   , &
                                         CRTM_Planck_Temperature_AD
 
@@ -119,6 +110,11 @@ MODULE CRTM_K_Matrix_Module
                           ASvar_Associated, &
                           ASvar_Destroy   , &
                           ASvar_Create
+  ! ...Radiative transfer
+  USE RTV_Define,   ONLY: RTV_type      , &
+                          RTV_Associated, &
+                          RTV_Destroy   , &
+                          RTV_Create
 
 
   ! -----------------------
@@ -309,7 +305,6 @@ CONTAINS
     INTEGER :: m, n_Profiles
     INTEGER :: j, ln
     INTEGER :: n_Full_Streams, mth_Azi
-    INTEGER, DIMENSION(2) :: AllocStatus(2), AllocStatus_K(2)
     REAL(fp) :: Source_ZA
     REAL(fp) :: Wavenumber
     ! Local ancillary input structure
@@ -324,8 +319,8 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type)    :: AtmOptics, AtmOptics_K
     TYPE(CRTM_SfcOPtics_type)    :: SfcOptics, SfcOptics_K
     ! Component variable internals
-    TYPE(CRTM_APVariables_type) :: APV  ! Predictor
-    TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
+    TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
+    TYPE(CRTM_AAvar_type) :: AAvar    ! AtmAbsorption
     TYPE(CSVar_type) :: CSvar  ! CloudScatter
     TYPE(ASVar_type) :: ASvar  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
@@ -635,27 +630,32 @@ CONTAINS
 
 
         ! Allocate the AtmAbsorption predictor structures
-        AllocStatus(1) = CRTM_Allocate_Predictor( SensorIndex , &  ! Input
-                                                  Atm%n_Layers, &  ! Input
-                                                  Predictor   , &  ! Output
-                                                  SaveFWV = 1   )  ! Optional input
-        AllocStatus_K(1) = CRTM_Allocate_Predictor( SensorIndex , &  ! Input
-                                                    Atm%n_Layers, &  ! Input
-                                                    Predictor_K   )  ! Output
-        IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_K(1) /= SUCCESS ) THEN
+        CALL CRTM_Predictor_Create( &
+               Predictor   , &
+               atm%n_Layers, &
+               SensorIndex , &
+               SaveFWV = 1   )
+        CALL CRTM_Predictor_Create( &
+               Predictor_K , &
+               atm%n_Layers, &
+               SensorIndex   )
+        IF ( (.NOT. CRTM_Predictor_Associated(Predictor)) .OR. &
+             (.NOT. CRTM_Predictor_Associated(Predictor_K)) ) THEN
           Error_Status=FAILURE
           WRITE( Message,'("Error allocating predictor structures for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
           CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
           RETURN
         END IF
+
+
         ! ...Compute forward predictors
         CALL CRTM_Compute_Predictors( SensorIndex   , &  ! Input
                                       Atm           , &  ! Input
                                       GeometryInfo  , &  ! Input
                                       AncillaryInput, &  ! Input
                                       Predictor     , &  ! Output
-                                      APV             )  ! Internal variable output
+                                      PVar            )  ! Internal variable output
 
 
         ! Allocate the RTV structure if necessary
@@ -689,6 +689,7 @@ CONTAINS
         ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
+
 
           ! Channel setup
           ! ...Skip channel if requested
@@ -738,7 +739,7 @@ CONTAINS
                                            AncillaryInput, &  ! Input
                                            Predictor     , &  ! Input
                                            AtmOptics     , &  ! Output
-                                           AAV             )  ! Internal variable output
+                                           AAvar           )  ! Internal variable output
 
 
           ! Compute the molecular scattering properties
@@ -1087,7 +1088,7 @@ CONTAINS
                                               Predictor   , &  ! FWD Input
                                               AtmOptics_K , &  ! K   Input
                                               Predictor_K , &  ! K   Output
-                                              AAV           )  ! Internal variable input
+                                              AAvar         )  ! Internal variable input
 
 
           ! K-matrix of the NLTE correction predictor calculations
@@ -1104,10 +1105,9 @@ CONTAINS
                                            Atm           , &  ! FWD Input
                                            Predictor     , &  ! FWD Input
                                            Predictor_K   , &  ! K   Input
-                                           GeometryInfo  , &  ! Input
                                            AncillaryInput, &  ! Input
                                            Atm_K         , &  ! K   Output
-                                           APV             )  ! Internal variable input
+                                           PVar            )  ! Internal variable input
 
 
           ! Postprocess some input data
@@ -1129,14 +1129,8 @@ CONTAINS
         ! ...RTV structure
         IF ( RTV_Associated(RTV) ) CALL RTV_Destroy(RTV)
         ! ...Predictor structures
-        AllocStatus(1)   = CRTM_Destroy_Predictor( SensorIndex, Predictor )
-        AllocStatus_K(1) = CRTM_Destroy_Predictor( SensorIndex, Predictor_K )
-        IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_K(1) /= SUCCESS ) THEN
-          WRITE( Message,'("Error deallocating predictor structures for profile #",i0, &
-                 &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-          RETURN
-        END IF
+        CALL CRTM_Predictor_Destroy( Predictor )
+        CALL CRTM_Predictor_Destroy( Predictor_K )
 
       END DO Sensor_Loop
 

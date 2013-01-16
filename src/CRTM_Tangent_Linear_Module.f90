@@ -46,15 +46,16 @@ MODULE CRTM_Tangent_Linear_Module
                                         CRTM_GeometryInfo_SetValue, &
                                         CRTM_GeometryInfo_GetValue
   USE CRTM_GeometryInfo,          ONLY: CRTM_GeometryInfo_Compute
-  USE CRTM_AtmAbsorption,         ONLY: CRTM_AAVariables_type        , &
-                                        CRTM_Compute_AtmAbsorption, &
-                                        CRTM_Compute_AtmAbsorption_TL, &
-                                        CRTM_Destroy_Predictor       , &
-                                        CRTM_Allocate_Predictor      , &
-                                        CRTM_Compute_Predictors      , &
-                                        CRTM_Compute_Predictors_TL   , &
-                                        CRTM_Predictor_type          , &
-                                        CRTM_APVariables_type
+  USE CRTM_Predictor_Define,      ONLY: CRTM_Predictor_type      , &
+                                        CRTM_Predictor_Associated, &
+                                        CRTM_Predictor_Destroy   , &
+                                        CRTM_Predictor_Create
+  USE CRTM_Predictor,             ONLY: CRTM_PVar_type => iVar_type, &
+                                        CRTM_Compute_Predictors    , &
+                                        CRTM_Compute_Predictors_TL
+  USE CRTM_AtmAbsorption,         ONLY: CRTM_AAvar_type => iVar_type, &
+                                        CRTM_Compute_AtmAbsorption  , &
+                                        CRTM_Compute_AtmAbsorption_TL
   USE CRTM_AtmOptics_Define,      ONLY: CRTM_AtmOptics_type      , &
                                         CRTM_AtmOptics_Associated, &
                                         CRTM_AtmOptics_Create    , &
@@ -289,7 +290,6 @@ CONTAINS
     INTEGER :: m, n_Profiles
     INTEGER :: ln
     INTEGER :: n_Full_Streams, mth_Azi
-    INTEGER :: AllocStatus(2), AllocStatus_TL(2)
     REAL(fp) :: Source_ZA
     REAL(fp) :: Wavenumber
     ! Local ancillary input structure
@@ -304,8 +304,8 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type)    :: AtmOptics, AtmOptics_TL
     TYPE(CRTM_SfcOptics_type)    :: SfcOptics, SfcOptics_TL
     ! Component variable internals
-    TYPE(CRTM_APVariables_type) :: APV  ! Predictor
-    TYPE(CRTM_AAVariables_type) :: AAV  ! AtmAbsorption
+    TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
+    TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
     TYPE(CSVar_type) :: CSvar  ! CloudScatter
     TYPE(ASVar_type) :: ASvar  ! AerosolScatter
     TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
@@ -590,14 +590,17 @@ CONTAINS
 
         ! Compute predictors for AtmAbsorption calcs
         ! ...Allocate the predictor structures
-        AllocStatus(1) = CRTM_Allocate_Predictor( SensorIndex , &  ! Input
-                                                  Atm%n_Layers, &  ! Input
-                                                  Predictor   , &  ! Output
-                                                  SaveFWV = 1   )  ! Optional input
-        AllocStatus_TL(1) = CRTM_Allocate_Predictor( SensorIndex , &  ! Input
-                                                     Atm%n_Layers, &  ! Input
-                                                     Predictor_TL  )  ! Output
-        IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_TL(1) /= SUCCESS ) THEN
+        CALL CRTM_Predictor_Create( &
+               Predictor   , &
+               atm%n_Layers, &
+               SensorIndex , &
+               SaveFWV = 1   )
+        CALL CRTM_Predictor_Create( &
+               Predictor_TL, &
+               atm%n_Layers, &
+               SensorIndex   )
+        IF ( (.NOT. CRTM_Predictor_Associated(Predictor)) .OR. &
+             (.NOT. CRTM_Predictor_Associated(Predictor_TL)) ) THEN
           Error_Status=FAILURE
           WRITE( Message,'("Error allocating predictor structures for profile #",i0, &
                  &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
@@ -610,15 +613,14 @@ CONTAINS
                                       GeometryInfo  , &  ! Input
                                       AncillaryInput, &  ! Input
                                       Predictor     , &  ! Output
-                                      APV             )  ! Internal variable output
+                                      PVar            )  ! Internal variable output
         CALL CRTM_Compute_Predictors_TL( SensorIndex   , &  ! Input
                                          Atm           , &  ! Input
                                          Predictor     , &  ! Input
                                          Atm_TL        , &  ! Input
-                                         GeometryInfo  , &  ! Input
                                          AncillaryInput, &  ! Input
                                          Predictor_TL  , &  ! Output
-                                         APV             )  ! Internal variable input
+                                         PVar            )  ! Internal variable input
 
 
         ! Allocate the RTV structure if necessary
@@ -702,13 +704,13 @@ CONTAINS
                                            AncillaryInput, &  ! Input
                                            Predictor     , &  ! Input
                                            AtmOptics     , &  ! Output
-                                           AAV             )  ! Internal variable output
+                                           AAvar           )  ! Internal variable output
           CALL CRTM_Compute_AtmAbsorption_TL( SensorIndex     , &  ! Input
                                               ChannelIndex    , &  ! Input
                                               Predictor       , &  ! Input
                                               Predictor_TL    , &  ! Input
                                               AtmOptics_TL    , &  ! Output
-                                              AAV               )  ! Internal variable input
+                                              AAvar             )  ! Internal variable input
 
 
           ! Compute the molecular scattering properties
@@ -932,14 +934,8 @@ CONTAINS
         ! ...RTV structure
         IF ( RTV_Associated(RTV) ) CALL RTV_Destroy(RTV)
         ! ...Predictor structures
-        AllocStatus(1)    = CRTM_Destroy_Predictor( SensorIndex, Predictor )
-        AllocStatus_TL(1) = CRTM_Destroy_Predictor( SensorIndex, Predictor_TL )
-        IF ( AllocStatus(1) /= SUCCESS .OR. AllocStatus_TL(1) /= SUCCESS ) THEN
-          WRITE( Message,'("Error deallocating predictor structures for profile #",i0, &
-                 &" and ",a," sensor.")' ) m, SC(SensorIndex)%Sensor_Id
-          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-          RETURN
-        END IF
+        CALL CRTM_Predictor_Destroy( Predictor )
+        CALL CRTM_Predictor_Destroy( Predictor_TL )
 
       END DO Sensor_Loop
 
