@@ -72,7 +72,7 @@ module Fortran
           # Special cases
           # ...Attributes
           when :attributes
-            instance_variable_set("@#{name.to_s}", value.collect {|a| a.upcase}) if value
+            instance_variable_set("@#{name.to_s}", [value].flatten.collect {|a| a.upcase}) if value
           # Handle unallowed options (?)
           else
             raise(ArgumentError, "Initialisation option #{name} invalid!")
