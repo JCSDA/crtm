@@ -329,11 +329,11 @@ CONTAINS
     No_OPTRAN      )  ! Optional Input
 
     ! Arguments
-    TYPE(PAFV_type), INTENT(OUT) :: self
-    INTEGER,           INTENT(IN) :: n_ODPS_Layers
-    INTEGER,           INTENT(IN) :: n_User_Layers
-    INTEGER,           INTENT(IN) :: n_Absorbers
-    LOGICAL, OPTIONAL, INTENT(IN) :: No_OPTRAN
+    TYPE(PAFV_type),   INTENT(OUT) :: self
+    INTEGER,           INTENT(IN)  :: n_ODPS_Layers
+    INTEGER,           INTENT(IN)  :: n_User_Layers
+    INTEGER,           INTENT(IN)  :: n_Absorbers
+    LOGICAL, OPTIONAL, INTENT(IN)  :: No_OPTRAN
     ! Local variables
     LOGICAL :: use_optran
     INTEGER :: alloc_stat

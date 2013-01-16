@@ -17,7 +17,7 @@ MODULE ODZeeman_Predictor
   ! Module use
   USE Type_Kinds,            ONLY: fp
   USE Message_Handler,       ONLY: SUCCESS, FAILURE, Display_Message
-  USE ODPS_Predictor_Define, ONLY: Predictor_type
+  USE ODPS_Predictor_Define, ONLY: ODPS_Predictor_type
   USE ODPS_Define,           ONLY: ODPS_type
 
   ! Disable implicit typing
@@ -150,7 +150,7 @@ CONTAINS
 ! OUTPUT ARGUMENTS:
 !       Predictor:      Predictor structure
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       TYPE(ODPS_Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -167,7 +167,7 @@ CONTAINS
     REAL(fp), INTENT( IN ) :: CosBK
     REAL(fp), INTENT( IN ) :: Doppler_Shift
     REAL(fp), INTENT( IN ) :: Secang(:)
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor
     
     ! LOCAL 
     REAL(fp) :: Be2, Be3, OneOverBe, OneOverBe2, CosBK2, OneOverT
@@ -259,7 +259,7 @@ CONTAINS
 ! OUTPUT ARGUMENTS:
 !       Predictor_TL:   TL Predictor structure
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       TYPE(ODPS_Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -274,7 +274,7 @@ CONTAINS
     REAL(fp), INTENT( IN ) :: Be
     REAL(fp), INTENT( IN ) :: CosBK
     REAL(fp), INTENT( IN ) :: Temperature_TL(:)
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_TL
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor_TL
     
     ! LOCAL 
     REAL(fp) :: Be2, CosBK2, OneOverT, OneOverT_TL
@@ -341,7 +341,7 @@ CONTAINS
 !
 !       Predictor_AD:    AD Predictor structure
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       TYPE(ODPS_Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(INOUT)
 !
@@ -361,7 +361,7 @@ CONTAINS
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Be
     REAL(fp), INTENT( IN ) :: CosBK
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_AD
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor_AD
     REAL(fp), INTENT( INOUT ) :: Temperature_AD(:)
     
     ! LOCAL 
@@ -445,7 +445,7 @@ CONTAINS
 ! OUTPUT ARGUMENTS:
 !       Predictor:      Predictor structure
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       TYPE(ODPS_Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -462,7 +462,7 @@ CONTAINS
     REAL(fp), INTENT( IN ) :: Be
     REAL(fp), INTENT( IN ) :: CosBK
     REAL(fp), INTENT( IN ) :: Secang(:)
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor
     
     ! LOCAL 
     REAL(fp) :: Be3,  CosBK2, CosBK2Be2, tk
@@ -528,7 +528,7 @@ CONTAINS
 ! OUTPUT ARGUMENTS:
 !       Predictor_TL:   TL Predictor structure
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       TYPE(ODPS_Predictor_type)
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -541,7 +541,7 @@ CONTAINS
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Ref_Temperature(:)
     REAL(fp), INTENT( IN ) :: Temperature_TL(:)
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_TL
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor_TL
     
     ! LOCAL 
     REAL(fp) :: tk, tk_TL
@@ -595,7 +595,7 @@ CONTAINS
 !
 !       Predictor_AD:    AD Predictor structure
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       TYPE(ODPS_Predictor_type)
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(INOUT)
 !
@@ -613,7 +613,7 @@ CONTAINS
                                           Temperature_AD )
     REAL(fp), INTENT( IN ) :: Temperature(:)
     REAL(fp), INTENT( IN ) :: Ref_Temperature(:)
-    TYPE(Predictor_type), INTENT( INOUT ) :: Predictor_AD
+    TYPE(ODPS_Predictor_type), INTENT( INOUT ) :: Predictor_AD
     REAL(fp), INTENT( INOUT ) :: Temperature_AD(:)
     
     ! LOCAL 

@@ -29,16 +29,15 @@ MODULE ODSSU_AtmAbsorption
                                       SSU_Input_CellPressureIsSet
   USE ODSSU_TauCoeff,           ONLY: TC
   ! ...ODAS modules
-  USE ODAS_Predictor,           ONLY: ODAS_Predictor_type => Predictor_type
+  USE ODAS_Predictor_Define,    ONLY: ODAS_Predictor_type
   USE ODAS_AtmAbsorption,       ONLY: ODAS_AAVar_type => iVar_type , &
                                       ODAS_Compute_AtmAbsorption   , &
                                       ODAS_Compute_AtmAbsorption_TL, &
                                       ODAS_Compute_AtmAbsorption_AD
   ! ...ODPS modules
-  USE ODPS_Predictor,           ONLY: ODPS_Predictor_type => Predictor_type
-  USE ODPS_AtmAbsorption,       ONLY: ODPS_AAVariables_type         ,  &
-                                      ODPS_Compute_AtmAbsorption    ,  &
-                                      ODPS_Compute_AtmAbsorption_TL ,  &
+  USE ODPS_Predictor_Define,    ONLY: ODPS_Predictor_type
+  USE ODPS_AtmAbsorption,       ONLY: ODPS_Compute_AtmAbsorption   , &
+                                      ODPS_Compute_AtmAbsorption_TL, &
                                       ODPS_Compute_AtmAbsorption_AD
   ! Disable implicit typing
   IMPLICIT NONE
@@ -157,7 +156,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of this module.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(iVar_type)
+!                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !

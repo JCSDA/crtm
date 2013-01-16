@@ -2,15 +2,16 @@
 ! ODAS_Predictor
 !
 ! Module continaing routines to compute the predictors for the
-! Optical Depth Absorber Space (ODAS) gas absorption (AtmAbsorption) model.
+! Optical Depth in Absorber Space (ODAS) .
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 29-Aug-2006
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 29-Aug-2006
+!                       paul.vandelst@noaa.gov
 !
-!       Modifed by:     Yong Han, NESDIS/STAR 25-June-2008
+!       Modified by:    Yong Han, 25-June-2008
 !                       yong.han@noaa.gov
+!
 
 MODULE ODAS_Predictor
 
@@ -26,18 +27,17 @@ MODULE ODAS_Predictor
                                       MINIMUM_ABSORBER_AMOUNT    , &
                                       TOA_PRESSURE               , &
                                       RECIPROCAL_GRAVITY         , &
-                                      MAX_N_LAYERS 
+                                      MAX_N_LAYERS
   USE CRTM_Atmosphere_Define  , ONLY: CRTM_Atmosphere_type, &
                                       CRTM_Get_AbsorberIdx, &
                                       H2O_ID, O3_ID
   USE CRTM_GeometryInfo_Define, ONLY: CRTM_GeometryInfo_type, &
                                       CRTM_GeometryInfo_GetValue
-  USE ODAS_Predictor_Define   , ONLY: Predictor_type      , &
-                                      Associated_Predictor, &
-                                      Destroy_Predictor   , &
-                                      Allocate_Predictor  , &
-                                      Assign_Predictor    , &
-                                      Zero_Predictor
+  USE ODAS_Predictor_Define   , ONLY: ODAS_Predictor_type      , &
+                                      ODAS_Predictor_Associated, &
+                                      ODAS_Predictor_Destroy   , &
+                                      ODAS_Predictor_Create    , &
+                                      ODAS_Predictor_Zero
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -46,83 +46,604 @@ MODULE ODAS_Predictor
   ! ------------
   ! Everything private by default
   PRIVATE
-  ! Predictor structure data type
-  ! in the ODAS_Predictor_Define module
-  PUBLIC :: Predictor_type
-  ! ODAS_Predictor structure routines inherited
-  ! from the ODAS_Predictor_Define module
-  PUBLIC :: Associated_Predictor
-  PUBLIC :: Destroy_Predictor
-  PUBLIC :: Allocate_Predictor
-  PUBLIC :: Assign_Predictor
-  PUBLIC :: Zero_Predictor
-  ! Science routines in this module
-  PUBLIC :: Compute_Predictors
-  PUBLIC :: Compute_Predictors_TL
-  PUBLIC :: Compute_Predictors_AD
-  ! Internal variable structure
-  PUBLIC :: APVariables_type
+  ! Datatypes
+  PUBLIC :: iVar_type
+  ! Procedures
+  PUBLIC :: ODAS_Assemble_Predictors
+  PUBLIC :: ODAS_Assemble_Predictors_TL
+  PUBLIC :: ODAS_Assemble_Predictors_AD
+  ! Parameters
+  PUBLIC :: MAX_N_ABSORBERS
+  PUBLIC :: WET_ABSORBER_INDEX
+  PUBLIC :: DRY_ABSORBER_INDEX
+  PUBLIC :: OZO_ABSORBER_INDEX
+  PUBLIC :: ABSORBER_INDEX
+  PUBLIC :: ABSORBER_NAME
+  PUBLIC :: MAX_N_STANDARD_PREDICTORS
+  PUBLIC :: MAX_N_INTEGRATED_PREDICTORS
+  PUBLIC :: MAX_N_PREDICTORS
+  PUBLIC :: MAX_N_PREDICTORS_USED
+  PUBLIC :: MAX_N_ORDERS
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+
 
   ! Absorbers in the gas absorption model
   ! -------------------------------------
   ! The total number
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_ABSORBERS = 3
+  INTEGER, PARAMETER :: MAX_N_ABSORBERS = 3
   ! The indexing order of the absorbers
-  INTEGER, PUBLIC, PARAMETER :: WET_ABSORBER_INDEX = 1
-  INTEGER, PUBLIC, PARAMETER :: DRY_ABSORBER_INDEX = 2
-  INTEGER, PUBLIC, PARAMETER :: OZO_ABSORBER_INDEX = 3
+  INTEGER, PARAMETER :: WET_ABSORBER_INDEX = 1
+  INTEGER, PARAMETER :: DRY_ABSORBER_INDEX = 2
+  INTEGER, PARAMETER :: OZO_ABSORBER_INDEX = 3
   ! The absorber index and name arrays
-  INTEGER, PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
-    ABSORBER_INDEX = (/ WET_ABSORBER_INDEX, &
-                        DRY_ABSORBER_INDEX, &
-                        OZO_ABSORBER_INDEX /)
-  CHARACTER( * ), PUBLIC, PARAMETER, DIMENSION( MAX_N_ABSORBERS ) :: &
-    ABSORBER_NAME = (/ 'wet', &
-                       'dry', &
-                       'ozo' /)
+  INTEGER, PARAMETER :: ABSORBER_INDEX(MAX_N_ABSORBERS) = &
+    (/ WET_ABSORBER_INDEX, &
+       DRY_ABSORBER_INDEX, &
+       OZO_ABSORBER_INDEX /)
+  CHARACTER(*), PARAMETER :: ABSORBER_NAME(MAX_N_ABSORBERS) = &
+    (/ 'wet', &
+       'dry', &
+       'ozo' /)
+
 
   ! Predictors in the gas absorption model
   ! --------------------------------------
   ! Standard predictors are absorber independent
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_STANDARD_PREDICTORS   = 11
+  INTEGER, PARAMETER :: MAX_N_STANDARD_PREDICTORS   = 11
   ! Integrated predictors are defined for EACH absoreber
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_INTEGRATED_PREDICTORS = 6
+  INTEGER, PARAMETER :: MAX_N_INTEGRATED_PREDICTORS = 6
   ! The total number of predictors
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS = MAX_N_STANDARD_PREDICTORS + &
-                                                   ( MAX_N_ABSORBERS * MAX_N_INTEGRATED_PREDICTORS )
+  INTEGER, PARAMETER :: MAX_N_PREDICTORS = MAX_N_STANDARD_PREDICTORS + &
+                                           ( MAX_N_ABSORBERS * MAX_N_INTEGRATED_PREDICTORS )
   ! The number selected from the total to be
   ! used in the gas absorption algorithm
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_PREDICTORS_USED = 6
-
+  INTEGER, PARAMETER :: MAX_N_PREDICTORS_USED = 6
   ! Maximum number of polynomial orders for
   ! reconstructing the gas absorption coefficients
-  ! ----------------------------------------------
-  INTEGER, PUBLIC, PARAMETER :: MAX_N_ORDERS = 10
+  INTEGER, PARAMETER :: MAX_N_ORDERS = 10
 
-  ! -------------------------------------------------
-  ! Structure definition to hold integrated predictor
-  ! forward variables across FWD, TL, and AD calls
-  ! -------------------------------------------------
-  TYPE :: APVariables_type
+
+  ! ------------------------------------------
+  ! Structure definition to hold forward model
+  ! variables across FWD, TL, and AD calls
+  ! ------------------------------------------
+  TYPE :: iVar_type
     PRIVATE
     REAL(fp), DIMENSION(0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_2 = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_1 = ZERO
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: Factor_2 = ZERO
     REAL(fp), DIMENSION(MAX_N_INTEGRATED_PREDICTORS,0:MAX_N_LAYERS,MAX_N_ABSORBERS) :: s ! no need to initialized it to zero
     REAL(fp), DIMENSION(MAX_N_LAYERS,MAX_N_ABSORBERS) :: A_Level ! no need to initialized it to zero
-
-  END TYPE APVariables_type
+  END TYPE iVar_type
 
 
 CONTAINS
+
+
+!################################################################################
+!################################################################################
+!##                                                                            ##
+!##                        ## PUBLIC MODULE ROUTINES ##                        ##
+!##                                                                            ##
+!################################################################################
+!################################################################################
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ODAS_Assemble_Predictors
+!
+! PURPOSE:
+!       Subroutine to assemble all the gas absorption model predictors
+!       for the ODAS algorithm.
+!
+! CALLING SEQUENCE:
+!       CALL ODAS_Assemble_Predictors( &
+!              Atmosphere  , &
+!              GeometryInfo, &
+!              Max_Order   , &
+!              Alpha       , &
+!              Predictor   , &
+!              iVar          )
+!
+! INPUTS:
+!       Atmosphere:
+!         Structure containing the atmospheric state data.
+!         UNITS:      N/A
+!         TYPE:       CRTM_Atmosphere_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       GeometryInfo:
+!         Structure containing the view geometry information.
+!         UNITS:      N/A
+!         TYPE:       CRTM_GeometryInfo_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Max_Order:
+!         The maximum order of the polynomial function for each absorber
+!         UNITS:      N/A
+!         TYPE:       INTEGER
+!         DIMENSION:  1D array (n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:
+!         The alpha coefficients for absorber level calculations
+!         UNITS:      depends on the units of the absorber
+!         TYPE:       INTEGER
+!         DIMENSION:  2D array (n_Alphas x n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Predictor:
+!         Structure containing the integrated absorber and predictor profiles.
+!         UNITS:      N/A
+!         TYPE:       ODAS_Predictor_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN OUT)
+!
+!       iVar:
+!         Structure containing internal variables required for subsequent
+!         tangent-linear or adjoint model calls. The contents of this
+!         structure are NOT accessible outside of this module.
+!         UNITS:      N/A
+!         TYPE:       iVar_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(OUT)
+!
+! COMMENTS:
+!       The predictors used in the gas absorption model are organised in
+!       the following manner:
+!
+! ------------------------------------------------------------------------------
+! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
+! ------------------------------------------------------------------------------
+!
+! \                              /\             /\             /\             /
+!  \                            /  \           /  \           /  \           /
+!   ----------------------------    -----------    -----------    -----------
+!                 |                      |              |              |
+!                 v                      v              v              v
+!
+!             Standard               Integrated     Integrated     Integrated
+!            Predictors              predictors     predictors     predictors
+!                                       for            for            for
+!                                    Absorber 1     Absorber 2     Absorber 3
+!                                   (water vapor)   (dry gases)     (ozone)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ODAS_Assemble_Predictors( &
+    Atmosphere  , &  ! Input
+    GeometryInfo, &  ! Input
+    Max_Order   , &  ! Input
+    Alpha       , &  ! Input
+    Predictor   , &  ! Output
+    iVar          )  ! Internal variable output
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
+    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
+    INTEGER,                      INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
+    TYPE(ODAS_Predictor_type),    INTENT(IN OUT) :: Predictor
+    TYPE(iVar_type),              INTENT(OUT)    :: iVar
+    ! Local variables
+    INTEGER :: i,j,k,n_Layers
+    REAL(fp) :: Secant_Sensor_Zenith
+
+    ! Save the angle information
+    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
+                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
+    Predictor%Secant_Sensor_Zenith = Secant_Sensor_Zenith
+
+    ! Compute the nadir integrated absorber profiles
+    CALL Compute_IntAbsorber( Atmosphere, Predictor )
+
+    ! Compute the predictors
+    ! ...Standard predictors
+    CALL Standard_Predictors( Atmosphere, Predictor )
+    ! ...Integrated predictors
+    CALL Integrated_Predictors( Atmosphere, Predictor, iVar )
+
+
+    ! Calculate absorber space level associated with the average
+    ! absorber amount
+    !
+    ! Absorber level, k, to amount
+    !
+    !     A(k) = C1.exp(Alpha * k) + C2
+    !
+    ! Absorber amount to level
+    !
+    !           1      A - C2
+    !     k = ----- LN ------
+    !         Alpha      C1
+    !
+    !     AP(k, i) = A(k)**(i), i = 1, Max_Order(j)
+    !
+    !   Alpha : absorber amount-level coordinate constant
+    !   C1,C2 : scaling factors for level in the range of 0 to 1
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers
+
+      IF( Max_Order(j) < 0 )CYCLE
+
+      DO k = 1, n_Layers
+        iVar%A_Level(k,j) = LOG((Predictor%aveA(k,j) - Alpha(3,j)) / Alpha(2,j)) / &
+        !                   ----------------------------------------------------
+                                                Alpha(1,j)
+      END DO
+
+      Predictor%Ap(1:n_Layers, 1, j) = iVar%A_Level(1:n_Layers,j)
+      DO i = 2, Max_Order(j)
+        DO k = 1, n_Layers
+          Predictor%Ap(k, i, j) = Predictor%Ap(k, i-1, j) * iVar%A_Level(k,j)
+        END DO
+      END DO
+    END DO
+
+  END SUBROUTINE ODAS_Assemble_Predictors
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ODAS_Assemble_Predictors_TL
+!
+! PURPOSE:
+!       Subroutine to assemble all the gas absorption model predictors
+!       for the tangent-linear ODAS algorithm.
+!
+! CALLING SEQUENCE:
+!       CALL ODAS_Assemble_Predictors_TL ( &
+!              Atmosphere   , &  ! FWD Input
+!              Predictor    , &  ! FWD Input
+!              Atmosphere_TL, &  ! TL Input
+!              Max_Order    , &  ! Input
+!              Alpha        , &  ! Input
+!              Predictor_TL , &  ! TL Output
+!              iVar           )  ! Internal variable input
+!
+! INPUTS:
+!       Atmosphere:
+!         Structure containing the atmospheric state data.
+!         UNITS:      N/A
+!         TYPE:       CRTM_Atmosphere_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Predictor:
+!         Structure containing the integrated absorber and predictor profiles.
+!         UNITS:      N/A
+!         TYPE:       ODAS_Predictor_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Atmosphere_TL:
+!         Structure containing the tanggent-linear atmospheric state data.
+!         UNITS:      N/A
+!         TYPE:       CRTM_Atmosphere_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       GeometryInfo:
+!         Structure containing the view geometry information.
+!         UNITS:      N/A
+!         TYPE:       CRTM_GeometryInfo_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Max_Order:
+!         The maximum order of the polynomial function for each absorber
+!         UNITS:      N/A
+!         TYPE:       INTEGER
+!         DIMENSION:  1D array (n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:
+!         The alpha coefficients for absorber level calculations
+!         UNITS:      depends on the units of the absorber
+!         TYPE:       INTEGER
+!         DIMENSION:  2D array (n_Alphas x n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+!       iVar:
+!         Structure containing internal variables required for subsequent
+!         tangent-linear or adjoint model calls. The contents of this
+!         structure are NOT accessible outside of this module.
+!         UNITS:      N/A
+!         TYPE:       iVar_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(OUT)
+!
+! OUTPUTS:
+!       Predictor_TL:
+!         Structure containing the tangent-linear integrated absorber
+!         and predictor profiles.
+!         UNITS:      N/A
+!         TYPE:       ODAS_Predictor_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       The predictors used in the gas absorption model are organised in
+!       the following manner:
+!
+! ------------------------------------------------------------------------------
+! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
+! ------------------------------------------------------------------------------
+!
+! \                              /\             /\             /\             /
+!  \                            /  \           /  \           /  \           /
+!   ----------------------------    -----------    -----------    -----------
+!                 |                      |              |              |
+!                 v                      v              v              v
+!
+!             Standard               Integrated     Integrated     Integrated
+!            Predictors              predictors     predictors     predictors
+!                                       for            for            for
+!                                    Absorber 1     Absorber 2     Absorber 3
+!                                   (water vapor)   (dry gases)     (ozone)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ODAS_Assemble_Predictors_TL( &
+    Atmosphere   , &  ! FWD Input
+    Predictor    , &  ! FWD Input
+    Atmosphere_TL, &  ! TL Input
+    Max_Order    , &  ! Input
+    Alpha        , &  ! Input
+    Predictor_TL , &  ! TL Output
+    iVar           )  ! Internal variable input
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere
+    TYPE(ODAS_Predictor_type),  INTENT(IN)     :: Predictor
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atmosphere_TL
+    INTEGER,                    INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                   INTENT(IN)     :: Alpha(:,:)
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Predictor_TL
+    TYPE(iVar_type),            INTENT(IN)     :: iVar
+    ! Local variables
+    REAL(fp) :: A_Level_TL(Atmosphere%n_Layers)
+    INTEGER  :: i, j, k, n_Layers
+
+    ! Save the angle information
+    Predictor_TL%Secant_Sensor_Zenith = Predictor%Secant_Sensor_Zenith
+
+    ! Compute the tangent-linear nadir integrated absorber profiles
+    CALL Compute_IntAbsorber_TL( &
+           Atmosphere   , &  ! Input
+           Atmosphere_TL, &  ! Input
+           Predictor_TL   )  ! Output
+
+    ! Compute the tangent-linear predictors
+    ! ...Standard predictors
+    CALL Standard_Predictors_TL( &
+           Atmosphere   , &  ! Input
+           Atmosphere_TL, &  ! Input
+           Predictor_TL   )  ! Output
+    ! ...Integrated predictors
+    CALL Integrated_Predictors_TL( &
+           Atmosphere   , &  ! Input
+           Predictor    , &  ! Input
+           Atmosphere_TL, &  ! Input
+           Predictor_TL , &  ! Output
+           iVar           )  ! Internal variable input
+
+
+    ! Calculate tangent-linear absorber space level associated
+    ! with the average absorber amount
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers
+
+      IF( Max_Order(j) < 0 )CYCLE
+
+      DO k = 1, n_Layers
+
+        A_Level_TL(k) =             Predictor_TL%aveA(k,j) / &
+        !               -------------------------------------------------
+                        (Alpha(1,j) * (Predictor%aveA(k,j) - Alpha(3,j)))
+      END DO
+
+      Predictor_TL%Ap(1:n_layers, 1, j) = A_Level_TL(1:n_layers)
+      DO i = 2, Max_Order(j)
+        DO k = 1, n_Layers
+          Predictor_TL%Ap(k, i, j) = (Predictor_TL%Ap(k,i-1,j)*iVar%A_Level(k,j)) + &
+                                     (Predictor%Ap(k,i-1,j)   *A_Level_TL(k))
+        END DO
+      END DO
+    END DO
+
+  END SUBROUTINE ODAS_Assemble_Predictors_TL
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       ODAS_Assemble_Predictors_AD
+!
+! PURPOSE:
+!       Subroutine to assemble all the gas absorption model predictors
+!       for the adjoint ODAS algorithm.
+!
+! CALLING SEQUENCE:
+!       CALL ODAS_Assemble_Predictors_AD ( &
+!              Atmosphere   , &  ! FWD Input
+!              Predictor    , &  ! FWD Input
+!              Predictor_AD , &  ! AD Input
+!              Max_Order    , &  ! Input
+!              Alpha        , &  ! Input
+!              Atmosphere_AD, &  ! AD Output
+!              iVar           )  ! Internal variable input
+!
+! INPUTS:
+!       Atmosphere:
+!         Structure containing the atmospheric state data.
+!         UNITS:      N/A
+!         TYPE:       CRTM_Atmosphere_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Predictor:
+!         Structure containing the integrated absorber and predictor profiles.
+!         UNITS:      N/A
+!         TYPE:       ODAS_Predictor_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Predictor_AD:
+!         Structure containing the adjoint integrated absorber and
+!         predictor profiles.
+!         **NOTE: This structure is zeroed upon output
+!         UNITS:      N/A
+!         TYPE:       ODAS_Predictor_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN OUT)
+!
+!       Max_Order:
+!         The maximum order of the polynomial function for each absorber
+!         UNITS:      N/A
+!         TYPE:       INTEGER
+!         DIMENSION:  1D array (n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+!       Alpha:
+!         The alpha coefficients for absorber level calculations
+!         UNITS:      depends on the units of the absorber
+!         TYPE:       INTEGER
+!         DIMENSION:  2D array (n_Alphas x n_Absorbers)
+!         ATTRIBUTES: INTENT(IN)
+!
+!       iVar:
+!         Structure containing internal variables required for subsequent
+!         tangent-linear or adjoint model calls. The contents of this
+!         structure are NOT accessible outside of this module.
+!         UNITS:      N/A
+!         TYPE:       iVar_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(OUT)
+!
+! OUTPUTS:
+!       Atmosphere_AD:
+!         Structure containing the adjoint atmospheric state data.
+!         UNITS:      N/A
+!         TYPE:       CRTM_Atmosphere_type
+!         DIMENSION:  Scalar
+!         ATTRIBUTES: INTENT(IN OUT)
+!
+! COMMENTS:
+!       The predictors used in the gas absorption model are organised in
+!       the following manner:
+!
+! ------------------------------------------------------------------------------
+! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
+! ------------------------------------------------------------------------------
+!
+! \                              /\             /\             /\             /
+!  \                            /  \           /  \           /  \           /
+!   ----------------------------    -----------    -----------    -----------
+!                 |                      |              |              |
+!                 v                      v              v              v
+!
+!             Standard               Integrated     Integrated     Integrated
+!            Predictors              predictors     predictors     predictors
+!                                       for            for            for
+!                                    water vapor    dry gases        ozone
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE ODAS_Assemble_Predictors_AD( &
+    Atmosphere   , &  ! FWD Input
+    Predictor    , &  ! FWD Input
+    Predictor_AD , &  ! AD Input
+    Max_Order    , &  ! Input
+    Alpha        , &  ! Input
+    Atmosphere_AD, &  ! AD Output
+    iVar           )  ! Internal variable input
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
+    TYPE(ODAS_Predictor_type),    INTENT(IN)     :: Predictor
+    TYPE(ODAS_Predictor_type),    INTENT(IN OUT) :: Predictor_AD
+    INTEGER,                      INTENT(IN)     :: Max_Order(:)
+    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
+    TYPE(CRTM_Atmosphere_type),   INTENT(IN OUT) :: Atmosphere_AD
+    TYPE(iVar_type),              INTENT(IN)     :: iVar
+    ! Local variables
+    REAL(fp):: A_Level_AD(Atmosphere%n_Layers)
+    INTEGER :: i, j, k, n_Layers
+
+    ! Save the angle information
+    Predictor_AD%Secant_Sensor_Zenith = Predictor%Secant_Sensor_Zenith
+
+    ! Calculate adjoint absorber space level associated
+    ! with the average absorber amount
+    A_Level_AD = ZERO
+    n_Layers = Atmosphere%n_Layers
+    DO j = 1, Predictor%n_Absorbers
+
+      IF( Max_Order(j) < 0 )CYCLE
+
+      DO i = Max_Order(j), 2, -1
+        DO k = n_Layers, 1, -1
+
+           Predictor_AD%Ap(k, i-1, j) = Predictor_AD%Ap(k,i-1,j) + &
+                                        (Predictor_AD%Ap(k,i,j)*iVar%A_Level(k,j))
+           A_Level_AD(k) = A_Level_AD(k) + (Predictor%Ap(k,i-1,j)*Predictor_AD%Ap(k,i,j))
+           Predictor_AD%Ap(k,i,j) = ZERO
+
+        END DO
+      END DO
+
+      A_Level_AD(1:n_Layers) = A_Level_AD(1:n_Layers) + Predictor_AD%Ap(1:n_layers,1,j)
+      Predictor_AD%Ap(1:n_Layers, 1, j) = ZERO
+
+      DO k = n_Layers, 1, -1
+        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &
+                                 (A_Level_AD(k) / (Alpha(1,j) * (Predictor%aveA(k,j) - Alpha(3,j))))
+        A_Level_AD(k) = ZERO
+
+      END DO
+    END DO
+
+
+    ! Calculate the predictor adjoints
+    ! ...Integrated predictors
+    CALL Integrated_Predictors_AD( &
+           Atmosphere   , &  ! Input
+           Predictor    , &  ! Input
+           Predictor_AD , &  ! In/Output
+           Atmosphere_AD, &  ! Output
+           iVar           )  ! Internal variable input
+    ! ...Standard predictors
+    CALL Standard_Predictors_AD( &
+           Atmosphere   , &  ! Input
+           Predictor_AD , &  ! Input
+           Atmosphere_AD  )  ! Output
+
+
+    ! Compute the nadir integrated absorber profile adjoint
+    CALL Compute_IntAbsorber_AD( &
+           Atmosphere   , &  ! Input
+           Predictor_AD , &  ! Output
+           Atmosphere_AD  )  ! Input
+
+
+    ! Zero the adjoint predictor structure
+    CALL ODAS_Predictor_Zero( Predictor_AD )
+
+  END SUBROUTINE ODAS_Assemble_Predictors_AD
 
 
 !################################################################################
@@ -156,7 +677,7 @@ CONTAINS
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
 !                     state data.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Atmosphere_type)
+!                     TYPE:       CRTM_Atmosphere_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
@@ -164,7 +685,7 @@ CONTAINS
 !       Predictor:    Predictor structure containing the calculated
 !                     integrated absorber profiles
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(Predictor_type)
+!                     TYPE:       ODAS_Predictor_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
@@ -174,9 +695,7 @@ CONTAINS
                                   Pred )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_IntAbsorber'
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred
     ! Local variables
     INTEGER  :: k, j
     REAL(fp) :: dPonG
@@ -234,21 +753,21 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Compute_IntAbsorber_TL( Atmosphere,    &  ! Input
-!                                    Atmosphere_TL, &  ! Input      
-!                                    Predictor_TL   )  ! Output     
+!                                    Atmosphere_TL, &  ! Input
+!                                    Predictor_TL   )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:  CRTM Atmosphere structure containing the tangent-linear
 !                       atmospheric state data, i.e. the perturbations.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -257,21 +776,19 @@ CONTAINS
 !       Predictor_TL:   Predictor structure containing the calculated
 !                       tangent-linear integrated absorber profiles
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       ODAS_Predictor_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Compute_IntAbsorber_TL( Atm,    &  ! Input
-                                     Atm_TL, &  ! Input      
-                                     Pred_TL )  ! Output     
+                                     Atm_TL, &  ! Input
+                                     Pred_TL )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm_TL
-    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_TL
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_IntAbsorber_TL'
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred_TL
     ! Local variables
     INTEGER  :: k, j
     REAL(fp) :: dPonG
@@ -332,14 +849,14 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Compute_IntAbsorber_AD( Atmosphere,   &  ! Input
-!                                     Predictor_AD, &  ! Input     
-!                                     Atmosphere_AD )  ! Output    
+!                                    Predictor_AD, &  ! Input
+!                                    Atmosphere_AD )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -347,7 +864,7 @@ CONTAINS
 !                       calculated adjoint integrated absorber profiles.
 !                       These values are set to zero on output.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       ODAS_Predictor_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -355,7 +872,7 @@ CONTAINS
 !       Atmosphere_AD:  CRTM Atmosphere structure containing the adjoint
 !                       atmospheric state data, i.e. the Jacobians.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -366,11 +883,11 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Compute_IntAbsorber_AD( Atm,     &  ! Input
-                                     Pred_AD, &  ! Input      
-                                     Atm_AD   )  ! Output     
+                                     Pred_AD, &  ! Input
+                                     Atm_AD   )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_AD
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
     ! Local variables
     INTEGER  :: k, j
@@ -463,7 +980,7 @@ CONTAINS
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
 !                     state data.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Atmosphere_type)
+!                     TYPE:       CRTM_Atmosphere_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
@@ -471,7 +988,7 @@ CONTAINS
 !       Predictor:    Predictor structure containing the calculated
 !                     standard predictors.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(Predictor_type)
+!                     TYPE:       ODAS_Predictor_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
@@ -481,9 +998,7 @@ CONTAINS
                                   Pred )  ! Output, Istd x K
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors'
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2
@@ -528,15 +1043,15 @@ CONTAINS
 !       predictors for the gas absorption model.
 !
 ! CALLING SEQUENCE:
-!       CALL Integrated_Predictors( Atmosphere,  &  ! Input
-!                                   Predictor,   &  ! In/Output                    
-!                                   APVariables  )  ! Internal variable output     
+!       CALL Integrated_Predictors( Atmosphere, &  ! Input
+!                                   Predictor,  &  ! In/Output
+!                                   iVar        )  ! Internal variable output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:   CRTM Atmosphere structure containing the atmospheric
 !                     state data.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(CRTM_Atmosphere_type)
+!                     TYPE:       CRTM_Atmosphere_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN)
 !
@@ -544,30 +1059,28 @@ CONTAINS
 !       Predictor:    Predictor structure containing the calculated
 !                     integrated predictors.
 !                     UNITS:      N/A
-!                     TYPE:       TYPE(Predictor_type)
+!                     TYPE:       ODAS_Predictor_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(IN OUT)
 !
-!       APVariables:  Structure containing internal variables required for
+!       iVar:  Structure containing internal variables required for
 !                     subsequent tangent-linear or adjoint model calls.
 !                     The contents of this structure are NOT accessible
 !                     outside of the ODAS_Predictor module.
 !                     UNITS:      N/A
-!                     TYPE:       APVariables_type
+!                     TYPE:       iVar_type
 !                     DIMENSION:  Scalar
 !                     ATTRIBUTES: INTENT(OUT)
 
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Integrated_Predictors( Atm,  &  ! Input
-                                    Pred, &  ! Input/output                 
-                                    APV   )  ! Internal variable output     
+                                    Pred, &  ! Input/output
+                                    iVar  )  ! Internal variable output
     ! Arguments
-    TYPE(CRTM_Atmosphere_type), INTENT(IN)      :: Atm
-    TYPE(Predictor_type),       INTENT(IN OUT)  :: Pred
-    TYPE(APVariables_type),     INTENT(OUT)     :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors'
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred
+    TYPE(iVar_type),            INTENT(OUT)    :: iVar
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: Inverse_1
@@ -583,25 +1096,25 @@ CONTAINS
       i1 = MAX_N_STANDARD_PREDICTORS + ((j-1) * MAX_N_INTEGRATED_PREDICTORS) + 1
 
       ! Initialise values
-      APV%A_2(0,j) = Pred%A(0,j) * Pred%A(0,j)
-      APV%s(:,0,j) = ZERO
+      iVar%A_2(0,j) = Pred%A(0,j) * Pred%A(0,j)
+      iVar%s(:,0,j) = ZERO
       xL(:,0) = ZERO
 
       ! Compute the integrated predictor set
       Layer_Loop: DO k = 1, Pred%n_Layers
 
         ! Calculate Absorber multiplicative Factors
-        APV%A_2(k,j)      = Pred%A(k,j)*Pred%A(k,j)
-        APV%Factor_1(k,j) = (Pred%A(k,j)  + Pred%A(k-1,j) ) * Pred%dA(k,j) ! For ** terms
-        APV%Factor_2(k,j) = (APV%A_2(k,j) + APV%A_2(k-1,j)) * Pred%dA(k,j) ! For *** terms
+        iVar%A_2(k,j)      = Pred%A(k,j)*Pred%A(k,j)
+        iVar%Factor_1(k,j) = (Pred%A(k,j)  + Pred%A(k-1,j) ) * Pred%dA(k,j) ! For ** terms
+        iVar%Factor_2(k,j) = (iVar%A_2(k,j) + iVar%A_2(k-1,j)) * Pred%dA(k,j) ! For *** terms
 
         ! Calculate the intermediate sums
-        APV%s(1,k,j) = APV%s(1,k-1,j) + ( Atm%Temperature(k) * Pred%dA(k,j) )      ! T*
-        APV%s(2,k,j) = APV%s(2,k-1,j) + ( Atm%Pressure(k)    * Pred%dA(k,j) )      ! P*
-        APV%s(3,k,j) = APV%s(3,k-1,j) + ( Atm%Temperature(k) * APV%Factor_1(k,j) ) ! T**
-        APV%s(4,k,j) = APV%s(4,k-1,j) + ( Atm%Pressure(k)    * APV%Factor_1(k,j) ) ! P**
-        APV%s(5,k,j) = APV%s(5,k-1,j) + ( Atm%Temperature(k) * APV%Factor_2(k,j) ) ! T***
-        APV%s(6,k,j) = APV%s(6,k-1,j) + ( Atm%Pressure(k)    * APV%Factor_2(k,j) ) ! P***
+        iVar%s(1,k,j) = iVar%s(1,k-1,j) + ( Atm%Temperature(k) * Pred%dA(k,j) )      ! T*
+        iVar%s(2,k,j) = iVar%s(2,k-1,j) + ( Atm%Pressure(k)    * Pred%dA(k,j) )      ! P*
+        iVar%s(3,k,j) = iVar%s(3,k-1,j) + ( Atm%Temperature(k) * iVar%Factor_1(k,j) ) ! T**
+        iVar%s(4,k,j) = iVar%s(4,k-1,j) + ( Atm%Pressure(k)    * iVar%Factor_1(k,j) ) ! P**
+        iVar%s(5,k,j) = iVar%s(5,k-1,j) + ( Atm%Temperature(k) * iVar%Factor_2(k,j) ) ! T***
+        iVar%s(6,k,j) = iVar%s(6,k-1,j) + ( Atm%Pressure(k)    * iVar%Factor_2(k,j) ) ! P***
 
         ! Calculate the normalising factors
         ! for the integrated predictors
@@ -614,12 +1127,12 @@ CONTAINS
         Inverse_3 = Inverse_2 * Inverse_1
 
         ! Compute the LEVEL integrated predictors
-        xL(1,k) = POINT_5  * APV%s(1,k,j) * Inverse_1  ! T*
-        xL(2,k) = POINT_5  * APV%s(2,k,j) * Inverse_1  ! P*
-        xL(3,k) = POINT_5  * APV%s(3,k,j) * Inverse_2  ! T**
-        xL(4,k) = POINT_5  * APV%s(4,k,j) * Inverse_2  ! P**
-        xL(5,k) = POINT_75 * APV%s(5,k,j) * Inverse_3  ! T***
-        xL(6,k) = POINT_75 * APV%s(6,k,j) * Inverse_3  ! P***
+        xL(1,k) = POINT_5  * iVar%s(1,k,j) * Inverse_1  ! T*
+        xL(2,k) = POINT_5  * iVar%s(2,k,j) * Inverse_1  ! P*
+        xL(3,k) = POINT_5  * iVar%s(3,k,j) * Inverse_2  ! T**
+        xL(4,k) = POINT_5  * iVar%s(4,k,j) * Inverse_2  ! P**
+        xL(5,k) = POINT_75 * iVar%s(5,k,j) * Inverse_3  ! T***
+        xL(6,k) = POINT_75 * iVar%s(6,k,j) * Inverse_3  ! P***
 
         ! Sum predictors for current absorber across layers
         DO i = 1, MAX_N_INTEGRATED_PREDICTORS
@@ -643,21 +1156,21 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Standard_Predictors_TL( Atmosphere,    &  ! Input
-!                                    Atmosphere_TL, &  ! Input      
-!                                    Predictor_TL   )  ! Output     
+!                                    Atmosphere_TL, &  ! Input
+!                                    Predictor_TL   )  ! Output
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:  CRTM Atmosphere structure containing the tangent-linear
 !                       atmospheric state data, i.e. the perturbations.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
@@ -665,21 +1178,19 @@ CONTAINS
 !       Predictor_TL:   Predictor structure containing the calculated
 !                       tangent-linear standard predictors.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       ODAS_Predictor_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Standard_Predictors_TL( Atm,    &  ! Input
-                                     Atm_TL, &  ! Input      
-                                     Pred_TL )  ! Output     
+                                     Atm_TL, &  ! Input
+                                     Pred_TL )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atm
     TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: Atm_TL
-    TYPE(Predictor_type),       INTENT(IN OUT)  :: Pred_TL
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors_TL'
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT)  :: Pred_TL
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2, p2_TL
@@ -699,7 +1210,7 @@ CONTAINS
       ! Tangent-linear of squared terms
       p2_TL = TWO * Atm%Pressure(k)    * Atm_TL%Pressure(k)
       t2_TL = TWO * Atm%Temperature(k) * Atm_TL%Temperature(k)
-      
+
       ! Calculate and assign the integrated absorber independent predictors
       Pred_TL%X(k, 1) = Atm_TL%Temperature(k)
       Pred_TL%X(k, 2) = Atm_TL%Pressure(k)
@@ -734,64 +1245,62 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Integrated_Predictors_TL( Atmosphere,    &  ! Input
-!                                      Predictor,     &  ! Input                       
-!                                      Atmosphere_TL, &  ! Input                       
-!                                      Predictor_TL,  &  ! In/Output                   
-!                                      APVariables    )  ! Internal variable input     
+!                                      Predictor,     &  ! Input
+!                                      Atmosphere_TL, &  ! Input
+!                                      Predictor_TL,  &  ! In/Output
+!                                      iVar           )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM Atmosphere structure containing the atmospheric
 !                        state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Predictor:       Predictor structure containing the calculated
 !                        integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Atmosphere_TL:   CRTM Atmosphere structure containing the tangent-linear
 !                        atmospheric state data, i.e. the perturbations.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
-!       APVariables:     Structure containing internal variables required for
+!       iVar:            Structure containing internal variables required for
 !                        subsequent tangent-linear or adjoint model calls.
 !                        The contents of this structure are NOT accessible
 !                        outside of the Predictor module.
 !                        UNITS:      N/A
-!                        TYPE:       APVariables_type
+!                        TYPE:       iVar_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 ! OUTPUT ARGUMENTS:
 !       Predictor_TL:    Predictor structure containing the calculated
 !                        tangent-linear integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Integrated_Predictors_TL( Atm,     &  ! Input
-                                       Pred,    &  ! Input                       
-                                       Atm_TL,  &  ! Input                       
-                                       Pred_TL, &  ! Output                      
-                                       APV      )  ! Internal variable input     
+                                       Pred,    &  ! Input
+                                       Atm_TL,  &  ! Input
+                                       Pred_TL, &  ! Output
+                                       iVar      )  ! Internal variable input
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)      :: Atm
-    TYPE(Predictor_type),        INTENT(IN)      :: Pred
+    TYPE(ODAS_Predictor_type),   INTENT(IN)      :: Pred
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)      :: Atm_TL
-    TYPE(Predictor_type),        INTENT(IN OUT)  :: Pred_TL
-    TYPE(APVariables_type),      INTENT(IN)      :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors_TL'
+    TYPE(ODAS_Predictor_type),   INTENT(IN OUT)  :: Pred_TL
+    TYPE(iVar_type),             INTENT(IN)      :: iVar
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: Factor_1_TL
@@ -829,8 +1338,8 @@ CONTAINS
         ! For the ** terms
         Factor_1_TL = ( ( Pred%A(k,j)    + Pred%A(k-1,j)    ) * Pred_TL%dA(k,j) ) + &
                       ( ( Pred_TL%A(k,j) + Pred_TL%A(k-1,j) ) *    Pred%dA(k,j) )
-        ! For the *** terms       
-        Factor_2_TL = ( ( APV%A_2(k,j) + APV%A_2(k-1,j)) * Pred_TL%dA(k,j) ) + &
+        ! For the *** terms
+        Factor_2_TL = ( ( iVar%A_2(k,j) + iVar%A_2(k-1,j)) * Pred_TL%dA(k,j) ) + &
                       ( ( A_2_TL(k)    + A_2_TL(k-1)   ) *    Pred%dA(k,j) )
 
         ! Calculate the intermediate sums
@@ -838,13 +1347,13 @@ CONTAINS
                             ( Atm%Temperature(k)    * Pred_TL%dA(k,j))
         s_TL(2) = s_TL(2) + ( Atm_TL%Pressure(k)    *    Pred%dA(k,j)) + &   ! P*
                             ( Atm%Pressure(k)       * Pred_TL%dA(k,j))
-        s_TL(3) = s_TL(3) + ( Atm_TL%Temperature(k) * APV%Factor_1(k,j)) + & ! T**
+        s_TL(3) = s_TL(3) + ( Atm_TL%Temperature(k) * iVar%Factor_1(k,j)) + & ! T**
                             ( Atm%Temperature(k)    * Factor_1_TL )
-        s_TL(4) = s_TL(4) + ( Atm_TL%Pressure(k)    * APV%Factor_1(k,j)) + & ! P**
+        s_TL(4) = s_TL(4) + ( Atm_TL%Pressure(k)    * iVar%Factor_1(k,j)) + & ! P**
                             ( Atm%Pressure(k)       * Factor_1_TL )
-        s_TL(5) = s_TL(5) + ( Atm_TL%Temperature(k) * APV%Factor_2(k,j)) + & ! T***
+        s_TL(5) = s_TL(5) + ( Atm_TL%Temperature(k) * iVar%Factor_2(k,j)) + & ! T***
                             ( Atm%Temperature(k)    * Factor_2_TL )
-        s_TL(6) = s_TL(6) + ( Atm_TL%Pressure(k)    * APV%Factor_2(k,j)) + & ! P***
+        s_TL(6) = s_TL(6) + ( Atm_TL%Pressure(k)    * iVar%Factor_2(k,j)) + & ! P***
                             ( Atm%Pressure(k)       * Factor_2_TL )
 
         ! Calculate the normalising factors
@@ -862,18 +1371,18 @@ CONTAINS
         Inverse_3_TL = -Inverse_4 * Pred_TL%A(k,j) * THREE
 
         ! Compute the tangent-linear LEVEL integrated predictors
-        xL_TL(1,k) = POINT_5  * ( ( s_TL(1)      * Inverse_1    ) + &  ! T*
-                                  ( APV%s(1,k,j) * Inverse_1_TL ) )
-        xL_TL(2,k) = POINT_5  * ( ( s_TL(2)      * Inverse_1    ) + &  ! P*
-                                  ( APV%s(2,k,j) * Inverse_1_TL ) )
-        xL_TL(3,k) = POINT_5  * ( ( s_TL(3)      * Inverse_2    ) + &  ! T**
-                                  ( APV%s(3,k,j) * Inverse_2_TL ) )
-        xL_TL(4,k) = POINT_5  * ( ( s_TL(4)      * Inverse_2    ) + &  ! P**
-                                  ( APV%s(4,k,j) * Inverse_2_TL ) )
-        xL_TL(5,k) = POINT_75 * ( ( s_TL(5)      * Inverse_3    ) + &  ! T***
-                                  ( APV%s(5,k,j) * Inverse_3_TL ) )
-        xL_TL(6,k) = POINT_75 * ( ( s_TL(6)      * Inverse_3    ) + &  ! P***
-                                  ( APV%s(6,k,j) * Inverse_3_TL ) )
+        xL_TL(1,k) = POINT_5  * ( ( s_TL(1)       * Inverse_1    ) + &  ! T*
+                                  ( iVar%s(1,k,j) * Inverse_1_TL ) )
+        xL_TL(2,k) = POINT_5  * ( ( s_TL(2)       * Inverse_1    ) + &  ! P*
+                                  ( iVar%s(2,k,j) * Inverse_1_TL ) )
+        xL_TL(3,k) = POINT_5  * ( ( s_TL(3)       * Inverse_2    ) + &  ! T**
+                                  ( iVar%s(3,k,j) * Inverse_2_TL ) )
+        xL_TL(4,k) = POINT_5  * ( ( s_TL(4)       * Inverse_2    ) + &  ! P**
+                                  ( iVar%s(4,k,j) * Inverse_2_TL ) )
+        xL_TL(5,k) = POINT_75 * ( ( s_TL(5)       * Inverse_3    ) + &  ! T***
+                                  ( iVar%s(5,k,j) * Inverse_3_TL ) )
+        xL_TL(6,k) = POINT_75 * ( ( s_TL(6)       * Inverse_3    ) + &  ! P***
+                                  ( iVar%s(6,k,j) * Inverse_3_TL ) )
 
         ! Sum predictors across layers
         DO i = 1, MAX_N_INTEGRATED_PREDICTORS
@@ -897,22 +1406,22 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Standard_Predictors_AD( Atmosphere,   &  ! Input
-!                                    Predictor_AD, &  ! Input      
-!                                    Atmosphere_AD )  ! Output     
-!                                         
+!                                    Predictor_AD, &  ! Input
+!                                    Atmosphere_AD )  ! Output
+!
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
 !                       state data.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN)
 !
 !       Predictor_AD:   Predictor structure containing the calculated
 !                       adjoint integrated predictors.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
+!                       TYPE:       ODAS_Predictor_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -920,7 +1429,7 @@ CONTAINS
 !       Atmosphere_AD:  CRTM Atmosphere structure containing the adjoints of
 !                       the standard predictors.
 !                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
+!                       TYPE:       CRTM_Atmosphere_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -934,14 +1443,12 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Standard_Predictors_AD( Atm,     &  ! Input
-                                     Pred_AD, &  ! Input      
-                                     Atm_AD   )  ! Output     
+                                     Pred_AD, &  ! Input
+                                     Atm_AD   )  ! Output
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: Atm
-    TYPE(Predictor_type),       INTENT(IN OUT) :: Pred_AD
+    TYPE(ODAS_Predictor_type),  INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: Atm_AD
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Standard_Predictors_AD'
     ! Local variables
     INTEGER  :: k
     REAL(fp) :: p2, p2_AD
@@ -1008,30 +1515,30 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       CALL Integrated_Predictors_AD( Atmosphere,    &  ! Input
-!                                      Predictor,     &  ! Input                       
-!                                      Predictor_AD,  &  ! In/Output                   
-!                                      Atmosphere_AD, &  ! Output                      
-!                                      APVariables    )  ! Internal variable input     
+!                                      Predictor,     &  ! Input
+!                                      Predictor_AD,  &  ! In/Output
+!                                      Atmosphere_AD, &  ! Output
+!                                      iVar           )  ! Internal variable input
 !
 ! INPUT ARGUMENTS:
 !       Atmosphere:      CRTM Atmosphere structure containing the atmospheric
 !                        state data.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Predictor:       Predictor structure containing the calculated
 !                        integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Predictor_AD:    Predictor structure that, on input, contains
 !                        the adjoint integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -1039,37 +1546,35 @@ CONTAINS
 !       Predictor_AD:    Predictor structure that, on output, contains
 !                        the adjoint integrated absorber amounts.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 !       Atmosphere_AD:   CRTM Atmosphere structure containing the adjoints of
 !                        the integrated predictors.
 !                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
+!                        TYPE:       CRTM_Atmosphere_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
 ! COMMENTS:
 !       Note that all the adjoint arguments have INTENTs of IN OUT. This is
-!       because they are assumed to have some value upon entry even if they 
+!       because they are assumed to have some value upon entry even if they
 !       are labeled as output arguments.
 !
 !--------------------------------------------------------------------------------
 
   SUBROUTINE Integrated_Predictors_AD( Atm,     &  ! Input
-                                       Pred,    &  ! Input                       
-                                       Pred_AD, &  ! In/Output                   
-                                       Atm_AD,  &  ! Output                      
-                                       APV      )  ! Internal variable input     
+                                       Pred,    &  ! Input
+                                       Pred_AD, &  ! In/Output
+                                       Atm_AD,  &  ! Output
+                                       iVar      )  ! Internal variable input
     ! Arguments
     TYPE(CRTM_Atmosphere_type),  INTENT(IN)     :: Atm
-    TYPE(Predictor_type),        INTENT(IN)     :: Pred
-    TYPE(Predictor_type),        INTENT(IN OUT) :: Pred_AD
+    TYPE(ODAS_Predictor_type),   INTENT(IN)     :: Pred
+    TYPE(ODAS_Predictor_type),   INTENT(IN OUT) :: Pred_AD
     TYPE(CRTM_Atmosphere_type),  INTENT(IN OUT) :: Atm_AD
-    TYPE(APVariables_type),      INTENT(IN)     :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrated_Predictors_AD'
+    TYPE(iVar_type),             INTENT(IN)     :: iVar
     ! Local variables
     INTEGER :: i, i1, j, k
     REAL(fp) :: d_A_AD
@@ -1134,20 +1639,20 @@ CONTAINS
         Multiplier   = POINT_5 * Inverse_1
         s_AD(1)    = s_AD(1) + ( Multiplier * xL_AD(1,k) )
         s_AD(2)    = s_AD(2) + ( Multiplier * xL_AD(2,k) )
-        Inverse_1_AD = POINT_5 * ( ( APV%s(1,k,j) * xL_AD(1,k) ) + &
-                                   ( APV%s(2,k,j) * xL_AD(2,k) ) )
+        Inverse_1_AD = POINT_5 * ( ( iVar%s(1,k,j) * xL_AD(1,k) ) + &
+                                   ( iVar%s(2,k,j) * xL_AD(2,k) ) )
         ! P** and T**, Predictor indices #4 and 3
         Multiplier   = POINT_5 * Inverse_2
         s_AD(3)    = s_AD(3) + ( Multiplier * xL_AD(3,k) )
         s_AD(4)    = s_AD(4) + ( Multiplier * xL_AD(4,k) )
-        Inverse_2_AD = POINT_5 * ( ( APV%s(3,k,j) * xL_AD(3,k) ) + &
-                                   ( APV%s(4,k,j) * xL_AD(4,k) ) )
+        Inverse_2_AD = POINT_5 * ( ( iVar%s(3,k,j) * xL_AD(3,k) ) + &
+                                   ( iVar%s(4,k,j) * xL_AD(4,k) ) )
         ! P*** and T***, Predictor indices #6 and 5
         Multiplier   = POINT_75 * Inverse_3
         s_AD(5)    = s_AD(5) + ( Multiplier * xL_AD(5,k) )
         s_AD(6)    = s_AD(6) + ( Multiplier * xL_AD(6,k) )
-        Inverse_3_AD = POINT_75 * ( ( APV%s(5,k,j) * xL_AD(5,k) ) + &
-                                    ( APV%s(6,k,j) * xL_AD(6,k) ) )
+        Inverse_3_AD = POINT_75 * ( ( iVar%s(5,k,j) * xL_AD(5,k) ) + &
+                                    ( iVar%s(6,k,j) * xL_AD(6,k) ) )
 
         ! Adjoint of Inverse terms. Note that the Inverse_X_AD
         ! terms are *not* zeroed out as they are re-assigned values
@@ -1159,15 +1664,15 @@ CONTAINS
         ! Pressure adjoint
         Atm_AD%Pressure(k) = Atm_AD%Pressure(k) + &
                              ( Pred%dA(k,j)      * s_AD(2) ) + &  ! P*
-                             ( APV%Factor_1(k,j) * s_AD(4) ) + &  ! P**
-                             ( APV%Factor_2(k,j) * s_AD(6) )      ! P***
+                             ( iVar%Factor_1(k,j) * s_AD(4) ) + &  ! P**
+                             ( iVar%Factor_2(k,j) * s_AD(6) )      ! P***
 
 
         ! Temperature adjoint
         Atm_AD%Temperature(k) = Atm_AD%Temperature(k) + &
                                 ( Pred%dA(k,j)      * s_AD(1) ) + &  ! T*
-                                ( APV%Factor_1(k,j) * s_AD(3) ) + &  ! T**
-                                ( APV%Factor_2(k,j) * s_AD(5) )      ! T***
+                                ( iVar%Factor_1(k,j) * s_AD(3) ) + &  ! T**
+                                ( iVar%Factor_2(k,j) * s_AD(5) )      ! T***
 
         ! Adjoint of the absorber amount
         !
@@ -1207,7 +1712,7 @@ CONTAINS
         d_A_AD = ( Atm%Temperature(k) * s_AD(1) ) + &
                  ( Atm%Pressure(k)    * s_AD(2) ) + &
                  ( ( Pred%A(k,j)  + Pred%A(k-1,j)  ) * Factor_1_AD ) + &
-                 ( ( APV%A_2(k,j) + APV%A_2(k-1,j) ) * Factor_2_AD )
+                 ( ( iVar%A_2(k,j) + iVar%A_2(k-1,j) ) * Factor_2_AD )
 
         Add_Factor = Pred%dA(k,j) * Factor_1_AD
         Pred_AD%A(k-1,j) = Pred_AD%A(k-1,j) + Add_Factor - d_A_AD
@@ -1222,531 +1727,7 @@ CONTAINS
       A_2_AD(0) = ZERO
 
     END DO Absorber_Loop
-    
+
   END SUBROUTINE Integrated_Predictors_AD
-
-
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                        ## PUBLIC MODULE ROUTINES ##                        ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors
-!
-! PURPOSE:
-!       Subroutine to calculate the gas absorption model predictors.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors ( Atmosphere,   &  ! Input
-!                                 GeometryInfo, &  ! Input
-!                                 POrder,       &  ! Input                        
-!                                 Alpha,        &  ! Input                        
-!                                 Predictor,    &  ! Output                       
-!                                 APVariables   )  ! Internal variable output     
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:     CRTM Atmosphere structure containing the atmospheric
-!                       state data.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_Atmosphere_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:   CRTM_GeometryInfo structure containing the 
-!                       view geometry information.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Max_Order:      The maximum order of the polynomial function for each absorber 
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  1D array (n_Absorbers)
-!                       ATTRIBUTES: INTENT(IN)
-!
-!       Alpha:          The alpha coefficients for absorber level calculations 
-!                       UNITS:      depends on the units of the absorber
-!                       TYPE:       INTEGER
-!                       DIMENSION:  2D array (n_Alphas x n_Absorbers)
-!                       ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!       Predictor:      Predictor structure containing the integrated absorber
-!                       and predictor profiles.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(Predictor_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(IN OUT)
-!
-!       APVariables:    Structure containing internal variables required for
-!                       subsequent tangent-linear or adjoint model calls.
-!                       The contents of this structure are NOT accessible
-!                       outside of the ODAS_Predictor module.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(APVariables_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-! COMMENTS:
-!       The predictors used in the gas absorption model are organised in
-!       the following manner:
-!
-! ------------------------------------------------------------------------------
-! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
-! ------------------------------------------------------------------------------
-!
-! \                              /\             /\             /\             /
-!  \                            /  \           /  \           /  \           /
-!   ----------------------------    -----------    -----------    -----------
-!                 |                      |              |              |
-!                 v                      v              v              v
-!
-!             Standard               Integrated     Integrated     Integrated
-!            Predictors              predictors     predictors     predictors
-!                                       for            for            for
-!                                    Absorber 1     Absorber 2     Absorber 3
-!                                   (water vapor)   (dry gases)     (ozone)
-!
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Compute_Predictors( Atmosphere,   &  ! Input
-                                 GeometryInfo, &  ! Input 
-                                 Max_Order,    &  ! Input
-                                 Alpha,        &  ! Input                       
-                                 Predictor,    &  ! Output                       
-                                 APV           )  ! Internal variable output     
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Max_Order(:)
-    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
-    TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor
-    TYPE(APVariables_type),       INTENT(OUT)    :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors'
-    INTEGER :: i,j,k,n_Layers
-    REAL(fp) :: Secant_Sensor_Zenith
-
-    ! Save the angle information
-    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
-    Predictor%Secant_Sensor_Zenith = Secant_Sensor_Zenith
-
-    ! Compute the nadir integrated absorber profiles
-    CALL Compute_IntAbsorber( Atmosphere, &  ! Input
-                              Predictor   )  ! Output
-
-    ! Compute the predictors
-    !
-    ! Standard predictors
-    CALL Standard_Predictors( Atmosphere, &
-                              Predictor   )
-    ! Integrated predictors
-    CALL Integrated_Predictors( Atmosphere, &
-                                Predictor,  &     
-                                APV         )     
-        ! ----------------------------------------------------------
-        ! Calculate absorber space level associated with the average
-        ! absorber amount
-        ! 
-        ! Absorber level, k, to amount 
-        ! 
-        !     A(k) = C1.exp(Alpha * k) + C2
-        ! 
-        ! Absorber amount to level 
-        ! 
-        !           1      A - C2
-        !     k = ----- LN ------
-        !         Alpha      C1
-        ! 
-        !     AP(k, i) = A(k)**(i), i = 1, Max_Order(j)
-        ! 
-        !   Alpha : absorber amount-level coordinate constant
-        !   C1,C2 : scaling factors for level in the range of 0 to 1
-        ! ----------------------------------------------------------
-
-    n_Layers = Atmosphere%n_Layers
-    DO j = 1, Predictor%n_Absorbers                                                    
-
-      IF( Max_Order(j) < 0 )CYCLE
-
-      DO k = 1, n_Layers                                                       
-
-        APV%A_Level(k,j) = LOG((Predictor%aveA(k,j) - Alpha(3, j)) / Alpha(2, j)) / &    
-        !                 ------------------------------------------------------------    
-                                           Alpha(1, j)                                    
-      END DO
-
-      Predictor%Ap(1:n_Layers, 1, j) = APV%A_Level(1:n_Layers,j)                                                    
-      DO i = 2, Max_Order(j)                                               
-        DO k = 1, n_Layers     
-          Predictor%Ap(k, i, j) = Predictor%Ap(k, i-1, j) * APV%A_Level(k,j)                        
-        END DO                                                                                       
-      END DO                                                                           
-    END DO                                                                             
-
-
-  END SUBROUTINE Compute_Predictors
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors_TL
-!
-! PURPOSE:
-!       Subroutine to calculate the gas absorption model tangent-linear
-!       predictors.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors_TL ( Atmosphere,    &  ! FWD Input
-!                                    Predictor,     &  ! FWD Input                   
-!                                    Atmosphere_TL, &  ! TL Input                    
-!                                    GeometryInfo,  &  ! Input                       
-!                                    POrder,        &  ! Input                        
-!                                    Alpha,         &  ! Input                        
-!                                    Predictor_TL,  &  ! TL Output                   
-!                                    APVariables    )  ! Internal variable input     
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:        CRTM Atmosphere structure containing the atmospheric
-!                          state data.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Atmosphere_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:         Predictor structure containing the integrated absorber
-!                          and predictor profiles.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(Predictor_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Atmosphere_TL:     CRTM Atmosphere structure containing the tangent-linear
-!                          atmospheric state data, i.e. the perturbations.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Atmosphere_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:      CRTM_GeometryInfo structure containing the
-!                          view geometry information.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Max_Order:         The maximum order of the polynomial function for each absorber 
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  1D array (n_Absorbers)
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Alpha:             The alpha coefficients for absorber level calculations 
-!                          UNITS:      depends on the units of the absorber
-!                          TYPE:       INTEGER
-!                          DIMENSION:  2D array (n_Alphas x n_Absorbers)
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       APVariables:       Structure containing internal variables required for
-!                          subsequent tangent-linear or adjoint model calls.
-!                          The contents of this structure are NOT accessible
-!                          outside of the ODAS_Predictor module.
-!                          UNITS:      N/A
-!                          TYPE:       APVariables_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!       Predictor_TL:      Predictor structure containing the tangent-linear
-!                          integrated absorber and predictor profiles.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(Predictor_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       The predictors used in the gas absorption model are organised in
-!       the following manner:
-!
-! ------------------------------------------------------------------------------
-! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
-! ------------------------------------------------------------------------------
-!
-! \                              /\             /\             /\             /
-!  \                            /  \           /  \           /  \           /
-!   ----------------------------    -----------    -----------    -----------
-!                 |                      |              |              |
-!                 v                      v              v              v
-!
-!             Standard               Integrated     Integrated     Integrated
-!            Predictors              predictors     predictors     predictors
-!                                       for            for            for
-!                                    Absorber 1     Absorber 2     Absorber 3
-!                                   (water vapor)   (dry gases)     (ozone)
-!
-!S-
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Compute_Predictors_TL( Atmosphere,    &  ! FWD Input
-                                    Predictor,     &  ! FWD Input                   
-                                    Atmosphere_TL, &  ! TL Input                    
-                                    GeometryInfo,  &  ! Input 
-                                    Max_Order,     &  ! Input
-                                    Alpha,         &  ! Input                       
-                                    Predictor_TL,  &  ! TL Output                   
-                                    APV            )  ! Internal variable input     
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere
-    TYPE(Predictor_type),         INTENT(IN)     :: Predictor
-    TYPE(CRTM_Atmosphere_type),   INTENT(IN)     :: Atmosphere_TL
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Max_Order(:)
-    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
-    TYPE(Predictor_type),         INTENT(IN OUT) :: Predictor_TL
-    TYPE(APVariables_type),       INTENT(IN)     :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_TL'
-    REAL(fp):: A_Level_TL(Atmosphere%n_Layers)
-    INTEGER :: i,j,k,n_Layers
-    REAL(fp) :: Secant_Sensor_Zenith
-
-    ! Save the angle information
-    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
-    Predictor_TL%Secant_Sensor_Zenith = Secant_Sensor_Zenith
-
-    ! Compute the tangent-linear nadir integrated absorber profiles
-    CALL Compute_IntAbsorber_TL( Atmosphere   , &  ! Input
-                                 Atmosphere_TL, &  ! Input     
-                                 Predictor_TL   )  ! Outpu     t
-
-    ! Compute the predictors
-    !
-    ! Standard predictors
-    CALL Standard_Predictors_TL( Atmosphere   , &  ! Input
-                                 Atmosphere_TL, &  ! Input      
-                                 Predictor_TL   )  ! Output     
-    ! Integrated predictors
-    CALL Integrated_Predictors_TL( Atmosphere   , &  ! Input
-                                   Predictor    , &  ! Input                       
-                                   Atmosphere_TL, &  ! Input                       
-                                   Predictor_TL , &  ! Output                      
-                                   APV            )  ! Internal variable input     
-
-
-    n_Layers = Atmosphere%n_Layers
-    DO j = 1, Predictor%n_Absorbers 
-
-      IF( Max_Order(j) < 0 )CYCLE
-                                                       
-      DO k = 1, n_Layers                                                       
-
-        A_Level_TL(k) =                      Predictor_TL%aveA(k,j)  /&   
-        !            ------------------------------------------------------------------    
-                       ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ) )                                   
-      END DO
-      
-      Predictor_TL%Ap(1:n_layers, 1, j) = A_Level_TL(1:n_layers)                                                    
-      DO i = 2, Max_Order(j)                                               
-        DO k = 1, n_Layers                                                       
-          Predictor_TL%Ap(k, i, j) = Predictor_TL%Ap(k, i-1, j)*APV%A_Level(k,j) &
-                                   + Predictor%Ap(k, i-1, j)*A_Level_TL(k)                     
-        END DO                                                                         
-      END DO                                                                           
-    END DO                                                                             
-
-  END SUBROUTINE Compute_Predictors_TL
-
-
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors_AD
-!
-! PURPOSE:
-!       Subroutine to calculate the adjoint gas absorption model predictors.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
-!                                    Predictor,     &  ! FWD Input                   
-!                                    Predictor_AD,  &  ! AD Input                    
-!                                    GeometryInfo,  &  ! Input                       
-!                                    POrder,        &  ! Input                        
-!                                    Alpha,         &  ! Input                        
-!                                    Atmosphere_AD, &  ! AD Output                   
-!                                    APVariables    )  ! Internal variable input     
-! INPUT ARGUMENTS:
-!       Atmosphere:        CRTM Atmosphere structure containing the atmospheric
-!                          state data.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Atmosphere_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:         Predictor structure containing the integrated absorber
-!                          and predictor profiles.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(Predictor_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Predictor_AD:      Predictor structure containing the adjoint
-!                          integrated absorber and predictor profiles.
-!                          **NOTE: This structure is zeroed upon output
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(Predictor_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-!       GeometryInfo:      CRTM_GeometryInfo structure containing the
-!                          view geometry information.
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Max_Order:         The maximum order of the polynomial function for each absorber 
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  1D array (n_Absorbers)
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       Alpha:             The alpha coefficients for absorber level calculations 
-!                          UNITS:      depends on the units of the absorber
-!                          TYPE:       INTEGER
-!                          DIMENSION:  2D array (n_Alphas x n_Absorbers)
-!                          ATTRIBUTES: INTENT(IN)
-!
-!       APVariables:       Structure containing internal variables required for
-!                          subsequent tangent-linear or adjoint model calls.
-!                          The contents of this structure are NOT accessible
-!                          outside of the ODAS_Predictor module.
-!                          UNITS:      N/A
-!                          TYPE:       APVariables_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere_AD:     CRTM Atmosphere structure containing the adjoint
-!                          atmospheric state data, i.e. the Jacobians
-!                          UNITS:      N/A
-!                          TYPE:       TYPE(CRTM_Atmosphere_type)
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       The predictors used in the gas absorption model are organised in
-!       the following manner:
-!
-! ------------------------------------------------------------------------------
-! | 1 | 2 | 3 | ... | 9 | 10 | 11 | 12 |....| 17 | 18 |....| 23 | 24 |....| 29 |
-! ------------------------------------------------------------------------------
-!
-! \                              /\             /\             /\             /
-!  \                            /  \           /  \           /  \           /
-!   ----------------------------    -----------    -----------    -----------
-!                 |                      |              |              |
-!                 v                      v              v              v
-!
-!             Standard               Integrated     Integrated     Integrated
-!            Predictors              predictors     predictors     predictors
-!                                       for            for            for
-!                                    water vapor    dry gases        ozone
-!S-
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Compute_Predictors_AD ( Atmosphere,    &  ! FWD Input
-                                     Predictor,     &  ! FWD Input                   
-                                     Predictor_AD,  &  ! AD Input                    
-                                     GeometryInfo,  &  ! Input                       
-                                     Max_Order,     &  ! Input
-                                     Alpha,         &  ! Input                       
-                                     Atmosphere_AD, &  ! AD Output                   
-                                     APV            )  ! Internal variable input     
-    ! Arguments
-    TYPE(CRTM_Atmosphere_type)  , INTENT(IN)     :: Atmosphere
-    TYPE(Predictor_type)        , INTENT(IN)     :: Predictor     
-    TYPE(Predictor_type)        , INTENT(IN OUT) :: Predictor_AD  
-    TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
-    INTEGER,                      INTENT(IN)     :: Max_Order(:)
-    REAL(fp),                     INTENT(IN)     :: Alpha(:,:)
-    TYPE(CRTM_Atmosphere_type)  , INTENT(IN OUT) :: Atmosphere_AD
-    TYPE(APVariables_type)      , INTENT(IN)     :: APV
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_Predictors_AD'
-    REAL(fp):: A_Level_AD(Atmosphere%n_Layers)
-    INTEGER :: i, j, k, n_Layers
-    REAL(fp) :: Secant_Sensor_Zenith
-
-    ! Save the angle information
-    CALL CRTM_GeometryInfo_GetValue( GeometryInfo, &
-                                     Secant_Trans_Zenith = Secant_Sensor_Zenith )
-    Predictor_AD%Secant_Sensor_Zenith = Secant_Sensor_Zenith
-
-    ! Compute aveA AD
-    A_Level_AD = ZERO
-
-    n_Layers = Atmosphere%n_Layers
-    DO j = 1, Predictor%n_Absorbers                                                    
-
-      IF( Max_Order(j) < 0 )CYCLE
-
-      DO i = Max_Order(j), 2, -1 
- 
-        DO k = n_Layers, 1, -1                                                      
-
-           Predictor_AD%Ap(k, i-1, j) = Predictor_AD%Ap(k, i-1, j) &
-                                      + Predictor_AD%Ap(k, i, j) *APV%A_Level(k,j)
-           A_LEVEL_AD(k) = A_LEVEL_AD(k) + Predictor%Ap(k, i-1, j)*Predictor_AD%Ap(k, i, j)
-           Predictor_AD%Ap(k, i, j) = ZERO
-        END DO
-        
-      END DO
-      
-      A_Level_AD(1:n_Layers) = A_Level_AD(1:n_Layers) + Predictor_AD%Ap(1:n_layers, 1, j)  
-      Predictor_AD%Ap(1:n_Layers, 1, j) = ZERO  
-
-      DO k = n_Layers, 1, -1  
-        Predictor_AD%aveA(k,j) = Predictor_AD%aveA(k,j) + &                                
-                                       A_Level_AD(k) / &                                   
-        !          --------------------------------------------------------------          
-                   ( Alpha(1, j) * (Predictor%aveA(k,j) - Alpha(3, j) ))                   
-        A_Level_AD(k) = ZERO                                                               
-
-      END DO  
-                                                                                   
-    END DO
-
-    ! Calculate the predictor adjoints
-    !
-    ! Integrated predictors
-    CALL Integrated_Predictors_AD( Atmosphere   , &  ! Input
-                                   Predictor    , &  ! Input                       
-                                   Predictor_AD , &  ! In/Output                   
-                                   Atmosphere_AD, &  ! Output                      
-                                   APV            )  ! Internal variable input     
-    ! Standard predictors
-    CALL Standard_Predictors_AD( Atmosphere   , &  ! Input
-                                 Predictor_AD , &  ! Input      
-                                 Atmosphere_AD  )  ! Output     
-
-    ! Compute the adjoint nadir integrated absorber profiles
-    CALL Compute_IntAbsorber_AD( Atmosphere   , &  ! Input
-                                 Predictor_AD , &  ! Output     
-                                 Atmosphere_AD  )  ! Input      
-
-    ! Zero the adjoint predictor structure
-    CALL Zero_Predictor( Predictor_AD )
-    
-  END SUBROUTINE Compute_Predictors_AD
 
 END MODULE ODAS_Predictor

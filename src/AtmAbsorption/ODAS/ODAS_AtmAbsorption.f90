@@ -29,8 +29,8 @@ MODULE ODAS_AtmAbsorption
   USE CRTM_Atmosphere_Define,    ONLY: CRTM_Atmosphere_type
   USE CRTM_GeometryInfo_Define,  ONLY: CRTM_GeometryInfo_type
   USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type
-  USE ODAS_Predictor,            ONLY: Predictor_type,        &
-                                       MAX_N_ABSORBERS,       &
+  USE ODAS_Predictor_Define,     ONLY: ODAS_Predictor_type
+  USE ODAS_Predictor,            ONLY: MAX_N_ABSORBERS,       &
                                        MAX_N_ORDERS,          &
                                        MAX_N_PREDICTORS_USED, &
                                        MAX_N_ORDERS
@@ -123,7 +123,7 @@ CONTAINS
 !       Predictor:       Structure containing the ODAS model integrated
 !                        absorber and predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       Predictor_type
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -160,7 +160,7 @@ CONTAINS
     ! Arguments
     TYPE(ODAS_TauCoeff_type) , INTENT(IN)     :: TC
     INTEGER                  , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor
+    TYPE(ODAS_Predictor_type), INTENT(IN)     :: Predictor
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics
     TYPE(iVar_type)          , INTENT(IN OUT) :: iVar
     ! Local variables
@@ -315,14 +315,14 @@ CONTAINS
 !       Predictor:       Structure containing the ODAS model integrated
 !                        absorber and predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       Predictor_type
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
 !       Predictor_TL:    Structure containing the ODAS model tangent-linear
 !                        integrated absorber and predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       Predictor_type
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -359,8 +359,8 @@ CONTAINS
     ! Arguments
     TYPE(ODAS_TauCoeff_type) , INTENT(IN)     :: TC
     INTEGER                  , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor
-    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor_TL
+    TYPE(ODAS_Predictor_type), INTENT(IN)     :: Predictor
+    TYPE(ODAS_Predictor_type), INTENT(IN)     :: Predictor_TL
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_TL
     TYPE(iVar_type)          , INTENT(IN)     :: iVar
     ! Local variables
@@ -519,7 +519,7 @@ CONTAINS
 !       Predictor:       Structure containing the ODAS model integrated
 !                        absorber and predictor profile data.
 !                        UNITS:      N/A
-!                        TYPE:       Predictor_type
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -541,11 +541,11 @@ CONTAINS
 !                        ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       Predictor_AD:    Structure containing the ODAS model adjoint 
+!       Predictor_AD:    Structure containing the ODAS model adjoint
 !                        integrated absorber and predictor profile data.
 !                        *** NOTE: Must contain a value upon input. ***
 !                        UNITS:      N/A
-!                        TYPE:       Predictor_type
+!                        TYPE:       ODAS_Predictor_type
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN OUT)
 !
@@ -566,9 +566,9 @@ CONTAINS
     ! Arguments
     TYPE(ODAS_TauCoeff_type) , INTENT(IN)     :: TC
     INTEGER                  , INTENT(IN)     :: ChannelIndex
-    TYPE(Predictor_type)     , INTENT(IN)     :: Predictor
+    TYPE(ODAS_Predictor_type), INTENT(IN)     :: Predictor
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
-    TYPE(Predictor_type)     , INTENT(IN OUT) :: Predictor_AD
+    TYPE(ODAS_Predictor_type), INTENT(IN OUT) :: Predictor_AD
     TYPE(iVar_type)          , INTENT(IN)     :: iVar
     ! Local variables
     INTEGER  :: l        ! Channel index
