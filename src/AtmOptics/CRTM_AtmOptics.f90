@@ -35,6 +35,7 @@ MODULE CRTM_AtmOptics
   PUBLIC :: CRTM_AOVariables_type
   ! Procedures
   PUBLIC :: CRTM_Compute_Transmittance
+  PUBLIC :: CRTM_Compute_Transmittance_TL
   PUBLIC :: CRTM_Combine_AtmOptics
   PUBLIC :: CRTM_Combine_AtmOptics_TL
   PUBLIC :: CRTM_Combine_AtmOptics_AD
@@ -53,6 +54,9 @@ MODULE CRTM_AtmOptics
   ! ------------------------------------
   TYPE :: CRTM_AOVariables_type
     PRIVATE
+    ! Used in Compute_Transmittance procedures
+    REAL(fp) :: transmittance
+    ! Used in Combine_AtmOptics procedures
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs
     REAL(fp), DIMENSION(MAX_N_LAYERS) :: w
@@ -105,6 +109,61 @@ CONTAINS
     REAL(fp)                 , INTENT(OUT) :: transmittance
     transmittance = EXP(-ONE*SUM(atmoptics%optical_depth))
   END SUBROUTINE CRTM_Compute_Transmittance
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Compute_Transmittance_TL
+!
+! PURPOSE:
+!       Subroutine to compute the tangent-linear total atmospheric transmittance.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Compute_Transmittance_TL( AtmOptics   , &
+!                                           AtmOptics_TL, &
+!                                           Transmittance_TL )
+!
+! INPUTS:
+!       AtmOptics:         The atmospheric optical properties
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_AtmOptics_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       AtmOptics_TL:      The tangent-linear atmospheric optical properties
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_AtmOptics_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Transmittance_TL:  The tangent-linear of the total atmospheric
+!                          transmittance derived from the optical depth
+!                          component of AtmOptics.
+!                          UNITS:      N/A
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Compute_Transmittance_TL( &
+    atmoptics       , &  ! Input
+    atmoptics_TL    , &  ! Input
+    transmittance_TL  )  ! Output
+    ! Arguments
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: atmoptics
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: atmoptics_TL
+    REAL(fp)                 , INTENT(OUT) :: transmittance_TL
+    ! Local variables
+    REAL(fp) :: transmittance
+    
+    transmittance    = EXP(-ONE*SUM(atmoptics%optical_depth))
+    transmittance_TL = -transmittance * SUM(atmoptics_TL%optical_depth)
+  END SUBROUTINE CRTM_Compute_Transmittance_TL
 
 
 !--------------------------------------------------------------------------------

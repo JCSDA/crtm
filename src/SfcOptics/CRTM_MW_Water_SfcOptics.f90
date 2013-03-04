@@ -434,7 +434,8 @@ CONTAINS
                iVar%FastemX_Var                            , &  ! Internal variable input
                SfcOptics_TL%Emissivity(i,:)                , &  ! TL Output
                Reflectivity_TL                             , &  ! TL Output
-               Azimuth_Angle_TL = Surface_TL%Wind_Direction  )  ! Optional TL input
+               Azimuth_Angle_TL = Surface_TL%Wind_Direction, &  ! Optional TL input
+               Transmittance_TL = SfcOptics_TL%Transmittance )  ! Optional TL input
         DO j = 1, N_STOKES
           SfcOptics_TL%Reflectivity(i,j,i,j) = Reflectivity_TL(j)
         END DO
