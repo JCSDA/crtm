@@ -1,7 +1,7 @@
 !
 ! CRTM_AtmOptics
 !
-! Module containing routines to combine separate AtmOptics objects
+! Application module for AtmOptics objects.
 !
 ! CREATION HISTORY:
 !       Written by:     Quanhua Liu,    quanhua.liu@noaa.gov
@@ -34,6 +34,7 @@ MODULE CRTM_AtmOptics
   ! Datatypes
   PUBLIC :: CRTM_AOVariables_type
   ! Procedures
+  PUBLIC :: CRTM_Compute_Transmittance
   PUBLIC :: CRTM_Combine_AtmOptics
   PUBLIC :: CRTM_Combine_AtmOptics_TL
   PUBLIC :: CRTM_Combine_AtmOptics_AD
@@ -68,6 +69,43 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Compute_Transmittance
+!
+! PURPOSE:
+!       Subroutine to compute the total atmospheric transmittance.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Compute_Transmittance( AtmOptics, Transmittance )
+!
+! INPUTS:
+!       AtmOptics:      The atmospheric optical properties
+!                       UNITS:      N/A
+!                       TYPE:       CRTM_AtmOptics_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Transmittance:  The total atmospheric transmittance derived from
+!                       the optical depth component of AtmOptics.
+!                       UNITS:      N/A
+!                       TYPE:       REAL(fp)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Compute_Transmittance( atmoptics, transmittance )
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: atmoptics
+    REAL(fp)                 , INTENT(OUT) :: transmittance
+    transmittance = EXP(-ONE*SUM(atmoptics%optical_depth))
+  END SUBROUTINE CRTM_Compute_Transmittance
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:

@@ -232,7 +232,8 @@ CONTAINS
                iVar%FastemX_Var                       , &  ! Internal variable output
                SfcOptics%Emissivity(i,:)              , &  ! Output
                Reflectivity                           , &  ! Output
-               Azimuth_Angle = SfcOptics%Azimuth_Angle  )  ! Optional input
+               Azimuth_Angle = SfcOptics%Azimuth_Angle, &  ! Optional input
+               Transmittance = SfcOptics%Transmittance  )  ! Optional input
         DO j = 1, N_STOKES
           SfcOptics%Reflectivity(i,j,i,j) = Reflectivity(j)
         END DO
