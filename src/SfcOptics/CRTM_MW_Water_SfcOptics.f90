@@ -629,14 +629,15 @@ CONTAINS
           Reflectivity_AD(j) = SfcOptics_AD%Reflectivity(i,j,i,j)
         END DO
         CALL Compute_FastemX_AD( &
-               MWwaterC                           , &  ! Input model coefficients
-               SfcOptics_AD%Emissivity(i,:)       , &  ! AD Input
-               Reflectivity_ad                    , &  ! AD Input
-               iVar%FastemX_Var                   , &  ! Internal variable input
-               Surface_AD%Water_Temperature       , &  ! AD Output
-               Surface_AD%Salinity                , &  ! AD Output
-               Surface_AD%Wind_Speed              , &  ! AD Output
-               Azimuth_Angle_AD = Azimuth_Angle_AD  )  ! Optional AD Output
+               MWwaterC                                     , &  ! Input model coefficients
+               SfcOptics_AD%Emissivity(i,:)                 , &  ! AD Input
+               Reflectivity_ad                              , &  ! AD Input
+               iVar%FastemX_Var                             , &  ! Internal variable input
+               Surface_AD%Water_Temperature                 , &  ! AD Output
+               Surface_AD%Salinity                          , &  ! AD Output
+               Surface_AD%Wind_Speed                        , &  ! AD Output
+               Azimuth_Angle_AD = Azimuth_Angle_AD          , &  ! Optional AD Output
+               Transmittance_AD = SfcOptics_AD%Transmittance  )  ! Optional AD Output
       END DO
       Surface_AD%Wind_Direction = Surface_AD%Wind_Direction + Azimuth_Angle_AD
 

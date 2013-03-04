@@ -36,6 +36,7 @@ MODULE CRTM_AtmOptics
   ! Procedures
   PUBLIC :: CRTM_Compute_Transmittance
   PUBLIC :: CRTM_Compute_Transmittance_TL
+  PUBLIC :: CRTM_Compute_Transmittance_AD
   PUBLIC :: CRTM_Combine_AtmOptics
   PUBLIC :: CRTM_Combine_AtmOptics_TL
   PUBLIC :: CRTM_Combine_AtmOptics_AD
@@ -107,7 +108,9 @@ CONTAINS
   SUBROUTINE CRTM_Compute_Transmittance( atmoptics, transmittance )
     TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: atmoptics
     REAL(fp)                 , INTENT(OUT) :: transmittance
-    transmittance = EXP(-ONE*SUM(atmoptics%optical_depth))
+    INTEGER :: k
+    k = atmoptics%n_layers
+    transmittance = EXP(-ONE*SUM(atmoptics%optical_depth(1:k)))
   END SUBROUTINE CRTM_Compute_Transmittance
 
 
@@ -159,11 +162,74 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: atmoptics_TL
     REAL(fp)                 , INTENT(OUT) :: transmittance_TL
     ! Local variables
+    INTEGER :: k
     REAL(fp) :: transmittance
-    
-    transmittance    = EXP(-ONE*SUM(atmoptics%optical_depth))
-    transmittance_TL = -transmittance * SUM(atmoptics_TL%optical_depth)
+
+    k = atmoptics%n_layers
+    transmittance    = EXP(-ONE*SUM(atmoptics%optical_depth(1:k)))
+    transmittance_TL = -transmittance * SUM(atmoptics_TL%optical_depth(1:k))
   END SUBROUTINE CRTM_Compute_Transmittance_TL
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Compute_Transmittance_AD
+!
+! PURPOSE:
+!       Subroutine to compute the adjoint of the total atmospheric transmittance.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Compute_Transmittance_AD( AtmOptics       , &
+!                                           Transmittance_AD, &
+!                                           AtmOptics_AD      )
+!
+! INPUTS:
+!       AtmOptics:         The atmospheric optical properties
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_AtmOptics_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
+!       Transmittance_AD:  The adjoint of the total atmospheric transmittance.
+!                          *** Set to ZERO upon exit ***
+!                          UNITS:      N/A
+!                          TYPE:       REAL(fp)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN OUT)
+!
+! OUTPUTS:
+!       AtmOptics_AD:      The adjoint atmospheric optical properties.
+!                          *** Must be defined upon input ***
+!                          UNITS:      N/A
+!                          TYPE:       CRTM_AtmOptics_type
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Compute_Transmittance_AD( &
+    atmoptics       , &  ! Input
+    transmittance_AD, &  ! Input
+    atmoptics_AD      )  ! Output
+    ! Arguments
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: atmoptics
+    REAL(fp)                 , INTENT(IN OUT) :: transmittance_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: atmoptics_AD
+    ! Local variables
+    INTEGER :: k
+    REAL(fp) :: transmittance, t_delstar_t
+
+    k = atmoptics%n_layers
+    transmittance = EXP(-ONE*SUM(atmoptics%optical_depth(1:k)))
+    t_delstar_t   = transmittance*transmittance_AD
+    DO k = 1, atmoptics%n_layers
+      atmoptics_AD%optical_depth(k) = atmoptics_AD%optical_depth(k) - t_delstar_t
+    END DO
+    transmittance_AD = ZERO
+  END SUBROUTINE CRTM_Compute_Transmittance_AD
 
 
 !--------------------------------------------------------------------------------
