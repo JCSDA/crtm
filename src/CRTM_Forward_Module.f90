@@ -61,7 +61,8 @@ MODULE CRTM_Forward_Module
                                         CRTM_AtmOptics_Zero
   USE CRTM_AerosolScatter,        ONLY: CRTM_Compute_AerosolScatter
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter
-  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type , &
+  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type     , &
+                                        CRTM_Compute_Transmittance, &
                                         CRTM_Combine_AtmOptics
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
                                         CRTM_SfcOptics_Associated, &
@@ -247,6 +248,7 @@ CONTAINS
     REAL(fp) :: Source_ZA
     REAL(fp) :: Wavenumber
     REAL(fp) :: Aircraft_Pressure
+    REAL(fp) :: transmittance
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default values
@@ -634,6 +636,12 @@ CONTAINS
                                            Predictor     , &  ! Input
                                            AtmOptics     , &  ! Output
                                            AAvar           )  ! Internal variable output
+          
+
+          ! Compute and save the total atmospheric transmittance
+          ! for use in surface optics reflection corrections
+          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
+          SfcOptics%Transmittance = transmittance
 
 
           ! Compute the molecular scattering properties
@@ -687,6 +695,8 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
+            ! ...Switch off any reflection correction for multi-stream RT
+            SfcOptics%Transmittance = -ONE
           END IF
 
           ! Compute the aerosol absorption/scattering properties
@@ -703,6 +713,8 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
+            ! ...Switch off any reflection correction for multi-stream RT
+            SfcOptics%Transmittance = -ONE
           END IF
 
 
