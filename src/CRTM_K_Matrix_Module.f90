@@ -68,8 +68,10 @@ MODULE CRTM_K_Matrix_Module
                                         CRTM_Compute_AerosolScatter_AD
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter   , &
                                         CRTM_Compute_CloudScatter_AD
-  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type    , &
-                                        CRTM_Combine_AtmOptics   , &
+  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type        , &
+                                        CRTM_Compute_Transmittance   , &
+                                        CRTM_Compute_Transmittance_AD, &
+                                        CRTM_Combine_AtmOptics       , &
                                         CRTM_Combine_AtmOptics_AD
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
                                         CRTM_SfcOptics_Associated, &
@@ -307,6 +309,7 @@ CONTAINS
     INTEGER :: n_Full_Streams, mth_Azi
     REAL(fp) :: Source_ZA
     REAL(fp) :: Wavenumber
+    REAL(fp) :: transmittance, transmittance_K
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default values
@@ -711,6 +714,7 @@ CONTAINS
 
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
+          transmittance_K = ZERO
 
 
           ! Copy the input K-matrix atmosphere with extra layers if necessary
@@ -740,6 +744,12 @@ CONTAINS
                                            Predictor     , &  ! Input
                                            AtmOptics     , &  ! Output
                                            AAvar           )  ! Internal variable output
+
+
+          ! Compute and save the total atmospheric transmittance
+          ! for use in surface optics reflection corrections
+          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
+          SfcOptics%Transmittance = transmittance
 
 
           ! Compute the molecular scattering properties
@@ -794,6 +804,8 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
+            ! ...Switch off any reflection correction for multi-stream RT
+            SfcOptics%Transmittance = -ONE
           END IF
 
 
@@ -811,6 +823,8 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
+            ! ...Switch off any reflection correction for multi-stream RT
+            SfcOptics%Transmittance = -ONE
           END IF
 
 
@@ -1079,6 +1093,16 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
+          END IF
+
+
+          ! Compute the adjoint of the total atmospheric transmittance
+          IF ( Atm%n_Clouds   == 0 .AND. &
+               Atm%n_Aerosols == 0 .AND. &
+               SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
+            transmittance_K = SfcOptics_K%transmittance
+            SfcOptics_K%transmittance = ZERO
+            CALL CRTM_Compute_Transmittance_AD(AtmOptics,transmittance_K,AtmOptics_K)
           END IF
 
 
