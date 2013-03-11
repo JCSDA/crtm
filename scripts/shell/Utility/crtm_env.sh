@@ -18,6 +18,7 @@ usage()
   echo "     CRTM_SCRIPTS_ROOT   : The CRTM scripts subdirectory"
   echo "     CRTM_DOC_ROOT       : The CRTM documents subdirectory"
   echo "     CRTM_VALIDATION_ROOT: The CRTM validation subdirectory"
+  echo "     CRTM_CONFIG_ROOT    : The CRTM configuration subdirectory"
   echo
   echo "   NOTE: These envars are used in various scripts and makefiles within"
   echo "         the CRTM repository heirarchy so if you are going to change"
@@ -58,7 +59,7 @@ VERSION_ID='$Id$'
 SCRIPT_NAME="`basename $0`"
 
 # No output by default
-OUTPUT=0
+OUTPUT="NO"
 OUTPUT_DEFAULT="${HOME}/.crtm_env"
 
 
@@ -76,7 +77,7 @@ while getopts :hxo: OPTVAL; do
   # Parse the valid options here
   case ${OPTVAL} in
     x)  set -x;;
-    o)  OUTPUT=1; OUTPUT_FILE=${OPTARG};;
+    o)  OUTPUT="YES"; OUTPUT_FILE=${OPTARG};;
     h)  usage "${VERSION_ID}"; exit 0;;
     :|\?) OPTVAL=${OPTARG}; break;;
   esac
@@ -98,7 +99,7 @@ case ${OPTVAL} in
   \?) :;;
 
   # Valid option, but missing argument
-  o) OUTPUT=1
+  o) OUTPUT="YES"
      OUTPUT_FILE=${OUTPUT_DEFAULT};;
                  
   # Invalid option
@@ -111,7 +112,7 @@ esac
 # ----------------------
 # Create the output file
 # ----------------------
-if [ ${OUTPUT} -eq 1 ]; then
+if [ "${OUTPUT}" = "YES" ]; then
   echo "Creating output file ${OUTPUT_FILE}..."; echo
   echo "#" > ${OUTPUT_FILE}
   echo "# ${VERSION_ID}" >> ${OUTPUT_FILE}
@@ -123,12 +124,20 @@ fi
 # ------------------
 # Display the envars
 # ------------------
-ENVAR_LIST="CRTM_ROOT CRTM_SOURCE_ROOT CRTM_FIXFILE_ROOT CRTM_TEST_ROOT CRTM_EXTERNALS_ROOT CRTM_SCRIPTS_ROOT CRTM_DOC_ROOT CRTM_VALIDATION_ROOT"
+ENVAR_LIST="CRTM_ROOT \
+            CRTM_SOURCE_ROOT \
+            CRTM_FIXFILE_ROOT \
+            CRTM_TEST_ROOT \
+            CRTM_EXTERNALS_ROOT \
+            CRTM_SCRIPTS_ROOT \
+            CRTM_DOC_ROOT \
+            CRTM_VALIDATION_ROOT \
+            CRTM_CONFIG_ROOT"
 for ENVAR in ${ENVAR_LIST}; do
   SETTING=`env | grep $ENVAR=`
   if [ -n "${SETTING}" ]; then
     echo ${SETTING}
-    if [ ${OUTPUT} -eq 1 ]; then
+    if [ "${OUTPUT}" = "YES" ]; then
       echo "export ${SETTING}" >> ${OUTPUT_FILE}
     fi
   fi
