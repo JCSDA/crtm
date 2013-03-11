@@ -8,14 +8,16 @@ usage()
   echo
   echo $1
   echo
-  echo "   Shell script to display the values of the CRTM environment variables:"
-  echo "     CRTM_SOURCE_ROOT    : The CRTM source code root directory"
-  echo "     CRTM_FIXFILE_ROOT   : The CRTM fixed file root directory"
-  echo "     CRTM_TEST_ROOT      : The CRTM test code root directory"
-  echo "     CRTM_EXTERNALS_ROOT : The CRTM externals root directory"
-  echo "     CRTM_SCRIPTS_ROOT   : The CRTM scripts root directory"
-  echo "     CRTM_DOC_ROOT       : The CRTM documents root directory"
-  echo "     CRTM_VALIDATION_ROOT: The CRTM validation root directory"
+  echo "   Shell script to display the values of the CRTM environment variables"
+  echo "   as they relate to a particular working copy:"
+  echo "     CRTM_ROOT           : The CRTM working copy root directory"
+  echo "     CRTM_SOURCE_ROOT    : The CRTM source code subdirectory"
+  echo "     CRTM_FIXFILE_ROOT   : The CRTM fixed file subdirectory"
+  echo "     CRTM_TEST_ROOT      : The CRTM test code subdirectory"
+  echo "     CRTM_EXTERNALS_ROOT : The CRTM externals subdirectory"
+  echo "     CRTM_SCRIPTS_ROOT   : The CRTM scripts subdirectory"
+  echo "     CRTM_DOC_ROOT       : The CRTM documents subdirectory"
+  echo "     CRTM_VALIDATION_ROOT: The CRTM validation subdirectory"
   echo
   echo "   NOTE: These envars are used in various scripts and makefiles within"
   echo "         the CRTM repository heirarchy so if you are going to change"
@@ -50,7 +52,7 @@ error_message()
 # Setup and definitions
 # ---------------------
 # Version control info
-RCSID='$Id$'
+VERSION_ID='$Id$'
 
 # The name of the script for message output
 SCRIPT_NAME="`basename $0`"
@@ -75,7 +77,7 @@ while getopts :hxo: OPTVAL; do
   case ${OPTVAL} in
     x)  set -x;;
     o)  OUTPUT=1; OUTPUT_FILE=${OPTARG};;
-    h)  usage "${RCSID}"; exit 0;;
+    h)  usage "${VERSION_ID}"; exit 0;;
     :|\?) OPTVAL=${OPTARG}; break;;
   esac
 done
@@ -100,7 +102,7 @@ case ${OPTVAL} in
      OUTPUT_FILE=${OUTPUT_DEFAULT};;
                  
   # Invalid option
-  ?) usage "${RCSID}"
+  ?) usage "${VERSION_ID}"
      error_message "Invalid option '-${OPTARG}'"
      exit 1;;
 esac
@@ -112,7 +114,7 @@ esac
 if [ ${OUTPUT} -eq 1 ]; then
   echo "Creating output file ${OUTPUT_FILE}..."; echo
   echo "#" > ${OUTPUT_FILE}
-  echo "# ${RCSID}" >> ${OUTPUT_FILE}
+  echo "# ${VERSION_ID}" >> ${OUTPUT_FILE}
   echo "# CRTM environment variables. This file created by ${SCRIPT_NAME}" >> ${OUTPUT_FILE}
   echo "#" >> ${OUTPUT_FILE}
 fi
@@ -121,7 +123,7 @@ fi
 # ------------------
 # Display the envars
 # ------------------
-ENVAR_LIST="CRTM_SOURCE_ROOT CRTM_FIXFILE_ROOT CRTM_TEST_ROOT CRTM_EXTERNALS_ROOT CRTM_SCRIPTS_ROOT CRTM_DOC_ROOT CRTM_VALIDATION_ROOT"
+ENVAR_LIST="CRTM_ROOT CRTM_SOURCE_ROOT CRTM_FIXFILE_ROOT CRTM_TEST_ROOT CRTM_EXTERNALS_ROOT CRTM_SCRIPTS_ROOT CRTM_DOC_ROOT CRTM_VALIDATION_ROOT"
 for ENVAR in ${ENVAR_LIST}; do
   SETTING=`env | grep $ENVAR=`
   if [ -n "${SETTING}" ]; then
