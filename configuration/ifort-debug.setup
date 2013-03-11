@@ -1,0 +1,30 @@
+#-------------------------------------------------------------------------------#
+# DEBUG build settings for Linux ifort compiler
+#-------------------------------------------------------------------------------#
+
+export FC="ifort"
+
+export FCFLAGS="\
+-g \
+-check bounds \
+-convert big_endian \
+-e03 \
+-traceback \
+-free \
+-assume byterecl \
+-fp-stack-check \
+-mieee-fp"
+
+export LDFLAGS=""
+
+export LIBS=""
+
+
+echo "========================================="
+echo " CRTM compilation environment variables:"
+echo "   FC:      ${FC}"
+echo "   FCFLAGS: ${FCFLAGS}"
+echo "   LDFLAGS: ${LDFLAGS}"
+echo "   LIBS:    ${LIBS}"
+echo "========================================="
+echo

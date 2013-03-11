@@ -1,0 +1,25 @@
+#-------------------------------------------------------------------------------#
+# PRODUCTION build settings for Linux ifort compiler
+#-------------------------------------------------------------------------------#
+
+export FC="ifort"
+
+export FCFLAGS="\
+-O2 \
+-convert big_endian \
+-free \
+-assume byterecl"
+
+export LDFLAGS=""
+
+export LIBS=""
+
+
+echo "========================================="
+echo " CRTM compilation environment variables:"
+echo "   FC:      ${FC}"
+echo "   FCFLAGS: ${FCFLAGS}"
+echo "   LDFLAGS: ${LDFLAGS}"
+echo "   LIBS:    ${LIBS}"
+echo "========================================="
+echo

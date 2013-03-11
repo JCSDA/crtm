@@ -1,0 +1,31 @@
+#-------------------------------------------------------------------------------#
+# PRODUCTION build settings for Linux gfortran compiler
+#-------------------------------------------------------------------------------#
+
+export FC="gfortran"
+
+export FCFLAGS="\
+-O3 \
+-fimplicit-none \
+-fconvert=big-endian \
+-ffree-form \
+-fno-second-underscore \
+-frecord-marker=4 \
+-funroll-loops \
+-ggdb \
+-Wall \
+-std=f2003"
+
+export LDFLAGS=""
+
+export LIBS=""
+
+
+echo "========================================="
+echo " CRTM compilation environment variables:"
+echo "   FC:      ${FC}"
+echo "   FCFLAGS: ${FCFLAGS}"
+echo "   LDFLAGS: ${LDFLAGS}"
+echo "   LIBS:    ${LIBS}"
+echo "========================================="
+echo

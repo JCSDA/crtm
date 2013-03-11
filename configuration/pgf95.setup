@@ -1,0 +1,24 @@
+#-------------------------------------------------------------------------------#
+# PRODUCTION build settings for Linux pgf95 compiler
+#-------------------------------------------------------------------------------#
+
+export FC="pgf95"
+
+export FCFLAGS="\
+-g \
+-fast \
+-byteswapio"
+
+export LDFLAGS=""
+
+export LIBS=""
+
+
+echo "========================================="
+echo " CRTM compilation environment variables:"
+echo "   FC:      ${FC}"
+echo "   FCFLAGS: ${FCFLAGS}"
+echo "   LDFLAGS: ${LDFLAGS}"
+echo "   LIBS:    ${LIBS}"
+echo "========================================="
+echo
