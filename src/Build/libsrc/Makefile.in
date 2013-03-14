@@ -1,0 +1,69 @@
+# @configure_input@
+
+# libsrc/ level makefile template
+
+# Package-specific substitution variables
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+tarname = @PACKAGE_TARNAME@
+distdir = $(tarname)-$(version)
+
+# Prefix-specific substitution variables
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = @bindir@
+
+# Mixed package and prefix substitution variables
+installdir  = $(prefix)/$(distdir)
+
+# Tool-specific substitution variables
+FC      = @FC@
+FCFLAGS = @FCFLAGS@ -c
+INSTALL         = @INSTALL@
+INSTALL_DATA    = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT  = @INSTALL_SCRIPT@
+
+# The file definitions. This include must occur before targets.
+include make.filelist
+
+# The targets
+all: crtm
+
+crtm: $(OBJ_FILES)
+	ar -crvs lib$(package).a $(OBJ_FILES)
+
+clean:
+	-rm *.o *.mod *.a
+
+realclean: clean
+	-rm Makefile
+
+check: all
+	@echo "***THIS IS WHERE THE UNIT TEST INVOCATION GOES***"
+
+install_include:
+	$(INSTALL) -d $(DESTDIR)$(installdir)/include
+	$(INSTALL_DATA) *.mod $(DESTDIR)$(installdir)/include
+
+install_lib:
+	$(INSTALL) -d $(DESTDIR)$(installdir)/lib
+	$(INSTALL_DATA) lib$(package).a $(DESTDIR)$(installdir)/lib
+
+install: install_include install_lib
+
+uninstall:
+	-rm -fr $(DESTDIR)$(installdir)
+
+Makefile: Makefile.in ../config.status
+	cd .. && ./config.status libsrc/$@
+
+../config.status: ../configure
+	cd .. && ./config.status --recheck
+
+# Specify targets that do not generate filesystem objects
+.PHONY: all clean check install uninstall
+
+# File dependency and compilation rule include files
+include make.dependencies
+include make.rules

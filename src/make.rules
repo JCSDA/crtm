@@ -4,7 +4,7 @@
 #       make.rules
 #
 # PURPOSE:
-#       Unix make utility include file for definition of suffix and
+#       Unix make utility include file for definition of CRTM suffix and
 #       compilation rules
 #
 # LANGUAGE:
@@ -22,25 +22,20 @@
 #
 #------------------------------------------------------------------------------
 
-# Fortran 90 suffix rules
-# -----------------------
 .SUFFIXES:
-.SUFFIXES: .fpp .F95 .f95 .F90 .f90 .f .o
+.SUFFIXES: .fpp .F95 .f95 .F90 .f90 .o
 .fpp.o:
-	$(FC) $(EXTRA_FC_FLAGS) $(FC_FLAGS) $(FPP_FLAGS) $<
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $(FPPFLAGS) $<
 
 .F95.o:
-	$(FC) $(EXTRA_FC_FLAGS) $(FC_FLAGS) $(FPP_FLAGS) $<
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $(FPPFLAGS) $<
 
 .f95.o:
-	$(FC) $(EXTRA_FC_FLAGS) $(FC_FLAGS) $<
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $<
 
 .F90.o:
-	$(FC) $(EXTRA_FC_FLAGS) $(FC_FLAGS) $(FPP_FLAGS) $<
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $(FPPFLAGS) $<
 
 .f90.o:
-	$(FC) $(EXTRA_FC_FLAGS) $(FC_FLAGS) $<
-
-.f.o:
-	$(FC) $(EXTRA_FC_FLAGS) -c $<
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $<
 

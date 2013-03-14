@@ -1,10 +1,16 @@
+#
+# The make include file of the source files to be used in the CRTM library build.
+#
+# $Id$
+#
+
 # The list of files that need preprocessing
-#CPP_FILES = \
+#FPP_FILES = \
 #  Type_Kinds.fpp
-CPP_FILES =
+FPP_FILES =
 
 # The list of regular source files
-NOCPP_FILES = \
+FSRC_FILES = \
   Type_Kinds.f90 \
   File_Utility.f90 \
   Message_Handler.f90 \
@@ -135,12 +141,12 @@ NOCPP_FILES = \
   CRTM_NLTECorrection.f90 NLTE_Parameters.f90 NLTE_Predictor_Define.f90 NLTE_Predictor_IO.f90
 
 # The complete list of source files
-SRC_FILES = $(CPP_FILES) \
-            $(NOCPP_FILES)
+SRC_FILES = $(FSRC_FILES) \
+            $(FPP_FILES)
 
 # The list of object files
-OBJ_FILES = ${CPP_FILES:.F90=.o} \
-            ${NOCPP_FILES:.f90=.o}
+OBJ_FILES = ${FSRC_FILES:.f90=.o} \
+            ${FPP_FILES:.fpp=.o}
 
 # The list of include files
 INC_FILES = FitCoeff_Destroy.inc \
