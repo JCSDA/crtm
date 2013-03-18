@@ -15,15 +15,20 @@ bindir      = @bindir@
 installdir  = $(prefix)/$(distdir)
 
 # Target specification
-all clean install uninstall crtm:
+all clean crtm:
+	cd libsrc && $(MAKE) $@
+	cd test && $(MAKE) $@
+
+install uninstall:
 	cd libsrc && $(MAKE) $@
 
 realclean:
 	cd libsrc && $(MAKE) $@
+	cd test && $(MAKE) $@
 	-rm Makefile config.log* config.status
 
-check: all
-	cd test && $(MAKE) all
+check:
+	cd test && $(MAKE) $@
 
 dist: $(distdir).tar.gz
 
@@ -36,10 +41,12 @@ distcheck:  $(distdir).tar.gz
 	cd $(distdir) && $(MAKE) DESTDIR=$${PWD}/_inst uninstall
 	cd $(distdir) && $(MAKE) clean
 	rm -fr $(distdir)
-	@echo "*** Package $(distdir).tar.gz is ready for distribution ***"
+	@echo; \
+	echo "*** Package $(distdir).tar.gz is ready for distribution ***"; \
+	echo
 
 $(distdir).tar.gz: $(distdir)
-	tar chof - $(distdir) | gzip -9 -c > $@
+	tar chof - $(distdir) --exclude .svn | gzip -9 -c > $@
 	rm -rf $(distdir)
 
 $(distdir): FORCE
@@ -47,7 +54,8 @@ $(distdir): FORCE
 	cp configure.ac $(distdir)
 	cp configure $(distdir)
 	cp Makefile.in $(distdir)
-	cp -r libsrc $(distdir)/libsrc
+	cp -rL libsrc $(distdir)/libsrc
+	cp -rL test $(distdir)/test
 
 Makefile: Makefile.in config.status
 	./config.status $@

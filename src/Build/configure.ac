@@ -2,10 +2,10 @@
 AC_REVISION($Id: $)
 
 ## Initialise autoconf
-AC_INIT([CRTM], [2.1.2], [ncep.list.emc.jcsda_crtm.support@noaa.gov])
+AC_INIT([crtm], [2.1.2], [ncep.list.emc.jcsda_crtm.support@noaa.gov])
 
 # Output info for user
-AC_MSG_NOTICE([CRTM AC_PACKAGE_VERSION])
+AC_MSG_NOTICE([crtm AC_PACKAGE_VERSION])
 
 # Check for existence of unique file before proceeding
 AC_CONFIG_SRCDIR([libsrc/CRTM_Module.f90])
