@@ -6,7 +6,6 @@ export FC="pgf95"
 
 export FCFLAGS="\
 -g \
--byteswapio \
 -Ktrap=ovf,divz -Mdaz \
 -Mbounds \
 -Mchkstk \
@@ -19,13 +18,3 @@ export FCFLAGS="\
 export LDFLAGS="-Kieee"
 
 export LIBS=""
-
-
-echo "========================================="
-echo " CRTM compilation environment variables:"
-echo "   FC:      ${FC}"
-echo "   FCFLAGS: ${FCFLAGS}"
-echo "   LDFLAGS: ${LDFLAGS}"
-echo "   LIBS:    ${LIBS}"
-echo "========================================="
-echo

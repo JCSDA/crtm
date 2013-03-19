@@ -7,7 +7,6 @@ export FC="gfortran"
 export FCFLAGS="\
 -fbounds-check \
 -fimplicit-none \
--fconvert=big-endian \
 -ffpe-trap=overflow,zero,invalid \
 -ffree-form \
 -fno-second-underscore \
@@ -19,13 +18,3 @@ export FCFLAGS="\
 export LDFLAGS=""
 
 export LIBS=""
-
-
-echo "========================================="
-echo " CRTM compilation environment variables:"
-echo "   FC:      ${FC}"
-echo "   FCFLAGS: ${FCFLAGS}"
-echo "   LDFLAGS: ${LDFLAGS}"
-echo "   LIBS:    ${LIBS}"
-echo "========================================="
-echo

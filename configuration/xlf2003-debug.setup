@@ -19,13 +19,3 @@ export FCFLAGS="\
 export LDFLAGS=""
 
 export LIBS=""
-
-
-echo "========================================="
-echo " CRTM compilation environment variables:"
-echo "   FC:      ${FC}"
-echo "   FCFLAGS: ${FCFLAGS}"
-echo "   LDFLAGS: ${LDFLAGS}"
-echo "   LIBS:    ${LIBS}"
-echo "========================================="
-echo
