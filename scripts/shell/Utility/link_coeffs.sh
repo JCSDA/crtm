@@ -17,25 +17,25 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: link_coeffs.sh [-xhla] source-dir dest-dir"
+  echo " Usage: link_coeffs.sh [-ahlx] source-dir dest-dir [sensor_id1 sensor id2 ... sensor_idN]"
   echo
   echo "   Link in CRTM release fixfiles into a single directory."
   echo
   echo " Options:"
-  echo "   -l"
-  echo "         Link in little-endian files. BIG-ENDIAN is the default."
-  echo
   echo "   -a"
   echo "         Link in ODAS TauCoeff files. ODPS is the default."
   echo
   echo "         Note: Currently there are no ODPS TauCoeff files"
   echo "               for visible sensors (we're working on it)."
   echo
-  echo "   -x"
-  echo "         Turn on execution tracing"
-  echo
   echo "   -h"
   echo "         Print this message"
+  echo
+  echo "   -l"
+  echo "         Link in little-endian files. BIG-ENDIAN is the default."
+  echo
+  echo "   -x"
+  echo "         Turn on execution tracing"
   echo
   echo " Arguments:"
   echo "   source-dir"
@@ -45,6 +45,12 @@ usage()
   echo "   dest-dir"
   echo "         The directory into which the coefficients will be linked."
   echo "         If this directory does not exist, it is created."
+  echo
+  echo " Optional arguments:"
+  echo "   sensor_id1 sensor id2 ... sensor_idN"
+  echo "         A list of sensor ids identifying the particular sensors for which"
+  echo "         the SpcCoeff and TauCoeff files are required. If not specified, all"
+  echo "         available sensor files are linked."
   echo
 }
 
@@ -74,6 +80,7 @@ FAILURE=1
 # ..Define defaults
 ENDIAN_TYPE="Big_Endian"
 TAUCOEFF_TYPE="ODPS"
+ALL_SENSORS="yes"
 
 # ...Define helper script, and make sure it can be found
 LINK_SCRIPT="linkfiles.sh"
@@ -113,11 +120,11 @@ while getopts :xhla OPTVAL; do
 
   # Parse the valid options here
   case ${OPTVAL} in
-    l)  ENDIAN_TYPE="Little_Endian";;
-    a)  TAUCOEFF_TYPE="ODAS";;
-    x)  set -x;;
-    h)  usage; exit ${SUCCESS};;
-    \?) OPTVAL=${OPTARG}; break;;
+    l)  ENDIAN_TYPE="Little_Endian" ;;
+    a)  TAUCOEFF_TYPE="ODAS" ;;
+    x)  set -x ;;
+    h)  usage | more; exit ${SUCCESS} ;;
+    \?) OPTVAL=${OPTARG}; break ;;
   esac
 done
 
@@ -144,10 +151,17 @@ esac
 
 
 
-# Transfer the arguments
+# Transfer, and remove, the arguments
 SOURCE_DIR=$1
 DEST_DIR=$2
+shift 2
 
+
+# Check if sensor ids have been specified
+if [ $# -ne 0 ]; then
+  SENSOR_ID_LIST="$*"
+  ALL_SENSORS="no"
+fi
 
 
 # Check the directory arguments
@@ -181,26 +195,42 @@ echo "  ${SOURCE_DIR}"
 echo "to destination directory,"
 echo "  ${DEST_DIR}"
 
-# ...Go to destination
+# Go to destination
 cd ${DEST_DIR}
 if [ $? -ne ${SUCCESS} ]; then
   error_message "Error cd'ing to destination directory '${DEST_DIR}'. Exiting."
   exit ${FAILURE}
 fi
 
-# ...Link common files
+
+# Link common files
 echo; echo "...linking sensor-independent coefficient files..."
 ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${COMMON_COEFF_FILES}
 
-# ...Link the SpcCoeff files
+
+# Link the SpcCoeff files
 echo; echo "...linking SpcCoeff coefficient files..."
-SPCCOEFF_FILES=`ls ${SOURCE_DIR}/SpcCoeff/${ENDIAN_TYPE}`
+if [ "${ALL_SENSORS}" = "yes" ]; then
+  SPCCOEFF_FILES=`ls ${SOURCE_DIR}/SpcCoeff/${ENDIAN_TYPE}`
+else
+  for SENSOR_ID in ${SENSOR_ID_LIST}; do
+    SPCCOEFF_FILES="${SPCCOEFF_FILES} ${SENSOR_ID}.SpcCoeff.bin"
+  done
+fi
 ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
 
-# ...Link the TauCoeff files
+
+# Link the TauCoeff files
 echo; echo "...linking TauCoeff coefficient files..."
-TAUCOEFF_FILES=`ls ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE}/${ENDIAN_TYPE}`
+if [ "${ALL_SENSORS}" = "yes" ]; then
+  TAUCOEFF_FILES=`ls ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE}/${ENDIAN_TYPE}`
+else
+  for SENSOR_ID in ${SENSOR_ID_LIST}; do
+    TAUCOEFF_FILES="${TAUCOEFF_FILES} ${SENSOR_ID}.TauCoeff.bin"
+  done
+fi
 ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
 
-# ...Return to original directory
+
+# Return to original directory
 cd ${CURRENT_DIR}
