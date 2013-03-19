@@ -74,7 +74,7 @@ UNLINK_SCRIPT = unlinkfiles.sh
 
 # CRTM library build definitions
 # ...Library name
-PACKAGE = CRTM
+PACKAGE = crtm
 LIBRARY = lib$(PACKAGE).a
 # ...Module file extension
 EXT_MOD = mod
@@ -83,7 +83,7 @@ BUILD_DIR = Build
 LIBSRC_DIR = libsrc
 LIB_DIR = lib
 INC_DIR = include
-TEST_DIR = test
+CHECK_DIR = test
 COEFF_DIR = coefficients
 
 

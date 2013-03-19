@@ -1,6 +1,9 @@
 #==============================================================================
 #
-# Makefile for *local, working copy* JCSDA CRTM library build
+# Makefile for setup of library build in local working copy.
+#
+# All this makefile does is link in source and coefficient files in the
+# required places. Maybe change it to a script?
 #
 #==============================================================================
 
@@ -11,40 +14,15 @@ include make.macros
 # Source files to link
 include $(BUILD_DIR)/$(LIBSRC_DIR)/make.filelist
 
+# Sensor ids to link for build check target
+CHECK_SENSOR_ID_LIST = cris399_npp atms_npp
+
 
 # Main target
-all: create_links Build/all
+all: create_links
 
-install: Build/install
-
-clean: Build/clean
-
-distclean: remove_links Build/distclean
-
-# ...Alternative names for distclean
-realclean real_clean: distclean
-
-
-# Subtargets. Format: <subdirectory>/<target>
-Build/all       \
-Build/install   \
-Build/clean     \
-Build/distclean \
-:
-	@subdir=`echo $@ | sed 's,/.*,,'`; \
-	target=`echo $@ | sed 's,.*/,,'`; \
-	$(MAKE) -s SUBDIR=$$subdir TARGET=$$target subdir_target
-
-
-subdir_target:
-	@echo ""
-	@cd $(SUBDIR) && \
-	  echo "Making \`$(TARGET)' in directory `pwd`" && \
-	  echo "" && \
-	  $(MAKE) -s $(TARGET) || exit 1
-	@echo ""
-	@echo "Returning to directory `pwd`"
-	@echo ""
+clean: remove_links
+realclean real_clean: clean
 
 
 # File link creation and removal
@@ -68,40 +46,20 @@ remove_links: remove_coeff_links
 	@echo "Returning to directory `pwd`"
 	@echo
 
-create_coeff_links remove_coeff_links:
+create_coeff_links:
 	@echo
-	@cd $(BUILD_DIR)/$(TEST_DIR) && \
-	CATEGORY_DIR=`ls -d */` && \
-	for CATEGORY in $$CATEGORY_DIR; do \
-	  cd $$CATEGORY && \
-	  EXAMPLE_DIR=`ls -d Example*_*` && \
-	  for EXAMPLE in $$EXAMPLE_DIR; do \
-	    cd $$EXAMPLE/coefficients && \
-	    $(MAKE) -s -f make.link_data $@ && \
-	    cd ../..; \
-	  done; \
-          cd ..; \
-	done || exit 1
+	@cd $(BUILD_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
+	  link_coeffs.sh $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
+	  link_coeffs.sh -l $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
 
-
-# --------------------------------------------------
-# Create tarball for distribution
-# Invoke make like so:
-#
-#   make tar BUILD=My.Different.BuildName.JCSDA_CRTM
-#
-# to create a tarball with different
-# name from the default (JCSDA_CRTM)
-# --------------------------------------------------
-
-BUILD = JCSDA_CRTM
-TAR_DIR = $(BUILD)
-TAR_FILE = $(TAR_DIR).tar
-tar: create_links
-	@$(LINK) $(BUILD_DIR) $(TAR_DIR)
-	$(TARBALL_CREATE) $(TAR_FILE) --exclude-from make.tarball_exclude $(TAR_DIR)
-	@$(REMOVE) $(TAR_DIR)
-	compress $(TAR_FILE)
+remove_coeff_links:
+	@echo
+	@cd $(BUILD_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
+	  $(REMOVE) big_endian/*.bin && \
+	  $(REMOVE) little_endian/*.bin || exit 1
+	@echo
+	@echo "Returning to directory `pwd`"
+	@echo
