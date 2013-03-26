@@ -17,6 +17,7 @@ SRC_FILES = crtm_env.sh \
             linkfiles.sh \
             unlinkfiles.sh \
             link_coeffs.sh \
+            test_all_builds.sh \
             Link_SensorInfo \
             Link_Solar \
             Link_SRF \
