@@ -46,6 +46,10 @@ else
 fi
 AC_MSG_NOTICE([Building ${endian_type}-endian version])
 
+# Special case the ifort compiler to force byte-unit record lengths
+if test "${FC}" = ifort; then
+  FCFLAGS="-assume byterecl $FCFLAGS"
+fi
 
 # Create the configure script
 AC_OUTPUT
