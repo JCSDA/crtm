@@ -40,9 +40,11 @@ if test "${endian_type}" = big; then
     xlf2003)  ;;
     *)        AC_MSG_WARN([Endian swap flags for $FC unknown and not set]);;
   esac
-  AC_SUBST(FPPFLAGS,[])
 else
-  AC_SUBST(FPPFLAGS,[-DLITTLE_ENDIAN])
+  case ${FC} in
+    xlf2003) FPPFLAGS="-WF,-DLITTLE_ENDIAN $FPPFLAGS" ;;
+    *)       FPPFLAGS="-DLITTLE_ENDIAN $FPPFLAGS" ;;
+  esac
 fi
 AC_MSG_NOTICE([Building ${endian_type}-endian version])
 
@@ -50,6 +52,14 @@ AC_MSG_NOTICE([Building ${endian_type}-endian version])
 if test "${FC}" = ifort; then
   FCFLAGS="-assume byterecl $FCFLAGS"
 fi
+
+# Special case the xlf2003 compiler to recognise the .fpp (Fortran PreProcessor) suffix
+if test "${FC}" = xlf2003; then
+  FPPFLAGS="-qsuffix=cpp=fpp $FPPFLAGS"
+fi
+
+# Generate the variable substitution
+AC_SUBST(FPPFLAGS)
 
 # Create the configure script
 AC_OUTPUT
