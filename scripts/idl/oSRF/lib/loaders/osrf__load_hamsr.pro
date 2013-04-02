@@ -1,61 +1,3 @@
-; ################################################################################
-;
-; This file is a template for reading raw SRF data from file
-; and loading it into an oSRF object.
-;
-; There are two procedures in this template to be modified as required:
-;
-; =========================
-; PRO Read_<sensor>_Raw_SRF, $
-;   Filename , $  ; Input
-;   n_points , $  ; Output ARRAY, No. of elements: N_BANDS
-;   frequency, $  ; Output LIST , No. of elements: N_BANDS
-;   response      ; Output LIST , No. of elements: N_BANDS
-;
-; This (private) helper procedure simply reads individual channel data
-; files and loads the SRF data into arrays and lists.
-;
-; NOTE: This procedure should work for single band datafiles (e.g. IR), as
-;       well as multi-band ones (e.g. microwave multiple passband channels)
-;       hence the use of lists to return the data.
-;
-;
-; =========================
-; PRO oSRF::Load_<sensor>, $
-;   Sensor_Id        , $ ; Input
-;   Channel          , $ ; Input
-;   Path    = Path   , $ ; Input keyword.
-;   Debug   = Debug  , $ ; Input keyword.
-;   History = HISTORY    ; Output keyword.
-;
-; This is the main oSRF object loader that is called by the main driver procedure.
-;
-;
-; =============
-; INSTRUCTIONS:
-;
-; 1) First "svn copy" this file from its generic name to a sensor specific name.
-;    For example, for the VIIRS sensor:
-;      $ svn copy osrf__load_SENSOR.pro osrf__load_viirs.pro
-;
-; 2) Set the svn:keywords property in the copied file. For example, for the 
-;    VIIRS sensor:
-;      $ svn propset svn:keywords "Id Revision" osrf__load_viirs.pro
-;
-; 3) Do a global replace of the string "<sensor>" with the sensor name for which
-;    the SRF loaqder is required. (Double-check the result)
-;
-; 4) Modify the procedures as needed to read and load the data.
-;
-; 5) UPDATE THE HEADER DOCUMENTATION FOR THE CONTAINED PROCEDURES AS NECESSARY!!
-;
-; 6) Delete this template information section (between the "####"'s)
-;
-; 7) Commit the file to the repository.
-;
-; ################################################################################
-
-
 ;
 ; NAME:
 ;       Read_hamsr_Raw_SRF
@@ -67,6 +9,8 @@
 ; CALLING SEQUENCE:
 ;       Read_hamsr_Raw_SRF, $
 ;         Filename     , $  ; Input
+;         Channel      , $  ; Input
+;         n_bands      , $  ; Input
 ;         n_points     , $  ; Output
 ;         frequency    , $  ; Output
 ;         response     , $  ; Output
@@ -76,6 +20,18 @@
 ;       Filename:    The filename conmtaining the SRF data to be read.
 ;                    UNITS:      N/A
 ;                    TYPE:       CHARACTER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;      
+;       Channel:     The channel number being processed
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+;       n_bands:     The channel number being processed
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
 ;                    
@@ -120,6 +76,7 @@
 PRO Read_hamsr_Raw_SRF, $
   Filename     , $  ; Input
   Channel      , $  ; Input
+  n_bands      , $  ; Input
   n_points     , $  ; Output
   frequency    , $  ; Output
   response     , $  ; Output
@@ -131,30 +88,52 @@ PRO Read_hamsr_Raw_SRF, $
   @osrf_pro_err_handler
   ; ...Lists for the SRF data
   frequency = LIST()
-  response  = LIST() 
+  response  = LIST()
   
-   
-
-
-  ; 1) Add code to read the data.
-  ;
-  ; 2) Don't forget to check for uniqueness of the frequency grid
-  ;    for each band, i.e.
-  ;      ; Only keep the unique values for each band
-  ;      idx = UNIQ(f, SORT(f))
-  ;      f = f[idx]
-  ;      r = r[idx]
-  ;
-  ; 3) Add the individual bands to the return argument lists, e.g.
-  ;        frequency.Add, f
-  ;        response.Add , r
-  ;
-  ; 4) Don;t forget to assign the n_points return argument
-
+  ; spectral and response indices
+  IDX_SPECTRAL = 0 ; Index of wavenumber
+  IDX_RESPONSE = 1 ; Index of response
   
+  ; Read the data
+  n_lines = FILE_LINES(Filename)
+  data    = STRARR(n_lines)
+  n       = INDGEN(n_lines)
+  
+  OPENR, fid, Filename, /GET_LUN
+  READF, fid, data
+  FREE_LUN, fid
+  
+  n_band_boundaries = n_bands*2L
+  
+  bound_indices = INTARR(n_band_boundaries)
+  bound_indices = WHERE((data[n] - data[n-1] EQ data[n]) OR &
+                        (data[n] - data[n+1] EQ data[n]))
+
+  ; Extract the data from the string array
+  f = DBLARR(n_bands, n_lines)
+  r = DBLARR(n_bands, n_lines)
+  FOR i = 0L, n_lines-1L DO BEGIN
+    elements = STRSPLIT(data[i], /EXTRACT)
+    f[i] = DOUBLE(elements[IDX_SPECTRAL])
+    r[i] = DOUBLE(elements[IDX_RESPONSE])
+  ENDFOR
+
+  idx = UNIQ(f, SORT(f))
+  f = f[idx]
+  r = r[idx]
+  
+  n_points = INTARR(n_bands)
+  c1 = 0L
+  c2 = 1L
+  FOR b = 0L, n_bands-1L DO BEGIN
+    n_points[b] = N_ELEMENTS(f[bound_indices[c1]:bound_indices[c2]])
+    frequency.Add, f[bound_indices[c1]], f[bound_indices[c2]] /NO_COPY
+    response.Add, r[bound_indices[c1]], r[bound_indices[c2]] /NO_COPY
+    c1 = c1 + 1L
+    c2 = c2 + 1L
+  ENDFOR  
+
 END
-
-
 ;+
 ;
 ; NAME:
@@ -167,6 +146,7 @@ END
 ;       obj->[oSRF::]Load_hamsr, $
 ;         Sensor_Id        , $ ; Input
 ;         Channel          , $ ; Input
+;         n_bands          , $ ; Input
 ;         Path    = Path   , $ ; Input keyword.
 ;         Debug   = Debug  , $ ; Input keyword.
 ;         History = HISTORY    ; Output keyword.
@@ -183,6 +163,12 @@ END
 ;       Channel:     The sensor channel number for which SRF data is to be
 ;                    loaded. This value is used to construct the filename
 ;                    containing SRF data.
+;                    UNITS:      N/A
+;                    TYPE:       INTEGER
+;                    DIMENSION:  Scalar
+;                    ATTRIBUTES: INTENT(IN)
+;
+;       n_bands:     The number of bands for the channel being processed
 ;                    UNITS:      N/A
 ;                    TYPE:       INTEGER
 ;                    DIMENSION:  Scalar
@@ -229,6 +215,7 @@ END
 PRO oSRF::Load_hamsr, $
   Sensor_Id        , $ ; Input
   Channel          , $ ; Input
+  n_bands          , $ ; Input
   Path    = Path   , $ ; Input keyword. If not specified, default is "./"
   Debug   = Debug  , $ ; Input keyword. Passed onto all oSRF methods
   History = HISTORY    ; Output keyword of version id.
@@ -243,10 +230,8 @@ PRO oSRF::Load_hamsr, $
   Check_Threshold = N_ELEMENTS(Response_Threshold) GT 0 ? TRUE : FALSE
   Path            = Valid_String(Path) ? Path : "./"
 
-
   ; Parameters
   HISTORY = "$Id$"
-
 
   ; Construct file name
   ch = STRING(Channel,FORMAT='(i2.2)')
@@ -257,10 +242,8 @@ PRO oSRF::Load_hamsr, $
     MESSAGE, 'Datafile '+filename+' not found....', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-
   ; Read the file
-  Read_hamsr_Raw_SRF, filename, n_points, frequency, response
-
+  Read_hamsr_Raw_SRF, filename, channel, n_bands, n_points, frequency, response
 
   ; Load the SRF data into the oSRF object
   ; ...Allocate
