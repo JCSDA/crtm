@@ -90,14 +90,11 @@ PRO Read_hamsr_Raw_SRF, $
   ; Read the data
   n_lines = FILE_LINES(Filename)
   data    = STRARR(n_lines)
-  n       = INDGEN(n_lines)
   
   OPENR, fid, Filename, /GET_LUN
   READF, fid, data
   FREE_LUN, fid
   
-  n_band_boundaries = n_bands*2L
-
   ; Extract the data from the string array
   f = DBLARR(n_bands, n_lines)
   r = DBLARR(n_bands, n_lines)
@@ -106,14 +103,22 @@ PRO Read_hamsr_Raw_SRF, $
     f[i] = DOUBLE(elements[IDX_SPECTRAL])
     r[i] = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
-
-  bound_indices = INTARR(n_band_boundaries)
-  bound_indices = WHERE(((r[n] - r[n-1]) EQ r[n]) OR ((r[n] - r[n+1]) EQ r[n]) AND r[n] NE 0L)
-
+  
+  ; find unique
+  ; frequencies and sort
   idx = UNIQ(f, SORT(f))
   f = f[idx]
   r = r[idx]
   
+  ; Get ancillary information
+  ; needed to separate bands
+  n=INDGEN(N_ELEMENTS(f))
+  n_band_boundaries = n_bands*2L
+  bound_indices = INTARR(n_band_boundaries)
+  bound_indices = WHERE(((r[n] - r[n-1]) EQ r[n]) OR ((r[n] - r[n+1]) EQ r[n]) AND r[n] NE 0L)
+
+  ; Construct and define 
+  ; output arguments
   n_points = INTARR(n_bands)
   c1 = 0L
   c2 = 1L
@@ -121,8 +126,8 @@ PRO Read_hamsr_Raw_SRF, $
     n_points[b] = N_ELEMENTS(f[bound_indices[c1]:bound_indices[c2]])
     frequency.Add, f[bound_indices[c1]:bound_indices[c2]], /NO_COPY
     response.Add, r[bound_indices[c1]:bound_indices[c2]], /NO_COPY
-    c1 = c1 + 1L
-    c2 = c2 + 1L
+    c1 = c1 + 2L
+    c2 = c2 + 2L
   ENDFOR  
 
 END
