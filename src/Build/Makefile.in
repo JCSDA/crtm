@@ -8,27 +8,17 @@ distdir = $(tarname)-$(version)
 
 # Prefix-specific substitution variables
 prefix      = @prefix@
-exec_prefix = @exec_prefix@
-bindir      = @bindir@
 
 # Mixed package and prefix substitution variables
 installdir  = $(prefix)/$(distdir)
 
 # Target specification
-all clean crtm:
-	cd libsrc && $(MAKE) $@
-	cd test && $(MAKE) $@
-
-install uninstall:
+all clean check install uninstall:
 	cd libsrc && $(MAKE) $@
 
-realclean:
+distclean:
 	cd libsrc && $(MAKE) $@
-	cd test && $(MAKE) $@
-	-rm Makefile config.log* config.status
-
-check:
-	cd test && $(MAKE) $@
+	-rm Makefile config.log* config.status >/dev/null 2>&1
 
 dist: $(distdir).tar.gz
 
@@ -54,8 +44,8 @@ $(distdir): FORCE
 	cp configure.ac $(distdir)
 	cp configure $(distdir)
 	cp Makefile.in $(distdir)
+	cp install-sh $(distdir)
 	cp -rL libsrc $(distdir)/libsrc
-	cp -rL test $(distdir)/test
 
 Makefile: Makefile.in config.status
 	./config.status $@

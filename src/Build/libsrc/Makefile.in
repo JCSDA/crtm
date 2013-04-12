@@ -6,7 +6,7 @@
 package = @PACKAGE_NAME@
 version = @PACKAGE_VERSION@
 tarname = @PACKAGE_TARNAME@
-distdir = $(tarname)-$(version)
+distdir = $(tarname)_$(version)
 
 # Prefix-specific substitution variables
 prefix = @prefix@
@@ -17,23 +17,36 @@ installdir = $(prefix)/$(distdir)
 # Tool-specific substitution variables
 FC      = @FC@
 FCFLAGS = @FCFLAGS@ -c
+AR      = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB  = @RANLIB@
 INSTALL      = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
+
+# The library name
+LIBRARY = lib$(tarname).a
 
 # The file definitions. This include must occur before targets.
 include make.filelist
 
 # The targets
-all: crtm
+all: library
 
-crtm: $(OBJ_FILES)
-	ar -crvs lib$(package).a $(OBJ_FILES)
+$(LIBRARY): $(OBJ_FILES)
+	$(AR) $(ARFLAGS) $@ $(OBJ_FILES)
+	$(RANLIB) $@
+        
+library: $(LIBRARY)
 
 clean:
-	-rm *.o *.mod *.a
+	cd test && $(MAKE) $@
+	-rm *.o *.mod *.a >/dev/null 2>&1
 
-realclean: clean uninstall
-	-rm Makefile
+distclean: clean uninstall
+	-rm Makefile >/dev/null 2>&1
+
+check: library
+	cd test && $(MAKE) $@
 
 install_include:
 	$(INSTALL) -d $(DESTDIR)$(installdir)/include
@@ -41,12 +54,13 @@ install_include:
 
 install_lib:
 	$(INSTALL) -d $(DESTDIR)$(installdir)/lib
-	$(INSTALL_DATA) lib$(package).a $(DESTDIR)$(installdir)/lib
+	$(INSTALL_DATA) $(LIBRARY) $(DESTDIR)$(installdir)/lib
 
 install: install_include install_lib
+	$(INSTALL_DATA) ../config.log $(DESTDIR)$(installdir)
 
 uninstall:
-	-rm -fr $(DESTDIR)$(installdir)
+	-rm -fr $(DESTDIR)$(installdir) >/dev/null 2>&1
 
 Makefile: Makefile.in ../config.status
 	cd .. && ./config.status libsrc/$@
@@ -55,7 +69,7 @@ Makefile: Makefile.in ../config.status
 	cd .. && ./config.status --recheck
 
 # Specify targets that do not generate filesystem objects
-.PHONY: all clean install uninstall
+.PHONY: all clean distclean check install uninstall
 
 # File dependency and compilation rule include files
 include make.dependencies
