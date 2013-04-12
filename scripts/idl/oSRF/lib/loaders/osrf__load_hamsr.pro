@@ -104,10 +104,6 @@ PRO Read_hamsr_Raw_SRF, $
   FREE_LUN, fid
   
   n_band_boundaries = n_bands*2L
-  
-  bound_indices = INTARR(n_band_boundaries)
-  bound_indices = WHERE((data[n] - data[n-1] EQ data[n]) OR &
-                        (data[n] - data[n+1] EQ data[n]))
 
   ; Extract the data from the string array
   f = DBLARR(n_bands, n_lines)
@@ -118,6 +114,9 @@ PRO Read_hamsr_Raw_SRF, $
     r[i] = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
 
+  bound_indices = INTARR(n_band_boundaries)
+  bound_indices = WHERE(((r[n] - r[n-1]) EQ r[n]) OR ((r[n] - r[n+1]) EQ r[n]) AND r[n] NE 0L)
+
   idx = UNIQ(f, SORT(f))
   f = f[idx]
   r = r[idx]
@@ -127,8 +126,8 @@ PRO Read_hamsr_Raw_SRF, $
   c2 = 1L
   FOR b = 0L, n_bands-1L DO BEGIN
     n_points[b] = N_ELEMENTS(f[bound_indices[c1]:bound_indices[c2]])
-    frequency.Add, f[bound_indices[c1]], f[bound_indices[c2]] /NO_COPY
-    response.Add, r[bound_indices[c1]], r[bound_indices[c2]] /NO_COPY
+    frequency.Add, f[bound_indices[c1]:bound_indices[c2]], /NO_COPY
+    response.Add, r[bound_indices[c1]:bound_indices[c2]], /NO_COPY
     c1 = c1 + 1L
     c2 = c2 + 1L
   ENDFOR  
@@ -254,6 +253,7 @@ PRO oSRF::Load_hamsr, $
     /All
   ; ...Set the data values
   n_bands = N_ELEMENTS(n_points)
+
   FOR i = 0, n_bands-1 DO BEGIN
     band = i+1
     self->Set_Property, $
