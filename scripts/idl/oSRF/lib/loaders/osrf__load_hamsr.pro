@@ -22,12 +22,6 @@
 ;                    TYPE:       CHARACTER
 ;                    DIMENSION:  Scalar
 ;                    ATTRIBUTES: INTENT(IN)
-;      
-;       Channel:     The channel number being processed
-;                    UNITS:      N/A
-;                    TYPE:       INTEGER
-;                    DIMENSION:  Scalar
-;                    ATTRIBUTES: INTENT(IN)
 ;
 ;       n_bands:     The channel number being processed
 ;                    UNITS:      N/A
@@ -75,7 +69,6 @@
 
 PRO Read_hamsr_Raw_SRF, $
   Filename     , $  ; Input
-  Channel      , $  ; Input
   n_bands      , $  ; Input
   n_points     , $  ; Output
   frequency    , $  ; Output
@@ -242,7 +235,7 @@ PRO oSRF::Load_hamsr, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; Read the file
-  Read_hamsr_Raw_SRF, filename, channel, n_bands, n_points, frequency, response
+  Read_hamsr_Raw_SRF, filename, n_bands, n_points, frequency, response
 
   ; Load the SRF data into the oSRF object
   ; ...Allocate
@@ -255,6 +248,7 @@ PRO oSRF::Load_hamsr, $
   n_bands = N_ELEMENTS(n_points)
 
   FOR i = 0, n_bands-1 DO BEGIN
+
     band = i+1
     self->Set_Property, $
       band, $
