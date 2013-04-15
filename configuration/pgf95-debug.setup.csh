@@ -1,21 +1,9 @@
-#!/bin/sh
+#!/bin/csh
 #-------------------------------------------------------------------------------#
 # DEBUG build settings for Linux pgf95 compiler
 #-------------------------------------------------------------------------------#
 
-export FC="pgf95"
-
-export FCFLAGS="\
--g \
--Ktrap=ovf,divz -Mdaz \
--Mbounds \
--Mchkstk \
--Mdclchk \
--Minform,inform \
--Mnosave \
--Mref_externals \
--Kieee"
-
-export LDFLAGS="-Kieee"
-
-export LIBS=""
+setenv FC "pgf95"
+setenv FCFLAGS "-g -Ktrap=ovf,divz -Mdaz -Mbounds -Mchkstk -Mdclchk -Minform,inform -Mnosave -Mref_externals -Kieee"
+setenv LDFLAGS "-Kieee"
+setenv LIBS ""

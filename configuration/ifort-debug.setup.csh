@@ -1,20 +1,9 @@
-#!/bin/sh
+#!/bin/csh
 #-------------------------------------------------------------------------------#
 # DEBUG build settings for Linux ifort compiler
 #-------------------------------------------------------------------------------#
 
-export FC="ifort"
-
-export FCFLAGS="\
--g \
--check bounds \
--e03 \
--traceback \
--free \
--assume byterecl \
--fp-stack-check \
--mieee-fp"
-
-export LDFLAGS=""
-
-export LIBS=""
+setenv FC "ifort"
+setenv FCFLAGS "-g -check bounds -e03 -traceback -free -assume byterecl -fp-stack-check -mieee-fp"
+setenv LDFLAGS ""
+setenv LIBS ""

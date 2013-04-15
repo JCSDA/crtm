@@ -1,15 +1,9 @@
-#!/bin/sh
+#!/bin/csh
 #-------------------------------------------------------------------------------#
 # PRODUCTION build settings for Linux ifort compiler
 #-------------------------------------------------------------------------------#
 
-export FC="ifort"
-
-export FCFLAGS="\
--O2 \
--free \
--assume byterecl"
-
-export LDFLAGS=""
-
-export LIBS=""
+setenv FC "ifort"
+setenv FCFLAGS "-O2 -free -assume byterecl"
+setenv LDFLAGS ""
+setenv LIBS ""

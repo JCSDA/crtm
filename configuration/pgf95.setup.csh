@@ -1,14 +1,9 @@
-#!/bin/sh
+#!/bin/csh
 #-------------------------------------------------------------------------------#
 # PRODUCTION build settings for Linux pgf95 compiler
 #-------------------------------------------------------------------------------#
 
-export FC="pgf95"
-
-export FCFLAGS="\
--g \
--fast"
-
-export LDFLAGS=""
-
-export LIBS=""
+setenv FC "pgf95"
+setenv FCFLAGS "-g -fast"
+setenv LDFLAGS ""
+setenv LIBS ""

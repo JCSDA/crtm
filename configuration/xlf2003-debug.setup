@@ -1,3 +1,4 @@
+#!/bin/sh
 #-------------------------------------------------------------------------------#
 # DEBUG build settings for IBM AIX xlf2003 compiler
 #-------------------------------------------------------------------------------#
@@ -14,7 +15,7 @@ export FCFLAGS="\
 -qhalt=W \
 -qlanglvl=2003pure \
 -qmaxmem=-1 \
--qsuffix=f=f90:cpp=F90"
+-qsuffix=f=f90:cpp=fpp:cpp=F90"
 
 export LDFLAGS=""
 
