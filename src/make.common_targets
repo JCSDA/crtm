@@ -53,7 +53,7 @@ remove_links::
 # Build the program
 # -----------------
 build:: create_links $(OBJ_FILES)
-	$(FL) $(OBJ_FILES) $(EXTRA_FL_FLAGS) $(FL_FLAGS) $(EXE_FILE)
+	$(FL) $(OBJ_FILES) $(EXTRA_LDFLAGS) $(LDFLAGS) $(EXE_FILE) $(LIBS)
 
 
 # --------
@@ -83,7 +83,7 @@ install::
 # Build for timing runs
 # ---------------------
 timing::
-	$(MAKE) clean; $(MAKE) EXTRA_FC_FLAGS="-DTIMING"
+	$(MAKE) clean; $(MAKE) EXTRA_FCFLAGS="-DTIMING"
 
 
 # ----------------------

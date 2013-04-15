@@ -109,49 +109,49 @@ NAME_AIX = xlf95
 AIX_COMMON_FLAGS_DEBUG = -pg
 AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
 	          "FL=${NAME_AIX}" \
-	          "FC_FLAGS= -c \
-                             -qcheck \
-                             -qdbg \
-                             -qundef \
-                             -qextchk \
-                             -qflttrap=overflow:zerodivide:invalid:nanq:enable \
-                             -qinitauto=FF \
-                             -qfree=f90 \
-                             -qhalt=W \
-                             -qlanglvl=2003pure \
-                             -qxlf2003=nooldnaninf \
-                             -qmaxmem=-1 \
-                             -qsuffix=f=f90:cpp=F90 \
-			     -qsuppress=1518-319 \
-                             ${INCLUDES} \
-                             ${AIX_COMMON_FLAGS_DEBUG}" \
-	          "FL_FLAGS= ${AIX_COMMON_FLAGS_DEBUG} \
-                             ${LIBRARIES} \
-                             -o" \
+	          "FCFLAGS= -c \
+                            -qcheck \
+                            -qdbg \
+                            -qundef \
+                            -qextchk \
+                            -qflttrap=overflow:zerodivide:invalid:nanq:enable \
+                            -qinitauto=FF \
+                            -qfree=f90 \
+                            -qhalt=W \
+                            -qlanglvl=2003pure \
+                            -qxlf2003=nooldnaninf \
+                            -qmaxmem=-1 \
+                            -qsuffix=f=f90:cpp=F90 \
+		            -qsuppress=1518-319 \
+                            ${INCLUDES} \
+                            ${AIX_COMMON_FLAGS_DEBUG}" \
+	          "LDFLAGS= ${AIX_COMMON_FLAGS_DEBUG} \
+                            ${LIBRARIES} \
+                            -o" \
                   "ENDIAN=Big_Endian"
 
 # Compiler settings for PRODUCTION builds
 AIX_COMMON_FLAGS_PROD = -O3
 AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
                  "FL=${NAME_AIX}" \
-                 "FC_FLAGS= -c \
-                            -qdbg \
-                            -qundef \
-                            -qarch=auto \
-                            -qfree=f90 \
-                            -qhalt=W \
-                            -qlanglvl=2003pure \
-                            -qxlf2003=nooldnaninf \
-                            -qsuffix=f=f90:cpp=F90 \
-		            -qsuppress=1518-319 \
-                            -qstrict \
-                            -NS32768 \
-                            ${INCLUDES} \
-                            ${AIX_COMMON_FLAGS_PROD}" \
-                 "FL_FLAGS= ${AIX_COMMON_FLAGS_PROD} \
-                            -lmass -lm \
-                            ${LIBRARIES} \
-                            -o" \
+                 "FCFLAGS= -c \
+                           -qdbg \
+                           -qundef \
+                           -qarch=auto \
+                           -qfree=f90 \
+                           -qhalt=W \
+                           -qlanglvl=2003pure \
+                           -qxlf2003=nooldnaninf \
+                           -qsuffix=f=f90:cpp=F90 \
+		           -qsuppress=1518-319 \
+                           -qstrict \
+                           -NS32768 \
+                           ${INCLUDES} \
+                           ${AIX_COMMON_FLAGS_PROD}" \
+                 "LDFLAGS= ${AIX_COMMON_FLAGS_PROD} \
+                           -lmass -lm \
+                           ${LIBRARIES} \
+                           -o" \
                  "ENDIAN=Big_Endian"
 
 # Here set the DEFAULT AIX compiler flags
@@ -170,18 +170,18 @@ NAME_SUNOS = f95
 SUNOS_COMMON_FLAGS = 
 SUNOS_FLAGS = "FC=${NAME_SUNOS}" \
 	      "FL=${NAME_SUNOS}" \
-	      "FC_FLAGS= -ansi \
-                         -c \
-                         -C \
-                         -fsimple=0 \
-                         -ftrap=overflow,division \
-                         -g \
-                         -w3 \
-                         ${INCLUDES} \
-                         ${SUNOS_COMMON_FLAGS}" \
-	      "FL_FLAGS= ${SUNOS_COMMON_FLAGS} \
-                         ${LIBRARIES} \
-                         -o" \
+	      "FCFLAGS= -ansi \
+                        -c \
+                        -C \
+                        -fsimple=0 \
+                        -ftrap=overflow,division \
+                        -g \
+                        -w3 \
+                        ${INCLUDES} \
+                        ${SUNOS_COMMON_FLAGS}" \
+	      "LDFLAGS= ${SUNOS_COMMON_FLAGS} \
+                        ${LIBRARIES} \
+                        -o" \
               "ENDIAN=Big_Endian"
 
 SUNOS_FLAGS_DEBUG = ${SUNOS_FLAGS)
@@ -200,19 +200,19 @@ NAME_IRIX64 = f90
 IRIX64_COMMON_FLAGS = -64
 IRIX64_FLAGS = "FC=${NAME_IRIX64}" \
 	       "FL=${NAME_IRIX64}" \
-	       "FC_FLAGS= -ansi \
-                          -c \
-                          -C \
-                          -DEBUG:suppress=399,878 \
-                          -fullwarn \
-                          -g \
-                          -bytereclen \
-                          -u \
-                          ${INCLUDES} \
-                          ${IRIX64_COMMON_FLAGS}" \
-	       "FL_FLAGS= ${IRIX64_COMMON_FLAGS} \
-                          ${LIBRARIES} \
-                          -o" \
+	       "FCFLAGS= -ansi \
+                         -c \
+                         -C \
+                         -DEBUG:suppress=399,878 \
+                         -fullwarn \
+                         -g \
+                         -bytereclen \
+                         -u \
+                         ${INCLUDES} \
+                         ${IRIX64_COMMON_FLAGS}" \
+	       "LDFLAGS= ${IRIX64_COMMON_FLAGS} \
+                         ${LIBRARIES} \
+                         -o" \
                "ENDIAN=Big_Endian"
 
 IRIX64_FLAGS_DEBUG = ${IRIX64_FLAGS)
@@ -231,12 +231,12 @@ NAME_HPUX = f90
 HPUX_COMMON_FLAGS_DEBUG = 
 HPUX_FLAGS_DEBUG = "FC=${NAME_HPUX}" \
                    "FL=${NAME_HPUX}" \
-                   "FC_FLAGS= +ppu -c +fltconst_strict \
-                              ${INCLUDES} \
-                              ${HPUX_COMMON_FLAGS_DEBUG}" \
-                   "FL_FLAGS= ${HPUX_COMMON_FLAGS_DEBUG} \
-                              ${LIBRARIES} \
-                              -o" \
+                   "FCFLAGS= +ppu -c +fltconst_strict \
+                             ${INCLUDES} \
+                             ${HPUX_COMMON_FLAGS_DEBUG}" \
+                   "LDFLAGS= ${HPUX_COMMON_FLAGS_DEBUG} \
+                             ${LIBRARIES} \
+                             -o" \
                    "ENDIAN=Big_Endian"
 
 
@@ -244,12 +244,12 @@ HPUX_FLAGS_DEBUG = "FC=${NAME_HPUX}" \
 HPUX_COMMON_FLAGS_PROD = -O3
 HPUX_FLAGS_PROD = "FC=${NAME_HPUX}" \
                   "FL=${NAME_HPUX}" \
-                  "FC_FLAGS= +ppu -c +fltconst_strict \
-                             ${INCLUDES} \
-                             ${HPUX_COMMON_FLAGS_PROD}" \
-                  "FL_FLAGS= ${HPUX_COMMON_FLAGS_PROD} \
-                             ${LIBRARIES} \
-                             -o" \
+                  "FCFLAGS= +ppu -c +fltconst_strict \
+                            ${INCLUDES} \
+                            ${HPUX_COMMON_FLAGS_PROD}" \
+                  "LDFLAGS= ${HPUX_COMMON_FLAGS_PROD} \
+                            ${LIBRARIES} \
+                            -o" \
                   "ENDIAN=Big_Endian"
 
 
@@ -273,48 +273,48 @@ NAME_GFORTRAN = gfortran
 LINUX_COMMON_FLAGS_GFORTRAN_DEBUG = 
 LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
 	                     "FL=${NAME_GFORTRAN}" \
-	                     "FC_FLAGS= -c \
-                                        -fbounds-check \
-                                        -fimplicit-none \
-                                        -fconvert=big-endian \
-                                        -ffpe-trap=overflow,zero,invalid \
-                                        -ffree-form \
-                                        -fno-second-underscore \
-                                        -frecord-marker=4 \
-                                        -fbacktrace \
-                                        -ggdb \
-	                                -static \
-                                        -Wall \
-                                        -std=f2003 \
-                                        ${INCLUDES} \
-                                        ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
-	                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
-                                        ${LIBRARIES} \
-                                        -o" \
+	                     "FCFLAGS= -c \
+                                       -fbounds-check \
+                                       -fimplicit-none \
+                                       -fconvert=big-endian \
+                                       -ffpe-trap=overflow,zero,invalid \
+                                       -ffree-form \
+                                       -fno-second-underscore \
+                                       -frecord-marker=4 \
+                                       -fbacktrace \
+                                       -ggdb \
+	                               -static \
+                                       -Wall \
+                                       -std=f2003 \
+                                       ${INCLUDES} \
+                                       ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
+	                     "LDFLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
+                                       ${LIBRARIES} \
+                                       -o" \
                              "ENDIAN=Little_Endian"
 
 # Compiler settings for DEBUG builds
 LINUX_COMMON_FLAGS_GFORTRAN_PROD =
 LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
 	                    "FL=${NAME_GFORTRAN}" \
-	                    "FC_FLAGS= -c \
-                                       -O3 \
-                                       -fimplicit-none \
-                                       -fconvert=big-endian \
-                                       -ffast-math \
-                                       -ffree-form \
-                                       -fno-second-underscore \
-                                       -frecord-marker=4 \
-                                       -funroll-loops \
-                                       -ggdb \
-	                               -static \
-                                       -Wall \
-                                       -std=f2003 \
-                                       ${INCLUDES} \
-                                       ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
-	                    "FL_FLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
-                                       ${LIBRARIES} \
-                                       -o" \
+	                    "FCFLAGS= -c \
+                                      -O3 \
+                                      -fimplicit-none \
+                                      -fconvert=big-endian \
+                                      -ffast-math \
+                                      -ffree-form \
+                                      -fno-second-underscore \
+                                      -frecord-marker=4 \
+                                      -funroll-loops \
+                                      -ggdb \
+	                              -static \
+                                      -Wall \
+                                      -std=f2003 \
+                                      ${INCLUDES} \
+                                      ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
+	                    "LDFLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
+                                      ${LIBRARIES} \
+                                      -o" \
                             "ENDIAN=Little_Endian"
                             
 # Here set the DEFAULT gfortran compiler flags
@@ -332,36 +332,36 @@ NAME_PGI = pgf95
 LINUX_COMMON_FLAGS_PGI_DEBUG = -Kieee
 LINUX_FLAGS_PGI_DEBUG = "FC=${NAME_PGI}" \
                         "FL=${NAME_PGI}" \
-                        "FC_FLAGS= -c \
-                                   -g \
-                                   -byteswapio \
-                                   -Ktrap=ovf,divz \
-                                   -Mbounds \
-                                   -Mchkstk \
-                                   -Mdclchk \
-                                   -Minform,inform \
-                                   -Mnosave \
-                                   -Mref_externals \
-                                   ${INCLUDES} \
-                                   ${LINUX_COMMON_FLAGS_PGI_DEBUG}" \
-                        "FL_FLAGS= ${LINUX_COMMON_FLAGS_PGI_DEBUG} \
-                                   ${LIBRARIES} \
-                                   -o" \
+                        "FCFLAGS= -c \
+                                  -g \
+                                  -byteswapio \
+                                  -Ktrap=ovf,divz \
+                                  -Mbounds \
+                                  -Mchkstk \
+                                  -Mdclchk \
+                                  -Minform,inform \
+                                  -Mnosave \
+                                  -Mref_externals \
+                                  ${INCLUDES} \
+                                  ${LINUX_COMMON_FLAGS_PGI_DEBUG}" \
+                        "LDFLAGS= ${LINUX_COMMON_FLAGS_PGI_DEBUG} \
+                                  ${LIBRARIES} \
+                                  -o" \
                         "ENDIAN=Little_Endian"
 
 # Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_PGI_PROD =
 LINUX_FLAGS_PGI_PROD = "FC=${NAME_PGI}" \
                        "FL=${NAME_PGI}" \
-                       "FC_FLAGS= -c \
-                                  -g \
-                                  -fast \
-                                  -byteswapio \
-                                  ${INCLUDES} \
-                                  ${LINUX_COMMON_FLAGS_PGI_PROD}" \
-                       "FL_FLAGS= ${LINUX_COMMON_FLAGS_PGI_PROD} \
-                                  ${LIBRARIES} \
-                                  -o" \
+                       "FCFLAGS= -c \
+                                 -g \
+                                 -fast \
+                                 -byteswapio \
+                                 ${INCLUDES} \
+                                 ${LINUX_COMMON_FLAGS_PGI_PROD}" \
+                       "LDFLAGS= ${LINUX_COMMON_FLAGS_PGI_PROD} \
+                                 ${LIBRARIES} \
+                                 -o" \
                        "ENDIAN=Little_Endian"
 
 # Here set the DEFAULT PGI compiler flags
@@ -380,37 +380,37 @@ NAME_INTEL = ifort
 LINUX_COMMON_FLAGS_INTEL_DEBUG = 
 LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                           "FL=${NAME_INTEL}" \
-                          "FC_FLAGS= -c \
-                                     -g \
-                                     -check bounds \
-                                     -convert big_endian \
-                                     -e03 \
-                                     -traceback \
-                                     -free \
-                                     -assume byterecl \
-                                     -fp-stack-check \
-                                     -mieee-fp \
-                                     ${INCLUDES} \
-                                     ${LINUX_COMMON_FLAGS_DEBUG}" \
-	                  "FL_FLAGS= ${LINUX_COMMON_FLAGS_DEBUG} \
-                                     ${LIBRARIES} \
-                                     -o" \
+                          "FCFLAGS= -c \
+                                    -g \
+                                    -check bounds \
+                                    -convert big_endian \
+                                    -e03 \
+                                    -traceback \
+                                    -free \
+                                    -assume byterecl \
+                                    -fp-stack-check \
+                                    -mieee-fp \
+                                    ${INCLUDES} \
+                                    ${LINUX_COMMON_FLAGS_DEBUG}" \
+	                  "LDFLAGS= ${LINUX_COMMON_FLAGS_DEBUG} \
+                                    ${LIBRARIES} \
+                                    -o" \
                           "ENDIAN=Little_Endian"
 
 # Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_INTEL_PROD =
 LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 	                 "FL=${NAME_INTEL}" \
-	                 "FC_FLAGS= -c \
-                                    -O2 \
-                                    -convert big_endian \
-                                    -free \
-      	                            -assume byterecl \
-                                    ${INCLUDES} \
-                                    ${LINUX_COMMON_FLAGS_PROD}" \
-                         "FL_FLAGS= ${LINUX_COMMON_FLAGS_PROD} \
-                                    ${LIBRARIES} \
-                                    -o" \
+	                 "FCFLAGS= -c \
+                                   -O2 \
+                                   -convert big_endian \
+                                   -free \
+      	                           -assume byterecl \
+                                   ${INCLUDES} \
+                                   ${LINUX_COMMON_FLAGS_PROD}" \
+                         "LDFLAGS= ${LINUX_COMMON_FLAGS_PROD} \
+                                   ${LIBRARIES} \
+                                   -o" \
                          "ENDIAN=Little_Endian"
 
 # Here set the DEFAULT Intel compiler flags
@@ -429,35 +429,35 @@ NAME_LAHEY = lf95
 LINUX_COMMON_FLAGS_LAHEY_DEBUG =
 LINUX_FLAGS_LAHEY_DEBUG = "FC=${NAME_LAHEY}" \
 	                  "FL=${NAME_LAHEY}" \
-	                  "FC_FLAGS= -c \
-                                     -g \
-                                     --chk aesu \
-                                     --f95 \
-	                             --trace \
-                                     --trap \
-                                     --ninfo --warn \
-                                     ${INCLUDES} \
-                                     ${LINUX_COMMON_FLAGS_LAHEY_DEBUG}" \
-	                  "FL_FLAGS= ${LINUX_COMMON_FLAGS_LAHEY_DEBUG} \
-                                     ${LIBRARIES} \
-                                     --staticlink \
-                                     -o" \
+	                  "FCFLAGS= -c \
+                                    -g \
+                                    --chk aesu \
+                                    --f95 \
+	                            --trace \
+                                    --trap \
+                                    --ninfo --warn \
+                                    ${INCLUDES} \
+                                    ${LINUX_COMMON_FLAGS_LAHEY_DEBUG}" \
+	                  "LDFLAGS= ${LINUX_COMMON_FLAGS_LAHEY_DEBUG} \
+                                    ${LIBRARIES} \
+                                    --staticlink \
+                                    -o" \
                           "ENDIAN=Little_Endian"
 
 # Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_LAHEY_PROD =
 LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
 	                 "FL=${NAME_LAHEY}" \
-	                 "FC_FLAGS= -c \
-                                    --f95 \
-	                            --o1 \
-                                    --ninfo --warn \
-                                    ${INCLUDES} \
-                                    ${LINUX_COMMON_FLAGS_LAHEY_PROD}" \
-                         "FL_FLAGS= ${LINUX_COMMON_FLAGS_LAHEY_PROD} \
-                                    ${LIBRARIES} \
-                                     --staticlink \
-                                    -o" \
+	                 "FCFLAGS= -c \
+                                   --f95 \
+	                           --o1 \
+                                   --ninfo --warn \
+                                   ${INCLUDES} \
+                                   ${LINUX_COMMON_FLAGS_LAHEY_PROD}" \
+                         "LDFLAGS= ${LINUX_COMMON_FLAGS_LAHEY_PROD} \
+                                   ${LIBRARIES} \
+                                   --staticlink \
+                                   -o" \
                          "ENDIAN=Little_Endian"
 
 # Here set the DEFAULT Lahey compiler flags
@@ -475,38 +475,38 @@ NAME_G95 = g95
 LINUX_COMMON_FLAGS_G95_DEBUG = 
 LINUX_FLAGS_G95_DEBUG = "FC=${NAME_G95}" \
 	                "FL=${NAME_G95}" \
-	                "FC_FLAGS= -c \
-                                   -fbounds-check \
-                                   -fendian=big \
-                                   -ffree-form \
-                                   -fno-second-underscore \
-                                   -ftrace=frame \
-                                   -malign-double \
-	                           -Wall \
-                                   ${INCLUDES} \
-                                   ${LINUX_COMMON_FLAGS_G95_DEBUG}" \
-                        "FL_FLAGS= ${LINUX_COMMON_FLAGS_G95_DEBUG} \
-                                   ${LIBRARIES} \
-                                   -o" \
+	                "FCFLAGS= -c \
+                                  -fbounds-check \
+                                  -fendian=big \
+                                  -ffree-form \
+                                  -fno-second-underscore \
+                                  -ftrace=frame \
+                                  -malign-double \
+	                          -Wall \
+                                  ${INCLUDES} \
+                                  ${LINUX_COMMON_FLAGS_G95_DEBUG}" \
+                        "LDFLAGS= ${LINUX_COMMON_FLAGS_G95_DEBUG} \
+                                  ${LIBRARIES} \
+                                  -o" \
                         "ENDIAN=Little_Endian"
 
 # Compiler settings for PRODUCTION builds
 LINUX_COMMON_FLAGS_G95_PROD =
 LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
 	               "FL=${NAME_G95}" \
-	               "FC_FLAGS= -c \
-                                  -O2 \
-                                  -fendian=big \
-                                  -ffast-math \
-                                  -ffree-form \
-		                  -fno-second-underscore \
-                                  -funroll-loops \
-                                  -malign-double \
-                                  ${INCLUDES} \
-                                  ${LINUX_COMMON_FLAGS_G95_PROD}" \
-                       "FL_FLAGS= ${LINUX_COMMON_FLAGS_G95_PROD} \
-                                  ${LIBRARIES} \
-                                  -o" \
+	               "FCFLAGS= -c \
+                                 -O2 \
+                                 -fendian=big \
+                                 -ffast-math \
+                                 -ffree-form \
+		                 -fno-second-underscore \
+                                 -funroll-loops \
+                                 -malign-double \
+                                 ${INCLUDES} \
+                                 ${LINUX_COMMON_FLAGS_G95_PROD}" \
+                       "LDFLAGS= ${LINUX_COMMON_FLAGS_G95_PROD} \
+                                 ${LIBRARIES} \
+                                 -o" \
                        "ENDIAN=Little_Endian"
 
 
@@ -525,16 +525,16 @@ NAME_ABSOFT = f90
 LINUX_COMMON_FLAGS_ABSOFT = 
 LINUX_FLAGS_ABSOFT = "FC=${NAME_ABSOFT}" \
                      "FL=${NAME_ABSOFT}" \
-                     "FC_FLAGS= -c \
-                                -B80 \
-                                -en \
-                                -g \
-                                -m0 \
-                                ${INCLUDES} \
-                                ${LINUX_COMMON_FLAGS_ABSOFT}" \
-                     "FL_FLAGS= ${LINUX_COMMON_FLAGS_ABSOFT} \
-                                ${LIBRARIES} \
-                                -o" \
+                     "FCFLAGS= -c \
+                               -B80 \
+                               -en \
+                               -g \
+                               -m0 \
+                               ${INCLUDES} \
+                               ${LINUX_COMMON_FLAGS_ABSOFT}" \
+                     "LDFLAGS= ${LINUX_COMMON_FLAGS_ABSOFT} \
+                               ${LIBRARIES} \
+                               -o" \
                      "ENDIAN=Little_Endian"
 
 LINUX_FLAGS_ABSOFT_DEBUG = $(LINUX_FLAGS_ABSOFT)
