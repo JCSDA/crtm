@@ -15,6 +15,7 @@ export FCFLAGS="\
 -frecord-marker=4 \
 -ggdb \
 -Wall \
+-Wconversion \
 -std=f2003"
 
 export LDFLAGS=""

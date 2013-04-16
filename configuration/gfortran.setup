@@ -14,6 +14,7 @@ export FCFLAGS="\
 -funroll-loops \
 -ggdb \
 -Wall \
+-Wconversion \
 -std=f2003"
 
 export LDFLAGS=""
