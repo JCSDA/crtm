@@ -57,7 +57,7 @@ create_coeff_links:
 
 remove_coeff_links:
 	@echo
-	@cd $(BUILD_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
+	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  $(REMOVE) big_endian/*.bin && \
 	  $(REMOVE) little_endian/*.bin || exit 1
 	@echo
