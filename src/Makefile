@@ -48,7 +48,7 @@ remove_links: remove_coeff_links
 
 create_coeff_links:
 	@echo
-	@cd $(BUILD_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
+	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  link_coeffs.sh $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
 	  link_coeffs.sh -l $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) || exit 1
 	@echo
