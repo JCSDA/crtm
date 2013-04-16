@@ -13,7 +13,7 @@ prefix      = @prefix@
 installdir  = $(prefix)/$(distdir)
 
 # Target specification
-all clean check install uninstall:
+all clean check install uninstall nco_install:
 	cd libsrc && $(MAKE) $@
 
 distclean:

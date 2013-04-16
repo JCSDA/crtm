@@ -3,7 +3,7 @@ AC_REVISION($Id: $)
 
 
 ## Initialise autoconf
-AC_INIT([CRTM], [v2.1.2], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [crtm])
+AC_INIT([CRTM], [v2.2.0-alpha], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [crtm])
 
 
 # Output info for user
