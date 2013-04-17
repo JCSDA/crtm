@@ -48,25 +48,34 @@ fi
 # Determine the I/O endian-type to use.
 AC_ARG_ENABLE([big-endian],
   [AS_HELP_STRING([--disable-big-endian],[Native I/O on little-endian machines. @<:@default: big-endian@:>@])],
-  [endian_io=little],[endian_io=big])
+  [ENDIAN_IO=little],[ENDIAN_IO=big])
 
-# ...Modify the compiler switches accordingly
-if test "${endian_io}" = big -a "${ENDIAN_PLATFORM}" = little; then
-  case ${FC} in
-    ifort)    FCFLAGS="-convert big_endian $FCFLAGS";;
-    gfortran) FCFLAGS="-fconvert=big-endian $FCFLAGS";;
-    pgf95)    FCFLAGS="-byteswapio $FCFLAGS";;
-    g95)      FCFLAGS="-fendian=big $FCFLAGS";;
-    xlf2003)  ;;
-    *)        AC_MSG_WARN([Endian swap flags for $FC unknown and not set]);;
-  esac
-else
+# ...All little-endian I/O requires the following for the check program
+if test "${ENDIAN_IO}" = little; then
   case ${FC} in
     xlf2003) FPPFLAGS="-WF,-DLITTLE_ENDIAN $FPPFLAGS" ;;
     *)       FPPFLAGS="-DLITTLE_ENDIAN $FPPFLAGS" ;;
   esac
 fi
-AC_MSG_NOTICE([Building ${endian_io}-endian version])
+
+# ...Big-endian I/O on little-endian platforms
+if test "${ENDIAN_IO}" = big -a "${ENDIAN_PLATFORM}" = little; then
+  case ${FC} in
+    ifort)    FCFLAGS="-convert big_endian $FCFLAGS";;
+    gfortran) FCFLAGS="-fconvert=big-endian $FCFLAGS";;
+    pgf95)    FCFLAGS="-byteswapio $FCFLAGS";;
+    g95)      FCFLAGS="-fendian=big $FCFLAGS";;
+    *)        AC_MSG_WARN([Endian swap flags for $FC unknown and not set]);;
+  esac
+fi
+
+# ...Little-endian I/O on big-endian platforms
+if test "${ENDIAN_IO}" = little -a "${ENDIAN_PLATFORM}" = big; then
+  AC_MSG_WARN([Little-endian I/O on big-endian platforms not supported via compiler switches])
+fi
+
+# ...Final build type
+AC_MSG_NOTICE([Building ${ENDIAN_IO}-endian version])
 
 
 # Section for special cases for supported compilers
@@ -76,15 +85,17 @@ if test "${FC}" = ifort; then
   FCFLAGS="-assume byterecl $FCFLAGS"
 fi
 
-# ...Special case the xlf2003 compiler to recognise the .fpp (Fortran PreProcessor) suffix
+# ...Special case the xlf2003 compiler to:
+#      a) recognise the .fpp (Fortran PreProcessor) suffix
+#      b) not insert "#line" directives when it encounters multiple empty lines
 if test "${FC}" = xlf2003; then
-  FPPFLAGS="-qsuffix=cpp=fpp $FPPFLAGS"
+  FPPFLAGS="-qsuffix=cpp=fpp -WF,-P $FPPFLAGS"
 fi
 
 
 # Generate variable substitutions
 AC_SUBST(ENDIAN_PLATFORM)
-AC_SUBST(ENDIAN_IO,[${endian_io}])
+AC_SUBST(ENDIAN_IO)
 AC_SUBST(FPPFLAGS)
 
 
