@@ -1,7 +1,7 @@
 ;+
-; Function to convert relative response to deciBels
+; Procedure to convert relative response to deciBels
 ;
-FUNCTION Response_to_dB, Response  ; Input response
+PRO Response_to_dB, Response, Response_dB  ; Input response
 ;-
-  RETURN, 10.0d0*ALOG10(DOUBLE(Response))  ; Return deciBels
+  Response_dB = 10.0d0*ALOG10(DOUBLE(Response))  ; Return deciBels
 END
