@@ -4,7 +4,7 @@
 package = @PACKAGE_NAME@
 version = @PACKAGE_VERSION@
 tarname = @PACKAGE_TARNAME@
-distdir = $(tarname)-$(version)
+distdir = $(tarname)_$(version)
 
 # Prefix-specific substitution variables
 prefix      = @prefix@
@@ -16,7 +16,7 @@ installdir  = $(prefix)/$(distdir)
 all clean check install uninstall nco_install:
 	cd libsrc && $(MAKE) $@
 
-distclean:
+distclean: clean
 	cd libsrc && $(MAKE) $@
 	-rm Makefile config.log* config.status >/dev/null 2>&1
 
@@ -36,7 +36,7 @@ distcheck:  $(distdir).tar.gz
 	echo
 
 $(distdir).tar.gz: $(distdir)
-	tar chof - $(distdir) --exclude .svn | gzip -9 -c > $@
+	tar -chof - $(distdir) --exclude .svn | gzip -9 -c > $@
 	rm -rf $(distdir)
 
 $(distdir): FORCE
@@ -46,6 +46,7 @@ $(distdir): FORCE
 	cp Makefile.in $(distdir)
 	cp install-sh $(distdir)
 	cp -rL libsrc $(distdir)/libsrc
+	cp -rL config-setup $(distdir)/config-setup
 
 Makefile: Makefile.in config.status
 	./config.status $@

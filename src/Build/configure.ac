@@ -21,8 +21,8 @@ AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
 # Check for programs
 AC_PROG_FC(ifort gfortran xlf2003 pgf95 g95)
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 AC_CHECK_TOOL([AR], ar)
-AC_CHECK_TOOL([RANLIB], ranlib)
 # ...Set defaults for ARFLAGS since there is no autoconf macro
 test -n "$ARFLAGS" || ARFLAGS="crvs"
 AC_SUBST(ARFLAGS)

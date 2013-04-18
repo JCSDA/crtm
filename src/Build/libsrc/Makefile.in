@@ -42,7 +42,8 @@ clean:
 	cd test && $(MAKE) $@
 	-rm *.o *.mod *.a >/dev/null 2>&1
 
-distclean: clean uninstall
+distclean:
+	cd test && $(MAKE) $@
 	-rm Makefile >/dev/null 2>&1
 
 check: library
