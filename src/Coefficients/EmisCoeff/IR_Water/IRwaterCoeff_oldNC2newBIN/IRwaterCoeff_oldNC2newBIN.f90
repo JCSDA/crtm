@@ -10,7 +10,7 @@
 !                       paul.vandelst@noaa.gov
 !
 
-PROGRAM EmisCoeff_NC2BIN
+PROGRAM IRwaterCoeff_oldNC2newBIN
 
   ! ------------------
   ! Environment set up
@@ -130,7 +130,7 @@ PROGRAM EmisCoeff_NC2BIN
                    irwatercoeff(1)  , &
                    BIN_Filename     , &
                    Title   = title  , &
-                   History = PROGRAM_VERSION_ID//';'//TRIM(history) , &
+                   History = PROGRAM_VERSION_ID//'; '//TRIM(history) , &
                    Comment = comment   )
   IF ( Error_Status /= SUCCESS ) THEN
     msg = 'Error writing Binary IRwaterCoeff file '//TRIM(BIN_Filename)
@@ -160,4 +160,4 @@ PROGRAM EmisCoeff_NC2BIN
   Error_Status = Destroy_EmisCoeff( EmisCoeff )
   CALL IRwaterCoeff_Destroy(irwatercoeff)
 
-END PROGRAM EmisCoeff_NC2BIN
+END PROGRAM IRwaterCoeff_oldNC2newBIN
