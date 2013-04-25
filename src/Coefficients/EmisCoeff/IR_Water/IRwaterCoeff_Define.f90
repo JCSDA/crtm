@@ -63,11 +63,15 @@ MODULE IRwaterCoeff_Define
     '$Id$'
   ! Current valid release and version
   INTEGER, PARAMETER :: IRWATERCOEFF_RELEASE = 3  ! This determines structure and file formats.
-  INTEGER, PARAMETER :: IRWATERCOEFF_VERSION = 1  ! This is just the default data version.
+  INTEGER, PARAMETER :: IRWATERCOEFF_VERSION = 2  ! This is just the default data version.
   ! Close status for write errors
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
+  ! Conversion constants
+  REAL(fp), PARAMETER :: PI = 3.141592653589793238462643383279_fp
+  REAL(fp), PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
 
@@ -92,6 +96,8 @@ MODULE IRwaterCoeff_Define
     REAL(Double), ALLOCATABLE :: Wind_Speed(:)  ! N
     ! Emissivity LUT data
     REAL(Double), ALLOCATABLE :: Emissivity(:,:,:)  ! I x L x N
+    ! Transformed dimensional vectors
+    REAL(Double), ALLOCATABLE :: Secant_Angle(:)  ! I
   END TYPE IRwaterCoeff_type
   !:tdoc-:
 
@@ -248,6 +254,7 @@ CONTAINS
               self%Frequency( n_Frequencies ), &
               self%Wind_Speed( n_Wind_Speeds ), &
               self%Emissivity( n_Angles, n_Frequencies, n_Wind_Speeds ), &
+              self%Secant_Angle( n_Angles ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
@@ -258,10 +265,11 @@ CONTAINS
     self%n_Frequencies = n_Frequencies
     self%n_Wind_Speeds = n_Wind_Speeds
     ! ...Arrays
-    self%Angle      = ZERO
-    self%Frequency  = ZERO
-    self%Wind_Speed = ZERO
-    self%Emissivity = ZERO
+    self%Angle        = ZERO
+    self%Frequency    = ZERO
+    self%Wind_Speed   = ZERO
+    self%Emissivity   = ZERO
+    self%Secant_Angle = ZERO
 
     ! Set allocation indicator
     self%Is_Allocated = .TRUE.
@@ -918,8 +926,9 @@ CONTAINS
       msg = 'Error reading emissivity data - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    
-    
+    ! ...Compute the transformed dimensional vectors
+    IRwaterCoeff%Secant_Angle = ONE/COS(DEGREES_TO_RADIANS*IRwaterCoeff%Angle)
+
     ! Close the file
     IF ( close_file ) THEN
       CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
