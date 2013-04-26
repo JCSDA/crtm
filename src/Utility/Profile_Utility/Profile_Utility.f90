@@ -10,17 +10,66 @@
 !
 
 MODULE Profile_Utility
-  ! The Utility modules
+
+  ! Module information
+  ! ------------------
+  ! Support modules
   USE Type_Kinds
   USE File_Utility
   USE Message_Handler
   USE Fundamental_Constants
   USE Compare_Float_Numbers
-  ! The Profile_Utility modules
+
+  ! The library modules
   USE Atmospheric_Properties
   USE Geopotential
   USE Level_Layer_Conversion
   USE Profile_Utility_Parameters
   USE Units_Conversion
+
+
+  ! Visibility
+  ! ----------
   PUBLIC
+
+
+  ! Module parameters
+  ! -----------------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
+  CHARACTER(*), PARAMETER :: LIBRARY_VERSION_ID = &
+  'v1.0.0'
+
+
+CONTAINS
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Profile_Utility_Version
+!
+! PURPOSE:
+!       Subroutine to provide profile utility library version information.
+!
+! CALLING SEQUENCE:
+!       CALL Profile_Utility_Version( version )
+!
+! OUTPUTS:
+!       version:  Character string identifying the profile utility
+!                 library version.
+!                 UNITS:      N/A
+!                 TYPE:       CHARACTER(*)
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE Profile_Utility_Version( version )
+    CHARACTER(*), INTENT(OUT) :: version
+    version = LIBRARY_VERSION_ID
+  END SUBROUTINE Profile_Utility_Version
+
 END MODULE Profile_Utility
