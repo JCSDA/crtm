@@ -1,20 +1,34 @@
 #!/bin/sh
 
+# $Id$
+
 usage()
 {
   echo
-  echo "Usage: linkfiles [-d filter] dir file1 [file2 | file3 | ... | fileN]"
+  echo " Usage: linkfiles.sh [-d filter-dir] dir file1 [file2 | file3 | ... | fileN]"
   echo
-  echo "  -d"
-  echo "       Use this option to filter the directory location of"
-  echo "       requested file(s) to symlink."
+  echo "   $Revision$"
   echo
-  echo "  dir"
-  echo "       Directory at which to begin the search for the"
-  echo "       requested file(s) to symlink."
+  echo "   Script to search a directory tree and symlink in the requested"
+  echo "   file(s) to the current directory."
+  echo
+  echo "   * If multiple files of the same name exist in the directory tree,"
+  echo "     the first one found is linked in."
+  echo '   * Only regular files are linked in. No symlinks will be "chain"-linked.'
+  echo
+  echo
+  echo " Options:"
+  echo "   -d filter-dir   Use this option to filter the directory location"
+  echo "                   of the requested file(s) to symlink."
+  echo
+  echo "   -h              Print this message and exit"
+  echo
+  echo " Arguments:"
+  echo "  dir              Directory at which to begin the search for the"
+  echo "                   requested file(s) to symlink."
   echo
   echo "  file1 [file2 | file3 | ... | fileN]"
-  echo "       List of the file(s) for which a symlink is required."
+  echo "                   List of the file(s) for which a symlink is required."
   echo
 }
 
@@ -115,17 +129,22 @@ fi
 
 
 # Link in the files found
-${LINK} ${LINKFILES} .
-if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Link command failed for:"
-  echo ${FINDFILE_LIST}
-  exit ${FAILURE}
-fi
+for FILE in ${LINKFILES}; do
+  # Skip if file already exists OR if the file is itself a link
+  if [ -f $(basename ${FILE}) ] || [ -h ${FILE} ]; then
+    continue
+  fi
+  ${LINK} ${FILE} .
+  if [ $? -ne 0 ]; then
+    echo "${SCRIPT_NAME}: Link command failed for ${FILE}"
+    exit ${FAILURE}
+  fi
+done
 
 
 # Check that all the required files were found
 for FILE in ${LINKFILE_LIST}; do
   if [ ! -f ${FILE} ]; then
-    echo "File ${FILE} not found in ${LINKFILE_ROOT} heirarchy."
+    echo "File ${FILE} not found in ${LINKFILE_ROOT} hierarchy."
   fi
 done
