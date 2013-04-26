@@ -2,12 +2,20 @@
 
 # $Id$
 
+script_id()
+{
+  REVISION='$Revision$'
+  LAST_CHANGED_DATE='$LastChangedDate$'
+  echo
+  echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
+  echo " "`date`
+  echo " Support email: NCEP.List.EMC.JCSDA_CRTM.Support@noaa.gov"
+}
+
 usage()
 {
   echo
-  echo " Usage: linkfiles.sh [-d filter-dir] dir file1 [file2 | file3 | ... | fileN]"
-  echo
-  echo "   $Revision$"
+  echo " Usage: linkfiles.sh [-hx] [-d filter-dir] dir file [file2 | file3 | ... | fileN]"
   echo
   echo "   Script to search a directory tree and symlink in the requested"
   echo "   file(s) to the current directory."
@@ -18,19 +26,45 @@ usage()
   echo
   echo
   echo " Options:"
-  echo "   -d filter-dir   Use this option to filter the directory location"
-  echo "                   of the requested file(s) to symlink."
+  echo "   -d filter-dir"
+  echo "         Use this option to filter the directory location"
+  echo "         of the requested file(s) to symlink."
   echo
-  echo "   -h              Print this message and exit"
+  echo "   -h"
+  echo "         Print this message and exit"
+  echo
+  echo "   -x"
+  echo "         Turn on execution tracing. This also causes extra script"
+  echo "         information to be printed out."
   echo
   echo " Arguments:"
-  echo "  dir              Directory at which to begin the search for the"
-  echo "                   requested file(s) to symlink."
+  echo "   dir"
+  echo "         Directory at which to begin the search for the"
+  echo "         requested file(s) to symlink."
   echo
-  echo "  file1 [file2 | file3 | ... | fileN]"
-  echo "                   List of the file(s) for which a symlink is required."
+  echo "   file"
+  echo "         File for which a symlink is required."
+  echo
+  echo " Optional arguments:"
+  echo "   file2 | file3 | ... | fileN"
+  echo "         Additional list of files for which symlinks are required."
   echo
 }
+
+error_message()
+{
+  MESSAGE=$1
+  echo >&2
+  echo "  *********************" >&2
+  echo "  ${SCRIPT_NAME}(ERROR): ${MESSAGE}" >&2
+  echo "  *********************" >&2
+}
+
+
+
+########################################################################
+#                           MAIN SCRIPT BEGINS                         #
+########################################################################
 
 # Setup
 # ...Script name for error messages
@@ -42,40 +76,46 @@ LINK="ln -sf"
 
 
 # Parse the command line options
-while getopts :hd: OPTVAL; do
+while getopts :hxd: OPTVAL; do
+
   # Exit if option argument looks like another option
   case ${OPTARG} in
     -*) break;;
   esac
+
   # Parse the valid options
   case ${OPTVAL} in
-    d) FILTER_DIR=${OPTARG};;
-    h)  usage
-        exit ${SUCCESS};;
-    :|\?) OPTVAL=${OPTARG}
-          break;;
+    d)    FILTER_DIR=${OPTARG} ;;
+    x)    script_id; set -x ;;
+    h)    usage | more; exit ${SUCCESS} ;;
+    :|\?) OPTVAL=${OPTARG}; break ;;
   esac
 done
-# Remove the options processed
+
+# ...Remove the options processed
 shift $(expr ${OPTIND} - 1)
-# Output invalidities based on OPTVAL
+
+# ...Output invalidities based on OPTVAL
 case ${OPTVAL} in
+
   # If OPTVAL contains nothing, then all options
   # have been successfully parsed and all that
   # remains are the arguments
   \?) if [ $# -lt 2 ]; then
-        echo "${SCRIPT_NAME}: Missing 'dir' and 'file' arguments"
         usage
+        error_message "Missing 'dir' and 'file' arguments"
         exit ${FAILURE}
       fi;;
+
   # Valid options, but missing arguments
-  d) echo "${SCRIPT_NAME}: '-${OPTVAL}' option requires an argument"
-     usage
-     exit ${FAILURE};;
+  d) usage
+     error_message "'-${OPTVAL}' option requires an argument"
+     exit ${FAILURE} ;;
+
   # Invalid option
-  ?) echo "${SCRIPT_NAME}: Invalid option '-${OPTARG}'"
-     usage
-     exit ${FAILURE};;
+  ?) usage
+     error_message "Invalid option '-${OPTARG}'"
+     exit ${FAILURE} ;;
 esac
 
 
@@ -122,8 +162,7 @@ else
   LINKFILES=$(find ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | grep ${FILTER_DIR})
 fi
 if [ $? -ne 0 ]; then
-  echo "${SCRIPT_NAME}: Find command failed for:"
-  echo ${FINDFILE_LIST}
+  error_message "Find command failed for: ${FINDFILE_LIST}"
   exit ${FAILURE}
 fi
 
@@ -136,7 +175,7 @@ for FILE in ${LINKFILES}; do
   fi
   ${LINK} ${FILE} .
   if [ $? -ne 0 ]; then
-    echo "${SCRIPT_NAME}: Link command failed for ${FILE}"
+    error_message "Link command failed for ${FILE}"
     exit ${FAILURE}
   fi
 done
