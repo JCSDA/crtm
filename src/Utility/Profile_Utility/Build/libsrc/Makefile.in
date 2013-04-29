@@ -76,6 +76,11 @@ Makefile: Makefile.in ../config.status
 # Specify targets that do not generate filesystem objects
 .PHONY: all clean distclean check install uninstall
 
-# File dependency and compilation rule include files
+# Dependency include files
 include make.dependencies
-include make.rules
+
+# Suffix rules
+.SUFFIXES:
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $<
