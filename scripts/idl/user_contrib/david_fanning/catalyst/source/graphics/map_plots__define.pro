@@ -7,9 +7,7 @@
 ;       This object is a wrapper for the PLOTS routine in IDL. It provides a simple 
 ;       way to draw polygons or lines on images which use a MAPCOORD object to set up the map 
 ;       projection space. A map coordinate space must be in effect at the time the 
-;       Draw method of this object is used. If you used MAP_PROJ_INIT to set up the
-;       map coordinate space, then a map structure must be passed into the program with
-;       the MAP_STRUCTURE keyword.
+;       Draw method of this object is used. 
 ;
 ; AUTHOR:
 ;
@@ -27,15 +25,25 @@
 ;
 ; CALLING SEQUENCE:
 ;
-;       plotObject = Obj_New('Map_PlotS', lons, lats)
-;       Map_Set, /CYLINDRICAL
+;       mapCoordObj = Obj_New('MapCoord', 'Lambert Azimuthal', CENTER_LAT=90, CENTER_LON=0)
+;       plotObject = Obj_New('Map_PlotS', lons, lats, mapCoordObj)
+;       mapCoordObj -> Draw
 ;       plotObject -> Draw
+;       
 ;       
 ; AUGUMENTS:
 ; 
 ;       lons:           A vector (or scalar) of longitude values to plot.
 ;       
-;       lats:           A vector (or scalar) of latiitude values to plot.
+;       lats:           A vector (or scalar) of latitude values to plot.
+;
+;       mapCoordObj:   A map coordinate object which can return a map structure for converting coordinates
+;                      from lon/lat coordinates to XY coordinates. Typically, a MAPCOORD object. An
+;                      alternative way of specifying a map coordinate object is to use the MAP_OBJECT
+;                      keyword. But don't do both. Note, this object is *not* destroyed when the MAP_PLOTS
+;                      object is destroyed. You are responsible for destroying the map coordinate object.
+;                      A map coordinate object is REQUIRED. So, if you don't specify a this argument, use the
+;                      MAP_OBJECT keyword to pass this object into the program.
 ;
 ; KEYWORDS:
 ;     
@@ -47,36 +55,21 @@
 ;                       respectively. The default clipping rectangle is the plot window set
 ;                       up by the MAPCOORD object.
 ; 
-;      COLOR:           The name of the color to draw the grid lines in. Default: "charcoal".
+;      COLOR:           The name of the color to draw the lines or symbols in. Default: "white".
 ;      
 ;      LINESTYLE:       Set this keyword to the type of linestyle desired. See Graphics Keywords in
 ;                       the on-line help for additional information. Default is 0, solid line.
 ; 
 ;      MAP_OBJECT:      A MAPCOORD object or equivalent which had the ability to provide a map
-;                       structure with a MAP_STRUCTURE keyword to the SetProperty method. If this
-;                       object is supplied, it is always used in preference to MAP_STRUCTURE to 
-;                       obtain the necessarey map structure for coordinate conversions.
+;                       structure with a GetMapStructure method. Don't use this keyword if you have
+;                       passed a map coordinate object as a positional parameter. 
 ;      
-;      MAP_STRUCTURE:   Keyword depreciated in favor of MAP_OBJECT.
-;                       
-;                       A map projection structure (e.g., from MAP_PROJ_INIT) that allows the
-;                       the coordinate conversion from Cartisian coordinates (otherwise known as
-;                       UV coordinates) to longitude/latitude coordinates and visa versa. The problem
-;                       with passing a MAP_STRUCTURE is that the structure is absolutely dependent on
-;                       the *last* MAP_PROJ_INIT call made (from anywhere!) prior to the map structure
-;                       being used. In other words, it is *exceedingly* easy for a map structure to go
-;                       "stale". If you only have one map projection, and it never changes, and nothing
-;                       else in your IDL session will use a map projection, you can get away with this.
-;                       But it is FAR better to use the MAP_OBJECT keyword to provide a MAPCOORD object
-;                       from which to obtain the map structure when it is needed. This is because in
-;                       obtaining the map structure from a MAPCOORD object the MAP_PROJ_INIT method is
-;                       invoked just prior to the map structure being returned. So, this keyword is
-;                       depreciated in favor or the MAP_OBJECT keyword.
-;
-;      NOCLIP:          Set this keyword to surpress clipping of the plot. Set to 0 by default.
+;      NOCLIP:          Set this keyword to supress clipping of the plot. Set to 0 by default.
+;      
+;      PARENT:          An object reference to an object that will be the parent of this object.
 ;      
 ;      PSYM:            The plotting symbol to use for the plot. Can use any symbol available in
-;                       the Coyote Library routine SYMCAT. Set to 0 by default.
+;                       the Coyote Library routine cgSYMCAT. Set to 0 by default.
 ;                       
 ;      SYMSIZE:         Set this keyword to the size of symbols. Default is 1.0.
 ;      
@@ -86,16 +79,16 @@
 ;        
 ;      ZVALUE:          Set this keyword to the ZVALUE where the output should be drawn. Set to 0 by default.
 ;        
-;      UVCOORDS:        Set this keyword if the LONS and LATS are specified in UV coordinates, rather than
+;      UVCOORDS:        Set this keyword if the LONS and LATS are specified in UV (XY) coordinates, rather than
 ;                       longitude and latitude coordinates.
 ;
 ; DEPENDENCIES:
 ;
 ;       The following programs (at least) are required from the Coyote Library:
 ;
-;                     http://www.dfanning.com/programs/error_message.pro
-;                     http://www.dfanning.com/programs/fsc_color.pro
-;                     http://www.dfanning.com/programs/symcat.pro
+;                     http://www.idlcoyote.com/programs/error_message.pro
+;                     http://www.idlcoyote.com/programs/cgcolor.pro
+;                     http://www.idlcoyote.com/programs/cgsymcat.pro
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -105,6 +98,8 @@
 ;       Fixed a problem with converting lat/lon to UV coordinates in the DRAW method. 13 June 2009. DWF.
 ;       Circular parent references when passed a MAP_OBJECT was fixed, preventing memory
 ;          leakage. 30 August 2009. DWF.
+;       Removed the MAP_STRUCTURE keyword, which caused MASSIVE problems and added a mapCoordObj
+;          parameter. 9 November 2009. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -134,7 +129,13 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-PRO Map_PlotS::Draw, _EXTRA=extrakeywords
+PRO Map_PlotS::Draw, NOMAPDRAW=nomapdraw, _EXTRA=extrakeywords
+
+    ; Normally, when the DRAW method is called, the DRAW method of the MapCoord object is
+    ; called first, so the map projection space can be set properly. If the map projection
+    ; space is already set up, there is no need to call the DRAW method of the MapCoord 
+    ; object. In this case, it would be appropriate to set the NOMAPDRAW keyword on this
+    ; DRAW method.
 
     ; Error handling
     Catch, theError
@@ -147,12 +148,11 @@ PRO Map_PlotS::Draw, _EXTRA=extrakeywords
     ; You have to have data to plot. If not exit quietly.
     IF (N_Elements(*self.lons) EQ 0) OR (N_Elements(*self.lats) EQ 0) THEN RETURN
     
-    ; Find a map structure, if one is available.
+    ; Find a map structure, if you can.
     IF Obj_Valid(self.map_object) THEN BEGIN
-        self.map_object -> GetProperty, MAP_STRUCTURE=mapStruct
-    ENDIF ELSE BEGIN
-        IF N_Elements(*self.map_structure) NE 0 THEN mapStruct = *self.map_structure
-    ENDELSE
+        mapStruct = self.map_object -> GetMapStructure() 
+        IF ~Keyword_Set(nomapdraw) THEN self.map_object -> Draw
+    ENDIF ELSE Message, 'There is no valid map object from which a map structure can be obtained.'
 
     ; If you have a map structure, then determine if the points to plot
     ; are in lat/lon or UV coordinate space. The MapCoord object sets up
@@ -176,8 +176,8 @@ PRO Map_PlotS::Draw, _EXTRA=extrakeywords
         lats = *self.lats
     ENDELSE
     
-    ; Accommodate SYMCAT symbols
-    IF self.psym GE 0 THEN psym = SymCat(self.psym) ELSE psym = (-1) * SymCat(Abs(self.psym))
+    ; Accommodate cgSYMCAT symbols
+    IF self.psym GE 0 THEN psym = cgSymCat(self.psym) ELSE psym = (-1) * cgSymCat(Abs(self.psym))
     
     ; If clip is not defined, then set it here.
     IF Total(self.clip) EQ 0 $
@@ -187,7 +187,7 @@ PRO Map_PlotS::Draw, _EXTRA=extrakeywords
     ; Draw the lines or symbols.
     PlotS, lons, lats,  $
         CLIP=clip, $
-        COLOR=FSC_COLOR(self.color), $
+        COLOR=cgColor(self.color), $
         LINESTYLE=self.linestyle, $
         NOCLIP=self.noclip, $
         PSYM=psym, $
@@ -237,15 +237,9 @@ PRO Map_PlotS::GetProperty, $
     thick = self.thick
     uvcoords = self.uvcoords
     zvalue = self.zvalue
-    thick = self.thick
     lats = *self.lats
     lons = *self.lons
-    IF Obj_Valid(self.map_object) THEN map_object = self.map_object
-    IF N_Elements(*self.map_structure) NE 0 THEN BEGIN
-        map_structure = *self.map_structure
-    ENDIF ELSE BEGIN
-        IF Obj_Valid(self.map_object) THEN self.map_object -> GetProperty, MAP_STRUCTURE=map_structure
-    ENDELSE
+    map_object = self.map_object
     
     IF N_Elements(extra) NE 0 THEN self -> CATATOM::GetProperty, _EXTRA=extra
     
@@ -259,7 +253,6 @@ PRO Map_PlotS::SetProperty, $
     COLOR=color, $
     LINESTYLE=linestyle, $
     MAP_OBJECT=map_object, $
-    MAP_STRUCTURE=map_structure, $
     NOCLIP=noclip, $
     PSYM=psym, $
     SYMSIZE=symsize, $
@@ -284,7 +277,6 @@ PRO Map_PlotS::SetProperty, $
         *self.lats = lats
     ;print, 'lats:',  lats
     ENDIF
-    IF N_Elements(map_structure) NE 0 THEN *self.map_structure = map_structure
 
     IF N_Elements(clip) NE 0 THEN self.clip = clip
     IF N_Elements(color) NE 0 THEN self.color = color
@@ -306,20 +298,18 @@ PRO Map_PlotS::CLEANUP
 
     Ptr_Free, self.lons
     Ptr_Free, self.lats
-    Ptr_Free, self.map_structure
-    IF Obj_Valid(self.map_object) THEN self.map_object -> RemoveParent, self
     
     self -> CatAtom::CLEANUP
 END ; -------------------------------------------------------------------------------------
 
 
-FUNCTION Map_PlotS::INIT, lons, lats, $
+FUNCTION Map_PlotS::INIT, lons, lats, mapCoordObj, $
     CLIP=clip, $
     COLOR=color, $
     LINESTYLE=linestyle, $
     MAP_OBJECT=map_object, $
-    MAP_STRUCTURE=map_structure, $
     NOCLIP=noclip, $
+    PARENT=parent, $
     PSYM=psym, $
     SYMSIZE=symsize, $
     T3D=t3d, $
@@ -368,13 +358,17 @@ FUNCTION Map_PlotS::INIT, lons, lats, $
     IF N_Elements(lats) EQ 0 $
         THEN self.lats = Ptr_New(/ALLOCATE_HEAP) $
         ELSE self.lats = Ptr_New(lats)
-    
-    IF N_Elements(map_structure) EQ 0 $
-        THEN self.map_structure = Ptr_New(/ALLOCATE_HEAP) $
-        ELSE self.map_structure = Ptr_New(map_structure)
-    
-    ; If a map object exists.
-    IF Obj_Valid(map_object) THEN self.map_object = map_object
+        
+    ; If a map object exists, simply put it in the right place. Do NOT
+    ; make yourself a parent, because this object might contain YOU!
+    IF Obj_Valid(mapCoordObj) THEN self.map_object = mapCoordObj
+    IF Obj_Valid(map_object) AND Obj_Valid(self.map_object) THEN $
+        Message, 'Cannot use both mapCoordObj parameter and MAP_OBJECT keyword.'
+    IF Obj_Valid(map_object) AND ~Obj_Valid(self.map_object) THEN $
+        self.map_object = map_object
+        
+    ; Make sure you have a valid map object at this point.
+    IF ~Obj_Valid(self.map_object) THEN Message, 'A valid map object is required to create a MAP_PLOTS object.'
 
     RETURN, 1
     
@@ -397,7 +391,6 @@ PRO Map_PlotS__DEFINE, class
               zvalue: 0.0, $
               uvcoords: 0B, $
               map_object: Obj_New(), $
-              map_structure: Ptr_New(), $
               INHERITS CatAtom $
             }
 

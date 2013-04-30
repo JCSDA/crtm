@@ -38,8 +38,11 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David W. Fanning, 24 July 2002.
-;       Modified keywords in the SetProperty method that started with SET_, dropping this prefix
-;          to keep them consistent with the same keywords in the GetProperty method. 18 July 2004. DWF.
+;       Modified keywords in the SetProperty method that started with SET_, 
+;          dropping this prefix to keep them consistent with the same keywords 
+;          in the GetProperty method. 18 July 2004. DWF.
+;       Typo preventing text widgets from being set to EDITABLE in INIT 
+;           method fixed. 28 Oct 2010. DWF    
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        ;
@@ -303,7 +306,7 @@ PRO TextWidget::SetProperty, $
    IF (N_ELEMENTS (all_events) GT 0) THEN WIDGET_CONTROL, self._id, ALL_TEXT_EVENTS=Keyword_Set(all_events)
    IF N_Elements(context_events) NE 0 THEN $
       WIDGET_CONTROL, self._id, CONTEXT_EVENTS=Keyword_Set(context_events)
-   IF (N_ELEMENTS (editable) GT 0) THEN WIDGET_CONTROL, self._id, EDITABLE=Keyword_Set(all_events)
+   IF (N_ELEMENTS (editable) GT 0) THEN WIDGET_CONTROL, self._id, EDITABLE=Keyword_Set(editable)
    IF (N_ELEMENTS (input_focus) GT 0) THEN WIDGET_CONTROL, self._id, INPUT_FOCUS=Keyword_Set(input_focus)
    IF (N_ELEMENTS (kbrd_focus_events) GT 0) THEN WIDGET_CONTROL, self._id, KBRD_FOCUS_EVENTS=Keyword_Set(kbrd_focus_events)
    IF (N_ELEMENTS (no_newline) GT 0) THEN WIDGET_CONTROL, self._id, NO_NEWLINE=Keyword_Set(no_newline)

@@ -73,6 +73,8 @@
 ;
 ;       Written by: David W. Fanning, 25 Jan 2004.
 ;       Modified to work with MapCoord object. 25 June 2009. DWF.
+;       An invisible call to XYOUTS to get the width of the output line is actually
+;          drawn on the display when hardware fonts are used. Fixed. 15 July 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        ;
@@ -339,13 +341,13 @@ END
 ;
 ; ARGUMENTS:
 ;
-;       drawID:    The draw widget which will contain the new arrow object. Required in normal operation.
+;       drawID:    The draw widget which will contain the new textline object. Required in normal operation.
 ;
-;       pixmapID:  The pixmap which will contain the new arrow object. Optional.
+;       pixmapID:  The pixmap which will contain the new textline object. Optional.
 ;
 ; KEYWORDS:
 ;
-;       NEWOBJECT: An output keyword containing the new arrow object that gets created.
+;       NEWOBJECT: An output keyword containing the new textline object that gets created.
 ;
 ;-
 ;*****************************************************************************************************
@@ -413,7 +415,7 @@ PRO TextLine::CreateNewObject, drawID, pixmapID, NEWOBJECT=newObject
       drawID -> Add, newObject
       IF Obj_Valid(pixmapID) THEN pixmapID -> Add, newObject
 
-      ; Draw the new arrow.
+      ; Draw the new textline.
       newObject -> Draw
 
    ENDELSE
@@ -470,10 +472,15 @@ PRO TextLine::Draw, _Extra=extrakeywords
         ; are in lat/lon or UV coordinate space. The MapCoord object sets up
         ; a UV coordinate space. The values to be plotted here are in lat/lon
         ; space (normally), so they have to be converted to XY space to be plotted.
-        mapStruct = self._coords -> GetMapStructure()
-        uv = Map_Proj_Forward(self.x, self.y, MAP_STRUCTURE=mapStruct)
-        _x = uv[0]
-        _y = uv[1]
+        IF ~self.uvcoords THEN BEGIN
+            mapStruct = self._coords -> GetMapStructure()
+            uv = Map_Proj_Forward(self.x, self.y, MAP_STRUCTURE=mapStruct)
+            _x = uv[0]
+            _y = uv[1]
+        ENDIF ELSE BEGIN
+            _x = self.x
+            _y = self.y
+        ENDELSE
       ENDIF  ELSE BEGIN
         _x = self.x
         _y = self.y
@@ -492,8 +499,9 @@ PRO TextLine::Draw, _Extra=extrakeywords
    IF (!D.Name EQ 'PS' OR !D.Name EQ 'PRINTER') THEN BEGIN
        theWidth = self.width
    ENDIF ELSE BEGIN
+      IF theFont EQ 1 THEN widthFont=0 ELSE widthFont=theFont
       XYOuts, _x, _y, text, Alignment=self.alignment/2.0, Orientation=self.orientation, $
-         Font=theFont-1, Charsize=-self.charsize, Color=FSC_Color(self.color), Width=theWidth, $
+         Font=widthFont-1, Charsize=-self.charsize, Color=cgColor(self.color), Width=theWidth, $
          CharThick=self.thickness
    ENDELSE
 
@@ -507,7 +515,7 @@ PRO TextLine::Draw, _Extra=extrakeywords
 
    ;Draw the background if required.
    IF self.background THEN $
-      PolyFill, self.box[0,*], self.box[1,*], Fill=1, Color=FSC_Color(self.bg_color), /Normal
+      PolyFill, self.box[0,*], self.box[1,*], Fill=1, Color=cgColor(self.bg_color), /Normal
 
    ; Apply the coordinate system, if you have one.
    self -> ApplyCoords
@@ -515,10 +523,10 @@ PRO TextLine::Draw, _Extra=extrakeywords
    ; Output the string.
    IF (!D.Name EQ 'PS' OR !D.Name EQ 'PRINTER') THEN BEGIN
       XYOuts, self.x, self.y, text, Alignment=self.alignment/2.0, Orientation=self.orientation, $
-         Font=theFont-1, Charsize=self.charsize, Color=FSC_Color(self.color), CharThick=self.thickness
+         Font=theFont-1, Charsize=self.charsize, Color=cgColor(self.color), CharThick=self.thickness
    ENDIF ELSE BEGIN
       XYOuts, self.x, self.y, text, Alignment=self.alignment/2.0, Orientation=self.orientation, $
-         Font=theFont-1, Charsize=self.charsize, Color=FSC_Color(self.color), $
+         Font=theFont-1, Charsize=self.charsize, Color=cgColor(self.color), $
          CharThick=self.thickness
    ENDELSE
 
@@ -612,7 +620,7 @@ PRO TextLine::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -624,7 +632,7 @@ PRO TextLine::EventHandler, event
 
                   event.component -> GetProperty, BG_Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, BG_Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -886,7 +894,7 @@ PRO TextLine::InteractionEvents, event, Interaction=interaction
          XYOUTS, self.sx, self.sy, self.newText, $
             ALIGNMENT=alignment/2.0, $
             CHARSIZE=charsize, $,
-            COLOR=FSC_Color(color), $
+            COLOR=cgColor(color), $
             FONT=font-1, $
             ORIENTATION=orientation, $
             CHARTHICK=thickness, $
@@ -996,7 +1004,7 @@ PRO TextLine::InteractionEvents, event, Interaction=interaction
                      XYOUTS, self.sx, self.sy, self.newText, $
                         ALIGNMENT=alignment/2.0, $
                         CHARSIZE=charsize, $,
-                        COLOR=FSC_Color(color), $
+                        COLOR=cgColor(color), $
                         FONT=font-1, $
                         ORIENTATION=orientation, $
                         CHARTHICK=thickness, $

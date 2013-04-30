@@ -233,15 +233,15 @@ PRO ContrastBox::Draw, _Extra=extra
    self.contrastID -> Copy, Destination=[x1, y1], Origin=[x1,y1], Extent=[Abs(x2-x1)+1, Abs(y2-y1)+1]
    PLOTS, [self.box[0], self.box[0], self.box[2], self.box[2], self.box[0]], $
        [self.box[1], self.box[3], self.box[3], self.box[1], self.box[1]], $
-       /Device, Color=FSC_Color(self._roi_color)
-   PLOTS, x1, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x1, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x1, midy, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, midy, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, midx, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, midx, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
+       /Device, Color=cgColor(self._roi_color)
+   PLOTS, x1, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x1, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x1, midy, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, midy, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, midx, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, midx, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
 
    self._drawID -> SetWindow
    self.bufferID -> Copy
@@ -402,7 +402,7 @@ PRO ContrastBox::SetDisplay
 
    ; Make a a light image for display in the pixmap.
    self._drawID -> SetWindow
-   image = TVRead(True=3)
+   image = cgSnapshot(True=3)
 
    image24 = BytArr(xsize, ysize, 3)
    Color_Convert, Reform(image[*,*,0]), Reform(image[*,*,1]), Reform(image[*,*,2]), hue, light, sat, /RGB_HLS
@@ -540,7 +540,7 @@ PRO ContrastBox_Test, roi
    LoadCT, 0, /Silent
    tlb = Obj_New('TOPLEVELBASE')
    drawID = Obj_New('DrawWidget', tlb, XSize=400, ysize=400)
-   drawID -> Add, Obj_New('catimage', loaddata(7), position=[0.1, 0.1, 0.9, 0.9])
+   drawID -> Add, Obj_New('catimage', cgDemoData(7), position=[0.1, 0.1, 0.9, 0.9])
 
    tlb -> Draw, /Center
    roi = Obj_New('CONTRASTBOX', drawID)

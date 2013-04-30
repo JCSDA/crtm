@@ -235,7 +235,7 @@ PRO RubberbandBox::Draw, _EXTRA=extra
 
    PlotS, [self.box[0], self.box[0], self.box[2], self.box[2], self.box[0]], $
           [self.box[1], self.box[3], self.box[3], self.box[1], self.box[1]], $
-          /Device, Color=FSC_Color(self._roi_color), Linestyle=self.linestyle, $
+          /Device, Color=cgColor(self._roi_color), Linestyle=self.linestyle, $
           Thick=self.thick
 
    self -> Report, /Completed

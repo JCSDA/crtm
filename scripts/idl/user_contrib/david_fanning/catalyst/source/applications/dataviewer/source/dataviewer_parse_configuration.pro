@@ -28,7 +28,8 @@
 ;
 ; KEYWORD PARAMETERS:
 ;
-;  None.
+;  CONFIGURATION:   An output keyword containing an IDL structure variable with
+;                   the configuration of the parsed config file.
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -60,7 +61,7 @@
 ;  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE              ;
 ;  POSSIBILITY OF SUCH DAMAGE.                                                             ;
 ;******************************************************************************************;
-PRO DataViewer_Parse_Configuration, config_file
+PRO DataViewer_Parse_Configuration, config_file, CONFIGURATION=currentStruct
 
    ; Error handling.
    Catch, theError
@@ -111,6 +112,11 @@ PRO DataViewer_Parse_Configuration, config_file
                  theString = StrMid(thisLine, start)
                  theString = StrMid(theString,1,StrLen(theString)-2)
                  CatSetDefault, parts[0], theString
+                 IF N_Elements(currentStruct) EQ 0 THEN BEGIN
+                    currentStruct = Create_Struct(parts[0], theString)
+                 ENDIF ELSE bEGIN
+                     currentStruct = Create_Struct(currentStruct, parts[0], theString)
+                 ENDELSE
                  END
                  
             '"': BEGIN ; String.
@@ -118,6 +124,11 @@ PRO DataViewer_Parse_Configuration, config_file
                  theString = StrMid(thisLine, start)
                  theString = StrMid(theString,1,StrLen(theString)-2)
                  CatSetDefault, parts[0], theString
+                 IF N_Elements(currentStruct) EQ 0 THEN BEGIN
+                    currentStruct = Create_Struct(parts[0], theString)
+                 ENDIF ELSE bEGIN
+                     currentStruct = Create_Struct(currentStruct, parts[0], theString)
+                 ENDELSE
                  END
                  
             '[': BEGIN ; Two-element array.
@@ -128,12 +139,22 @@ PRO DataViewer_Parse_Configuration, config_file
                  num2 = StrMid(nums[1], 0, StrLen(nums[1])-1)
                  IF dot EQ -1 THEN num2 = Long(num2) ELSE num2 = FLOAT(num2)
                  CatSetDefault, parts[0], [num1,num2]
+                 IF N_Elements(currentStruct) EQ 0 THEN BEGIN
+                    currentStruct = Create_Struct(parts[0], [num1,num2])
+                 ENDIF ELSE bEGIN
+                     currentStruct = Create_Struct(currentStruct, parts[0], [num1,num2])
+                 ENDELSE
                  END
   
               ELSE: BEGIN ; Number value of some sort.
                  dot = StrPos(parts[1], '.')
                  IF dot EQ -1 THEN theValue = Long(parts[1]) ELSE theValue = Float(parts[1])
                  CatSetDefault, parts[0], theValue
+                 IF N_Elements(currentStruct) EQ 0 THEN BEGIN
+                    currentStruct = Create_Struct(parts[0], theValue)
+                 ENDIF ELSE bEGIN
+                     currentStruct = Create_Struct(currentStruct, parts[0], theValue)
+                 ENDELSE
                  END
                  
         ENDCASE

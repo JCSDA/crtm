@@ -225,7 +225,7 @@ PRO MoveableBox::Draw, _EXTRA=extra
    ; Draw the box.
    PlotS, [self.box[0], self.box[0], self.box[2], self.box[2], self.box[0]], $
        [self.box[1], self.box[3], self.box[3], self.box[1], self.box[1]], $
-       /Device, Color=FSC_Color(self._roi_color)
+       /Device, Color=cgColor(self._roi_color)
 
    ; Draw the handles on the box.
    UserSym, Cos(self.phi), Sin(self.phi), /Fill
@@ -238,14 +238,14 @@ PRO MoveableBox::Draw, _EXTRA=extra
    midy = (Abs(y2 - y1) / 2) + Min([y1,y2])
    midx = (Abs(x2 - x1) / 2) + Min([x1,x2])
 
-   PLOTS, x1, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x1, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x1, midy, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, x2, midy, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, midx, y1, PSYM=8, Color=FSC_Color(self.handle_color), /Device
-   PLOTS, midx, y2, PSYM=8, Color=FSC_Color(self.handle_color), /Device
+   PLOTS, x1, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x1, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x1, midy, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, x2, midy, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, midx, y1, PSYM=8, Color=cgColor(self.handle_color), /Device
+   PLOTS, midx, y2, PSYM=8, Color=cgColor(self.handle_color), /Device
 
    ; Transfer buffer to the display
    self._drawID -> SetWindow
@@ -940,7 +940,7 @@ PRO MoveableBox_Test
    LoadCT, 0, /Silent
    tlb = Obj_New('TOPLEVELBASE')
    drawID = Obj_New('DrawWidget', tlb, XSize=400, ysize=400)
-   drawID -> Add, Obj_New('catimage2d', loaddata(7))
+   drawID -> Add, Obj_New('catimage2d', cgDemoData(7))
 
    tlb -> Draw, /Center
    roi = Obj_New('MOVEABLEBOX', drawID)

@@ -283,7 +283,7 @@ PRO CatColorBar::Draw, _Extra=extrakeywords
 
    ; Draw the background if required.
    IF self.background THEN BEGIN
-      PolyFill, self.box, Fill=1, Color=FSC_Color(self.bg_color), /Normal
+      PolyFill, self.box, Fill=1, Color=cgColor(self.bg_color), /Normal
    ENDIF
 
    IF self.matchparent THEN BEGIN
@@ -326,25 +326,25 @@ PRO CatColorBar::Draw, _Extra=extrakeywords
 
          PLOT, self.range, /NODATA, XTICKS=1, $
             YTICKS=self.divisions, XSTYLE=1, YSTYLE=9, $
-            POSITION=position, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, /NOERASE, $
+            POSITION=position, COLOR=cgColor(self.color), CHARSIZE=self.charsize, /NOERASE, $
             YTICKFORMAT='(A1)', XTICKFORMAT='(A1)', YTICKLEN=self.ticklen, XTHICK=self.thickness, $
             YRANGE=self.range, FONT=font-1, YMINOR=self.minor, _EXTRA=*self.extra, YTHICK=self.thickness
 
          AXIS, YAXIS=1, YRANGE=self.range, YTICKFORMAT=self.format, YTICKS=self.divisions, YTHICK=self.thickness, $
-            YTICKLEN=self.ticklen, YSTYLE=1, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, $
+            YTICKLEN=self.ticklen, YSTYLE=1, COLOR=cgColor(self.color), CHARSIZE=self.charsize, $
             FONT=font-1, YMINOR=self.minor, YTICKNAME=*self.tickv, YTITLE=self.title, _EXTRA=*self.extra
 
       ENDIF ELSE BEGIN
 
          PLOT, self.range, /NODATA, XTICKS=1, $
             YTICKS=self.divisions, XSTYLE=1, YSTYLE=9, YMINOR=self.minor, $
-            POSITION=position, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, /NOERASE, $
+            POSITION=position, COLOR=cgColor(self.color), CHARSIZE=self.charsize, /NOERASE, $
             YTICKFORMAT=self.format, XTICKFORMAT='(A1)', YTICKLEN=self.ticklen , $
             YRANGE=self.range, FONT=font-1, YTITLE=self.title, _EXTRA=*self.extra, $
             YTICKNAME=*self.tickv, YTHICK=self.thickness, XTHICK=self.thickness
 
          AXIS, YAXIS=1, YRANGE=self.range, YTICKFORMAT='(A1)', YTICKS=self.divisions, $
-            YTICKLEN=self.ticklen, YSTYLE=1, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, $
+            YTICKLEN=self.ticklen, YSTYLE=1, COLOR=cgColor(self.color), CHARSIZE=self.charsize, $
             FONT=font-1, YMINOR=self.minor, YTHICK=self.thickness
 
       ENDELSE
@@ -355,11 +355,11 @@ PRO CatColorBar::Draw, _Extra=extrakeywords
 
          PLOT, self.range, /NODATA, XTICKS=self.divisions, $
             YTICKS=1, XSTYLE=9, YSTYLE=1, XTHICK=self.thickness, YTHICK=self.thickness, $
-            POSITION=position, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, /NOERASE, $
+            POSITION=position, COLOR=cgColor(self.color), CHARSIZE=self.charsize, /NOERASE, $
             YTICKFORMAT='(A1)', XTICKFORMAT='(A1)', XTICKLEN=self.ticklen, $
             XRANGE=self.range, FONT=font-1, XMINOR=self.minor
 
-         AXIS, XTICKS=self.divisions, XSTYLE=1, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, $
+         AXIS, XTICKS=self.divisions, XSTYLE=1, COLOR=cgColor(self.color), CHARSIZE=self.charsize, $
             XTICKFORMAT=self.format, XTICKLEN=self.ticklen, XRANGE=self.range, XAXIS=1, $
             FONT=font-1, XCHARSIZE=self.charsize, XMINOR=self.minor, XTHICK=self.thickness, $
             XTICKNAME=*self.tickv, _EXTRA=*self.extra, XTITLE=self.title
@@ -368,7 +368,7 @@ PRO CatColorBar::Draw, _Extra=extrakeywords
 
          PLOT, self.range, /NODATA, XTICKS=self.divisions, $
             YTICKS=1, XSTYLE=1, YSTYLE=1, XTITLE=self.title, XTHICK=self.thickness, YTHICK=self.thickness, $
-            POSITION=position, COLOR=FSC_Color(self.color), CHARSIZE=self.charsize, /NOERASE, $
+            POSITION=position, COLOR=cgColor(self.color), CHARSIZE=self.charsize, /NOERASE, $
             YTICKFORMAT='(A1)', XTICKFORMAT=self.format, XTICKLEN=self.ticklen, $
             XRANGE=self.range, FONT=font-1, XMinor=self.minor, $
             XTICKNAME=*self.tickv, _EXTRA=*self.extra
@@ -430,7 +430,7 @@ PRO CatColorBar::DrawSelectionBox, Color=color
 
    ; Draw the box.
    Plots, [p[0], p[0], p[2], p[2], p[0]], $
-          [p[1], p[3], p[3], p[1], p[1]], /Normal, Color=FSC_Color(color)
+          [p[1], p[3], p[3], p[1], p[1]], /Normal, Color=cgColor(color)
 
    ; Find midpoint of box.
    xl = Min([p[0], p[2]], Max=xr)
@@ -439,14 +439,14 @@ PRO CatColorBar::DrawSelectionBox, Color=color
    midy = (yr - yl) / 2.0 + yl
 
    ; Draw the handles on the box.
-   PLOTS, p[0], p[1], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, p[0], p[3], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, p[2], p[1], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, p[2], p[3], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, p[0], midy, PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, p[2], midy, PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, midx, p[1], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
-   PLOTS, midx, p[3], PSYM=6, Color=FSC_Color(color), Symsize=1.25, /Normal
+   PLOTS, p[0], p[1], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, p[0], p[3], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, p[2], p[1], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, p[2], p[3], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, p[0], midy, PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, p[2], midy, PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, midx, p[1], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
+   PLOTS, midx, p[3], PSYM=6, Color=cgColor(color), Symsize=1.25, /Normal
 
    self -> Report, /Completed
 
@@ -494,7 +494,7 @@ PRO CatColorBar::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.

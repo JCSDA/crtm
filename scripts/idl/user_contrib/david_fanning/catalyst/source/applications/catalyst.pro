@@ -411,7 +411,7 @@ PRO Catalyst::EventHandler, event
          ENDIF
          self.currentInteraction = Obj_New('Selectinteraction', self.draw5ID, /Start_Now, $
             Name='INTERACTION', /ASK_ON_UP, UVALUE='ELLIPSE', Thick=2, Color='Yellow', $
-            /NoPicRestore, Coord_Object=zcoord, SelectedObject=Obj_New('Ellipse'), MODE='INSERT')
+            /NoPicRestore, Coord_Object=zcoord, SelectedObject=Obj_New('Cat_Ellipse'), MODE='INSERT')
          ruler = self.draw5ID -> Get('Ruler', /Recursive_Search)
          IF Obj_Valid(ruler) THEN ruler -> SetProperty, Selectable=0
          self.draw5ID -> SetProperty, Motion=0
@@ -462,7 +462,7 @@ PRO Catalyst::EventHandler, event
          ENDIF
          self.currentInteraction = Obj_New('Selectinteraction', self.draw5ID, /Start_Now, $
             Name='INTERACTION', /ASK_ON_UP, UVALUE='POLYGON',Thick=2, Color='Yellow', $
-            /NoPicRestore, Coord_Object=zcoord, SelectedObject=Obj_New('Polygon'), MODE='INSERT')
+            /NoPicRestore, Coord_Object=zcoord, SelectedObject=Obj_New('Cat_Polygon'), MODE='INSERT')
          ruler = self.draw5ID -> Get('Ruler', /Recursive_Search)
          IF Obj_Valid(ruler) THEN ruler -> SetProperty, Selectable=0
          self.draw5ID -> SetProperty, Motion=0
@@ -708,7 +708,7 @@ PRO Catalyst::GUI, menuBar
 
 
    ; First TAB Window to demonstate use of object graphics in Catalyst.
-   surface = Obj_New('CatSurface', Loaddata(2), Title='A Fully Rotatable Surface', NAME='Object Graphics Surface')
+   surface = Obj_New('CatSurface', cgDemoData(2), Title='A Fully Rotatable Surface', NAME='Object Graphics Surface')
    draw1 -> Add, surface, /Handle_Events ; The surface object will handle these events.
 
     ; Create an embedded control panel widget.
@@ -718,12 +718,12 @@ PRO Catalyst::GUI, menuBar
    ; Second TAB Window to demonstate a standard IDL graphics command.
    ; The CatGraphicsCmdTool can be used execute any IDL graphics command.
    histogramCmd = Obj_New('CatGraphicsCmdTool', Name='HistogramPlot',Decomposed=1)
-   histogramCmd -> LoadCommand, 'Plot', Histogram(loaddata(5)), Max_Value=5000, XStyle=1, $
-      Title='Histogram Plot', Background=FSC_Color('charcoal', Decomposed=1), $
-      Color=FSC_Color('green', Decomposed=1), /NoData, $
+   histogramCmd -> LoadCommand, 'Plot', Histogram(cgDemoData(5)), Max_Value=5000, XStyle=1, $
+      Title='Histogram Plot', Background=cgColor('charcoal', Decomposed=1), $
+      Color=cgColor('green', Decomposed=1), /NoData, $
       Position=[0.15, 0.15, 0.9, 0.9]
-   histogramOplotCmd = Obj_New('CatGraphicsCmdTool', 'OPlot', Histogram(loaddata(5)), Max_Value=5000, $
-      Color=FSC_Color('yellow', Decomposed=1), Name='HistogramOPlot')
+   histogramOplotCmd = Obj_New('CatGraphicsCmdTool', 'OPlot', Histogram(cgDemoData(5)), Max_Value=5000, $
+      Color=cgColor('yellow', Decomposed=1), Name='HistogramOPlot')
 
    ; Adding the two graphics command tools to the draw object causes
    ; them to be drawn in the order in which they are added to the draw object.
@@ -737,7 +737,7 @@ PRO Catalyst::GUI, menuBar
    ; Create a coordinate object for the image.
    coords = Obj_New('CATCOORD', Name='True Color Image Coordinates', XRange=[0,227], YRange=[0,149])
 
-   image3 = Obj_New('CATTRUECOLORIMAGE', LoadData(16), Position=[0.15, 0.15, 0.85, 0.85], $
+   image3 = Obj_New('CATTRUECOLORIMAGE', cgDemoData(16), Position=[0.15, 0.15, 0.85, 0.85], $
       Name='TrueColor Image Example', Coord_Object=coords)
    draw3 -> Add, image3
 
@@ -759,7 +759,7 @@ PRO Catalyst::GUI, menuBar
    colors = Obj_New('COLORTOOL', NAME='Earth Colors', 4)
 
    ; Create the image object.
-   image4 = Obj_New('CATIMAGE', Congrid(Loaddata(7), 360, 180), Coord_Object=coords, $
+   image4 = Obj_New('CATIMAGE', Congrid(cgDemoData(7), 360, 180), Coord_Object=coords, $
       Position=pos, Name='Moveable Graphics', /Keep_Aspect, Color_Object=colors, /Selectable)
 
    ; Create image axes in the window.

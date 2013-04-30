@@ -46,6 +46,18 @@
 ;                          
 ; KEYWORDS:
 ; 
+;    GRID_COLOR:           The name of a color the map grid should be displayed with. The default
+;                          is "indian red". Color names are those supported by cgColor.
+;                          
+;    MAP_GRID:             If a MapCoord object is made successfully, then setting this keyword
+;                          will add a Map_Grid object to the MapCoord object.
+;
+;    MAP_OUTLINE:          If a MapCoord object is made successfully, then setting this keyword
+;                          will add a Map_Outline object to the MapCoord object.
+;                         
+;    OUTLINE_COLOR:        The name of a color the map outline should be displayed with. The default
+;                          is "indian red". Color names are those supported by cgColor.
+;                         
 ;    SILENT:               IDL cannot map every GeoTiff image to a supported map projection or datum.
 ;                          Normally, if the GeoTIFF image is unsupported, an error message is issued.
 ;                          Setting this keyword will suppress such error messages. If you do this, you
@@ -59,7 +71,7 @@
 ; 
 ;    mapCoord              A MAPCOORD object that can be used as the data coordinate object for
 ;                          a TIFF image. Creation of this object requires that the Catalyst Library
-;                          by on your IDL path.
+;                          be on your IDL path.
 ;                          
 ; NOTES:                   
 ; 
@@ -80,9 +92,16 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David W. Fanning, 30 August 2009.
+;       Removed the requirement that the GTRasterTypeGeoKey has to be "PixelIsArea". It
+;          can now also be "PixelIsPoint". 10 February 2010. DWF.
+;       Added ability to add MAP_OUTLINE and MAP_GRID objects to the output MapCoord object.
+;          New keywords OUTLINE_COLOR, MAP_OUTLINE, GRID_COLOR, and MAP_GRID. 20 Feb 2010, DWF.
+;       Switch UTM datum from WGS84 to WALBECK to avoid UTM projection bug in all versions
+;            of IDL prior to IDL 8.2, when it is suppose to be fixed. For more information,
+;            see this article: http://www.idlcoyote.com/map_tips/utmwrong.php. 31 Oct 2011. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2009, by Fanning Software Consulting, Inc.                                ;
+;  Copyright (c) 2009-2010, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -108,18 +127,32 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
+Function GeoCoord, image, geotiff, $
+    GRID_COLOR=grid_color, $
+    MAP_GRID=map_grid, $
+    MAP_OUTLINE=map_outline, $
+    OUTLINE_COLOR=outline_color, $
+    SILENT=silent, $
+    SUCCESS=success
 
-   Compile_Opt idl2
-   
-   Catch, theError
-   IF theError NE 0 THEN BEGIN
+    ; Compiler options.
+    Compile_Opt DEFINT32
+    Compile_Opt STRICTARR
+    Compile_Opt STRICTARRSUBS
+    Compile_Opt LOGICAL_PREDICATE
+       
+    Catch, theError
+    IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
         IF ~Keyword_Set(silent) THEN void = Error_Message()
         success = 0
         RETURN, Obj_New()
-   ENDIF
+    ENDIF
    
+    ; Set default values of keywords.
+    SetDefaultValue, grid_color, 'indian red'
+    SetDefaultValue, outline_color, 'indian red'
+    
    ; If no parameters, ask about reading a GeoTiff file.
    IF N_Params() EQ 0 THEN BEGIN
         geofile = Dialog_Pickfile(Title='Select GeoTiff File...', FILTER=['*.tif', '*.tiff'])
@@ -200,7 +233,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
    IF geotiff.gtModelTypeGeoKey NE 1 THEN Message, 'GEOTIFF image does not have a projected coordinate system.'
    
    ; We can not handle point data.
-   IF geotiff.gtRasterTypeGeoKey NE 1 THEN Message, 'Image pixels do not represent area in this GEOTIFF image.'
+   ;IF geotiff.gtRasterTypeGeoKey NE 1 THEN Message, 'Image pixels do not represent area in this GEOTIFF image.'
    
    ; Get the fields of the geotiff structure.
    fields = Tag_Names(geotiff)
@@ -703,7 +736,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
                  
         ENDCASE
         
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
    
@@ -733,7 +766,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
         
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
    
@@ -761,7 +794,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
                 
    ENDIF
 
@@ -816,6 +849,16 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         thisProjection = 101 ; UTM
         thisDatum = 8        ; WGS 84
         zone = projCode - 32600
+
+        ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
+        ; produces the wrong result when a UTM projection is used in conjunction
+        ; with a WGS84 datum (the most common datum used in this projection). Here
+        ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
+        ; results in position errors of less than a meter typically.
+        IF (Float(!version.release) LE 8.2) THEN BEGIN
+              Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
+              thisDatum = 12
+        ENDIF   
         
         CASE 1 OF ; Longitude
               (Where(fields EQ 'PROJNATORIGINLONGGEOKEY'))[0] NE -1 :        lon = geotiff.PROJNATORIGINLONGGEOKEY
@@ -835,7 +878,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
  
    ENDIF
 
@@ -845,6 +888,16 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         thisDatum = 8        ; WGS 84
         zone = -(projCode - 32700)
         
+        ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
+        ; produces the wrong result when a UTM projection is used in conjunction
+        ; with a WGS84 datum (the most common datum used in this projection). Here
+        ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
+        ; results in position errors of less than a meter typically.
+        IF (Float(!version.release) LE 8.2) THEN BEGIN
+              Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
+              thisDatum = 12
+        ENDIF
+
         CASE 1 OF ; Longitude
               (Where(fields EQ 'PROJNATORIGINLONGGEOKEY'))[0] NE -1 :        lon = geotiff.PROJNATORIGINLONGGEOKEY
               (Where(fields EQ 'PROJORIGINLONGGEOKEY'))[0] NE -1 :           lon = geotiff.PROJORIGINLONGGEOKEY
@@ -863,7 +916,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
 
@@ -891,7 +944,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
  
@@ -900,6 +953,16 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         thisProjection = 101 ; UTM
         thisDatum = 8        ; WGS84 or NAD83
         zone = projCode - 26900
+        
+        ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
+        ; produces the wrong result when a UTM projection is used in conjunction
+        ; with a WGS84 datum (the most common datum used in this projection). Here
+        ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
+        ; results in position errors of less than a meter typically.
+        IF (Float(!version.release) LE 8.2) THEN BEGIN
+              Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
+              thisDatum = 12
+        ENDIF
         
         CASE 1 OF ; Longitude
               (Where(fields EQ 'PROJNATORIGINLONGGEOKEY'))[0] NE -1 :        lon = geotiff.PROJNATORIGINLONGGEOKEY
@@ -919,7 +982,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
   
@@ -948,7 +1011,7 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
  
@@ -958,6 +1021,16 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         thisDatum = 8        ; WGS84 or NAD83
         zone = projCode - 32100
         
+        ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
+        ; produces the wrong result when a UTM projection is used in conjunction
+        ; with a WGS84 datum (the most common datum used in this projection). Here
+        ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
+        ; results in position errors of less than a meter typically.
+        IF (Float(!version.release) LE 8.2) THEN BEGIN
+              Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
+              thisDatum = 12
+        ENDIF
+
         CASE 1 OF ; Longitude
               (Where(fields EQ 'PROJNATORIGINLONGGEOKEY'))[0] NE -1 :        lon = geotiff.PROJNATORIGINLONGGEOKEY
               (Where(fields EQ 'PROJORIGINLONGGEOKEY'))[0] NE -1 :           lon = geotiff.PROJORIGINLONGGEOKEY
@@ -976,11 +1049,27 @@ Function GeoCoord, image, geotiff, SILENT=silent, SUCCESS=success
         mapCoord = Obj_New('MapCoord', thisProjection, DATUM=thisDatum, $
             CENTER_LATITUDE=lat, CENTER_LONGITUDE=lon, ZONE=zone)
         mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
-        RETURN, mapCoord
+;        RETURN, mapCoord
         
    ENDIF
    
    ; If we get here, we don't know what to do. 
-   Message, 'Map projection code ' + StrTrim(projCode,2) + ' is not supported.
+   IF N_Elements(mapCoord) EQ 0 THEN BEGIN
+      Message, 'Map projection code ' + StrTrim(projCode,2) + ' is not supported.
+   ENDIF
    
+   ; Need a map outline in this MapCoord object?
+   IF Keyword_Set(map_outline) THEN BEGIN
+       outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, /HIRES, $
+                        COLOR=outline_color, FILL=Keyword_Set(fill))
+       mapCoord -> SetProperty, OUTLINE_OBJECT=outline
+   ENDIF
+      
+   ; Need a map grid in this MapCoord object?
+   IF Keyword_Set(map_grid) THEN BEGIN
+       grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color)
+       mapCoord -> SetProperty, GRID_OBJECT=grid
+   ENDIF
+
+   RETURN, mapCoord
 END

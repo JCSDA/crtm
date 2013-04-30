@@ -426,11 +426,11 @@ PRO Box::Draw, _Extra=extrakeywords
    IF self.background THEN $
       PolyFill, [_x1, _x1, _x2, _x2, _x1], $
                 [_y1, _y2, _y2, _y1, _y1], $
-                 Fill=1, Color=FSC_Color(self.bg_color), NOCLIP=1-self.clip_to_data
+                 Fill=1, Color=cgColor(self.bg_color), NOCLIP=1-self.clip_to_data
 
    ; Draw the box.
    PlotS, [_x1, _x1, _x2, _x2, _x1], $
-          [_y1, _y2, _y2, _y1, _y1], Color=FSC_Color(self.color), $
+          [_y1, _y2, _y2, _y1, _y1], Color=cgColor(self.color), $
           Thick=self.thickness, Linestyle=self.linestyle, NOCLIP=1-self.clip_to_data
 
    self -> Report, /Completed
@@ -503,14 +503,14 @@ PRO Box::DrawSelectionBox, Color=color
    midy = (yr - yl) / 2.0 + yl
 
    ; Draw the handles on the box.
-   PLOTS, _x1, _y1,   PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, _x1, _y2,   PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, _x2, _y1,   PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, _x2, _y2,   PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, _x1, midy, PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, _x2, midy, PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, midx, _y1, PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
-   PLOTS, midx, _y2, PSYM=6, Color=FSC_Color(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x1, _y1,   PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x1, _y2,   PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x2, _y1,   PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x2, _y2,   PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x1, midy, PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, _x2, midy, PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, midx, _y1, PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
+   PLOTS, midx, _y2, PSYM=6, Color=cgColor(color), Symsize=1.25, NOCLIP=1-self.clip_to_data
 
    self -> Report, /Completed
 
@@ -557,7 +557,7 @@ PRO Box::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -569,7 +569,7 @@ PRO Box::EventHandler, event
 
                   event.component -> GetProperty, BG_Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, BG_Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -1394,7 +1394,7 @@ END
 ;
 ;     THICKNESS:    Set this to the thickness of the output. By default, 1.0.
 ;
-;     UVCOORDS:     If the coordinate object for the Arrow object is a MAPCOORD object, then it
+;     UVCOORDS:     If the coordinate object for the Box object is a MAPCOORD object, then it
 ;                   is assumed the data coordinate space (and, hence, X and Y) is specified in 
 ;                   longitude and latitude values. If they are in UV map coordinates instead, set this
 ;                   keyword to indicate that fact.

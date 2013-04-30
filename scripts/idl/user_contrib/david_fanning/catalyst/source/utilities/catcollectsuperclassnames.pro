@@ -38,7 +38,7 @@
 ;
 ; EXAMPLE:
 ;
-;       IDL> theObject = Obj_New('CatImage2d', Loaddata(7))
+;       IDL> theObject = Obj_New('CatImage2d', cgDemoData(7))
 ;       IDL> Print, CatCollectSuperclassNames(theObject)
 ;            CATIMAGE2D CATIMAGEDATA CATDATAATOM CATATOM CATCONTAINER
 ;

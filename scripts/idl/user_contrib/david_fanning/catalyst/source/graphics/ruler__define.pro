@@ -239,7 +239,7 @@ PRO Ruler::Draw, _Extra=extrakeywords
       AXIS, x, y, $
          YAXIS=yaxis, $
          CHARSIZE=self.charsize, $
-         COLOR=FSC_COLOR(self.color), $
+         COLOR=cgColor(self.color), $
          SAVE=1, $
          YMINOR=self.minor, $
          YRANGE=[0.0,theLength], $
@@ -290,7 +290,7 @@ PRO Ruler::Draw, _Extra=extrakeywords
       AXIS, x, y, $
          XAXIS=xaxis, $
          CHARSIZE=self.charsize, $
-         COLOR=FSC_COLOR(self.color), $
+         COLOR=cgColor(self.color), $
          XMINOR=self.minor, $
          XRANGE=[0.0,theLength], $
          XTHICK=self.thick, $
@@ -368,7 +368,7 @@ PRO Ruler::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -380,7 +380,7 @@ PRO Ruler::EventHandler, event
 
                   event.component -> GetProperty, BG_Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, BG_Color=color
 
                   ; Refresh the graphics hierarchy.

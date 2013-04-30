@@ -8,7 +8,7 @@
 ;       This object implements a methodology for displaying object graphics in
 ;       the Catalyst Object Library. The object contains an IDLgrView or IDLgrScene
 ;       object, written in object graphics that can be displayed in an ODrawWidget
-;       object. If fact, the ODrawWidget will *only* accept a CATOBJECTVEW object.
+;       object. If fact, the ODrawWidget will *only* accept a CATOBJECTVIEW object.
 ;
 ; AUTHORS:
 ;
@@ -40,6 +40,7 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David Fanning, 30 June 2003.
+;       Changed FSC_Normalize to cgNormalize to reflect new name. 6 Feb 2013. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        ;
@@ -239,9 +240,9 @@ PRO CatObjectView::SetView, theView
          theModel = Obj_New('IDLgrModel')
          theView = Obj_New('IDLgrView', Viewplane_Rect=[0, 0, 1, 1], _Extra=extraKeywords)
          idlGraphic -> GetProperty, XRange=xr, YRange=yr, ZRange=zr
-         xscale = FSC_Normalize(xr, Position=[0.15, 0.85])
-         yscale = FSC_Normalize(yr, Position=[0.15, 0.85])
-         zscale = FSC_Normalize(zr, Position=[0.15, 0.85])
+         xscale = cgNormalize(xr, Position=[0.15, 0.85])
+         yscale = cgNormalize(yr, Position=[0.15, 0.85])
+         zscale = cgNormalize(zr, Position=[0.15, 0.85])
          idlGraphic -> SetProperty, XCoord_Conv=xscale, YCoord_Conv=yscale, ZCoord_Conv=zscale
          theModel -> Add, idlGraphic
          theView -> Add, theModel
@@ -303,9 +304,9 @@ PRO CatObjectView::SetProperty, NO_DESTROY=no_destroy, VIEW=theView, _EXTRA=extr
          theModel = Obj_New('IDLgrModel')
          theView = Obj_New('IDLgrView', Viewplane_Rect=[0, 0, 1, 1], _Extra=extraKeywords)
          idlGraphic -> GetProperty, XRange=xr, YRange=yr, ZRange=zr
-         xscale = FSC_Normalize(xr, Position=[0.15, 0.85])
-         yscale = FSC_Normalize(yr, Position=[0.15, 0.85])
-         zscale = FSC_Normalize(zr, Position=[0.15, 0.85])
+         xscale = cgNormalize(xr, Position=[0.15, 0.85])
+         yscale = cgNormalize(yr, Position=[0.15, 0.85])
+         zscale = cgNormalize(zr, Position=[0.15, 0.85])
          idlGraphic -> SetProperty, XCoord_Conv=xscale, YCoord_Conv=yscale, ZCoord_Conv=zscale
          theModel -> Add, idlGraphic
          theView -> Add, theModel
@@ -413,9 +414,9 @@ FUNCTION CatObjectView::INIT, theView, NO_DESTROY=no_destroy, _Extra=extraKeywor
          theModel = Obj_New('IDLgrModel')
          theView = Obj_New('IDLgrView', Viewplane_Rect=[0, 0, 1, 1], _Extra=extraKeywords)
          idlGraphic -> GetProperty, XRange=xr, YRange=yr, ZRange=zr
-         xscale = FSC_Normalize(xr, Position=[0.15, 0.85])
-         yscale = FSC_Normalize(yr, Position=[0.15, 0.85])
-         zscale = FSC_Normalize(zr, Position=[0.15, 0.85])
+         xscale = cgNormalize(xr, Position=[0.15, 0.85])
+         yscale = cgNormalize(yr, Position=[0.15, 0.85])
+         zscale = cgNormalize(zr, Position=[0.15, 0.85])
          idlGraphic -> SetProperty, XCoord_Conv=xscale, YCoord_Conv=yscale, ZCoord_Conv=zscale
          theModel -> Add, idlGraphic
          theView -> Add, theModel

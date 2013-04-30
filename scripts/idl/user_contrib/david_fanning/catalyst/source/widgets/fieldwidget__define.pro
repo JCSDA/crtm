@@ -77,6 +77,8 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David W. Fanning, 18 July 2004.
+;       Fixed a problem with validating a float or double value when it was written with
+;          exponential notation. 2 April 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        ;
@@ -611,7 +613,11 @@ PRO FieldWidget::SetProperty, $
    ENDIF
 
    IF N_Elements(value) NE 0 THEN BEGIN
-      theText = StrTrim(value, 2)
+       CASE Size(value, /TNAME) OF
+           'FLOAT': theText = StrTrim(String(value, FORMAT='(F0)'),2)
+           'DOUBLE': theText = StrTrim(String(value, FORMAT='(D0)'),2)
+           ELSE: theText = StrTrim(value, 2)
+       ENDCASE
       theText = self -> Validate(theText)
       self.theText = theText
       *self.theValue = self -> ReturnValue(self.theText)
@@ -675,10 +681,14 @@ FUNCTION FieldWidget::Validate, value
    IF N_Elements(value) EQ 0 THEN value = ""
    value = value[0]
    IF value EQ "" THEN RETURN, String(value)
-
+   
       ; No leading or trailing blank characters to evaluate.
 
-   value = StrTrim(value, 2)
+   CASE Size(value, /TNAME) OF
+       'FLOAT': value = StrTrim(String(value, FORMAT='(F0)'),2)
+       'DOUBLE': value = StrTrim(String(value, FORMAT='(D0)'),2)
+       ELSE:  value = StrTrim(value, 2)
+   ENDCASE
 
       ; A string value should be returned at once. Nothing to check.
 

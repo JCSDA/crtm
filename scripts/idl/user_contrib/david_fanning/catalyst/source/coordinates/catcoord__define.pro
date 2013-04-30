@@ -107,8 +107,8 @@ PRO CatCoord::Draw, Extra=extrakeywords
    @cat_pro_error_handler
 
    ; Set up the data coordinate space by drawing a plot.
-;   self._xs = FSC_Normalize(self._xrange, Position=[self._position[0], self._position[2]])
-;   self._ys = FSC_Normalize(self._yrange, Position=[self._position[1], self._position[3]])
+;   self._xs = cgNormalize(self._xrange, Position=[self._position[0], self._position[2]])
+;   self._ys = cgNormalize(self._yrange, Position=[self._position[1], self._position[3]])
 ;
 ;   !X.S = self._xs
 ;   !Y.S = self._ys

@@ -434,7 +434,7 @@ PRO CatImage2D::EventHandler, event
 
                   event.component -> GetProperty, BackgroundColor=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, BackgroundColor=color
                   CatRefreshDraw, self, Stop_At='DrawWidget'
 

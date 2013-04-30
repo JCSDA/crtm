@@ -10,13 +10,14 @@
 ;
 ;           image = ORIGINAL_IMAGE
 ;           i = WHERE(image EQ MISSING_VALUE, count)
-;           IF count GT 0 THEN image[i] = MISSING_COLOR
-;           image = BytScl(image, MIN=SCLMIN, MAX=SCLMAX, TOP=NCOLORS-1) + BOTTOM
+;           IF count GT 0 THEN image[i] = !Values.F_NAN
+;           scaledImage = BytScl(image, MIN=SCLMIN, MAX=SCLMAX, TOP=NCOLORS-1, /NAN) + BOTTOM
+;           IF count GT 0 THEN scaledImage[i] = MISSING_INDEX
 ;           
 ;       Scaling or stretching types include: linear, 2% linear, gamma, log, hyperbolic sine,
 ;       square-root, equilization, and gaussian. See this article for additional information:
 ;       
-;           http://www.dfanning.com/ip_tips/xstretch.html
+;           http://www.idlcoyote.com/ip_tips/xstretch.html
 ;       
 ;       Scaling only applies to 2D images. True-color images are not scaled and none
 ;       of the scaling parameters apply to them. 
@@ -49,16 +50,19 @@
 ;
 ;   class = { SCALEIMAGE, $
 ;             bottom: 0, $                    ; The lowest value in the image.
+;             missing_color: "", $            ; The name of a missing color.
 ;             missing_value: Ptr_New(),  $    ; The missing value in the image.
-;             missing_color: 0, $             ; The color index for missing colors.
-;             ncolors: 0, $                   ; The number of colors to display.
+;             missing_index: 0, $             ; The color index for missing color in scaled image.
+;             ncolors: 0, $                   ; The number of colors to display the image in.
 ;             sclmin: 0.0D, $                 ; The minimum scale value.
 ;             sclmax: 0.0D, $                 ; The maximun scale value.
 ;             gamma: 0.0D, $                  ; The gamma scale factor.
 ;             beta: 0.0D, $                   ; The beta scale factor.
 ;             mean: 0.0D, $                   ; The mean scale factor.
+;             negative: 0, $                  ; Take the reverse of the stretch.
 ;             exponent: 0.0, $                ; The exponent scale factor.
 ;             scaletype: 0, $                 ; The type of scaling. 
+;             sigma: 0.0, $                   ; The sigma scale factor.
 ;             INHERITS CATIMAGE $
 ;           }
 ;
@@ -69,9 +73,20 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David Fanning, 27 July 2006.
+;       Modified the CreateDisplayImage to allow image display in PostScript. 7 November 2009. DWF.
+;       Refactored CreateDisplayImage in superclass CatImage to two new methods: 
+;       CheckMultiPlotPosition and CheckKeepAspectRatio. 7 November 2009. DWF.
+;       Modified the program to better handle missing data values and to straighten out
+;          some confusing documentation and inconsistent usage of MISSING_COLOR. 15 July 2010. DWF.
+;       More work on correct usage of MISSING_COLOR and MISSING_INDEX keywords and
+;          properties. 28 July 2010. DWF.
+;       Still more bugs in the MISSING_COLOR, MISSING_INDEX, and MISSING_VALUE keyword 
+;          handling. Tested more extensively, and passing all current tests. 10 October 2010. DWF.
+;       Error searching for missing value. Was using FINITE(missing_value) and I should have
+;          been using PTR_VALID(missing_value). 25 October 2010. DWF.
 ;-
 ;*******************************************************************************************
-;* Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        *
+;* Copyright (c) 2008-2009, jointly by Fanning Software Consulting, Inc.                   *
 ;* and Burridge Computing. All rights reserved.                                            *
 ;*                                                                                         *
 ;* Redistribution and use in source and binary forms, with or without                      *
@@ -176,47 +191,11 @@ PRO ScaleImage::CreateDisplayImage
 
    @cat_pro_error_handler
 
-    ; Doing multiple plots?
-    IF Total(!P.Multi) GT 0 THEN multi = 1 ELSE multi = 0
-    IF Keyword_Set(multi) THEN BEGIN
+   ; Check for multiple plots. If so, set position.
+   self -> CheckMultiPlotPosition
     
-          ; Draw the invisible plot to get plot position.
-          currentWindow = !D.WINDOW
-          Window, XSIZE=!D.X_SIZE, YSIZE=!D.Y_SIZE, /PIXMAP
-          Plot, Findgen(11), XStyle=4, YStyle=4, /NoData, XMargin=[1,1], YMargin=[1,1]
-          WDelete, !D.Window
-          IF currentWindow GE 0 THEN WSet, currentWindow
-          self._position = [!X.Window[0], !Y.Window[0], !X.Window[1], !Y.Window[1]]
-        
-   ENDIF 
-
-   ;Keep the aspect ratio of the image?
-   IF self._keep_aspect THEN BEGIN
-
-      ; Find aspect ratio of image.
-      ratio = FLOAT(self._ysize) / self._xsize
-
-      ; Find the proposed size of the image in pixels without aspect considerations.
-      xpixSize = (self._position[2] - self._position[0]) * !D.X_VSize
-      ypixSize = (self._position[3] - self._position[1]) * !D.Y_VSize
-
-      ; Try to fit the image width. If you can't maintain
-      ; the aspect ratio, fit the image height.
-      trialX = xpixSize
-      trialY = trialX * ratio
-      IF trialY GT ypixSize THEN BEGIN
-         trialY = ypixSize
-         trialX = trialY / ratio
-      ENDIF
-
-      ; Recalculate the position of the image in the window.
-      position = FltArr(4)
-      position[0] = (((xpixSize - trialX) / 2.0) / !D.X_VSize) + self._position[0]
-      position[2] = position[0] + (trialX/Double(!D.X_VSize))
-      position[1] = (((ypixSize - trialY) / 2.0) / !D.Y_VSize)  + self._position[1]
-      position[3] = position[1] + (trialY/Double(!D.Y_VSize))
-
-   ENDIF ELSE position = self._position
+   ; Keep the aspect ratio of the image? If so, maybe change image position.
+   position = self -> CheckKeepAspectRatio()
 
    ; Calculate the image size and start locations.
     xsize = Ceil((position[2] - position[0]) * !D.X_VSIZE)
@@ -225,7 +204,8 @@ PRO ScaleImage::CreateDisplayImage
     ystart = Round(position[1] * !D.Y_VSIZE)
 
    ; Update the location variables, as these may have changed.
-   self._location[*,0] = [xstart, ystart, xstart + xsize, ystart + ysize, Double(!D.X_VSize), Double(!D.Y_VSize)]
+   self._location[*,0] = [xstart, ystart, xstart + xsize, ystart + ysize, $
+                          Double(!D.X_VSize), Double(!D.Y_VSize)]
    self._location[*,1] = [ self._location[0,0]/self._location[4,0], $
                            self._location[1,0]/self._location[5,0], $
                            self._location[2,0]/self._location[4,0], $
@@ -255,16 +235,23 @@ PRO ScaleImage::CreateDisplayImage
             3: image = (*self._dataPtr)[self._x1:self._x2, self._y1:self._y2, *]
         ENDCASE
 
+        ; Handle missing value, if you have one.
         IF Ptr_Valid(self.missing_value) THEN BEGIN
-           i = Where(image EQ *self.missing_value, count)
+           IF Finite(*self.missing_value) THEN BEGIN
+               i = Where(image EQ *self.missing_value, count)
+           ENDIF ELSE BEGIN
+               i = Where(Finite(image) EQ 0, count)
+           ENDELSE
            IF count NE 0 THEN BEGIN
-              image = Float(Temporary(image))
-              image[i] = !VALUES.F_NAN
+               image = Float(Temporary(image))
+               image[i] = !VALUES.F_NAN
+               self -> GetProperty, COLOR_OBJECT=colors
+               colors -> LoadColor, self.missing_color, self.missing_index
            ENDIF
         ENDIF
         i = Where(Finite(image) EQ 0, count)
         image = Temporary(self->ScaleTheImage(image)) + self.bottom
-        IF count GT 0 THEN image[i] = self.missing_color
+        IF count GT 0 THEN image[i] = self.missing_index
         IF Ptr_Valid(self._displayImage) THEN BEGIN
            *self._displayImage = image
         ENDIF ELSE BEGIN
@@ -279,16 +266,26 @@ PRO ScaleImage::CreateDisplayImage
          0: BEGIN
 
             image = (*self._dataPtr)[self._x1:self._x2, self._y1:self._y2]
+            
+            ; Handle missing value, if present.
             IF Ptr_Valid(self.missing_value) THEN BEGIN
-               i = Where(image EQ *self.missing_value, count)
-               IF count NE 0 THEN Begin
-                  image = Float(Temporary(image))
-                  image[i] = !VALUES.F_NAN
-               ENDIF
+                IF Finite(*self.missing_value) THEN BEGIN
+                   i = Where(image EQ *self.missing_value, count)
+                ENDIF ELSE BEGIN
+                   i = Where(Finite(image) EQ 0, count)
+                ENDELSE
+            ENDIF ELSE count = 0
+            IF count NE 0 THEN BEGIN
+               image = Float(Temporary(image))
+               image[i] = !VALUES.F_NAN
+               self -> GetProperty, COLOR_OBJECT=colors
+               colors -> LoadColor, self.missing_color, self.missing_index
             ENDIF
             i = Where(Finite(image) EQ 0, count)
+            
+            ; Scale the image, create display image.
             image = Temporary(self->ScaleTheImage(image)) + self.bottom
-            IF count GT 0 THEN IF Ptr_Valid(self.missing_value) THEN image[i] = *self.missing_value
+            IF count GT 0 THEN IF Ptr_Valid(self.missing_value) THEN image[i] = self.missing_index
             IF Ptr_Valid(self._displayImage) THEN BEGIN
                *self._displayImage = Congrid(image, xsize, ysize, $
                   INTERP=self._interpolate)
@@ -302,45 +299,59 @@ PRO ScaleImage::CreateDisplayImage
         1: BEGIN
         
             image = (*self._dataPtr)[*, self._x1:self._x2, self._y1:self._y2]
+
+            ; Handle missing value, if present.
             IF Ptr_Valid(self.missing_value) THEN BEGIN
                i = Where(image EQ *self.missing_value, count)
-               IF count NE 0 THEN Begin
-                  image = Float(Temporary(image))
-                  image[i] = !VALUES.F_NAN
-               ENDIF
+            ENDIF ELSE BEGIN
+               i = Where(Finite(image) EQ 0, count)
+            ENDELSE
+            IF count NE 0 THEN BEGIN
+               image = Float(Temporary(image))
+               image[i] = !VALUES.F_NAN
+               self -> GetProperty, COLOR_OBJECT=colors
+               colors -> LoadColor, self.missing_color, self.missing_index
             ENDIF
             i = Where(Finite(image) EQ 0, count)
+
+            ; Scale the image, create display image.
             image = Temporary(self->ScaleTheImage(image)) + self.bottom
-            IF count GT 0 THEN image[i] = self.missing_color
-           IF Ptr_Valid(self._displayImage) THEN BEGIN
+            IF count GT 0 THEN image[i] = self.missing_index
+            IF Ptr_Valid(self._displayImage) THEN BEGIN
               *self._displayImage = Congrid(image, 3, xsize, ysize, $
-               INTERP=self._interpolate)
-           ENDIF ELSE BEGIN
+                 INTERP=self._interpolate)
+            ENDIF ELSE BEGIN
               self._displayImage = Ptr_New(Congrid(image, 3, xsize, ysize, $
-               INTERP=self._interpolate), /No_Copy)
-           ENDELSE
+                 INTERP=self._interpolate), /No_Copy)
+            ENDELSE
 
            END
 
         2: BEGIN
 
            image = (*self._dataPtr)[self._x1:self._x2, *, self._y1:self._y2]
+
+            ; Handle missing value, if present.
             IF Ptr_Valid(self.missing_value) THEN BEGIN
                i = Where(image EQ *self.missing_value, count)
-               IF count NE 0 THEN Begin
-                  image = Float(Temporary(image))
-                  image[i] = !VALUES.F_NAN
-               ENDIF
+            ENDIF ELSE BEGIN
+               i = Where(Finite(image) EQ 0, count)
+            ENDELSE
+            IF count NE 0 THEN BEGIN
+               image = Float(Temporary(image))
+               image[i] = !VALUES.F_NAN
+               self -> GetProperty, COLOR_OBJECT=colors
+               colors -> LoadColor, self.missing_color, self.missing_index
             ENDIF
             i = Where(Finite(image) EQ 0, count)
             image = Temporary(self->ScaleTheImage(image)) + self.bottom
-            IF count GT 0 THEN image[i] = self.missing_color
-           IF Ptr_Valid(self._displayImage) THEN BEGIN
+            IF count GT 0 THEN image[i] = self.missing_index
+            IF Ptr_Valid(self._displayImage) THEN BEGIN
               *self._displayImage = Congrid(image, ROUND(xsize), 3, ROUND(ysize), $
-               INTERP=self._interpolate)
-           ENDIF ELSE BEGIN
+                 INTERP=self._interpolate)
+            ENDIF ELSE BEGIN
               self._displayImage = Ptr_New(Congrid(image, ROUND(xsize), 3, ROUND(ysize), $
-               INTERP=self._interpolate), /No_Copy)
+                 INTERP=self._interpolate), /No_Copy)
            ENDELSE
 
            END
@@ -348,25 +359,29 @@ PRO ScaleImage::CreateDisplayImage
         3: BEGIN
 
            image = (*self._dataPtr)[self._x1:self._x2, self._y1:self._y2, *]
-            IF Ptr_Valid(self.missing_value) THEN BEGIN
+
+            ; Handle missing value, if present.
+           IF Ptr_Valid(self.missing_value) THEN BEGIN
                i = Where(image EQ *self.missing_value, count)
-               IF count NE 0 THEN Begin
-                  image = Float(Temporary(image))
-                  image[i] = !VALUES.F_NAN
-               ENDIF
+            ENDIF ELSE BEGIN
+               i = Where(Finite(image) EQ 0, count)
+            ENDELSE
+            IF count NE 0 THEN BEGIN
+               image = Float(Temporary(image))
+               image[i] = !VALUES.F_NAN
             ENDIF
             i = Where(Finite(image) EQ 0, count)
             image = Temporary(self->ScaleTheImage(image)) + self.bottom
-            IF count GT 0 THEN image[i] = self.missing_color
-           IF Ptr_Valid(self._displayImage) THEN BEGIN
+            IF count GT 0 THEN image[i] = self.missing_index
+            IF Ptr_Valid(self._displayImage) THEN BEGIN
               *self._displayImage = Congrid(image, xsize, ysize, 3, $
-               INTERP=self._interpolate)
-           ENDIF ELSE BEGIN
+                  INTERP=self._interpolate)
+            ENDIF ELSE BEGIN
               self._displayImage = Ptr_New(Congrid(image, xsize, ysize, 3, $
-               INTERP=self._interpolate), /No_Copy)
-           ENDELSE
+                 INTERP=self._interpolate), /No_Copy)
+            ENDELSE
 
-           END
+            END
 
      ENDCASE
   ENDIF
@@ -420,7 +435,7 @@ PRO ScaleImage::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -524,8 +539,10 @@ END
 ;     GAMMA:         The gamma factor in a gamma stretch. 
 ;
 ;     MEAN:          The mean factor in a logarithmic stretch. Default is 0.5.
+;     
+;     MISSING_COLOR: The color the missing value should be displayed in.
 ;
-;     MISSING_COLOR:  The name of the missing color.
+;     MISSING_INDEX:  The index of the missing color.
 ;
 ;     MISSING_VALUE:  The number that represents missing value in the image.
 ;
@@ -560,6 +577,7 @@ PRO SCALEIMAGE::GetProperty, $
    GAMMA=gamma, $
    MEAN=mean, $
    MISSING_COLOR=missing_color, $
+   MISSING_INDEX=missing_index, $
    MISSING_VALUE=missing_value, $
    NCOLORS=ncolors, $
    NEGATIVE=negative, $
@@ -578,7 +596,10 @@ PRO SCALEIMAGE::GetProperty, $
    gamma = self.gamma
    mean = self.mean
    missing_color = self.missing_color
-   IF Ptr_Valid(self.missing_value) THEN missing_value=*self.missing_value ELSE missing_value = !VALUES.F_NAN
+   missing_index = self.missing_index
+   IF Ptr_Valid(self.missing_value) $
+       THEN missing_value=*self.missing_value $
+       ELSE missing_value = !VALUES.F_NAN
    ncolors = self.ncolors
    negative = self.negative
    scaletype = self.scaletype
@@ -735,10 +756,12 @@ END
 ;
 ;     IMAGE:         The image data. If SCLMIN and SCLMAX are not used in conjunction with this
 ;                    keyword, the image is scaled with a 2% linear scaling.
+;                   
+;     MISSING_COLOR: The name of the missing color in the scaled image.
 ;
-;     MISSING_COLOR: The name of the missing color.
+;     MISSING_INDEX: The index number of the missing color in the scaled image.
 ;
-;     MISSING_VALUE: The number that represents missing value in the image.
+;     MISSING_VALUE: The number that represents the missing value in the image.
 ;
 ;     NCOLORS:       The number of colors to scale the data into. (Default: 256)
 ;
@@ -773,6 +796,7 @@ PRO SCALEIMAGE::SetProperty, $
    IMAGE=image, $
    MEAN=mean, $
    MISSING_COLOR=missing_color, $
+   MISSING_INDEX=missing_index, $
    MISSING_VALUE=missing_value, $
    NCOLORS=ncolors, $
    NEGATIVE=negative, $
@@ -792,6 +816,7 @@ PRO SCALEIMAGE::SetProperty, $
    IF N_Elements(negative) NE 0 THEN self.negative = negative
    IF N_Elements(image) NE 0 THEN self -> CATIMAGE::SetProperty, IMAGE=image
    IF N_Elements(missing_color) NE 0 THEN self.missing_color = missing_color
+   IF N_Elements(missing_index) NE 0 THEN self.missing_index = missing_index
    IF N_Elements(missing_value) NE 0 THEN BEGIN
       IF Ptr_Valid(self.missing_value) THEN *self.missing_value = missing_value ELSE $
          self.missing_value = Ptr_New(missing_value)
@@ -813,8 +838,6 @@ PRO SCALEIMAGE::SetProperty, $
                 
         ; Linear 2% Scaling needs to be initialized properly.
         IF scaletype EQ 4 THEN BEGIN 
-        
-           
         
             ; Calculate binsize.
             maxr = Max(Float(*self._dataPtr), MIN=minr, /NAN)
@@ -900,7 +923,7 @@ END
 ;
 ; KEYWORDS:
 ;
-;     BOTTOM:        The lowest value of the image.
+;     BOTTOM:        The lowest value of the byte-scaled display image.
 ;
 ;     BETA:          The beta factor in a Hyperpolic Sine stretch. Default is 3.0.
 ;
@@ -909,12 +932,16 @@ END
 ;     GAMMA:         The gamma factor in a gamma stretch. Default is 1.5.
 ;
 ;     MEAN:          The mean factor in a logarithmic stretch. Default is 0.5.
-;
-;     MISSING_COLOR: The name of the missing color. By default, "ivory".
 ;     
-;     MISSING_VALUE: The number that represents missing value in the image.
+;     MISSING_COLOR: The color name of the missing value. By default, "black".
 ;
-;     NCOLORS:       The number of colors to scale the data into. (Default: 256)
+;     MISSING_INDEX: The index of the missing color in the final byte scaled image. 
+;                    By default, 255.
+;     
+;     MISSING_VALUE: The number that represents the missing value in the image.
+;
+;     NCOLORS:       The number of colors to scale the data into. (Default: 256 unless a
+;                    MISSING_VALUE is used, in which case 255.)
 ;
 ;     NEGATIVE:      Set this keyword if you want to display the image with a negative or reverse stretch.
 ;
@@ -950,6 +977,7 @@ FUNCTION SCALEIMAGE::INIT, image, $
    GAMMA=gamma, $
    MEAN=mean, $
    MISSING_COLOR=missing_color, $
+   MISSING_INDEX=missing_index, $
    MISSING_VALUE=missing_value, $
    NCOLORS=ncolors, $
    SCALETYPE=scaletype, $
@@ -963,8 +991,30 @@ FUNCTION SCALEIMAGE::INIT, image, $
 
    ; Interacting with image must go on here. Because if NO_COPY is set on call to ScaleImage, then image
    ; will be undefined when it returns from the CATIMAGE::INIT call.
-   IF N_Elements(sclmin) EQ 0 THEN IF N_Elements(image) NE 0 THEN sclmin = Min(image, /NAN) ELSE sclmin = 0
-   IF N_Elements(sclmax) EQ 0 THEN IF N_Elements(image) NE 0 THEN sclmax = Max(image, /NAN) ELSE sclmax = 255
+   IF N_Elements(sclmin) EQ 0 THEN IF N_Elements(image) NE 0 THEN BEGIN
+        IF N_Elements(missing_value) NE 0 THEN BEGIN
+            i = Where(image EQ missing_value, count)
+            IF count GT 0 THEN BEGIN
+                temp = Float(image)
+                temp[i] = !Values.F_NAN
+                sclmin = Min(temp, /NAN)
+                UnDefine, temp
+            ENDIF ELSE sclmin = Min(image, /NAN)
+        ENDIF ELSE sclmin = Min(image, /NAN)
+   ENDIF 
+   IF N_Elements(sclmin) EQ 0 THEN sclmin = 0
+   IF N_Elements(sclmax) EQ 0 THEN IF N_Elements(image) NE 0 THEN BEGIN
+        IF N_Elements(missing_value) NE 0 THEN BEGIN
+            i = Where(image EQ missing_value, count)
+            IF count GT 0 THEN BEGIN
+                temp = Float(image)
+                temp[i] = !Values.F_NAN
+                sclmax = Max(temp, /NAN)
+                UnDefine, temp
+            ENDIF ELSE sclmax = Max(image, /NAN)
+        ENDIF ELSE sclmax = Max(image, /NAN) 
+   ENDIF
+   IF N_Elements(sclmax) EQ 0 THEN sclmax = 255
    ok = self -> CATIMAGE::INIT (image, _EXTRA=extraKeywords)
    IF ~ok THEN RETURN, 0
 
@@ -973,8 +1023,11 @@ FUNCTION SCALEIMAGE::INIT, image, $
    IF N_Elements(exponent) EQ 0 THEN exponent = 4.0
    IF N_Elements(gamma) EQ 0 THEN gamma = 1.5
    IF N_Elements(mean) EQ 0 THEN mean = 0.5
-   IF N_Elements(missing_color) EQ 0 THEN missing_color = "ivory"
-   IF N_Elements(ncolors) EQ 0 THEN ncolors = 256
+   IF N_Elements(missing_color) EQ 0 THEN missing_color = 'black'
+   IF N_Elements(missing_index) EQ 0 THEN missing_index = 255
+   IF N_Elements(ncolors) EQ 0 THEN BEGIN
+       IF N_Elements(missing_value) EQ 0 THEN ncolors = 256 ELSE ncolors = 255
+   ENDIF
    possibleTypes = ['LINEAR', 'GAMMA', 'LOG', 'ASINH', $
                     'LINEAR 2%', 'SQUARE ROOT', 'EQUALIZATION', 'GAUSSIAN', 'NONE', 'MODIS']
    IF N_Elements(scaletype) EQ 0 THEN scaletype = 0 ELSE BEGIN
@@ -985,7 +1038,7 @@ FUNCTION SCALEIMAGE::INIT, image, $
         ENDIF
    ENDELSE
    IF N_Elements(sigma) EQ 0 THEN sigma = 1.0
-
+   
    ; Load the object.
    self.beta = beta
    self.bottom = bottom
@@ -993,7 +1046,8 @@ FUNCTION SCALEIMAGE::INIT, image, $
    self.gamma = gamma
    self.mean = mean
    self.missing_color = missing_color
-   IF N_Elements(missing_value) NE 0 THEN self.missing_value = Ptr_New(missing_value)
+   self.missing_index = missing_index
+   IF N_Elements(missing_value) NE 0 THEN self.missing_value = Ptr_New(missing_value) 
    self.ncolors = ncolors
    self.negative = 0
    self.sclmin = sclmin
@@ -1035,9 +1089,10 @@ PRO SCALEIMAGE__DEFINE, class
 
    class = { SCALEIMAGE, $
              bottom: 0, $                    ; The lowest value in the image.
-             missing_color: "", $             ; The color index for missing color.
              missing_value: Ptr_New(),  $    ; The missing value in the image.
-             ncolors: 0, $                   ; The number of colors to display.
+             missing_color: "", $            ; The name of the missing color in scaled image.
+             missing_index: 0, $             ; The color index for missing color in scaled image.
+             ncolors: 0, $                   ; The number of colors to display the image in.
              sclmin: 0.0D, $                 ; The minimum scale value.
              sclmax: 0.0D, $                 ; The maximun scale value.
              gamma: 0.0D, $                  ; The gamma scale factor.

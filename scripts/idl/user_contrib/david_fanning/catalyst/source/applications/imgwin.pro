@@ -50,7 +50,7 @@
 ;     BREWER:      Set if the color table index number (CT) is the index of a Brewer color table.
 ;                  To use Brewer color tables, the file fsc_brewer.tbl must be in your IDL path.
 ;                  
-;     COLOR:       Set this keyword to the name of the axis color. The name is passed to FSC_Color 
+;     COLOR:       Set this keyword to the name of the axis color. The name is passed to cgColor 
 ;                  for processing. Default is "charcoal". Used only if AXES is set.
 ;
 ;     CTINDEX:     The index of the color table to use to display the image. Applies only to 
@@ -75,6 +75,16 @@
 ;                   words, to allow free positioning, set KEEP_ASPECT=0. Note that if this keyword is
 ;                   set, and the XSIZE and YSIZE keywords are undefined, that the window will have the
 ;                   same aspect ratio as the image.
+;                   
+;     MAP_COORD:    A MapCoord object that can be used to georeference the image in the display window.
+;
+;     MAP_GRID:     If the file can be georegistered (e.g. a GeoTIFF file), then setting this keyword
+;                   will add a map grid to the MapCoord object. Otherwise, the keyword is
+;                   ignored. Can only be used when passing ImgWin a GeoTIFF filename.
+;
+;     MAP_OUTLINE:  If the file can be georegistered (e.g. a GeoTIFF file), then setting this keyword
+;                   will add a continental outline to the MapCoord object. Otherwise, the keyword is
+;                   ignored. Can only be used when passing ImgWin a GeoTIFF filename.
 ;                  
 ;     MEAN:         The mean factor in a logarithmic stretch. Default is 0.5.
 ;
@@ -162,6 +172,12 @@
 ;       Fixed a small problem with the way the CTINDEX keyword was handled. 8 May 2009. DWF.
 ;       PNG files with more than 8-bits per channel are now being handled correctly. 5 August 2009. DWF.
 ;       Modified to georegister GEOTIFF files when they are opened via a GeoTIFF file name. 30 August 2009. DWF.
+;       Modified code so that input parameter data type would not change. 13 December 2009. DWF.
+;       Fixed a problem with the image variable name when the name of a GeoTIFF is passed to
+;           the program. 10 February 2010. DWF.
+;       Fixed a problem with CTINDEX=-1 not working when passed GeoTIFF files. 21 Febrary 2010. DWF.
+;       Added AUTODRAWGRID keyword to MAP_GRID calls. 11 March 2010.
+;       Overly ambitious cleanup was killing passed in map coordinate variable Fixed. 24 March 2010. DWF.
 ;-
 ;*****************************************************************************************************
 PRO ImgWin::CreateStatusBar
@@ -371,7 +387,7 @@ PRO ImgWin::EventHandler, event
 
             ; Make sure you are drawing in the right window. Start XSTRETCH.
             self.theDrawWidget -> SetWindow
-            XStretch, image, GROUP_LEADER=self->GetID(), /NO_WINDOW, $
+            cgStretch, image, GROUP_LEADER=self->GetID(), /NO_WINDOW, $
                BETA=beta, $
                EXPONENT=exponent, $
                GAMMA=gamma, $
@@ -576,6 +592,9 @@ FUNCTION ImgWin::INIT, image, $
     FULL_RESOLUTION=full_resolution, $
     GAMMA=gamma, $
     KEEP_ASPECT=keep_aspect, $
+    MAP_COORD=map_coord, $
+    MAP_GRID=map_grid, $
+    MAP_OUTLINE=map_outline, $
     MEAN=mean, $
     MISSING_COLOR=missing_color, $
     MISSING_VALUE=missing_value, $
@@ -611,6 +630,7 @@ FUNCTION ImgWin::INIT, image, $
     ; or it could be the image itself. Give the user a change to pick an image
     ; file is an image is not specified.
     IF N_Elements(image) EQ 0 THEN BEGIN
+       imageIsObject = 0
        imageFile = Dialog_Pickfile(TITLE='Select image file...')
        IF imageFile EQ "" THEN RETURN, 0
        ok = Query_Image(imageFile, HAS_PALETTE=has_palette, TYPE=imagetype)
@@ -619,31 +639,58 @@ FUNCTION ImgWin::INIT, image, $
          ok = Query_TIFF(imageFile, fileInfo, GEOTIFF=geotiff)
          IF ok THEN BEGIN
             CASE fileInfo.channels OF
-               3: image = Read_TIFF(imageFile, _EXTRA=extra, ORIENTATION=orientation)
-               ELSE: image = Read_TIFF(imageFile, r, g, b, _EXTRA=extra, ORIENTATION=orientation)
+               3: theImage = Read_TIFF(imageFile, _EXTRA=extra, ORIENTATION=orientation)
+               ELSE: theImage = Read_TIFF(imageFile, r, g, b, _EXTRA=extra, ORIENTATION=orientation)
             ENDCASE
             IF fileInfo.has_palette EQ 1 THEN colorPalette = [[r], [g], [b]]
             IF orientation EQ 1 THEN BEGIN
-                dims = Image_Dimensions(image, YINDEX=yindex)
-                image = Reverse(Temporary(image), yindex+1)
+                dims = Image_Dimensions(theImage, YINDEX=yindex)
+                theImage = Reverse(Temporary(theImage), yindex+1)
             ENDIF
          ENDIF
          IF Size(geotiff, /TNAME) EQ 'STRUCT' THEN BEGIN
-            mapCoord = GeoCoord(imageFile, SUCCESS=success, /SILENT)
-            IF success EQ 1 THEN BEGIN
+             mapCoord = GeoCoord(imageFile, SUCCESS=success, /SILENT)
+             IF success AND Keyword_Set(map_outline) THEN BEGIN
+                    outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, /HIRES, $
+                        COLOR='indian red', FILL=Keyword_Set(fill))
+                    mapCoord -> SetProperty, OUTLINE_OBJECT=outline
+             ENDIF
+             IF success AND Keyword_Set(map_grid) THEN BEGIN
+                    grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR='indian red', /AUTODRAWGRID)
+                    mapCoord -> SetProperty, GRID_OBJECT=grid
+             ENDIF
+             IF success EQ 1 THEN BEGIN
                 IF fileInfo.has_palette EQ 1 THEN colors = Obj_New('CatColors', COLORPALETTE=colorpalette)
                 IF Obj_Valid(colors) THEN BEGIN
-                    theImageObj = Obj_New('CatImage', image, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
+                    theImageObj = Obj_New('CatImage', theImage, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
                 ENDIF ELSE BEGIN
-                    theImageObj = Obj_New('ScaleImage', image, COORD_OBJECT=mapCoord)
+                    theImageObj = Obj_New('ScaleImage', theImage, theImage, $
+                        NAME='IMGWIN_IMAGE', $
+                        BETA=beta, $
+                        BOTTOM=bottom, $
+                        COORD_OBJECT=coords, $
+                        EXPONENT=exponent, $
+                        GAMMA=gamma, $
+                        KEEP_ASPECT=keep_aspect, $
+                        MEAN=mean, $
+                        MISSING_COLOR=missing_color, $
+                        MISSING_VALUE=missing_value, $
+                        NCOLORS=ncolors, $
+                        NOINTERPOLATE=nointerp, $
+                        POSITION=position, $
+                        SCALETYPE=scaletype, $
+                        SCLMIN=sclmin, $
+                        SCLMAX=sclmax, $
+                        SELECTABLE=1, $
+                        SIGMA=sigma)
                 ENDELSE
                 imageIsObject = 1
                 GOTO, DefineWidgets
             ENDIF
          ENDIF
        ENDIF ELSE BEGIN
-            image = Read_Image(imageFile, r, g, b)
-                IF N_Elements(image) EQ 1 THEN Message, 'Image file can not be read with READ_IMAGE.'
+            theImage = Read_Image(imageFile, r, g, b)
+                IF N_Elements(theImage) EQ 1 THEN Message, 'Image file can not be read with READ_IMAGE.'
        ENDELSE
        IF has_palette THEN BEGIN
             colorPalette = [[r], [g], [b]]
@@ -652,19 +699,22 @@ FUNCTION ImgWin::INIT, image, $
        
        ; Some PNG files (from ImageMagick, for example) are created with 16-bits per channel.
        ; Convert this to 8-bits per channel, and also remove any alpha channel for this application.
-       root_name = FSC_Base_Filename(imageFile, EXTENSION=ext)
+       root_name = cgRootName(imageFile, EXTENSION=ext)
        IF StrUpCase(ext) EQ 'PNG' THEN BEGIN
-            IF Size(image, /TNAME) NE 'BYTE' THEN image = BytScl(image)
-            IF Size(image, /N_DIMENSIONS) GT 3 THEN BEGIN
-                dims = Image_Dimensions(image, TRUEINDEX=trueindex)
+            IF Size(theImage, /TNAME) NE 'BYTE' THEN theImage = BytScl(theImage)
+            IF Size(theImage, /N_DIMENSIONS) GT 3 THEN BEGIN
+                dims = Image_Dimensions(theImage, TRUEINDEX=trueindex)
                 CASE trueIndex OF
-                    0: image = image[0:2, *, *]
-                    1: image = image[*, 0:2, *]
-                    2: image = image[*, *, 0:2]
+                    0: theImage = theImage[0:2, *, *]
+                    1: theImage = theImage[*, 0:2, *]
+                    2: theImage = theImage[*, *, 0:2]
                 ENDCASE
             ENDIF
        ENDIF
     ENDIF
+    
+    ; If you have an image at this point, skip the next section.
+    IF N_Elements(theImage) NE 0 THEN Goto, DefineWidgets
     
     ; This can be the name of a file to read, an actual image variable, or an image object.
     imageIsObject = 0
@@ -679,31 +729,69 @@ FUNCTION ImgWin::INIT, image, $
              ok = Query_TIFF(imageFile, fileInfo, GEOTIFF=geotiff)
              IF ok THEN BEGIN
                 CASE fileInfo.channels OF
-                   3: image = Read_TIFF(imageFile, _EXTRA=extra, ORIENTATION=orientation)
-                   ELSE: image = Read_TIFF(imageFile, r, g, b, _EXTRA=extra, ORIENTATION=orientation)
+                   3: theImage = Read_TIFF(imageFile, _EXTRA=extra, ORIENTATION=orientation)
+                   ELSE: theImage = Read_TIFF(imageFile, r, g, b, _EXTRA=extra, ORIENTATION=orientation)
                 ENDCASE
-                IF fileInfo.has_palette EQ 1 THEN colorPalette = [[r], [g], [b]]
+                IF fileInfo.has_palette EQ 1 THEN BEGIN
+                    colorPalette = [[r], [g], [b]]
+                ENDIF ELSE BEGIN
+                    ; Did the user say to use the current color table?
+                    IF N_Elements(ctindex) NE 0 THEN BEGIN
+                        IF ctindex EQ -1 THEN BEGIN
+                            TVLCT, r, g, b, /GET
+                            colorPalette = [[r], [g], [b]]
+                        ENDIF
+                    ENDIF
+                ENDELSE
                 IF orientation EQ 1 THEN BEGIN
-                    dims = Image_Dimensions(image, YINDEX=yindex)
-                    image = Reverse(Temporary(image), yindex+1)
+                    dims = Image_Dimensions(theImage, YINDEX=yindex)
+                    theImage = Reverse(Temporary(theImage), yindex+1)
                 ENDIF
              ENDIF
              IF Size(geotiff, /TNAME) EQ 'STRUCT' THEN BEGIN
                 mapCoord = GeoCoord(imageFile, SUCCESS=success, /SILENT)
+                IF success AND Keyword_Set(map_outline) THEN BEGIN
+                    outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, /HIRES, $
+                        COLOR='indian red', FILL=Keyword_Set(fill))
+                    mapCoord -> SetProperty, OUTLINE_OBJECT=outline
+                ENDIF
+                IF success AND Keyword_Set(map_grid) THEN BEGIN
+                    grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, $
+                        COLOR='indian red', /AUTODRAWGRID)
+                    mapCoord -> SetProperty, GRID_OBJECT=grid
+                ENDIF
                 IF success EQ 1 THEN BEGIN
                     IF fileInfo.has_palette EQ 1 THEN colors = Obj_New('CatColors', COLORPALETTE=colorpalette)
                     IF Obj_Valid(colors) THEN BEGIN
-                        theImageObj = Obj_New('CatImage', image, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
+                        theImageObj = Obj_New('CatImage', theImage, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
                     ENDIF ELSE BEGIN
-                        theImageObj = Obj_New('ScaleImage', image, COORD_OBJECT=mapCoord)
+                        theImageObj = Obj_New('ScaleImage', theImage,$
+                            NAME='IMGWIN_IMAGE', $
+                            BETA=beta, $
+                            BOTTOM=bottom, $
+                            COORD_OBJECT=coords, $
+                            EXPONENT=exponent, $
+                            GAMMA=gamma, $
+                            KEEP_ASPECT=keep_aspect, $
+                            MEAN=mean, $
+                            MISSING_COLOR=missing_color, $
+                            MISSING_VALUE=missing_value, $
+                            NCOLORS=ncolors, $
+                            NOINTERPOLATE=nointerp, $
+                            POSITION=position, $
+                            SCALETYPE=scaletype, $
+                            SCLMIN=sclmin, $
+                            SCLMAX=sclmax, $
+                            SELECTABLE=1, $
+                            SIGMA=sigma)
                     ENDELSE
                     imageIsObject = 1
                     GOTO, DefineWidgets
                 ENDIF
              ENDIF
            ENDIF ELSE BEGIN
-                image = Read_Image(imageFile, r, g, b)
-                IF N_Elements(image) EQ 1 THEN Message, 'Image file can not be read with READ_IMAGE.'
+                theImage = Read_Image(imageFile, r, g, b)
+                IF N_Elements(theImage) EQ 1 THEN Message, 'Image file can not be read with READ_IMAGE.'
            ENDELSE
            IF has_palette THEN BEGIN
                 colorPalette = [[r], [g], [b]]
@@ -734,7 +822,7 @@ FUNCTION ImgWin::INIT, image, $
             
     ENDCASE
     
-    ; A label to jump to if you have created an object.
+    ; A label to jump to if you have already have an image.
     DefineWidgets:
     
     ; This INIT method simply instantiates a top-level base object with a status bar.
@@ -816,7 +904,7 @@ FUNCTION ImgWin::INIT, image, $
         IF N_Elements(ctindex) EQ 0 THEN BEGIN
             ctindex = 0
             TVLCT, rr, gg, bb, /Get
-            CTLoad, ctindex, BREWER=brewer, NCOLORS=ncolors
+            cgLoadCT, ctindex, BREWER=brewer, NCOLORS=ncolors
             TVLCT, r, g, b, /GET
             colorPalette = [[r], [g], [b]]
             TVLCT, rr, gg, bb
@@ -826,7 +914,7 @@ FUNCTION ImgWin::INIT, image, $
                 colorPalette = [[r], [g], [b]]
             ENDIF ELSE BEGIN
                 TVLCT, rr, gg, bb, /Get
-                CTLoad, ctindex, BREWER=brewer, NCOLORS=ncolors
+                cgLoadCT, ctindex, BREWER=brewer, NCOLORS=ncolors
                 TVLCT, r, g, b, /GET
                 colorPalette = [[r], [g], [b]]
                 TVLCT, rr, gg, bb
@@ -834,8 +922,13 @@ FUNCTION ImgWin::INIT, image, $
         ENDELSE
     ENDIF
     
-    ; Create a coordinate system for the image.
-    coords = Obj_New('CATCOORD', Name='IMG WIN COORDS OBJECT', XRANGE=xrange, YRANGE=yrange)
+    ; Create a coordinate system for the image if one is not passed in.
+    IF N_Elements(map_coord) EQ 0 THEN BEGIN
+        coords = Obj_New('CATCOORD', Name='IMG WIN COORDS OBJECT', XRANGE=xrange, YRANGE=yrange)
+    ENDIF ELSE BEGIN
+        coords = map_coord
+        coords -> AddParent, self
+    ENDELSE
     
     ; If AXES are required.
     IF Keyword_Set(axes) THEN BEGIN
@@ -935,6 +1028,9 @@ PRO ImgWin, image, $
     FULL_RESOLUTION=full_resolution, $
     GAMMA=gamma, $
     KEEP_ASPECT=keep_aspect, $
+    MAP_COORD=map_coord, $
+    MAP_GRID=map_grid, $
+    MAP_OUTLINE=map_outline, $
     MEAN=mean, $
     MISSING_COLOR=missing_color, $
     MISSING_VALUE=missing_value, $
@@ -978,6 +1074,9 @@ PRO ImgWin, image, $
         FULL_RESOLUTION=full_resolution, $
         GAMMA=gamma, $
         KEEP_ASPECT=keep_aspect, $
+        MAP_COORD=map_coord, $
+        MAP_GRID=map_grid, $
+        MAP_OUTLINE=map_outline, $
         MEAN=mean, $
         MISSING_COLOR=missing_color, $
         MISSING_VALUE=missing_value, $

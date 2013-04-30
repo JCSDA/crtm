@@ -89,7 +89,7 @@ FUNCTION Parse_NSIDC_AMSR_E_L3_SeaIce, filename, variable, INFO=info, SUCCESS=su
    ; Parse the root file name to determine the parameters that need to be set appropriately.
    ; If this is not a compressed file, with extension .gz, then we will have to add the extension
    ; back to the filename and set the extension to a null string.
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootName(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
 
    ; Pull out information from the filename and the variable for info structure and for further processing.
    product_code = StrMid(root_name, 21, 1)

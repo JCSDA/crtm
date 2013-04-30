@@ -81,10 +81,16 @@ FUNCTION Parse_NSIDC_Filename_0001, filename, INFO=info, SUCCESS=success
    success = 0 ; Assume no success
    IF N_Elements(filename) EQ 0 THEN Message, "A filename is a required input parameter."
 
+   ; Set up colors.
+   landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+   grid_color = CatGetDefault('DATAVIEWER_GRID_COLOR')
+   vector_color = CatGetDefault('DATAVIEWER_VECTOR_COLOR')
+   outline_color = CatGetDefault('DATAVIEWER_OUTLINE_COLOR')
+
    ; Parse the root file name to determine the parameters that need to be set appropriately.
    ; If this is not a compressed file, with extension .gz, then we will have to add the extension
    ; back to the filename and set the extension to a null string.
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootName(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
    IF StrUpCase(theExtension) NE 'GZ' THEN BEGIN
         root_name = root_name + '.' + theExtension
         theExtension = ''
@@ -108,6 +114,7 @@ FUNCTION Parse_NSIDC_Filename_0001, filename, INFO=info, SUCCESS=success
      'N': BEGIN
               CASE Fix(freq) OF
                  85:   image = IntArr(608,896)
+                 91:   image = IntArr(608,896)
                  ELSE: image = IntArr(304,448)
               ENDCASE
           END
@@ -115,6 +122,7 @@ FUNCTION Parse_NSIDC_Filename_0001, filename, INFO=info, SUCCESS=success
      'S': BEGIN
              CASE Fix(freq) OF
                 85:   image = IntArr(632,664)
+                91:   image = IntArr(632,664)
                 ELSE: image = IntArr(316,332)
              ENDCASE
           END
@@ -138,6 +146,8 @@ FUNCTION Parse_NSIDC_Filename_0001, filename, INFO=info, SUCCESS=success
                xrange = [(uv[0,0] + uv[0,3])/2.0, (uv[0,1] + uv[0,2])/2.0]
                yrange = [(uv[1,3] + uv[1,2])/2.0, (uv[1,0] + uv[1,1])/2.0]
                mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
+               lats = Indgen(9)*10
+               lons = Indgen(11)*36
             END
         'S': BEGIN
                mapCoord = Obj_New('MAPCOORD', 106, $
@@ -153,8 +163,16 @@ FUNCTION Parse_NSIDC_Filename_0001, filename, INFO=info, SUCCESS=success
                xrange = [(uv[0,0] + uv[0,3])/2.0, (uv[0,1] + uv[0,2])/2.0]
                yrange = [(uv[1,3] + uv[1,2])/2.0, (uv[1,0] + uv[1,1])/2.0]
                mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
+               lats = -Reverse(Indgen(9)*10)
+               lons = Indgen(11)*36
             END
    ENDCASE
+   
+   ; Set up outline and grid for the image.
+   outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, COLOR=outline_color)
+   grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color, $
+        LATS=lats, LONS=lons, LATLAB=latlab, LONLAB=lonlab)
+   mapCoord -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
    
    ; Read the data file.
    OpenR, lun, filename, /GET_LUN, SWAP_IF_BIG_ENDIAN=1

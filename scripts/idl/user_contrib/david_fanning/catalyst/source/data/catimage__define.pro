@@ -73,10 +73,14 @@
 ;         restricted the number of colors in the image. 5 July 2005. DWF.
 ;       Fixed a bug in Pixel_To_Value method that caused value to be slightly off.
 ;          This was most noticable with really small images. 10 Oct 2008. DWF.
-;       In Draw_Mode_0 (i.e., the mode similar to TVIMAGE), this object will now draw
+;       In Draw_Mode_0 (i.e., the mode similar to cgImage), this object will now draw
 ;          map outlines and map grids if the coordinate object is a MAPCOORD object, and
 ;          it has been loaded with with MAP_OUTLINE or MAP_GRID objects. 4 January 2009.
 ;       Removed some testing code in SetProperty that asked to update IMGAXES objects. 31 July 2009. DWF.
+;       Modified the CreateDisplayImage to allow image display in PostScript. 7 November 2009. DWF.
+;       Refactored CreateDisplayImage to two new methods: CheckMultiPlotPosition and CheckKeepAspectRatio.
+;           7 November 2009. DWF.
+;       Modified the Pixel_To_Value function to allow for true-color images with four channels. 12 Jan 2012. DWF.
 ;-
 ;*******************************************************************************************
 ;* Copyright (c) 2003-2009, jointly by Fanning Software Consulting, Inc.                   *
@@ -247,15 +251,16 @@ END
 ;*****************************************************************************************************
 ;+
 ; NAME:
-;       CatImage::CREATEDISPLAYIMAGE
+;       CatImage::CHECKMULTIPLOTPOSITION
 ;
 ; PURPOSE:
 ;
-;       This method creates a display image for the object
+;       This method checks to see if !P.MULTI is set, and if so,
+;       sets the image position accordingly.
 ;
 ; SYNTAX:
 ;
-;       imageObject -> CreateDisplayImage
+;       imageObject -> CheckMultiPlotPosition
 ;
 ; ARGUMENTS:
 ;
@@ -267,25 +272,56 @@ END
 ;
 ;-
 ;*****************************************************************************************************
-PRO CatImage::CreateDisplayImage
+PRO CatImage::CheckMultiPlotPosition
 
-   @cat_pro_error_handler
-   
     ; Doing multiple plots?
     IF Total(!P.Multi) GT 0 THEN multi = 1 ELSE multi = 0
     IF Keyword_Set(multi) THEN BEGIN
     
-          ; Draw an invisible plot to get plot position. In pixmap to avoid background
-          ; color change in window.
+          ; Draw an invisible plot to get plot position. Make sure you support
+          ; windows.
+          IF (!D.FLAGS AND 256) EQ 0 THEN BEGIN
+             thisDevice = !D.NAME
+             SET_PLOT, StrUpCase(!Version.OS_Family) EQ 'WINDOWS' ? 'WIN' : 'X'
+          ENDIF
           currentWindow = !D.Window
           Window, XSIZE=!D.X_SIZE, YSIZE=!D.Y_SIZE, /PIXMAP
           Plot, Findgen(11), XStyle=4, YStyle=4, /NoData, XMargin=[1,1], YMargin=[1,1]
           WDelete, !D.Window
           IF currentWindow GE 0 THEN WSet, currentWindow
           self._position = [!X.Window[0], !Y.Window[0], !X.Window[1], !Y.Window[1]]
-        
+          IF N_Elements(thisDevice) NE 0 THEN Set_Plot, thisDevice
    ENDIF 
-    
+   
+END
+
+
+;*****************************************************************************************************
+;+
+; NAME:
+;       CatImage::CHECKKEEPASPECTRATIO
+;
+; PURPOSE:
+;
+;       This method checks to see if the aspect ratio of the image should be
+;       kept. If so, the position and location in the window are updated.
+;
+; SYNTAX:
+;
+;       position = imageObject -> CheckKeepAspectRatio()
+;       
+; ARGUMENTS:
+;
+;       None.
+;
+; KEYWORDS:
+;
+;       None.
+;
+;-
+;*****************************************************************************************************
+FUNCTION CatImage::CheckKeepAspectRatio
+
    ;Keep the aspect ratio of the image?
    IF self._keep_aspect THEN BEGIN
 
@@ -313,7 +349,43 @@ PRO CatImage::CreateDisplayImage
       position[3] = position[1] + (trialY/Double(!D.Y_VSize))
 
    ENDIF ELSE position = self._position
+   
+   RETURN, position
+END
 
+;*****************************************************************************************************
+;+
+; NAME:
+;       CatImage::CREATEDISPLAYIMAGE
+;
+; PURPOSE:
+;
+;       This method creates a display image for the object
+;
+; SYNTAX:
+;
+;       imageObject -> CreateDisplayImage
+;
+; ARGUMENTS:
+;
+;       None.
+;
+; KEYWORDS:
+;
+;       None.
+;
+;-
+;*****************************************************************************************************
+PRO CatImage::CreateDisplayImage
+
+   @cat_pro_error_handler
+   
+   ; Check for multiple plots. If so, set position.
+   self -> CheckMultiPlotPosition
+    
+   ; Keep the aspect ratio of the image? If so, maybe change image position.
+   position = self -> CheckKeepAspectRatio()
+   
    ; Calculate the image size and start locations.
     xsize = Ceil((position[2] - position[0]) * !D.X_VSIZE)
     ysize = Ceil((position[3] - position[1]) * !D.Y_VSIZE)
@@ -455,7 +527,7 @@ PRO CatImage::Draw, _Extra=extrakeywords
 
    ; Which display mode?
    CASE self._display_mode OF
-      0: self -> Draw_Mode_0, _Extra=extrakeywords ; Based on image's position in window (similar to TVIMAGE)
+      0: self -> Draw_Mode_0, _Extra=extrakeywords ; Based on image's position in window (similar to cgImage)
       1: self -> Draw_Mode_1, _Extra=extrakeywords ; Just a standard TV.
       2: self -> Draw_Mode_2, _Extra=extrakeywords ; Standard TV, but with a position index (TV, image, 1).
    ENDCASE
@@ -861,7 +933,7 @@ PRO CatImage::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -1361,6 +1433,7 @@ END
 ;       YDATA:         The y data value with respect to the image data coordinate system,
 ;
 ;       YPIXEL:        The y pixel value in terms of image (rather than window) device coordinates.
+;       
 ;-
 ;*****************************************************************************************************
 FUNCTION CatImage::Pixel_to_Value, x, y, $
@@ -1383,7 +1456,7 @@ FUNCTION CatImage::Pixel_to_Value, x, y, $
    
    ; Where is th image in the window, and what size is it?
    thePos = self._location[0:3, 0]
-   dims = Image_Dimensions(*self._dataPtr, XSIZE=xsize, YSIZE=ysize)
+   dims = Image_Dimensions(*self._dataPtr, XSIZE=xsize, YSIZE=ysize, TRUEINDEX=trueIndex)
    
    ; Create vectors for locating the image dimensions with VALUE_LOCATE.
    xvec = Scale_Vector(Findgen(xsize+1), thePos[0], thePos[2])
@@ -1391,9 +1464,6 @@ FUNCTION CatImage::Pixel_to_Value, x, y, $
    xpixel = 0 > Value_Locate(xvec, x) < (xsize - 1)
    ypixel = 0 > Value_Locate(yvec, y) < (ysize - 1)
    
-   ; Output depends in whether this is 2D or 3D image.
-   trueIndex = Where(dims EQ 3)
-
    IF trueIndex[0] EQ -1 THEN BEGIN
 
          value = (*self._dataPtr)[xpixel, ypixel]
@@ -2363,6 +2433,7 @@ FUNCTION CatImage::INIT, image, $
    IF N_Elements(xstart) NE 0 THEN self._xstart = xstart
    IF N_Elements(ystart) NE 0 THEN self._ystart = ystart
    self._visible = 1
+   self._zoomcoords = self._coords
 
    IF Obj_Valid(wid) NE 0 THEN self._wid = wid
 

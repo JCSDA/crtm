@@ -6,7 +6,7 @@
 ; PURPOSE:
 ;
 ;       The purpose of this routine is to provide an application for viewing
-;       image files found at NSIDC.
+;       passive microwave image files found at NSIDC.
 ;
 ; AUTHOR:
 ;
@@ -23,41 +23,63 @@
 ; SYNTAX:
 ;
 ;       IDL> DataViewer, files
-;       
+;
 ; ARGUMENTS:
-; 
+;
 ;       files:   The definition of "files" is fairly broad. This can be the name of one or more
 ;                of the image files DataViewer can read (see below), an actual image variable,
 ;                or it can be the name of a directory containing image files that DataViewer can
 ;                read, in which case DataViewer reads all the image files in the directory. This
-;                is an optional argument. 
-;                
+;                is an optional argument.
+;
 ; DATA_FILES:
 ;
 ;   Currently the DataViewer program reads the following NSIDC image data files.
 ;
 ;   nsidc-0001: DMSP-SSM Daily Polar Gridded Brightness Temperatures
-;               http://www.nsidc.org/data/nsidc-0001.html
+;               http://nsidc.org/data/nsidc-0001.html
 ;   nsidc-0032: DMSP SSM/I Pathfinder Daily EASE-Grid Brightness Temperatures
-;               http://www.nsidc.org/data/nsidc-0032.html
+;               http://nsidc.org/data/nsidc-0032.html
+;   nsidc-0046: Northern Hemisphere EASE-Grid Weekly Snow Cover and Sea Ice Extent
+;               http://nsidc.org/data/nsidc-0046.html
+;   nsidc-0051: Sea Ice Concentrations from SMMR and SSM/I platforms
+;               http://nsidc.org/data/nsidc-0051.html
 ;   nsidc-0071: Nimbus-7 SMMR Pathfinder Daily EASE-Grid Brightness Temperatures
-;               http://www.nsidc.org/data/nsidc-0071.html
+;               http://nsidc.org/data/nsidc-0071.html
 ;   nsidc-0079: Bootstrap Sea Ice Concentrations from Nimbus-7 SMMR and DMST SSM/I
-;               http://www.nsidc.org/data/nsidc-0079.html
+;               http://nsidc.org/data/nsidc-0079.html
+;   nsidc-0080: Near Real Time SMSP SSM/I Gridded Brightness Temperatures
+;               http://nsidc.org/data/nsidc-0080.html
+;   nsidc-0081: Near Real Time SMSP SSM/I Daily Polar Gridded Sea Ice Concentrations
+;               http://nsidc.org/data/nsidc-0081.html
 ;   nsidc-0301: AMSR-E/Aqua Daily EASE-Grid Brightness Temperatures
-;               http://www.nsidc.org/data/nsidc-0301.html
+;               http://nsidc.org/data/nsidc-0301.html
 ;   nsidc-0302: AMSR-E/Aqua Daily Global Quarter-Degree Gridded Brightness Temperatures
-;               http://www.nsidc.org/data/nsidc-0302.html
+;               http://nsidc.org/data/nsidc-0302.html
+;   nsidc-0342: Near Real Time SSM/I and SSMIS Daily Gridded Brightness Temperatures
+;               http://nsidc.org/data/nsidc-0342.html
+;   nsidc-ae_si25: AMSR-E Daily 25 km Gridded Brightness Temperature and Sea Ice Concentration
+;               http://nsidc.org/data/ae_si25.html
 ;
-;   Additionally, the program reads BMP, GIF, JPEG, PNG, PPM, SRF, TIFF, DICOM, or 
+;   Additionally, the program reads BMP, GIF, JPEG, PNG, PPM, SRF, TIFF, DICOM, or
 ;   JPEG2000 image files .
 ;
+;   The DataViewer no longer supports the following NSIDC data set:
+;
+;   nsidc-0116: Sea Ice Motion Vectors for Daily, Monthly, and Yearly Gridded Products
+;               http://nsidc.org/data/nsidc-0116.html
+
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David W. Fanning and version 1.0 released to the public 11 November 2008.
+;       Extensively modified to read more passive microware data products from NSIDS. Changes
+;          include better ways of handling map projection information. 17 June 2010. DWF.
+;       Fixed problem caused by loading a configuration file before images were selected,
+;           and fixed a problem with Coyote Library routine cgLoadCT and the way it looks
+;           for the Brewer color table file. 28 June 2010. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2008, Regents of the University of Colorado. All rights reserved.         ;
+;  Copyright (c) 2008-2010, Regents of the University of Colorado. All rights reserved.    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -76,7 +98,7 @@
 ;  WARRANTIES OF MERCHANTABILITY  AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.     ;
 ;  IN NO EVENT SHALL THE REGENTS OF THE UNIVERSITY OF COLORADO BE LIABLE FOR ANY DIRECT,   ;
 ;  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT      ;
-;  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR      ;         
+;  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR      ;
 ;  PROFITS OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,        ;
 ;  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)      ;
 ;  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE              ;
@@ -114,73 +136,80 @@ PRO DataViewer::ChangeGrid, grid, NOLOAD=noload
 
    ; No more than 64 images per page due to memory considerations.
    grid = 1 > grid < 8
-   
+
    ; Update the grid in various locations.
    self.numImages = grid[0] * grid[1]
    self.gridWindow -> SetProperty, GRID=grid
-   
-      ; If you are not loading images, then out of here.
+
+   ; If you are not loading images, then out of here.
    IF Keyword_Set(noload) THEN RETURN
- 
+
    ; Remove all the current images from the window.
    currentImages = self.gridWindow -> Get(/ALL, ISA='NSIDC_IMAGE', COUNT=count)
-   
+
    ; Find the first current image in the list of names.
-   currentImages[0] -> GetProperty, FILENAME=filename
-   currentFilePtr = Where(*self.theFiles EQ filename)
-   self.fileStackPtr = (currentFilePtr / self.numimages) * self.numimages 
-   
-   ; Remove all the image objects from the window and destroy them.
-   FOR j=0,count-1 DO currentImages[j] -> RemoveParent, self.gridWindow
-   self.gridWindow -> Remove, /ALL, ISA='NSIDC_IMAGE'   
-  
+   IF count GT 0 THEN BEGIN
+       currentImages[0] -> GetProperty, FILENAME=filename
+       currentFilePtr = Where(*self.theFiles EQ filename)
+       self.fileStackPtr = (currentFilePtr / self.numimages) * self.numimages
+
+       ; Remove all the image objects from the window and destroy them.
+       FOR j=0,count-1 DO currentImages[j] -> RemoveParent, self.gridWindow
+       self.gridWindow -> Remove, /ALL, ISA='NSIDC_IMAGE'
+  ENDIF
+
    ; Read the new images.
-   FOR j=0,self.numImages-1 DO BEGIN
-        newObject = Parse_NSIDC_Filename((*self.theFiles)[self.fileStackPtr], INFO=info, SUCCESS=success)
-        IF success EQ 0 THEN RETURN
-        namesOff = CatGetDefault('DATAVIEWER_IMAGE_NAMES_OFF', SUCCESS=success)
-        IF success NE 1 THEN namesOff = 1
-        cbOff = CatGetDefault('DATAVIEWER_COLORBARS_OFF', SUCCESS=success)
-        IF success NE 1 THEN cbOff = 1
-        moOn = CatGetDefault('DATAVIEWER_MAP_OUTLINE_ON', SUCCESS=success)
-        IF success NE 1 THEN moOn = 0
-        gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
-        IF success NE 1 THEN gridOn = 0
-        missing_color = CatGetDefault('DATAVIEWER_MISSING_COLOR')
-        oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
-        oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
-        landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
-        annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
-        newObject -> SetProperty, SELECTABLE=1, MISSING_COLOR=missing_color, OOB_LOW_COLOR=oob_low_color, $
-            OOB_HIGH_COLOR=oob_high_color, LANDMASK_COLOR=landmask_color, NO_NAME_DISPLAY=namesOff, $
-            NO_COLORBAR_DISPLAY=cbOff, FN_COLOR=annotate_color, MAP_OUTLINE=moOn, MAP_GRID=gridOn
-        self.gridWindow -> Add, newObject
-        self.fileStackPtr = self.fileStackPtr + 1
-        IF self.filestackPtr EQ N_Elements(*self.theFiles) THEN BREAK
-  ENDFOR
-   
+   IF count GT 0 THEN BEGIN
+       FOR j=0,self.numImages-1 DO BEGIN
+            newObject = Parse_NSIDC_Filename((*self.theFiles)[self.fileStackPtr], INFO=info, SUCCESS=success)
+            IF success EQ 0 THEN RETURN
+            namesOff = CatGetDefault('DATAVIEWER_IMAGE_NAMES_OFF', SUCCESS=success)
+            IF success NE 1 THEN namesOff = 1
+            cbOff = CatGetDefault('DATAVIEWER_COLORBARS_OFF', SUCCESS=success)
+            IF success NE 1 THEN cbOff = 1
+            moOn = CatGetDefault('DATAVIEWER_MAP_OUTLINE_ON', SUCCESS=success)
+            IF success NE 1 THEN moOn = 0
+            gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
+            IF success NE 1 THEN gridOn = 0
+            missing_color = CatGetDefault('DATAVIEWER_MISSING_COLOR')
+            oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
+            oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
+            landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+            annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
+            newObject -> SetProperty, SELECTABLE=1, MISSING_COLOR=missing_color, OOB_LOW_COLOR=oob_low_color, $
+                OOB_HIGH_COLOR=oob_high_color, LANDMASK_COLOR=landmask_color, NO_NAME_DISPLAY=namesOff, $
+                NO_COLORBAR_DISPLAY=cbOff, FN_COLOR=annotate_color, MAP_OUTLINE=moOn, MAP_GRID=gridOn
+            self.gridWindow -> Add, newObject
+            self.fileStackPtr = self.fileStackPtr + 1
+            IF self.filestackPtr EQ N_Elements(*self.theFiles) THEN BREAK
+      ENDFOR
+  ENDIF
+
    ; The images in the window need new positions.
    self.gridWindow -> GetProperty, POSITIONS=positions
    currentImages = self.gridWindow -> Get(/ALL, COUNT=numCurrentImages, ISA='NSIDC_IMAGE')
    FOR j=0,numCurrentImages-1 DO currentImages[j] -> SetProperty, POSITION=positions[*,j]
-   
+
    ; You have to unregister the GridWindow Color object from messages, and re-register
    ; it, otherwise, it will get the notification to redraw the images before the images
    ; have received the message to change their colors. This results in a one-click "delay"
    ; when changing color tables.
    self.gridWindow -> GetProperty, COLOR_OBJECT=gridColors
-   gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_TABLECHANGE', /UNREGISTER
-   gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY', /UNREGISTER
-   gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_TABLECHANGE'
-   gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY'
-
+   IF Obj_Valid(gridColors) THEN BEGIN
+       gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_TABLECHANGE', /UNREGISTER
+       gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY', /UNREGISTER
+       gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_TABLECHANGE'
+       gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY'
+   ENDIF
    ; Draw the images in the window.
    self.gridWindow -> Draw
 
    ; Check to see if buttons should be turned on or off.
-   IF self.fileStackPtr EQ (N_Elements(*self.theFiles)) $
-       THEN self.nextButton -> SetProperty, SENSITIVE=0 $
-       ELSE self.nextButton -> SetProperty, SENSITIVE=1
+   IF Obj_Valid(self.theFiles) THEN BEGIN
+       IF self.fileStackPtr EQ (N_Elements(*self.theFiles)) $
+           THEN self.nextButton -> SetProperty, SENSITIVE=0 $
+           ELSE self.nextButton -> SetProperty, SENSITIVE=1
+   ENDIF
    IF self.fileStackPtr GT self.numimages $
        THEN self.prevButton -> SetProperty, SENSITIVE=1 $
        ELSE self.prevButton -> SetProperty, SENSITIVE=0
@@ -216,6 +245,42 @@ PRO DataViewer::CreateStatusBar, baseObject, _Extra=extrakeywords
    IF N_Elements(baseObject) EQ 0 THEN baseObject = self
    self._statusbar = OBJ_NEW('STATUSBAR', baseObject, Name='Statusbar', /Align_Left, $
       Font='Times*14', Frame=1,  _Extra=extrakeywords)
+
+END
+
+
+
+;*****************************************************************************************************
+;+
+; NAME:
+;        DATAVIEWER::EditConfigFile
+;
+; PURPOSE:
+;
+;        This method allows the user to edit the configuration file and save it
+;        as itself or as another configuration file.
+;
+; SYNTAX:
+;
+;        This method is called automatically by the event handling mechanism.
+;
+; ARGUMENTS:
+;
+;       event: The event structure as described in the IDL help files, except
+;              that the ID, TOP and HANDLER tags will be object references.
+;
+; KEYWORDS:
+;
+;       None.
+;
+;-
+;*****************************************************************************************************
+PRO DataViewer::EditConfigFile, event
+
+  @cat_pro_error_handler
+
+  success = DataViewer_Edit_Config_File(self.configFile, self->GetID(), self)
+  IF ~success THEN RETURN
 
 END
 
@@ -263,8 +328,7 @@ PRO DataViewer::EventHandler, event
             ; create an annomation the correct size.
             firstImage = self.gridWindow -> Get(POSITION=0)
             firstImage -> GetProperty, IMAGE=image, NO_NAME_DISPLAY=no_name, NO_COLORBAR_DISPLAY=no_colorbar
-            s = Size(image, /DIMENSIONS)
-            aspect = Float(s[1])/s[0]
+            aspect = image_aspect( image )
             IF aspect GE 1 THEN BEGIN
                 ysize = maxsize
                 xsize = maxsize / aspect
@@ -276,8 +340,9 @@ PRO DataViewer::EventHandler, event
             ; How many images do we have?
             numfiles = N_Elements(*self.theFiles)
 
-            ; Start it up. 
+            ; Start it up.
             XInterAnimate, /SHOWLOAD, SET=[xsize, ysize, numfiles], TITLE='DataViewer Animation'
+            animateWindow = !D.Window
             missing_color = CatGetDefault('DATAVIEWER_MISSING_COLOR')
             oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
@@ -288,7 +353,7 @@ PRO DataViewer::EventHandler, event
             IF success NE 1 THEN moOn = 0
             gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
             IF success NE 1 THEN gridOn = 0
-            
+
             ; Read each file, display it in the window, then leave.
             FOR j=0,numfiles-1 DO BEGIN
                newObject = Parse_NSIDC_Filename((*self.theFiles)[j], INFO=info, SUCCESS=success)
@@ -300,10 +365,11 @@ PRO DataViewer::EventHandler, event
                      MAP_OUTLINE=moOn, MAP_GRID=gridOn
                newObject -> GetProperty, NSIDC_TAG=nsidc_tag, FILENAME=filename, COLORCHANGEALLOWED=colorChangeAllowed
                IF colorChangeAllowed THEN newObject -> SetProperty, COLOR_OBJECT=colors
-               Erase, Color=FSC_Color(background_color)
+               WSet, animateWindow
+               Erase, Color=cgColor(background_color)
                newObject -> Draw
                Obj_Destroy, newObject
-               XInterAnimate, WINDOW=!D.Window, FRAME=j
+               XInterAnimate, WINDOW=animateWindow, FRAME=j
             ENDFOR
 
             ; Set it loose.
@@ -311,7 +377,38 @@ PRO DataViewer::EventHandler, event
 
 
             END
-            
+
+      'CHANGE_ANNOTATE_COLOR': BEGIN
+            annotateColor = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), annotateColor, TITLE='Change Annotation Color')
+            CatSetDefault, 'DATAVIEWER_ANNOTATE_COLOR', colorname
+            theImages = self.gridWindow -> Get(/ALL, COUNT=count)
+            FOR j=0,count-1 DO BEGIN
+                IF Obj_Isa_Valid(theImages[j], 'NSIDC_IMAGE') THEN BEGIN
+                theImages[j] -> SetProperty, FN_COLOR=colorname
+                ENDIF
+             ENDFOR
+             self.gridWindow -> Draw
+             END
+
+      'CHANGE_BACKGROUND_COLOR': BEGIN
+            self -> GetProperty, ID=tlbID
+            backgroundColor = CatGetDefault('DATAVIEWER_BACKGROUND_COLOR')
+            color = cgPickColorName(GROUP_LEADER=tlbID, backgroundcolor, TITLE='Change BACKGROUND Color')
+            CatSetDefault, 'DATAVIEWER_BACKGROUND_COLOR', color
+            self.gridWindow -> SetProperty, INITIAL_COLOR=color
+            self.gridWindow -> Draw
+            END
+
+      'CHANGE_DATA_DIRECTORY': BEGIN
+            self -> GetProperty, ID=tlbID
+            dataDir = CatGetDefault('DATAVIEWER_DATA_DIRECTORY')
+            newDataDir = Dialog_Pickfile(PATH=dataDir, /DIRECTORY, TITLE='Select Data Directory...')
+            IF newDataDir EQ "" THEN RETURN
+            CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', newDataDir
+            self -> Write_Config_File, self.configFile
+            END
+
      'CHANGE_GRID': BEGIN
 
             ; Get the new grid size from the user.
@@ -342,39 +439,9 @@ PRO DataViewer::EventHandler, event
 
             END
 
-
-      'CHANGE_BACKGROUND_COLOR': BEGIN
-            self -> GetProperty, ID=tlbID
-            backgroundColor = CatGetDefault('DATAVIEWER_BACKGROUND_COLOR')
-            color = PickColorName(GROUP_LEADER=tlbID, backgroundcolor, TITLE='Change BACKGROUND Color')
-            CatSetDefault, 'DATAVIEWER_BACKGROUND_COLOR', color
-            self.gridWindow -> SetProperty, INITIAL_COLOR=color
-            self.gridWindow -> Draw
-            END
-
-
-
-      'CHANGE_IMAGE_COLORS': BEGIN
-            self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-            colors -> XColors, TITLE='Change Image Colors', GROUP_LEADER=self.gridWindow
-            END
-
-      'CHANGE_ANNOTATE_COLOR': BEGIN
-            annotateColor = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), annotateColor, TITLE='Change Annotation Color')
-            CatSetDefault, 'DATAVIEWER_ANNOTATE_COLOR', colorname
-            theImages = self.gridWindow -> Get(/ALL, COUNT=count)
-            FOR j=0,count-1 DO BEGIN
-                IF Obj_Isa_Valid(theImages[j], 'NSIDC_IMAGE') THEN BEGIN
-                theImages[j] -> SetProperty, FN_COLOR=colorname
-                ENDIF
-             ENDFOR
-             self.gridWindow -> Draw
-             END
-
       'CHANGE_GRID_COLOR': BEGIN
             gridColor = CatGetDefault('DATAVIEWER_GRID_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), gridColor, TITLE='Change Map Grid Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), gridColor, TITLE='Change Map Grid Color')
             CatSetDefault, 'DATAVIEWER_GRID_COLOR', colorname
             theImages = self.gridWindow -> Get(/ALL, COUNT=count)
             FOR j=0,count-1 DO BEGIN
@@ -385,12 +452,17 @@ PRO DataViewer::EventHandler, event
              self.gridWindow -> Draw
              END
 
+      'CHANGE_IMAGE_COLORS': BEGIN
+            self.gridWindow -> GetProperty, COLOR_OBJECT=colors
+            colors -> XColors, TITLE='Change Image Colors', GROUP_LEADER=self.gridWindow
+            END
+
       'CHANGE_LANDMASK_COLOR': BEGIN
             landmaskColor = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), landmaskColor, TITLE='Change LANDMASK Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), landmaskColor, TITLE='Change LANDMASK Color')
             CatSetDefault, 'DATAVIEWER_LANDMASK_COLOR', colorname
             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-            color = FSC_Color(colorname, /Triple)
+            color = cgColor(colorname, /Triple)
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
             r[252] = color[0]
             g[252] = color[1]
@@ -409,10 +481,10 @@ PRO DataViewer::EventHandler, event
 
       'CHANGE_MISSING_COLOR': BEGIN
             missingColor = CatGetDefault('DATAVIEWER_MISSING_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), missingColor, TITLE='Change MISSING Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), missingColor, TITLE='Change MISSING Color')
             CatSetDefault, 'DATAVIEWER_MISSING_COLOR', colorname
             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-            color = FSC_Color(colorname, /Triple)
+            color = cgColor(colorname, /Triple)
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
             r[255] = color[0]
             g[255] = color[1]
@@ -431,10 +503,10 @@ PRO DataViewer::EventHandler, event
 
       'CHANGE_OOB_HIGH_COLOR': BEGIN
             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), oob_high_color, TITLE='Change OUT-OF-BOUNDS HIGH Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), oob_high_color, TITLE='Change OUT-OF-BOUNDS HIGH Color')
             CatSetDefault, 'DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR', colorname
             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-            color = FSC_Color(colorname, /Triple)
+            color = cgColor(colorname, /Triple)
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
             r[253] = color[0]
             g[253] = color[1]
@@ -453,10 +525,10 @@ PRO DataViewer::EventHandler, event
 
       'CHANGE_OOB_LOW_COLOR': BEGIN
             oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), oob_low_color, TITLE='Change OUT-OF-BOUNDS LOW Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), oob_low_color, TITLE='Change OUT-OF-BOUNDS LOW Color')
             CatSetDefault, 'DATAVIEWER_OUTOFBOUNDS_LOW_COLOR', colorname
             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-            color = FSC_Color(colorname, /Triple)
+            color = cgColor(colorname, /Triple)
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
             r[254] = color[0]
             g[254] = color[1]
@@ -475,7 +547,7 @@ PRO DataViewer::EventHandler, event
 
       'CHANGE_OUTLINE_COLOR': BEGIN
             outlineColor = CatGetDefault('DATAVIEWER_OUTLINE_COLOR')
-            colorname = PickColorName(GROUP_LEADER=self->GetID(), outlineColor, TITLE='Change Map Outline Color')
+            colorname = cgPickColorName(GROUP_LEADER=self->GetID(), outlineColor, TITLE='Change Map Outline Color')
             CatSetDefault, 'DATAVIEWER_OUTLINE_COLOR', colorname
             theImages = self.gridWindow -> Get(/ALL, COUNT=count)
             FOR j=0,count-1 DO BEGIN
@@ -499,7 +571,13 @@ PRO DataViewer::EventHandler, event
          event.id -> SetProperty, UVALUE=1-buttonChangeValue
 
          END
-         
+
+      'EDIT_CONFIGURATION_FILE': BEGIN
+
+         self -> EditConfigFile, event
+
+         END
+
       'EXIT': OBJ_DESTROY, self
 
       'GRIDWINDOW' : BEGIN
@@ -508,10 +586,10 @@ PRO DataViewer::EventHandler, event
            ; the image, if we can find it.
            CASE event.event_name OF
                 'WIDGET_DRAW': BEGIN
-                
+
                    ; Make this the current window/
                    self.gridWindow -> SetWindow
-                   
+
                    IF (event.type EQ 2) THEN BEGIN
                         ; Which image are we talking about?
                         images = event.ID -> Get(/ALL, Count=count)
@@ -522,7 +600,7 @@ PRO DataViewer::EventHandler, event
                         ENDFOR
                         ; If there is no success, you haven't clicked on an image.
                         IF success EQ 0 THEN RETURN
-                   
+
                                selectedImage -> GetProperty, Filename=filename, SCLMIN=sclmin, $
                                     SCLMAX=sclmax, IMAGE=image, MISSING_VALUE=missing_value
                                value = selectedImage -> Pixel_To_Value(event.x, event.y, XDATA=xpix, YDATA=ypix)
@@ -538,7 +616,7 @@ PRO DataViewer::EventHandler, event
                                     filename = "" ELSE $
                                     filename = File_Basename(filename, '.gz')
                                CASE N_Elements(value) OF
-                               
+
                                    1: BEGIN
                                      IF Size(value, /TNAME) NE 'STRING' THEN  value = String(value, Format='(F0.2)')
                                      theText = filename + $
@@ -563,7 +641,7 @@ PRO DataViewer::EventHandler, event
                                ENDCASE
                                self._statusbar -> SetProperty, Text=theText
                    ENDIF
-                   
+
                    ; Only interested in  BUTTON DOWN.
                     IF (event.type EQ 0) THEN BEGIN
 
@@ -660,7 +738,7 @@ PRO DataViewer::EventHandler, event
          xoffset = xoffset + (xsize/2)
          yoffset = yoffset + (ysize/2)
          XDisplayFile, readmeFile, GROUP=self._ID, TITLE='NSIDC DataViewer Help', RETURN_ID=displayTLB
-         CenterTLB, displayTLB, xoffset, yoffset, /DEVICE
+         cgCenterTLB, displayTLB, xoffset, yoffset, /DEVICE
          END
 
       'IMAGE NAMES ON/OFF': BEGIN
@@ -676,7 +754,7 @@ PRO DataViewer::EventHandler, event
          event.id -> SetProperty, UVALUE=1-buttonChangeValue
 
          END
-         
+
       'MAP_OUTLINES ON/OFF': BEGIN
 
          event.id -> GetProperty, UVALUE=buttonChangeValue, VALUE=buttonValue
@@ -703,8 +781,8 @@ PRO DataViewer::EventHandler, event
             event.id -> SetProperty, VALUE='Map Grid On'
          event.id -> SetProperty, UVALUE=1-buttonChangeValue
 
-         END      
-         
+         END
+
       'NEXT_PAGE': BEGIN
 
             ; How many files are there to load?
@@ -722,10 +800,10 @@ PRO DataViewer::EventHandler, event
             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
             landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
             annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
             FOR j=0,numFilesToLoad-1 DO BEGIN
                  newObject = Parse_NSIDC_Filename((*self.theFiles)[self.fileStackPtr], INFO=info, SUCCESS=success)
                  IF success EQ 0 THEN RETURN
@@ -764,7 +842,7 @@ PRO DataViewer::EventHandler, event
 
             ; Display them.
             self.gridWindow -> Draw
-            
+
             ; You have to unregister the GridWindow Color object from messages, and re-register
             ; it, otherwise, it will get the notification to redraw the images before the images
             ; have received the message to change their colors. This results in a one-click "delay"
@@ -774,7 +852,7 @@ PRO DataViewer::EventHandler, event
             gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY', /UNREGISTER
             gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_TABLECHANGE'
             gridColors -> RegisterForMessage, self.gridWindow, 'COLORTOOL_SETPROPERTY'
-            
+
             ; Check to see if buttons should be turned on or off.
             IF self.fileStackPtr EQ (N_Elements(*self.theFiles)) $
                 THEN self.nextButton -> SetProperty, SENSITIVE=0 $
@@ -782,12 +860,12 @@ PRO DataViewer::EventHandler, event
             IF self.fileStackPtr GT self.numimages $
                 THEN self.prevButton -> SetProperty, SENSITIVE=1 $
                 ELSE self.prevButton -> SetProperty, SENSITIVE=0
-                        
+
             END
 
-      'OPEN_CONFIG_FILE': BEGIN
+      'LOAD_CONFIG_FILE': BEGIN
 
-             suggestFilename = FSC_Base_Filename(self.configFile, DIRECTORY=thePath, EXTENSION=theExtension)
+             suggestFilename = cgRootName(self.configFile, DIRECTORY=thePath, EXTENSION=theExtension)
              filename = Dialog_Pickfile(FILE=suggestFilename + '.txt', $
                   PATH=thepath, TITLE='Open CONFIG file...')
              IF filename EQ "" THEN RETURN
@@ -800,7 +878,7 @@ PRO DataViewer::EventHandler, event
                config_file = CatGetDefault('DATAVIEWER_CONFIG_FILE', SUCCESS=success)
                IF success THEN BEGIN
                     IF StrUpCase(File_BaseName(config_file, '.txt')) NE 'DATAVIEWER_DEFAULT' THEN BEGIN
-            
+
                        ; Is this a relative file name or a complete file name?
                        IF StrUpCase(File_BaseName(config_file)) EQ StrUpCase(config_file) THEN BEGIN
                            IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
@@ -812,7 +890,7 @@ PRO DataViewer::EventHandler, event
                         DataViewer_Parse_Configuration, config_file
                     ENDIF
                ENDIF
-            
+
                ; Check to be sure the data directory has a file separator at the end of the directory
                ; name. If it doesn't, the path is indeterminate.
                dataDir = CatGetDefault('DATAVIEWER_DATA_DIRECTORY', SUCCESS=success)
@@ -832,7 +910,7 @@ PRO DataViewer::EventHandler, event
                         dataDir = dataDir + Path_Sep()
                         CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
                     ENDIF
-            
+
                     ; Make sure the file separators are appropriate for the machine
                     ; we are running on. Byte('\') = 92, Byte('/') = 47.
                     CASE Path_Sep() OF
@@ -845,7 +923,7 @@ PRO DataViewer::EventHandler, event
                                 CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
                              ENDIF
                              END
-            
+
                         '\': BEGIN ; Windows
                              thisArray = Byte(dataDir)
                              i = Where(thisArray EQ 47, count)
@@ -855,66 +933,19 @@ PRO DataViewer::EventHandler, event
                                 CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
                              ENDIF
                              END
-            
+
                          ELSE: ; Strange machine. Everyone for himself...
-            
+
                     ENDCASE
                ENDIF
-               
-               ; Set the data directory.
-               CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir   
 
-             ; New background color.
-             backgroundColor = CatGetDefault('DATAVIEWER_BACKGROUND_COLOR')
-             self.gridWindow -> SetProperty, INITIAL_COLOR=backgroundColor
+             ; Set the data directory.
+             CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
 
-             ; New drawing colors.
-             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
-             IF Obj_Valid(colors) EQ 0 THEN BEGIN
-                colors = Obj_New('CatColors')
-             ENDIF
-             
-             
-             ; New colors.
-             cttype = CatGetDefault('DATAVIEWER_DEFAULT_CT_TYPE')
-             IF StrUpCase(cttype) EQ 'BREWER' THEN brewer=1 ELSE brewer = 0
-             index = CatGetDefault('DATAVIEWER_DEFAULT_CT')
-             colors -> SetProperty, INDEX=index, BREWER=brewer, NCOLORS=250
-             colors -> Loadct, index
-             colors -> GetProperty, RED=r, GREEN=g, BLUE=b, NCOLORS=ncolors, $
-               BREWER=brewer, INDEX=index
-             missingColor = CatGetDefault('DATAVIEWER_MISSING_COLOR')
-             color = FSC_Color(missingColor, /TRIPLE)
-             r[255] = color[0]
-             g[255] = color[1]
-             b[255] = color[2]
-             oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
-             color = FSC_Color(oob_low_color, /TRIPLE)
-             r[254] = color[0]
-             g[254] = color[1]
-             b[254] = color[2]
-             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
-             color = FSC_Color(oob_high_color, /TRIPLE)
-             r[253] = color[0]
-             g[253] = color[1]
-             b[253] = color[2]
-             landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
-             color = FSC_Color(landmask_color, /TRIPLE)
-             r[252] = color[0]
-             g[252] = color[1]
-             b[252] = color[2]
-
-             ; Update everyone.
-             colors -> SetProperty, INDEX=CatGetDefault('DATAVIEWER_DEFAULT_CT'), BREWER=brewer, RED=r, GREEN=g, BLUE=b
-
-             ; Update the config file.
-             self.configFile = filename
-
-             ; New grid.
-             self -> ChangeGrid
+             self -> Update_GUI_From_Config, filename
 
             END
-            
+
       'OPEN_HDF_FILE': BEGIN
             self -> Open_HDF_File
             END
@@ -928,7 +959,7 @@ PRO DataViewer::EventHandler, event
                 self.fileStackPtr =  0 > (self.fileStackPtr - (self.fileStackPtr MOD self.numImages) $
                     - self.numImages) <  N_Elements(*self.theFiles)
             ENDELSE
-            
+
             ; Remove the image files currently on the display.
             currentImages = self.gridWindow -> Get(/ALL)
             self.gridWindow -> Remove, /ALL
@@ -944,10 +975,10 @@ PRO DataViewer::EventHandler, event
             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
             landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
             annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
             FOR j=startIndex, endindex DO BEGIN
                  newObject = Parse_NSIDC_Filename((*self.theFiles)[j], INFO=info, SUCCESS=success)
                  IF success EQ 0 THEN RETURN
@@ -1027,15 +1058,15 @@ PRO DataViewer::EventHandler, event
             annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
 
             ; Load colors here, because we are going to copy for the color palette below.
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
-            TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
+            TVLCT, cgColor(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
             cttype = CatGetDefault('DATAVIEWER_DEFAULT_CT_TYPE')
             IF StrUpCase(cttype) EQ 'BREWER' THEN brewer=1 ELSE brewer = 0
             colorIndex = CatGetDefault('DATAVIEWER_DEFAULT_CT', SUCCESS=success)
             IF success EQ 0 THEN colorIndex = 4
-            CTLOAD, colorIndex, BREWER=brewer, NCOLORS=250
+            cgLoadCT, colorIndex, BREWER=brewer, NCOLORS=250
             TVLCT, r, g, b, /GET
 
             ; Read the images again.
@@ -1172,7 +1203,7 @@ PRO DataViewer::EventHandler, event
                 indices = Where(image GT 100, count)
                 IF count GT 0 THEN image[indices] = !VALUES.F_NAN
             ENDIF
-            XStretch, image, GROUP_LEADER=self->GetID(), /NO_WINDOW, $
+            cgStretch, image, GROUP_LEADER=self->GetID(), /NO_WINDOW, $
                 BETA=beta, $
                 BOTTOM=bottom, $
                 EXPONENT=exponent, $
@@ -1203,7 +1234,7 @@ PRO DataViewer::EventHandler, event
             ; window.
             self.gridWindow -> SetWindow
             self.gridWindow -> Output, TYPE=fileType, FILENAME='dataviewer', /DRAW
-            
+
             END
 
       'SELECT_FILES': self -> Select_Files
@@ -1224,30 +1255,30 @@ PRO DataViewer::EventHandler, event
                 RETURN
             ENDIF
             CD, thisDir
-            
+
             ; The files need to have the complete path name.
             theFiles = File_Search(theDirectory + '*.*', COUNT=newcount)
-            
+
             ; Set the grid to its default values. (Necessary to load image correctly!)
             self -> ChangeGrid, /NOLOAD
- 
+
             ; Load the files into the DataViewer.
             self -> LoadFiles, theFiles
-            
+
             ; Make this the default directory
             CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', theDirectory
             END
-            
+
       'SPLASHWINDOW': BEGIN
-      
+
             ; Only button down events.
             IF event.type NE 0 THEN RETURN
-            
+
             ; Get the location in normalized coordinates.
             event.id -> GetProperty, XSIZE=xsize, YSIZE=ysize
             xnorm = event.x / Float(xsize)
             ynorm = event.y / Float(ysize)
-            
+
             ; Are you inside the information button?
             IF (xnorm GE 0.88) AND (xnorm LE 0.98) AND (ynorm GE 0.89) AND (ynorm LE 0.99) THEN BEGIN
                  IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
@@ -1264,8 +1295,8 @@ PRO DataViewer::EventHandler, event
                                      'splash screen for DataViewer information.'], /INFORMATION)
             ENDELSE
             END
-      
-       
+
+
       'TLB': BEGIN ; A TLB re-size event. Resize the draw widget and re-draw.
 
          drawObject = self -> Get("GridWindow", /Recursive_Search)
@@ -1276,7 +1307,7 @@ PRO DataViewer::EventHandler, event
          ENDIF ELSE BEGIN
             s = [event.x - self.xoffset + 1, event.y - self.yoffset + 1]
          ENDELSE
- 
+
          ; Resize the draw widget.
          drawObject -> Resize, s[0], s[1]
 
@@ -1317,7 +1348,7 @@ END
 ;     None.
 ;
 ; KEYWORDS:
-; 
+;
 ;    VERSION:         The current version number of the program.
 ;
 ;     _REF_EXTRA:     Any keywords appropriate for the superclass GetProperty method.
@@ -1326,7 +1357,7 @@ END
 PRO DataViewer::GetProperty,  VERSION=version, _Ref_Extra=extrakeywords
 
    @cat_pro_error_handler
-   
+
    version = self.version
 
    IF N_Elements(extrakeywords) NE 0 THEN self -> TOPLEVELBASE::GetProperty, _Extra=extrakeywords
@@ -1420,19 +1451,19 @@ PRO DataViewer::GUI, menubarID
         Value='Histogram Stretch All Images', Sensitive=0)
    button = OBJ_NEW('ButtonWidget', ops, Name='REFRESH_IMAGES', $
         Value='Refresh All Images', Sensitive=0)
-        
+
    namesOff = CatGetDefault('DATAVIEWER_IMAGE_NAMES_OFF', SUCCESS=success)
    IF success EQ 0 THEN namesOff = 0
    IF namesOff THEN nameValue = 'Image Names On' ELSE nameValue = 'Image Names Off'
    button = OBJ_NEW ('ButtonWidget', ops,  Name='IMAGE NAMES ON/OFF', $
       Value=nameValue, /Separator, /DYNAMIC_RESIZE, UVALUE=1-namesOff, SENSITIVE=0)
-      
+
    cbOff = CatGetDefault('DATAVIEWER_COLORBARS_OFF', SUCCESS=success)
    IF success EQ 0 THEN cbOff = 0
    IF cbOff THEN cbValue = 'Colorbars On' ELSE cbValue = 'Colorbars Off'
    button = OBJ_NEW ('ButtonWidget', ops,  Name='COLORBARS ON/OFF', $
       Value=cbValue, /DYNAMIC_RESIZE, UVALUE=1-cbOff, SENSITIVE=0)
-      
+
    moOn = CatGetDefault('DATAVIEWER_MAP_OUTLINE_ON', SUCCESS=success)
    IF success EQ 0 THEN moOn = 0
    IF moOn THEN moValue = 'Map Outlines Off' ELSE moValue = 'Map Outlines On'
@@ -1446,21 +1477,25 @@ PRO DataViewer::GUI, menubarID
       Value=gridValue, /DYNAMIC_RESIZE, UVALUE=1-gridOn, SENSITIVE=0)
 
 
-   button = OBJ_NEW('ButtonWidget', fileMenu, Name='OPEN_CONFIG_FILE', $
-        Value='Open Configuration File', /Separator)
+   ; Configuration buttons.
+   button = OBJ_NEW('ButtonWidget', fileMenu, Name='LOAD_CONFIG_FILE', $
+        Value='Load a Configuration File...', /Separator)
    button = OBJ_NEW('ButtonWidget', fileMenu, Name='SAVE_CONFIG_FILE', $
         Value='Save Current Configuration As...')
+   button = OBJ_NEW('ButtonWidget', fileMenu, Name='EDIT_CONFIGURATION_FILE', $
+        Value='Edit Current Configuration File...', UVALUE=self)
+   button = OBJ_NEW('ButtonWidget', fileMenu, Name='CHANGE_DATA_DIRECTORY', $
+        Value='Change Default Data Directory...')
 
 
    button = OBJ_NEW ('ButtonWidget', helpObj,  Name='Help', Value='Program Instructions')
-
    button = OBJ_NEW ('ButtonWidget', fileMenu,  Name='Exit', Value='Exit', /Separator)
 
    ; Gather configuration variables.
    grid = CatGetDefault('DATAVIEWER_GRIDWINDOW_GRID')
    xsize = CatGetDefault('DATAVIEWER_GRIDWINDOW_XSIZE')
    ysize = CatGetDefault('DATAVIEWER_GRIDWINDOW_YSIZE')
-   
+
    ; No matter what the preferred size, constrain the data viewer
    ; to no more than 95% of the screen size.
    s = Get_Screen_Size()
@@ -1488,6 +1523,9 @@ PRO DataViewer::GUI, menubarID
    IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
    iceimagefile = Filepath(Root_Dir=ProgramRootDir(ONEUP=oneup), $
       Subdirectory='resources', 'dataviewer_splash.jpg')
+   IF File_Test(iceimagefile) EQ 0 THEN BEGIN
+      iceimagefile = Find_Resource_File('dataviewer_splash.jpg')
+   ENDIF
    Read_JPEG, iceimagefile, image
    iceimage = Obj_New('CatImage', image, Position=[0.0, 0.0, 1.0, 1.0], /KEEP_ASPECT, NAME='SPLASH_IMAGE')
    self.splashWindow -> Add, iceimage
@@ -1555,9 +1593,9 @@ END
 PRO DataViewer::LoadFiles, files
 
     @cat_pro_error_handler
-    
+
     Obj_Destroy, self.splashWindow
-    
+
     ; Is the argument there?
     IF N_Elements(files) EQ 0 THEN Message, 'A file or directory name must be supplied.'
 
@@ -1600,15 +1638,15 @@ PRO DataViewer::LoadFiles, files
     annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
 
     ; Load colors here, because we are going to copy for the color palette below.
-    TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
-    TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
-    TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
-    TVLCT, FSC_COLOR(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
+    TVLCT, cgColor(CatGetDefault('DATAVIEWER_MISSING_COLOR'), /Triple), 255
+    TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR'), /Triple), 254
+    TVLCT, cgColor(CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR'), /Triple), 253
+    TVLCT, cgColor(CatGetDefault('DATAVIEWER_LANDMASK_COLOR'), /Triple), 252
     cttype = CatGetDefault('DATAVIEWER_DEFAULT_CT_TYPE')
     IF StrUpCase(cttype) EQ 'BREWER' THEN brewer=1 ELSE brewer = 0
     colorIndex = CatGetDefault('DATAVIEWER_DEFAULT_CT', SUCCESS=success)
     IF success EQ 0 THEN colorIndex = 27
-    CTLOAD, colorIndex, BREWER=brewer, NCOLORS=250
+    cgLoadCT, colorIndex, BREWER=brewer, NCOLORS=250
     TVLCT, r, g, b, /GET
 
     FOR j=0,numImagesToLoad-1 DO BEGIN
@@ -1622,8 +1660,8 @@ PRO DataViewer::LoadFiles, files
            IF success NE 1 THEN moOn = 0
            gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
            IF success NE 1 THEN gridOn = 0
-           
-           newObject -> SetProperty, SELECTABLE=1, MISSING_COLOR=missing_color, OOB_LOW_COLOR=oob_low_color, $
+
+           newObject -> SetProperty, SELECTABLE=1, MISSING_COLOR=missing_color, MISSING_INDEX=255, OOB_LOW_COLOR=oob_low_color, $
                 OOB_HIGH_COLOR=oob_high_color, LANDMASK_COLOR=landmask_color, NO_NAME_DISPLAY=namesOff, $
                 NO_COLORBAR_DISPLAY=cbOff, FN_COLOR=annotate_color, MAP_OUTLINE=moOn, MAP_GRID=gridOn
            newObject -> GetProperty, COLOR_OBJECT=colors, NSIDC_TAG=nsidc_tag, $
@@ -1650,7 +1688,7 @@ PRO DataViewer::LoadFiles, files
            self.gridWindow -> Add, newObject
            self.fileStackPtr = self.fileStackPtr + 1
     ENDFOR
-    
+
     ; We must have loaded at least one image to continue with this method.
     IF self.fileStackPtr EQ 0 THEN RETURN
 
@@ -1714,6 +1752,20 @@ PRO DataViewer::LoadFiles, files
            IF cbOff THEN cbValue = 'Colorbars On' ELSE cbValue = 'Colorbars Off'
            button = self -> Get('COLORBARS ON/OFF', /RECURSIVE_SEARCH)
            IF Obj_Valid(button) THEN button -> SetProperty, VALUE=cbValue, UVALUE=1-cbOff, SENSITIVE=1
+
+           ; Set the map grid on/off button.
+           gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
+           IF success EQ 0 THEN gridOn = 0
+           IF gridOn THEN gridValue = 'Map Grid Off' ELSE gridValue = 'Map Grid On'
+           button = self -> Get('MAP_GRID ON/OFF', /RECURSIVE_SEARCH)
+           IF Obj_Valid(button) THEN button -> SetProperty, VALUE=gridValue, UVALUE=1-gridOn, SENSITIVE=1
+
+           ; Set the map outline on/off button.
+           moOn = CatGetDefault('DATAVIEWER_MAP_OUTLINE_ON', SUCCESS=success)
+           IF success EQ 0 THEN moOn = 0
+           IF moOn THEN moValue = 'Map Outlines Off' ELSE moValue = 'Map Outlines On'
+           button = self -> Get('MAP_OUTLINES ON/OFF', /RECURSIVE_SEARCH)
+           IF Obj_Valid(button) THEN button -> SetProperty, VALUE=moValue, UVALUE=1-moOn, SENSITIVE=1
         ENDELSE
 
     ; Draw the images.
@@ -1723,9 +1775,9 @@ PRO DataViewer::LoadFiles, files
     Ptr_Free, self.scaling_values
 
     ; Should the NEXT button be made sensitive?
-    
+
     IF N_Elements(*self.theFiles) GT numImagesToLoad THEN BEGIN
-        self.nextButton -> SetProperty, SENSITIVE=1 
+        self.nextButton -> SetProperty, SENSITIVE=1
         IF self.fileStackPtr LE self.numimages $
             THEN self.prevButton -> SetProperty, SENSITIVE=0 $
             ELSE self.prevButton -> SetProperty, SENSITIVE=1
@@ -1818,7 +1870,7 @@ PRO DataViewer::MessageHandler, title, DATA=data, SENDER=sender
 
             END
 
-        ELSE: Message, 'Received an upexpected message in the message handler.
+        ELSE: Message, 'Received an upexpected message in the message handler.'
 
     ENDCASE
 
@@ -1851,34 +1903,34 @@ END ;***************************************************************************
 ;PRO DataViewer::Open_HDF_File
 ;
 ;    @cat_pro_error_handler
-;    
+;
 ;    ; Select an HDF file to open.
 ;    dataDir = CatGetDefault('DATAVIEWER_DATA_DIRECTORY')
-;    hdf_file = Dialog_Pickfile(FILTER='*.hdf', TITLE='Select HDF File', PATH=dataDir)            
+;    hdf_file = Dialog_Pickfile(FILTER='*.hdf', TITLE='Select HDF File', PATH=dataDir)
 ;    IF hdf_file[0] EQ '' THEN RETURN
-;    
+;
 ;    ; Set the data directory system variable.
-;    void = FSC_Base_Filename(hdf_file[0], DIRECTORY=newDir)
+;    void = cgRootName(hdf_file[0], DIRECTORY=newDir)
 ;    CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', newDir
-;            
+;
 ;    ; Set the grid to its default values. (Necessary to load image correctly!)
 ;    self -> ChangeGrid, /NOLOAD
-;    
+;
 ;    ; Open the HDF file and search through it for SDs containing 2D images.
 ;    ; It is these we will display.
 ;    hdf_id = HDF_SD_START(hdf_file[0])
-;    
+;
 ;    ; How many variables are there in the file?
 ;    HDF_SD_FILEINFO, hdf_id, numVariables, numGlobalAtts
-;    
+;
 ;    ; Let the user know if there are no variables in this file.
 ;    IF numVariables EQ 0 THEN BEGIN
 ;         IF (!D.FLAGS AND 256) NE 0 THEN $
 ;            void = Dialog_Message('There are no scientific variables in file: ' + hdf_file) ELSE $
 ;            Message, 'There are no scientific variables in file: ' + hdf_file, /INFORMATIONAL
 ;         RETURN
-;    ENDIF 
-;    
+;    ENDIF
+;
 ;    ; Get each variable, see if it is 2D, and save its name, if so.
 ;    vars2d = StrArr(numVariables)
 ;    count = 0
@@ -1897,18 +1949,18 @@ END ;***************************************************************************
 ;            void = Dialog_Message('There are no 2D scientific variables in file: ' + hdf_file) ELSE $
 ;            Message, 'There are no 2D scientific variables in file: ' + hdf_file, /INFORMATIONAL
 ;         RETURN
-;    ENDIF 
-;    
-;    ; Close the HDF file access.    
+;    ENDIF
+;
+;    ; Close the HDF file access.
 ;    HDF_SD_END, hdf_id
 ;
 ;    ; Save the HDF filename.
 ;    self.hdf_filename = hdf_file
-;    
+;
 ;    vars = Name_Selector(vars2d, Label='Select SD to Read and Display', CANCEL=cancelled)
 ;    IF cancelled THEN RETURN
-;    
-;    
+;
+;
 ;    ; Load the variables.
 ;    self -> LoadFiles, vars2D, /HDF
 ;
@@ -1942,15 +1994,15 @@ PRO DataViewer::Select_Files
     dataDir = CatGetDefault('DATAVIEWER_DATA_DIRECTORY')
     theFiles = Dialog_Pickfile(/MULTIPLE, Title='Select Image Files', PATH=dataDir)
     IF theFiles[0] EQ '' THEN RETURN
-    
+
     ; Special processing if this is an HDF file.
     testFile = theFiles[0]
-    filename = FSC_Base_Filename(testFile, EXTENSION=ext, DIRECTORY=dir)
+    filename = cgRootName(testFile, EXTENSION=ext, DIRECTORY=dir)
     IF StrLowCase(ext) EQ 'hdf' OR StrLowCase(ext) EQ 'hdfeos' THEN BEGIN
-    
+
        ; Open the HDF file
        hdfID = HDF_SD_Start(testFile)
-    
+
        ; Which variables would the user like to display from this file or files?
        ; We are only going to allow 2D scientific data sets.
        sd_list = HDF_SD_Varlist(hdfid)
@@ -1968,46 +2020,46 @@ PRO DataViewer::Select_Files
           RETURN
        ENDIF
        list2dvar = list2dvar[0:listCnt-1]
-       
+
        ; Allow the user to select the variables.
-       selectList = List_Selector(list2dvar, COUNT=selectCnt, CANCEL=cancelled, GROUP_LEADER=self->GetID())  
+       selectList = List_Selector(list2dvar, COUNT=selectCnt, CANCEL=cancelled, GROUP_LEADER=self->GetID())
        IF cancelled THEN BEGIN
           HDF_SD_END, hdfID
           RETURN
        ENDIF
-       
+
        tempFiles = StrArr(selectCnt)
        FOR j=0,selectCnt-1 DO BEGIN
           tempFiles[j] = testFile + '@' + selectList[j]
        ENDFOR
-       
+
        ; Close the file
        HDF_SD_END, hdfID
-        
+
         ; Set the data directory system variable.
-        void = FSC_Base_Filename(theFiles[0], DIRECTORY=newDir)
+        void = cgRootName(theFiles[0], DIRECTORY=newDir)
         CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', newDir
-            
+
        ; Set the grid to its default values. (Necessary to load image correctly!)
        self -> ChangeGrid, /NOLOAD
 
        ; Load the files into the DataViewer.
        self -> LoadFiles, tempFiles
-      
+
        RETURN
-       
+
     ENDIF
-            
+
     ; Set the data directory system variable.
-    void = FSC_Base_Filename(theFiles[0], DIRECTORY=newDir)
+    void = cgRootName(theFiles[0], DIRECTORY=newDir)
     CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', newDir
-            
+
     ; Set the grid to its default values. (Necessary to load image correctly!)
     self -> ChangeGrid, /NOLOAD
 
     ; Load the files into the DataViewer.
     self -> LoadFiles, theFiles
-    
+
 END ;--------------------------------------------------------------------------------------------------
 
 ;
@@ -2057,18 +2109,36 @@ PRO DataViewer::SingleFileSetup, imageObject
     ENDELSE
     self.gridWindow -> SetProperty, XSIZE=xsize, YSIZE=ysize
     self._statusbar -> Resize, self.gridWindow
-    self -> SetProperty, TITLE='NSIDC DataViewer: ' + FSC_Base_Filename((*self.theFiles)[0])
+    self -> SetProperty, TITLE='NSIDC DataViewer: ' + cgRootName((*self.theFiles)[0])
 
 
-    ; Turn the name off.
-    imageObject -> SetProperty, NO_NAME_DISPLAY=1
-    button = self -> Get('IMAGE NAMES ON/OFF', /RECURSIVE_SEARCH)
-    IF Obj_Valid(button) THEN button -> SetProperty, VALUE='Image Names On', UVALUE=0, SENSITIVE=1
+      ; Set the name on/off button.
+      namesOff = CatGetDefault('DATAVIEWER_IMAGE_NAMES_OFF', SUCCESS=success)
+      IF success EQ 0 THEN namesOff = 0
+      IF namesOff THEN nameValue = 'Image Names On' ELSE nameValue = 'Image Names Off'
+      button = self -> Get('IMAGE NAMES ON/OFF', /RECURSIVE_SEARCH)
+      IF Obj_Valid(button) THEN button -> SetProperty, VALUE=nameValue, UVALUE=1-namesOff, SENSITIVE=1
 
-    ; Turn the colorbar off.
-    imageObject -> SetProperty, NO_COLORBAR_DISPLAY=1
-    button = self -> Get('COLORBARS ON/OFF', /RECURSIVE_SEARCH)
-    IF Obj_Valid(button) THEN button -> SetProperty, VALUE='Colorbars On', UVALUE=0, SENSITIVE=1
+      ; Set the colorbar on/off button.
+      cbOff = CatGetDefault('DATAVIEWER_COLORBARS_OFF', SUCCESS=success)
+      IF success EQ 0 THEN cbOff = 0
+      IF cbOff THEN cbValue = 'Colorbars On' ELSE cbValue = 'Colorbars Off'
+      button = self -> Get('COLORBARS ON/OFF', /RECURSIVE_SEARCH)
+      IF Obj_Valid(button) THEN button -> SetProperty, VALUE=cbValue, UVALUE=1-cbOff, SENSITIVE=1
+
+      ; Set the map grid on/off button.
+      gridOn = CatGetDefault('DATAVIEWER_MAP_GRID_ON', SUCCESS=success)
+      IF success EQ 0 THEN gridOn = 0
+      IF gridOn THEN gridValue = 'Map Grid Off' ELSE gridValue = 'Map Grid On'
+      button = self -> Get('MAP_GRID ON/OFF', /RECURSIVE_SEARCH)
+      IF Obj_Valid(button) THEN button -> SetProperty, VALUE=gridValue, UVALUE=1-gridOn, SENSITIVE=1
+
+      ; Set the map outline on/off button.
+      moOn = CatGetDefault('DATAVIEWER_MAP_OUTLINE_ON', SUCCESS=success)
+      IF success EQ 0 THEN moOn = 0
+      IF moOn THEN moValue = 'Map Outlines Off' ELSE moValue = 'Map Outlines On'
+      button = self -> Get('MAP_OUTLINES ON/OFF', /RECURSIVE_SEARCH)
+      IF Obj_Valid(button) THEN button -> SetProperty, VALUE=moValue, UVALUE=1-moOn, SENSITIVE=1
 
     ; Turn certain control off.
     imageObject -> GetProperty, COLORCHANGEALLOWED=colorChangeAllowed, N_DIMENSIONS=ndims, SCALETYPE=scaletype
@@ -2125,10 +2195,9 @@ PRO DataViewer::SingleFileSetup, imageObject
     button = self -> Get('ANIMATE_IMAGES', /RECURSIVE_SEARCH)
     IF Obj_Valid(button) THEN button -> SetProperty, SENSITIVE=0
 
-END ; ************************************************************************************************
+END
 
-
-;
+; ************************************************************************************************
 ;+
 ; NAME:
 ;       DATAVIEWER::SETPROPERTY
@@ -2162,6 +2231,92 @@ PRO DataViewer::SetProperty, _Extra=extrakeywords
 
 END
 
+
+; ************************************************************************************************
+;+
+; NAME:
+;       DATAVIEWER::UPDATE_GUI_FROM_CONFIG
+;
+; PURPOSE:
+;
+;       This method updates items in the GUI when a new configuration file is loaded.
+;
+; SYNTAX:
+;
+;       theObject -> Update_GUI_From_Config
+;
+; ARGUMENTS:
+;
+;     filename:     The name of the configuration file.
+;
+; KEYWORDS:
+;
+;     None.
+;-
+;*****************************************************************************************************
+PRO DataViewer::Update_GUI_From_Config, filename
+
+   @cat_pro_error_handler
+
+             ; New background color.
+             backgroundColor = CatGetDefault('DATAVIEWER_BACKGROUND_COLOR')
+             self.gridWindow -> SetProperty, INITIAL_COLOR=backgroundColor
+
+             ; New drawing colors.
+             self.gridWindow -> GetProperty, COLOR_OBJECT=colors
+             IF Obj_Valid(colors) EQ 0 THEN BEGIN
+                colors = Obj_New('CatColors')
+             ENDIF
+
+             ; New colors.
+             cttype = CatGetDefault('DATAVIEWER_DEFAULT_CT_TYPE')
+             IF StrUpCase(cttype) EQ 'BREWER' THEN brewer=1 ELSE brewer = 0
+             index = CatGetDefault('DATAVIEWER_DEFAULT_CT')
+             colors -> SetProperty, INDEX=index, BREWER=brewer, NCOLORS=250
+             colors -> Loadct, index
+             colors -> GetProperty, RED=r, GREEN=g, BLUE=b, NCOLORS=ncolors, $
+               BREWER=brewer, INDEX=index
+             missingColor = CatGetDefault('DATAVIEWER_MISSING_COLOR')
+             color = cgColor(missingColor, /TRIPLE)
+             r[255] = color[0]
+             g[255] = color[1]
+             b[255] = color[2]
+             oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
+             color = cgColor(oob_low_color, /TRIPLE)
+             r[254] = color[0]
+             g[254] = color[1]
+             b[254] = color[2]
+             oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
+             color = cgColor(oob_high_color, /TRIPLE)
+             r[253] = color[0]
+             g[253] = color[1]
+             b[253] = color[2]
+             landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+             color = cgColor(landmask_color, /TRIPLE)
+             r[252] = color[0]
+             g[252] = color[1]
+             b[252] = color[2]
+
+             ; Update everyone.
+             colors -> SetProperty, INDEX=CatGetDefault('DATAVIEWER_DEFAULT_CT'), BREWER=brewer, RED=r, GREEN=g, BLUE=b
+
+             ; Update the config file.
+             self.configFile = filename
+
+             ; New grid.
+             self -> ChangeGrid
+
+             ; Update the size of the grid window, if necessary.
+             xsize = CatGetDefault('DATAVIEWER_GRIDWINDOW_XSIZE')
+             ysize =  CatGetDefault('DATAVIEWER_GRIDWINDOW_YSIZE')
+             self.gridWindow -> GetProperty, XSIZE=xs, YSIZE=ys
+             IF xs NE xsize OR ysize NE ys THEN BEGIN
+                self.gridWindow -> Resize, xsize, ysize, DRAW=1
+             ENDIF
+
+   self -> Report, /Completed
+
+END
 
 PRO DataViewer::XColors_Notification, XCOLORS_DATA=colorData
     IF colorData.index NE -1 THEN BEGIN
@@ -2228,10 +2383,13 @@ END
 ;
 ; KEYWORDS:
 ;
-;     None.
+;     NOCURRENTWINDOW:   Normally, the window size is taken from the current graphics window.
+;                        However, if this keyword is set, the window size is taken from the
+;                        current value of DATAVIEWER_GRIDWINDOW_XSIZE and
+;                        DATAVIEWER_GRIDWINDOW_YSIZE.
 ;-
 ;*****************************************************************************************************
-PRO DataViewer::Write_Config_File, filename
+PRO DataViewer::Write_Config_File, filename, NOCURRENTWINDOW=noCurrentWindow
 
     Compile_Opt idl2
 
@@ -2244,15 +2402,18 @@ PRO DataViewer::Write_Config_File, filename
 
     ; If the configuration file doesn't exist. Ask for a filename.
     IF N_Elements(filename) EQ 0 THEN BEGIN
-      suggestFilename = FSC_Base_Filename(self.configFile, DIRECTORY=thePath, EXTENSION=theExtension)
+      suggestFilename = cgRootName(self.configFile, DIRECTORY=thePath, EXTENSION=theExtension)
       filename = Dialog_Pickfile(FILE=suggestFilename + '.txt', /Write, $
            PATH=thepath, TITLE='Save CONFIG file as...')
       IF filename EQ "" THEN RETURN
 
     ENDIF
 
+    ; Check keywords.
+    noCurrentWindow = Keyword_Set(noCurrentWindow)
+
     ; Is the filename such that it will write into the config directory?
-    basename = FSC_Base_Filename(filename, DIRECTORY=theDir, EXTENSION=extension)
+    basename = cgRootName(filename, DIRECTORY=theDir, EXTENSION=extension)
     IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
     IF theDir EQ "" THEN filename = Filepath(ROOT_DIR=ProgramRootDir(ONEUP=oneup), $
       SUBDIR='config', filename)
@@ -2269,8 +2430,10 @@ PRO DataViewer::Write_Config_File, filename
 
     ; Get the current size of the window and save that, too
     self.gridWindow -> GetProperty, XSIZE=xsize, YSIZE=ysize
-    CatSetDefault, 'DATAVIEWER_GRID_XSIZE', xsize
-    CatSetDefault, 'DATAVIEWER_GRID_YSIZE', ysize
+    IF ~NoCurrentWindow THEN BEGIN
+        CatSetDefault, 'DATAVIEWER_GRIDWINDOW_XSIZE', xsize
+        CatSetDefault, 'DATAVIEWER_GRIDWINDOW_YSIZE', ysize
+    ENDIF
 
     ; Get all the CatDefaults. Those that start with "DATAVIEWER" will be
     ; written into the new file.
@@ -2413,8 +2576,8 @@ FUNCTION DataViewer::INIT, _Ref_Extra=extra
    self.numImages = grid[0] * grid[1]
    IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
    self.configFile = Filepath(Root_Dir=ProgramRootDir(ONEUP=oneup), $
-      SUBDIRECTORY='config', 'dataviewer_default.pro')
-      
+      SUBDIRECTORY='config', 'dataviewer_default.txt')
+
    self.version = 1.0
 
    IF (ok) THEN self -> Report, /Completed $
@@ -2500,16 +2663,35 @@ PRO DataViewer, files
            IF File_Test(config_file, /READ) EQ 0 THEN $
                 Message, 'Configuration file specified in "dataviewer_default.txt" cannot be found.'
             DataViewer_Parse_Configuration, config_file
-        ENDIF
-   ENDIF
+        ENDIF ELSE BEGIN
+
+            ; This may not be a fully-qualified path to the Configuration file. Make
+            ; sure it is.
+            ;
+           ; Is this a relative file name or a complete file name?
+           IF StrUpCase(File_BaseName(config_file)) EQ StrUpCase(config_file) THEN BEGIN
+               IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
+               config_file = Filepath(ROOT_DIR=ProgramRootDir(ONEUP=oneup), $
+                  SUBDIR='config', config_file)
+           ENDIF
+        ENDELSE
+   ENDIF ELSE BEGIN
+
+        ; Look in the config directory for files. If the user can't find any, we
+        ; are done.
+        IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
+        configPath = Filepath(ROOT_DIR=ProgramRootDir(ONEUP=oneup), SUBDIR='config', "")
+        config_file = Dialog_Pickfile(PATH=configPath, TITLE='Select Configuration File...', $
+            FILTER='*.txt')
+        IF config_file EQ "" THEN Message, 'Cannot continue with DataViewer Configuration File.'
+   ENDELSE
 
    ; Check to be sure the data directory has a file separator at the end of the directory
    ; name. If it doesn't, the path is indeterminate.
    dataDir = CatGetDefault('DATAVIEWER_DATA_DIRECTORY', SUCCESS=success)
    IF StrLowCase(dataDir) EQ 'default' THEN BEGIN
        IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
-       dataDir = FilePath(ROOT_DIR=ProgramRootDir(ONEUP=oneup), $
-           SUBDIR='data', "")
+       dataDir = FilePath(ROOT_DIR=ProgramRootDir(ONEUP=oneup), SUBDIR='data', "")
    ENDIF
    IF StrLowCase(dataDir) EQ 'data' THEN BEGIN
        IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
@@ -2550,9 +2732,9 @@ PRO DataViewer, files
 
         ENDCASE
    ENDIF
-   
+
    ; Set the data directory.
-   CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir   
+   CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
 
     ; Create the widgets that make up the application. Widgets that generate
    ; events should be named explicitly and should be children (or grandchildren)
@@ -2566,18 +2748,30 @@ PRO DataViewer, files
    ; select one.
    test = File_Test(dataDir, /DIRECTORY)
    IF test EQ 0 THEN BEGIN
-      answer = Dialog_Message(['The configuration Data Directory ' + dataDir + ' does not exist. ',  $
-                              'Would you like to select the Data Directory now?'], QUESTION=1, CENTER=1, $
-                              TITLE='DATA Directory Cannot be Found')
+
+      IF (StrUpCase(dataDir) EQ 'DEFAULT' + Path_Sep()) THEN dataDir = ProgramRootDir(ONEUP=oneup)
+      answer = Dialog_Message(['The DataViewer needs to know where your images are located. ', $
+                               'The current Data Directory is set to a currently non-existent directory: ', $
+                               ' ', $
+                               dataDir,  $
+                               ' ', $
+                               'Would you like to select a different Data Directory now and make', $
+                               'this new selection be the default Data Directory?'], QUESTION=1, CENTER=1, $
+                               TITLE='Select the DataViewer Data Directory')
       IF StrUpCase(StrMid(answer,0,1)) EQ 'Y' THEN BEGIN ; Answer is "yes".
           dataDir = Dialog_Pickfile(/DIRECTORY, TITLE='Select the Data Directory...')
           IF dataDir NE '' THEN BEGIN
                 CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
                 tlb -> Write_Config_File, config_file
+                ok = Dialog_Message(['The current Data Directory has been set to', dataDir], CENTER=1)
           ENDIF ELSE RETURN
       ENDIF ELSE BEGIN ; Answer is "no".
-         IF LMGR(/RUNTIME) OR LMGR(/VM) THEN oneup = 0 ELSE oneup=1
-         CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', ProgramRootDir(ONEUP=oneup)
+
+         ; Answer is no, but the current directory doesn't exist. Get a directory that
+         ; does  exist, i.e., the DataViewer directory.
+         dataDir = FilePath(ROOT_DIR=ProgramRootDir(ONEUP=oneup),  "")
+         CatSetDefault, 'DATAVIEWER_DATA_DIRECTORY', dataDir
+         ok = Dialog_Message(['The current Data Directory has been set temporarily to', dataDir], CENTER=1)
       ENDELSE
    ENDIF
 

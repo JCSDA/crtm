@@ -15,7 +15,7 @@
 ;        Fort Collins                  Warborough, Oxon
 ;        CO 80526 USA                  OX10 7DN, ENGLAND
 ;        Phone: 970-221-0438           Phone: +44 (0)1865 858279
-;        E-mail: davidf@dfanning.com   E-mail: davidb@burridgecomputing.co.uk
+;        E-mail: davidf@idlcoyote.com  E-mail: davidb@burridgecomputing.co.uk
 ;
 ; CATEGORY:
 ;

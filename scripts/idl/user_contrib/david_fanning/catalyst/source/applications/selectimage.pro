@@ -145,12 +145,12 @@
 ;
 ; OTHER COYOTE LIBRARY FILES REQUIRED:
 ;
-;  http://www.dfanning.com/programs/centertlb.pro
+;  http://www.dfanning.com/programs/cgcentertlb.pro
 ;  http://www.dfanning.com/programs/error_message.pro
 ;  http://www.dfanning.com/programs/fsc_fileselect.pro
 ;  http://www.dfanning.com/programs/image_dimensions.pro
-;  http://www.dfanning.com/programs/number_formatter.pro
-;  http://www.dfanning.com/programs/tvimage.pro
+;  http://www.dfanning.com/programs/cgnumber_formatter.pro
+;  http://www.dfanning.com/programs/cgimage.pro
 ;
 ;  Note: Keyword inheritance to collect undefined keywords that may be passed into the
 ;  program for use in READ_XXX routines, make it impossible to trap keyword useage errors.
@@ -209,6 +209,7 @@
 ;      with the GeoTiff information. 26 August 2009. DWF.
 ;   Added GEOTIFF keyword to return GEOTIFF structure from GeoTIFF files. 30 Aug 2009. DWF.
 ;   Added DISPLAY keyword to immediately display the image in an IMGWIN window. 30 Aug 2009. DWF.
+;   Fixed a problem in which the starting directory was changed on exit. 20 Nov 2010. DWF.
 ;   
 ;-
 ;
@@ -491,7 +492,7 @@ PRO SelectImage_FilenameEvents, event
 
    ; Sort the files.
    FOR j=0, N_Elements(*info.filter)-1 DO BEGIN
-      specificFiles = Findfile((*info.filter)[j], Count=fileCount)
+      specificFiles = File_Search((*info.filter)[j], Count=fileCount)
       IF fileCount GT 0 THEN IF N_Elements(*(info.theFiles)) EQ 0 THEN $
          *info.theFiles = specificFiles[SelectImage_BSort(specificFiles)] ELSE $
          *info.theFiles = [*info.theFiles, specificFiles[SelectImage_BSort(specificFiles)]]
@@ -585,8 +586,8 @@ PRO SelectImage_FilenameEvents, event
    Widget_Control, info.labelXSizeID, Set_Value="X Size: " + StrTrim(xsize, 2)
    Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
    Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
-   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
 
    ; Draw the preview image.
    WSet, info.previewWID
@@ -594,8 +595,8 @@ PRO SelectImage_FilenameEvents, event
    Widget_Control, info.previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
    TVLCT, info.r, info.g, info.b
    IF (Min(image) LT 0) OR (Max(image) GT (!D.Table_Size-1)) THEN $
-      TVImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
-      TVImage, image, /Keep_Aspect, /NoInterpolation, /Erase
+      cgImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
+      cgImage, image, /Keep_Aspect, /NoInterpolation, /Erase
    IF imageDataType EQ 'NONE' THEN image = 0
 
    ; Store the image data for later retrieval.
@@ -638,8 +639,8 @@ PRO SelectImage_FlipImage, event
    Widget_Control, info.previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
    TVLCT, info.r, info.g, info.b
    IF (Min(*(*(info.storagePtr)).image) LT 0) OR (Max(*(*(info.storagePtr)).image) GT (!D.Table_Size-1)) THEN $
-      TVImage, BytScl(*(*(info.storagePtr)).image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
-      TVImage, *(*(info.storagePtr)).image, /Keep_Aspect, /NoInterpolation, /Erase
+      cgImage, BytScl(*(*(info.storagePtr)).image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
+      cgImage, *(*(info.storagePtr)).image, /Keep_Aspect, /NoInterpolation, /Erase
 
    Widget_Control, event.top, Set_UValue=info, /No_Copy
 
@@ -763,11 +764,11 @@ PRO SelectImage_ListEvents, event
          Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
          Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
          IF imageDataType NE 'FLOAT' THEN BEGIN
-            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
          ENDIF ELSE BEGIN
-            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
          ENDELSE
 
          ; Draw the preview image.
@@ -776,8 +777,8 @@ PRO SelectImage_ListEvents, event
          Widget_Control, info.previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
          TVLCT, info.r, info.g, info.b
          IF (Min(image) LT 0) OR (Max(image) GT (!D.Table_Size-1)) THEN $
-            TVImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
-            TVImage, image, /Keep_Aspect, /NoInterpolation, /Erase
+            cgImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
+            cgImage, image, /Keep_Aspect, /NoInterpolation, /Erase
          IF imageDataType EQ 'NONE' THEN image = 0
 
          ; Store the image data for later retrieval.
@@ -866,11 +867,11 @@ PRO SelectImage_ListEvents, event
       Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
       Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
       IF imageDataType NE 'FLOAT' THEN BEGIN
-         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
       ENDIF ELSE BEGIN
-         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
       ENDELSE
 
       ; Draw the preview image.
@@ -879,8 +880,8 @@ PRO SelectImage_ListEvents, event
       Widget_Control, info.previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
       TVLCT, info.r, info.g, info.b
       IF (Min(image) LT 0) OR (Max(image) GT (!D.Table_Size-1)) THEN $
-         TVImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
-         TVImage, image, /Keep_Aspect, /NoInterpolation, /Erase
+         cgImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
+         cgImage, image, /Keep_Aspect, /NoInterpolation, /Erase
       IF imageDataType EQ 'NONE' THEN image = 0
 
       ; Store the image data for later retrieval.
@@ -1299,7 +1300,7 @@ PRO SelectImage_SetFilter, event
    ; Locate appropriate files.
    FOR j=0, N_Elements(*info.filter)-1 DO BEGIN
 
-      specificFiles = Findfile((*info.filter)[j], Count=fileCount)
+      specificFiles = File_Search((*info.filter)[j], Count=fileCount)
       IF fileCount GT 0 THEN IF N_Elements(theFiles) EQ 0 THEN $
          theFiles = specificFiles[SelectImage_BSort(StrLowCase(specificFiles))] ELSE $
          theFiles = [theFiles, specificFiles[SelectImage_BSort(StrLowCase(specificFiles))]]
@@ -1373,8 +1374,8 @@ PRO SelectImage_SetFilter, event
    Widget_Control, info.labelXSizeID, Set_Value="X Size: " + StrTrim(xsize, 2)
    Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
    Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
-   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
 
    ; Draw the preview image.
    WSet, info.previewWID
@@ -1382,8 +1383,8 @@ PRO SelectImage_SetFilter, event
    Widget_Control, info.previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
    TVLCT, info.r, info.g, info.b
    IF (Min(image) LT 0) OR (Max(image) GT (!D.Table_Size-1)) THEN $
-      TVImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
-      TVImage, image, /Keep_Aspect, /NoInterpolation, /Erase
+      cgImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation, /Erase ELSE $
+      cgImage, image, /Keep_Aspect, /NoInterpolation, /Erase
    IF imageDataType EQ 'NONE' THEN image = 0
 
    ; Save the image data for later retrieval.
@@ -1440,6 +1441,8 @@ FUNCTION SelectImage, $
    TITLE=title, $                  ; The title of the main image selection window.
    PreviewSize=previewsize         ; The maximum size of the image preview window. 150 pixels by default.
 
+CD, Current=originalDir
+
 ; First thing we are going to do is check for the availability of FITS files. We are
 ; going to look for MRDFITS on the path. If we don't find it, we will generate an error
 ; condition and handle it silently.
@@ -1482,6 +1485,7 @@ info = { storagePtr: Ptr_New(), $            ; The "outside the program" storage
          only3d: 0L, $                       ; A flag that permits only the acceptance of true-color images.
          filter: Ptr_New(), $                ; The file filter.
          filenameObj: Obj_New(), $           ; The FileSelect compound widget object reference.
+         originalDir: "", $                  ; The starting or original directory.
          dataDirectory: "", $                ; The current data directory.
          display: 0B, $                      ; Display the image after reading?
          labelmaxvalID: 0L, $                ; The ID of the Max Value label.
@@ -1599,7 +1603,7 @@ info.previewSize = previewSize
 
 ; Locate appropriate files.
 FOR j=0, N_Elements(filter)-1 DO BEGIN
-   specificFiles = Findfile(filter[j], Count=fileCount)
+   specificFiles = File_Search(filter[j], Count=fileCount)
    IF fileCount GT 0 THEN IF N_Elements(theFiles) EQ 0 THEN $
       theFiles = specificFiles[SelectImage_BSort(StrLowCase(specificFiles))] ELSE $
       theFiles = [theFiles, specificFiles[SelectImage_BSort(StrLowCase(specificFiles))]]
@@ -1696,8 +1700,8 @@ labeltypeID = Widget_Label(labelBaseID, Value=imageType, /Dynamic_Resize)
 labelxsizeID = Widget_Label(labelBaseID, Value="X Size: " + StrTrim(xsize, 2), /Dynamic_Resize)
 labelysizeID = Widget_Label(labelBaseID, Value="Y Size: " + StrTrim(ysize, 2), /Dynamic_Resize)
 labeldataTypeID = Widget_Label(labelBaseID, Value="Type: " + imageDataType, /Dynamic_Resize)
-labelminvalID = Widget_Label(labelBaseID, Value="Min Value: " + Number_Formatter(Min(image)), /Dynamic_Resize)
-labelmaxvalID = Widget_Label(labelBaseID, Value="Max Value: " + Number_Formatter(Max(image)), /Dynamic_Resize)
+labelminvalID = Widget_Label(labelBaseID, Value="Min Value: " + cgNumber_Formatter(Min(image)), /Dynamic_Resize)
+labelmaxvalID = Widget_Label(labelBaseID, Value="Max Value: " + cgNumber_Formatter(Max(image)), /Dynamic_Resize)
 
 ; Size the draw widget appropriately.
 ; Calculate a window size for the image preview.
@@ -1775,7 +1779,7 @@ IF N_Elements(offsets) NE 0 THEN BEGIN
    IF N_Elements(offsets) NE 2 THEN offsets = [offsets[0], offsets[0]]
    Widget_Control, tlb, XOffset=offsets[0], YOffset=offsets[1]
 ENDIF ELSE BEGIN
-   CenterTLB, tlb
+   cgCenterTLB, tlb
    offsets = LonArr(2)
 ENDELSE
 Widget_Control, tlb, /Realize
@@ -1786,13 +1790,13 @@ WSet, previewWID
 sizes = SelectImage_WindowSize(image, XSIZE=previewSize, YSIZE=previewSize)
 Widget_Control, previewID, Draw_XSize=sizes[0], Draw_YSize=sizes[1]
 IF (Min(image) LT 0) OR (Max(image) GT (!D.Table_Size-1)) THEN $
-   TVImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation ELSE $
-   TVImage, image, /Keep_Aspect, /NoInterpolation
+   cgImage, BytScl(image, Top=!D.Table_Size-1), /Keep_Aspect, /NoInterpolation ELSE $
+   cgImage, image, /Keep_Aspect, /NoInterpolation
 
 ; Set up information to run the program.
 storagePtr = Ptr_New({cancel:1, image:Ptr_New(image), fileInfo:Ptr_New(fileInfo), offsets:offsets, $
    outdirectory:"", outfilename:"", r:info.r, g:info.g, b:info.b, $
-   geotiff:Ptr_New(), extra:Ptr_New(extra)})
+   geotiff:Ptr_New(), extra:Ptr_New(extra), originalDir:originalDir})
 
 ; Load the info structure.
 info.storagePtr = storagePtr
@@ -1816,6 +1820,7 @@ info.labelTypeID = labelTypeID
 info.labelXSizeID = labelXSizeID
 info.labelYSizeID = labelYSizeID
 info.labelDataTypeID = labelDataTypeID
+info.originalDir = originalDir
 
 Widget_Control, tlb, Set_UValue=info, /No_Copy
 
@@ -1832,6 +1837,8 @@ IF type EQ 'FITS' THEN fheader = fileInfo.header
 image = *((*storagePtr).image)
 outDirectory = (*storagePtr).outDirectory
 outFilename = (*storagePtr).outFilename
+originalDir = (*storagePtr).originalDir
+CD, originalDir
 offsets = (*storagePtr).offsets
 Ptr_Free, (*storagePtr).image
 Ptr_Free, (*storagePtr).fileInfo
@@ -1863,8 +1870,6 @@ IF Keyword_Set(display) THEN BEGIN
     ENDIF ELSE IMGWIN, image, /WIN_KEEP_ASPECT
 ENDIF
 
-; Restore start directory.
-CD, startDirectory
 IF cancel EQ 1 THEN RETURN, 0 ELSE RETURN, image
 
 END ; ----------------------------------------------------------------------------------------

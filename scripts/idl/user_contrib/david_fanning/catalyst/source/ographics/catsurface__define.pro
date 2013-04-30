@@ -523,9 +523,9 @@ FUNCTION CatSurface::Create_View, data, x, y, $
        ; surface is rotated we don't have to worry about translations. In
        ; other words, the rotations occur about the point (0,0,0).
 
-   xs = FSC_Normalize(xrange, Position=[position[0], position[1]])
-   ys = FSC_Normalize(yrange, Position=[position[2], position[3]])
-   zs = FSC_Normalize(zrange, Position=[position[4], position[5]])
+   xs = cgNormalize(xrange, Position=[position[0], position[1]])
+   ys = cgNormalize(yrange, Position=[position[2], position[3]])
+   zs = cgNormalize(zrange, Position=[position[4], position[5]])
 
        ; Scale the axes and place them in the coordinate space.
        ; Note that not all values in the Location keyword are

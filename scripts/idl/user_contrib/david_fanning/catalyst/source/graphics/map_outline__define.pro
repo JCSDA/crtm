@@ -28,17 +28,26 @@
 ;
 ; CALLING SEQUENCE:
 ;
-;       outlineObject = Obj_New('Map_Outline')
-;       Map_Set, /CYLINDRICAL
+;       mapCoord = Obj_New('MapCoord', 111, CENTER_LON=0, CENTER_LAT=90)
+;       outlineObject = Obj_New('Map_Outline', MAP_OBJECT=mapCoord)
 ;       outlineObject -> Draw
+;       Obj_Destroy, mapCoord, outlineObject
 ;       
 ; AUGUMENTS:
 ; 
-;       parent:        The parent object.
+;       parent:        The parent object. Optional.
+;
+;       mapCoordObj:   A map coordinate object which can return a map structure for converting coordinates
+;                      to/from XY coordinates to lon/lat coordinates. Typically, a MAPCOORD object. An
+;                      alternative way of specifying a map coordinate object is to use the MAP_OBJECT
+;                      keyword. But don't do both. Note, this object is *not* destroyed when the MAP_OUTLINE
+;                      object is destroyed. You are responsible for destroying the map coordinate object.
+;                      A map coordinate object is REQUIRED. So, if you don't specify a parent, use the
+;                      MAP_OBJECT keyword to pass this object into the program.
 ;
 ; COMMON KEYWORDS (used with either MAP_CONTINENTS of MAP_GSHHS_SHORELINE):
 ;
-;       COLOR:         The name of a color (used with FSC_COLOR) to draw the output in.
+;       COLOR:         The name of a color (used with cgColor) to draw the output in.
 ;       
 ;       FILL:          Set this keyword to create a filled polygon output, rather than an outline.
 ;       
@@ -48,26 +57,10 @@
 ;                      that the high resolution dataset must be installed to be used.
 ;                    
 ;      MAP_OBJECT:      A MAPCOORD object or equivalent which had the ability to provide a map
-;                       structure with a MAP_STRUCTURE keyword to the SetProperty method. If this
-;                       object is supplied, it is always used in preference to MAP_STRUCTURE to 
-;                       obtain the necessarey map structure for coordinate conversions.
+;                       structure with a GetMapStructure method. Don't use this keyword if you have
+;                       passed a map coordinate object as a positional parameter. This keyword should
+;                       be used ONLY if you are not specifying a parent parameter.
 ;      
-;      MAP_STRUCTURE:   Keyword depreciated in favor of MAP_OBJECT.
-;                       
-;                       A map projection structure (e.g., from MAP_PROJ_INIT) that allows the
-;                       the coordinate conversion from Cartisian coordinates (otherwise known as
-;                       UV coordinates) to longitude/latitude coordinates and visa versa. The problem
-;                       with passing a MAP_STRUCTURE is that the structure is absolutely dependent on
-;                       the *last* MAP_PROJ_INIT call made (from anywhere!) prior to the map structure
-;                       being used. In other words, it is *exceedingly* easy for a map structure to go
-;                       "stale". If you only have one map projection, and it never changes, and nothing
-;                       else in your IDL session will use a map projection, you can get away with this.
-;                       But it is FAR better to use the MAP_OBJECT keyword to provide a MAPCOORD object
-;                       from which to obtain the map structure when it is needed. This is because in
-;                       obtaining the map structure from a MAPCOORD object the MAP_PROJ_INIT method is
-;                       invoked just prior to the map structure being returned. So, this keyword is
-;                       depreciated in favor or the MAP_OBJECT keyword.
-;
 ; MAP_CONTINENTS KEYWORDS (apply only if you are using MAP_CONTINENTS to draw outlines):
 ; 
 ;        COASTS:       Set this keyword if you want coasts to be drawn.
@@ -90,7 +83,8 @@
 ; 
 ;        FILENAME:     The root name of the GSHHS file to open. By default, "gshhs_l.b" unless the HIRES
 ;                      keyword is selected, in which case it will be "gshhs_h.b". The GSHHS file must be
-;                      in a "resource" directory or in one of the directories on your IDL path.
+;                      in a "resource" directory or in one of the directories on your IDL path, or it
+;                      must be an absolute path to the file.
 ;                      
 ;        GSHHS:        Set this keyword to use the GSHHS Shoreline data. The default is to use IDL's
 ;                      built-in database.  
@@ -115,7 +109,7 @@
 ;
 ;                     http://www.dfanning.com/programs/error_message.pro
 ;                     http://www.dfanning.com/programs/find_resource_file.pro
-;                     http://www.dfanning.com/programs/fsc_color.pro
+;                     http://www.dfanning.com/programs/cgColor.pro
 ;                     http://www.dfanning.com/programs/map_gshhs_shoreline.pro
 ;
 ; MODIFICATION HISTORY:
@@ -128,10 +122,14 @@
 ;           to the same color as COLOR. 10 August 2009. DWF.
 ;       Circular parent references when passed a MAP_OBJECT was fixed, preventing memory
 ;          leakage. 30 August 2009. DWF.
+;       Removed the MAP_STRUCTURE keyword, which caused MASSIVE problems and added a mapCoordObj
+;          parameter. 9 November 2009. DWF.
+;        Made a change that allows the GSHHS filename to be an absolute path to the
+;           gshhs_*.b file. 4 June 2010. DWF.
 ;-
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2009, by Fanning Software Consulting, Inc.                                ;
+;  Copyright (c) 2009-2010, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -157,7 +155,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-PRO Map_Outline::Draw, _EXTRA=extrakeywords
+PRO MAP_OUTLINE::Draw, _EXTRA=extrakeywords
 
     ; Error handling.
     Catch, theError
@@ -168,23 +166,24 @@ PRO Map_Outline::Draw, _EXTRA=extrakeywords
     ENDIF
     
     ; Find a map structure, if you can.
-    IF Obj_Valid(self.map_object) $
-        THEN self.map_object -> GetProperty, Map_Structure=mapStruct $
-        ELSE mapStruct = *self.map_structure
-    IF N_Elements(mapStruct) EQ 0 THEN Message, 'There is no valid map structure to use in producing output.'
+    IF Obj_Valid(self.map_object) THEN BEGIN
+        mapStruct = self.map_object -> GetMapStructure() 
+    ENDIF
     
     ; Do this in decomposed color, if possible.
-    IF (!D.Flags AND 256) NE 0 THEN BEGIN
-       DEVICE, GET_DECOMPOSED=theState
-       Device, DECOMPOSED=1
-    ENDIF
+    SetDecomposedState, 1, CURRENT=currentState
     
     ; Draw the appropriate map outline.
     IF self.gshhs THEN BEGIN
         rootName = File_Basename(self.filename)
-        gshhsFileName = Find_Resource_File(rootName, SUCCESS=success)
+        IF StrLowCase(rootName) EQ StrLowCase(self.filename) THEN BEGIN
+            gshhsFileName = Find_Resource_File(rootName, SUCCESS=success)
+        ENDIF ELSE BEGIN
+            gshhsFileName = self.filename
+            IF self.filename EQ "" THEN success = 0 ELSE success = 1
+        ENDELSE
         IF ~success THEN Message, 'Cannot file requested GSHHS Shoreline Data File.'
-        Map_GSHHS_Shoreline, gshhsFileName, $ 
+        cgMap_GSHHS, gshhsFileName, $ 
            COLOR=self.color, $                    
            FILL=self.fill, $                      
            LAND_COLOR=self.land_color, $          
@@ -195,9 +194,9 @@ PRO Map_Outline::Draw, _EXTRA=extrakeywords
            WATER_COLOR=self.water_color
     ENDIF ELSE BEGIN
         IF self.fill AND (self.color NE self.land_color) THEN BEGIN
-            MAP_CONTINENTS, $
+            cgMAP_CONTINENTS, $
                 COASTS=self.coasts, $
-                COLOR=FSC_COLOR(self.land_color), $
+                COLOR=self.land_color, $
                 CONTINENTS=self.continents, $
                 COUNTRIES=self.countries, $
                 FILL=1, $
@@ -209,24 +208,10 @@ PRO Map_Outline::Draw, _EXTRA=extrakeywords
                 USA=self.usa, $
                 T3D=self.t3d, $
                 ZVALUE=self.zvalue
-            MAP_CONTINENTS, $
-                COASTS=self.coasts, $
-                COLOR=FSC_COLOR(self.color), $
-                CONTINENTS=self.continents, $
-                COUNTRIES=self.countries, $
-                FILL=0, $
-                HIRES=self.hires, $
-                MAP_STRUCTURE=mapStruct, $
-                LINESTYLE=self.linestyle, $
-                THICK=self.thick, $
-                RIVERS=self.rivers, $
-                USA=self.usa, $
-                T3D=self.t3d, $
-                ZVALUE=self.zvalue
         ENDIF ELSE BEGIN
-            MAP_CONTINENTS, $
+                cgMAP_CONTINENTS, $
                 COASTS=self.coasts, $
-                COLOR=FSC_COLOR(self.color), $
+                COLOR=self.color, $
                 CONTINENTS=self.continents, $
                 COUNTRIES=self.countries, $
                 FILL=self.fill, $
@@ -240,7 +225,7 @@ PRO Map_Outline::Draw, _EXTRA=extrakeywords
                 ZVALUE=self.zvalue
          ENDELSE
     ENDELSE
-    IF (!D.Flags AND 256) NE 0 THEN DEVICE, DECOMPOSED=theState
+    SetDecomposedState, currentState
     
     ; Draw children?
     self -> CatAtom::Draw, _EXTRA=extrakeywords
@@ -290,12 +275,8 @@ PRO Map_Outline::GetProperty, $
     land_color = self.land_color
     level = self.level
     linestyle = self.linestyle 
-    IF Obj_Valid(self.map_object) THEN map_object = self.map_object
-    IF N_Elements(*self.map_structure) NE 0 THEN BEGIN
-        map_structure = *self.map_structure
-    ENDIF ELSE BEGIN
-        IF Obj_Valid(self.map_object) THEN self.map_object -> GetProperty, MAP_STRUCTURE=map_structure
-    ENDELSE
+    map_object = self.map_object
+    IF Arg_Present(map_structure) THEN map_structure = self.map_object -> GetMapStructure()
     minarea = self.minarea
     outline = self.outline
     thick = self.thick
@@ -324,7 +305,6 @@ PRO Map_Outline::SetProperty, $
     LEVEL=level, $
     LINESTYLE=linestyle, $
     MAP_OBJECT=map_object, $
-    MAP_STRUCTURE=map_structure, $
     MINAREA=minarea, $
     OUTLINE=outline, $
     RIVERS=rivers, $
@@ -355,7 +335,6 @@ PRO Map_Outline::SetProperty, $
     IF N_Elements(level) NE 0 THEN self.level = level
     IF N_Elements(linestyle) NE 0 THEN self.linestyle = linestyle
     IF N_Elements(map_object) NE 0 THEN self.map_object = map_object
-    IF N_Elements(map_structure) NE 0 THEN *self.map_structure = map_structure 
     IF N_Elements(minarea) NE 0 THEN self.minarea = minarea
     IF N_Elements(outline) NE 0 THEN self.outline = outline
     IF N_Elements(thick) NE 0 THEN self.thick = thick
@@ -372,14 +351,12 @@ END ; --------------------------------------------------------------------------
 
 PRO Map_Outline::CLEANUP
 
-    Ptr_Free, self.map_structure
-    self -> CatAtom::CLEANUP
-    IF Obj_Valid(self.map_object) THEN self.map_object -> RemoveParent, self
+    self -> CatAtom::CLEANUP    
     
 END ; --------------------------------------------------------------------------------------------
 
 
-FUNCTION Map_Outline::INIT, parent, $
+FUNCTION Map_Outline::INIT, parent, mapCoordObj, $
     COASTS=coasts, $
     COLOR=color, $
     CONTINENTS=continents, $
@@ -392,7 +369,6 @@ FUNCTION Map_Outline::INIT, parent, $
     LEVEL=level, $
     LINESTYLE=linestyle, $
     MAP_OBJECT=map_object, $
-    MAP_STRUCTURE=map_structure, $
     MINAREA=minarea, $
     OUTLINE=outline, $
     RIVERS=rivers, $
@@ -440,9 +416,6 @@ FUNCTION Map_Outline::INIT, parent, $
         IF hires THEN filename = 'gshhs_h.b' ELSE filename = 'gshhs_l.b'
     ENDIF
     
-    IF N_Elements(map_structure) NE 0 $
-        THEN self.map_structure = Ptr_New(map_structure) $
-        ELSE self.map_structure = Ptr_New(/ALLOCATE_HEAP)
     self.coasts = coasts
     self.color = color
     self.continents = continents
@@ -462,8 +435,16 @@ FUNCTION Map_Outline::INIT, parent, $
     self.water_color = water_color
     self.zvalue = zvalue
     
-    ; If a map object exists, register interest in it and add yourself as an overlay.
-    IF Obj_Valid(map_object) THEN self.map_object = map_object
+    ; If a map object exists, simply put it in the right place. Do NOT
+    ; make yourself a parent, because this object might contain YOU!
+    IF Obj_Valid(mapCoordObj) THEN self.map_object = mapCoordObj
+    IF Obj_Valid(map_object) AND Obj_Valid(self.map_object) THEN $
+        Message, 'Cannot use both mapCoordObj parameter and MAP_OBJECT keyword.'
+    IF Obj_Valid(map_object) AND ~Obj_Valid(self.map_object) THEN $
+        self.map_object = map_object
+        
+    ; Make sure you have a valid map object at this point.
+    IF ~Obj_Valid(self.map_object) THEN Message, 'A valid map object is required to create a MAP_OUTLINE object.'
 
     RETURN, 1
 END ; --------------------------------------------------------------------------------------------
@@ -481,7 +462,6 @@ PRO MAP_OUTLINE__DEFINE, class
               hires: 0B, $                 ; Set to use high resolution maps rather than low resoluton maps.
               gshhs: 0B, $                 ; A flag to signify that a GSHHS file should be used.
               map_object: Obj_New(), $
-              map_structure: Ptr_New(), $  ; A map structure to use.
               land_color: "", $            ; The name of the land color (for color fill).
               level: 0, $                  ; The level of GSHHS file to draw.
               linestyle: 0, $              ; The linestyle of the outline. By default, solid.

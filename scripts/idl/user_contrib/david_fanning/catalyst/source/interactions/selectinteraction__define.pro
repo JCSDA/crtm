@@ -18,7 +18,7 @@
 ;
 ;       Much of the event handling for an interaction occurs in the INTERACTION_EVENTS
 ;       method of the object being drawn or manipulated. These objects are SELECTABLEOBJECTS
-;       (e.g. BOX, ARROW, TEXTLINE, etc.) and must be written in a particular way. This 
+;       (e.g. BOX, CAT_ARROW, TEXTLINE, etc.) and must be written in a particular way. This 
 ;       approach is, in my opinion, overly complicated at the moment, and new interaction
 ;       objects are difficult to write. I have given this subject a great deal of thought,
 ;       and have still not hit on the one simple, elegant idea. So, I leave this to you.
@@ -620,7 +620,7 @@ PRO SelectInteraction::GetProperty, $
    IF Arg_Present(drawimage) THEN BEGIN
       IF Obj_Valid(self._drawID) THEN BEGIN
          self._drawID -> SetWindow
-         drawimage = TVRead()
+         drawimage = cgSnapshot()
       ENDIF
    ENDIF
 

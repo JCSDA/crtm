@@ -444,7 +444,7 @@ END
 PRO ImageStack_Test
 
    LoadCT, 0, /Silent
-   images = LoadData(8)
+   images = cgDemoData(8)
    imagestack = Obj_New('ImageStack', images)
    imageContainer = Obj_New('ImageContainer')
    imageStack -> GetProperty, ZSize=number

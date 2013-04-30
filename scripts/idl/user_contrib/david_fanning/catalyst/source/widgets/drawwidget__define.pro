@@ -69,9 +69,11 @@
 ;       Changed the INITIALCOLOR back to "black". Tired of fighting it... 5 July 2005. DWF.
 ;       Fixed a problem that occurred when setting XSIZE, but not YSIZE. 29 Aug 2005. DWF.
 ;       Modified OUTPUT method to better handle input filenames in DIALOG_PICKFILE. 13 Aug 2009. DWF.
+;       PostScript landscape mode is now right-side up when created from the OUTPUT method.
+;           16 June 2010. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, jointly by Fanning Software Consulting, Inc.                   ;
+;  Copyright (c) 2008-2010, jointly by Fanning Software Consulting, Inc.                   ;
 ;  and Burridge Computing. All rights reserved.                                            ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -348,7 +350,7 @@ PRO DrawWidget::ControlPanelEvents, event
 
                   event.component -> GetProperty, Initial_Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Initial_Color=color
 
                   ; Update changes
@@ -450,7 +452,7 @@ PRO DrawWidget::Copy, $
    BEGIN
       thisWindow = !D.Window
       WSet, windowID
-      image = TVRead()
+      image = cgSnapshot()
       IF thisWindow GT 0 THEN WSet, thisWindow
    ENDIF $
    ELSE DEVICE, COPY=[origin[0], origin[1], extent[0], extent[1], destination[0], destination[1], windowID]
@@ -547,7 +549,7 @@ PRO DrawWidget::Draw, $
       IF Obj_Valid(target_window) THEN target_window -> SetWindow ELSE WSet, windowID
 
          ; Need the window erased?
-      IF (erase_window OR self._eraseWindow) THEN Erase, Color = FSC_Color(background_color, !P.BACKGROUND)
+      IF (erase_window OR self._eraseWindow) THEN Erase, Color = cgColor(background_color, !P.BACKGROUND)
 
    ENDIF
 
@@ -799,12 +801,12 @@ PRO DrawWidget::Notify_Realize, theObject
    self -> GetProperty, RefreshBuffer=refreshBuffer
    IF Obj_Valid(refreshBuffer) THEN BEGIN
       refreshBuffer -> SetWindow
-      Erase, Color=FSC_Color(self._initialcolor)
+      Erase, Color=cgColor(self._initialcolor)
       self -> SetWindow
       refreshBuffer -> Copy
    ENDIF ELSE BEGIN
       self -> SetWindow
-      Erase, Color=FSC_Color(self._initialcolor)
+      Erase, Color=cgColor(self._initialcolor)
    ENDELSE
 
    IF currentWindow GE 0 THEN WSet, currentWindow
@@ -925,7 +927,7 @@ PRO DrawWidget::Output, $
    self -> SetWindow
    aspectRatio = Float(!D.Y_Size) / !D.X_Size
    IF aspectRatio LT 1 THEN landscape = 1 ELSE landscape = 0
-   snapshot = TVRead()
+   snapshot = cgSnapshot()
    position = PSWindow(LANDSCAPE=landscape)
    
 
@@ -935,7 +937,7 @@ PRO DrawWidget::Output, $
       'JPEG': BEGIN
 
          IF N_Elements(filename) EQ 0 THEN filename='output.jpg' 
-         basename = FSC_Base_Filename(filename, EXTENSION=ext, DIRECTORY=theDirectory)
+         basename = cgRootName(filename, EXTENSION=ext, DIRECTORY=theDirectory)
          IF ext EQ "" THEN basename = basename + '.jpg'
          IF nodialog EQ 0 THEN BEGIN
             CD, theDirectory, CURRENT=thisDir
@@ -949,7 +951,7 @@ PRO DrawWidget::Output, $
       'TIFF': BEGIN
 
          IF N_Elements(filename) EQ 0 THEN filename='output.tif'
-         basename = FSC_Base_Filename(filename, EXTENSION=ext, DIRECTORY=theDirectory)
+         basename = cgRootName(filename, EXTENSION=ext, DIRECTORY=theDirectory)
          IF ext EQ "" THEN basename = basename + '.tif'
          IF nodialog EQ 0 THEN BEGIN
             CD, theDirectory, CURRENT=thisDir
@@ -967,7 +969,7 @@ PRO DrawWidget::Output, $
 
       'BMP': BEGIN
          IF N_Elements(filename) EQ 0 THEN filename='output.bmp'
-         basename = FSC_Base_Filename(filename, EXTENSION=ext, DIRECTORY=theDirectory)
+         basename = cgRootName(filename, EXTENSION=ext, DIRECTORY=theDirectory)
          IF ext EQ "" THEN basename = basename + '.bmp'
          IF nodialog EQ 0 THEN BEGIN
             CD, theDirectory, CURRENT=thisDir
@@ -979,7 +981,7 @@ PRO DrawWidget::Output, $
 
       'PNG': BEGIN
          IF N_Elements(filename) EQ 0 THEN filename='output.png'
-         basename = FSC_Base_Filename(filename, EXTENSION=ext, DIRECTORY=theDirectory)
+         basename = cgRootName(filename, EXTENSION=ext, DIRECTORY=theDirectory)
          IF ext EQ "" THEN basename = basename + '.png'
          IF nodialog EQ 0 THEN BEGIN
             CD, theDirectory, CURRENT=thisDir
@@ -1013,7 +1015,7 @@ PRO DrawWidget::Output, $
          ENDIF
          position = PSWindow(LANDSCAPE=landscape)
          IF N_Elements(filename) EQ 0 THEN filename='output.ps'
-         basename = FSC_Base_Filename(filename, EXTENSION=ext)
+         basename = cgRootName(filename, EXTENSION=ext)
          IF ext EQ "" THEN filename = filename + '.ps'
          IF nodialog EQ 1 THEN BEGIN
             keywords = PSConfig(Filename=filename, /NoGUI, _Extra=position, LANDSCAPE=landscape)
@@ -1028,6 +1030,7 @@ PRO DrawWidget::Output, $
          self -> Draw
          Device, /Close_File
          Set_Plot, thisDevice
+         IF landscape THEN cgFixPS, keywords.filename
          END
 
    ENDCASE
@@ -1763,7 +1766,7 @@ FUNCTION DrawWidget::INIT, parent, $
    self._eraseWindow = Keyword_Set(erase_window)
 
    ; Refresh buffer.
-   IF Obj_ISA_VALID(refreshbuffer) THEN self._refreshbuffer = refreshbuffer
+   IF Obj_ISA_VALID(refreshbuffer, 'PIXMAPWIDGET') THEN self._refreshbuffer = refreshbuffer
 
    ; Set up PostScript configuration object.
    self._psconfig = Obj_New('FSC_PSCONFIG')

@@ -525,12 +525,12 @@ END
 PRO CatGraphicsWindowTest
 
    gDirectWindow = Obj_New('CatGraphicsWindow', XSize=400, YSize=400, XOFFSET=100, YOFFSET=200)
-   image = Obj_New('CatImage', Loaddata(7))
+   image = Obj_New('CatImage', cgDemoData(7))
    gDirectWindow -> Add, image
    gDirectWindow -> Draw
 
    gObjectWindow = Obj_New('CatGraphicsWindow', XSize=500, YSize=500, /Object_Graphics, XOFFSET=600, YOFFSET=200)
-   surface = Obj_New('CatSurface', Loaddata(2))
+   surface = Obj_New('CatSurface', cgDemoData(2))
    gObjectWindow -> Add, surface
    gObjectWindow -> Draw
 

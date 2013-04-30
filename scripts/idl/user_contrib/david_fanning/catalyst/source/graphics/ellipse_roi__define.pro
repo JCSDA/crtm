@@ -233,7 +233,7 @@ PRO Ellipse_ROI::Draw, _EXTRA=extra
   self._drawID_pixmap -> Copy
 
    PlotS, (*self.xpts)[0:self.count-1], (*self.ypts)[0:self.count-1], /Device, $
-      Color=FSC_Color(self._roi_color), Thick=self.thick, Linestyle=self.linestyle
+      Color=cgColor(self._roi_color), Thick=self.thick, Linestyle=self.linestyle
 
    ; Copy buffer to display.
    self._drawID -> SetWindow
@@ -908,7 +908,7 @@ PRO Ellipse_ROI_Test
    LoadCT, 0, /Silent
    tlb = Obj_New('TOPLEVELBASE')
    drawID = Obj_New('DrawWidget', tlb, XSize=400, ysize=400)
-   drawID -> Add, Obj_New('catimage2d', loaddata(7))
+   drawID -> Add, Obj_New('catimage2d', cgDemoData(7))
 
    tlb -> Draw, /Center
    roi = Obj_New('ELLIPSE_ROI', drawID)

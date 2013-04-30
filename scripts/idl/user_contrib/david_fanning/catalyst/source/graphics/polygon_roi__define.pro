@@ -456,7 +456,7 @@ PRO Polygon_ROI::EventHandler, event
                         self.count = self.count + 1
                         IF self.count GE 2 THEN BEGIN
                            self.pointsID -> SetWindow
-                           PlotS, (*self.xpts)[self.count-2:self.count-1], Color=FSC_Color(self._roi_color), $
+                           PlotS, (*self.xpts)[self.count-2:self.count-1], Color=cgColor(self._roi_color), $
                                  (*self.ypts)[self.count-2:self.count-1], /Device, Thick=self.thick, $
                                  Linestyle=self.linestyle
                         ENDIF
@@ -539,7 +539,7 @@ PRO Polygon_ROI::EventHandler, event
                IF self.count GE 1 THEN BEGIN
                   self._drawID -> SetWindow
                   self.pointsID -> Copy
-                  PlotS, [(*self.xpts)[self.count-1], event.x], Color=FSC_Color(self._roi_color), $
+                  PlotS, [(*self.xpts)[self.count-1], event.x], Color=cgColor(self._roi_color), $
                          [(*self.ypts)[self.count-1], event.y], /Device, Thick=self.thick, $
                          Linestyle=self.linestyle
                ENDIF

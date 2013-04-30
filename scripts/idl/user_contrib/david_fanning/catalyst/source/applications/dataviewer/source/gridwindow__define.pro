@@ -449,8 +449,8 @@ PRO GridWindow::Draw, $
          IF Obj_Valid(self._buffer_pixmap) THEN $
             self._buffer_pixmap -> SetWindow ELSE $
             self -> SetWindow
-         IF count GT 1 THEN progressBar = Obj_New("PROGRESSBAR", /START, $
-            /NOCANCEL, TEXT='Updating images...')
+         IF count GT 1 THEN progressBar = Obj_New("cgProgressBar", /START, $
+            TEXT='Updating images...')
          FOR j=0,count-1 DO BEGIN
                children[j] -> Draw
                IF Obj_Valid(progressBar) THEN progressBar -> Update, Float(j)/count*100
@@ -585,7 +585,7 @@ PRO GridWindow::EventHandler, event
                  loc[[1,3]] = loc[[1,3]] - ymove
                  PLOTS, [loc[0], loc[0], loc[2], loc[2], loc[0]], $
                         [loc[1], loc[3], loc[3], loc[1], loc[1]], /DEVICE, $
-                        COLOR=FSC_Color('indian red'), THICK=2
+                        COLOR=cgColor('indian red'), THICK=2
              ENDIF
              RETURN
              

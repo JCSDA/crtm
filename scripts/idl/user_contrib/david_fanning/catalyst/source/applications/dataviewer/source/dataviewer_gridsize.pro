@@ -153,7 +153,7 @@ FUNCTION DataViewer_GridSize, GRID=grid, Cancel=cancel, Group_Leader=groupleader
     Widget_Control, ysizeObj -> GetTextID(), /KBRD_FOCUS_EVENTS
 
     ; Center the widgets on display.
-    CenterTLB, tlb
+    cgCenterTLB, tlb
     Widget_Control, tlb, /Realize
     
     ; Set up the text widget selection.

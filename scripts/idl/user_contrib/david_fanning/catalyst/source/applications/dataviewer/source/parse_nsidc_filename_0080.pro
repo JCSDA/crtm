@@ -81,10 +81,16 @@ FUNCTION Parse_NSIDC_Filename_0080, filename, INFO=info, SUCCESS=success
    success = 0 ; Assume no success
    IF N_Elements(filename) EQ 0 THEN Message, "A filename is a required input parameter."
 
+   ; Set up colors.
+   landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+   grid_color = CatGetDefault('DATAVIEWER_GRID_COLOR')
+   vector_color = CatGetDefault('DATAVIEWER_VECTOR_COLOR')
+   outline_color = CatGetDefault('DATAVIEWER_OUTLINE_COLOR')
+
    ; Parse the root file name to determine the parameters that need to be set appropriately.
    ; If this is not a compressed file, with extension .gz, then we will have to add the extension
    ; back to the filename and set the extension to a null string.
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootName(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
    IF StrUpCase(theExtension) NE 'GZ' THEN BEGIN
         root_name = root_name + '.' + theExtension
         theExtension = ''
@@ -125,31 +131,35 @@ FUNCTION Parse_NSIDC_Filename_0080, filename, INFO=info, SUCCESS=success
    CASE StrUpCase(region) OF
    
         'N': BEGIN
-               mapStruct = Map_Proj_Init(106, $
+               mapCoord = Obj_New('MapCoord', 106, $
                     SEMIMAJOR_AXIS=6378273L, $
                     SEMIMINOR_AXIS=6356889L, $
                     CENTER_LONGITUDE=-45.0, $
                     CENTER_LATITUDE=90.0)
                     
-               uv = Map_Proj_Forward(map_Structure=mapstruct, $
+               uv = Map_Proj_Forward(Map_Structure=mapCoord->GetMapStructure(), $
                   [168.35D, 102.34D, 350.03D, 279.26], $
                   [30.98D, 31.37d, 34.35, 33.92])
-               xrange = [(uv[0,0] + uv[0,3])/2.0, (uv[0,1] + uv[0,2])/2.0]
-               yrange = [(uv[1,3] + uv[1,2])/2.0, (uv[1,0] + uv[1,1])/2.0]
+               xrange = [uv[0,0], uv[0,1]]
+               yrange = [uv[1,3], uv[1,0]]
+               mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
+               lats = Indgen(9)*10
+               lons = Indgen(11)*36
             END
         'S': BEGIN
-               mapStruct = Map_Proj_Init(106, $
+               mapCoord = Obj_New('MapCoord', 106, $
                     SEMIMAJOR_AXIS=6378273L, $
                     SEMIMINOR_AXIS=6356889L, $
                     CENTER_LONGITUDE=0.0, $
                     CENTER_LATITUDE=-90.0)
-               xrange = mapStruct.uv_box[[0,2]]
-               yrange = mapStruct.uv_box[[1,3]]
-               uv = Map_Proj_Forward(map_Structure=mapstruct, $
+               uv = Map_Proj_Forward(Map_Structure=mapCoord->GetMapStructure(), $
                   [317.76d, 42.24d, 135.00d, 225.00d], $
                   [-39.23d, -39.23d, -41.45d, -41.45d])
-               xrange = [(uv[0,0] + uv[0,3])/2.0, (uv[0,1] + uv[0,2])/2.0]
-               yrange = [(uv[1,3] + uv[1,2])/2.0, (uv[1,0] + uv[1,1])/2.0]
+               xrange = [uv[0,0], uv[0,1]]
+               yrange = [uv[1,3], uv[1,0]]
+               mapCoord -> SetProperty, XRANGE=xrange, YRANGE=yrange
+               lats = -Reverse(Indgen(9)*10)
+               lons = Indgen(11)*36
             END
    ENDCASE
    
@@ -175,63 +185,15 @@ FUNCTION Parse_NSIDC_Filename_0080, filename, INFO=info, SUCCESS=success
    minImage = MIN(temp, MAX=maximage, /NAN)
    Undefine, temp
 
-;   ; Scaling will depend on frequency and polarization.
-;   CASE freq OF
-;
-;        '19': BEGIN
-;              IF StrUpCase(polarization) EQ 'H' THEN BEGIN
-;                  sclmin = 90
-;                  sclmax = 275
-;              ENDIF ELSE BEGIN
-;                  sclmin = 150
-;                  sclmax = 300
-;              ENDELSE
-;              END
-;
-;        '22': BEGIN
-;              IF StrUpCase(polarization) EQ 'H' THEN BEGIN
-;                 sclmin = 90
-;                 sclmax = 275
-;              ENDIF ELSE BEGIN
-;                 sclmin = 160
-;                 sclmax = 280
-;              ENDELSE
-;              END
-;
-;        '37': BEGIN
-;              IF StrUpCase(polarization) EQ 'H' THEN BEGIN
-;                 sclmin = 120
-;                 sclmax = 270
-;              ENDIF ELSE BEGIN
-;                 sclmin = 150
-;                 sclmax = 270
-;              ENDELSE
-;              END
-;
-;        '85': BEGIN
-;              IF StrUpCase(polarization) EQ 'H' THEN BEGIN
-;                 sclmin = 140
-;                 sclmax = 280
-;              ENDIF ELSE BEGIN
-;                 sclmin = 140
-;                 sclmax = 280
-;              ENDELSE
-;              END
-;
-;        ELSE: BEGIN
-;              IF StrUpCase(polarization) EQ 'H' THEN BEGIN
-;                 sclmin = 70
-;                 sclmax = 320
-;              ENDIF ELSE BEGIN
-;                 sclmin = 140
-;                 sclmax = 320
-;              ENDELSE
-;              END
-;   ENDCASE
-
    ; Temporarily.
    sclmin = minImage / 10.0
    sclmax = maxImage / 10.0
+
+   ; Set up outline and grid for the image.
+   outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, COLOR=outline_color)
+   grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color, $
+        LATS=lats, LONS=lons, LATLAB=latlab, LONLAB=lonlab)
+   mapCoord -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
 
    ; Create an info structure containing information for this image.
    info = {directory :   theDirectory, $
@@ -241,7 +203,7 @@ FUNCTION Parse_NSIDC_Filename_0080, filename, INFO=info, SUCCESS=success
            year:         Fix(year), $
            month:        Fix(month), $
            missing:      missing / 10.0, $
-           nsidc_tag:   'nsidc_0001', $
+           nsidc_tag:   'nsidc_0080', $
            frequency:    Fix(freq), $
            polarization: polarization, $
            colorChangeAllowed: colorChangeAllowed, $
@@ -250,7 +212,7 @@ FUNCTION Parse_NSIDC_Filename_0080, filename, INFO=info, SUCCESS=success
            ysize:        s[1], $
            sclmin:       sclmin, $
            sclmax:       sclmax, $
-           mapinfo:      {mapStruct:mapStruct, xrange:xrange, yrange:yrange} }
+           mapCoord:     mapCoord }
 
      success = 1
      RETURN, Reverse(image / 10.0, 2) ; Scaled properly

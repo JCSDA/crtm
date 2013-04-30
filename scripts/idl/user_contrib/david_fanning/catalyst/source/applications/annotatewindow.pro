@@ -208,7 +208,7 @@ PRO AnnotateWindow, theBackground, $
             Message, 'The specified graphics window is not available to annotate.'
          currentWindow = !D.Window
          WSet, theBackground
-         image = TVREAD()
+         image = cgSnapshot()
          IF currentWindow GE 0 THEN WSet, currentWindow
          END
 

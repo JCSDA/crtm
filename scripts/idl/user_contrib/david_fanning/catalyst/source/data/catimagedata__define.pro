@@ -740,7 +740,7 @@ END
 ;
 ;       DIRECTORY:      The initial input directory name. The current directory by default.
 ;
-;       DEMO:           Set this keyword to load demonstration files via LOADDATA rather than SELECTIMAGE.
+;       DEMO:           Set this keyword to load demonstration files via cgDemoData rather than SELECTIMAGE.
 ;                       Setting this keyword will disable all other keywords.
 ;
 ;       DRAW:           Set this keyword to immediately draw the image after loading.
@@ -788,7 +788,7 @@ END
 PRO CatImageData::LoadImage, $
    BMP=bmp, $                      ; Set this keyword to select BMP files.
    Cancel=cancel, $                ; An output keyword. Returns 0 if the ACCEPT button is used, 1 otherwise.
-   Demo=demo, $                    ; Set this keyword to choose demo files using LOADDATA.
+   Demo=demo, $                    ; Set this keyword to choose demo files using cgDemoData.
    ColorTable=colortable, $        ; Set this to an index of a color table to load into the ColorTool object of the image.
    Dicom=dicom, $                  ; Set this keyword to select DICOM files
    Directory=directory, $          ; Initial directory to search for files.
@@ -822,7 +822,7 @@ PRO CatImageData::LoadImage, $
    ; Do we want demo files?
    CASE Keyword_Set(demo) OF
       1: BEGIN
-         image = LoadData(/Images, Group_Leader=gleader, Cancel=cancel)
+         image = cgDemoData(/Images, Group_Leader=gleader, Cancel=cancel)
       ENDCASE
 
       ELSE: BEGIN

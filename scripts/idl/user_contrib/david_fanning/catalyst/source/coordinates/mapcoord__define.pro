@@ -35,7 +35,90 @@
 ;
 ;       theObject = Obj_New("MAPCOORD")
 ;
-; CATCOORDES:
+; ARGUMENTS:
+;
+;       map_projection     The name or the reference number of a valid CGTP map projection. See
+;                          the on-line documentation for MAP_PROJ_INIT for details. Default is 111,
+;                          Lambert Azimuthal with spherical datum.
+;
+; KEYWORDS:
+; 
+;       CENTER_LATITUDE:   The center latitude of the map projection.
+;       
+;       CENTER_LONGITUDE:  The center longitude of the map projection.
+;       
+;       DATUM:             The name or index number of the DATUM. "Sphere" by default. See
+;                          the on-line documentation for MAP_PROJ_INIT for details.
+;                          
+;       SPHERE_RADIUS:     The radius, in meters, of the sphere used as the DATUM.
+;       
+;       SEMIMAJOR_AXIS:    The distance, in meters, of the semi-major axis of the reference ellipsoid.
+;       
+;       SEMIMINOR_AXIS:    The distance, in meters, of the semi-minor axis of the reference ellipsoid.
+;       
+;       LIMIT:             A vector of limits for the map projection: [latmin, lonmin, latmax, lonmax].
+;       
+;       ZONE:              The zone of UTM and State Plane projections.
+;       
+;       Any additional keywords defined for MAP_PROJ_INIT are allowed. And, in addition to those, the following:
+; 
+;       GRID_OBJECT:       An overlay object, such as MAP_GRID, for drawing map grid lines. The MAPCOORD 
+;                          object cannot draw grids, but provides a logical place to store such
+;                          an object. One advantage of storing the object here is that cleanup of
+;                          the object is possible without the user having to do it themselves.
+;                          This keyword is depreciated in favor of MAP_OVERLAY. If it is used,
+;                          and the OVERLAY_POSITION keyword is not defined, then OVERLAY_POSITION
+;                          is set to 1.
+;                       
+;       LATLON_RANGES:     If this keyword is set, the XRANGE and YRANGE keywords are assumed to
+;                          be in units of longitude and latitude, respectively. The map structure returned
+;                          from Map_Proj_Init will be used to convert these values to the appropriate UV
+;                          coordinates for internal storage.
+;                       
+;       OUTLINE_OBJECT:    An overlay object, such as MAP_OUTLINE, for drawing map outlines. The MAPCOORD 
+;                          object cannot draw outlines, but provides a logical place to store such
+;                          an object. One advantage of storing the object here is that cleanup of
+;                          the object is possible without the user having to do it themselves.
+;                          This keyword is depreciated in favor of MAP_OVERLAY. If it is used,
+;                          and the OVERLAY_POSITION keyword is not defined, then OVERLAY_POSITION
+;                          is set to 0.
+; 
+;       PARENT:            An object reference of the parent object. If provided, the MAPCOORD object
+;                          will add itself to the parent with the COORDS_OBJECT keyword to SETPROPERTY.
+;                          The parent should be a subclassed CATDATAATOM object.
+;
+;       POSITION:          A four-element array representing the position of the plot in the window.
+;                          Use normalized coordinates (0 to 1) in this order: [x0, y0, x1, y1]. The
+;                          default is [0,0,1,1].
+;                       
+;       MAP_OVERLAY:       A 20-element object array of overlay objects. An overlay object
+;                          is an object that draws graphics in a map coordinate data space.
+;                          
+;                          Note: Overlay objects must be written with a DRAW method, and they must
+;                          have a MAP_OBJECT keyword in a SetProperty method. When they are added
+;                          to the MAPCOORD object, the MAPCOORD object will be made their parent
+;                          (so they are not accidentally destroyed) and the SetProperty method will
+;                          be called with the MAP_STRUCTURE keyword set equal to the MAPCOORD map structure.
+;       
+;       OVERLAY_POSITION:  A  scalar or vector with the same number of elements as MAP_OVERLAY.
+;                          This keyword is used to tell IDL where to store the object in the overlay
+;                          object array. It should be a number in the range of 0 to 19. If undefined,
+;                          the overlay object array is searched for invalid objects, and the overlay
+;                          object is stored at the lowest index containing an invalid object.
+;                          
+;       XRANGE:            A two-element array representing the X range of the map projection in a 2D
+;                          Cartesian (x,y) coordinate system. These are sometimes called UV coordinates.
+;                          If undefined, the longitude range of -180 to 180 is used with the map structure
+;                          to create the XRANGE array.
+;
+;       YRANGE:            A two-element array representing the Y range of the map projection in a 2D
+;                          Cartesian (x,y) coordinate system. These are sometimes called UV coordinates.
+;                          If undefined, the latitude range of -90 to 90 is used with the map structure
+;                          to create the YRANGE array.
+;
+;       _EXTRA:            Any keywords appropriate for superclass INIT methods.
+;
+; SUPERCLASSES:
 ;
 ;       CATCOORD
 ;       CATATOM
@@ -45,9 +128,17 @@
 ; CLASS_STRUCTURE:
 ;
 ;   class = { MAPCOORD, $
-;             INHERITS CATCOORD $
-;             map_structure: Ptr_New(), $
-;             overlays: ObjArr(20) $
+;             overlays: ObjArr(20), $                ; A storage location for map overlays.
+;             map_projection_keywords: Ptr_New(), $  ; A storage location for MAP_PROJ_INIT keywords.
+;             center_latitude: 0.0D, $               ; The latitude at the center of the map projection.
+;             center_longitude:0.0D, $               ; The lontigude at the center of the map projection.
+;             limit: Ptr_New(), $                    ; The limit of the map projection.
+;             zone: 0, $                             ; The UTM zone of the map projection.
+;             theDatums: Ptr_New(), $                ; Information about available map datums.
+;             thisDatum: datumStruct, $              ; The particular datum structure for this map projection.
+;             theProjections: Ptr_New(), $           ; Information about available map projections.
+;             thisProjection: mapStruct, $           ; The particular map projection structure for this map projection.
+;             INHERITS CATCOORD $                    ; The superclass object.
 ;           }
 ;
 ; MESSAGES:
@@ -61,9 +152,28 @@
 ;       Reworked the program to make it more flexible with a wide variety of GTCP map projections. 2 June 2009.
 ;       Fixed some typos in the word "position". 10 June 2009. DWF.
 ;       Had to make some modifications to accommodate UTM and State Plane projections. 28 August 2009. DWF.
+;       Removed the POSTITION, XRANGE, and YRANGE keywords from the SetProjection method, where they
+;           didn't really belong. 22 November 2009. DWF.
+;       Removed more vestiges of the MAP_STRUCTURE keyword in INIT method. 14 December 2009. DWF.
+;       Added MAP_PROJECTION keyword to GetProperty and SetProperty methods. 16 December 2009. DWF
+;       Added MAP_PROJ_KEYWORDS keyword to GetProperty and SetProperty methods. 22 December 2009. DWF.
+;       If LIMIT is changed in the SetProperty method AND XRANGE and YRANGE keywords are not used, then
+;          the xrange and yrange are updated to reflect the new limits. 28 Dec 2009. DWF.
+;       The map projection was not being set correctly if the map projection was passed as
+;          string value. 9 Feb 2010. DWF.
+;       Setting the SPHERE_RADIUS keyword on some methods accessed a non-existent field "datum'
+;          instead of the field "thisDatum". Fixed. 9 Feb 2010. DWF.
+;       Mis-spelled SEMIMINOR_AXES keyword in the GetProperty method. Fixed. 10 March 2010. DWF.
+;       Added ADD_GRID, ADD_OUTLINE, and DRAW_OVERLAYS keywords. 12 April 2010. DWF.
+;       Modified the way map overlays are added with MAP_OVERLAY keyword to INIT and SetProperty
+;           methods. 15 June 2010. DWF.
+;       Added ZONE keyword to the GetProperty method. 22 June 2010. DWF.
+;       Switch UTM datum from WGS84 to WALBECK to avoid UTM projection bug in all versions
+;            of IDL prior to IDL 8.2, when it is suppose to be fixed. For more information,
+;            see this article: http://www.idlcoyote.com/map_tips/utmwrong.php. 31 Oct 2011. DWF.
 ;-
 ;*******************************************************************************************
-;* Copyright (c) 2008-2009, jointly by Fanning Software Consulting, Inc.                   *
+;* Copyright (c) 2008-2010, jointly by Fanning Software Consulting, Inc.                   *
 ;* and Burridge Computing. All rights reserved.                                            *
 ;*                                                                                         *
 ;* Redistribution and use in source and binary forms, with or without                      *
@@ -107,13 +217,18 @@
 ;
 ; KEYWORDS:
 ;
-;       None.
+;       OVERLAYS:       If this keyword is set, any overlays in the object are drawn in order.
 ;-
 ;*****************************************************************************************************
-PRO MapCoord::Draw, _EXTRA=extra
+PRO MapCoord::Draw, OVERLAYS=overlays, _EXTRA=extra
  
     mapStruct = self -> SetMapProjection()
-    self -> CATCoord::Draw
+    self -> CATCoord::Draw, _EXTRA=extra
+    IF Keyword_Set(overlays) OR (self.draw_overlays EQ 1) THEN overlays = 1 ELSE overlays = 0
+    IF overlays THEN BEGIN
+        indices = Where(Obj_Valid(self.overlays), count)
+        FOR j=0,count-1 DO self.overlays[indices[j]] -> Draw, /NOMAPDRAW
+    ENDIF
     
 END
 
@@ -171,6 +286,8 @@ END
 ;       CENTER_LONGITUDE:  The center longitude of the map projection.
 ;       
 ;       DATUM:          The name of the datum used for this map projection.
+;
+;       DRAW_OVERLAYS:  A flag that indicates if overlays are being drawn.
 ;       
 ;       LIMIT:             A vector of limits for the map projection: [latmin, lonmin, latmax, lonmax].
 ;       
@@ -185,6 +302,8 @@ END
 ;                       overlay objects. If you wish to return a specific map overlay object, then use the
 ;                       OVERLAY_POSITION keyword to select which object you wish to return.
 ;                      
+;       MAP_PROJ_KEYWORDS: A structure containing the current map projection keywords and values.
+;
 ;       MAP_PROJECTION: The name of the map projection.
 ; 
 ;       MAP_STRUCTURE:  A map projection structure (e.g., from MAP_PROJ_INIT) that allows the
@@ -220,24 +339,27 @@ END
 ;-
 ;*****************************************************************************************************
 PRO MapCoord::GetProperty, $
+    DRAW_OVERLAYS=draw_overlays, $
     GRID_OBJECT=grid_object, $
     LATLON_RANGES=latlon_ranges, $
     MAP_STRUCTURE=mapStruct, $
     OUTLINE_OBJECT=outline_object, $
     POSITION=position, $
     MAP_OVERLAY=map_overlay, $
+    MAP_PROJ_KEYWORDS=map_proj_keywords, $
+    MAP_PROJECTION=map_projection, $
     OVERLAY_POSITION=overlay_position, $
     XRANGE=xrange, $
     YRANGE=yrange, $
     ; MAP_PROJ_INIT keywords (partial list)
-    MAP_PROJECTION=map_projection, $
     DATUM=datum, $
     SPHERE_RADIUS=sphere_radius, $
     SEMIMAJOR_AXIS=semimajor_axis, $
-    SEMINMINOR_AXIS=semiminor_axis, $
+    SEMIMINOR_AXIS=semiminor_axis, $
     CENTER_LATITUDE=center_latitude, $
     CENTER_LONGITUDE=center_longitude, $
     LIMIT=limit, $
+    ZONE=zone, $
     _REF_EXTRA=extraKeywords
 
    @cat_pro_error_handler
@@ -245,6 +367,7 @@ PRO MapCoord::GetProperty, $
    ; Make sure the map structure is up to date by always calculating it in real-time.
    mapStruct = self -> SetMapProjection() 
    
+   draw_overlays = self.draw_overlays
    position = self._position
    IF Arg_Present(xrange) THEN BEGIN
       IF Keyword_Set(latlon_ranges) THEN BEGIN
@@ -279,10 +402,17 @@ PRO MapCoord::GetProperty, $
    center_longitude = self.center_longitude
    IF N_Elements(*self.limit) NE 0 THEN limit = *self.limit
    map_projection = self.thisProjection.name
+   IF Arg_Present(map_proj_keywords) THEN BEGIN
+        IF Ptr_Valid(self.map_projection_keywords) THEN BEGIN
+            IF N_Elements(*self.map_projection_keywords) NE 0 THEN $
+                map_proj_keywords = *self.map_projection_keywords
+        ENDIF
+   ENDIF
    datum = self.thisDatum.name
    sphere_radius = self.thisDatum.semimajor_axis
    semimajor_axis = self.thisDatum.semimajor_axis
    semiminor_axis = self.thisDatum.semiminor_axis
+   zone = self.zone
    
    ; Superclass keywords.
    IF (N_ELEMENTS (extraKeywords) GT 0) THEN self -> CATCOORD::GetProperty, _EXTRA=extraKeywords
@@ -369,6 +499,9 @@ END
 ;       DATUM:             The name or index number of the DATUM. "Sphere" by default. See
 ;                          the on-line documentation for MAP_PROJ_INIT for details.
 ;                          
+;       DRAW_OVERLAYS:     If this keyword is set, any map overlays that are included within the mapCoord object
+;                          are drawn at the time the DRAW method is called.
+; 
 ;       CENTER_LATITUDE:   The center latitude of the map projection.
 ;       
 ;       CENTER_LONGITUDE:  The center longitude of the map projection.
@@ -403,15 +536,27 @@ END
 ;       POSITION:          A four-element array representing the position of the plot in the window.
 ;                          Use normalized coordinates (0 to 1) in this order: [x0, y0, x1, y1]. The
 ;                          default is [0,0,1,1].
+;
+;       MAP_PROJ_KEYWORDS: Some map projections do not support some keywords. This is a way to specify
+;                          the map projection keywords you wish to use for a particular map projection.
+;                          For example, the keywords TRUE_SCALE_LATITUDE or STANDARD_PAR1 are keywords
+;                          like this. The MAP_PROJ_KEYWORDS can take an anonymous structure of map
+;                          projection keyword:value pairs that will be passed to MAP_PROJ_INIT when
+;                          a map structure is created in the program. If the fields are found in the
+;                          current map keyword structure, their values are changed, otherwise the keyword:value
+;                          pair is added to the map keyword structure. To eliminate all current keywords,
+;                          pass a structure defined with a NULL field set to 1 (eg. {NULL:1}.
+;                          
+;       MAP_PROJECTION:    The name or the reference number of a valid CGTP map projection. See
+;                          the on-line documentation for MAP_PROJ_INIT for details.
 ;                       
 ;       MAP_OVERLAY:       An object or object array of up to 20 overlay objects. An overlay object
 ;                          is an object that draws graphics in a map coordinate data space.
 ;                          
 ;                          Note: Overlay objects must be written with a DRAW method, and they must
-;                          have a MAP_STRUCTURE keyword in a SetProperty method. When they are added
-;                          to the MAPCOORD object, the MAPCOORD object will be made their parent
-;                          (so they are not accidentally destroyed) and the SetProperty method will
-;                          be called with the MAP_STRUCTURE keyword set equal to the MAPCOORD map structure.
+;                          accept a MapCoord object which can provide a map structure for converting
+;                          lat/lon values to XY values. Overlay objects always draw into an XY coordinate
+;                          space.
 ;       
 ;       OVERLAY_POSITION:  A  scalar or vector with the same number of elements as MAP_OVERLAY.
 ;                          This keyword is used to tell IDL where to store the object in the overlay
@@ -439,12 +584,15 @@ END
 ;-
 ;*****************************************************************************************************
 PRO MapCoord::SetProperty, $
+    DRAW_OVERLAYS=draw_overlays, $
     GRID_OBJECT=grid_object, $
     LATLON_RANGES=latlon_ranges, $
     OUTLINE_OBJECT=outline_object, $
     PARENT=parent, $
     POSITION=position, $
     MAP_OVERLAY=map_overlay, $
+    MAP_PROJ_KEYWORDS=map_proj_keywords, $
+    MAP_PROJECTION=map_projection, $
     OVERLAY_POSITION=overlay_position, $
     XRANGE=xrange, $
     YRANGE=yrange, $
@@ -460,6 +608,21 @@ PRO MapCoord::SetProperty, $
     
    @cat_pro_error_handler
    
+   ; Are we changing the map projection?
+   IF N_Elements(map_projection) NE 0 THEN BEGIN
+        projections = *self.theProjections
+        IF Size(map_projection, /TNAME) EQ 'STRING' THEN BEGIN
+            index = Where(StrUpCase(projections.name[*]) EQ StrUpCase(map_projection))
+            IF index[0] EQ -1 THEN Message, 'Cannot find map projection ' + map_projection + ' in the projection list.'
+        ENDIF
+        IF (N_Elements(index) EQ 0) THEN BEGIN
+            index = Where(projections.index EQ map_projection, count)
+            IF count EQ 0 THEN Message, 'Cannot find map projection index ' + StrTrim(map_projection,2) + ' in projection list.' 
+        ENDIF
+        self.thisProjection = projections[index]
+   ENDIF
+   
+   ; Are we changing the map datum.
    IF N_Elements(datum) NE 0 THEN BEGIN
         IF Size(datum, /TNAME) EQ 'STRING' THEN BEGIN
             index = Where(StrUpCase((*self.theDatums).name) EQ StrUpCase(datum))
@@ -469,12 +632,74 @@ PRO MapCoord::SetProperty, $
         self.thisDatum = thisDatum
    ENDIF
    
+   ; Are there map projection keywords to deal with?
+   IF N_Elements(map_proj_keywords) NE 0 THEN BEGIN
+   
+        ; Make the pointer a valid pointer, if necessary.
+        IF ~Ptr_Valid(self.map_projection_keywords) THEN self.map_projection_keywords = Ptr_New(/ALLOCATE_HEAP)
+        
+        ; Is there a NULL field in the current structure that means erase what is currently in the pointer?
+        index = Where(Tag_Names(map_proj_keywords) EQ 'NULL', count)
+        IF count GT 0 THEN BEGIN
+            IF map_proj_keywords.(index) EQ 1 THEN self.map_projection_keywords = Ptr_New(/ALLOCATE_HEAP)
+        ENDIF
+        
+        ; Add these fields to the structure, or modify the tag value if it is already present.
+        IF N_Elements(*self.map_projection_keywords) GT 0 THEN BEGIN
+            ntags = N_Tags(map_proj_keywords)
+            tags = Tag_Names(map_proj_keywords)
+            FOR j=0,ntags-1 DO BEGIN
+               thisTag = tags[j]
+               index = Where(Tag_Names(*self.map_projection_keywords) EQ thisTag, count)
+               IF count GT 0 THEN BEGIN
+                   (*self.map_projection_keywords).(index) = map_proj_keywords.(j)
+               ENDIF ELSE BEGIN
+                   *self.map_projection_keywords = Create_Struct(*self.map_projection_keywords, thisTag, map_proj_keywords.(j))
+               ENDELSE
+            ENDFOR
+        ENDIF ELSE BEGIN
+            
+            ; Add all the tags, except for NULL tags
+            ntags = N_Tags(map_proj_keywords)
+            tags = Tag_Names(map_proj_keywords)
+            FOR j=0,ntags-1 DO BEGIN
+               thisTag = tags[j]
+               IF thisTag EQ 'NULL' THEN Continue
+               IF N_Elements(*self.map_projection_keywords) EQ 0 THEN BEGIN
+                    count = 0
+               ENDIF ELSE BEGIN
+                    index = Where(Tag_Names(*self.map_projection_keywords) EQ thisTag, count)
+               ENDELSE
+               IF count GT 0 THEN BEGIN
+                   (*self.map_projection_keywords).(index) = map_proj_keywords.(j)
+               ENDIF ELSE BEGIN
+                   IF N_Elements(*self.map_projection_keywords) EQ 0 THEN BEGIN
+                        *self.map_projection_keywords = Create_Struct(thisTag, map_proj_keywords.(j))
+                   ENDIF ELSE BEGIN
+                        *self.map_projection_keywords = Create_Struct(*self.map_projection_keywords, $
+                            thisTag, map_proj_keywords.(j))
+                   ENDELSE
+               ENDELSE
+            ENDFOR
+        ENDELSE
+        
+        ; For debugging purposes.
+        ;Help, *self.map_projection_keywords, /Structure
+   ENDIF
+   
    IF N_Elements(center_latitude) NE 0 THEN self.center_latitude = center_latitude
    IF N_Elements(center_longitude) NE 0 THEN self.center_longitude = center_longitude
-   IF N_Elements(limit) NE 0 THEN *self.limit = limit
+   
+   ; If you change the limit, you really also need to change the XRANGE and YRANGE.
+   changedLimit = 0
+   IF N_Elements(limit) NE 0 THEN BEGIN
+        *self.limit = limit
+        changedLimit = 1
+   ENDIF
+   IF N_Elements(draw_overlays) NE 0 THEN self.draw_overlays = Keyword_Set(draw_overlays)
    IF N_Elements(sphere_radius) NE 0 THEN BEGIN
-      self.datum.semimajor_axis = sphere_radius
-      self.datum.semiminor_axis = sphere_radius
+      self.thisDatum.semimajor_axis = sphere_radius
+      self.thisDatum.semiminor_axis = sphere_radius
    ENDIF
    IF N_Elements(semimajor_axis) NE 0 THEN self.thisDatum.semimajor_axis = semimajor_axis
    IF N_Elements(semiminor_axis) NE 0 THEN self.thisDatum.semiminor_axis = semiminor_axis
@@ -490,14 +715,24 @@ PRO MapCoord::SetProperty, $
         xrange = Reform(uvcoords[0,*])   
       ENDIF
       self -> CATCOORD::SetProperty, XRANGE=xrange
-   ENDIF
+   ENDIF ELSE BEGIN
+      IF changedLimit THEN BEGIN
+            xrange = map_structure.uv_box[[0,2]]
+            self -> CATCOORD::SetProperty, XRANGE=xrange
+      ENDIF
+   ENDELSE
    IF N_Elements(yrange) NE 0 THEN BEGIN
       IF Keyword_Set(latlon_ranges) THEN BEGIN
         uvcoords = Map_Proj_Forward([-5000,5000], yrange, MAP_STRUCTURE=map_structure)
         yrange = Reform(uvcoords[1,*])     
       ENDIF
       self -> CATCOORD::SetProperty, YRANGE=yrange
-   ENDIF
+   ENDIF ELSE BEGIN
+      IF changedLimit THEN BEGIN
+            yrange = map_structure.uv_box[[1,3]]
+            self -> CATCOORD::SetProperty, YRANGE=yrange
+      ENDIF
+   ENDELSE
    IF N_Elements(outline_object) NE 0 THEN BEGIN
    
         IF N_Elements(overlay_position) EQ 0 THEN thisPosition = 0 ELSE thisPosition = overlay_position
@@ -517,11 +752,16 @@ PRO MapCoord::SetProperty, $
    IF N_Elements(map_overlay) NE 0 THEN BEGIN
    
         count = N_Elements(map_overlay)
-        IF count NE N_Elements(overlay_position) THEN Message, 'Number of map overlays does not match the number of overlay positions.'
-        FOR j=0,count-1 DO BEGIN
-            self -> SetOverlay, map_overlay[j], overlay_position[j]
-        ENDFOR
-   
+        IF N_Elements(overlay_position) EQ 0 THEN BEGIN
+            FOR j=0,count-1 DO BEGIN
+                thisOverlay = map_overlay[j]
+                IF Obj_Valid(thisOverlay) THEN self -> SetOverlay, thisOverlay
+            ENDFOR
+        ENDIF ELSE BEGIN
+            FOR j=0,count-1 DO BEGIN
+                self -> SetOverlay, map_overlay[j], overlay_position[j]
+            ENDFOR
+        ENDELSE
    ENDIF
    
    IF (N_ELEMENTS(extraKeywords) GT 0) THEN self -> CATCOORD::SetProperty,  _EXTRA=extraKeywords
@@ -567,27 +807,13 @@ END
 ;                       
 ;       LIMIT:             A vector of limits for the map projection: [latmin, lonmin, latmax, lonmax].
 ;       
-;       POSITION:          A four-element array representing the position of the plot in the window.
-;                          Use normalized coordinates (0 to 1) in this order: [x0, y0, x1, y1]. The
-;                          default is [0,0,1,1].
-;                       
 ;       SEMIMAJOR_AXIS:    The distance, in meters, of the semi-major axis of the reference ellipsoid.
 ;       
 ;       SEMIMINOR_AXIS:    The distance, in meters, of the semi-minor axis of the reference ellipsoid.
 ;       
 ;       SPHERE_RADIUS:     The radius, in meters, of the sphere used as the DATUM.
 ;       
-;       XRANGE:            A two-element array representing the X range of the map projection in a 2D
-;                          Cartesian (x,y) coordinate system. These are sometimes called UV coordinates.
-;                          If undefined, the longitude range of -180 to 180 is used with the map structure
-;                          to create the XRANGE array.
-;
-;       YRANGE:            A two-element array representing the Y range of the map projection in a 2D
-;                          Cartesian (x,y) coordinate system. These are sometimes called UV coordinates.
-;                          If undefined, the latitude range of -90 to 90 is used with the map structure
-;                          to create the YRANGE array.
-;                         
-;      ZONE:               UTM or State Plane zone.
+;       ZONE:              UTM or State Plane zone.
 ;-
 ;*****************************************************************************************************
 FUNCTION MapCoord::SetMapProjection, map_projection, $
@@ -637,8 +863,8 @@ FUNCTION MapCoord::SetMapProjection, map_projection, $
    IF N_Elements(center_latitude) NE 0 THEN self.center_latitude = center_latitude
    IF N_Elements(center_longitude) NE 0 THEN self.center_longitude = center_longitude
    IF N_Elements(sphere_radius) NE 0 THEN BEGIN
-      self.datum.semimajor_axis = sphere_radius
-      self.datum.semiminor_axis = sphere_radius
+      self.thisDatum.semimajor_axis = sphere_radius
+      self.thisDatum.semiminor_axis = sphere_radius
    ENDIF
    IF N_Elements(semimajor_axis) NE 0 THEN self.thisDatum.semimajor_axis = semimajor_axis
    IF N_Elements(semiminor_axis) NE 0 THEN self.thisDatum.semiminor_axis = semiminor_axis
@@ -673,7 +899,6 @@ FUNCTION MapCoord::SetMapProjection, map_projection, $
     
         CASE StrUpCase(thisProjection) OF
             'UTM': BEGIN
-                
                 mapStruct = Map_Proj_Init(thisProjection, DATUM=self.thisDatum.(0), /GCTP, $
                     CENTER_LATITUDE=center_lat, CENTER_LONGITUDE=center_lon, ZONE=zone)
                 END
@@ -684,7 +909,7 @@ FUNCTION MapCoord::SetMapProjection, map_projection, $
         ENDCASE
         
     ENDIF ELSE BEGIN
-    
+;print, 'Using the following limit in MapCoord::SetMapProjection: ', limit
         ; Call MAP_PROJ_INIT to get the map projection structure.
         CASE 1 OF
         
@@ -698,6 +923,7 @@ FUNCTION MapCoord::SetMapProjection, map_projection, $
                 END
                 
             ~centerLatOK AND sphereOnly: BEGIN
+
                 mapStruct = Map_Proj_Init(thisProjection, /GCTP, $
                     CENTER_LONGITUDE=center_lon, $
                     SPHERE_RADIUS=semimajor_axis, $
@@ -726,23 +952,6 @@ FUNCTION MapCoord::SetMapProjection, map_projection, $
         ENDCASE
    ENDELSE
         
-   ; Need ranges?
-   IF N_Elements(xrange) NE 0 THEN xrange = mapStruct.uv_box[[0,2]] ELSE xrange = self._xrange
-   IF N_Elements(yrange) NE 0 THEN yrange = mapStruct.uv_box[[1,3]] ELSE yrange = self._yrange
-   
-   ; Are the ranges in lat/lon space?
-   IF Keyword_Set(latlon_ranges) THEN BEGIN
-      uvcoords = Map_Proj_Forward(xrange, yrange, MAP_STRUCTURE=mapStruct)
-      xrange = Reform(uvcoords[0,*])
-      yrange = Reform(uvcoords[1,*])
-   ENDIF
-   
-   ; Superclass keywords.
-   self -> CATCOORD::SetProperty, $
-       POSITION=position, $
-       XRANGE=xrange, $
-       YRANGE=yrange
-       
     RETURN, mapStruct
 END
 
@@ -886,6 +1095,12 @@ END
 ;                          Lambert Azimuthal with spherical datum.
 ;
 ; KEYWORDS:
+;
+;       ADD_GRID:          If this keyword is set, a Map_Grid object is added to the mapCoord object.
+;                          The Map_Grid object is configured with AUTODRAW on and the color "sky blue".
+;
+;       ADD_OUTLINE:       If this keyword is set, a Map_Outline object is added to the mapCoord object.
+;                          The Map_Outline object is drawn with the color "indian red".
 ; 
 ;       CENTER_LATITUDE:   The center latitude of the map projection.
 ;       
@@ -905,6 +1120,9 @@ END
 ;       ZONE:              The zone of UTM and State Plane projections.
 ;       
 ;       Any additional keywords defined for MAP_PROJ_INIT are allowed. And, in addition to those, the following:
+;
+;       DRAW_OVERLAYS:     If this keyword is set, any map overlays that are included within the mapCoord object
+;                          are drawn at the time the DRAW method is called.
 ; 
 ;       GRID_OBJECT:       An overlay object, such as MAP_GRID, for drawing map grid lines. The MAPCOORD 
 ;                          object cannot draw grids, but provides a logical place to store such
@@ -939,16 +1157,17 @@ END
 ;                          is an object that draws graphics in a map coordinate data space.
 ;                          
 ;                          Note: Overlay objects must be written with a DRAW method, and they must
-;                          have a MAP_STRUCTURE keyword in a SetProperty method. When they are added
-;                          to the MAPCOORD object, the MAPCOORD object will be made their parent
-;                          (so they are not accidentally destroyed) and the SetProperty method will
-;                          be called with the MAP_STRUCTURE keyword set equal to the MAPCOORD map structure.
-;       
+;                          accept a MapCoord object which can provide a map structure for converting
+;                          lat/lon values to XY values. Overlay objects always draw into an XY coordinate
+;                          space.
+;                          
 ;       OVERLAY_POSITION:  A  scalar or vector with the same number of elements as MAP_OVERLAY.
 ;                          This keyword is used to tell IDL where to store the object in the overlay
 ;                          object array. It should be a number in the range of 0 to 19. If undefined,
 ;                          the overlay object array is searched for invalid objects, and the overlay
-;                          object is stored at the lowest index containing an invalid object.
+;                          object is stored at the lowest index containing an invalid object. Note
+;                          that overlay positions 0 and 1 are normally reserved for map outlines and
+;                          map grids, respectively.
 ;                          
 ;       XRANGE:            A two-element array representing the X range of the map projection in a 2D
 ;                          Cartesian (x,y) coordinate system. These are sometimes called UV coordinates.
@@ -964,9 +1183,11 @@ END
 ;-
 ;*****************************************************************************************************
 FUNCTION MapCoord::INIT, map_projection, $
+    ADD_GRID=add_grid, $
+    ADD_OUTLINE=add_outline, $
+    DRAW_OVERLAYS=draw_overlays, $
     GRID_OBJECT=grid_object, $
     LATLON_RANGES=latlon_ranges, $
-    MAP_STRUCTURE=map_structure, $
     OUTLINE_OBJECT=outline_object, $
     PARENT=parent, $
     POSITION=position, $
@@ -1045,11 +1266,10 @@ FUNCTION MapCoord::INIT, map_projection, $
     IF Size(map_projection, /TNAME) EQ 'STRING' THEN BEGIN
         index = Where(StrUpCase(projections.name[*]) EQ StrUpCase(map_projection))
         IF index[0] EQ -1 THEN Message, 'Cannot find map projection ' + map_projection + ' in the projection list.'
-    ENDIF
-    IF (N_Elements(index) EQ 0) AND (N_Elements(map_projection) NE 0) THEN BEGIN
+    ENDIF ELSE BEGIN
         index = Where(projections.index EQ map_projection, count)
         IF count EQ 0 THEN Message, 'Cannot find map projection index ' + StrTrim(map_projection,2) + ' in projection list.' 
-    ENDIF ELSE index = 10  ; Lambert Azimuthal Equal Area 
+    ENDELSE
     this_map_projection = projections[index]
    
    ; Find the datum.
@@ -1085,6 +1305,18 @@ FUNCTION MapCoord::INIT, map_projection, $
         ENDIF ELSE thisDatum = theDatums[0 > datum < 19]
    ENDELSE
    
+   ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
+   ; produces the wrong result when a UTM projection is used in conjunction
+   ; with a WGS84 datum (the most common datum used in this projection). Here
+   ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
+   ; results in position errors of less than a meter typically.
+   IF (StrUpCase(thisDatum.Name) EQ 'WGS 84') && $
+      (StrUpCase(this_map_projection.Name) EQ 'UTM') && $
+      (Float(!version.release) LE 8.2) THEN BEGIN
+          Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
+          thisDatum = { MAPCOORD_DATUM, 12, 'Walbeck', 6378137.0, 6356752.314245 }
+   ENDIF
+   
    ; Modify the radii?
    IF N_Elements(sphere_radius) NE 0 THEN BEGIN
         semimajor_axis = sphere_radius
@@ -1109,13 +1341,8 @@ FUNCTION MapCoord::INIT, map_projection, $
    self.thisProjection = this_map_projection
    self.zone = zone
    
-   ; Set up the map projection structure.
-   IF N_Elements(map_structure) NE 0 THEN BEGIN
-        mapStruct = map_structure 
-        ll = Map_Proj_Inverse(map_structure.uv_box[[0,2]], map_structure.uv_box[[1,3]], MAP_STRUCTURE=map_structure)
-        limit = [ll[0,0], ll[1,0], ll[0,1], ll[1,1]]
-        self -> SetProperty, LIMIT=limit
-   ENDIF ELSE mapStruct = self -> SetMapProjection()
+   ; Get the map structure.
+   mapStruct = self -> SetMapProjection()
    
    ; Need ranges?
    IF N_Elements(xrange) EQ 0 THEN xrange = mapStruct.uv_box[[0,2]]
@@ -1161,11 +1388,33 @@ FUNCTION MapCoord::INIT, map_projection, $
    ENDIF 
    
    IF N_Elements(map_overlay) NE 0 THEN BEGIN
+   
         count = N_Elements(map_overlay)
-        IF count NE N_Elements(overlay_position) THEN Message, 'Number of map overlays does not match the number of overlay positions.'
-        FOR j=0,count-1 DO BEGIN
-            self -> SetOverlay, map_overlay[j], overlay_position[j]
-        ENDFOR
+        IF N_Elements(overlay_position) EQ 0 THEN BEGIN
+            FOR j=0,count-1 DO BEGIN
+                thisOverlay = map_overlay[j]
+                IF Obj_Valid(thisOverlay) THEN self -> SetOverlay, thisOverlay
+            ENDFOR
+        ENDIF ELSE BEGIN
+            FOR j=0,count-1 DO BEGIN
+                self -> SetOverlay, map_overlay[j], overlay_position[j]
+            ENDFOR
+        ENDELSE
+   ENDIF
+   
+   ; Draw overlays?
+   self.draw_overlays = Keyword_Set(draw_overlays)
+   
+   ; Add a Map_Grid object?
+   IF Keyword_Set(add_grid) THEN BEGIN
+       grid = Obj_New('Map_Grid', /AUTODRAW, MAP_OBJECT=self, COLOR='sky blue', PARENT=self)
+       self -> SetProperty, GRID_OBJECT=grid
+   ENDIF
+   
+   ; Add a Map_Outline object.
+   IF Keyword_Set(add_outline) THEN BEGIN
+       outline = Obj_New('Map_Outline', MAP_OBJECT=self, COLOR='Indian Red', PARENT=self)
+       self -> SetProperty, OUTLINE_OBJECT=outline
    ENDIF
    
    ; Finished.
@@ -1192,17 +1441,18 @@ PRO MapCoord__DEFINE, class
    mapStruct =   { MAPCOORD_PROJECTION, name:"", index:0, sphereOnly:0 }
 
    class = { MAPCOORD, $
-             overlays: ObjArr(20), $             ; A storage location for map overlays.
-             map_projection_keywords: Ptr_New(), $
-             center_latitude: 0.0D, $
-             center_longitude:0.0D, $
-             limit: Ptr_New(), $
-             zone: 0, $
-             theDatums: Ptr_New(), $
-             thisDatum: datumStruct, $
-             theProjections: Ptr_New(), $
-             thisProjection: mapStruct, $
-             INHERITS CATCOORD $
+             draw_overlays: 0B, $                   ; A flag that indicates map overlays should be drawn.
+             overlays: ObjArr(20), $                ; A storage location for map overlays.
+             map_projection_keywords: Ptr_New(), $  ; A storage location for MAP_PROJ_INIT keywords.
+             center_latitude: 0.0D, $               ; The latitude at the center of the map projection.
+             center_longitude:0.0D, $               ; The lontigude at the center of the map projection.
+             limit: Ptr_New(), $                    ; The limit of the map projection.
+             zone: 0, $                             ; The UTM zone of the map projection.
+             theDatums: Ptr_New(), $                ; Information about available map datums.
+             thisDatum: datumStruct, $              ; The particular datum structure for this map projection.
+             theProjections: Ptr_New(), $           ; Information about available map projections.
+             thisProjection: mapStruct, $           ; The particular map projection structure for this map projection.
+             INHERITS CATCOORD $                    ; The superclass object.
            }
 
 END

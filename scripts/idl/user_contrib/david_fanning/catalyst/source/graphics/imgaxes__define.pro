@@ -211,7 +211,7 @@ PRO ImgAxes::Draw, _Extra=extrakeywords
           ; Draw the axes
           PLOT, self.xrange, self.yrange, XStyle=1, YStyle=1, /NoErase, /NoData, $
              Position=self.position, FONT=font-1, XTickformat=self.xtickformat, YTickformat=self.ytickformat, $
-             XCharsize=self.xcharsize, YCharsize=self.ycharsize, Color=FSC_Color(self.color, !P.Color), $
+             XCharsize=self.xcharsize, YCharsize=self.ycharsize, Color=cgColor(self.color, !P.Color), $
              XRange=self.xrange, YRange=self.yrange, XTitle=self.xtitle, YTitle=self.ytitle, $
              Charsize=self.charsize, Title=self.title, XTICKLEN=xticklen, YTICKLEN=yticklen
       ENDELSE
@@ -271,7 +271,7 @@ PRO ImgAxes::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.

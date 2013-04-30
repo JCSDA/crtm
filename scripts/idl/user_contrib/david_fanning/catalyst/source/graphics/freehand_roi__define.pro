@@ -235,7 +235,7 @@ PRO Freehand_ROI::Draw, _EXTRA=extra
    self._drawID_pixmap -> Copy
 
    PlotS, (*self.xpts)[0:self.count-1], (*self.ypts)[0:self.count-1], /Device, $
-      Color=FSC_Color(self._roi_color), Thick=self.thick, Linestyle=self.linestyle
+      Color=cgColor(self._roi_color), Thick=self.thick, Linestyle=self.linestyle
 
    ; Copy buffer to display.
    self._drawID -> SetWindow
@@ -467,7 +467,7 @@ PRO Freehand_ROI::EventHandler, event
                ; Relevant points are in device coordinates. Should be converted to
                ; normalized coordinates for moving and selecting.
                c = Convert_Coord(*self.xpts, *self.ypts, /Device, /To_Normal)
-               polygonObj = Obj_New('Polygon', $
+               polygonObj = Obj_New('Cat_Polygon', $
                   Color=color, $
                   Coord_Object=Obj_New('CatCoord', XRange=[0,1], YRange=[0,1], Position=[0,0,1,1]), $
                   Linestyle=linestyle, $

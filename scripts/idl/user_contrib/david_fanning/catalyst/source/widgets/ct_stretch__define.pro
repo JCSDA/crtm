@@ -263,29 +263,29 @@ PRO CT_Stretch::Draw, _Extra=extraKeywords
    ys = location[1,1]
    xd = location[2,1]
    yd = location[3,1]
-   Plots, [xs, xd], [ys,ys], /Normal, Color=FSC_Color(self.c_border)
-   Plots, [xs, xd], [yd,yd], /Normal, Color=FSC_Color(self.c_border)
-   Plots, [xs, xs], [ys,yd], /Normal, Color=FSC_Color(self.c_border)
-   Plots, [xd, xd], [ys,yd], /Normal, Color=FSC_Color(self.c_border)
+   Plots, [xs, xd], [ys,ys], /Normal, Color=cgColor(self.c_border)
+   Plots, [xs, xd], [yd,yd], /Normal, Color=cgColor(self.c_border)
+   Plots, [xs, xs], [ys,yd], /Normal, Color=cgColor(self.c_border)
+   Plots, [xd, xd], [ys,yd], /Normal, Color=cgColor(self.c_border)
 
    c = Convert_Coord(0, 5,  /Device, /To_Normal)
    yy = c[1,0]
 
    ; Draw the threshold lines.
    PlotS, [0, 1], [self.minThresh, self.minThresh], $
-      Color=FSC_Color(self.c_minthresh), Thick=3
+      Color=cgColor(self.c_minthresh), Thick=3
    cmin = Convert_Coord(0, self.minThresh,  /Data, /To_Normal)
-   PolyFill, [0.1, 0.2, 0.1], [cmin[1]-yy, cmin[1], cmin[1]+yy], /Normal, Fill=1, Color=FSC_Color(self.c_minthresh)
+   PolyFill, [0.1, 0.2, 0.1], [cmin[1]-yy, cmin[1], cmin[1]+yy], /Normal, Fill=1, Color=cgColor(self.c_minthresh)
 
    PlotS, [0, 1], [self.maxThresh, self.maxThresh], $
-      Color=FSC_Color(self.c_maxthresh), Thick=3
+      Color=cgColor(self.c_maxthresh), Thick=3
    cmax = Convert_Coord(0, self.maxThresh, /Data, /To_Normal)
-   PolyFill, [0.1, 0.2, 0.1], [cmax[1]-yy, cmax[1], cmax[1]+yy], /Normal, Fill=1, Color=FSC_Color(self.c_maxthresh)
+   PolyFill, [0.1, 0.2, 0.1], [cmax[1]-yy, cmax[1], cmax[1]+yy], /Normal, Fill=1, Color=cgColor(self.c_maxthresh)
 
    PlotS, [0, 1], [self.cenThresh, self.cenThresh], $
-      Color=FSC_Color(self.c_centhresh), Thick=3
+      Color=cgColor(self.c_centhresh), Thick=3
    cen = Convert_Coord(0, self.cenThresh, /Data, /To_Normal)
-   PolyFill, [0.1, 0.2, 0.1], [cen[1]-yy, cen[1], cen[1]+yy], /Normal, Fill=1, Color=FSC_Color(self.c_centhresh)
+   PolyFill, [0.1, 0.2, 0.1], [cen[1]-yy, cen[1], cen[1]+yy], /Normal, Fill=1, Color=cgColor(self.c_centhresh)
 
    ; Update all the text widgets.
    self.minTextID -> SetProperty, Value=String(self.minThresh, Format=self.format)
@@ -1034,8 +1034,8 @@ END
 ;coords = Obj_New('CatCoord', xrange=[0,1], yrange=[-1000, 3400])
 ;stretch = Obj_New('CT_Stretch', tlb, range=[-1000, 3400], Colortool=colors, YSize=200)
 ;draw1 = Obj_New('Drawwidget', tlb, XSize=400, YSize=300)
-;image = Obj_New('CatImage2D', loaddata(5), Color_Object=colors)
-;image1 = Obj_New('CatImage2D', loaddata(7), Color_Object=colors)
+;image = Obj_New('CatImage2D', cgDemoData(5), Color_Object=colors)
+;image1 = Obj_New('CatImage2D', cgDemoData(7), Color_Object=colors)
 ;draw -> Add, image
 ;draw1 -> Add, image1
 ;tlb -> Draw

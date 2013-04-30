@@ -81,10 +81,16 @@ FUNCTION Parse_NSIDC_Filename_0302, filename, INFO=info, SUCCESS=success
    success = 0 ; Assume no success
    IF N_Elements(filename) EQ 0 THEN Message, "A filename is a required input parameter."
 
+   ; Set up colors.
+   landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+   grid_color = CatGetDefault('DATAVIEWER_GRID_COLOR')
+   vector_color = CatGetDefault('DATAVIEWER_VECTOR_COLOR')
+   outline_color = CatGetDefault('DATAVIEWER_OUTLINE_COLOR')
+
    ; Parse the root file name to determine the parameters that need to be set appropriately.
    ; If this is not a compressed file, with extension .gz, then we will have to add the extension
    ; back to the filename and set the extension to a null string.
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootName(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
    IF StrUpCase(theExtension) NE 'GZ' THEN BEGIN
         root_name = root_name + '.' + theExtension
         theExtension = ''
@@ -112,6 +118,10 @@ FUNCTION Parse_NSIDC_Filename_0302, filename, INFO=info, SUCCESS=success
 
    ; Create map projection information.  Cylindrical projection.
    mapCoord = Obj_New('MAPCOORD', 117, SPHERE_RADIUS=6371228L, CENTER_LONGITUDE=0.0, CENTER_LATITUDE=0.0)
+   lats = Indgen(17)*10 - 80
+   lons = Indgen(11)*36
+   latlab = 18
+   lonlab = 0
 
    ; Read the image.
    image = (timeimg) ? INTARR(1440, 720) : UINTARR(1440, 720)
@@ -216,6 +226,12 @@ FUNCTION Parse_NSIDC_Filename_0302, filename, INFO=info, SUCCESS=success
             END
    ENDCASE
 
+   ; Set up outline and grid for the image.
+   outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, COLOR=outline_color)
+   grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color, $
+        LATS=lats, LONS=lons, LATLAB=latlab, LONLAB=lonlab)
+   mapCoord -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+   
    ; Create an info structure about the image.
    info = {directory :   theDirectory, $
            filename:     filename, $

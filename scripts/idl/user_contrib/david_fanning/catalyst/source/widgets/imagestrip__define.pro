@@ -164,7 +164,7 @@ PRO ImageStrip::Draw, _Extra=extraKeywords
    ; Draw frame divisions.
    Device, Decomposed=1, Get_Decomposed=theState
    FOR j=1,self.frames-1 DO BEGIN
-      Plots, [self.xsize*j, self.xsize*j], [0, !D.Y_Size], /Device, Color=FSC_Color(self.annotateColor)
+      Plots, [self.xsize*j, self.xsize*j], [0, !D.Y_Size], /Device, Color=cgColor(self.annotateColor)
    ENDFOR
    Device, Decomposed=theState
 
@@ -748,7 +748,7 @@ END
 PRO ImageStrip_Test
 
    LoadCT, 0, /Silent
-   images = LoadData(8)
+   images = cgDemoData(8)
    imagestack = Obj_New('ImageStack', images)
    imageContainer = Obj_New('ImageContainer', Name='bob')
    imageStack -> GetProperty, ZSize=number

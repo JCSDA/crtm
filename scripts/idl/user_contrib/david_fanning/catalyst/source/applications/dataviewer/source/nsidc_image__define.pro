@@ -13,7 +13,8 @@
 ;       254: Out of bounds low color.
 ;       253: Out of bounds high color.
 ;       252: Land mask color.
-;       250-251: Currently unused. Could be used for image overlay colors, etc.
+;       251: Motion vector color
+;       250: Currently unused. Could be used for image overlay colors, etc.
 ;
 ; AUTHOR:
 ;
@@ -43,13 +44,21 @@
 ;   class = { NSIDC_IMAGE, $
 ;             annotatePixmap: Obj_New(), $ ; The window used for annotations.
 ;             cb_format: "", $             ; The colorbar format.
+;             cb_type:                     ; The type of color bar allowed. 0 (default) normal, 1 discrete, 2 none.
 ;             colorChangeAllowed: 0B, $    ; A flag that indicates this image's colors can be changed by the user.
 ;             colorChangeNColors: 0L, $    ; If colors can be changed, this indicates how many colors can be changed.
 ;             contextmenu: Obj_New(), $    ; The context menu for the image selection events.
 ;             filename: "", $              ; The filename of the image.
+;             displayName: "" , $          ; The name that should be used on the display.
 ;             fn_color: "", $              ; The name of the filename color.
 ;             landmask_color: "", $        ; The name of the landmask color.
 ;             landmask_value: Ptr_New(), $ ; The value of the landmask in the image.
+;             grid_color: "", $            ; The name of the map grid color.
+;             outline_color: "", $         ; The name of the map outline or fill color.
+;             vector_color: "", $          ; The name of the color for drawing motion vectors on images.
+;             map_fill: 0B, $              ; A flag that indicates a filled map outline should be drawn on the image.
+;             map_outline: 0B, $           ; A flag that indicates a map outline should be drawn on the image.
+;             map_grid: 0B, $              ; A flag that indicates a map grid should be drawn on the image.
 ;             no_name_display:0B, $        ; A flag that indicates the filename should NOT be displayed.
 ;             no_colorbar_display:0B, $    ; A flag that indicates the colorbar should NOT be displayed.
 ;             nsidc_tag: "", $             ; The NSIDC number associated with this image, eg, "nsidc-0032".
@@ -68,9 +77,12 @@
 ;       Added a DISPLAYNAME keyword and modified the program to use the "display name" 
 ;          rather than the "filename" in the image DRAW method. I did this to facilitate
 ;          the display of HDF variables as images. 8 January 2009. DWF.
+;       Added a vector color field and ability to display motion vector overlays. 15 June 2010. DWF.
+;       Renamed Colorbar procedure to cgColorbar to avoid conflict with IDL 8 Colorbar function.
+;          26 September 2010. DWF.
 ;-
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, Regents of the University of Colorado. All rights reserved.    ;
+;  Copyright (c) 2008-2010, Regents of the University of Colorado. All rights reserved.    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -534,16 +546,39 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
        ; Draw map outlines?
        self -> GetProperty, COORD_OBJECT=coords
        IF Obj_Class(coords) EQ 'MAPCOORD' THEN BEGIN
+       
          IF self.map_outline THEN BEGIN
             coords -> GetProperty, MAP_OVERLAY=map_overlays, OVERLAY_POSITION=0
             validIndices = Where(Obj_Valid(map_overlays) EQ 1, count)
-            IF count GT 0 THEN FOR j=0,count-1 DO map_overlays[validIndices[j]] -> Draw
+            IF count GT 0 THEN BEGIN
+                FOR j=0,count-1 DO BEGIN
+                    map_overlays[validIndices[j]] -> SetProperty, COLOR=self.outline_color, $
+                        LAND_COLOR=self.landmask_color
+                    map_overlays[validIndices[j]] -> Draw
+                ENDFOR
+            ENDIF
          ENDIF
+         
          IF self.map_grid THEN BEGIN
             coords -> GetProperty, MAP_OVERLAY=map_overlays, OVERLAY_POSITION=1
             validIndices = Where(Obj_Valid(map_overlays) EQ 1, count)
-            IF count GT 0 THEN FOR j=0,count-1 DO map_overlays[validIndices[j]] -> Draw
+            IF count GT 0 THEN BEGIN
+                FOR j=0,count-1 DO BEGIN
+                    map_overlays[validIndices[j]] -> SetProperty, COLOR=self.grid_color
+                    map_overlays[validIndices[j]] -> Draw
+                ENDFOR
+            ENDIF
          ENDIF
+         
+          ; Any object in any overlay position EXCEPT 0 and 1 should be drawn.
+         coords -> GetProperty, MAP_OVERLAY=overlayObjects
+         index = Where(Obj_Valid(overlayObjects), count)
+         IF count GT 0 THEN BEGIN
+            FOR j=0,count-1 DO BEGIN
+                IF index[j] GE 2 THEN overlayObjects[index[j]] -> Draw
+            ENDFOR
+         ENDIF
+         
        ENDIF
            
        p = self._location[0:3,1]
@@ -553,11 +588,13 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
            XYOUTS, (p[2] - p[0]) / 2 + p[0], /NORMAL, $
               p[1] - (1.5 * unit), $
               self.displayName, $
-              ALIGNMENT=0.5, COLOR=FSC_Color(self.fn_color), $
+              ALIGNMENT=0.5, COLOR=cgColor(self.fn_color), $
               CHARSIZE=0.75, FONT=(StrUpCase(!Version.OS_Family) EQ 'WINDOWS') ? 1 : 0
            DEVICE, SET_FONT='Helvetica', /TT_FONT
       ENDIF 
-      IF ~Keyword_Set(self.no_colorbar_display) AND (Size(self, /N_DIMENSIONS) NE  3) THEN BEGIN
+      IF ~Keyword_Set(self.no_colorbar_display) AND $
+         (Size(self, /N_DIMENSIONS) NE  3) AND $
+         self.cb_type NE 2 THEN BEGIN
         self -> GetProperty, COLOR_OBJECT=colors, OOB_LOW_COLOR=oob_low_color, OOB_HIGH_COLOR=oob_high_color
         IF Obj_Valid(colors) THEN BEGIN
             colors -> GetProperty, NCOLORS=ncolors
@@ -565,22 +602,22 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
             xdistance = 3.0 * !D.X_CH_SIZE / Float(!D.X_Size)
             self -> GetProperty, SCLMIN=sclmin, SCLMAX=sclmax
             colors -> Draw
-            Colorbar, NCOLORS=ncolors, RANGE=[sclmin, sclmax], DIVISIONS=2, FORMAT=self.cb_format, $
+            cgColorbar, NCOLORS=ncolors, RANGE=[sclmin, sclmax], DIVISIONS=2, FORMAT=self.cb_format, $
                POSITION=[p[0]+xdistance, p[3]+ 0.01, p[2]-xdistance, p[3]+ydistance/2.], /TOP, ANNOTATECOLOR=self.fn_color, $
                XCharsize = StrUpCase(!Version.OS_Family) EQ 'WINDOWS' ? 0.8 : 1.0, $
                FONT=(StrUpCase(!Version.OS_Family) EQ 'WINDOWS') ? 1 : 0, XTINKLEN=1.0, XMINOR=0
             POLYFILL, [p[0]+xdistance, p[0], p[0]+xdistance, p[0]+xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(oob_low_color)
+                      COLOR=cgColor(oob_low_color)
             PLOTS, [p[0]+xdistance, p[0], p[0]+xdistance, p[0]+xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(self.fn_color)
+                      COLOR=cgColor(self.fn_color)
             POLYFILL, [p[2]-xdistance, p[2], p[2]-xdistance, p[2]-xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(oob_high_color)
+                      COLOR=cgColor(oob_high_color)
             PLOTS, [p[2]-xdistance, p[2], p[2]-xdistance, p[2]-xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(self.fn_color)
+                      COLOR=cgColor(self.fn_color)
         ENDIF
       ENDIF
    ENDIF ELSE $
@@ -599,19 +636,43 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
       ; Clean up.
       Device, Decomposed=theState
 
-      ; Draw map outlines?
+      ; Draw map outlines? Map outlines (overlay position 0) and map grids (overlay
+      ; position 1) are optional. Any other map overlays are drawn automatically.
       self -> GetProperty, COORD_OBJECT=coords
       IF Obj_Class(coords) EQ 'MAPCOORD' THEN BEGIN
+      
          IF self.map_outline THEN BEGIN
             coords -> GetProperty, MAP_OVERLAY=map_overlays, OVERLAY_POSITION=0
             validIndices = Where(Obj_Valid(map_overlays) EQ 1, count)
-            IF count GT 0 THEN FOR j=0,count-1 DO map_overlays[validIndices[j]] -> Draw
+            IF count GT 0 THEN BEGIN
+                FOR j=0,count-1 DO BEGIN
+                    map_overlays[validIndices[j]] -> SetProperty, COLOR=self.outline_color, $
+                        LAND_COLOR=self.landmask_color
+                    map_overlays[validIndices[j]] -> Draw
+                ENDFOR
+            ENDIF
          ENDIF
+         
          IF self.map_grid THEN BEGIN
             coords -> GetProperty, MAP_OVERLAY=map_overlays, OVERLAY_POSITION=1
             validIndices = Where(Obj_Valid(map_overlays) EQ 1, count)
-            IF count GT 0 THEN FOR j=0,count-1 DO map_overlays[validIndices[j]] -> Draw
+            IF count GT 0 THEN BEGIN
+                FOR j=0,count-1 DO BEGIN
+                    map_overlays[validIndices[j]] -> SetProperty, COLOR=self.grid_color
+                    map_overlays[validIndices[j]] -> Draw
+                ENDFOR
+            ENDIF
          ENDIF
+         
+          ; Any object in any overlay position EXCEPT 0 and 1 should be drawn.
+         coords -> GetProperty, MAP_OVERLAY=overlayObjects
+         index = Where(Obj_Valid(overlayObjects), count)
+         IF count GT 0 THEN BEGIN
+            FOR j=0,count-1 DO BEGIN
+                IF index[j] GE 2 THEN overlayObjects[index[j]] -> Draw
+            ENDFOR
+         ENDIF
+         
       ENDIF
       
       p = self._location[0:3,1]
@@ -619,11 +680,12 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
             XYOUTS, (p[2] - p[0]) / 2 + p[0], /NORMAL, $
                p[1] - (1.5 * unit), $
                self.displayName, $
-               ALIGNMENT=0.5, COLOR=FSC_Color(self.fn_color), $
+               ALIGNMENT=0.5, COLOR=cgColor(self.fn_color), $
                FONT=0
       ENDIF 
       
-      IF ~Keyword_Set(self.no_colorbar_display) AND (Size(self, /N_DIMENSIONS) NE  3) THEN BEGIN
+      IF ~Keyword_Set(self.no_colorbar_display) AND (Size(self, /N_DIMENSIONS) NE  3) $
+        AND self.cb_type NE 2 THEN BEGIN
         self -> GetProperty, COLOR_OBJECT=colors, OOB_LOW_COLOR=oob_low_color, OOB_HIGH_COLOR=oob_high_color
         IF Obj_Valid(colors) THEN BEGIN
             colors -> GetProperty, NCOLORS=ncolors
@@ -631,23 +693,23 @@ PRO NSIDC_Image::Draw,  _Extra=extrakeywords
             xdistance = 3.0 * !D.X_CH_SIZE / Float(!D.X_Size)
             self -> GetProperty, SCLMIN=sclmin, SCLMAX=sclmax
             colors -> Draw
-            Colorbar, NCOLORS=ncolors, RANGE=[sclmin, sclmax], DIVISIONS=2, FORMAT=self.cb_format, $
+            cgColorbar, NCOLORS=ncolors, RANGE=[sclmin, sclmax], DIVISIONS=2, FORMAT=self.cb_format, $
                POSITION=[p[0]+xdistance, p[3]+ 0.01, p[2]-xdistance, p[3]+ydistance/2.], /TOP, ANNOTATECOLOR=self.fn_color, $
                XCharsize = StrUpCase(!Version.OS_Family) EQ 'WINDOWS' ? 0.8 : 1.0, $
                FONT=(StrUpCase(!Version.OS_Family) EQ 'WINDOWS') ? -1 : 0, XTICKLEN=1.0, XMINOR=0
  
             POLYFILL, [p[0]+xdistance, p[0], p[0]+xdistance, p[0]+xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(oob_low_color)
+                      COLOR=cgColor(oob_low_color)
             PLOTS, [p[0]+xdistance, p[0], p[0]+xdistance, p[0]+xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(self.fn_color)
+                      COLOR=cgColor(self.fn_color)
             POLYFILL, [p[2]-xdistance, p[2], p[2]-xdistance, p[2]-xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(oob_high_color)
+                      COLOR=cgColor(oob_high_color)
             PLOTS, [p[2]-xdistance, p[2], p[2]-xdistance, p[2]-xdistance], $
                       [p[3] + 0.01,((p[3]+ydistance/2.)-(p[3]+ 0.01))/2. + (p[3]+ 0.01) , p[3]+ydistance/2.0, p[3]+ 0.01], /NORMAL, $
-                      COLOR=FSC_Color(self.fn_color)
+                      COLOR=cgColor(self.fn_color)
         ENDIF
       ENDIF
       
@@ -711,7 +773,7 @@ PRO NSIDC_Image::DrawPNG, filename, XSIZE=xsize, YSIZE=ysize, MAXSIZE=maxsize
    @cat_pro_error_handler
    
    IF N_Elements(filename) EQ 0 THEN BEGIN
-        rootname = FSC_Base_Filename(self.filename)
+        rootname = cgRootName(self.filename)
         filename = Dialog_Pickfile(TITLE='Select Name of PNG File...', FILE=rootname + '.png')
         IF filename EQ "" THEN RETURN
    ENDIF
@@ -738,7 +800,7 @@ PRO NSIDC_Image::DrawPNG, filename, XSIZE=xsize, YSIZE=ysize, MAXSIZE=maxsize
    self -> Draw
    IF StrUpCase(StrMid(filename, 3, 4, /REVERSE_OFFSET)) EQ '.PNG' $
         THEN filename = StrMid(filename, 0, StrLen(filename)-4)
-   void = TVRead(/PNG, /NODIALOG, FILENAME=filename)
+   void = cgSnapshot(/PNG, /NODIALOG, FILENAME=filename)
    
    self -> Report, /Completed
 
@@ -819,7 +881,7 @@ PRO NSIDC_Image::EventHandler, event
             thisImageFilename = Obj_New('TEXTLINE', FILE_BASENAME(filename), COLOR=fn_color, $
                 ALIGNMENT=1, X=0.5, Y=0.05, COORD_OBJECT=coords)
             AnnotateWindow, wid, GROUP_LEADER=drawID, BG_COLOR=bg_color, $
-                ADD_OBJECT=thisImageFilename, COLOR='black', OUTPUT_FILENAME=FSC_Base_Filename(filename)
+                ADD_OBJECT=thisImageFilename, COLOR='black', OUTPUT_FILENAME=cgRootName(filename)
             END
             
      'CHANGE_COLORS': BEGIN
@@ -843,9 +905,9 @@ PRO NSIDC_Image::EventHandler, event
             Obj_Destroy, self.contextMenu
             currentWindow = !D.Window
             self -> GetProperty, COLOR_OBJECT=colors, LANDMASK_COLOR=landmask_color
-            colorname = colors -> PickColorName(landmask_color, TITLE='Change LANDMASK Color')
+            colorname = colors -> cgPickColorName(landmask_color, TITLE='Change LANDMASK Color')
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
-            color = FSC_Color(colorname, /TRIPLE)
+            color = cgColor(colorname, /TRIPLE)
             r[252] = color[0]
             g[252] = color[1]
             b[252] = color[2]
@@ -861,9 +923,9 @@ PRO NSIDC_Image::EventHandler, event
             Obj_Destroy, self.contextMenu
             currentWindow = !D.Window
             self -> GetProperty, COLOR_OBJECT=colors, MISSING_COLOR=missing_color
-            colorname = colors -> PickColorName(missing_color, TITLE='Change MISSING Color')
+            colorname = colors -> cgPickColorName(missing_color, TITLE='Change MISSING Color')
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
-            color = FSC_Color(colorname, /TRIPLE)
+            color = cgColor(colorname, /TRIPLE)
             r[255] = color[0]
             g[255] = color[1]
             b[255] = color[2]
@@ -879,9 +941,9 @@ PRO NSIDC_Image::EventHandler, event
             Obj_Destroy, self.contextMenu
             currentWindow = !D.Window
             self -> GetProperty, COLOR_OBJECT=colors, OOB_LOW_COLOR=oob_low_color
-            colorname = colors -> PickColorName(oob_low_color, TITLE='Change OUT-OF-BOUNDS LOW Color')
+            colorname = colors -> cgPickColorName(oob_low_color, TITLE='Change OUT-OF-BOUNDS LOW Color')
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
-            color = FSC_Color(colorname, /TRIPLE)
+            color = cgColor(colorname, /TRIPLE)
             r[254] = color[0]
             g[254] = color[1]
             b[254] = color[2]
@@ -897,9 +959,9 @@ PRO NSIDC_Image::EventHandler, event
             Obj_Destroy, self.contextMenu
             currentWindow = !D.Window
             self -> GetProperty, COLOR_OBJECT=colors, OOB_HIGH_COLOR=oob_high_color
-            colorname = colors -> PickColorName(oob_high_color, TITLE='Change OUT-OF-BOUNDS HIGH Color')
+            colorname = colors -> cgPickColorName(oob_high_color, TITLE='Change OUT-OF-BOUNDS HIGH Color')
             colors -> GetProperty, RED=r, GREEN=g, BLUE=b
-            color = FSC_Color(colorname, /TRIPLE)
+            color = cgColor(colorname, /TRIPLE)
             r[253] = color[0]
             g[253] = color[1]
             b[253] = color[2]
@@ -918,7 +980,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, FN_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select FILENAME Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select FILENAME Color')
                   event.component -> SetProperty, FN_COLOR=color
 
                   ; Redraw yourself.
@@ -933,7 +995,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, GRID_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select Map Grid Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select Map Grid Color')
                   event.component -> SetProperty, GRID_COLOR=color
 
                   ; Redraw yourself.
@@ -948,7 +1010,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, MISSING_COLOR=color, COLOR_OBJECT=colors
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select MISSING Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select MISSING Color')
                   event.component -> SetProperty, MISSING_COLOR=color
                   colors -> LoadColor, color, 255
 
@@ -964,7 +1026,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, OOB_LOW_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
                   event.component -> SetProperty, OOB_LOW_COLOR=color
                   colors -> LoadColor, color, 254
 
@@ -980,7 +1042,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, OOB_LOW_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
                   event.component -> SetProperty, OOB_LOW_COLOR=color
                   colors -> LoadColor, color, 253
 
@@ -996,7 +1058,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, OOB_LOW_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select OUT-OF-BOUNDS LOW Color')
                   event.component -> SetProperty, OOB_LOW_COLOR=color
                   colors -> LoadColor, color, 252
 
@@ -1012,7 +1074,7 @@ PRO NSIDC_Image::EventHandler, event
 
                   event.component -> GetProperty, OUTLINE_COLOR=color, COLOR_OBJECT=colors, PARENT=parent
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader, TITLE='Select Map Outline Color')
+                  color = cgPickColorName(color, Group_Leader=group_leader, TITLE='Select Map Outline Color')
                   event.component -> SetProperty, OUTLINE_COLOR=color
 
                   ; Redraw yourself.
@@ -1073,7 +1135,7 @@ PRO NSIDC_Image::EventHandler, event
             Obj_Destroy, self.contextMenu
             currentWindow = !D.Window
             self -> GetProperty, FILENAME=filename, DISPLAYNAME=displayName
-            root_name = FSC_Base_Filename(filename, EXTENSION=extension)
+            root_name = cgRootName(filename, EXTENSION=extension)
             IF StrUpCase(extension) EQ 'HDF' THEN filename = filename + '@' + displayName
                 
            ; Make a new image from this file.
@@ -1135,7 +1197,7 @@ PRO NSIDC_Image::EventHandler, event
                 indices = Where(image GT 100, count)
                 IF count GT 0 THEN image[indices] = !VALUES.F_NAN
             ENDIF
-            XStretch, image, GROUP_LEADER=drawID->GetID(), /NO_WINDOW, $
+            cgStretch, image, GROUP_LEADER=drawID->GetID(), /NO_WINDOW, $
                 BETA=beta, $
                 BOTTOM=bottom, $
                 EXPONENT=exponent, $
@@ -1155,7 +1217,7 @@ PRO NSIDC_Image::EventHandler, event
             drawID -> Remove, self.contextMenu
             Obj_Destroy, self.contextMenu
             self -> GetProperty, FILENAME=filename
-            basename = FSC_Base_Filename(filename)
+            basename = cgRootName(filename)
             varname = TextBox(Title='Provide IDL Main-Level Variable Name...', Group_Leader=drawID->GetID(), $
                Label='Image Variable Name: ', Cancel=cancelled, XSize=300, Value=IDL_ValidName(basename, /CONVERT_ALL))
             IF NOT cancelled THEN BEGIN
@@ -1169,6 +1231,7 @@ PRO NSIDC_Image::EventHandler, event
            IF Obj_Valid(window) THEN window -> GetProperty, XSIZE=xsize, YSIZE=ysize, INITIAL_COLOR=background
            self -> GetProperty, $
                 AXES=axes, $
+                CB_TYPE=cb_type, $
                 COLORCHANGEALLOWED=colorChangeAllowed, $
                 COLORCHANGENCOLORS=colorChangeNColors, $
                 COLOR_OBJECT=color_object, $
@@ -1179,7 +1242,7 @@ PRO NSIDC_Image::EventHandler, event
                 MAP_GRID=map_grid, $
                 NOINTERPOLATE=nointerpolate, $
                 ORDER=order, $
-                POSITION=position, $
+;                POSITION=position, $
                 SELECTABLE=selectable, $
                 VISIBLE=visible, $
                 FILENAME=filename, $
@@ -1208,32 +1271,49 @@ PRO NSIDC_Image::EventHandler, event
                 INDEX=index, $
                 COLORPALETTE=colorPalette) 
                 
-           ; We need to do a similar thing with the coordinate object.
-           IF Obj_Class(coord_object) EQ 'MAPCOORD' THEN BEGIN
-               coord_object -> GetProperty, $
-                   GRID_OBJECT=grid_object, $
-                   MAP_STRUCTURE=map_structure, $
-                   OUTLINE_OBJECT=outline_object, $
-                   POSITION=position, $
-                   XRANGE=xrange, $
-                   YRANGE=yrange
-               new_coord_object = Obj_New('MapCoord', $
-                   GRID_OBJECT=grid_object, $
-                   MAP_STRUCTURE=map_structure, $
-                   OUTLINE_OBJECT=outline_object, $
-                   POSITION=position, $
-                   XRANGE=xrange, $
-                   YRANGE=yrange)
-           ENDIF ELSE BEGIN
-               coord_object -> GetProperty, $
-                   POSITION=position, $
-                   XRANGE=xrange, $
-                   YRANGE=yrange
-               new_coord_object = Obj_New('CatCoord', $
-                   POSITION=[0,0,1,1.], $
-                   XRANGE=xrange, $
-                   YRANGE=yrange)
-           ENDELSE
+;           ; We need to do a similar thing with the coordinate object.
+;           IF Obj_Class(coord_object) EQ 'MAPCOORD' THEN BEGIN
+;               coord_object -> GetProperty, $
+;                    DRAW_OVERLAYS=draw_overlays, $
+;                    POSITION=position, $
+;                    MAP_OVERLAY=map_overlay, $
+;                    MAP_PROJ_KEYWORDS=map_proj_keywords, $
+;                    MAP_PROJECTION=map_projection, $
+;                    XRANGE=xrange, $
+;                    YRANGE=yrange, $
+;                    ; MAP_PROJ_INIT keywords (partial list)
+;                    DATUM=datum, $
+;                    SPHERE_RADIUS=sphere_radius, $
+;                    SEMIMAJOR_AXIS=semimajor_axis, $
+;                    SEMIMINOR_AXIS=semiminor_axis, $
+;                    CENTER_LATITUDE=center_latitude, $
+;                    CENTER_LONGITUDE=center_longitude, $
+;                    LIMIT=limit               
+;                new_coord_object = Obj_New('MapCoord', map_projection, $
+;                    DRAW_OVERLAYS=draw_overlays, $
+;                    POSITION=[0,0,1,1], $
+;                    MAP_OVERLAY=map_overlay, $
+;                    MAP_PROJ_KEYWORDS=map_proj_keywords, $
+;                    XRANGE=xrange, $
+;                    YRANGE=yrange, $
+;                    ; MAP_PROJ_INIT keywords (partial list)
+;                    DATUM=datum, $
+;                    SPHERE_RADIUS=sphere_radius, $
+;                    SEMIMAJOR_AXIS=semimajor_axis, $
+;                    SEMIMINOR_AXIS=semiminor_axis, $
+;                    CENTER_LATITUDE=center_latitude, $
+;                    CENTER_LONGITUDE=center_longitude, $
+;                    LIMIT=limit)
+;           ENDIF ELSE BEGIN
+;               coord_object -> GetProperty, $
+;                   POSITION=position, $
+;                   XRANGE=xrange, $
+;                   YRANGE=yrange
+;               new_coord_object = Obj_New('CatCoord', $
+;                   POSITION=[0,0,1,1.], $
+;                   XRANGE=xrange, $
+;                   YRANGE=yrange)
+;           ENDELSE
            
            ; Create a new image object. Turn name display off.   
            newObject = Parse_NSIDC_Filename(filename, INFO=info, SUCCESS=success)
@@ -1241,23 +1321,17 @@ PRO NSIDC_Image::EventHandler, event
            newObject -> SetProperty, $
                 AXES=axes, $
                 COLOR_OBJECT=new_color_object, $
-                COORD_OBJECT=new_coord_object, $
-                KEEP_ASPECT=keep_aspect, $
+;                COORD_OBJECT=new_coord_object, $
                 MAP_OUTLINE=map_outline, $
                 MAP_GRID=map_grid, $
-                NOINTERPOLATE=nointerpolate, $
                 ORDER=order, $
                 POSITION=[0,0,1,1.], $
-                SELECTABLE=selectable, $
                 VISIBLE=1, $
-                COLORCHANGEALLOWED=colorChangeAllowed, $
-                COLORCHANGENCOLORS=colorChangeNColors, $
                 FN_COLOR=fn_color, $
                 LANDMASK_COLOR=landmask_color, $
                 LANDMASK_VALUE=landmask_value, $
                 NO_NAME_DISPLAY=1, $
                 NO_COLORBAR_DISPLAY=1, $
-                NSIDC_TAG=nsidc_tag, $
                 OOB_LOW_COLOR=oob_low_color, $
                 OOB_HIGH_COLOR=oob_high_color
            
@@ -1297,6 +1371,8 @@ END
 ; KEYWORDS:
 ; 
 ;    CB_FORMAT:       The current colorbar format.
+;    
+;    CB_TYPE:         The color bar type for this image.
 ;
 ;    COLORCHANGEALLOWED: If set to 1 if changing image colors is allowed. 
 ;                     If set to 0, if image color change is not allowed.
@@ -1337,6 +1413,7 @@ END
 ;*****************************************************************************
 PRO NSIDC_Image::GetProperty, $
     CB_FORMAT=cb_format, $
+    CB_TYPE=cb_type, $
     COLORCHANGEALLOWED=colorChangeAllowed, $
     COLORCHANGENCOLORS=colorChangeNColors, $
     DISPLAYNAME=displayname, $
@@ -1359,6 +1436,7 @@ PRO NSIDC_Image::GetProperty, $
    @cat_pro_error_handler
    
    IF Arg_Present(cb_format) THEN cb_format = self.cb_format
+   IF Arg_Present(cb_type) THEN cb_type = self.cb_type
    IF Arg_Present(colorChangeAllowed) THEN colorChangeAllowed = self.colorChangeAllowed
    IF Arg_Present(colorChangeNColors) THEN colorChangeNColors = self.colorChangeNColors
    IF Arg_Present(imageinfo) THEN IF Ptr_Valid(self.imageInfo) THEN imageinfo = *self.imageInfo
@@ -1562,6 +1640,10 @@ END
 ; 
 ;    CB_FORMAT:      A string variable that sets the colorbar format. For example: '(F6.3)'.
 ;
+;    CB_TYPE:        The "type" of colorbar allowed for NSIDC images. The default is 0, a normal
+;                    type color bar. A type of 1 is a discrete color bar. A type of 2 is no color
+;                    bar whatsoever. Currently (15 June 2010), a type of 1 has not been implemented.
+;
 ;    COLORCHANGEALLOWED: If set to 1 if changing image colors is allowed. 
 ;                     If set to 0, if image color change is not allowed.
 ; 
@@ -1605,6 +1687,7 @@ END
 ;*****************************************************************************************************
 PRO NSIDC_Image::SetProperty, $
     CB_FORMAT=cb_format, $
+    CB_TYPE=cb_type, $
     COLORCHANGEALLOWED=colorChangeAllowed, $
     COLORCHANGENCOLORS=colorChangeNColors, $
     DISPLAYNAME=displayName, $
@@ -1640,6 +1723,7 @@ PRO NSIDC_Image::SetProperty, $
       cb_format = String(Reverse(Byte(cb_format)))
       self.cb_format = cb_format
    ENDIF
+   IF N_Elements(cb_type) NE 0 THEN self.cb_type = cb_type
    IF N_Elements(colorChangeAllowed) NE 0 THEN self.colorChangeAllowed = colorChangeAllowed
    IF N_Elements(colorChangeNColors) NE 0 THEN self.colorChangeNColors = colorChangeNColors
    IF N_Elements(displayName) NE 0 THEN self.displayName = displayName
@@ -1694,7 +1778,7 @@ PRO NSIDC_Image::XStretch_Notification, info
    gridWindow -> SetWindow
    Polyfill, [loc[0], loc[0], loc[2], loc[2], loc[0]], $
              [loc[1], loc[3], loc[3], loc[1], loc[1]], /NORMAL, $
-             COLOR=FSC_Color(bgcolor)
+             COLOR=cgColor(bgcolor)
    self -> Draw
  
 END
@@ -1757,6 +1841,10 @@ END
 ; KEYWORDS:
 ; 
 ;    CB_FORMAT:      A string variable that sets the colorbar format. For example: '(F6.3)'.
+;    
+;    CB_TYPE:        The "type" of colorbar allowed for NSIDC images. The default is 0, a normal
+;                    type color bar. A type of 1 is a discrete color bar. A type of 2 is no color
+;                    bar whatsoever. Currently (15 June 2010), a type of 1 has not been implemented.
 ;
 ;    COLORCHANGEALLOWED: If set to 1 if changing image colors is allowed. 
 ;                     If set to 0, if image color change is not allowed.
@@ -1800,12 +1888,15 @@ END
 ;     OOB_HIGH_COLOR:  The name of the out-of-bounds high color. By default, "crimson".
 ;     
 ;     OUTLINE_COLOR:   The name of the map outline color. By default, 'indian red'
+;     
+;     VECTOR_COLOR:    The name of the color used to display ice motion vectors. By default, 'PBG7'.
 ;
 ;     _EXTRA:          Any keywords appropriate for the superclass INIT method.
 ;-
 ;*****************************************************************************************************
 FUNCTION NSIDC_Image::INIT, image, $
     CB_FORMAT=cb_format, $
+    CB_TYPE=cb_type, $
     COLORCHANGEALLOWED=colorChangeAllowed, $
     COLORCHANGENCOLORS=colorChangeNColors, $
     DISPLAYNAME=displayname, $
@@ -1824,6 +1915,7 @@ FUNCTION NSIDC_Image::INIT, image, $
     OOB_LOW_COLOR=oob_low_color, $
     OOB_HIGH_COLOR=oob_high_color, $
     OUTLINE_COLOR=outline_color, $
+    VECTOR_COLOR=vector_color, $
     _EXTRA=extraKeywords
 
    ; Set up error handler and call superclass INIT method
@@ -1834,6 +1926,7 @@ FUNCTION NSIDC_Image::INIT, image, $
       cb_format = CatGetDefault('DATAVIEWER_CB_FORMAT', SUCCESS=success)
       IF success EQ 0 THEN cb_format = '(F0.1)'
    ENDIF
+   IF N_Elements(cb_type) EQ 0 THEN cb_type = 0
    IF N_Elements(fn_color) EQ 0 THEN BEGIN
       fn_color = CatGetDefault('DATAVIEWER_IMAGENAME_COLOR', SUCCESS=success)
       IF success EQ 0 THEN fn_color = 'BLACK'
@@ -1858,6 +1951,10 @@ FUNCTION NSIDC_Image::INIT, image, $
       outline_color = CatGetDefault('DATAVIEWER_OUTLINE_COLOR', SUCCESS=success)
       IF success EQ 0 THEN outline_color = 'CHARCOAL'
    ENDIF
+   IF N_Elements(vector_color) EQ 0 THEN BEGIN
+      vector_color = CatGetDefault('DATAVIEWER_VECTOR_COLOR', SUCCESS=success)
+      IF success EQ 0 THEN vector_color = 'PBG7'
+   ENDIF
    IF N_Elements(colorChangeAllowed) EQ 0 THEN colorChangeAllowed = 1
    colorChangeAllowed = Keyword_Set(colorChangeAllowed)
    IF N_Elements(colorChangeNColors) EQ 0 THEN colorChangeNColors = 250
@@ -1874,6 +1971,7 @@ FUNCTION NSIDC_Image::INIT, image, $
       
    ; Load up the object.
    self.cb_format = cb_format
+   self.cb_type = cb_type
    self.fn_color = fn_color
    self.grid_color = grid_color
    self.landmask_color = landmask_color
@@ -1884,6 +1982,7 @@ FUNCTION NSIDC_Image::INIT, image, $
    self.map_outline = Keyword_Set(map_outline)
    self.oob_low_color = oob_low_color
    self.oob_high_color = oob_high_color
+   self.vector_color = vector_color
    self.colorChangeAllowed = colorChangeAllowed
    self.colorChangeNColors = colorChangeNColors
    self.map_outline = Keyword_Set(map_outline)
@@ -1891,8 +1990,8 @@ FUNCTION NSIDC_Image::INIT, image, $
    self.no_colorbar_display = Keyword_Set(no_colorbar_display)
    self.nsidc_tag = nsidc_tag
    IF N_Elements(filename) NE 0 THEN self.filename = filename
-   IF self.filename NE "" THEN self -> SetProperty, NAME=FSC_Base_Filename(self.filename)
-   IF N_Elements(displayName) EQ 0 THEN displayName = FSC_Base_Filename(self.filename)
+   IF self.filename NE "" THEN self -> SetProperty, NAME=cgRootName(self.filename)
+   IF N_Elements(displayName) EQ 0 THEN displayName = cgRootName(self.filename)
    self.displayName = displayName
 
    ; Register properties.
@@ -1912,6 +2011,7 @@ FUNCTION NSIDC_Image::INIT, image, $
       self->RegisterProperty, 'GRID_COLOR', 0, NAME="Map Grid Color", USERDEF="Grid Color"
       self->RegisterProperty, 'MAP_OUTLINE', 1, NAME="Display Map Outline" 
       self->RegisterProperty, 'OUTLINE_COLOR', 0, NAME="Map Outline Color", USERDEF="Outline Color"
+      self->RegisterProperty, 'VECTOR_COLOR', 0, NAME="Motion Vector Color", USERDEF="Motion Vector Color"
    ENDIF ELSE BEGIN
       self.map_grid = 0
       self.map_outline = 0
@@ -1922,23 +2022,6 @@ FUNCTION NSIDC_Image::INIT, image, $
    RETURN, 1
 
 END
-
-
-;*****************************************************************************************************
-;
-; NAME:
-;       NSIDC_IMAGE TEST PROGRAM
-;
-; PURPOSE:
-;
-;       This is the test program for the NSIDC_IMAGE object. It may not
-;       be required in your object.
-;
-;*****************************************************************************************************
-PRO NSIDC_Image_Test
-
-END
-
 
 
 ;*****************************************************************************************************
@@ -1956,6 +2039,7 @@ PRO NSIDC_Image__DEFINE, class
    class = { NSIDC_IMAGE, $
              annotatePixmap: Obj_New(), $ ; The window used for annotations.
              cb_format: "", $             ; The colorbar format.
+             cb_type: 0, $                ; The type of color bar allowed. 0 (default) normal, 1 discrete, 2 none.
              colorChangeAllowed: 0B, $    ; A flag that indicates this image's colors can be changed by the user.
              colorChangeNColors: 0L, $    ; If colors can be changed, this indicates how many colors can be changed.
              contextmenu: Obj_New(), $    ; The context menu for the image selection events.
@@ -1966,6 +2050,7 @@ PRO NSIDC_Image__DEFINE, class
              landmask_value: Ptr_New(), $ ; The value of the landmask in the image.
              grid_color: "", $            ; The name of the map grid color.
              outline_color: "", $         ; The name of the map outline or fill color.
+             vector_color: "", $          ; The name of the color for drawing motion vectors on images.
              map_fill: 0B, $              ; A flag that indicates a filled map outline should be drawn on the image.
              map_outline: 0B, $           ; A flag that indicates a map outline should be drawn on the image.
              map_grid: 0B, $              ; A flag that indicates a map grid should be drawn on the image.

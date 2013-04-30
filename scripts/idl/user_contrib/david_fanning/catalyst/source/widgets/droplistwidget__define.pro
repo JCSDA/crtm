@@ -65,6 +65,7 @@
 ; MODIFICATION_HISTORY:
 ;
 ;       Written by: David W.Fanning, 23 July 2002.
+;       Fixed typo in SetProperty method that prevented a VALUE from being set. 28 Oct 2010. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, jointly by Fanning Software Consulting, Inc.                        ;
@@ -339,7 +340,7 @@ PRO DroplistWidget::SetProperty, $
    ENDELSE
 
    IF N_Elements(value) NE 0 THEN BEGIN
-      Ptr_Free, self.value
+      Ptr_Free, self._value
       self._value = Ptr_New(value)
       Widget_Control, self._droplistID, Set_Value=forwardSpace + value + trailingSpace
    ENDIF

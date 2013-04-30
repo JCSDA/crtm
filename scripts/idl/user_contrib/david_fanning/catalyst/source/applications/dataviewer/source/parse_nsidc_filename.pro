@@ -121,6 +121,16 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
    success = 0 ; Assume no success
    IF N_Elements(filename) EQ 0 THEN Message, "A filename is a required input parameter."
    
+   ; Set up colors for reading data.
+   missing_color = CatGetDefault('DATAVIEWER_MISSING_COLOR')
+   oob_low_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_LOW_COLOR')
+   oob_high_color = CatGetDefault('DATAVIEWER_OUTOFBOUNDS_HIGH_COLOR')
+   annotate_color = CatGetDefault('DATAVIEWER_ANNOTATE_COLOR')
+   landmask_color = CatGetDefault('DATAVIEWER_LANDMASK_COLOR')
+   grid_color = CatGetDefault('DATAVIEWER_GRID_COLOR')
+   vector_color = CatGetDefault('DATAVIEWER_VECTOR_COLOR')
+   outline_color = CatGetDefault('DATAVIEWER_OUTLINE_COLOR')
+   
    ; Does the filename have a "@" symbol in the name. It if does, then this is a special
    ; type of file (HDF, netCDF, CDF, etc.)
    IF StrPos(filename, '@') NE -1 THEN BEGIN
@@ -128,7 +138,7 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
        parts = StrSplit(filename, '@', /EXTRACT)
        filename = parts[0]
        variable = parts[1]
-       rootName = FSC_Base_Filename(filename, EXTENSION=ext)
+       rootName = cgRootName(filename, EXTENSION=ext)
        
        ; HDFEOS file processed in the same way as HDF files.
        IF StrUpCase(ext) EQ 'HDFEOS' THEN ext = 'HDF'
@@ -140,14 +150,15 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
                    IF StrUpCase(StrMid(rootname, 0, 16)) EQ 'AMSR_E_L3_SEAICE' THEN BEGIN
                         theImage = Parse_NSIDC_AMSR_E_L3_SeaIce(filename, variable, INFO=info, SUCCESS=success)
                         IF ~success THEN RETURN, -1
-                        mapCoords = info.mapCoord
-                        outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                        grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                        mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
-                        theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
+                        mapCoord = info.mapCoord
+                        outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, COLOR=outline_color)
+                        grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color, /AUTODRAW)
+                        mapCoord -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+                        theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_COLOR=missing_color, $
+                           MISSING_VALUE=info.missing, $
                            SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                            COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                           NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords, DISPLAYNAME=info.displayName)
+                           NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord, DISPLAYNAME=info.displayName)
                         index = Where(Tag_Names(info) EQ 'LANDMASK')
                         IF index NE -1 THEN theImageObject -> SetProperty, LANDMASK_VALUE=info.landmask
                    ENDIF
@@ -171,7 +182,7 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
    
    ; As a first test, we check the file extension to see if this is a file IDL
    ; knows how to read (e.g., JPEG, TIFF, PNG, etc.)
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootName(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
    check = Query_Image(filename, CHANNELS=channels, HAS_PALETTE=palette, TYPE=image_type) 
    IF check THEN BEGIN
    
@@ -191,8 +202,8 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
              ENDIF
              IF Size(geotiff, /TNAME) EQ 'STRUCT' THEN BEGIN
                 mapCoord = GeoCoord(filename, SUCCESS=success, /SILENT)
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR='charcoal')
-                countries = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, /COUNTRIES, /COASTS, COLOR='indian red')
+                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoord, COLOR=grid_color, /AUTODRAW)
+                countries = Obj_New('Map_Outline', MAP_OBJECT=mapCoord, /COUNTRIES, /COASTS, COLOR=outline_color)
                 mapCoord -> SetProperty, MAP_OVERLAY=countries, OVERLAY_POSITION=0
                 mapCoord -> SetProperty, MAP_OVERLAY=grid, OVERLAY_POSITION=1
                 IF success EQ 1 THEN BEGIN
@@ -200,12 +211,12 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
                     IF Obj_Valid(colors) THEN BEGIN
                         theImageObject = Obj_New('NSIDC_Image', theImage, FILENAME=filename, COORD_OBJECT=mapCoord, $
                            COLORCHANGENCOLORS=256, COLORCHANGEALLOWED=colorChangeAllowed, NSIDC_TAG=image_type, $
-                           COLOR_OBJECT=colors, SCALETYPE=scaletype, GRID_COLOR='charcoal', OUTLINE_COLOR='indian red')
+                           COLOR_OBJECT=colors, SCALETYPE=scaletype, GRID_COLOR=grid_color, OUTLINE_COLOR=outline_color)
                         
                     ENDIF ELSE BEGIN
                         theImageObject = Obj_New('NSIDC_Image', theImage, FILENAME=filename, COORD_OBJECT=mapCoord, $
                            COLORCHANGENCOLORS=256, COLORCHANGEALLOWED=colorChangeAllowed, NSIDC_TAG=image_type, $
-                           COLOR_OBJECT=colors, SCALETYPE=scaletype, GRID_COLOR='charcoal', OUTLINE_COLOR='indian red')
+                           COLOR_OBJECT=colors, SCALETYPE=scaletype, GRID_COLOR=grid_color, OUTLINE_COLOR=outline_color)
                     ENDELSE
                     
                     imageIsObject = 1
@@ -274,47 +285,56 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
    ; The first two letters of the root_name can be used as the first division point.
    firstTwoLetters = StrUpCase(StrMid(root_name, 0, 2))
    
+   ; DMSP SSM/I Gridded Brightness Temperatures (e.g, nsidc_0081).
+   IF firstTwoLetters EQ 'NT' THEN BEGIN
+   
+        ; Is this near real time data?
+        nearRealTime = StrUpCase(StrMid(root_name, 16, 3))
+        IF nearRealTime EQ 'NRT' THEN BEGIN
+            theImage = Parse_NSIDC_Filename_0081(filename, INFO=info, SUCCESS=success)
+            IF ~success THEN RETURN, -1
+            mapCoord = info.mapCoord
+            theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missingValue, $
+                SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
+                COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
+                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord, LANDMASK_VALUE=info.landmaskValue)
+        ENDIF ELSE BEGIN
+        
+            theImage = Parse_NSIDC_Filename_0051(filename, INFO=info, SUCCESS=success)
+            IF ~success THEN RETURN, -1
+            mapCoord = info.mapCoord
+            theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missingValue, $
+                SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
+                COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
+                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord, LANDMASK_VALUE=info.landmaskValue)
+        ENDELSE 
+        
+   ENDIF
+   
    ; TB - DMSP SSM/I Gridded Brightness Temperatures (e.g., nsidc_0001, nsidc_0080).
    IF firstTwoLetters EQ 'TB' THEN BEGIN
-        theImage = Parse_NSIDC_Filename_0001(filename, INFO=info, SUCCESS=success)
-        IF ~success THEN RETURN, -1
-        mapCoords = info.mapCoord
-        outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-        grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-        mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
-        theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
-            SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
-            COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-            NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
-   
+      
         ; Is this near real time data?
         nearRealTime = StrUpCase(StrMid(root_name, 16, 3))
         IF nearRealTime EQ 'NRT' THEN BEGIN
             theImage = Parse_NSIDC_Filename_0080(filename, INFO=info, SUCCESS=success)
             IF ~success THEN RETURN, -1
-            mapStruct = info.mapinfo.mapStruct
-            mapCoords = Obj_New('MapCoord', Map_Structure=mapStruct, $
-                        XRANGE=info.mapinfo.xrange, YRANGE=info.mapinfo.yrange)
-            outline = Obj_New('Map_Outline', MAP_STRUCTURE=mapstruct, COLOR='indian red')
-            grid = Obj_New('Map_Grid', MAP_STRUCTURE=mapstruct, COLOR='charcoal')
-            mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+            mapCoord = info.mapCoord
             theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
                 SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                 COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
+                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+                
         ENDIF ELSE BEGIN
+        
             theImage = Parse_NSIDC_Filename_0001(filename, INFO=info, SUCCESS=success)
             IF ~success THEN RETURN, -1
-            mapStruct = info.mapinfo.mapStruct
-            mapCoords = Obj_New('MapCoord', Map_Structure=mapStruct, $
-                        XRANGE=info.mapinfo.xrange, YRANGE=info.mapinfo.yrange)
-            outline = Obj_New('Map_Outline', MAP_STRUCTURE=mapstruct, COLOR='indian red')
-            grid = Obj_New('Map_Grid', MAP_STRUCTURE=mapstruct, COLOR='charcoal')
-            mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+            mapCoord = info.mapCoord
             theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
                 SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                 COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
+                NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+                
         ENDELSE
    ENDIF
    
@@ -328,27 +348,21 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
             'SMMR': BEGIN
                 theImage = Parse_NSIDC_Filename_0071(filename, INFO=info, SUCCESS=success)
                 IF ~success THEN RETURN, -1
-                mapCoords = info.mapCoord
-                outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+                mapCoord = info.mapCoord
                 theImageObject = Obj_New('NSIDC_Image', theImage,MISSING_VALUE=info.missing, $
                      SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                      COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
+                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
                END
                
             ELSE: BEGIN
                 theImage = Parse_NSIDC_Filename_0032(filename, INFO=info, SUCCESS=success)
                 IF ~success THEN RETURN, -1
-                mapCoords = info.mapCoord
-                outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+                mapCoord = info.mapCoord
                 theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
                      SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                      COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
+                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
                      
                END
                
@@ -359,63 +373,82 @@ FUNCTION Parse_NSIDC_Filename, filename, INFO=info, SUCCESS=success, RETURN_IMAG
    ; or in EASE grids (nsidc_0301). Added Near Real Time SSM/I (nsidc_0342) data, too.
    IF firstTwoLetters EQ 'ID' THEN BEGIN
    
-        IF StrMid(root_name, 0, 3) EQ 'ID2' THEN gridType = 'D2' ELSE gridType = StrMid(root_name, 12, 2)
-        CASE StrUpCase(gridType) OF
-        
-            'D.': BEGIN
-                theImage = Parse_NSIDC_Filename_0302(filename, INFO=info, SUCCESS=success)
-                IF ~success THEN RETURN, -1
-                mapCoords = info.mapCoord
-                outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
-                theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
-                     SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
-                     COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
-               END
-
-            'D2': BEGIN
+        IF StrMid(root_name, 0, 4) EQ 'ID2-' THEN BEGIN
                 theImage = Parse_NSIDC_Filename_0342(filename, INFO=info, SUCCESS=success)
                 IF ~success THEN RETURN, -1
-                mapCoords = info.mapCoord
-                outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+                mapCoord = info.mapCoord
                 theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
                      SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                      COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
-               END
-               
-            ELSE: BEGIN
+                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+        ENDIF
+        
+        
+        IF StrPos(root_name, 'D.25') NE -1 THEN BEGIN
+        
+                theImage = Parse_NSIDC_Filename_0302(filename, INFO=info, SUCCESS=success)
+                IF ~success THEN RETURN, -1
+                mapCoord = info.mapCoord
+                theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
+                     SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
+                     COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
+                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+         ENDIF 
+
+         IF (StrPos(root_name, 'D.25') EQ -1) AND StrMid(root_name, 0, 4) EQ 'ID2r' THEN BEGIN
                 theImage = Parse_NSIDC_Filename_0301(filename, INFO=info, SUCCESS=success)
                 IF ~success THEN RETURN, -1
-                mapCoords = info.mapCoord
-                outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-                grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-                mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+                mapCoord = info.mapCoord
                 theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
                      SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
                      COLORCHANGEALLOWED=info.colorChangeAllowed, COLORCHANGENCOLORS=info.colorChangeNColors, $
-                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
-                END
+                     NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+         ENDIF
                
-        ENDCASE
    ENDIF
    
    ; BT Bootstrap Sea Ice Concentration (nsidc-0079).
    IF firstTwoLetters EQ 'BT' THEN BEGIN
         theImage = Parse_NSIDC_Filename_0079(filename, INFO=info, SUCCESS=success)
         IF ~success THEN RETURN, -1
-        mapCoords = info.mapCoord
-        outline = Obj_New('Map_Outline', MAP_OBJECT=mapCoords, COLOR='indian red')
-        grid = Obj_New('Map_Grid', MAP_OBJECT=mapCoords, COLOR='charcoal')
-        mapCoords -> SetProperty, OUTLINE_OBJECT=outline, GRID_OBJECT=grid
+        mapCoord = info.mapCoord
         theImageObject = Obj_New('NSIDC_Image', theImage, MISSING_VALUE=info.missing, $
             SCLMIN=info.sclmin, SCLMAX=info.sclmax, FILENAME=info.filename, NCOLORS=250, $
             COLORCHANGEALLOWED=info.colorChangeAllowed, LANDMASK_VALUE=info.landmask, $
-            COLORCHANGENCOLORS=info.colorChangeNColors, NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoords)
+            COLORCHANGENCOLORS=info.colorChangeNColors, NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord)
+   ENDIF
+
+   ; NSIDC-0046 data.
+   root_name = cgRootName(root_name, EXTENSION=theExtension)
+   IF StrUpCase(theExtension) EQ 'SI' THEN BEGIN
+        theImage = Parse_NSIDC_Filename_0046(filename, INFO=info, SUCCESS=success)
+        IF ~success THEN RETURN, -1
+        mapCoord = info.mapCoord
+        colors = info.colors
+        
+        ; Turn color bars off.
+        CatSetDefault, 'DATAVIEWER_COLORBARS_OFF', 1
+        theImageObject = Obj_New('NSIDC_Image', theImage, FILENAME=info.filename, NCOLORS=256, $
+            COLORCHANGEALLOWED=0, COLORCHANGENCOLORS=info.colorChangeNColors, CB_TYPE=2, $
+            NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
+   ENDIF
+
+   ; Ice motion data.
+   iceMotion = StrMid(root_name, 0, 9)
+   IF StrUpCase(iceMotion) EQ 'ICEMOTION' THEN BEGIN
+        theImage = Parse_NSIDC_Filename_0116(filename, INFO=info, SUCCESS=success)
+        IF ~success THEN RETURN, -1
+        mapCoord = info.mapCoord
+        
+        ; Turn color bars off and grid on.
+        CatSetDefault, 'DATAVIEWER_COLORBARS_OFF', 1
+        CatSetDefault, 'DATAVIEWER_MAP_GRID_ON', 1
+        colors = Obj_New('CatColors')
+        colors -> LoadCT, 0
+        colors -> LoadColor, 'light gray', 0
+        theImageObject = Obj_New('NSIDC_Image', theImage, FILENAME=info.filename, NCOLORS=250, $
+            COLORCHANGEALLOWED=0, COLORCHANGENCOLORS=info.colorChangeNColors, CB_TYPE=2, $
+            NSIDC_TAG=info.nsidc_tag, COORD_OBJECT=mapCoord, COLOR_OBJECT=colors)
    ENDIF
 
    ; Are we successful so far?

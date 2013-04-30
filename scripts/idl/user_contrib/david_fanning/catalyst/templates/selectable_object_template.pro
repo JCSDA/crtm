@@ -414,13 +414,13 @@ PRO Selectable_Object_Template::DrawSelectionBox, Color=color
    ; Draw the selection box.
 ;    x1 = self.box[0,0] & x2 = self.box[0,2]
 ;    y1 = self.box[1,0] & y2 = self.box[1,1]
-;    PLOTS, [x1, x1, x2, x2, x1], [y1, y2, y2, y1, y1], /Normal, Color=FSC_Color(color)
+;    PLOTS, [x1, x1, x2, x2, x1], [y1, y2, y2, y1, y1], /Normal, Color=cgColor(color)
 
    ; Draw the handles on the box.
-;   PLOTS, x1, y1,   PSYM=6, Color=FSC_Color(color), Symsize=1.25
-;   PLOTS, x1, y2,   PSYM=6, Color=FSC_Color(color), Symsize=1.25
-;   PLOTS, x2, y1,   PSYM=6, Color=FSC_Color(color), Symsize=1.25
-;   PLOTS, x2, y2,   PSYM=6, Color=FSC_Color(color), Symsize=1.25
+;   PLOTS, x1, y1,   PSYM=6, Color=cgColor(color), Symsize=1.25
+;   PLOTS, x1, y2,   PSYM=6, Color=cgColor(color), Symsize=1.25
+;   PLOTS, x2, y1,   PSYM=6, Color=cgColor(color), Symsize=1.25
+;   PLOTS, x2, y2,   PSYM=6, Color=cgColor(color), Symsize=1.25
 
 
    self -> Report, /Completed
@@ -471,7 +471,7 @@ PRO Selectable_Object_Template::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.

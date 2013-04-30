@@ -1,346 +1,356 @@
-This is the NSIDC DataViewer program, version 1.0, written by David Fanning of the National 
-Snow and Ice Data Center (NSIDC) and released on 11 November 2008. The program is written
-in the Interactive Data Language (IDL). For additional information about IDL, see the
-ITTVIS web page (http://www.ittvis.com).
+Welcome to the NSIDC DataViewer program, version 1.1, written by David 
+Fanning for the National Snow and Ice Data Center (NSIDC). The DataViewer 
+was released 11 November 2008 and updated 4 August 2010.  The program is 
+written in the Interactive Data Language (IDL) and works with IDL 6.4 
+and above. For information about IDL, visit the ITT Visual Information 
+Solutions site at http://www.ittvis.com.
 
-DATA FILES
+For assistance with the DataViewer, please contact the NSIDC User 
+Services Office at: 
 
-   Currently the program reads the following NSIDC image data files.
-
-   nsidc-0001: DMSP-SSM Daily Polar Gridded Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0001.html
-   nsidc-0032: DMSP SSM/I Pathfinder Daily EASE-Grid Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0032.html
-   nsidc-0071: Nimbus-7 SMMR Pathfinder Daily EASE-Grid Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0071.html
-   nsidc-0079: Bootstrap Sea Ice Concentrations from Nimbus-7 SMMR and DMST SSM/I
-               http://www.nsidc.org/data/nsidc-0079.html
-   nsidc-0080: Near Real-Time DMSP SSM/I Daily Polar Gridded Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0080.html
-   nsidc-0301: AMSR-E/Aqua Daily EASE-Grid Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0301.html
-   nsidc-0302: AMSR-E/Aqua Daily Global Quarter-Degree Gridded Brightness Temperatures
-               http://www.nsidc.org/data/nsidc-0302.html
-   Sea Ice:    AMSR-E/Aqua Daily L3 25Km Brightness Temperature & Sea Ice Concentration Polar Grids
-               http://nsidc.org/data/ae_si25.html
-
-   Additionally, the program reads BMP, GIF, JPEG, PNG, PPM, SRF, TIFF, DICOM, or 
-   JPEG2000 image files .
-
-SET-UP 
-
-    The DataViewer set-up depends upon whether you downloaded the DataViewer files
-    as a zip file from an NSIDC web page, or whether you received the DataViewer files
-    on a CD-ROM. The zip file contains IDL source code only, and requires a full IDL license
-    to run the program. The CD distribution contains the IDL source code, but can
-    also be run without an IDL license, using the IDL Virtual Machine.
-
-    DATAVIEWER AS ZIP FILE
-
-    If you downloaded the DataViewer zip file, then you have DataViewer source code
-    files only. You must have a full IDL license to run the DataViewer program.
-    When you extract the zip file to your local directory, it will unzip itself into a 
-    "dataviewer" directory. You must add this dataviewer directory to your IDL path. See
-    the section below, entitled ADDING DATAVIEWER TO THE IDL PATH, for additional 
-    directions. (Note that the sample "data" directory is not included in the DataViewer
-    zip file and must be downloaded separately.)
-
-    DATAVIWER ON CD-ROM
-
-    If you received the DataViewer files on a CD, then you can run the DataViewer
-    program directly from the CD using the IDL Virtual Machine. The CD supports LINUX
-    and WINDOWS machines only. In some cases, simply inserting the CD into your CD-ROM 
-    drive is all that is required to run the program. However, if the program doesn't 
-    run automatically, simply browse to the root directory of the CD. There you will
-    find a shell script, named dataviewer_linux, that you can run to start the
-    DataViewer program if you are running from a LINUX machine. Or, you will find a 
-    program named dataviewer_windows.exe that you can double-click to start the
-    DataViewer program on a WINDOWS machine.
-
-    Program performance will be better if the DataViewer program runs from a local
-    disk, rather than from the CD-ROM. Simply drag the files on the CD to any
-    location on your hard drive, and follow the directions below. The IDL Virtual
-    Machine files are included in the dataviewer/IDL70 directory, so everything needed
-    to run the DataViewer program is on the CD, including sample NSIDC image files.
-
-DATAVIEWER DIRECTORIES
-
-    FILES ON THE CD
-
-    The following folders or directories are included on the DataViewer CD.
-
-       root-- this is the main directory of the CD and contains this README file, and
-              the start-up scripts and programs for starting the DataViewer program on
-              various machine architectures. The dataviewer.sav file is also here. This
-              is an IDL save file that contains all the IDL programs files necessary to
-              run the IDL program.
-          config       -- this folder contains configuration text files
-          data         -- this folder contains sample data files and is only available
-                          on the DataViewer CD or by separate download
-          IDL70        -- this folder contains the IDL Virtual Machine files
-          resources    -- this folder contains resources for the DataViewer program
-          dataviewer_source -- this folder contains the IDL source code for the DataViewer program,
-                          which you will only need if you have a full IDL license and wish to
-                          modify the source code itself.
-           	config       -- this folder contains configuration text files
-          	resources    -- this folder contains resources for the DataViewer program
-         	library      -- this folder contains the Catalyst and Coyote Library files
-                                used by DataViewer
-                source       -- this folder contains the DataViewer IDL source code files.
+	Phone: +1 303.492.6199
+	Email: nsidc@nsidc.org
 
 
-    The dataviewer.sav file is the file that can be run on the IDL Virtual Machine. Do not remove 
-    this file from its current locaton relative to the other files on the distribution, if you 
-    want the DataViewer program to run correctly. (However, you can make shortcuts to this file 
-    and install the shortcuts elsewhere, if you like.)
+The DataViewer works with the following NSIDC data sets, listed by data set title and URL:
+   
+   DMSP SSM/I-SSMIS Daily Polar Gridded Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0001.html
+	
+   DMSP SSM/I-SSMIS Pathfinder Daily EASE-Grid Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0032.html
+  	
+   Northern Hemisphere EASE-Grid Weekly Snow Cover and Sea Ice Extent Version 3 
+	http://nsidc.org/data/nsidc-0046.html
+   
+   Sea Ice Concentrations from Nimbus-7 SMMR and DMSP SSM/I-SSMIS Passive Microwave Data 
+	http://nsidc.org/data/nsidc-0051.html
 
-    FILES IN THE ZIP FILE
+   Nimbus-7 SMMR Pathfinder Daily EASE-Grid Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0071.html
 
-    If you received the DataViewer distribution via a zip file, you must have a full
-    IDL license to run the IDL source code. You must add the dataviewer folder and all
-    of its sub-folders to your IDL path (!PATH). See below for directions. The folders
-    in the zip file are these:
+   Bootstrap Sea Ice Concentrations from Nimbus-7 SMMR and DMSP SSM/I-SSMIS 
+	http://nsidc.org/data/nsidc-0079.html
+	
+   Near-Real-Time DMSP SSM/I-SSMIS Gridded Brightness Temperatures
+	http://nsidc.org/data/nsidc-0080.html
+   
+   Near-Real-Time DMSP SSM/I-SSMIS Daily Polar Gridded Sea Ice Concentrations 
+	http://nsidc.org/data/nsidc-0081.html
+	
+   AMSR-E/Aqua Daily EASE-Grid Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0301.html
+   	
+   AMSR-E/Aqua Daily Global Quarter-Degree Gridded Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0302.html
+   
+   Near-Real-Time SSM/I-SSMIS Pathfinder Daily Gridded Brightness Temperatures 
+	http://nsidc.org/data/nsidc-0342.html
+   
+   AMSR-E/Aqua Daily L3 25 km Brightness Temperature & Sea Ice Concentration Polar Grids 
+	http://nsidc.org/data/ae_si25.html
 
-       dataviewer   -- this folder contains the IDL source code for the DataViewer program,
-                       which you will only need if you have a full IDL license and wish to
-                       modify the source code itself
-          config    -- this folder contains configuration text files
-          data      -- this folder contains sample image files and must be downloaded separately
-          resources -- this folder contains resources for the program
-          library   -- this folder contains the Catalyst and Coyote Library files
-          source    -- this folder contains the DataViewer IDL source code files
+Additionally, the program reads BMP, GIF, JPEG, PNG, PPM, SRF, TIFF, DICOM, or 
+JPEG2000 image files.
 
-   In addition, you might have downloaded a separate zip file of NSIDC sample data files.
-   These files will extract into a data directory that should also be installed in the main
-   dataviewer directory.
+The DataViewer no longer supports the following NSIDC data set:
 
-CONFIGURING THE PROGRAM 
+   Polar Pathfinder Daily 25km EASE-Grid Sea Ice Motion Vectors* 
+	http://nsidc.org/data/nsidc-0116.html
+	* Please note: The ice motion vectors only display the mean gridded fields.
 
-   You can configure the DataViewer program ONLY if you are not running the program 
-   directly from the CD.
+SET-UP
 
-   Inside the config folder you will find the file "dataviewer_default.txt". This is 
-   the configuration file for the DataViewer application. The only parameter you are 
-   likely to want to change initially is the location of the data directory containing
-   your NSIDC image files. Open this configuration file in any text editor, and find 
-   this line in the file:
+IDL is required for the use of the DataViewer. If you do not have IDL, you may 
+download the free IDL Virtual Machine (VM) from ITTVIS at http://www.ittvis.com.  
+NSIDC distributes the DataViewer as an IDL save file named dataviewer.sav, which 
+contains all the IDL programs and libraries needed to run the DataViewer program. 
+The dataviewer.sav file can be used in either a normal IDL session, as an IDL 
+run-time application, or it can be run on the IDL Virtual Machine.  
 
-      DATAVIEWER_DATA_DIRECTORY, 'DEFAULT'
 
-   Remove the word "DEFAULT" between the single quotes and substitute the location
-   of your data directory. Be absolutely sure the directory name is enclosed in one
-   pair of single quotes. If you fail to make a change, the program will point
-   to the "dataviewer/data" sub-directory. This folder, if it is available,
-   or if you downloaded it, will contain sample NSIDC data files for you to use 
-   in the DataViewer.
+DOWNLOADING IDL VIRTUAL MACHINE (VM)
 
-   Configuration files are most easily changed from inside the DataViewer program 
-   itself. Make modifications to the program from the File menu button. When you 
-   are satisfied with the way the program looks and works, choose the "Save Current 
-   Configuration..." button. You can save your configuration file as the default, or
-   you can name it something else. You can have as many configuration files as you 
-   like. Opening a configuration file from inside the DataViewer program immediately 
-   implements that configuration for the program. You can have a different configuration 
-   file for each type of image you wish to view, if you like. Note that you CANNOT
-   save a configuration file on the read-only CD-ROM.
+If you do not have an IDL license, you may download the IDL VM from ITTVIS 
+at http://www.ittvis.com.  If you have an IDL license, these steps can be 
+skipped.
 
-RUNNING THE PROGRAM
+Step 1: Register to become a user of the IDL VM.  The ITTVIS Web Administrator 
+will send you an automated email with your verification code, and a link to 
+submit your final approval.  
 
-    How you run the program depends on whether or not you have the file
-    "dataviewer.sav" in your program distribution. If you have this file, and you 
-    do not have a full IDL license, then you can run the DataViewer program on the 
-    IDL Virtual Machine, which is provided in the CD-ROM distribution. 
+Step 2: It may take a full day to hear back with your approval, but there 
+should be no problem with being approved. Once you are approved, you can 
+download the VM to your workstation. If you do not hear from ITTVIS within 
+one day, please contact them by phone. The number is listed on their Web 
+site at http://www.ittvis.com.
 
-    If you have the "dataviewer.sav" file, but you also have a full IDL license, 
-    you can choose to run the DataViewer program from source. Simply drag the
-    folder dataviewer_source to any location on your hard drive and add the 
-    folder to your IDL path (!PATH). See the directions below for doing so.
 
-    RUNNING ON THE IDL VIRTUAL MACHINE 
+CONTENTS OF THE DATAVIEWER FILE
 
-    If you received the DataViewer distibution on CD, you need only to double 
-    click the dataviewer_linux shell script, or the dataviewer_windows.ext file 
-    in the dataviewer folder to start the program, depending on your operating
-    system. (Some LINUX machines will not allow you to run a shell script by
-    double clicking. On those machines, you will need to run the shell script 
-    from a terminal window in the usual way, e.g., by typing ./dataviewer_linux.)
-    On some machines, the DataViewer program will start automatically when you 
-    insert the CD-ROM into your machine. The program might run faster if you
-    first copy the contents of the CD to a local hard drive, and run the 
-    DataViewer program from there.
+Two folders or directories and one IDL "save" file are included in a 
+"dataviewer" top directory in the DataViewer zip or tar file you 
+downloaded from NSIDC. Extract the dataviewer directory to a location 
+on your computer. Inside the dataviewer directory, you will find the 
+following directories and files:
 
-    RUNNING THE DATAVIEWER SOURCE CODE
+\config\
+This directory contains the configuration text file, dataviewer_default.txt.
 
-    To run the DataViewer source code from a CD distribution, drag the 
-    dataviewer_source directory from your DataViewer distribution to a
-    location on your hard drive. Then, you must add the dataviewer_source folder 
-    to your IDL path (!PATH). Be sure to add the folder in such a way that all 
-    sub-folders are also included in the path. Usually, this means adding a +  
-    mark to the directory name or checking the box in front of the directory name, 
-    depending upon how you add the directory to your IDL path.
+\resources\
+This directory contains resources required to run the DataViewer program.
 
-    ADDING DATAVIEWER TO THE IDL PATH
+You will have either the dataviewer.sav file or a "sources" directory,
+depending upon whether you download the "save file" or "source" version
+of the DataViewer distribution.
 
-    There are many ways to add a folder and its sub-folders to the IDL path
-    (!PATH). See the IDL on-line help for additional information. But one way 
-    to make sure all the DataViewer programs are on your IDL path is to enter IDL 
-    and type one or the other of the following two commands, depending upon your 
-    machine operating system. 
+\dataviewer.sav\
+This is an IDL "save" file. This file may be restored in a normal IDL session, 
+it may be run with an IDL run-time license, or it may be opened by the IDL 
+Virtual Machine to run the DataViewer program. It is important, however, 
+not to move the dataviewer.sav file with respect to the other files and 
+folders in the dataviewer directory. If the dataviewer.sav file is moved 
+in relation to the other files or folders, the DataViewer program will 
+not function correctly. 
 
-        UNIX OPERATING SYSTEM
+\source\
+This directory contains the DataViewer IDL source code. If you have this
+version of the software, you must have a full IDL license to run the 
+DataViewer program. If you would prefer the "save file" version of the
+software, you can download it here:
 
-        Here is what you do if you are running IDL on a UNIX operating system.
-        Assume you have installed the dataviewer_source folder in your home directory
-        inside the folder IDL, like this:
+   http://www.dfanning.com/programs/dataviewer.zip
 
-            ~/IDL/dataviewer_source/
+RUNNING DATAVIEWER ON AN IDL VIRTUAL MACHINE
 
-       From within IDL, you can type this command to add the dataviewer directory
-       and all of its sub-directories to the IDL path:
+If you downloaded the IDL VM, you can run the dataviewer.sav file 
+as an application. Using your mouse, drag the dataviewer.sav icon 
+onto the VM icon, or just double click the VM icon and select the 
+DataViewer save file in the resulting file dialog box.
 
-           IDL> !PATH = Expand_Path('+~/IDL/dataviewer_source/') + ':' + !PATH
 
-       WINDOWS OPERATING SYSTEM
+RUNNING DATAVIEWER AS AN IDL RUN-TIME APPLICATION
 
-       Here is what you do if you are running IDL on a WINDOWS operating system.
-       Assume you have installed the dataviewer folder on your C drive, inside the 
-       folder IDL, like this:
+If you have an IDL run-time license installed (and you will if you 
+have installed a full version of IDL), you may run the DataViewer 
+program as a run-time application. On a Windows computer, just 
+double-click the dataviewer.sav program icon to start the DataViewer 
+as a run-time application. On a UNIX system, indicate that IDL 
+should be started in run-time mode, like this, where the text 
+"<path>" should be replaced by the actual path to the save file:
 
-           C:\IDL\dataviewer_source
+	% idl -rt=<path>dataviewer.sav 
 
-       From within IDL, you can type this command to add the dataviewer directory
-       and all of its sub-directories to the IDL path:
 
-          IDL> !PATH = Expand_Path('+C:\IDL\dataviewer_source\') + ';' + !PATH
+RUNNING DATAVIEWER WITH A FULL IDL LICENSE
 
-    Notice the plus sign (+) in front of the directory name for both operating systems. 
-    This is an indication to IDL that this directory should be expanded and all the 
-    sub-directories in this directory should also be added to the path. Note that in UNIX, 
-    the files in the path are separated by colons, whereas in WINDOWS, the files are 
-    separated by semi-colons. If you know how to do it, you can also include the appropriate
-    command above in your IDL start-up file, so the DataViewer program is added to your
-    IDL path whenever IDL is started.
+If you have not added the DataViewer directory to your IDL path 
+(see ADDING DATAVIEWER TO YOUR IDL PATH, below), you can run 
+the program from within IDL by typing commands like this, where 
+the text "<path>" should be replaced by the actual path to the 
+dataviewer.pro source file:
+	
+   IDL> .Compile <path>dataviewer
+   IDL> dataviewer
 
-    STARTING THE DATAVIEWER PROGRAM
-    
-    You can run the program from within IDL by typing "dataviewer" at the IDL command line.
+If you have added the DataViewer to your IDL path (see ADDING DATAVIEWER 
+TO THE IDL PATH, below), you can run the program from within IDL by 
+typing "dataviewer" at the IDL command line.
 
-       IDL> dataviewer
+   IDL> dataviewer
+
+If you like, you can pass the program the name of an image file to open:
+
+   IDL> dataviewer, 'C:\data\EASE-F13-NL2006364D.85H.gz'
+
+Or, you can pass it the name of a folder. The program will read and 
+open all the image files in the folder.
+	
+   IDL> dataviewer, 'C:\data\'
+
+
+ADDING DATAVIEWER TO THE IDL PATH
+
+It is only possible to add the DataViewer to the IDL path if you have a 
+fully-licensed version of IDL. There are many ways to add a folder and its 
+sub-folders to the IDL path (!PATH). See the IDL online help for additional 
+information. One way to make sure all the DataViewer programs are on your 
+IDL path is to enter IDL and type one or the other of the following two 
+commands, depending upon your machine operating system. 
+
+UNIX OPERATING SYSTEM
+Assuming you have installed the dataviewer_source folder in your home 
+directory inside the folder IDL, for example ~/IDL/dataviewer/, you can 
+type the following command within IDL to add the dataviewer directory 
+and all of its sub-directories to the IDL path:  
        
-    If you like, you can pass the program the name of an image file to open:
-   
-       IDL> dataviewer, 'C:\data\EASE-F13-NL2006364D.85H.gz'
-      
-    Or, you can pass it the name of a folder. The program will read and open all
-    the image files in the folder.
-   
-       IDL> dataviewer, 'C:\data\'
-
-USING DATAVIEWER MENU OPTIONS
-      
-   Selecting Files
-   
-       You can open files in the DataViewer by choosing either the Open Image Files... 
-       or the Open Image Directory of Files... buttons under the File menu. The latter 
-       button allows you to choose an image directory and the program attempts to open 
-       all the image files in the directory. If you use the  Open Image Files... button, 
-       you have the opportunity to filter files before selection. Multiple files can be 
-       selected by holding down the SHIFT or CONTROL keys while you make a selection. 
-       Note that if a single file is selected, the window layout is changed to a 1-by-1 
-       layout grid, regardless of the current window layout grid configuration.
-   
-   Changing the Window Layout
-   
-       The DataViewer program appears in a completely resizeable window. Feel free to 
-       adjust the size of the window for optimal viewing of images. Simple grab any
-       side or corner of the DataViewer window with your mouse and size accordingly.
-
-       At any time you can change the layout of the images in the DataViewer window
-       by selecting Change Window Layout Grid button from the File menu. Up to 64 image 
-       files in an 8-by-8 grid layout is allowed.
-
-   Saving the DataViewer Display Window
-
-       The DataViewer display window can be saved at any time to a variety of file
-       formats. Choose the Save Window As... button from the File menu to save the
-       window in JPEG, PNG, PostScript, and other file formats.
-   
-   Changing Colors
-   
-       Colors for the image, and for different properties in the image
-       (e.g., missing values, out-of-bounds values, etc.) can be changed
-       from the Colors menu.
+   IDL> !PATH = Expand_Path('+~/IDL/dataviewer/') + ':' + !PATH
        
-   Animating Images
-   
-        All selected images can be animated by selecting the Animate All Images...
-        button from the Operations menu.
+WINDOWS OPERATING SYSTEM
+Assuming you have installed the dataviewer folder on your C drive, inside 
+the folder IDL, for example C:\IDL\dataviewer, you can type this command 
+within IDL to add the dataviewer directory and all of its sub-directories 
+to the IDL path:     
+	
+   IDL> !PATH = Expand_Path('+C:\IDL\dataviewer\') + ';' + !PATH.  
 
-   Stretching or Scaling Images
+You may put this command in your IDL start-up file to add the DataViewer 
+program to your IDL path whenever IDL is started.
 
-        All selected images can be stretched (with Histogram stretching) or rescaled
-        by selecting the Histogram Stretch All Images... button from the Operations
-        menu. Various stretches, included LINEAR, LOG, and GAMMA stretches can be
-        applied.
 
-   Refreshing Images
+CONFIGURING THE DATAVIEWER PROGRAM
 
-        All images can be refreshed and returned to their default properties by choosing
-        the Refresh All Images button from the Operations menu.
-        
-   Displaying Image Names
-   
-       Typically, images are displayed with their names below the images. This
-       functionality can be turned on or off by selecting the Image Names button
-       from the Operations menu.
-       
-   Displaying Image Color Bars
-   
-       Typically, images are displayed with a color bar above the images. This
-       functionality can be turned on or off by selecting the Colorbars button
-       from the Operations menu.
+The first time you open the DataViewer application it will assume your 
+image files are located in a "data" directory in the dataviewer folder. 
+This data directory may not exist, and if it does not you will be prompted 
+to select a different data directory. If you choose not to select a data 
+directory at this time, the dataviewer folder itself will be the temporary 
+data directory. Otherwise, select or create a directory of your choosing 
+and this will become the data directory for this session. This directory 
+you select or create will then automatically be saved as the new default 
+location in the configuration file (dataviewer_default.txt).
 
-   Rearranging Images
-   
-        Images, when they are read into the program, are read in alphabetical order.
-        You can rearrange the images in the current display window by left clicking
-        inside the image and dragging it on top of the image location where you would
-        like the image to be. All other images in the window will move to accommodate
-        this rearrangement. You might have to rearrange the images, for example, prior
-        to animating them.
-        
-   Image Information
-   
-         As you move your mouse over the images in the DataViewer display, you
-         see the name of the image and its value and pixel location displayed in
-         the status bar widget of the program interface. In this way, you can see
-         the value of the image under your cursor.
-        
-   Other Image Properties
-   
-          You can change individual properties of images by right-clicking
-          on individual images. Properties will include changing image colors,
-          scaling the image, displaying the image in its natural size, and
-          annotating the image (see below), among various other properties.
-                    
-  Annotating the Image
+You may change the default data directory at any time from within the 
+DataViewer. To do so, select “Change Default Data Directory…” from the 
+"File" menu. The directory you select will automatically be saved as the 
+new default directory in the configuration file.
 
-          You can annotate any image you like by right-clicking on the image
-          you wish to annotate and choosing the Annotate Image selection from
-          the pop-up menu. If you choose to add text to the annotation, be sure
-          to hit the carriage return when you are finished typing text, for the
-          text to be "set" in the annotation window. You can select and drag
-          annotations in the window to position them where you want them. If you
-          select an annotation and then right click it, you will be able to change
-          that annotation's properties.
+Note that as you open files in the DataViewer, the DataViewer will always 
+return to the last location in which you selected an image file, regardless 
+of the default data directory location.
 
-HELP
+Along with the data directory, you may also change other default settings, 
+such as image layout, from within the DataViewer at any time. To do so, 
+select “Edit Current Configuration File…” from the "File" menu. Make your 
+changes, then select "Apply Configuration" to view your new settings. When 
+you are satisfied with your changes, select "Save Configuration."
 
-   If you need help with this program or its set-up, please contact NSIDC User Services:
-   
-       National Snow and Ice Data Center (NSIDC) User Services
-       NSIDC/CIRES University of Colorado
-       Boulder, CO 80309
-       Phone: 303-492-6199
-       E-Mail: nsidc@nsidc.org
 
+USING DATAVIEWER OPTIONS
+
+The DataViewer provides different mechanisms for displaying data images. 
+Tab options in the navigation bar allow you to control the image operation 
+you would like to run, including image display, image animate, color change, 
+etc.  When images are displayed in the DataViewer, you can scroll over a 
+particular image and make further changes just to that image.  Use your 
+right-click mouse button to bring up a pop up window with operations for 
+that specific image. 
+
+
+SELECTING FILES
+
+You can open files in the DataViewer by choosing either the Open Image Files 
+or the Open Image Directory of Files under the File tab. The latter button 
+allows you to choose an image directory and the program attempts to open 
+all the image files in the directory. If you use the Open Image Files button, 
+you have the opportunity to filter files before selection. Multiple files 
+can be selected by holding down the SHIFT or CONTROL keys while you make 
+a selection.  Note that if a single file is selected, the window layout 
+is changed to a 1-by-1 layout grid, regardless of the current window layout 
+grid configuration.
+
+
+CHANGING THE WINDOW LAYOUT
+
+The DataViewer program appears in a completely resizeable window. Feel 
+free to adjust the size of the window for optimal viewing of images. Simply 
+grab any side or corner of the DataViewer window with your mouse and size 
+accordingly.  You can change the layout of the images at any time in the 
+DataViewer window by selecting the Change Window Layout Grid button from 
+the File tab. Up to 64 image files in an 8-by-8 grid layout is allowed.
+
+
+SAVING THE DATAVIEWER DISPLAY WINDOW
+
+The DataViewer display window can be saved at any time to a variety of 
+file formats. Choose the Save Window As button from the File tab to 
+save the window in JPEG, PNG, PostScript, and other file formats.
+
+
+CHANGING COLORS
+
+Colors for the image, and for different properties in the image (missing 
+values, out-of-bounds values, etc.). can be changed from the Colors tab.
+
+
+ANIMATING IMAGES
+
+All selected images can be animated by selecting the Animate All Images 
+button from the Operations tab.
+
+
+STRETCHING OR SCALING IMAGES
+
+All selected images can be stretched with Histogram stretching or rescaled 
+by selecting the Histogram Stretch All Images button from the Operations 
+tab. Various stretches, including LINEAR, LOG, and GAMMA stretches, can 
+be applied.
+
+
+REFRESHING IMAGES
+
+All images can be refreshed and returned to their default properties by 
+choosing the Refresh All Images button from the Operations tab.
+
+
+DISPLAYING IMAGE NAMES
+
+Typically, images are displayed with their names below the images. This 
+functionality can be turned on or off by selecting the Image Names button 
+from the Operations tab.
+
+
+DISPLAYING IMAGE COLOR BARS
+
+Typically, images are displayed with a color bar above the images. This 
+functionality can be turned on or off by selecting the Colorbars button 
+from the Operations tab.
+
+
+REARRANGING IMAGES
+
+Images are read into the program in alphabetical order.  You can rearrange 
+the images in the current display window by left-clicking inside the image 
+and dragging it on top of the image location where you would like the image 
+to be. All other images in the window will move to accommodate this rearrangement. 
+
+
+IMAGE INFORMATION
+
+As you move your mouse over the images in the DataViewer display, you see 
+the name of the image, its value, and pixel location (longitude, latitude) 
+displayed in the status bar widget of the program interface. In this way, 
+you can see the value of the image under your cursor.
+
+
+OTHER IMAGE PROPERTIES
+
+You can change individual properties of images by right-clicking on 
+individual images. Properties will include changing image colors, 
+scaling the image, displaying the image in its natural size, and 
+annotating the image (see below), among various other properties.
+
+
+ANNOTATING THE IMAGE
+
+You can annotate any image you like by right-clicking on the image you 
+wish to annotate and choosing the Annotate Image selection from the pop-up 
+tab. If you choose to add text to the annotation, be sure to hit the 
+carriage return when you are finished typing text; this will ensure the 
+text is "set" in the annotation window. You can select and drag annotations 
+in the window to position them where you want them. If you select an 
+annotation and then right-click it, you will be able to change the 
+properties of that annotation.
+
+
+ASSISTANCE WITH THE DATAVIEWER
+
+If you need help with this program or its set-up, please contact NSIDC 
+User Services:
+
+   National Snow and Ice Data Center (NSIDC) User Services
+   NSIDC/CIRES, 449 UCB
+   University of Colorado
+   Boulder, Colorado 80309-0449 USA
+   Phone: +1 303.492.6199
+   Email: nsidc@nsidc.org

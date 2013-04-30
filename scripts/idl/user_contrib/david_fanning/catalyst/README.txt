@@ -1,5 +1,12 @@
 The Catalyst Library is an Open Source programming project, hosted at
-http://catalyst.idldev.com. 
+http://idl-coyote.googlecode.com.
+
+The Catalyst Library is an object-oriented framework for producing
+IDL applications. It is written entirely in the IDL (Interactive
+Data Language) and depends completely on the Coyote Library also
+being installed and located on your IDL path. (The Coyote Library
+should appear *before* the Catalyst Library on your IDL path.)
+The Coyote Library can also be found at http://idl-coyote.googlecode.com.
 
 AUTHORS:
 

@@ -89,7 +89,7 @@ FUNCTION Parse_NSIDC_NISE_SSMI_SeaIce, filename, variable, INFO=info, SUCCESS=su
    ; Parse the root file name to determine the parameters that need to be set appropriately.
    ; If this is not a compressed file, with extension .gz, then we will have to add the extension
    ; back to the filename and set the extension to a null string.
-   root_name = FSC_Base_Filename(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
+   root_name = cgRootname(filename, DIRECTORY=theDirectory, EXTENSION=theExtension)
 
    ; root name example: NISE_SSMIF13_20070810
    ; 

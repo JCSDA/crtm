@@ -458,7 +458,7 @@ PRO AngleTool::Draw, Statusbar_Only=sbonly, _Extra=extrakeywords
    IF self.background THEN BEGIN
 
       IF Keyword_Set(sbonly) THEN BEGIN
-         PolyFill, self.box[0,*], self.box[1,*], Fill=1, Color=FSC_Color(self.bg_color), /Normal
+         PolyFill, self.box[0,*], self.box[1,*], Fill=1, Color=cgColor(self.bg_color), /Normal
       ENDIF ELSE BEGIN
          self.text -> GetProperty, Boundary_Box=text_bbox
 
@@ -474,7 +474,7 @@ PRO AngleTool::Draw, Statusbar_Only=sbonly, _Extra=extrakeywords
 
          PolyFill, [minx, minx, maxx, maxx, minx], $
                    [miny, maxy, maxy, miny, miny], $
-                   Fill=1, Color=FSC_Color(self.bg_color), /Normal
+                   Fill=1, Color=cgColor(self.bg_color), /Normal
       ENDELSE
 
    ENDIF
@@ -490,12 +490,12 @@ PRO AngleTool::Draw, Statusbar_Only=sbonly, _Extra=extrakeywords
       IF (!D.Flags AND 1) NE 0 THEN arrowhead_size = arrowhead_size * 25
    ENDELSE
 
-   Cat_Arrow, (*self.xpts)[npoints-2], (*self.ypts)[npoints-2], $
+   Cat_IDLArrow, (*self.xpts)[npoints-2], (*self.ypts)[npoints-2], $
       (*self.xpts)[npoints-3], (*self.ypts)[npoints-3], $
       Color=self.color, Thick=self.thickness, /Solid, $
       Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
 
-   Cat_Arrow, (*self.xpts)[npoints-2], (*self.ypts)[npoints-2], $
+   Cat_IDLArrow, (*self.xpts)[npoints-2], (*self.ypts)[npoints-2], $
       (*self.xpts)[npoints-1], (*self.ypts)[npoints-1], $
       Color=self.color, Thick=self.thickness, /Solid, $
       Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
@@ -568,9 +568,9 @@ PRO AngleTool::DrawSelectionBox, Color=color
    self -> ApplyCoords
 
    ; Mark the vertices.
-   PLOTS, (*self.xpts)[0], (*self.ypts)[0], PSYM=6, Color=FSC_Color(color), Symsize=1.25
-   PLOTS, (*self.xpts)[1], (*self.ypts)[1], PSYM=6, Color=FSC_Color(color), Symsize=1.25
-   PLOTS, (*self.xpts)[2], (*self.ypts)[2], PSYM=6, Color=FSC_Color(color), Symsize=1.25
+   PLOTS, (*self.xpts)[0], (*self.ypts)[0], PSYM=6, Color=cgColor(color), Symsize=1.25
+   PLOTS, (*self.xpts)[1], (*self.ypts)[1], PSYM=6, Color=cgColor(color), Symsize=1.25
+   PLOTS, (*self.xpts)[2], (*self.ypts)[2], PSYM=6, Color=cgColor(color), Symsize=1.25
 
    self -> Report, /Completed
 
@@ -617,7 +617,7 @@ PRO AngleTool::EventHandler, event
 
                   event.component -> GetProperty, Color=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -629,7 +629,7 @@ PRO AngleTool::EventHandler, event
 
                   event.component -> GetProperty, BG_Color=bg_color
                   event.id -> GetProperty, ID=group_leader
-                  bg_color = PickColorName(bg_color, Group_Leader=group_leader)
+                  bg_color = cgPickColorName(bg_color, Group_Leader=group_leader)
                   event.component -> SetProperty, BG_Color=bg_color
 
                   ; Refresh the graphics hierarchy.
@@ -641,7 +641,7 @@ PRO AngleTool::EventHandler, event
 
                   event.component -> GetProperty, TextColor=color
                   event.id -> GetProperty, ID=group_leader
-                  color = PickColorName(color, Group_Leader=group_leader)
+                  color = cgPickColorName(color, Group_Leader=group_leader)
                   event.component -> SetProperty, TextColor=color
 
                   ; Refresh the graphics hierarchy.
@@ -966,7 +966,7 @@ PRO AngleTool::InteractionEvents, event, Interaction=interaction
                         ; If you have more than two points, draw on the points pixmap.
                         IF self.npoints GE 2 THEN BEGIN
                            self.pointsPixID -> SetWindow
-                           PlotS, (*self.xpts)[self.npoints-2:self.npoints-1], Color=FSC_Color(self.color), $
+                           PlotS, (*self.xpts)[self.npoints-2:self.npoints-1], Color=cgColor(self.color), $
                                  (*self.ypts)[self.npoints-2:self.npoints-1], Thick=self.thickness, $
                                  Linestyle=self.linestyle
                         ENDIF
@@ -1008,19 +1008,19 @@ PRO AngleTool::InteractionEvents, event, Interaction=interaction
                      ELSE arrowhead_size = self.arrowhead_size
 
                   IF self.npoints LE 1 THEN BEGIN
-                  Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
+                  Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
                      Color=self.color, Thick=self.thickness, /Solid, $
                      Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
                   ENDIF
 
                   IF self.npoints EQ 2 THEN BEGIN
 
-                     Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], $
+                     Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], $
                         (*self.xpts)[self.npoints-2], (*self.ypts)[self.npoints-2], $
                         Color=self.color, Thick=self.thickness, /Solid, $
                         Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
 
-                     Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
+                     Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
                         Color=self.color, Thick=self.thickness, /Solid, $
                         Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
 
@@ -1157,7 +1157,7 @@ PRO AngleTool::InteractionEvents, event, Interaction=interaction
                         ; If you have more than two points, draw on the points pixmap.
                         IF self.npoints GE 2 THEN BEGIN
                            self.pointsPixID -> SetWindow
-                           PlotS, (*self.xpts)[self.npoints-2:self.npoints-1], Color=FSC_Color(self.color), $
+                           PlotS, (*self.xpts)[self.npoints-2:self.npoints-1], Color=cgColor(self.color), $
                                  (*self.ypts)[self.npoints-2:self.npoints-1], Thick=self.thickness, $
                                  Linestyle=self.linestyle
                         ENDIF
@@ -1199,19 +1199,19 @@ PRO AngleTool::InteractionEvents, event, Interaction=interaction
                      ELSE arrowhead_size = self.arrowhead_size
 
                   IF self.npoints LE 1 THEN BEGIN
-                  Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
+                  Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
                      Color=self.color, Thick=self.thickness, /Solid, $
                      Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
                   ENDIF
 
                   IF self.npoints EQ 2 THEN BEGIN
 
-                     Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], $
+                     Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], $
                         (*self.xpts)[self.npoints-2], (*self.ypts)[self.npoints-2], $
                         Color=self.color, Thick=self.thickness, /Solid, $
                         Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
 
-                     Cat_Arrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
+                     Cat_IDLArrow, (*self.xpts)[self.npoints-1], (*self.ypts)[self.npoints-1], c[0,0], c[1,0], $
                         Color=self.color, Thick=self.thickness, /Solid, $
                         Linestyle=self.linestyle, HSIZE=arrowhead_size, /Data
 

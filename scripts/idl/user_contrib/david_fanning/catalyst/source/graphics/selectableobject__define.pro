@@ -276,7 +276,7 @@ PRO SelectableObject::DrawSelectionBox, Color=color
    IF (self.box[0,0] EQ self.box[0,2]) OR (self.box[1,0] EQ self.box[1,1]) THEN RETURN
 
    ; Draw the box.
-   Plots, self.box[0,*], self.box[1,*], Color=FSC_Color(color), Thick=2, /Normal
+   Plots, self.box[0,*], self.box[1,*], Color=cgColor(color), Thick=2, /Normal
 
    ; Draw the handles on the box.
    phi = Findgen(32) * (!PI * 2 / 32.)
@@ -291,22 +291,22 @@ PRO SelectableObject::DrawSelectionBox, Color=color
    x4 = self.box[0,3]
    y4 = self.box[1,3]
 
-   PLOTS, x1, y1, PSYM=8, Color=FSC_Color(color), /Normal
-   PLOTS, x2, y2, PSYM=8, Color=FSC_Color(color), /Normal
-   PLOTS, x3, y3, PSYM=8, Color=FSC_Color(color), /Normal
-   PLOTS, x4, y4, PSYM=8, Color=FSC_Color(color), /Normal
+   PLOTS, x1, y1, PSYM=8, Color=cgColor(color), /Normal
+   PLOTS, x2, y2, PSYM=8, Color=cgColor(color), /Normal
+   PLOTS, x3, y3, PSYM=8, Color=cgColor(color), /Normal
+   PLOTS, x4, y4, PSYM=8, Color=cgColor(color), /Normal
 
    maxx = Max([x1,x4], Min=minx)
    maxy = Max([y1,y4], Min=miny)
    lmidx = (maxx - minx) / 2.0 + minx
    lmidy = (maxy - miny) / 2.0 + miny
-   PLOTS, lmidx, lmidy, PSYM=8, Color=FSC_Color(color), /Normal
+   PLOTS, lmidx, lmidy, PSYM=8, Color=cgColor(color), /Normal
 
    maxx = Max([x2,x3], Min=minx)
    maxy = Max([y2,y3], Min=miny)
    umidx = (maxx - minx) / 2.0 + minx
    umidy = (maxy - miny) / 2.0 + miny
-   PLOTS, umidx, umidy, PSYM=8, Color=FSC_Color(color), /Normal
+   PLOTS, umidx, umidy, PSYM=8, Color=cgColor(color), /Normal
 
    self -> Report, /Completed
 
@@ -351,7 +351,7 @@ PRO SelectableObject::EventHandler, event
 
       'FOREGROUND_COLOR': BEGIN
                   self -> GetProperty, Color=color
-                  color = PickColorName(color, Group_Leader=self.contextmenu->GetID())
+                  color = cgPickColorName(color, Group_Leader=self.contextmenu->GetID())
                   self -> SetProperty, Color=color
 
                   ; Refresh the graphics hierarchy.
@@ -361,7 +361,7 @@ PRO SelectableObject::EventHandler, event
 
       'BACKGROUND_COLOR': BEGIN
                   self -> GetProperty, BG_Color=color
-                  color = PickColorName(color, Group_Leader=self.contextmenu->GetID())
+                  color = cgPickColorName(color, Group_Leader=self.contextmenu->GetID())
                   self -> SetProperty, BG_Color=color
 
                   ; Refresh the graphics hierarchy.

@@ -295,7 +295,7 @@ PRO PixmapWidget::Copy, ERASE_WINDOW=erase_window, $
    IF ARG_PRESENT(image) THEN BEGIN
       currWin = !D.WINDOW
       WSET, windowID
-      image = TVRead (origin[0], origin[1], extent[0], extent[1], ORDER=Keyword_Set(order))
+      image = cgSnapshot (origin[0], origin[1], extent[0], extent[1], ORDER=Keyword_Set(order))
       IF (currWin NE -1) THEN WSET, currWin
    ENDIF ELSE BEGIN
       DEVICE, COPY=[origin[0], origin[1], extent[0], extent[1], dest[0], dest[1], windowID]
@@ -699,7 +699,7 @@ PRO PixmapWidget::Refresh, HOURGLASS=hourglass, $
    self -> SetWindow
 
    ; Erase the pixmap window
-   ERASE, Color=FSC_Color(self._backgroundColor)
+   ERASE, Color=cgColor(self._backgroundColor)
 
    IF N_Elements(targets) NE 0 THEN BEGIN
 
@@ -891,9 +891,9 @@ PRO PixmapWidget::UnSetWindow, NO_DELETE=no_delete, NO_SNAPSHOT=no_snapshot
          WIDGET_CONTROL, self._drawWidget, GET_VALUE=windowID
          WSet, windowID
          IF (OBJ_VALID (self._snapshot) EQ 0) THEN BEGIN
-            self._snapshot = OBJ_NEW ('CatImage', TVRead(TRUE=3), DISPLAY_MODE=1)
+            self._snapshot = OBJ_NEW ('CatImage', cgSnapshot(TRUE=3), DISPLAY_MODE=1)
          ENDIF ELSE BEGIN
-            self._snapshop -> SetProperty, Image=TVRead(TRUE=3)
+            self._snapshop -> SetProperty, Image=cgSnapshot(TRUE=3)
          ENDELSE
       ENDIF
       IF ((self._keep EQ 0) AND NOT KEYWORD_SET (no_delete)) THEN WIDGET_CONTROL, self._drawWidget, /DESTROY

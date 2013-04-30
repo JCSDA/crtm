@@ -138,7 +138,7 @@ PRO PropertyPanel::Display_Slider_Bar, index
 
    ; Draw the line in the window.
    self.line_drawID -> SetWindow
-   TVImage, (*self.linepix)[index*8:(index+1)*8-1,*], /TV
+   cgImage, (*self.linepix)[index*8:(index+1)*8-1,*], /TV
 
    ; Draw borders around the line.
    self.line_drawID -> GetProperty, Geometry=g
@@ -190,13 +190,13 @@ PRO PropertyPanel::DrawDashedBar
 
    ; Load colors.
    TVLCT, rr, gg, bb, /Get
-   TVLCT, FSC_Color(['Black', 'White'], /Triple), 0
+   TVLCT, cgColor(['Black', 'White'], /Triple), 0
 
    ; Display line.
    self.move_drawID_1 -> SetWindow
-   TVImage, b, /TV
+   cgImage, b, /TV
    self.move_drawID_2 -> SetWindow
-   TVImage, b, /TV
+   cgImage, b, /TV
 
    ; Restore color table.
    TVLCT, rr, gg, bb
