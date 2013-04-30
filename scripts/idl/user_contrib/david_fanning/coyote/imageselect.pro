@@ -29,8 +29,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -196,11 +196,12 @@
 ;   Fixed a problem in which the starting directory was changed on exit. 20 Nov 2010. DWF.
 ;   Change EXAMPLES to more easily remembered DEMO keyword. 29 Nov 2010. DWF.
 ;   Removed NOINTERPOLATION keywords in going from TVIMAGE to cgImage. 22 Feb 2011. DWF.
+;   Fixed a problem reading 2D Tiff files. 20 Sept 2012. DWF.
 ;   
 ;-
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
+;  Copyright (c) 2008-2012, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -569,8 +570,8 @@ PRO ImageSelect_FilenameEvents, event
    Widget_Control, info.labelXSizeID, Set_Value="X Size: " + StrTrim(xsize, 2)
    Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
    Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
-   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
 
    ; Draw the preview image.
    WSet, info.previewWID
@@ -747,11 +748,11 @@ PRO ImageSelect_ListEvents, event
          Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
          Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
          IF imageDataType NE 'FLOAT' THEN BEGIN
-            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
          ENDIF ELSE BEGIN
-            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+            Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+            Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
          ENDELSE
 
          ; Draw the preview image.
@@ -850,11 +851,11 @@ PRO ImageSelect_ListEvents, event
       Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
       Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
       IF imageDataType NE 'FLOAT' THEN BEGIN
-         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
       ENDIF ELSE BEGIN
-         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+         Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+         Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
       ENDELSE
 
       ; Draw the preview image.
@@ -1200,7 +1201,7 @@ PRO ImageSelect_ReadFiles, extension, filename, info, fileinfo, image, ok, type,
                (Scope_VarFetch('geotiff', LEVEL=1, /ENTER)) = geotiff
             
             ENDIF
-         ENDIF
+         ENDIF ELSE orientation = 1
          IF orientation EQ 1 THEN BEGIN
              dims = Image_Dimensions(image, YINDEX=yindex)
              image = Reverse(Temporary(image), yindex+1)
@@ -1222,7 +1223,7 @@ PRO ImageSelect_ReadFiles, extension, filename, info, fileinfo, image, ok, type,
                (Scope_VarFetch('geotiff', LEVEL=1, /ENTER)) = geotiff
             
             ENDIF
-         ENDIF
+         ENDIF ELSE orientation = 1
          IF orientation EQ 1 THEN BEGIN
              dims = Image_Dimensions(image, YINDEX=yindex)
              image = Reverse(Temporary(image), yindex+1)
@@ -1363,8 +1364,8 @@ PRO ImageSelect_SetFilter, event
    Widget_Control, info.labelXSizeID, Set_Value="X Size: " + StrTrim(xsize, 2)
    Widget_Control, info.labelYSizeID, Set_Value="Y Size: " + StrTrim(ysize, 2)
    Widget_Control, info.labelDataTypeID, Set_Value="Type: " + imageDataType
-   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + Number_Formatter(Min(image))
-   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + Number_Formatter(Max(image))
+   Widget_Control, info.labelminvalID, Set_Value="Min Value: " + cgNumber_Formatter(Min(image))
+   Widget_Control, info.labelmaxvalID, Set_Value="Max Value: " + cgNumber_Formatter(Max(image))
 
    ; Draw the preview image.
    WSet, info.previewWID
@@ -1690,8 +1691,8 @@ labeltypeID = Widget_Label(labelBaseID, Value=imageType, /Dynamic_Resize)
 labelxsizeID = Widget_Label(labelBaseID, Value="X Size: " + StrTrim(xsize, 2), /Dynamic_Resize)
 labelysizeID = Widget_Label(labelBaseID, Value="Y Size: " + StrTrim(ysize, 2), /Dynamic_Resize)
 labeldataTypeID = Widget_Label(labelBaseID, Value="Type: " + imageDataType, /Dynamic_Resize)
-labelminvalID = Widget_Label(labelBaseID, Value="Min Value: " + Number_Formatter(Min(image)), /Dynamic_Resize)
-labelmaxvalID = Widget_Label(labelBaseID, Value="Max Value: " + Number_Formatter(Max(image)), /Dynamic_Resize)
+labelminvalID = Widget_Label(labelBaseID, Value="Min Value: " + cgNumber_Formatter(Min(image)), /Dynamic_Resize)
+labelmaxvalID = Widget_Label(labelBaseID, Value="Max Value: " + cgNumber_Formatter(Max(image)), /Dynamic_Resize)
 
 ; Size the draw widget appropriately.
 ; Calculate a window size for the image preview.
@@ -1769,7 +1770,7 @@ IF N_Elements(offsets) NE 0 THEN BEGIN
    IF N_Elements(offsets) NE 2 THEN offsets = [offsets[0], offsets[0]]
    Widget_Control, tlb, XOffset=offsets[0], YOffset=offsets[1]
 ENDIF ELSE BEGIN
-   CenterTLB, tlb
+   cgCenterTLB, tlb
    offsets = LonArr(2)
 ENDELSE
 Widget_Control, tlb, /Realize

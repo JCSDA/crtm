@@ -16,8 +16,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 
@@ -82,7 +82,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ; NAME:                                                                                
 ;    RandomNumberGenerator::GetRandomDigits                                                                   
 ;                                                                                      
@@ -146,7 +146,7 @@ FUNCTION RandomNumberGenerator::GetRandomDigits, digits, BYTES=bytes
 END
     
     
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ; NAME:                                                                                
 ;    RandomNumberGenerator::GetRandomNumbers                                                                  
 ;                                                                                      

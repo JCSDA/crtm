@@ -20,7 +20,7 @@
 ;
 ; CATEGORY:
 ;
-;       Graphics, Color Specification. See related program cgColor.
+;       Graphics, Color Specification. See related program cgCOLOR.
 ;
 ; CALLING SEQUENCE:
 ;
@@ -40,7 +40,7 @@
 ;
 ;       IF the NAMES keyword is set, the return value of the function is
 ;       the "name" of the selected color. This would be appropriate for
-;       passing to the cgColor program, for example.
+;       passing to the cgCOLOR program, for example.
 ;
 ; OPTIONAL INPUT POSITIONAL PARAMETERS:
 ;
@@ -50,11 +50,6 @@
 ;              values of the color at this color index.
 ;
 ; OPTIONAL INPUT KEYWORD PARAMETERS:
-;
-;       BREWER: Set this keyword if you wish to use the Brewer Colors, as defined
-;              in this reference:
-;
-;              http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer_intro.html
 ;
 ;       GROUP_LEADER: The group leader for this widget program. This
 ;              keyword is required for MODAL operation. If not supplied
@@ -120,41 +115,42 @@
 ;       Added NAME keyword. 18 March 2000, DWF.
 ;       Fixed a small bug when choosing a colorindex less than !D.Table_Size-17. 20 April 2000. DWF.
 ;       Added actual color names to label when NAMES keyword selected. 12 May 2000. DWF.
-;       Modified to use 88 colors and cgColor instead of 16 colors and GETCOLOR. 4 Dec 2000. DWF.
-;       Now drawing small box around each color. 13 March 2003. DWF.
-;       Added CURRENTCOLOR keyword. 3 July 2003. DWF.
-;       Added BREWER keyword. 15 May 2008. DWF.
-;       Fixed a couple of problems with outline color. 19 May 2008. DWF.
-;       Added all the colors available from cgColor. 28 Nov 2010. DWF.
+;       Modified to use 88 colors and cgCOLOR instead of 16 colors and GETCOLOR. 4 Dec 2000. DWF.
+;       Changed FSC_Color to cgColor everywhere. 16 Jan 2013. DWF.
 ;-
 ;
-;******************************************************************************************;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
-;  All rights reserved.                                                                    ;
-;                                                                                          ;
-;  Redistribution and use in source and binary forms, with or without                      ;
-;  modification, are permitted provided that the following conditions are met:             ;
-;                                                                                          ;
-;      * Redistributions of source code must retain the above copyright                    ;
-;        notice, this list of conditions and the following disclaimer.                     ;
-;      * Redistributions in binary form must reproduce the above copyright                 ;
-;        notice, this list of conditions and the following disclaimer in the               ;
-;        documentation and/or other materials provided with the distribution.              ;
-;      * Neither the name of Fanning Software Consulting, Inc. nor the names of its        ;
-;        contributors may be used to endorse or promote products derived from this         ;
-;        software without specific prior written permission.                               ;
-;                                                                                          ;
-;  THIS SOFTWARE IS PROVIDED BY FANNING SOFTWARE CONSULTING, INC. ''AS IS'' AND ANY        ;
-;  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES    ;
-;  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT     ;
-;  SHALL FANNING SOFTWARE CONSULTING, INC. BE LIABLE FOR ANY DIRECT, INDIRECT,             ;
-;  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED    ;
-;  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;         ;
-;  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND             ;
-;  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT              ;
-;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
-;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
-;******************************************************************************************;
+;###########################################################################
+;
+; LICENSE
+;
+; This software is OSI Certified Open Source Software.
+; OSI Certified is a certification mark of the Open Source Initiative.
+;
+; Copyright � 2000 Fanning Software Consulting.
+;
+; This software is provided "as-is", without any express or
+; implied warranty. In no event will the authors be held liable
+; for any damages arising from the use of this software.
+;
+; Permission is granted to anyone to use this software for any
+; purpose, including commercial applications, and to alter it and
+; redistribute it freely, subject to the following restrictions:
+;
+; 1. The origin of this software must not be misrepresented; you must
+;    not claim you wrote the original software. If you use this software
+;    in a product, an acknowledgment in the product documentation
+;    would be appreciated, but is not required.
+;
+; 2. Altered source versions must be plainly marked as such, and must
+;    not be misrepresented as being the original software.
+;
+; 3. This notice may not be removed or altered from any source distribution.
+;
+; For more information on Open Source Software, visit the Open Source
+; web site: http://www.opensource.org.
+;
+;###########################################################################
+
 
 PRO PickColor_CenterTLB, tlb
 
@@ -187,11 +183,10 @@ IF info.needsliders EQ 0 THEN Widget_Control, info.labelID, Set_Value=thisColorN
    ; Get the color value and load it as the current color.
 
 WSet, info.currentWID
-thisColor = cgColor(thisColorName, /Triple, BREWER=info.brewer)
+thisColor = cgColor(thisColorName, /Triple)
 info.currentName = thisColorName
 TVLCT, thisColor, info.currentColorIndex
 PolyFill, [0,0,1,1,0], [0,1,1,0,0], /Normal, Color=info.currentColorIndex
-PlotS, [0,0,59,59,0], [0,14,14,0,0], /Device, Color=info.outlineColor
 
 IF info.needSliders THEN BEGIN
 
@@ -224,7 +219,7 @@ Widget_Control, info.blueID, Get_Value=blue
 WSet, info.currentWID
 TVLCT, red, green, blue, info.currentColorIndex
 PolyFill, [0,0,1,1,0], [0,1,1,0,0], /Normal, Color=info.currentColorIndex
-PlotS, [0,0,59,59,0], [0,14,14,0,0], /Device, Color=info.outlineColor
+
 Widget_Control, event.top, Set_UValue=info, /No_Copy
 END ;---------------------------------------------------------------------------
 
@@ -260,8 +255,7 @@ END ;---------------------------------------------------------------------------
 
 
 FUNCTION PickColor, currentColorIndex, StartIndex=startIndex, Title=title, $
-   Group_Leader=groupLeader, Cancel=cancelled, Names=name, CurrentColor=currentColor, $
-   BREWER=brewer
+   Group_Leader=groupLeader, Cancel=cancelled, Names=name
 
    ; Device must support windows.
 
@@ -279,7 +273,7 @@ IF Float(!Version.Release) GE 5.2 THEN BEGIN
 ENDIF ELSE decomposedState = 0
 
 Device, Decomposed=0
-NCOLORS = 192
+NCOLORS = 88
 
    ; Check parameters.
 
@@ -296,175 +290,71 @@ TVLCT, r_old, g_old, b_old, /Get
 
    ; Load the new drawing colors and get their names.
 
-   IF Keyword_Set(brewer) THEN BEGIN
-       colors = [ 'WT1', 'WT2', 'WT3', 'WT4', 'WT5', 'WT6', 'WT7', 'WT8']
-       red =   [   255,   255,   255,   255,   255,   245,   255,   250 ]
-       green = [   255,   250,   255,   255,   248,   245,   245,   240 ]
-       blue =  [   255,   250,   240,   224,   220,   220,   238,   230 ]
-       colors = [ colors, 'TAN1', 'TAN2', 'TAN3', 'TAN4', 'TAN5', 'TAN6', 'TAN7', 'TAN8']
-       red =   [ red,      250,   255,    255,    255,    255,    245,    222,    210 ]
-       green = [ green,    235,   239,    235,    228,    228,    222,    184,    180 ]
-       blue =  [ blue,     215,   213,    205,    196,    181,    179,    135,    140 ]
-       colors = [ colors, 'BLK1', 'BLK2', 'BLK3', 'BLK4', 'BLK5', 'BLK6', 'BLK7', 'BLK8']
-       red =   [ red,      250,   230,    210,    190,    112,     110,    70,       0 ]
-       green = [ green,    250,   230,    210,    190,    128,     110,    70,       0 ]
-       blue =  [ blue,     250,   230,    210,    190,    128,     110,    70,       0 ]
-       colors = [ colors, 'GRN1', 'GRN2', 'GRN3', 'GRN4', 'GRN5', 'GRN6', 'GRN7', 'GRN8']
-       red =   [ red,      250,   223,    173,    109,     53,     35,      0,       0 ]
-       green = [ green,    253,   242,    221,    193,    156,     132,    97,      69 ]
-       blue =  [ blue,     202,   167,    142,    115,     83,      67,    52,      41 ]
-       colors = [ colors, 'BLU1', 'BLU2', 'BLU3', 'BLU4', 'BLU5', 'BLU6', 'BLU7', 'BLU8']
-       red =   [ red,      232,   202,    158,     99,     53,     33,      8,       8 ]
-       green = [ green,    241,   222,    202,    168,    133,    113,     75,      48 ]
-       blue =  [ blue,     250,   240,    225,    211,    191,    181,    147,     107 ]
-       colors = [ colors, 'ORG1', 'ORG2', 'ORG3', 'ORG4', 'ORG5', 'ORG6', 'ORG7', 'ORG8']
-       red =   [ red,      254,    253,    253,    250,    231,    217,    159,    127 ]
-       green = [ green,    236,    212,    174,    134,     92,     72,     51,     39 ]
-       blue =  [ blue,     217,    171,    107,     52,     12,      1,      3,      4 ]
-       colors = [ colors, 'RED1', 'RED2', 'RED3', 'RED4', 'RED5', 'RED6', 'RED7', 'RED8']
-       red =   [ red,      254,    252,    252,    248,    225,    203,    154,    103 ]
-       green = [ green,    232,    194,    146,     97,     45,     24,     12,      0 ]
-       blue =  [ blue,     222,    171,    114,     68,     38,     29,     19,     13 ]
-       colors = [ colors, 'PUR1', 'PUR2', 'PUR3', 'PUR4', 'PUR5', 'PUR6', 'PUR7', 'PUR8']
-       red =   [ red,      244,    222,    188,    152,    119,    106,     80,     63 ]
-       green = [ green,    242,    221,    189,    148,    108,     82,     32,      0 ]
-       blue =  [ blue,     248,    237,    220,    197,    177,    163,    139,    125 ]
-       colors = [ colors, 'PBG1', 'PBG2', 'PBG3', 'PBG4', 'PBG5', 'PBG6', 'PBG7', 'PBG8']
-       red =   [ red,      243,    213,    166,     94,     34,      3,      1,      1 ]
-       green = [ green,    234,    212,    189,    164,    138,    129,    101,     70 ]
-       blue =  [ blue,     244,    232,    219,    204,    171,    139,     82,     54 ]
-       colors = [ colors, 'YGB1', 'YGB2', 'YGB3', 'YGB4', 'YGB5', 'YGB6', 'YGB7', 'YGB8']
-       red =   [ red,      244,    206,    127,     58,     30,     33,     32,      8 ]
-       green = [ green,    250,    236,    205,    175,    125,     95,     48,     29 ]
-       blue =  [ blue,     193,    179,    186,    195,    182,    168,    137,     88 ]
-       colors = [ colors, 'RYB1', 'RYB2', 'RYB3', 'RYB4', 'RYB5', 'RYB6', 'RYB7', 'RYB8']
-       red =   [ red,       201,    245,    253,    251,    228,    193,    114,     59 ]
-       green = [ green,      35,    121,    206,    253,    244,    228,    171,     85 ]
-       blue =  [ blue,       38,    72,     127,    197,    239,    239,    207,    164 ]
-       colors = [ colors, 'TG1', 'TG2', 'TG3', 'TG4', 'TG5', 'TG6', 'TG7', 'TG8']
-       red =   [ red,      84,    163,   197,   220,   105,    51,    13,     0 ]
-       green = [ green,    48,    103,   141,   188,   188,   149,   113,    81 ]
-       blue =  [ blue,      5,     26,    60,   118,   177,   141,   105,    71 ]   
-   ENDIF ELSE BEGIN
-       colors= ['White']
-       red =   [ 255]
-       green = [ 255]
-       blue =  [ 255]
-       colors= [ colors,      'Snow',     'Ivory','Light Yellow',   'Cornsilk',      'Beige',   'Seashell' ]
-       red =   [ red,            255,          255,          255,          255,          245,          255 ]
-       green = [ green,          250,          255,          255,          248,          245,          245 ]
-       blue =  [ blue,           250,          240,          224,          220,          220,          238 ]
-       colors= [ colors,     'Linen','Antique White',    'Papaya',     'Almond',     'Bisque',  'Moccasin' ]
-       red =   [ red,            250,          250,          255,          255,          255,          255 ]
-       green = [ green,          240,          235,          239,          235,          228,          228 ]
-       blue =  [ blue,           230,          215,          213,          205,          196,          181 ]
-       colors= [ colors,     'Wheat',  'Burlywood',        'Tan', 'Light Gray',   'Lavender','Medium Gray' ]
-       red =   [ red,            245,          222,          210,          230,          230,          210 ]
-       green = [ green,          222,          184,          180,          230,          230,          210 ]
-       blue =  [ blue,           179,          135,          140,          230,          250,          210 ]
-       colors= [ colors,      'Gray', 'Slate Gray',  'Dark Gray',   'Charcoal',      'Black',   'Honeydew', 'Light Cyan' ]
-       red =   [ red,            190,          112,          110,           70,            0,          240,          224 ]
-       green = [ green,          190,          128,          110,           70,            0,          255,          255 ]
-       blue =  [ blue,           190,          144,          110,           70,            0,          255,          240 ]
-       colors= [ colors,'Powder Blue',  'Sky Blue', 'Cornflower Blue', 'Cadet Blue', 'Steel Blue','Dodger Blue', 'Royal Blue',  'Blue' ]
-       red =   [ red,            176,          135,         100,           95,            70,           30,           65,            0 ]
-       green = [ green,          224,          206,         149,          158,           130,          144,          105,            0 ]
-       blue =  [ blue,           230,          235,         237,          160,           180,          255,          225,          255 ]
-       colors= [ colors,      'Navy', 'Pale Green','Aquamarine','Spring Green',       'Cyan' ]
-       red =   [ red,              0,          152,          127,            0,            0 ]
-       green = [ green,            0,          251,          255,          250,          255 ]
-       blue =  [ blue,           128,          152,          212,          154,          255 ]
-       colors= [ colors, 'Turquoise', 'Light Sea Green', 'Sea Green','Forest Green',  'Teal','Green Yellow','Chartreuse', 'Lawn Green' ]
-       red =   [ red,             64,       143,             46,           34,             0,      173,           127,         124 ]
-       green = [ green,          224,       188,            139,          139,           128,      255,           255,         252 ]
-       blue =  [ blue,           208,       143,             87,           34,           128,       47,             0,           0 ]
-       colors= [ colors,     'Green', 'Lime Green', 'Olive Drab',     'Olive','Dark Green','Pale Goldenrod']
-       red =   [ red,              0,           50,          107,           85,            0,          238 ]
-       green = [ green,          255,          205,          142,          107,          100,          232 ]
-       blue =  [ blue,             0,           50,           35,           47,            0,          170 ]
-       colors =[ colors,     'Khaki', 'Dark Khaki',     'Yellow',       'Gold','Goldenrod','Dark Goldenrod']
-       red =   [ red,            240,          189,          255,          255,          218,          184 ]
-       green = [ green,          230,          183,          255,          215,          165,          134 ]
-       blue =  [ blue,           140,          107,            0,            0,           32,           11 ]
-       colors= [ colors,'Saddle Brown',       'Rose',       'Pink', 'Rosy Brown','Sandy Brown',      'Peru']
-       red =   [ red,            139,          255,          255,          188,          244,          205 ]
-       green = [ green,           69,          228,          192,          143,          164,          133 ]
-       blue =  [ blue,            19,          225,          203,          143,           96,           63 ]
-       colors= [ colors,'Indian Red',  'Chocolate',     'Sienna','Dark Salmon',    'Salmon','Light Salmon' ]
-       red =   [ red,            205,          210,          160,          233,          250,          255 ]
-       green = [ green,           92,          105,           82,          150,          128,          160 ]
-       blue =  [ blue,            92,           30,           45,          122,          114,          122 ]
-       colors= [ colors,    'Orange',      'Coral', 'Light Coral',  'Firebrick',   'Dark Red',    'Brown',  'Hot Pink' ]
-       red =   [ red,            255,          255,          240,          178,       139,          165,        255 ]
-       green = [ green,          165,          127,          128,           34,         0,           42,        105 ]
-       blue =  [ blue,             0,           80,          128,           34,         0,           42,        180 ]
-       colors= [ colors, 'Deep Pink',    'Magenta',     'Tomato', 'Orange Red',        'Red', 'Crimson', 'Violet Red' ]
-       red =   [ red,            255,          255,          255,          255,          255,      220,        208 ]
-       green = [ green,           20,            0,           99,           69,            0,       20,         32 ]
-       blue =  [ blue,           147,          255,           71,            0,            0,       60,        144 ]
-       colors= [ colors,    'Maroon',    'Thistle',       'Plum',     'Violet',    'Orchid','Medium Orchid']
-       red =   [ red,            176,          216,          221,          238,          218,          186 ]
-       green = [ green,           48,          191,          160,          130,          112,           85 ]
-       blue =  [ blue,            96,          216,          221,          238,          214,          211 ]
-       colors= [ colors,'Dark Orchid','Blue Violet',     'Purple']
-       red =   [ red,            153,          138,          160]
-       green = [ green,           50,           43,           32]
-       blue =  [ blue,           204,          226,          240]
-       colors= [ colors, 'Slate Blue',  'Dark Slate Blue']
-       red =   [ red,           106,            72]
-       green = [ green,            90,            61]
-       blue =  [ blue,           205,           139]
-       colors = [ colors, 'WT1', 'WT2', 'WT3', 'WT4', 'WT5', 'WT6', 'WT7', 'WT8']
-       red =   [ red,     255,   255,   255,   255,   255,   245,   255,   250 ]
-       green = [ green,   255,   250,   255,   255,   248,   245,   245,   240 ]
-       blue =  [ blue,    255,   250,   240,   224,   220,   220,   238,   230 ]
-       colors = [ colors, 'TAN1', 'TAN2', 'TAN3', 'TAN4', 'TAN5', 'TAN6', 'TAN7', 'TAN8']
-       red =   [ red,      250,   255,    255,    255,    255,    245,    222,    210 ]
-       green = [ green,    235,   239,    235,    228,    228,    222,    184,    180 ]
-       blue =  [ blue,     215,   213,    205,    196,    181,    179,    135,    140 ]
-       colors = [ colors, 'BLK1', 'BLK2', 'BLK3', 'BLK4', 'BLK5', 'BLK6', 'BLK7', 'BLK8']
-       red =   [ red,      250,   230,    210,    190,    112,     110,    70,       0 ]
-       green = [ green,    250,   230,    210,    190,    128,     110,    70,       0 ]
-       blue =  [ blue,     250,   230,    210,    190,    128,     110,    70,       0 ]
-       colors = [ colors, 'GRN1', 'GRN2', 'GRN3', 'GRN4', 'GRN5', 'GRN6', 'GRN7', 'GRN8']
-       red =   [ red,      250,   223,    173,    109,     53,     35,      0,       0 ]
-       green = [ green,    253,   242,    221,    193,    156,     132,    97,      69 ]
-       blue =  [ blue,     202,   167,    142,    115,     83,      67,    52,      41 ]
-       colors = [ colors, 'BLU1', 'BLU2', 'BLU3', 'BLU4', 'BLU5', 'BLU6', 'BLU7', 'BLU8']
-       red =   [ red,      232,   202,    158,     99,     53,     33,      8,       8 ]
-       green = [ green,    241,   222,    202,    168,    133,    113,     75,      48 ]
-       blue =  [ blue,     250,   240,    225,    211,    191,    181,    147,     107 ]
-       colors = [ colors, 'ORG1', 'ORG2', 'ORG3', 'ORG4', 'ORG5', 'ORG6', 'ORG7', 'ORG8']
-       red =   [ red,      254,    253,    253,    250,    231,    217,    159,    127 ]
-       green = [ green,    236,    212,    174,    134,     92,     72,     51,     39 ]
-       blue =  [ blue,     217,    171,    107,     52,     12,      1,      3,      4 ]
-       colors = [ colors, 'RED1', 'RED2', 'RED3', 'RED4', 'RED5', 'RED6', 'RED7', 'RED8']
-       red =   [ red,      254,    252,    252,    248,    225,    203,    154,    103 ]
-       green = [ green,    232,    194,    146,     97,     45,     24,     12,      0 ]
-       blue =  [ blue,     222,    171,    114,     68,     38,     29,     19,     13 ]
-       colors = [ colors, 'PUR1', 'PUR2', 'PUR3', 'PUR4', 'PUR5', 'PUR6', 'PUR7', 'PUR8']
-       red =   [ red,      244,    222,    188,    152,    119,    106,     80,     63 ]
-       green = [ green,    242,    221,    189,    148,    108,     82,     32,      0 ]
-       blue =  [ blue,     248,    237,    220,    197,    177,    163,    139,    125 ]
-       colors = [ colors, 'PBG1', 'PBG2', 'PBG3', 'PBG4', 'PBG5', 'PBG6', 'PBG7', 'PBG8']
-       red =   [ red,      243,    213,    166,     94,     34,      3,      1,      1 ]
-       green = [ green,    234,    212,    189,    164,    138,    129,    101,     70 ]
-       blue =  [ blue,     244,    232,    219,    204,    171,    139,     82,     54 ]
-       colors = [ colors, 'YGB1', 'YGB2', 'YGB3', 'YGB4', 'YGB5', 'YGB6', 'YGB7', 'YGB8']
-       red =   [ red,      244,    206,    127,     58,     30,     33,     32,      8 ]
-       green = [ green,    250,    236,    205,    175,    125,     95,     48,     29 ]
-       blue =  [ blue,     193,    179,    186,    195,    182,    168,    137,     88 ]
-       colors = [ colors, 'RYB1', 'RYB2', 'RYB3', 'RYB4', 'RYB5', 'RYB6', 'RYB7', 'RYB8']
-       red =   [ red,       201,    245,    253,    251,    228,    193,    114,     59 ]
-       green = [ green,      35,    121,    206,    253,    244,    228,    171,     85 ]
-       blue =  [ blue,       38,    72,     127,    197,    239,    239,    207,    164 ]
-       colors = [ colors, 'TG1', 'TG2', 'TG3', 'TG4', 'TG5', 'TG6', 'TG7', 'TG8']
-       red =   [ red,      84,    163,   197,   220,   105,    51,    13,     0 ]
-       green = [ green,    48,    103,   141,   188,   188,   149,   113,    81 ]
-       blue =  [ blue,      5,     26,    60,   118,   177,   141,   105,    71 ]   
-   ENDELSE
+colors= ['White']
+red =   [ 255]
+green = [ 255]
+blue =  [ 255]
+colors= [ colors,      'Snow',     'Ivory','Light Yellow',   'Cornsilk',      'Beige',   'Seashell' ]
+red =   [ red,            255,          255,          255,          255,          245,          255 ]
+green = [ green,          250,          255,          255,          248,          245,          245 ]
+blue =  [ blue,           250,          240,          224,          220,          220,          238 ]
+colors= [ colors,     'Linen','Antique White',    'Papaya',     'Almond',     'Bisque',  'Moccasin' ]
+red =   [ red,            250,          250,          255,          255,          255,          255 ]
+green = [ green,          240,          235,          239,          235,          228,          228 ]
+blue =  [ blue,           230,          215,          213,          205,          196,          181 ]
+colors= [ colors,     'Wheat',  'Burlywood',        'Tan', 'Light Gray',   'Lavender','Medium Gray' ]
+red =   [ red,            245,          222,          210,          230,          230,          210 ]
+green = [ green,          222,          184,          180,          230,          230,          210 ]
+blue =  [ blue,           179,          135,          140,          230,          250,          210 ]
+colors= [ colors,      'Gray', 'Slate Gray',  'Dark Gray',   'Charcoal',      'Black', 'Light Cyan' ]
+red =   [ red,            190,          112,          110,           70,            0,          224 ]
+green = [ green,          190,          128,          110,           70,            0,          255 ]
+blue =  [ blue,           190,          144,          110,           70,            0,          255 ]
+colors= [ colors,'Powder Blue',  'Sky Blue', 'Steel Blue','Dodger Blue', 'Royal Blue',       'Blue' ]
+red =   [ red,            176,          135,           70,           30,           65,            0 ]
+green = [ green,          224,          206,          130,          144,          105,            0 ]
+blue =  [ blue,           230,          235,          180,          255,          225,          255 ]
+colors= [ colors,      'Navy',   'Honeydew', 'Pale Green','Aquamarine','Spring Green',       'Cyan' ]
+red =   [ red,              0,          240,          152,          127,            0,            0 ]
+green = [ green,            0,          255,          251,          255,          250,          255 ]
+blue =  [ blue,           128,          240,          152,          212,          154,          255 ]
+colors= [ colors, 'Turquoise', 'Sea Green','Forest Green','Green Yellow','Chartreuse', 'Lawn Green' ]
+red =   [ red,             64,           46,           34,          173,          127,          124 ]
+green = [ green,          224,          139,          139,          255,          255,          252 ]
+blue =  [ blue,           208,           87,           34,           47,            0,            0 ]
+colors= [ colors,     'Green', 'Lime Green', 'Olive Drab',     'Olive','Dark Green','Pale Goldenrod']
+red =   [ red,              0,           50,          107,           85,            0,          238 ]
+green = [ green,          255,          205,          142,          107,          100,          232 ]
+blue =  [ blue,             0,           50,           35,           47,            0,          170 ]
+colors =[ colors,     'Khaki', 'Dark Khaki',     'Yellow',       'Gold','Goldenrod','Dark Goldenrod']
+red =   [ red,            240,          189,          255,          255,          218,          184 ]
+green = [ green,          230,          183,          255,          215,          165,          134 ]
+blue =  [ blue,           140,          107,            0,            0,           32,           11 ]
+colors= [ colors,'Saddle Brown',       'Rose',       'Pink', 'Rosy Brown','Sandy Brown',      'Peru']
+red =   [ red,            139,          255,          255,          188,          244,          205 ]
+green = [ green,           69,          228,          192,          143,          164,          133 ]
+blue =  [ blue,            19,          225,          203,          143,           96,           63 ]
+colors= [ colors,'Indian Red',  'Chocolate',     'Sienna','Dark Salmon',    'Salmon','Light Salmon' ]
+red =   [ red,            205,          210,          160,          233,          250,          255 ]
+green = [ green,           92,          105,           82,          150,          128,          160 ]
+blue =  [ blue,            92,           30,           45,          122,          114,          122 ]
+colors= [ colors,    'Orange',      'Coral', 'Light Coral',  'Firebrick',      'Brown',  'Hot Pink' ]
+red =   [ red,            255,          255,          240,          178,          165,          255 ]
+green = [ green,          165,          127,          128,           34,           42,          105 ]
+blue =  [ blue,             0,           80,          128,           34,           42,          180 ]
+colors= [ colors, 'Deep Pink',    'Magenta',     'Tomato', 'Orange Red',        'Red', 'Violet Red' ]
+red =   [ red,            255,          255,          255,          255,          255,          208 ]
+green = [ green,           20,            0,           99,           69,            0,           32 ]
+blue =  [ blue,           147,          255,           71,            0,            0,          144 ]
+colors= [ colors,    'Maroon',    'Thistle',       'Plum',     'Violet',    'Orchid','Medium Orchid']
+red =   [ red,            176,          216,          221,          238,          218,          186 ]
+green = [ green,           48,          191,          160,          130,          112,           85 ]
+blue =  [ blue,            96,          216,          221,          238,          214,          211 ]
+colors= [ colors,'Dark Orchid','Blue Violet',     'Purple']
+red =   [ red,            153,          138,          160 ]
+green = [ green,           50,           43,           32 ]
+blue =  [ blue,           204,          226,          240 ]
 
-NCOLORS = N_Elements(colors)
 colorNames = colors
 nameIndex = currentColorIndex - startIndex
 IF nameIndex GE 0 AND nameIndex LE N_Elements(colorNames) THEN BEGIN
@@ -472,19 +362,19 @@ IF nameIndex GE 0 AND nameIndex LE N_Elements(colorNames) THEN BEGIN
 ENDIF ELSE currentName = ""
 TVLCT, red, green, blue, startIndex
 TVLCT, r, g, b, /Get
-IF Keyword_Set(names) THEN labelTitle = currentName ELSE labelTitle = 'Current Color'
+IF Keyword_Set(name) THEN labelTitle = currentName ELSE labelTitle = 'Current Color'
 
    ; Create the widgets. TLB is MODAL or BLOCKING.
 
 IF N_Elements(groupLeader) EQ 0 THEN BEGIN
-   tlb = Widget_Base(Title=title, Column=1, /Base_Align_Center, Map=0)
+   tlb = Widget_Base(Title=title, Column=1, /Base_Align_Center)
 ENDIF ELSE BEGIN
    tlb = Widget_Base(Title=title, Column=1, /Base_Align_Center, /Modal, $
       Group_Leader=groupLeader)
 ENDELSE
 
-colorbaseID = Widget_Base(tlb, Column=12, Event_Pro='PickColor_Select_Color')
-drawID = LonArr(NCOLORS)
+colorbaseID = Widget_Base(tlb, Column=11, Event_Pro='PickColor_Select_Color')
+drawID = LonArr(88)
 FOR j=0,NCOLORS-1 DO BEGIN
    drawID[j] = Widget_Draw(colorbaseID, XSize=20, YSize=15, $
       UValue=colorNames[j], Button_Events=1)
@@ -524,7 +414,6 @@ acceptID = Widget_Button(buttonbase, VALUE='Accept')
 
 PickColor_CenterTLB, tlb
 Widget_Control, tlb, /Realize
-Widget_Control, tlb, Map=1
 
    ; Load the drawing colors.
 
@@ -533,28 +422,15 @@ FOR j=0, NCOLORS-1 DO BEGIN
    Widget_Control, drawID[j], Get_Value=thisWID
    wids[j] = thisWID
    WSet, thisWID
-   ;PolyFill, [0,0,1,1,0], [0,1,1,0,0], /Normal, Color=startIndex + j
-   Erase, Color=startIndex + j
-   outlineName = Keyword_Set(brewer) ? 'BLK8' : 'BLACK
-   black = Where(StrUpCase(colornames) EQ outlineName)
-   black = black[0]
-   PlotS, [0,0,19,19,0], [0,14,14,0,0], /Device, Color=startIndex + black
+   PolyFill, [0,0,1,1,0], [0,1,1,0,0], /Normal, Color=startIndex + j
 ENDFOR
 
    ; Load the current color.
 
 Widget_Control, currentColorID, Get_Value=currentWID
 WSet, currentWID
-IF N_Elements(currentcolor) NE 0 THEN $
-   TVLCT, Reform(currentcolor, 1, 3), currentColorIndex ELSE $
-   TVLCT, r[currentColorIndex], g[currentColorIndex], b[currentColorIndex], currentColorIndex
-Erase, Color=currentColorIndex
-   outlineName = Keyword_Set(brewer) ? 'BLK8' : 'BLACK
-   black = Where(StrUpCase(colornames) EQ outlineName)
-black = black[0]
-PlotS, [0,0,58,58,0], [0,13,13,0,0], /Device, Color=startIndex + black
-
-outlineColor = startIndex + black
+TVLCT, r[currentColorIndex], g[currentColorIndex], b[currentColorIndex], currentColorIndex
+PolyFill, [0,0,1,1,0], [0,1,1,0,0], /Normal, Color=currentColorIndex
 
    ; Pointer to hold the form information.
 
@@ -570,8 +446,6 @@ info = { ptr:ptr, $                    ; The pointer to the form information.
          r:r, $                        ; The new color table.
          g:g, $
          b:b, $
-         outlineColor:outlineColor, $  ; The outline color.
-         brewer:Keyword_Set(brewer), $ ; Using Brewer Colors.
          labelID:labelID, $
          needSliders:needSliders, $    ; A flag that indicates if sliders are needed.
          redID:redID, $                ; The IDs of the color sliders.

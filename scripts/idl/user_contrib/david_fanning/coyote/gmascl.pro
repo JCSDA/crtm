@@ -17,8 +17,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -66,7 +66,7 @@
 ; EXAMPLES:
 ;
 ;       LoadCT, 0                                            ; Gray-scale colors.
-;       image = LoadData(11)                                 ; Load image.
+;       image = cgDemoData(11)                                 ; Load image.
 ;       TV, GmaScl(image, Min=30, Max=100)                   ; Similar to BytScl.
 ;       TV, GmaScl(image, /Negative)                         ; Produce negative image.
 ;       power = Shift(ALog(Abs(FFT(image,-1))), 124, 124)    ; Create power spectrum.
@@ -77,12 +77,13 @@
 ;
 ;     Requires SCALE_VECTOR from the Coyote Library:
 ;
-;        http://www.dfanning.com/programs/scale_vector.pro
+;        http://www.idlcoyote.com/programs/scale_vector.pro
 ;
 ; MODIFICATION HISTORY:
 ;
 ;       Written by:  David W. Fanning, 17 February 2006.
 ;       Fixed a problem with output scaling. 1 July 2009. DWF (with input from Bo Milvang-Jensen).
+;       Now setting NAN keyword on all MIN and MAX functions. 2 Dec 2011. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -142,8 +143,8 @@ FUNCTION GmaScl, image, $
    output = Double(image)
 
    ; Check keywords.
-   IF N_Elements(imageMax) EQ 0 THEN imageMax = Max(output)
-   IF N_Elements(imageMin) EQ 0 THEN imageMin = Min(output)
+   IF N_Elements(imageMax) EQ 0 THEN imageMax = Max(output, /NAN)
+   IF N_Elements(imageMin) EQ 0 THEN imageMin = Min(output, /NAN)
    IF N_Elements(maxOut) EQ 0 THEN maxOut = 255B ELSE maxout = 0 > Byte(maxOut) < 255
    IF N_Elements(minOut) EQ 0 THEN minOut = 0B ELSE minOut = 0 > Byte(minOut) < 255
    IF minOut GE maxout THEN Message, 'OMIN must be less than OMAX.'
@@ -155,7 +156,7 @@ FUNCTION GmaScl, image, $
    output = Scale_Vector(Temporary(output), 0.0D, 1.0D, MinValue=imageMin, MaxValue=imageMax, /NAN, Double=1)
 
    ; For gamma, we need positive values. Make sure we have them
-   IF Min(output) LT 0.0D THEN output = output + Abs(Min(output))
+   IF Min(output, /NAN) LT 0.0D THEN output = output + Abs(Min(output, /NAN))
    output = Scale_Vector(output^gamma, minOut, maxOut, MinValue=0.0D, MaxValue=1.0D, /NAN, Double=1)
 
    ; Does the user want the negative result?

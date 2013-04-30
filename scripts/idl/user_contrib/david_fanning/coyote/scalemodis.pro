@@ -20,8 +20,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -118,7 +118,8 @@ FUNCTION ScaleModis_ScaleIt, image, input, output
     IF inum NE onum THEN Message, 'Scaling vectors must be the same length.'
     
     ; Partition the image into input values.
-    h = Histogram(Value_Locate(input[1:inum-2], image) + 2, REVERSE_INDICES=ri)
+    h = Histogram(Value_Locate(input[1:inum-2], image) + 2, $
+       MIN=0, MAX=255, REVERSE_INDICES=ri)
     
     ; Differentially scale the image.
     FOR index=0,N_Elements(input)-2 DO BEGIN

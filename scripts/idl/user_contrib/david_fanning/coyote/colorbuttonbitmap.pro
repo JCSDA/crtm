@@ -14,8 +14,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -48,7 +48,7 @@
 ;
 ;       Reqires cgColor from the Coyote Library:
 ;
-;                     http://www.dfanning.com/programs/cgColor.pro
+;                     http://www.idlcoyote.com/programs/cgColor.pro
 ;
 ; EXAMPLE:
 ;
@@ -61,7 +61,7 @@
 ; MODIFICATION HISTORY:
 ;
 ;       Written by David Fanning, May 25, 2007 based on code named BitmapForButtonText supplied to the IDL
-;       newsgroup by Dick Jackson: http://www.dfanning.com/tip_examples/bitmapforbuttontext.pro.
+;       newsgroup by Dick Jackson: http://www.idlcoyote.com/tip_examples/bitmapforbuttontext.pro.
 ;       Fixed a problem with foreground and background colors that caused them to work correctly only
 ;           when color decomposition is on--as it should be :-). 6 May 2009.
 ;-
@@ -99,8 +99,8 @@ FUNCTION ColorButtonBitmap, theText, BGColor=bgcolor, FGColor=fgcolor
 
     ;; Check parameters, define default colors.
     IF N_Elements(theText) EQ 0 THEN theText = 'Button'
-    IF N_Elements(bgcolor) EQ 0 THEN bgcolor = 'FACE'
-    IF N_Elements(fgcolor) EQ 0 THEN fgcolor = 'TEXT'
+    IF N_Elements(bgcolor) EQ 0 THEN bgcolor = 'background'
+    IF N_Elements(fgcolor) EQ 0 THEN fgcolor = 'opposite'
 
     ;; Get the current hardware font.
     wTLB = Widget_Base()
@@ -129,7 +129,7 @@ FUNCTION ColorButtonBitmap, theText, BGColor=bgcolor, FGColor=fgcolor
 
     ;;    Make window, draw text, read back
     Window, XSize=xSize, YSize=ySize, /Pixmap, /Free, Retain=2
-    Erase, Color=cgColor(bgcolor)
+    Erase, cgColor(bgcolor)
     blankRGB = TVRD(True=3)
     XYOutS, x0, y0, theText, /Device, Font=0, $
             Color=cgColor(fgcolor)

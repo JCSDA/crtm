@@ -15,8 +15,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -128,7 +128,7 @@
 ; DEPENDENCIES:
 ;
 ;   Requires the Coyote Library:
-;     http://www.dfanning.com/programs/coyoteprograms.zip
+;     http://www.idlcoyote.com/programs/coyoteprograms.zip
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -386,7 +386,7 @@ FUNCTION FSC_ColorSelect::PickColorEvents, event
             self.tlb, event.top, 0L, tableName, cinfo.index, $
             cinfo.brewer, self.ct_ncolors, self}        
     ENDIF ELSE BEGIN
-        color = PickColorName(self.color, CANCEL=cancelled, GROUP_LEADER=self.tlb)
+        color = cgPickColorName(self.color, CANCEL=cancelled, GROUP_LEADER=self.tlb)
         IF cancelled THEN RETURN, 0
         
         ; Style the color name.

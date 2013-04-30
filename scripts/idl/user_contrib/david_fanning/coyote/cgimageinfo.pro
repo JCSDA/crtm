@@ -1,97 +1,19 @@
-;+
+; docformat = 'rst'
+;
 ; NAME:
-;     cgImageInfo
+;   cgImageInfo
 ;
 ; PURPOSE:
-;
 ;     The purpose of this program is allow interactive inquiry of image
 ;     position and values for images displayed with cgImage.
 ;     After a call to cgImage, cgImageInfo can be called and the user
 ;     can use the cursor to click in the image display window. If the user clicks
 ;     inside the image, the image location and value will be printed out in the
 ;     user's IDL console window.
-;
-; AUTHOR:
-;
-;       FANNING SOFTWARE CONSULTING:
-;       David Fanning, Ph.D.
-;       1645 Sheely Drive
-;       Fort Collins, CO 80526 USA
-;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
-;
-; CATEGORY:
-;
-;     Graphics display.
-;
-; CALLING SEQUENCE:
-;
-;     cgImageInfo, image
-;
-; INPUTS:
-;
-;     image:    A 2D or 3D image array. Values will be returned from this image. (Required)
-;
-;     position: A four-element array giving image position in the window in normalized
-;               coordinates. If not provided, uses the stored position from cgImage.
-;
-; KEYWORD PARAMETERS:
-;
-;     None.
-;
-; OUTPUTS:
-;
-;     Image locations and values are printed in the IDL console window.
-;
-; SIDE EFFECTS:
-;
-;     cgImageInfo blocks the IDL command line until the RIGHT mouse button is clicked
-;     in the image display window.
-;
-; RESTRICTIONS:
-;
-;     cgImageInfo *only* works for the last image displayed with cgImage 
-;     on a Windows or X device. Precautions are taken to help you avoid shooting
-;     yourself in the foot, but I can't anticipate every foolish action at the
-;     IDL command line. Expecially if you close the image window before exiting
-;     the program with the RIGHT mouse button, you are COMPLETELY on your own!
-;
-;     Coyote Library programs are required to use cgImageInfo. Among the ones I know
-;     about are these:
-;
-;      cgImage, SCALE_VECTOR, IMAGE_DIMENSIONS, ERROR_MESSAGE, CONVERT_TO_TYPE, FPUFIX.
-;
-;      If the program doesn't compile, you probably need library routines. They
-;      can be found here:
-;
-;           http:/www.idlcoyote.com/documents/programs.html
-;
-; EXAMPLE:
-;
-;     To display an image with axes and then inquire about it:
-;
-;        filename = FILEPATH(SUBDIR=['examples','data'], 'worldelv.dat')
-;        image = BYTARR(360,360)
-;        OPENR, lun, filename, /GET_LUN
-;        READU, lun, image
-;        FREE_LUN, lun
-;
-;        thisPosition = [0.1, 0.1, 0.9, 0.9]
-;        cgImage, image, /KEEP_ASPECT,  POSITION=thisPosition, /AXES
-;        cgImageInfo, image
-;
-; MODIFICATION HISTORY:
-;      Written by: David W Fanning, 16 March 2008.
-;      Added ability to specify position directly in call. 20 March 2008. DWF
-;      Changed cursor operation to conform with expected differences
-;         between Windows and UNIX. 20 March 2008, DWF.
-;      Slightly modified screen directions. 16 November 2010. DWF.
-;-
-;
+;     
 ;******************************************************************************************;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
-;  All rights reserved.                                                                    ;
+;                                                                                          ;
+;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -116,6 +38,73 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
+;
+;+
+;  The purpose of this program is allow interactive inquiry of image
+;  position and values for images displayed with cgImage.
+;  After a call to cgImage, cgImageInfo can be called and the user
+;  can use the cursor to click in the image display window. If the user clicks
+;  inside the image, the image location and value will be printed out in the
+;  user's IDL console window. The cgImageInfo program blocks the IDL command 
+;  line until the RIGHT mouse button is clicked in the image display window.
+;  
+;  This cgImageInfo program is designed to work for the last image displayed with cgImage 
+;  on a Windows or X device. Precautions are taken to help you avoid shooting
+;  yourself in the foot, but I can't anticipate every action a user might take at the 
+;  IDL command line. Pay particular attention to exiting the program with the RIGHT mouse
+;  button before you close or kill the current graphics window. Failure to do so will 
+;  put you into a very strange and precarious state from which no rescue is possible.
+;  You might want to consider using the Catalyst Program `IMGWIN <http://www.idlcoyote.com/catalyst/imgwin.html>`
+;   as an alternative to cgImageInfo.
+;
+; :Categories:
+;    Graphics
+;    
+; :Params:
+;    image: in, required, 
+;         A 2D or 3D image array. Values will be returned from this image.
+;         In versions of IDL < 8.0, it is possible to use a HASH object of
+;         keys/images where this program will describe the value for each of
+;         the images in the HASH object.
+;    position: in, optional, type=float
+;         A four-element floating array giving the position of the image in
+;         the display window. If not provided, the image position will be
+;         retrieved from the last image position used with cgImage.
+;         
+; :Examples:
+;     To display an image with axes and then inquire about it::
+;
+;         filename = FILEPATH(SUBDIR=['examples','data'], 'worldelv.dat')
+;         image = BYTARR(360,360)
+;         OPENR, lun, filename, /GET_LUN
+;         READU, lun, image
+;         FREE_LUN, lun
+;
+;         thisPosition = [0.1, 0.1, 0.9, 0.9]
+;         cgImage, image, /KEEP_ASPECT,  POSITION=thisPosition, /AXES
+;         cgImageInfo, image
+;       
+; :Author:
+;       FANNING SOFTWARE CONSULTING::
+;           David W. Fanning 
+;           1645 Sheely Drive
+;           Fort Collins, CO 80526 USA
+;           Phone: 970-221-0438
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;
+; :History:
+;     Change History::
+;      Written by: David W Fanning, 16 March 2008.
+;      Added ability to specify position directly in call. 20 March 2008. DWF
+;      Changed cursor operation to conform with expected differences
+;         between Windows and UNIX. 20 March 2008, DWF.
+;      Slightly modified screen directions. 16 November 2010. DWF.
+;      Modified so that multiple images/grids can be described 18 May 2011. MHS
+;
+; :Copyright:
+;     Copyright (c) 2008-2011, Fanning Software Consulting, Inc.
+;-
 PRO cgImageInfo, image, position
 
     COMPILE_OPT idl2
@@ -140,6 +129,32 @@ PRO cgImageInfo, image, position
                          _cgimage_winxsize, _cgimage_winysize, $
                          _cgimage_position, _cgimage_winID, $
                          _cgimage_current
+
+
+
+    ;;  First check to see if we're using a HASH as input for the variable image.
+    hsh = ''
+    IF total( obj_valid( image ) EQ 1 ) &&  obj_isa( image, 'HASH' ) THEN BEGIN 
+       ;; If so, we need to pull out the first image from the hash so that all of the
+       ;; information can be set up properly before the user selects data from the
+       ;; displayed image
+       hsh = image
+
+       IF n_elements( hsh ) EQ 0 THEN Message, 'Must supply a hash of names/images to examine.'
+       ;; 
+       keys = hsh -> keys( ) 
+       image = hsh[ keys[ 0 ] ]
+
+       ;; check that each image in the hash has same dimensions.
+       void =  Image_Dimensions( image, xsize = first_xsize, ysize = first_ysize )
+       FOR k = 1, n_elements( keys ) - 1 DO BEGIN
+          img =  hsh[ keys[ k ] ]
+          void =  Image_Dimensions( img,  xsize = xsize,  ysize = ysize )
+          IF xsize NE first_xsize OR ysize NE first_ysize THEN $
+             Message, 'Each Image must have same X & Y dimensions'
+       ENDFOR 
+       
+    ENDIF 
 
     ; Check to see if we can proceed. First see if we have an image.
     IF N_Elements(image) EQ 0 THEN Message, 'Must supply image for reporting values.'
@@ -214,33 +229,9 @@ PRO cgImageInfo, image, position
           xpixel = Value_Locate(xvec, x)
           ypixel = Value_Locate(yvec, y)
 
-          ; Output depends in whether this is 2D or 3D image.
-          dims = Size(image, /Dimensions)
-          trueIndex = Where(dims EQ 3)
-
-          ; I guess a legit dimension could be three, too, but I
-          ; don't know what to do in that case.
-          IF N_Elements(trueIndex) GT 1 THEN $
-             Message, 'Dude. This is one strange image! Returning.'
-
-          IF trueIndex[0] EQ -1 THEN BEGIN
-
-             value = image[xpixel, ypixel]
-             IF Size(value, /TNAME) EQ 'BYTE' THEN value = Fix(value)
-             Print, 'Value at (' + StrTrim(xpixel,2) + ',' + StrTrim(ypixel,2) + ') is ', StrTrim(value,2)
-
-          ENDIF ELSE BEGIN
-
-            ; 3D image processing here.
-            CASE trueindex[0] OF
-                0: rgb = image[*, xpixel, ypixel]
-                1: rgb = image[xpixel, *, ypixel]
-                2: rgb = image[xpixel, ypixel, *]
-            ENDCASE
-            IF Size(rgb, /TNAME) EQ 'BYTE' THEN rgb = Fix(rgb)
-            value = '[' + StrTrim(rgb[0],2) + ', ' + StrTrim(rgb[1],2) + ', ' + StrTrim(rgb[2],2) + ']'
-            Print, 'Value at (' + StrTrim(xpixel,2) + ',' + StrTrim(ypixel,2) + ') is ' + value
-          ENDELSE
+          ;; If a hash wasn't input, use the old output convention.
+          cgImageInfoDescribeValues, image,  xpixel,  ypixel, hsh
+          
        ENDIF ELSE Print, 'Outside image'
 
     ENDWHILE

@@ -16,8 +16,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -98,7 +98,7 @@
 ;          DELETE_ON_DESTROY and NOTRACEBACK keywords to the INIT and SetProperty
 ;          methods. 28 Jan 2010. DWF.
 ;        Modified default filenames so that I am now guaranteed to get unique file names 
-;           by using Timestamp program from the Coyote Library. 8 Feb 2010. DWF.
+;           by using cgTimestamp program from the Coyote Library. 8 Feb 2010. DWF.
 ;        Added NOCLUTTER keyword. 15 February 2010. DWF.
 ;        Added PRINT keyword to AddText method to allow users to log statements that should
 ;           also be printed easily to a file. 17 February 2010. DWF.
@@ -109,6 +109,7 @@
 ;            will immediately flush the log information to disk when log information is
 ;            added to the object. This will prevent missing information that is buffered
 ;            when a program crashes. Matt Savoie suggestion. DWF, 10 Sept 2010.
+;        Now calling cgTimeStamp rather than TimeStamp to avoid problems with IDL code. 6 Feb 2013. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -138,7 +139,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::AddError
 ;
@@ -162,7 +163,7 @@
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::AddError, theText
 
@@ -280,7 +281,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::AddText
 ;
@@ -298,12 +299,15 @@ END
 ;       theText :    The message text you wish to add to the file. 
 ;
 ; KEYWORDS:
+; 
+;       ADD_CALLER:   If this keyword is set, the name of the caller routine is
+;                     prepended to the text message.
 ;
 ;       PRINT:        If this keyword is set, the added text is also sent to standard
 ;                     output.
-;-
+;
 ;******************************************************************************************;
-PRO ErrorLogger::AddText, theText, PRINT=print
+PRO ErrorLogger::AddText, theText, PRINT=print, ADD_CALLER=add_caller
     
     Compile_Opt idl2
     
@@ -322,13 +326,19 @@ PRO ErrorLogger::AddText, theText, PRINT=print
     thisType = Size(theText, /TNAME)
     IF thisType NE 'STRING' THEN Message, 'Only strings can be written into the error log file.'
     
+    IF Keyword_Set(add_caller) THEN BEGIN
+        ; Get the call stack and the calling routine's name.
+        Help, Calls=callStack
+        callingRoutine = (StrSplit(StrCompress(callStack[1])," ", /Extract))[0]
+        theText = callingRoutine + ': ' + theText
+    ENDIF
+    
     ; Write the text to the file and to standard output, if requested.
     IF self.lun EQ 0 THEN BEGIN
             success = self -> OpenFile(self.filename)
             IF ~success THEN Message, 'Cannot successfully open the error log file.'
     ENDIF
     numLines = N_Elements(theText)
-    print=1
     FOR j=0L, N_Elements(theText) -1 DO BEGIN
         PrintF, self.lun, theText[j]
         IF Keyword_Set( print ) THEN Print, theText[ j ]
@@ -350,7 +360,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::ClearLog
 ;
@@ -369,7 +379,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::ClearLog
 
@@ -386,7 +396,7 @@ PRO ErrorLogger::ClearLog
 END 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::Flush
 ;
@@ -405,14 +415,14 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::Flush
    IF self.lun GE 100 THEN Flush,  self.lun
 END 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::CloseFile
 ;
@@ -431,7 +441,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::CloseFile
     IF self.lun GE 100 THEN Free_Lun, self.lun ELSE IF self.lun GT 0 THEN Close, self.lun
@@ -439,7 +449,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::GetFileName
 ;
@@ -462,7 +472,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 FUNCTION ErrorLogger::GetFileName
     RETURN, self.filename
@@ -471,7 +481,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::Status
 ;
@@ -497,7 +507,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 FUNCTION ErrorLogger::Status
     RETURN, self.status
@@ -505,7 +515,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::SetStatus
 ;
@@ -527,7 +537,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::SetStatus, status
     IF N_Elements(status) NE 0 THEN BEGIN
@@ -542,7 +552,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::OpenFile
 ;
@@ -562,7 +572,7 @@ END
 ;
 ;       DELETE_CURRENT_FILE:  If this keyword is set, the current error log file is closed
 ;                      and deleted before the new file is opened for writing.
-;-
+;
 ;******************************************************************************************;
 FUNCTION ErrorLogger::OpenFile, newLogFilename, DELETE_CURRENT_FILE=delete_current_file
     
@@ -581,7 +591,7 @@ FUNCTION ErrorLogger::OpenFile, newLogFilename, DELETE_CURRENT_FILE=delete_curre
     ENDIF
     
     ; Can we write into the specified directory?
-    basename = FSC_Base_Filename(newLogFilename, EXTENSION=ext, DIRECTORY=dir)
+    basename = cgRootName(newLogFilename, EXTENSION=ext, DIRECTORY=dir)
     IF File_Test(dir, /DIRECTORY) EQ 0 THEN Message, 'Specified directory (' + dir + ') does not exist.' 
     
     ; Close the current file (if any) before opening a new one.
@@ -607,7 +617,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::LastMessage
 ;
@@ -630,7 +640,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 FUNCTION ErrorLogger::LastMessage
     
@@ -641,7 +651,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::PrintLastMessage
 ;
@@ -660,7 +670,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::PrintLastMessage
     
@@ -673,7 +683,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::GetProperty
 ;
@@ -705,7 +715,7 @@ END
 ;
 ;       NOTRACEBACK:    The notraceback flag in the object. (Output)
 ;
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::GetProperty, $
     ALERT=alert, $
@@ -731,7 +741,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::SetProperty
 ;
@@ -758,7 +768,7 @@ END
 ;       NOTRACEBACK:    The notraceback flag in the object. (Input)
 ;
 ;       STATUS:         The current error log status. (Input)
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::SetProperty, $
     ALERT=alert, $
@@ -785,7 +795,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::CLEANUP
 ;
@@ -804,7 +814,7 @@ END
 ; KEYWORDS:
 ;
 ;       None.
-;-
+;
 ;******************************************************************************************;
 PRO ErrorLogger::CLEANUP
 
@@ -824,7 +834,7 @@ END
 
 
 ;******************************************************************************************;
-;+
+;
 ; NAME:
 ;       ErrorLogger::INIT
 ;
@@ -869,7 +879,7 @@ END
 ;       TIMESTAMP:   Set this keyword if you wish a time stamp to be appended to the provided
 ;                    filename. Otherwise, the filename is used as defined. Default filenames
 ;                    always have a timestamp appended to the file name. (Input)                  
-;-
+;
 ;******************************************************************************************;
 FUNCTION ErrorLogger::INIT, filename, $
     ALERT=alert, $
@@ -900,7 +910,7 @@ FUNCTION ErrorLogger::INIT, filename, $
     IF N_Elements(filename) EQ 0 THEN BEGIN
        CD, CURRENT=currentDir
        logFilename = FilePath(ROOT_DIR=currentDir, 'logger' + $
-            Timestamp(RANDOM_DIGITS=6, /VALID) + '.log')
+            cgTimestamp(RANDOM_DIGITS=6, /VALID) + '.log')
        filename = logFilename
        timestamp = 0
     ENDIF
@@ -914,10 +924,10 @@ FUNCTION ErrorLogger::INIT, filename, $
     
     ; Does the name need a time stamp?
     IF Keyword_Set(timestamp) THEN BEGIN
-       basename = FSC_Base_Filename(logFilename, EXTENSION=ext, DIRECTORY=dir)
+       basename = cgRootName(logFilename, EXTENSION=ext, DIRECTORY=dir)
        time = Systime(1)
        randomdigits =  StrMid(StrTrim(time - Long(time),2), 2)
-       logFilename = Filepath(ROOT_DIR=dir, basename +  Timestamp(RANDOM_DIGITS=6, /VALID))
+       logFilename = Filepath(ROOT_DIR=dir, basename +  cgTimestamp(RANDOM_DIGITS=6, /VALID))
        IF ext NE "" THEN logFilename = logFilename + '.' + ext
     END
 

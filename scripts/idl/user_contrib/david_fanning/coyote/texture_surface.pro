@@ -15,8 +15,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -88,15 +88,15 @@
 ;
 ;       To use this program with your surface data and 2D image, type:
 ;
-;        IDL> data = Loaddata(2)
-;        IDL> image = Loaddata(7)
+;        IDL> data = cgDemoData(2)
+;        IDL> image = cgDemoData(7)
 ;        IDL> Texture_Surface, data, Image=image, Colortable=33
 ;
 ; RESTRICTIONS:
 ;
 ;        Requires the ASPECT program from the Coyote Library:
 ;
-;           http://www.dfanning.com/programs/aspect.pro
+;           http://www.idlcoyote.com/programs/aspect.pro
 ;
 ; MODIFICATION HISTORY
 ;
@@ -106,6 +106,7 @@
 ;          positioning images. BORDERCOLOR keyword added. DWF. 4 Nov 2001.
 ;       The surface now maintains the same X/Y aspect ratio as the surface data. DWF. 8 April 2002.
 ;       Added ZSCALE keyword. DWF. 8 April 2002.
+;       Changed FSC_Normalize to cgNormalize to reflect new name. 6 Feb 2013. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -635,9 +636,9 @@ zAxis->GetProperty, CRange=zrange
     ; surface is rotated we don't have to worry about translations. In
     ; other words, the rotations occur about the point (0,0,0).
 
-xs = FSC_Normalize(xrange, Position=[pos[0], pos[2]])
-ys = FSC_Normalize(yrange, Position=[pos[1], pos[3]])
-zs = FSC_Normalize(zrange, Position=[-0.5,0.5]*zscale)
+xs = cgNormalize(xrange, Position=[pos[0], pos[2]])
+ys = cgNormalize(yrange, Position=[pos[1], pos[3]])
+zs = cgNormalize(zrange, Position=[-0.5,0.5]*zscale)
 
     ; Scale the axes and place them in the coordinate space.
     ; Note that not all values in the Location keyword are

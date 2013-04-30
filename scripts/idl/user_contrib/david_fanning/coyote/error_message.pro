@@ -33,8 +33,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -112,6 +112,7 @@
 ;    Added QUIET keyword. 18 October 2008. DWF.
 ;    The traceback information was bypassed when in the PostScript device. Not what I
 ;      had in mind. Fixed. 6 July 2009. DWF.
+;    The QUIET keyword was clearing traceback information. Fixed with help from Phillip Bitzer. 2 Oct 2012. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -257,6 +258,7 @@ FUNCTION ERROR_MESSAGE, theMessage, Error=error, Informational=information, $
          ENDELSE
       ENDELSE
    ENDIF ELSE BEGIN
+         Help, /Last_Message, Output=traceback_msg ; Required because following MESSAGE call clears traceback info.
          Message, theMessage, /Continue, /NoPrint, /NoName, /NoPrefix, _Extra=extra
          IF Keyword_Set(noname) THEN $
             Print, theMessage ELSE $
@@ -266,7 +268,7 @@ FUNCTION ERROR_MESSAGE, theMessage, Error=error, Informational=information, $
    
    ; Provide traceback information if requested and this is NOT an informational message.
    IF Keyword_Set(traceback) AND ~Keyword_Set(informational)THEN BEGIN
-      Help, /Last_Message, Output=traceback
+      IF N_Elements(traceback_msg) NE 0 THEN traceback = traceback_msg ELSE Help, /Last_Message, Output=traceback
       Print,''
       Print, 'Traceback Report from ' + StrUpCase(callingRoutine) + ':'
       Print, ''

@@ -36,9 +36,11 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
-;   Provides a device-independent and color-model-independent way to fill a polygon
-;   with a particular color. This is a wrapper to the PolyFill command in IDL.
+; Provides a device-independent and color-model-independent way to fill a polygon
+; with a particular color. This is a wrapper to the PolyFill command in IDL.
+; 
+; The program requires the `Coyote Library <http://www.idlcoyote.com/documents/programs.php>`
+; to be installed on your machine.
 ;
 ; :Categories:
 ;    Graphics
@@ -58,17 +60,21 @@
 ;         connected. Z must contain at least three elements.
 ;
 ; :Keywords:
-;     color: in, optional, type=string/integer/long, default='rose'
+;     color: in, optional, type=string/byte/integer/long, default='rose'
 ;         The name of the fill color. Color names are those used with cgColor. 
 ;         This value can also be a long integer or an index into the current color
 ;         table.
 ;     device: in, optional, type=boolean, default=0
 ;         Set to indicate the polygon vertices are in device coordinates.
-;     normalized: in, optional, type=boolean, default=0
+;     normal: in, optional, type=boolean, default=0
 ;         Set to indicate the polygon vertices are in normalized coordinates.
+;     position: in, optional, type=float
+;         Set to the normal four-element normalized position array for locating 
+;         a rectangular region in a graphics window. If this keyword is used, the
+;         x and y parameters are constructed from this position.
 ;     window: in, optional, type=boolean, default=0
 ;         Set this keyword to add the command to the current cgWindow application.
-;     _extra: in, optional, type=appropriate
+;     _ref_extra: in, optional, type=appropriate
 ;         Any other keywords to the IDL POLYFILL command may be used.
 ;     
 ;          
@@ -78,13 +84,13 @@
 ;                 /NORMAL, COLOR='blue'
 ;       
 ; :Author:
-;       FANNING SOFTWARE CONSULTING::
-;           David W. Fanning 
-;           1645 Sheely Drive
-;           Fort Collins, CO 80526 USA
-;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;    FANNING SOFTWARE CONSULTING::
+;       David W. Fanning 
+;       1645 Sheely Drive
+;       Fort Collins, CO 80526 USA
+;       Phone: 970-221-0438
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Change History::
@@ -95,14 +101,17 @@
 ;             background problems when passed 24-bit color integers. 12 Jan 2011. DWF.   
 ;        Added WINDOW keyword. 24 Jan 2011. DWF.
 ;        Modified error handler to restore the entry decomposition state if there is an error. 17 March 2011. DWF
+;        Modified to use cgDefaultColor for default color selection. 24 Dec 2011. DWF.
+;        Added a POSITION keyword to allow setting the color position in a graphics window. 24 Jan 2013. DWF.
 ;
 ; :Copyright:
-;     Copyright (c) 2010, Fanning Software Consulting, Inc.
+;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
 ;-
 PRO cgColorFill, x, y, z, $
     COLOR=color, $
     NORMAL=normal, $
     DEVICE=device, $
+    POSITION=position, $
     WINDOW=window, $
      _REF_EXTRA=extra
 
@@ -117,7 +126,7 @@ PRO cgColorFill, x, y, z, $
     ENDIF
 
     ; Did user pass parameters?
-    IF N_Params() EQ 0 THEN BEGIN
+    IF (N_Params() EQ 0) && (N_Elements(position) EQ 0) THEN BEGIN
         Print, 'USE SYNTAX: cgColorFill, x, y, [z]'
         RETURN
     ENDIF
@@ -129,6 +138,7 @@ PRO cgColorFill, x, y, z, $
             COLOR=color, $
             NORMAL=normal, $
             DEVICE=device, $
+            POSITION=position, $
             ADDCMD=1, $
             _EXTRA=extra
             
@@ -138,13 +148,24 @@ PRO cgColorFill, x, y, z, $
     ; Set up PostScript device for working with colors.
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
     
-    ; Do this in decomposed color, if possible.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    ; We are going to draw in decomposed color, if possible.
+    SetDecomposedState, 1, Current=currentState
+
+    ; Use position to set up vectors?
+    IF N_Elements(position) NE 0 THEN BEGIN
+       p = position
+       x = [p[0], p[0], p[2], p[2], p[0]]
+       y = [p[1], p[3], p[3], p[1], p[1]]
+       normal = 1
+    ENDIF
+    
+    ; If current state is "indexed color" and colors are represented as long integers then "fix" them.
+    IF (currentState EQ 0) THEN BEGIN
+       IF Size(color, /TNAME) EQ 'LONG' THEN color = Fix(color)
+    ENDIF
     
     ; Need a color?
-    IF N_Elements(color) EQ 0 THEN thisColor = 'rose' ELSE thisColor = color
-    IF Size(thisColor, /TYPE) EQ 3 THEN IF GetDecomposedState() EQ 0 THEN thisColor = Byte(thisColor)
-    IF Size(thisColor, /TYPE) LE 2 THEN thisColor = StrTrim(Fix(thisColor),2)
+    thisColor = cgDefaultColor(color, DEFAULT='rose')
 
     ; Get the current color vectors.
     TVLCT, rr, gg, bb, /Get

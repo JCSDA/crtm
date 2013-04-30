@@ -17,8 +17,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -39,7 +39,7 @@
 ;                      linearly scales approximately 96% of the image histogram.
 ;                      Clipping percents are approximations only, and depend
 ;                      entirely on the distribution of pixels in the image. For
-;                      interactive scaling, see XSTRETCH.
+;                      interactive scaling, see cgStretch.
 ;
 ; INPUT KEYWORDS:
 ;
@@ -66,18 +66,20 @@
 ; EXAMPLES:
 ;
 ;       LoadCT, 0                                            ; Gray-scale colors.
-;       image = LoadData(22)                                 ; Load image.
+;       image = cgDemoData(22)                                 ; Load image.
 ;       TV, ClipScl(image, 4)
 ;
 ; RESTRICTIONS:
 ;
 ;     Requires SCALE_VECTOR from the Coyote Library:
 ;
-;        http://www.dfanning.com/programs/scale_vector.pro
+;        http://www.idlcoyote.com/programs/scale_vector.pro
 ;
 ; MODIFICATION HISTORY:
 ;
 ;       Written by:  David W. Fanning, 6 September 2007.
+;       Not sure what this program was doing, but not what I thought. I've reworked
+;          the algorithm to scale the data appropriately. 25 Oct 2011. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -144,7 +146,8 @@ FUNCTION ClipScl, image, clip, $
    maxr = Max(image, MIN=minr, /NAN)
    range = maxr - minr
    IF Size(image, /TName) EQ 'BYTE' THEN binsize = 1.0 ELSE binsize = range / 1000.
-   h = Histogram(image, BINSIZE=binsize, OMIN=omin, OMAX=omax)
+   IF Size(image, /TName) NE Size(binsize, /TName) THEN image = Convert_To_Type(image, Size(binsize, /TName))
+   h = Histogram(image, BINSIZE=binsize, OMIN=omin, OMAX=omax, /NAN)
    n = N_Elements(image)
    cumTotal = Total(h, /CUMULATIVE)
    minIndex = Value_Locate(cumTotal, n * (clip/100.))
@@ -154,7 +157,17 @@ FUNCTION ClipScl, image, clip, $
    ENDWHILE
    minThresh = minIndex * binsize + omin
 
+   ; Not all files can be clipped appropriately. If maxIndex
+   ; is -1 or N_Elements(cumTotal), or maxIndex=minIndex then 
+   ; just byte scale the image and get out of here.
    maxIndex  = Value_Locate(cumTotal, n * ((100-clip)/100.))
+   IF (maxIndex EQ -1) || (maxIndex EQ N_Elements(cumTotal)) || (maxIndex EQ minIndex) THEN BEGIN
+       threshold = [minr, maxr]
+       Message, 'Image histogram could not be clipped successfully. Image is byte scaled.', /Informational
+       IF Keyword_Set(negative) THEN RETURN, 255B - BytScl(image, /NAN) ELSE RETURN, BytScl(image, /NAN)
+   ENDIF
+   
+   ; If you are still here, try to clip the histogram.
    WHILE cumTotal[maxIndex] EQ cumTotal[maxIndex - 1] DO BEGIN
        maxIndex = maxIndex - 1
    ENDWHILE
@@ -162,13 +175,9 @@ FUNCTION ClipScl, image, clip, $
 
    ; Save the thresholds.
    threshold = [minThresh, maxThresh]
-
-   ; Scale it into the thresholds.
-   output = Temporary(output - (Min(output)))
-   output = output * (Float(maxThresh)/Max(output)) + minThresh
-
-   ; Scale it into the output values.
-   output = Byte(Scale_Vector(Temporary(output), minOut, MaxOut))
+   
+   ; Scale the data.
+   output = Scale_Vector(Temporary(output), MIN=threshold[0], MAX=threshold [1], minOut, maxOut)
 
    IF Keyword_Set(negative) THEN RETURN, 0B > (maxout - output + minOut) < 255B $
       ELSE RETURN, output

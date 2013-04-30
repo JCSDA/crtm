@@ -39,6 +39,69 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 ;
+;+
+;   The purpose of cgSurface is to create a window where a surface is displayed. Surfaces
+;   can be wire-framed, shaded surfaces, and surfaces with texture maps draped on top of
+;   them, among other types of surfaces. LEFT mouse button rotates the surface, MIDDLE
+;   mouse button zooms out from the surface, RIGHT mouse button zoom into the surface. 
+;   Clicking on the surface axes will allow the user to move or translate the surface, and 
+;   clicking on the plot title will allow the user to move the title.
+;
+; .. image:: cgsurface.png
+; 
+; :Categories:
+;    Graphics
+;    
+; :Examples:
+;    Use as you would use the IDL SURFACE of SHADE_SURF command::
+;       data = Dist(200)
+;       LoadCT, 33
+;       cgSurface, data
+;       cgSurface, data, /Elevation_Shading
+;       cgSurface, data, /Shaded
+;       cgSurface, data, /Shaded, Texture_Image=cgDemoData(16) 
+;       
+;       Setting up the initial surface rotation.
+;       IDL> T3D, /RESET, ROTATE=[0, 0, 30]
+;       IDL> T3D, ROTATE=[-90, 0, 0]
+;       IDL> T3D, ROTATE=[0, 30, 0]
+;       IDL> T3D, ROTATE=[30, 0, 0]
+;       IDL> cgSurface, cgDemoData(2), Transform=!P.T
+;       
+; :Author:
+;    FANNING SOFTWARE CONSULTING::
+;       David W. Fanning 
+;       1645 Sheely Drive
+;       Fort Collins, CO 80526 USA
+;       Phone: 970-221-0438
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;
+; :History:
+;     Change History::
+;        Completely re-written, 26 November 2010 from old cgSURFACE program. DWF.
+;        Added ability to translate the surface by clicking on an axis. 28 Nov 2010. DWF.
+;        Fixed a problem with light controls in which the light controls didn't show the
+;            current light color. 28 Nov 2010. DWF.
+;        I was ANDing [XYZ]Style keywords with 8 instead of 4 for hidded axes. Fixed. 4 Jan 2011. DWF.
+;        Added Axes ON/OFF button. 4 Jan 2011. DWF.
+;        Rotation is throwing underflow warnings, so switched to code that surpress 
+;            these warnings. 26 Aug 2011. DWF
+;        Added TRANSFORM keyword to allow the initial surface to be rotated to user 
+;            specifications. 26 Sept 2011. DWF.
+;        Changed FSC_Normalize to cgNormalize to reflect new name. 6 Feb 2013. DWF.
+;
+; :Copyright:
+;     Copyright (c) 2010-2011, Fanning Software Consulting, Inc.
+;-
+
+;+
+; Controls light intensity by handling selection events from the Intensity Value widget.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO CW_Light_Control_Intensity_Events, event
 
     ; Handles selection events from the Intensity Value widget.
@@ -84,6 +147,13 @@ END ;---------------------------------------------------------------------------
 
 
 
+;+
+; Controls light properties such as color, whether the light is on or off, etc.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO CW_Light_Control_Events, event
 
     ; Error handling.
@@ -166,8 +236,45 @@ END ;---------------------------------------------------------------------------
 
 
 
-FUNCTION CW_Light_Control, parent, theLight, Name=name, UValue=uvalue, Event_Pro=event_pro, $
-   LabelSize=labelsize, Index=index, Color=color, SETCOLOR_NAME=setColor_name
+;+
+; This is a compound widget that allows the user to manipulate various
+; properties of a light object via a graphical user interface.
+; 
+; :Params:
+;    parent: in, required
+;       The parent widget of this compound widget.
+;    thelight: in, required, type=object
+;       An object reference to a particular light object.
+;       
+; :Keywords:
+;   color: in, optional, type=bytarr
+;      A color triple representing the color of the light.
+;   event_pro: in, optional, type=string
+;      The name of an event handler that will handle events for this widget.
+;   index: in, optional, type=integer
+;      A color table index number. If the `Color` keyword is not used, the color
+;      will be obtained from the colors loaded in the current color table at this
+;      color table index number.
+;   labelsize: in, optional, type=integer
+;      The size of the label widget used in the compound widget in pixels.
+;      If not specified, the "natural" size of the label widget is used.
+;   name: in, optional, type=string, default=""
+;      A name for this widget. Provided to help identify the widget in
+;      event handlers.
+;   setcolor_name: in, optional, type=string, default=""
+;      This keyword sets the UNAME property of the Set Color button in the interface.
+;      It's purpose is to help you identify that button in event handlers.
+;   uvalue: in, optional
+;       A container to store any IDL variable needed by the user of this program.
+;-
+FUNCTION CW_Light_Control, parent, theLight, $
+  Color=color, $
+  Event_Pro=event_pro, $
+  Index=index, $
+  LabelSize=labelsize, $
+  Name=name, $
+  SetColor_Name=setColor_name, $
+  UValue=uvalue
 
 ; This is a compound widget that allows one to manipulate various
 ; properties of light objects.
@@ -224,12 +331,26 @@ END ;---------------------------------------------------------------------------
 
 
 
+;+
+; An event handler that destroys the light controller in the program.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Light_Done, event
     Widget_Control, event.top, /Destroy
 END ;--------------------------------------------------------------------
 
 
 
+;+
+; An event handler that renders the light controller's graphics.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Light_Controls_Event, event
     Widget_Control, event.top, Get_UValue=info
     info.theWindow->Draw, info.theView
@@ -238,6 +359,14 @@ END
 
 
 
+;+
+; An event handler that creates the graphical user interface for the
+; light controller.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Light_Controls, event
 
     ; Place the light control beside the current widget program.
@@ -276,6 +405,13 @@ END
 ;-------------------------------------------------------------------------
 
 
+;+
+; An event handler that turns the surface axes on or off.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Axes_OnOff, event
 
     ; This event handler turns the surface axes on or off.
@@ -316,6 +452,13 @@ PRO cgSurface_Axes_OnOff, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler that turns the bottom color on or off.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Bottom_OnOff, event
 
     ; This event handler turns the bottom color on or off.
@@ -348,6 +491,13 @@ PRO cgSurface_Bottom_OnOff, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler that changes the color tables for elevation shading.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Change_Colors, event
 
     ; This event handler changes color tables for elevation shading.
@@ -365,25 +515,25 @@ PRO cgSurface_Change_Colors, event
     CASE StrUpCase(buttonValue) OF
         'TITLE COLOR': BEGIN
             title = 'Set Title Color'
-            color = PickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
+            color = cgPickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
             info.tcolor = cgColor(color, /Triple, /Row)
             info.plottitle -> SetProperty, COLOR=info.tcolor
             END
         'SURFACE COLOR': BEGIN
             title = 'Set Surface Color'
-            color = PickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
+            color = cgPickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
             info.color = cgColor(color, /Triple, /Row)
             info.thisSurface -> SetProperty, COLOR=info.color
             END
         'BACKGROUND COLOR': BEGIN
             title = 'Set Background Color'
-            color = PickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
+            color = cgPickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
             info.background = cgColor(color, /Triple, /Row)
             info.thisView -> SetProperty, COLOR=info.background
             END
         'AXIS COLOR': BEGIN
             title = 'Set Axis Color'
-            color = PickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
+            color = cgPickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
             info.axiscolor = cgColor(color, /Triple, /Row)
             info.xaxis -> SetProperty, COLOR=info.axiscolor
             info.yaxis -> SetProperty, COLOR=info.axiscolor
@@ -391,7 +541,7 @@ PRO cgSurface_Change_Colors, event
             END
         'BOTTOM COLOR': BEGIN
             title = 'Set Bottom Color'
-            color = PickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
+            color = cgPickColorName(buttonUValue, TITLE=title, GROUP_LEADER=event.top)
             info.bottom = cgColor(color, /Triple, /Row)
             info.thisSurface -> SetProperty, BOTTOM=info.bottom
             END
@@ -407,6 +557,14 @@ PRO cgSurface_Change_Colors, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler for draw events such as expose events and trackball
+; events. The trackball uses the IDL-supplied TRACKBALL_DEFINE.PRO.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Draw_Events, event
 
     ; Draw widget events handled here: expose events and trackball
@@ -515,18 +673,25 @@ PRO cgSurface_Draw_Events, event
     ; Draw the view. If this program STILL throws floating point exceptions,
     ; comment this line out and uncomment the code below it. Dishonest as
     ; all get out, but it works fine. :-)
-    info.thisWindow->Draw, info.thisView
-    ;currentExcept = !Except
-    ;!Except = 0
-    ;info.thisWindow -> Draw, info.thisView
-    ;dummy = Check_Math()
-    ;!Except = currentExcept
+    ;info.thisWindow->Draw, info.thisView
+    currentExcept = !Except
+    !Except = 0
+    info.thisWindow -> Draw, info.thisView
+    dummy = Check_Math()
+    !Except = currentExcept
     
     ; Put the info structure back.
     Widget_Control, event.top, Set_UValue=info, /No_Copy
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler changing the colors used in elevation shading.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Elevation_Colors, event
 
     ; This event handler changes color tables for elevation shading.
@@ -577,6 +742,13 @@ PRO cgSurface_Elevation_Colors, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to set up elevation shading for the surface.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Elevation_Shading, event
 
     ; This event handler sets up elevation shading for the surface.
@@ -620,6 +792,13 @@ PRO cgSurface_Elevation_Shading, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to destroy the GUI for this program.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Exit, event
 
    ; Exit the program. This will cause the CLEANUP
@@ -629,6 +808,13 @@ PRO cgSurface_Exit, event
 END ;-----------------------------------------------------------------------------------------
 
 
+;+
+; An event handler to allow the surface to move in the graphics window.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Move_Surface, event
 
     ; This event handler moves the surface.
@@ -671,6 +857,13 @@ PRO cgSurface_Move_Surface, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to allow the title to move in the graphics window.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Move_Title, event
 
     ; This event handler moves the surface title.
@@ -713,6 +906,15 @@ PRO cgSurface_Move_Title, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to allow the user to save the graphics window
+; in a variety of output formats, including raster formats and
+; PostScript.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Output, event
 
    ; This event handler creates GIF and JPEG files.
@@ -786,6 +988,13 @@ PRO cgSurface_Output, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to allow the user to change various surface properties.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Properties, event
 
     ; Event handler to set program properties.
@@ -837,6 +1046,13 @@ PRO cgSurface_Properties, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to respond to window resizing events.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Resize, event
 
     ; The only events generated by this simple program are resize
@@ -870,6 +1086,13 @@ END
 
 
 
+;+
+; An event handler to turn the surface skirt on and off.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Skirt_OnOff, event
 
     ; This event handler turns the skirt on or off.
@@ -900,6 +1123,14 @@ PRO cgSurface_Skirt_OnOff, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; An event handler to respond to events from the Style menu, changing
+; style properties of the surface.
+; 
+; :Params:
+;    event: in, required
+;       The event structure from the graphical user interface of the program.
+;-
 PRO cgSurface_Style, event
 
      ; Event handler to select surface style.
@@ -955,6 +1186,13 @@ PRO cgSurface_Style, event
 END ;------------------------------------------------------------------------------
 
 
+;+
+; The cleanup routine for the program. Cleans everything up when the widget dies.
+; 
+; :Params:
+;    tlb: in, required
+;       The identifier of the widget that just died.
+;-
 PRO cgSurface_Cleanup, tlb
 
     ; Come here when program dies. Free all created objects.
@@ -967,6 +1205,24 @@ PRO cgSurface_Cleanup, tlb
 END ;------------------------------------------------------------------------------
 
 
+;+
+; A function for calculating the correct surface aspect ratio. A position
+; in the window with this aspect ratio is returned.
+; 
+; :Returns:
+;    A four-element POSITION array, giving the position in the window for
+;    a plot with this aspect ratio.
+; 
+; :Params:
+;    aspectRatio: in, optional, type=float, default=1.0
+;       The desired aspect ratio of the surface.
+;       
+; :Keywords:
+;    margin: in, optional, type=float, default=0.0
+;       The desired margin around the edges of the window.
+;    windowaspect: in, optional, type=float
+;       The aspect ratio of the window the graphics are to be displayed in.
+;-
 FUNCTION cgSurface_Aspect, aspectRatio, MARGIN=margin, WindowAspect=wAspectRatio
 
     ; This function calculates the correct aspect ratio for display.
@@ -1015,7 +1271,6 @@ END ;---------------------------------------------------------------------------
 
 
 ;+
-; :Description:
 ;   The purpose of cgSurface is to create a window where a surface is displayed. Surfaces
 ;   can be wire-framed, shaded surfaces, and surfaces with texture maps draped on top of
 ;   them, among other types of surfaces. LEFT mouse button rotates the surface, MIDDLE
@@ -1023,9 +1278,6 @@ END ;---------------------------------------------------------------------------
 ;   Clicking on the surface axes will allow the user to move or translate the surface, and 
 ;   clicking on the plot title will allow the user to move the title.
 ;
-; :Categories:
-;    Graphics
-;    
 ; :Params:
 ;    data: in, required, type=any
 ;         A two-dimensional array of data to be displayed.
@@ -1049,7 +1301,8 @@ END ;---------------------------------------------------------------------------
 ;        Set this keyword to indicate that the colortable (CTABLE) is
 ;        to use Brewer color tables rather than IDL standard color tables.
 ;     charsize: in, optional, type=float, default=1.0
-;        The character size of the surface annotation. 
+;        The character size of the surface annotation. This value is multiplied
+;        times a 12 point character size.
 ;     color: in, optional, type=string, default='blu6'
 ;        The name of the data color. 
 ;     constrain_aspect: in, optional, type=boolean, default=0
@@ -1077,20 +1330,35 @@ END ;---------------------------------------------------------------------------
 ;        Set this keyword if you wish to display a shaded surface. The is the same as setting STYLE=2.
 ;     skirt: in, optional, type=any
 ;         Set this keyword to a Z value where a skirt will be drawn for the surface.
+;     style: in, optional, type=integer, default=1
+;         Sets the style of the surface::
+;         
+;             0 - Dot surface
+;             1 - Wire mesh (the default)
+;             2 - Shaded surface
+;             3 - Parallel X lines
+;             4 - Parallel Y line
+;             5 - Wire mesh lego style
+;             6 - Solid lego style
+;             
 ;     texture_image: in, optional, type=byte
-;         Set this keyword to a 2d or true-color image that will be overlaid on the surface
+;         Set this keyword to a 2D or true-color image that will be overlaid on the surface
 ;         as a texture map. If a 2D image is passed, the colortable specified with CTABLE will
 ;         be used to construct a true-color image for the texture map.
 ;     tcharsize: in, optional, type=float
-;         The title character size. By default 1.25 times the CHARSIZE.
+;         The title character size. By default 1.25 times the `Charsize`.
+;     tcolor: in, optional, type=string
+;         The name of the title color. By default, the same as `AxisColor`.
 ;     title: in, optional, type=string
 ;        The title of the plot. It will be written "flat to the screen", rather than rotated.
-;     tsize: in, optional, type=float, default=1.25*CHARSIZE
-;        The character size for the title. By default, the title character size is 1.25 times
-;        the character size of the surface annotation.
+;     transform: in, optional, type=4x4 double array
+;         A homogeneous transformation matrix to be applied to the initial surface. Such a 
+;         transformation matrix can be obtained, for example, with the T3D procedure.
 ;     xoffset: in, optional, type=integer, default=50
 ;         The number of pixels the surface window should be offset in the X direction
 ;         from the upper-left corner of the display.
+;     xrange: in, optional, type=float
+;         The X data range of the data. Normally, just chosen from the data itself.
 ;     xsize: in, optional, type=interger, default=640
 ;         The X size of the initial surface window. By default, 640 pixels.
 ;     xstyle: in, hidden
@@ -1100,12 +1368,16 @@ END ;---------------------------------------------------------------------------
 ;     yoffset: in, optional, type=integer, default=25
 ;         The number of pixels the surface window should be offset in the Y direction
 ;         from the upper-left corner of the display.
+;     yrange: in, optional, type=float
+;         The Y data range of the data. Normally, just chosen from the data itself.
 ;     ysize: in, optional, type=integer, default=512
 ;         The Y size of the initial surface window. By default, 640 pixels.
 ;     ystyle: in, hidden
 ;         The normal YSTYLE keyword.
 ;     ytitle: in, optional, type=string
 ;         The text for the Y axis of the surface plot.
+;     zrange: in, optional, type=float
+;         The Z data range of the data. Normally, just chosen from the data itself.
 ;     zscale: in, optional, type=float, default=1.0
 ;          A number between 0.001 and 1.0 that will "scale" the Z axis height. Default is 1.0.
 ;     zstyle: in, hidden
@@ -1114,36 +1386,6 @@ END ;---------------------------------------------------------------------------
 ;         The text for the Z axis of the surface plot.
 ;     _extra: in, optional, type=any
 ;        Any keyword appropriate for the IDLgrSurface object is allowed in the program.
-;
-; :Examples:
-;    Use as you would use the IDL SURFACE of SHADE_SURF command::
-;       data = Dist(200)
-;       LoadCT, 33
-;       cgSurface, data
-;       cgSurface, data, /Elevation_Shading
-;       cgSurface, data, /Shaded
-;       cgSurface, data, /Shaded, Texture_Image=Loaddata(16) 
-;       
-; :Author:
-;       FANNING SOFTWARE CONSULTING::
-;           David W. Fanning 
-;           1645 Sheely Drive
-;           Fort Collins, CO 80526 USA
-;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
-;
-; :History:
-;     Change History::
-;        Completely re-written, 26 November 2010 from old cgSURFACE program. DWF.
-;        Added ability to translate the surface by clicking on an axis. 28 Nov 2010. DWF.
-;        Fixed a problem with light controls in which the light controls didn't show the
-;            current light color. 28 Nov 2010. DWF.
-;        I was ANDing [XYZ]Style keywords with 8 instead of 4 for hidded axes. Fixed. 4 Jan 2011. DWF.
-;        Added Axes ON/OFF button. 4 Jan 2011. DWF.
-;
-; :Copyright:
-;     Copyright (c) 2010, Fanning Software Consulting, Inc.
 ;-
 PRO cgSurface, data, x, y, $
     Axiscolor=axiscolorName, $
@@ -1167,6 +1409,7 @@ PRO cgSurface, data, x, y, $
     Title=plotTitleText, $
     TCharsize=tcharsize, $
     TColor=tcolorName, $
+    Transform=transform, $
     XOffset=xoffset, $
     XRange=xrange_u, $
     XSize=xsize, $
@@ -1210,7 +1453,7 @@ PRO cgSurface, data, x, y, $
     IF N_Elements(data) EQ 0 THEN BEGIN
         Print, 'USE SYNTAX: cgSurface, data, x, y'
         Print, 'Using example data.'
-        data = LoadData(2)
+        data = cgDemoData(2)
     ENDIF
     
     ; Get the current color table vectors. May need them later.
@@ -1454,9 +1697,9 @@ PRO cgSurface, data, x, y, $
     ; is scaled into the range -0.5 to 0.5. We do this so that when the
     ; surface is rotated we don't have to worry about translations. In
     ; other words, the rotations occur about the point (0,0,0).
-    xs = FSC_Normalize(xrange, Position=[pos[0], pos[1]])
-    ys = FSC_Normalize(yrange, Position=[pos[2], pos[3]])
-    zs = FSC_Normalize(zrange, Position=[pos[4], pos[5]] * zscale)
+    xs = cgNormalize(xrange, Position=[pos[0], pos[1]])
+    ys = cgNormalize(yrange, Position=[pos[2], pos[3]])
+    zs = cgNormalize(zrange, Position=[pos[4], pos[5]] * zscale)
     
     ; Scale the axes and place them in the coordinate space.
     ; Note that not all values in the Location keyword are
@@ -1476,10 +1719,15 @@ PRO cgSurface, data, x, y, $
     thisModel->Add, yAxis
     thisModel->Add, zAxis
     
-    ; Rotate the surface model to the standard surface view.
-    thisModel->Rotate,[1,0,0], -90  ; To get the Z-axis vertical.
-    thisModel->Rotate,[0,1,0],  30  ; Rotate it slightly to the right.
-    thisModel->Rotate,[1,0,0],  30  ; Rotate it down slightly.
+    ; Rotate the surface model to the standard surface view or 
+    ; apply a transformation matrix, if you have one.
+    IF N_Elements(transform) NE 0 THEN BEGIN
+      thisModel -> SetProperty, Transform=transform
+    ENDIF ELSE BEGIN
+      thisModel->Rotate,[1,0,0], -90  ; To get the Z-axis vertical.
+      thisModel->Rotate,[0,1,0],  30  ; Rotate it slightly to the right.
+      thisModel->Rotate,[1,0,0],  30  ; Rotate it down slightly.
+    ENDELSE
     
     ; Create some lights to view the surface. Surfaces will look
     ; best if there is some ambient lighting to illuminate them
@@ -1526,10 +1774,15 @@ PRO cgSurface, data, x, y, $
     fillLight->SetProperty, XCoord_Conv=xs, YCoord_Conv=ys, ZCoord_Conv=zs
     nonrotatingLight->SetProperty, XCoord_Conv=xs, YCoord_Conv=ys, ZCoord_Conv=zs
     
-    ; Rotate the non-rotating model to the standard surface view.
-    nonrotatingModel->Rotate,[1,0,0], -90  ; To get the Z-axis vertical.
-    nonrotatingModel->Rotate,[0,1,0],  30  ; Rotate it slightly to the right.
-    nonrotatingModel->Rotate,[1,0,0],  30  ; Rotate it down slightly.
+    ; Rotate the non-rotating model to the standard surface view or apply
+    ; the transformation matrix, if you have one.
+    IF N_Elements(transform) NE 0 THEN BEGIN
+      nonrotatingModel -> SetProperty, Transform=transform
+    ENDIF ELSE BEGIN
+      nonrotatingModel->Rotate,[1,0,0], -90  ; To get the Z-axis vertical.
+      nonrotatingModel->Rotate,[0,1,0],  30  ; Rotate it slightly to the right.
+      nonrotatingModel->Rotate,[1,0,0],  30  ; Rotate it down slightly.
+    ENDELSE
     
     ; Check for availability of GIF files.
     thisVersion = Float(!Version.Release)

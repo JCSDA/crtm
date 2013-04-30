@@ -36,9 +36,11 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
-;   Provides a device-independent and color-model-independent way of drawing an arrow
-;   in a specified color.
+; Provides a device-independent and color-model-independent way of drawing an arrow
+; in a specified color.
+; 
+; The program requires the `Coyote Library <http://www.idlcoyote.com/documents/programs.php>`
+; to be installed on your machine.
 ;
 ; :Categories:
 ;    Graphics
@@ -58,6 +60,8 @@
 ;         device coordinates.
 ;       
 ; :Keywords:
+;     addcmd: in, optional, type=boolean, default=0
+;         An alternative way to set the `Window` keyword.
 ;     color: in, optional, type=string/integer/long, default='white'
 ;         An alternative way to specify the color to use in erasing the graphics window.
 ;         Color names are those used with cgColor. This parameter is used in
@@ -92,19 +96,21 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Change History::
 ;        Written, 23 November 2010. DWF. Based on old Arrow routine in IDL.
 ;        Added Window keyword 24 January 2011. DWF.
 ;        Modified error handler to restore the entry decomposition state if there is an error. 17 March 2011. DWF
-;
+;        Added the ADDCMD keyword to make the interface more consistent with other Coyote Grapics routines. 18 April 2013. DWF.
+;        
 ; :Copyright:
-;     Copyright (c) 2010, Fanning Software Consulting, Inc.
+;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
 ;-
 PRO cgArrow, x0, y0, x1, y1, $
+    ADDCMD=addcmd, $
     COLOR = scolor, $
     DATA = data, $
     HSIZE = hsize, $
@@ -127,6 +133,9 @@ PRO cgArrow, x0, y0, x1, y1, $
         RETURN
     ENDIF
     
+    ; Use ADDCMD as an alternative way to set the WINDOW keyword.
+    IF Keyword_Set(addcmd) THEN window = 1
+    
     ; Should this be added to a resizeable graphics window?
     IF Keyword_Set(window) AND ((!D.Flags AND 256) NE 0) THEN BEGIN
     
@@ -141,6 +150,7 @@ PRO cgArrow, x0, y0, x1, y1, $
             NORMAL = normal, $
             SOLID = solid, $
             THICK = thick, $
+            ADDCMD=1, $
             _EXTRA=extra
             
          RETURN

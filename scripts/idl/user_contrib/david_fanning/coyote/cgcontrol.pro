@@ -36,7 +36,6 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
 ;   Allows the user to set various properties of an cgWindow object. This is essentially
 ;   a wrapper to the cgWindow SetProperty method.
 ;
@@ -54,6 +53,10 @@
 ;         This keyword applies only to keywords that manipulate commands in the command
 ;         list (e.g., DeleteCmd). It will select all the commands in the command list to
 ;         apply the action to.
+;     adjustsize: in, optional, type=boolean
+;         Set this keyword to adjust default character size to the display window size.
+;     aspect: in, optional, type=boolean
+;         Set this keyword to the desired aspect ratio (ysize/xsize) of the window.
 ;     background: in, optional, type=string
 ;         The background color of the window. Only use if the ERASEIT property is also set.
 ;     cmdindex: in, optional, type=integer
@@ -63,26 +66,36 @@
 ;     create_bmp: in, optional, type='string', default='cgwindow.bmp'
 ;          Set this keyword to the name of a bitmap file to create automatically from the window.
 ;          Using this keyword is a way to create a bitmap file programmatically from a cgWindow application.
-;          The raster file will be created via ImageMagick if raster_im has been set (default).
+;          The raster file will be created via ImageMagick if im_raster has been set (default).
+;          Depreciated now in favor of the `Output` keyword.
 ;     create_gif: in, optional, type='string', default='cgwindow.gif'
 ;          Set this keyword to the name of a GIF file to create automatically from the window.
 ;          Using this keyword is a way to create a GIF file programmatically from a cgWindow application.
-;          The raster file will be created via ImageMagick if raster_im has been set (default).
+;          The raster file will be created via ImageMagick if im_raster has been set (default).
+;          Depreciated now in favor of the `Output` keyword.
 ;     create_jpeg: in, optional, type='string', default='cgwindow.jpeg'
 ;          Set this keyword to the name of a JPEG file to create automatically from the window.
 ;          Using this keyword is a way to create a JPEG file programmatically from a cgWindow application.
-;          The raster file will be created via ImageMagick if raster_im has been set (default).
+;          The raster file will be created via ImageMagick if im_raster has been set (default).
+;          Depreciated now in favor of the `Output` keyword.
+;     create_pdf: in, optional, type='string', default='cgwindow.pdf'
+;          Set this keyword to the name of a PNG file to create automatically from the window.
+;          Using this keyword is a way to create a PDF file programmatically from a cgWindow application.
+;          The PDF file will be created via the Coyote Graphics program cgPS2PDF.
+;          Depreciated now in favor of the `Output` keyword.
 ;     create_png: in, optional, type='string', default='cgwindow.png'
 ;          Set this keyword to the name of a PNG file to create automatically from the window.
 ;          Using this keyword is a way to create a PNG file programmatically from a cgWindow application.
-;          The raster file will be created via ImageMagick if raster_im has been set (default).
+;          The raster file will be created via ImageMagick if im_raster has been set (default).
 ;     create_ps: in, optional, type='string', default='cgwindow.ps'
 ;          Set this keyword to the name of a PostScript file to create automatically from the window.
 ;          Using this keyword is a way to create a PostScript file programmatically from a cgWindow application.
+;          Depreciated now in favor of the `Output` keyword.
 ;     create_tiff: in, optional, type='string', default='cgwindow.tiff'
 ;          Set this keyword to the name of a TIFF file to create automatically from the window.
 ;          Using this keyword is a way to create a TIFF file programmatically from a cgWindow application.
-;          The raster file will be created via ImageMagick if raster_im has been set (default).
+;          The raster file will be created via ImageMagick if im_raster has been set (default).
+;          Depreciated now in favor of the `Output` keyword.
 ;     delay: in, optional, type=float
 ;         Set this keyword to the amount of "delay" you want between commands in the command list.
 ;     deletecmd: in, optional, type=boolean
@@ -91,6 +104,9 @@
 ;     destroy: in, optional, type=boolean
 ;          Set this keyword to destroy the cgWindow program. This keyword should not be used
 ;          with other keywords.
+;     dimensions: in, optional, type=intarr(2)
+;          Set this keyword to a two-element array giving the xsize and ysize
+;          of the draw widget.
 ;     eraseit: in, optional, type=boolean
 ;         If this property is set, the cgWindow erases with the background color before
 ;         displaying the commands in the window's command list.
@@ -122,28 +138,56 @@
 ;     im_resize: in, optional, type=integer, default=25
 ;         Set this keyword to percentage that the raster image file created my ImageMagick
 ;         from PostScript output should be resized.
-;     raster_im: in, optional, type=boolean, default=1
+;     im_raster: in, optional, type=boolean, default=1
 ;         Set this keyword to zero to create raster files using the create_png etc. keywords
 ;         directly, instead of via ImageMagick.
+;     im_width: in, optional, type=integer
+;        Set this keyword to the width of the output raster file in pixel units. The height of the raster
+;        file is set to preserve the aspect ratio of the output image. Applies only to raster images (eg
+;        PNG, JPEG, TIFF, etc.) created from PostScript files with ImageMagick.
 ;     multi: in, optional, type=Intarr(5)
 ;         Set this keyword to the !P.MULTI setting you want to use for the window.
 ;         !P.MULTI is set to this setting before command execution, and set back to
 ;         it's default value when the commands are finished executing.
 ;     object: in, optional, type=boolean
 ;         If this keyword is set, the selection is assumed to be an object reference.
-;     palette: in, optional, type=BytArr(N,3)
+;     output: in, optional, type=string
+;         This keyword should be set to the name of an output file. It is a short-hand way of
+;         specifying the CREATE_*** keywords. The type of file is taken from the file name
+;         extension.
+;     palette: in, optional, type=byte
 ;         Use this keyword to pass in an N-by-3 (or 3-by-N) byte array containing the
 ;         R, G, and B vectors of a color table. It is probably easier to use cgLoadCT or
 ;         XCOLORS to load color tables for the window, but this is provided as another option.
+;     pdf_path: out, optional, type=string
+;         Set this keyword to the name of the path to the Ghostscript command for converting PS to PDF.
+;     pdf_unix_convert_cmd: out, optional, type=string
+;         Set this keyword to the name of an alternative UNIX command to convert PostScript to PDF.
+;     ps_charsize: in, optional, type=float
+;         The PostScript character size.
+;     ps_decomposed: in, optional, type=boolean, default=0
+;         Set this keyword to zero to set the PostScript color mode to indexed color and to
+;         one to set the PostScript color mode to decomposed color.
 ;     ps_delete: in, optional, type=boolean, default=1
 ;         Set this keyword to zero if you want to keep the PostScript output ImageMagick creates
 ;         when making raster file output.
 ;     ps_encapsulated: in, optional, type=boolean, default=0
 ;          Set this keyword to configure PSCONFIG to produce encapsulated PostScript output by default.
+;     ps_font: in, optional, type=integer
+;        Set this keyword to the type of font you want to use in PostScript output. It sets the 
+;        FONT keyword on the PSConfig command. Normally, 0 (hardware fonts) or 1 (true-type fonts).
 ;     ps_metric: in, optional, type=boolean, default=0
 ;          Set this keyword to configure PSCONFIG to use metric values and A4 page size in its interface.
 ;     ps_quiet: in, optional, type=boolean, default=0
 ;          Set this keyword to set the QUIET keyword on PS_Start.
+;     ps_scale_factor: in, optional, type=float
+;          Set his keyword to the PostScript scale factor you wish to use in creating PostScript output.
+;     ps_tt_font: in, optional, type=string
+;        Set this keyword to the name of a true-type font to use in creating PostScript output.
+;     restore_visualization: in, optional, type=string
+;          Set this keyword to the name of a visualization save file to restore.
+;     save_visualization: in, optional, type=string, default='graphic.cgs'
+;          Set this keyword to the name of a file where the visualization should be saved.
 ;     title: in, optional, type=boolean
 ;         If this keyword is set, the selection is assumed to be a window title. All
 ;         matching is done in uppercase characters.
@@ -168,26 +212,38 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; :History:
 ;     Change History::
-;        Written, 28 January 2011. DWF.
-;        Added raster_im and the create_... raster options. 18 Feb 2011. Jeremy Bailin
-;
-; :Copyright:
-;     Copyright (c) 2011, Fanning Software Consulting, Inc.
+;     Written, 28 January 2011. DWF.
 ;     Added CREATE_PS keyword. 16 Feb 2011. DWF.
 ;     Added PS_QUIET, GET_KEYCMDINDEX, GET_KEYWORD, and GET_KEYVALUE keywords. 17 Feb 2011. DWF.
+;     Added im_raster and the create_... raster options. 18 Feb 2011. Jeremy Bailin
+;     Added the ability to set and unset adjustable text size in 
+;        cgWindow with ADJUSTSIZE keyword. 24 April 2011. DWF.
+;     Added the ability to set the dimensions of the draw widget programmatically. 14 June 2011.
+;     Added PS_DECOMPOSED keyword to set the PostScript color mode. 30 Aug 2011. DWF.
+;     Added SAVE_VISUALIZATION and RESTORE_VISUALIZATION keywords. 15 Sept 2011. DWF.
+;     Added ASPECT keyword to control window aspect ratio. 9 Nov 2011. DWF.
+;     Added CREATE_PDF, PDF_UNIX_CONVERT_CMD, and PDF_PATH keywords. 11 Dec 2011. DWF.
+;     Added IM_WIDTH keyword. 3 April 2012. DWF.
+;     Added the OUTPUT keyword. 3 April 2012. DWF.
+;
+; :Copyright:
+;     Copyright (c) 2011-2012, Fanning Software Consulting, Inc.
 ;-
 PRO cgControl, selection, $
+    ADJUSTSIZE=adjustsize, $                      ; Adjusts text size to fit display window size.
+    ASPECT=aspect, $                              ; Sets the aspect ratio of the window.
     ALL=all, $                                    ; Apply the command operation to all the commands (i.e., DeleteCMD)
     BACKGROUND=background, $                      ; Sets the background color of the window
     CMDINDEX=cmdIndex, $                          ; Apply the command operation to this command only.
     CREATE_BMP=create_bmp, $                      ; Set this to the name of a bitmap file that is produced from the commands in the window.
     CREATE_GIF=create_gif, $                      ; Set this to the name of a GIF file that is produced from the commands in the window.
     CREATE_JPEG=create_jpeg, $                    ; Set this to the name of a JPEG file that is produced from the commands in the window.
+    CREATE_PDF=create_pdf, $                      ; Set this to the name of a PDF file that is produced from the commands in the window.
     CREATE_PNG=create_png, $                      ; Set this to the name of a PNG file that is produced from the commands in the window.
     CREATE_PS=create_ps, $                        ; Set this to the name of a PostScript file that is produced from the commands in the window.
     CREATE_TIFF=create_tiff, $                    ; Set this to the name of a TIFF file that is produced from the commands in the window.
@@ -195,6 +251,7 @@ PRO cgControl, selection, $
     DELAY=delay, $                                ; Set the delay between command execution.
     DELETECMD=deleteCmd, $                        ; Delete a command. If ALL is set, delete all commands.
     DESTROY=destroy, $                            ; Destroy the window. Should be called alone or with the ALL keyword.
+    DIMENSIONS=dimensions, $                      ; The dimensions of the draw widget.
     ERASEIT=eraseit, $                            ; Set the erase feature of the window.
     EXECUTE=execute, $                            ; Execute the commands immediately. 
     GET_KEYCMDINDEX = get_keycmdindex, $          ; Gets the keyword value out of this command. Counting starts at 0.
@@ -203,24 +260,31 @@ PRO cgControl, selection, $
     LISTCMD=listCmd, $                            ; List a command or ALL commands.
     MULTI=multi, $                                ; Set the multiple property of the window. Identical to !P.Multi.
     OBJECT=object, $                              ; If this keyword is set, the selection is an object reference.
+    OUTPUT=output, $                              ; The name of the output file.
     TITLE=title, $                                ; If this keyword is set, the selection is the title.
     UPDATE=update, $                              ; If this keyword is set, the commands are immediately executed after properties are set.
     WIDGETID=widgetID, $                          ; If this keyword is set, the selection is a widget ID.
     XOMARGIN=xomargin, $                          ; Change the !X.OMargin setting for the winow.
     YOMARGIN=yomargin, $                          ; Change the !Y.OMargin setting for the window.
-    IM_TRANSPARENT=im_transparent, $              ; Sets the "alpha" keyword on ImageMagick convert command.
     IM_DENSITY=im_density, $                      ; Sets the density parameter on ImageMagick convert command.
     IM_RESIZE=im_resize, $                        ; Sets the resize parameter on ImageMagick convert command.
     IM_OPTIONS=im_options, $                      ; Sets extra ImageMagick options on the ImageMagick convert command.
     IM_RASTER=im_raster, $                        ; Sets whether to generate raster files via ImageMagick.
+    IM_TRANSPARENT=im_transparent, $              ; Sets the "alpha" keyword on ImageMagick convert command.
+    IM_WIDTH=im_width, $                          ; Set the width of raster file output from PostScript files.
+    PDF_UNIX_CONVERT_CMD=pdf_unix_convert_cmd, $  ; Command to convert PS to PDF.
+    PDF_PATH=pdf_path, $                          ; The path to the Ghostscript conversion command.
+    PS_CHARSIZE=ps_charsize, $                    ; Select the character size for PostScript output.
+    PS_DECOMPOSED=ps_decomposed, $                ; Sets the PostScript color mode.
     PS_DELETE=ps_delete, $                        ; Delete the PostScript file when making IM files.
-    PS_METRIC=ps_metric, $                        ; Select metric measurements in PostScript output.
     PS_ENCAPSULATED=ps_encapsulated, $            ; Create Encapsulated PostScript output.
     PS_FONT=ps_font, $                            ; Select the font for PostScript output.
-    PS_CHARSIZE=ps_charsize, $                    ; Select the character size for PostScript output.
+    PS_METRIC=ps_metric, $                        ; Select metric measurements in PostScript output.
     PS_QUIET=ps_quiet, $                          ; Select the QUIET keyword on PS_Start.
     PS_SCALE_FACTOR=ps_scale_factor, $            ; Select the scale factor for PostScript output.
-    PS_TT_FONT=ps_tt_font                         ; Select the true-type font to use for PostScript output.
+    PS_TT_FONT=ps_tt_font, $                      ; Select the true-type font to use for PostScript output.
+   RESTORE_VISUALIZATION=restore_visualization, $; Set this keyword to the name of a file containing a visualization to restore.
+    SAVE_VISUALIZATION=save_visualization         ; Set this keyword to the name of a file where the visualization is to be saved.
     
    Compile_Opt idl2
     
@@ -230,6 +294,46 @@ PRO cgControl, selection, $
         Catch, /CANCEL
         void = Error_Message()
         RETURN
+   ENDIF
+   
+   ; Make sure there is something here to control.
+   void = cgQuery(COUNT=count)
+   IF count EQ 0 THEN RETURN
+   
+   ; Handle the OUTPUT keyword first, since it sets other keywords.
+   IF N_Elements(output) NE 0 THEN BEGIN
+   
+        ; Start with a fresh slate.
+        Undefine, create_bmp
+        Undefine, create_gif
+        Undefine, create_jpeg
+        Undefine, create_pdf
+        Undefine, create_png
+        Undefine, create_ps
+        Undefine, create_tiff
+        
+        ; Parse the filename to find a file extension.
+        rootName = cgRootName(output, DIRECTORY=thisDir, EXTENSION=ext)
+        extension = StrUpCase(ext)
+
+        typeOfOutput = ['BMP','EPS', 'GIF','JPEG','JPG','PDF', 'PNG','PS', 'TIFF', 'TIF']
+        void = Where(typeOfOutput EQ extension, count)
+        IF count EQ 0 THEN Message, 'Cannot output to a file with a "' + ext + '" extension.'
+       
+        ; Set things up.
+        CASE extension OF
+          'BMP':  create_bmp = output
+          'EPS':  create_ps = output
+          'GIF':  create_gif = output
+          'JPEG': create_jpeg = output
+          'JPG':  create_jpeg = output
+          'PDF':  create_pdf = output
+          'PNG':  create_png = output
+          'PS':   create_ps = output
+          'TIFF': create_tiff = output
+          'TIF':  create_tiff = output
+        ENDCASE
+    
    ENDIF
    
    ; Always update, unless told otherwise.
@@ -251,7 +355,7 @@ PRO cgControl, selection, $
    
    ; Get the values you need.
    wid = cgQuery(WIDGETID=tlb, OBJECT=objref, TITLE=titles, COUNT=count)
-   IF count EQ 0 THEN Message, 'There are no cgWindows currently on the display.', /Infomational
+   IF count EQ 0 THEN Message, 'There are no cgWindows currently on the display.', /Informational
    
    ; Get the window list.
    list = !FSC_Window_List
@@ -262,7 +366,7 @@ PRO cgControl, selection, $
         Keyword_Set(widgetID): BEGIN
             index = Where(tlb EQ selection, selectCount)
             IF selectCount EQ 0 THEN $
-                Message, 'No cgWindow matches the selection criteria.', /Infomational
+                Message, 'No cgWindow matches the selection criteria.', /Informational
             END
             
         Keyword_Set(object): BEGIN
@@ -274,13 +378,13 @@ PRO cgControl, selection, $
         Keyword_Set(title): BEGIN
             index = Where(StrUpCase(titles) EQ StrUpCase(selection), selectCount)
             IF selectCount EQ 0 THEN $
-                Message, 'No cgWindow matches the selection criteria.', /Infomational
+                Message, 'No cgWindow matches the selection criteria.', /Informational
             END
 
         ELSE: BEGIN
             index = Where(wid EQ selection, selectCount)
             IF selectCount EQ 0 THEN $
-                Message, 'No cgWindow matches the selection criteria.', /Infomational
+                Message, 'No cgWindow matches the selection criteria.', /Informational
             END
    
    ENDCASE
@@ -320,8 +424,11 @@ PRO cgControl, selection, $
    
    ; Set the properties of the window.
    IF Obj_Valid(objref[index]) THEN objref[index] -> SetProperty, $
+        ADJUSTSIZE=adjustsize, $
+        ASPECT=aspect, $
         BACKGROUND=background, $
         DELAY=delay, $
+        DIMENSIONS=dimensions, $
         ERASEIT=eraseit, $
         PALETTE=palette, $
         MULTI=multi, $
@@ -333,11 +440,15 @@ PRO cgControl, selection, $
         IM_RESIZE = im_resize, $                        ; Sets the resize parameter on ImageMagick convert command.
         IM_OPTIONS = im_options, $                      ; Sets extra ImageMagick options on the ImageMagick convert command.
         IM_RASTER = im_raster, $                        ; Sets whether to create raster files via ImageMagick.
+        IM_WIDTH = im_width, $                          ; Sets the final width of the raster files create with ImageMagick.
+        PDF_UNIX_CONVERT_CMD=pdf_unix_convert_cmd, $    ; Command to convert PS to PDF.
+        PDF_PATH=pdf_path, $                            ; The path to the Ghostscript conversion command.
+        PS_CHARSIZE=ps_charsize, $                      ; Select the character size for PostScript output.
+        PS_DECOMPOSED = ps_decomposed, $                ; Sets the PostScript color mode.
         PS_DELETE = ps_delete, $                        ; Delete the PostScript file when making IM files.
-        PS_METRIC = ps_metric, $                        ; Select metric measurements in PostScript output.
         PS_ENCAPSULATED = ps_encapsulated, $            ; Create encapsulated PostScript output.
         PS_FONT=ps_font, $                              ; Select the font for PostScript output.
-        PS_CHARSIZE=ps_charsize, $                      ; Select the character size for PostScript output.
+        PS_METRIC = ps_metric, $                        ; Select metric measurements in PostScript output.
         PS_QUIET=ps_quiet, $                            ; Setlect the QUIET keywords for PS_Start.
         PS_SCALE_FACTOR=ps_scale_factor, $              ; Select the scale factor for PostScript output.
         PS_TT_FONT=ps_tt_font                           ; Select the true-type font to use for PostScript output.
@@ -364,6 +475,23 @@ PRO cgControl, selection, $
        ENDCASE
        
        IF Obj_Valid(objref[index]) THEN objref[index] -> AutoPostScriptFile, filename 
+   ENDIF
+
+   ; Are you creating a PDF file?
+   IF N_Elements(create_pdf) NE 0 THEN BEGIN
+   
+       typeName = Size(create_pdf, /TNAME)
+       CASE 1 OF
+          typeName EQ 'STRING': BEGIN
+            filename = create_pdf
+            END
+          (typeName EQ 'INT') && (create_pdf[0] EQ 1): BEGIN
+               filename = 'cgwindow.pdf'
+            END
+          ELSE: Message, 'Incorrect input to CREATE_PDF keyword.'
+       ENDCASE
+       
+       IF Obj_Valid(objref[index]) THEN objref[index] -> AutoRasterFile, 'PDF', filename 
    ENDIF
     
    ; Are you creating a bitmap file?
@@ -450,7 +578,41 @@ PRO cgControl, selection, $
        
        IF Obj_Valid(objref[index]) THEN objref[index] -> AutoRasterFile, 'TIFF', filename 
    ENDIF
+   
+   ; Are you saving a visualization?
+   IF N_Elements(save_visualization) NE 0 THEN BEGIN
+   
+       ; Get a filename if this is not a string.
+       IF Size(save_visualization, /TNAME) EQ 'STRING' $
+           THEN filename = save_visualization $
+           ELSE filename = 'graphics.cgs'
+           
+       ; Save the visualization to a file.
+       IF Obj_Valid(objref[index]) THEN objref[index] -> SaveCommands, filename
+   ENDIF
     
+   ; Are you restoring a visualization?
+   IF N_Elements(restore_visualization) NE 0 THEN BEGIN
+   
+       ; Get a filename if this is not a string.
+       IF Size(restore_visualization, /TNAME) EQ 'STRING' $
+           THEN filename = restore_visualization $
+           ELSE BEGIN
+                filename = cgPickfile()
+           ENDELSE
+           
+       ; Does this file exist?
+       IF File_Test(filename) EQ 0 THEN Message, 'Cannot find the file: ' + filename
+           
+       IF filename NE "" THEN BEGIN
+       
+           ; Restore the visualization.
+           IF Obj_Valid(objref[index]) THEN objref[index] -> RestoreCommands, filename
+           
+        ENDIF
+        
+   ENDIF
+
    ; Need a keyword?
    IF N_Elements(get_keyword) NE 0 THEN BEGIN
       IF Size(get_keyword, /TNAME) NE 'STRING' THEN Message, 'Keyword name must be a string variable.'

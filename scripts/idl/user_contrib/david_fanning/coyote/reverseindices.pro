@@ -64,7 +64,7 @@
 ;          
 ; :Examples:
 ;    Used with the HISTOGRAM command::
-;       IDL> image = LoadData(7)
+;       IDL> image = cgDemoData(7)
 ;       IDL> h = Histogram(image, REVERSE_INDICES=ri)
 ;       IDL> indices = ReverseIndices(ri, 4, COUNT=cnt)
 ;       IDL> Help, indices, cnt, h[4]
@@ -80,8 +80,8 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Written by David W. Fanning at suggestion of Ben Tupper. 7 January 2011.

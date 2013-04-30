@@ -1,6 +1,21 @@
 The Coyote Library is an Open Source programming project, hosted at
 http://idl-coyote.googlecode.com.
 
+Programs in the Coyote Library are updated frequently and new
+programs are added continuously. It is extremely important that
+you keep up with recent changes if you expect to work with the
+Coyote Library and all of the other IDL programs in the world that
+use the Coyote Library. Please update your library every time
+you think of it! 
+
+You can find the latest version of the Coyote Library here:
+
+   http://wwww.idlcoyote.com/programs/coyoteprograms.zip
+
+Or, in the Download section here:
+
+   http://idl-coyote.googlecode.com
+
 The Coyote Library evolved from work David Fanning was doing
 teaching IDL courses and answering IDL questions on the IDL
 newsgroup. It is meant to be a well-documented library that
@@ -54,7 +69,7 @@ All Coyote Library routines use the following BSD Open Source License:
 
 ;******************************************************************************************;
 ;                                                                                          ;
-;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
+;  Copyright (c) 2012, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -80,3 +95,15 @@ All Coyote Library routines use the following BSD Open Source License:
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 
+DOCUMENTATION:
+
+   Documentation for Coyote Graphics Routines (any program starting with "cg" as
+   a prefex as well as other intimately tied to Coyote Graphics routines) is 
+   available on line:
+
+        http://www.idlcoyote.com/idldoc/cg/index.html
+
+   Documentation for other routines is available as an HTML file in the Coyote
+   directory:
+
+         http://www.idlcoyote.com/programs/program.documentation.html

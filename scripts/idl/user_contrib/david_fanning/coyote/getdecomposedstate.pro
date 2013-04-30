@@ -36,18 +36,17 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
-;   Provides a device-independent way to get the color decomposition state of the
-;   current graphics device. 
+;  Provides a device-independent way to get the color decomposition state of the
+;  current graphics device. 
 ;
 ; :Categories:
 ;    Graphics, Utilities
 ;    
-; :Params:
-;    none
+; :Returns:
+;     Returns a 1 if color decomposition is turned on and a 0 if indexed color is used.
 ;       
 ; :Keywords:
-;     Detph: out, optional, type=integer
+;     Depth: out, optional, type=integer
 ;         The depth of the color display. Typically 8 for indexed color devices
 ;         and 24 for true-color devices.
 ;          
@@ -60,8 +59,8 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Change History::

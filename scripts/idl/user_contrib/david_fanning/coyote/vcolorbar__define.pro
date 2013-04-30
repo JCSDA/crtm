@@ -19,8 +19,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -105,12 +105,6 @@
 ;       the model that is selected in a selection event, since the SELECT_TARGET
 ;       keyword is set for the model.
 ;
-; RESTRICTIONS:
-;
-;       Requires FSC_NORMALIZE from Coyote Library:
-;
-;         http://www.dfanning.com/programs/fsc_normalize.pro
-;
 ; EXAMPLE:
 ;
 ;       To create a colorbar object and add it to a plot view object, type:
@@ -147,6 +141,8 @@
 ;          are now available. 26 June 2002. DWF.
 ;       Fixed a problem with POSITION keyword in SetProperty method. 23 May 2003. DWF.
 ;       Removed NORMALIZE from source code. 29 Nov 2005. DWF.
+;       Font sizes have changed. Now using a 12 point font. 6 May 2011. DWF.
+;       Changed FSC_Normalize to cgNormalize to reflect new name. 6 Feb 2013. DWF.
 ;-
 ;
 ;******************************************************************************************;
@@ -214,7 +210,7 @@ IF (self->IDLgrModel::Init(_EXTRA=extra) NE 1) THEN RETURN, 0
 IF N_Elements(name) EQ 0 THEN name=''
 IF N_Elements(color) EQ 0 THEN self.color = [255,255,255] $
    ELSE self.color = color
-thisFont = Obj_New('IDLgrFont', 'Helvetica', Size=8.0)
+thisFont = Obj_New('IDLgrFont', 'Helvetica', Size=12.0)
 self.thisFont = thisFont
 IF N_Elements(title) EQ 0 THEN title=''
 
@@ -246,8 +242,8 @@ ysize = s[1]
     ; Create the colorbar image object. Add palette to it.
 
 thisImage = Obj_New('IDLgrImage', bar, Palette=self.palette)
-xs = FSC_Normalize([0,xsize], Position=[0,1.])
-ys = FSC_Normalize([0,ysize], Position=[0,1.])
+xs = cgNormalize([0,xsize], Position=[0,1.])
+ys = cgNormalize([0,ysize], Position=[0,1.])
 thisImage->SetProperty, XCoord_Conv=xs, YCoord_Conv=ys
 
    ; Create a polygon object. Add the image as a texture map. We do
@@ -259,33 +255,33 @@ self.thisPolygon = thisPolygon
 
     ; Scale the polygon into the correct position.
 
-xs = FSC_Normalize([0,1], Position=[self.position(0), self.position(2)])
-ys = FSC_Normalize([0,1], Position=[self.position(1), self.position(3)])
+xs = cgNormalize([0,1], Position=[self.position[0], self.position[2]])
+ys = cgNormalize([0,1], Position=[self.position[1], self.position[3]])
 thispolygon->SetProperty, XCoord_Conv=xs, YCoord_Conv=ys
 
     ; Create scale factors to position the axes.
 
-longScale = FSC_Normalize(self.range, Position=[self.position(1), self.position(3)])
-shortScale = FSC_Normalize([0,1], Position=[self.position(0), self.position(2)])
+longScale = cgNormalize(self.range, Position=[self.position[1], self.position[3]])
+shortScale = cgNormalize([0,1], Position=[self.position[0], self.position[2]])
 
     ; Create the colorbar axes. 1000 indicates this location ignored.
 
-shortAxis1 = Obj_New("IDLgrAxis", 0, Color=self.color, Ticklen=0.025, $
+shortAxis1 = Obj_New("IDLgrAxis", 0, Color=self.color, Ticklen=0.00, $
     Major=1, Range=[0,1], /NoText, /Exact, XCoord_Conv=shortScale,  $
-    Location=[1000, self.position(1), 0.001])
+    Location=[1000, self.position[1], 0.001])
 shortAxis2 = Obj_New("IDLgrAxis", 0, Color=self.color, Ticklen=0.025, $0.001
     Major=1, Range=[0,1], /NoText, /Exact, XCoord_Conv=shortScale,  $
-    Location=[1000, self.position(3), 0.001], TickDir=1)
+    Location=[1000, self.position[3], 0.001], TickDir=1)
 
 textAxis = Obj_New("IDLgrAxis", 1, Color=self.color, Ticklen=0.025, $
     Major=self.major, Minor=self.minor, Title=thisTitle, Range=self.range, /Exact, $
-    YCoord_Conv=longScale, Location=[self.position(0), 1000, 0.001], _Extra=extra)
+    YCoord_Conv=longScale, Location=[self.position[0], 1000, 0.001], _Extra=extra)
 textAxis->GetProperty, TickText=thisText
 thisText->SetProperty, Font=self.thisFont, Recompute_Dimensions=2
 
 longAxis2 = Obj_New("IDLgrAxis", 1, Color=self.color, /NoText, Ticklen=0.025, $
     Major=self.major, Minor=self.minor, Range=self.range, TickDir=1, $
-    YCoord_Conv=longScale, Location=[self.position(2), 1000, 0.001], /Exact)
+    YCoord_Conv=longScale, Location=[self.position[2], 1000, 0.001], /Exact)
 
     ; Add the parts to the colorbar model.
 
@@ -376,27 +372,27 @@ IF N_Elements(position) NE 0 THEN BEGIN
 
         ; Move the image polygon into its new positon.
 
-    xs = FSC_Normalize([0,1], Position=[position(0), position(2)])
-    ys = FSC_Normalize([0,1], Position=[position(1), position(3)])
+    xs = cgNormalize([0,1], Position=[position[0], position[2]])
+    ys = cgNormalize([0,1], Position=[position[1], position[3]])
     self.thisPolygon->SetProperty, XCoord_Conv=xs, YCoord_Conv=ys
 
         ; Create new scale factors to position the axes.
 
-    longScale = FSC_Normalize(self.range, $
-       Position=[self.position(1), self.position(3)])
-    shortScale = FSC_Normalize([0,1], $
-       Position=[self.position(0), self.position(2)])
+    longScale = cgNormalize(self.range, $
+       Position=[self.position[1], self.position[3]])
+    shortScale = cgNormalize([0,1], $
+       Position=[self.position[0], self.position[2]])
 
         ; Position the axes. 1000 indicates this position ignored.
 
     self.textaxis->SetProperty, YCoord_Conv=longScale, $
-       Location=[self.position(0), 1000, 0]
+       Location=[self.position[0], 1000, 0]
     self.longaxis2->SetProperty, YCoord_Conv=longScale, $
-       Location=[self.position(2), 1000, 0]
+       Location=[self.position[2], 1000, 0]
     self.shortAxis1->SetProperty, XCoord_Conv=shortScale, $
-       Location=[1000, self.position(1), 0]
+       Location=[1000, self.position[1], 0]
     self.shortAxis2->SetProperty, XCoord_Conv=shortScale, $
-       Location=[1000, self.position(3), 0]
+       Location=[1000, self.position[3], 0]
 
 ENDIF
 IF N_Elements(title) NE 0 THEN self.thisTitle->SetProperty, Strings=title
@@ -417,8 +413,8 @@ IF N_Elements(minor) NE 0 THEN BEGIN
 END
 IF N_Elements(range) NE 0 THEN BEGIN
     self.range = range
-    longScale = FSC_Normalize(range, $
-       Position=[self.position(1), self.position(3)])
+    longScale = cgNormalize(range, $
+       Position=[self.position[1], self.position[3]])
     self.textAxis->SetProperty, Range=range, YCoord_Conv=longScale
     self.longAxis2->SetProperty, Range=range, YCoord_Conv=longScale
 ENDIF

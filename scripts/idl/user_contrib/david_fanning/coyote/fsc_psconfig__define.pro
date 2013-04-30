@@ -15,8 +15,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -28,11 +28,11 @@
 ;   keyword and method descriptions, and example programs using the object
 ;   can be found on the Coyote's Guide to IDL Programming web page:
 ;
-;     http://www.dfanning.com/programs/docs/fsc_psconfig.html
+;     http://www.idlcoyote.com/programs/docs/fsc_psconfig.html
 ;
 ;   Or, if you would prefer, you can download a self-contained PDF file:
 ;
-;     http://www.dfanning.com/programs/docs/fsc_psconfig.pdf
+;     http://www.idlcoyote.com/programs/docs/fsc_psconfig.pdf
 ;
 ; KEYWORDS:
 ;
@@ -41,6 +41,7 @@
 ;
 ;   Bits_per_Pixel - The number of image bits saved for each image pixel: 2, 4, or 8. The default is 8.
 ;   Color - Set this keyword to select Color PostScript output. Turned on by default.
+;   Decomposed - Set this keyword to 0 to select indexed color and to 1 to select decomposed color.
 ;   DefaultSetup - Set this keyword to the "name" of a default style. Current styles (you can easily
 ;     create and add your own to the source code) are the following:
 ;
@@ -160,11 +161,19 @@
 ;   Fixed a problem with 24-bit color support that allowed only IDL 7 versions to work correctly. 20 Sept 2009. DWF.
 ;   Added a LANGUAGE_LEVEL keyword. 13 Dec 2010. DWF.
 ;   Added the FONTYPE value to the keyword return structure. 14 Dec 2010. DWF.
-;   Modified the return structure to turn landscape mode off and set offsets to zero if in encapsulated mode. 19 Feb 2011. DWF.
+;   Modified the return structure to turn landscape mode off and set offsets to zero if in 
+;        encapsulated mode. 19 Feb 2011. DWF.
+;   Changes to handle inability to create raster files from PS encapsulated files in 
+;        landscape mode. Also removed changes of 19 Feb 2011 as no longer needed. 26 Aug 2011. DWF.
+;   The PAGETYPE was not getting set properly in the return keywords when the Metric 
+;        option was selected on the GUI. 12 October 2011. DWF.
+;   The program now remembers the last directory you used and will start in that
+;       directory, unless told otherwise. 26 Oct 2011. DWF.
+;   Parsing of full filename failing. Fixed 27 Oct 2011. DWF.
 ;-
 
 ;******************************************************************************************;
-;  Copyright (c) 2008-2009, by Fanning Software Consulting, Inc.                           ;
+;  Copyright (c) 2008-2011, by Fanning Software Consulting, Inc.                           ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -247,32 +256,6 @@ FUNCTION FSC_PSCONFIG_RStrPos, Expr, SubStr, Pos
   endfor
 
   RETURN, result
-END ;-------------------------------------------------------------------------
-
-
-
-PRO FSC_PSCONFIG_CenterTLB, tlb
-
-; This procedure centers the given top-level base on the display.
-
-   ; Get the screen size and find its center.
-
-screenSize = Get_Screen_Size()
-IF screenSize[0] GT 2000 THEN screenSize[0] = screenSize[0]/2 ; Dual monitors.
-xCenter = screenSize(0) / 2
-yCenter = screenSize(1) / 2
-
-   ; Get the size of the widget program and calculate a half-size.
-
-geom = Widget_Info(tlb, /Geometry)
-xHalfSize = geom.Scr_XSize / 2
-yHalfSize = geom.Scr_YSize / 2
-
-   ; Position the widget program on the display.
-
-Widget_Control, tlb, XOffset = xCenter-xHalfSize, $
-   YOffset = yCenter-yHalfSize
-
 END ;-------------------------------------------------------------------------
 
 
@@ -498,6 +481,14 @@ ENDIF
    ; Get the filename information.
 
 self.filenameID->GetProperty, File=filename, Directory=directory
+
+; Save the name of the directory, if you can.
+DEFSYSV, '!cgPostScript_LastDir', EXISTS=exists
+IF exists THEN BEGIN
+    IF File_Test(directory, /DIRECTORY) THEN !cgPostScript_LastDir = directory 
+ENDIF ELSE BEGIN
+    IF File_Test(directory, /DIRECTORY) THEN DEFSYSV, '!cgPostScript_LastDir', directory
+ENDELSE
 self.filenameSet = filename
 self.directorySet = directory
 self.fullFilenameSet=self.filenameID->GetFileName()
@@ -649,8 +640,20 @@ END ;---------------------------------------------------------------------------
 PRO FSC_PSCONFIG::Encapsulate, event
 
 ; This method responds to a change in the Encapsulation droplist widget.
+IF event.index THEN BEGIN
+    self.previewID->Sensitive, 1 
+    self.landscapeSet = 0
+    self.encapsulationSet = 1
+    self->UpdateDisplay
+    self.orientationID->Sensitive, 0
+    
+ENDIF ELSE BEGIN
+    self.previewID->Sensitive, 0
+    self.encapsulationSet = 0
+    self->UpdateDisplay
+    self.orientationID->Sensitive, 1
+ENDELSE
 
-IF event.index THEN self.previewID->Sensitive, 1  ELSE self.previewID->Sensitive, 0
 END ;--------------------------------------------------------------------------------
 
 
@@ -732,6 +735,7 @@ IF event.select EQ 1 THEN BEGIN
    ENDIF
    self.inchesSet = 0
    self.pageTypeSet = 'A4'
+   self.pageType = 'A4'
    self.plotID->SetUnits, 'Centimeters'
    Widget_Control, event.top, Update=1
 
@@ -746,6 +750,7 @@ ENDIF ELSE BEGIN
       self.xoffsetSet = sizes[2] / 2.54
       self.yoffsetSet = sizes[3] / 2.54
    self.inchesSet = 1
+   self.pageType = 'LETTER'
    self.pageTypeSet = 'LETTER'
    self.plotID->SetUnits, 'Inches'
    Widget_Control, event.top, Update=1
@@ -788,6 +793,9 @@ ENDIF ELSE BEGIN
     yoffset = self.yoffsetSet
 ENDELSE
 
+
+filename = self -> Construct_Full_Filename()
+
    ; Create the basic structure.
 
 struct = { $
@@ -795,7 +803,7 @@ struct = { $
    cmyk: self.cmykSet, $
    color: self.colorSet, $
    encapsulated: self.encapsulationSet, $
-   filename: self.fullfilenameSet, $
+   filename: filename, $
    font_size: Fix(self.fontSizeSet), $
    inches: self.inchesSet, $
    isolatin1: self.isolatinSet, $
@@ -858,14 +866,14 @@ IF self.fontStyleSet[7] THEN struct = Create_Struct(struct, 'oblique', 1) ELSE s
 
 ; If the user is doing encapsulated PostScript, then landscape mode must be off and
 ; offsets must be set to zero.
-IF struct.encapsulated THEN BEGIN
-
-    struct.portrait = 1
-    struct.landscape = 0
-    struct.xoffset = 0
-    struct.yoffset = 0
-
-ENDIF
+;IF struct.encapsulated THEN BEGIN
+;
+;    struct.portrait = 1
+;    struct.landscape = 0
+;    struct.xoffset = 0
+;    struct.yoffset = 0
+;
+;ENDIF
 
    ; Return the keyword stucture.
 
@@ -884,7 +892,7 @@ END ;---------------------------------------------------------------------------
 
 
 
-PRO FSC_PSConfig::GetProperty, Name=name, _Extra=extra
+PRO FSC_PSConfig::GetProperty, Name=name
 
 ; This GetProperty method is set up only to be able to obtain
 ; the name of the object. This makes the object compatible with
@@ -1001,6 +1009,7 @@ values = ['Portrait', 'Landscape']
 self.orientationID = FSC_Droplist(controlBase, Value=values, Title='Orientation:', $
    UValue={Method:'Orientation', Object:self}, Event_Pro='FSC_PSCONFIG_Events')
 self.orientationID->SetIndex, self.landscapeSet
+IF self.encapsulationSet THEN self.orientationID -> Sensitive, 0
 
 values = ['Centimeters', 'Inches']
 self.unitsID = FSC_Droplist(controlBase, Value=values, Title='Units:', $
@@ -1192,7 +1201,7 @@ self.plotID->SetColor, self.colorSet
 
    ; Center and realize TLB.
 
-FSC_PSConfig_CenterTLB, tlb
+cgCenterTLB, tlb
 Widget_Control, tlb, /Realize
 
 self.noblock = Keyword_Set(noblock)
@@ -1519,7 +1528,7 @@ ENDIF
 
    ; Center and realize the top-level base.
 
-FSC_PSConfig_CenterTLB, tlb
+cgCenterTLB, tlb
 Widget_Control, tlb, /Realize
 
 self.noblock = Keyword_Set(noblock)
@@ -1555,7 +1564,7 @@ helptext = [ $
 "  by David Fanning of Fanning Software Consulting. Complete   ", $
 "  program documenation is available on the FSC web page:      ", $
 "                                                              ", $
-"     http://www.dfanning.com/programs/docs/fsc_psconfig.html  ", $
+"     http://www.idlcoyote.com/programs/docs/fsc_psconfig.html  ", $
 "                                                              ", $
 "  Other IDL programs, as well as many IDL programming tips    ", $
 "  and techniques can be found on the Coyote's Guide to IDL    ", $
@@ -1565,9 +1574,9 @@ helptext = [ $
 "     1645 Sheely Drive                                        ", $
 "     Fort Collins, CO 80526                                   ", $
 "     Phone: 970-221-0438   Fax: 970-221-4762                  ", $
-"     E-Mail: david@dfanning.com                               ", $
+"     E-Mail: david@idlcoyote.com                               ", $
 "     IDL Book Orders: 1-888-461-0155                          ", $
-"     Coyote's Guide: http://www.dfanning.com/                 ", $
+"     Coyote's Guide: http://www.idlcoyote.com/                 ", $
 "                                                              " ]
 textsize = 19
 
@@ -1580,7 +1589,7 @@ IF XRegistered('fsc_psconfig_help') GT 0 THEN RETURN
 base = Widget_Base(Column=1, Group_Leader=self.acceptID)
 textID = Widget_Text(base, Value=helptext, Scr_XSize=500, YSize=textsize)
 IF NOT Widget_Info(self.tlb, /Modal) THEN button = Widget_Button(base, Value='Dismiss')
-FSC_PSConfig_CenterTLB, base
+cgCenterTLB, base
 Widget_Control, base, /Realize
 XManager, 'fsc_psconfig_help', base, /Just_Reg
 END ;--------------------------------------------------------------------------------
@@ -1843,7 +1852,7 @@ IF Obj_Valid(self.filenameID) THEN BEGIN
 ENDIF ELSE BEGIN
    IF self.filenameSet NE "" THEN BEGIN
       IF N_Elements(directoryName) EQ 0 THEN BEGIN
-            defaultFileName = FSC_Base_Filename(self.filenameSet, EXTENSION=ext, DIRECTORY=directoryName)
+            defaultFileName = cgRootName(self.filenameSet, EXTENSION=ext, DIRECTORY=directoryName)
             IF directoryName EQ "" THEN CD, Current=directoryName 
        ENDIF ELSE BEGIN
             defaultFileName = "idl"
@@ -2612,7 +2621,9 @@ ENDIF
 
 self.debug = 1; Keyword_Set(debug)
 decomposed = Keyword_Set(decomposed)
+encapsulated = Keyword_Set(encapsulated) ; Must come before LANDSCAPE.
 landscape = Keyword_Set(landscape)
+IF encapsulated THEN landscape = 0
 
    ; Set the available PostScript fonts.
 
@@ -2651,10 +2662,28 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
    ENDIF
    IF N_Elements(color) EQ 0 THEN color = 1 ELSE color = 0 > color < color
    IF N_Elements(filename) EQ 0 THEN filename = "idl.ps"
+   
+   ; Is this a fully-qualified filename?
+   dirName = File_Dirname(filename)  
+    
+   ; Parse the filename and the directory name     
    IF N_Elements(directory) EQ 0 THEN BEGIN
-        basename = FSC_Base_Filename(filename, EXTENSION=ext, DIRECTORY=directory)
-        IF directory EQ "" THEN CD, Current=directory ELSE filename = basename + '.' + ext
-   ENDIF
+        ; If no directory is provide, go get the last directory saved if you can.
+        ; Otherwise, use the current directory.
+        IF dirName EQ "." THEN BEGIN
+            DEFSYSV, '!cgPostScript_LastDir', EXISTS=exists
+            IF exists THEN directory = !cgPostScript_LastDir ELSE CD, Current=directory
+        ENDIF ELSE BEGIN
+            basename = File_Basename(filename)
+            filename = basename
+            directory = dirName
+        ENDELSE
+   ENDIF ELSE BEGIN
+        IF dirName NE "." THEN BEGIN
+            basename = File_Basename(filename)
+            filename = basename
+        ENDIF 
+   ENDELSE
    IF N_Elements(fontsize) EQ 0 THEN fontsize = 12
    IF Keyword_Set(inches) EQ 0 THEN IF Keyword_Set(metric) THEN inches = 0 ELSE inches = 1
    IF N_Elements(name) EQ 0 THEN name = ""
@@ -2698,8 +2727,6 @@ IF N_Elements(defaultsetup) EQ 0 THEN BEGIN
    cmyk = Keyword_Set(cmyk)
    courier = Keyword_Set(courier)
    demi = Keyword_Set(demi)
-   encapsulated = Keyword_Set(encapsulated)
-;   european = Keyword_Set(european)
    helvetica = Keyword_Set(helvetica)
    IF N_Elements(isolatin) EQ 0 THEN isolatin = 1 ELSE isolatin = Keyword_Set(isolatin)
    italic = Keyword_Set(italic)

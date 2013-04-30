@@ -1,97 +1,22 @@
-;+
+; docformat = 'rst'
+;
 ; NAME:
-;       cgDemoData
+;   cgDemoData
 ;
 ; PURPOSE:
-;
-;       The purpose of this function is to read a selection of standard
-;       data sets that are found in the normal IDL distribution in the
-;       subdirectory $IDL_DIR/examples/data. At least 25 data sets are
-;       available in all categories of data. The user selects one of the
-;       possible data sets with the mouse. Several of the data sets 
-;       simply create data used to illustrate graphics commands (numbers 1-3), 
-;       and two of the data sets produce random data. Data set 17 produces 
-;       a random vector of 101 elements. Data set 18 produces a 2D array of 
-;       random values, suitable for display as a contour plot or image.
-;
-; CATEGORY:
-;
-;       File I/O.
-;
-; AUTHOR:
-;
-;   FANNING SOFTWARE CONSULTING
-;   David Fanning, Ph.D.
-;   1645 Sheely Drive
-;   Fort Collins, CO 80526 USA
-;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
-;
-; CALLING SEQUENCE:
-;
-;       If calling from the IDL command line:
-;
-;          data = cgDemoData()
-;
-;       If calling from within a widget program:
-;
-;          data = cgDemoData(Cancel=cancelled, Group_Leader=event.top)
-;
-;       If you know which data set you want, you can load it directly:
-;
-;          data = cgDemoData(7)
-;
-; OPTIONAL INPUTS:
-;
-;       selection : The number of the data selection. Values start at 1,
-;           and go up to the number of data sets available (currently 25).
-;
-; KEYWORD PARAMETERS:
-;
-;       CANCEL : An output keyword that is 1 of the use clicked the CANCEL
-;           button and 0 otherwise.
-;
-;              data = cgDemoData(Cancel=cancelled)
-;              IF cancelled THEN RETURN
-;
-;        GROUP_LEADER: The group leader of the widget. This keyword
-;           is required if you wish cgDemoData to be a modal widget program.
-;           (Which you *always* do when calling it from a widget program.)
-;
-;        IMAGES: Set this keyword if you only want to select 2D image
-;           data sets. Note that the selection number does *not* change
-;           just because fewer data sets are available in the selection
-;           widget.
-;
-; COMMON BLOCKS:
-;       None.
-;
-; SIDE EFFECTS:
-;       None.
-;
-; RESTRICTIONS:
-;       None.
-;
-; EXAMPLE:
-;
-;       To load the world elevation data set:
-;
-;       image = cgDemoData(7)
-;
-; MODIFICATION HISTORY:
-;
-;       Written by:  David W. Fanning, 5 March 1999.
-;       Added some additonal random data capability. 29 April 99. DWF
-;       Added IMAGES keyword. 31 March 2000. DWF.
-;       Fixed a problem with the CANCEL button. 25 Oct 2002. DWF.
-;       Added new JPEG, DICOM, TIFF, and PGN images. 30 Oct 2002. DWF.
-;       Modified old program units to work with IDL strict arrays. 29 June 2003. DWF
-;-
+;   The purpose of this function is to read a selection of standard
+;   data sets that are found in the normal IDL distribution in the
+;   subdirectory $IDL_DIR/examples/data. At least 25 data sets are
+;   available in all categories of data. The user selects one of the
+;   possible data sets with the mouse. Several of the data sets 
+;   simply create data used to illustrate graphics commands (numbers 1-3), 
+;   and two of the data sets produce random data. Data set 17 produces 
+;   a random vector of 101 elements. Data set 18 produces a 2D array of 
+;   random values, suitable for display as a contour plot or image.
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
-;  All rights reserved.                                                                    ;
+;                                                                                          ;
+;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -116,6 +41,49 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
+;
+;+
+;   The purpose of this function is to read a selection of standard
+;   data sets that are found in the normal IDL distribution in the
+;   subdirectory $IDL_DIR/examples/data. At least 25 data sets are
+;   available in all categories of data. The user selects one of the
+;   possible data sets with the mouse. Several of the data sets 
+;   simply create data used to illustrate graphics commands (numbers 1-3), 
+;   and two of the data sets produce random data. Data set 17 produces 
+;   a random vector of 101 elements. Data set 18 produces a 2D array of 
+;   random values, suitable for display as a contour plot or image.
+;
+; :Categories:
+;    Utilities
+;    
+; :Examples:
+;       To load the world elevation data set::
+;
+;           image = cgDemoData(7)
+;       
+; :Author:
+;       FANNING SOFTWARE CONSULTING::
+;           David W. Fanning 
+;           1645 Sheely Drive
+;           Fort Collins, CO 80526 USA
+;           Phone: 970-221-0438
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;
+; :History:
+;     Change History::
+;       Written by:  David W. Fanning, 5 March 1999.
+;       Added some additonal random data capability. 29 April 99. DWF
+;       Added IMAGES keyword. 31 March 2000. DWF.
+;       Fixed a problem with the CANCEL button. 25 Oct 2002. DWF.
+;       Added new JPEG, DICOM, TIFF, and PGN images. 30 Oct 2002. DWF.
+;       Modified old program units to work with IDL strict arrays. 29 June 2003. DWF
+;       Yikes! Somehow lost the event handler for the CANCEL button! Fixed. 1 Jan 2012. DWF.
+;       Added 2D Combined Gaussian data set. Renamed utility routines. 22 Jan 2013. DWF.
+;
+; :Copyright:
+;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
+;-
 ;
 ; NAME:
 ;       SMOOTH2
@@ -146,12 +114,23 @@
 ; whatsoever.  Other limitations apply as described in the file disclaimer.txt.
 ;
 ;-------------------------------------------------------------
-
-    function smooth2, i, w, help=hlp
+;+
+; Does multiple smoothing. A routine from the JHUAPL IDL Library.
+; 
+; :Params:
+;    i: in, required
+;        The input array to be smoothed.
+;    w: in, required, type=integer
+;        The size of the smoothing window. Forced to be an odd integer. 
+; :Keywords:
+;    help: in, optional, type=boolean, default=0
+;        Set this keyword to print function syntax help.
+;-
+    function cgdemodata_smooth2, i, w, help=hlp
 
     if (n_params(0) lt 2) or keyword_set(hlp)  then begin
       print,' Do multiple smoothing. Gives near Gaussian smoothing.'
-      print,' b = smooth2(a, w)'
+      print,' b = cgdemodata_smooth2(a, w)'
       print,'   a = array to smooth (1,2, or 3-d).  in'
       print,'   w = smoothing window size.          in'
       print,'   b = smoothed array.                 out'
@@ -204,11 +183,30 @@
 ; whatsoever.  Other limitations apply as described in the file disclaimer.txt.
 ;
 ;-------------------------------------------------------------
+;+
+; Make simulated 2-d data. A routine from the JHUAPL IDL Library.
+; 
+; :Params:
+;    nx: in, required
+;        The X size of the data to be created.
+;    ny: in, required, type=integer
+;        The Y size of the data to be created.
+;    w: in, required, type=integer
+;        The smoothing window size.
+; :Keywords:
+;    help: in, optional, type=boolean, default=0
+;        Set this keyword to print function syntax help.
+;    lastseed: out, optional
+;        Returns the last random seed used.
+;    periodic: in, optional, type=boolean, default=0
+;        Set this keyword to force the data to match at either end.
+;    seed: in, optional
+;        Sets the random seed for repeatable results.
+;-
+    function cgdemodata_makez, nx, ny, w, help=hlp, lastseed=lseed, periodic=per, seed=seed0
+      
 
-    function makez, nx, ny, w, seed=seed0, lastseed=lseed, $
-      periodic=per, help=hlp
-
-        common makez_com, seed
+        common cgdemodata_makez_com, seed
     ;-----------------------------------------------------------------
     ;   Must store seed in common otherwise it is undefined
     ;   on entry each time and gets set by the clock but only
@@ -217,7 +215,7 @@
 
     if keyword_set(hlp) then begin
       print,' Make simulated 2-d data.  Useful for software development.'
-      print,' data = makez( nx, ny, w)'
+      print,' data = cgdemodata_makez( nx, ny, w)'
       print,'   nx, ny = size of 2-d array to make.                   in'
       print,'   w = smoothing window size (def = 5% of sqrt(nx*ny)).  in'
       print,'   data = resulting data array (def = undef).            out'
@@ -251,7 +249,7 @@
       r[ntx-2*lo,0] = r[0:2*lo-1,*] ; Copy part of random data.
       r[0,nty-2*lo] = r[*,0:2*lo-1]
     endif
-    s = smooth2(r,w)        ; Smooth.
+    s = cgdemodata_smooth2(r,w)        ; Smooth.
     s = s[lo:hix, lo:hiy]       ; Trim edge effects.
     s = s - min(s)          ; Normalize.
     s = s/max(s)
@@ -299,12 +297,28 @@
 ; whatsoever.  Other limitations apply as described in the file disclaimer.txt.
 ;
 ;-------------------------------------------------------------
-
-
-    function makey, n, w, seed=seed0, lastseed=lseed, $
+;+
+; Make simulated data vector. A routine from the JHUAPL IDL Library.
+; 
+; :Params:
+;    n: in, required
+;        The size of the data vector to be created.
+;    w: in, required, type=integer
+;        The smoothing window size.
+; :Keywords:
+;    help: in, optional, type=boolean, default=0
+;        Set this keyword to print function syntax help.
+;    lastseed: out, optional
+;        Returns the last random seed used.
+;    periodic: in, optional, type=boolean, default=0
+;        Set this keyword to force the data to match at either end.
+;    seed: in, optional
+;        Sets the random seed for repeatable results.
+;-
+    function cgdemodata_makey, n, w, seed=seed0, lastseed=lseed, $
       periodic=per, help=hlp
 
-        common makey_com, seed
+        common cgdemodata_makey_com, seed
     ;-----------------------------------------------------------------
     ;   Must store seed in common otherwise it is undefined
     ;   on entry each time and gets set by the clock but only
@@ -313,7 +327,7 @@
 
     if keyword_set(hlp) then begin
       print,' Make simulated data.  Useful for software development.'
-      print,' data = makey( n, w)'
+      print,' data = cgdemodata_makey( n, w)'
       print,'   n = number of data values to make.                in'
       print,'   w = smoothing window size (def = 5% of n).        in'
       print,'   data = resulting data array (def = undef).        out'
@@ -344,7 +358,7 @@
     if keyword_set(per) then begin  ; Want periodic data.
       r[nt-2*lo] = r[0:2*lo-1]  ; Copy part of random data.
     endif
-    s = smooth2(r,w)        ; Smooth.
+    s = cgdemodata_smooth2(r,w)        ; Smooth.
     s = s[lo:hi]            ; Trim edge effects.
     s = s - min(s)          ; Normalize.
     s = s/max(s)
@@ -354,7 +368,93 @@
     return, s
     end
 
+;
+; NAME: 
+;  gauss2d
+; PURPOSE: 
+;  Compute a two dimensional gaussian within an array.
+; DESCRIPTION:
+; CATEGORY:
+;  Mathematical
+; CALLING SEQUENCE:
+;  pro gauss2d,nx,ny,x,y,fwhm,array
+; INPUTS:
+;  nx   - X size of output array
+;  ny   - Y size of output array
+;  x    - X location of gaussian in array
+;  y    - Y location of gaussian in array
+;  fwhm - Full width at half-maximum of gaussian.
+; OPTIONAL INPUT PARAMETERS:
+; KEYWORD INPUT PARAMETERS:
+; OUTPUTS:
+;  array - Result array with gaussian inserted.
+; KEYWORD OUTPUT PARAMETERS:
+; COMMON BLOCKS:
+; SIDE EFFECTS:
+; RESTRICTIONS:
+; PROCEDURE:
+; MODIFICATION HISTORY:
+;  94/04/07, Written by Marc W. Buie, Lowell Observatory
+;
+;+
+; Creates a two-dimensions Gaussian data set.
+;
+; :Params:
+;     nx: in, required, type=integer
+;        The X size of the output array.
+;     ny: in, required, type=integer
+;        The Y size of the output array.
+;     x: in, required, type=integer
+;        The X location of the Gaussian in the array.   
+;     y: in, required, type=integer
+;        The Y location of the Gaussian in the array.   
+;     fwhm: in, required, type=float
+;        The full width at half-maximum of Gaussian.
+;     array: out, optional, type=float
+;        The output array containing the Gaussian.
+;-
+pro cgdemodata_gauss2d,nx,ny,x,y,fwhm,array
 
+   ehwd = fwhm/2.0/sqrt(alog(2.0))
+
+   ix = findgen(nx)
+   iy = findgen(ny)
+   onex = replicate(1.0,nx)
+   oney = replicate(1.0,ny)
+
+   xarr = ((ix-x)/ehwd)^2 # oney
+   yarr = onex # ((iy-y)/ehwd)^2
+
+   rsq = xarr + yarr
+   array = fltarr(nx,ny)
+
+   ; Protection against underflow in exp call.
+   big = where(rsq le 87.3, count)
+   if count ne 0 then array[big] = exp(-rsq[big])
+
+end
+
+
+;+
+; This event handler responds to the CANCEL button.
+; 
+; :Params:
+;    event: in, required, type=structure
+;        The event structure passed by the window manager from the CANCEL button.
+;-
+PRO cgDemoData_Cancel, event
+    Widget_Control, event.top, /Destroy
+END
+
+
+
+;+
+; Reads the data set from its current location.
+; 
+; :Params:
+;    number: in, required, type=integer
+;        The selection number.
+;-
 FUNCTION cgDemoData_ReadData, number
 
 COMMON cgDemoData_SEED, seed
@@ -369,15 +469,15 @@ ENDIF
 CASE number OF
 
    0: BEGIN
-      data = MAKEY(101, 5, Seed=1L) * 30.0
+      data = cgdemodata_makey(101, 5, Seed=1L) * 30.0
       END
 
    1: BEGIN
-      data = MAKEZ(41, 41, 8, Seed=-2L)  * 1550
+      data = cgdemodata_makez(41, 41, 8, Seed=-2L)  * 1550
       END
 
    2: BEGIN
-      data = MAKEZ(41, 41, 10, Seed=-5L)
+      data = cgdemodata_makez(41, 41, 10, Seed=-5L)
       data = Scale_Vector(data, 0, 60)
       END
 
@@ -509,14 +609,14 @@ CASE number OF
         ; Random 1D vector of 101 elements.
 
      scale = RandomU(seed, 1) * 100
-     data = Scale_Vector(MAKEY(101, 5, Seed=seed) * scale[0], 0, 100)
+     data = Scale_Vector(cgdemodata_makey(101, 5, Seed=seed) * scale[0], 0, 100)
      END
 
  17: BEGIN
 
         ; Random 401 by 401 array.
 
-     data = MAKEZ(401, 401, 41, Seed=seed)
+     data = cgdemodata_makez(401, 401, 41, Seed=seed)
      data = Hist_Equal(data)
      data = BytScl(data, Top=!D.Table_Size-1)
 
@@ -559,6 +659,13 @@ CASE number OF
      file = FILEPATH(SUBDIR=['examples', 'data'], 'mineral.png')
      data = Read_PNG(file)
      END
+     
+25: BEGIN ; 2D Gaussian.
+    cgDemoData_Gauss2D, 101, 101, 70, 70, 20., array1
+    cgDemoData_Gauss2D, 101, 101, 20, 20, 90., array2
+    data = (array1 + array2) * 10.
+    END
+
 
 ELSE: ok = Dialog_Message("No data set with that index number. Sorry.")
 
@@ -570,29 +677,13 @@ END
 
 
 
-PRO cgDemoData_CenterTLB, tlb
-
-Device, Get_Screen_Size=screenSize
-IF screenSize[0] GT 2000 THEN screenSize[0] = screenSize[0]/2 ; Dual monitors.
-xCenter = screenSize(0) / 2
-yCenter = screenSize(1) / 2
-
-geom = Widget_Info(tlb, /Geometry)
-xHalfSize = geom.Scr_XSize / 2
-yHalfSize = geom.Scr_YSize / 2
-
-Widget_Control, tlb, XOffset = xCenter-xHalfSize, $
-   YOffset = yCenter-yHalfSize
-
-END ;; CenterTLB
-
-PRO cgDemoData_CANCEL, event
-WIDGET_CONTROL, event.top, /Destroy
-END
-;------------------------------------------------------------------
-
-
-
+;+
+; Reads the data set from its current location.
+; 
+; :Params:
+;    event: in, required, type=structure
+;        The event handler for the graphical user interface.
+;-
 PRO cgDemoData_EVENT, event
 WIDGET_CONTROL, event.top, GET_UVALUE=ptr
 WIDGET_CONTROL, event.id, GET_UVALUE=indexValue
@@ -602,9 +693,31 @@ END
 ;------------------------------------------------------------------
 
 
-
-FUNCTION cgDemoData, CANCEL=cancel, number, Group_Leader=groupleader, $
-   Images=images
+;+
+; Select a dataset either interactively or by selection.
+; 
+; :Params:
+; 
+;    selection: in, optional, type=integer
+;       The data set selection number. If not present, a graphical user
+;       interface is presented to the user so that a data set may be
+;       selected.
+;       
+; :Keywords:
+;    cancel: out, optional, type=boolean
+;       If a graphical user interface is used for the data selection, this output 
+;       keyword is set to 1 if the user clicks the CANCEL button. Otherwise, it is 
+;       set to 0.
+;    group_leader: in, optional, type=long
+;       The identifier of a widget group leader for this widget application. If the
+;       group leader dies, this program will die as well.
+;    images: in, optional, type=boolean, default=0
+;       Set this keyword if you wish to see only 2D images in the selection widget.
+;-
+FUNCTION cgDemoData, selection, $
+   CANCEL=cancel, $
+   GROUP_LEADER=groupleader, $
+   IMAGES=images
 
 On_Error, 1
 
@@ -615,13 +728,13 @@ COMMON cgDemoData_SEED, seed
    ; If a parameter is passed in, read that data set and return.
 
 IF N_Params() EQ 1 THEN BEGIN
-   type = Size(number)
+   type = Size(selection)
    type = type( type(0) + 1 )
    IF type EQ 0 THEN Message, 'Supplied argument is undefined.'
    IF type GT 5 THEN Message, 'Supplied argument must be a number.'
-   number = number - 1
-   number = 0 > number < 24
-   data = cgDemoData_ReadData(number)
+   selection = selection - 1
+   selection = 0 > selection < 25
+   data = cgDemoData_ReadData(selection)
    RETURN, data
 ENDIF
 
@@ -672,12 +785,11 @@ ENDIF ELSE BEGIN
             '22. Muscle (JPEG 652-by-444 2D BYTE array)', $
             '23. River Delta (TIFF 786-by-512 2D BYTE array)', $
             '24. MRI of Knee (DICOM 256-by-256 2D INT array)', $
-            '25. Mineral Micrograph (PNG 288-by-216 2D BYTE array)']
+            '25. Mineral Micrograph (PNG 288-by-216 2D BYTE array)', $
+            '26. 2D Combined Gaussian (101-by-101 FLOAT array)']
 
-
-
-   indexValue = IndGen(25)
-   listsize = 25
+   indexValue = IndGen(N_Elements(value))
+   listsize = N_Elements(value)
    title = 'Select Data Set...'
 ENDELSE
 
@@ -690,7 +802,7 @@ ENDELSE
 
 list = WIDGET_LIST(tlb, VALUE=value, SCR_XSIZE=400, YSIZE=listsize, UValue=indexValue)
 button = WIDGET_BUTTON(tlb, VALUE='Cancel', EVENT_PRO='cgDemoData_CANCEL')
-cgDemoData_CenterTLB, tlb
+cgCenterTLB, tlb
 WIDGET_CONTROL, tlb, /REALIZE
 
    ; Create a pointer to store the data.

@@ -15,8 +15,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -65,6 +65,8 @@
 ; MODIFICATION HISTORY:
 ;
 ;       Written by:  David W. Fanning, 29 August 2007.
+;       Fixed a problem when using large numbers with the TOTAL command
+;          by setting the INTEGER keyword. 22 June 2011. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
@@ -100,15 +102,17 @@ FUNCTION FLOATS_EQUAL, array_1, array_2, ULP=ulp
        IF N_Params() NE 2 THEN Message, 'Must pass two arrays or values to compare.'
        ; Are we comparing double precision values?
        IF Size(array_1, /TNAME) EQ 'DOUBLE' OR Size(array_2, /TNAME) EQ 'DOUBLE' THEN $
-           double = 1 ELSE double = 0           
+           double = 1 ELSE double = 0
+           
         ; Check keyword.
-       IF N_Elements(ulp) EQ 0 THEN ulp = 1.0D ELSE ulp = ROUND(ABS(ulp))       
+       IF N_Elements(ulp) EQ 0 THEN ulp = 1.0D ELSE ulp = ROUND(ABS(ulp))
+       
        ; Arrays not equal if they are not the same length.
        IF N_Elements(array_1) NE N_Elements(array_2) THEN RETURN, 0
        ; Choose a number "sufficiently close" to zero for comparison.
        epsilon = (MACHAR(DOUBLE=double)).eps
        NUMBER = (Abs(array_1) > Abs(array_2)) * epsilon * ulp
        ; Compare the arrays.
-       IF Total(Abs(array_1 - array_2) LE NUMBER) EQ N_Elements(array_1) THEN $
+       IF Total(Abs(array_1 - array_2) LE NUMBER, /INTEGER) EQ N_Elements(array_1) THEN $
            RETURN, 1 ELSE RETURN, 0
    END

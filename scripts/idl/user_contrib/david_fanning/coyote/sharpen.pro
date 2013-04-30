@@ -15,8 +15,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -326,7 +326,7 @@ END
 
 PRO Example
 
-image = LoadData(13)
+image = cgDemoData(13)
 s = Size(image, /Dimensions)
 LoadCT, 0, /Silent
 Window, /Free, XSize=s[0]*2, YSize=s[1], Title='Image Sharpening'

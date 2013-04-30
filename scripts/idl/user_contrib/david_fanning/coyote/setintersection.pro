@@ -13,8 +13,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -35,9 +35,21 @@
 ;   set_b:         A vector of integers.
 ;
 ; KEYWORDRS:
+; 
+;  COUNT:          An output variable that contains the number of elements in the intersection vector.
 ;
 ;  NORESULT:       Set this keyword to a value that will be returned from the function
 ;                  if no intersection between the two sets of numbers is found. By default, -1.
+;                  
+;  POSITIONS:      And output keyword that will return the positions or locations in A where the values
+;                  in B appear.
+;                  
+;  INDICIES_A:     The indices in vector A where the intersected values appear. Note, this requires
+;                  the intersected points be unique in each vector. The POSITIONS 
+;                  keyword will return ALL the positions of the match, even if there are non-unique matches.
+;  
+;  INDICIES_B:     The indices in vector B where the intersected values appear. This assumes that
+;                  the intersected points are represented uniquely in the A and B vectors.
 ;
 ;  SUCCESS:        An output keyword that is set to 1 if an intersection was found, and to 0 otherwise.
 ;
@@ -48,7 +60,7 @@
 ;  IDL> Print, SetIntersection(set_a, set_b)
 ;          4   5
 ;
-;  See http://www.dfanning.com/tips/set_operations.html for other types of set operations.
+;  See http://www.idlcoyote.com/tips/set_operations.html for other types of set operations.
 ;  
 ; NOTES:
 ; 
@@ -64,6 +76,9 @@
 ;     newsgroup by Research Systems software engineers.
 ;  Yikes, bug in original code only allowed positive integers. Fixed now. 2 Nov 2009. DWF.
 ;  Fixed a problem when one or both of the sets was a scalar value. 18 Nov 2009. DWF.
+;  Added a POSITIONS keyword. 30 Nov 2012. DWF.
+;  Added a COUNT keyword 3 Dec 2012. DWF.
+;  Added INDICES_A and INDICES_B keywords at R.G. Stockwell's suggestion. 13 Dec 2012. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2009, by Fanning Software Consulting, Inc.                                ;
@@ -93,7 +108,11 @@
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
 FUNCTION SetIntersection, set_a, set_b, $
+    COUNT=count, $
+    INDICES_A=indices_a, $
+    INDICES_B=indices_b, $
     NORESULT=noresult, $
+    POSITIONS=positions, $
     SUCCESS=success
     
     Compile_Opt StrictArr, DefInt32
@@ -125,6 +144,7 @@ FUNCTION SetIntersection, set_a, set_b, $
 
     ; Assume success.
     success = 1
+    count = 0
    
     ; Find the intersection of the ranges.
     mina = Min(set_a, Max=maxa) 
@@ -139,14 +159,42 @@ FUNCTION SetIntersection, set_a, set_b, $
     ENDIF
     
     ; Find the intersection.
-    r = Where((Histogram(set_a, Min=minab, Max=maxab) NE 0) AND  $
-              (Histogram(set_b, Min=minab, Max=maxab) NE 0), count)
+    r = Where((Histogram(set_a, Min=minab, Max=maxab, REVERSE_INDICES=ra) NE 0) AND  $
+              (Histogram(set_b, Min=minab, Max=maxab, REVERSE_INDICES=rb) NE 0), count)
               
     ; Was there an intersection? If not, leave now.
     IF count EQ 0 THEN BEGIN
         success = 0
         RETURN, noresult 
     ENDIF 
+    
+    ; Do you want the positions in A where B is found?
+    IF Arg_Present(positions) THEN BEGIN
+        FOR j=0,N_Elements(r)-1 DO BEGIN
+           IF N_Elements(thesePositions) EQ 0 THEN BEGIN
+               thesePositions = [ReverseIndices(ra, r[j])]
+           ENDIF ELSE BEGIN
+               thesePositions = [thesePositions, ReverseIndices(ra, r[j])]
+           ENDELSE
+        ENDFOR
+        positions = thesePositions
+    ENDIF
+    
+    ; Do you want the indices of the matches? Code provided by
+    ; R.G. Stockwell. Note that if you ask for indices, the sets
+    ; may NOT have duplicate values in them. Each value in both sets
+    ; must be unique.
+    IF Arg_Present(indices_a) || Arg_Present(indices_b) THEN BEGIN
+        aindices = LonArr(count)
+        bindices = LonArr(count)
+        FOR matchCounter=0,count-1 DO BEGIN
+            j = r[matchCounter]
+            aindices[matchcounter] = ra[ra[j]:ra[j+1]-1]
+            bindices[matchcounter] = rb[rb[j]:rb[j+1]-1]
+        ENDFOR
+        indices_a = Temporary(aindices)
+        indices_b = Temporary(bindices)
+    ENDIF
     
     ; Here is the result.
     result = Temporary(r) + minab

@@ -14,8 +14,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 
@@ -42,7 +42,7 @@
 ;
 ;       Requires cgColor from the Coyote Library:
 ;
-;           http://www.dfanning.com/programs/cgColor.pro
+;           http://www.idlcoyote.com/programs/cgColor.pro
 ;
 ; EXAMPLE:
 ;
@@ -51,7 +51,7 @@
 ;   lat = Randomu(seed, 20) * 180 - 90
 ;   speed = Randomu(seed, 20) * 100
 ;   direction = Randomu(seed, 20) * 180 + 90
-;   Erase, Color=cgColor('Ivory', !P.Background)
+;   Erase, cgColor('Ivory', !P.Background)
 ;   Map_Set, /Cylindrical,Position=[0.1, 0.1, 0.9, 0.9], Color=cgColor('Steel Blue'), /NoErase
 ;   Map_Grid, Color=cgColor('Charcoal', !D.Table_Size-2)
 ;   Map_Continents, Color=cgColor('Sea Green', !D.Table_Size-3)

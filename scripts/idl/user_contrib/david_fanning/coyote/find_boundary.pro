@@ -15,8 +15,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;
@@ -85,7 +85,7 @@
 ;
 ;       Requires ERROR_MESSAGE from the Coyote Library.
 ;
-;           http://www.dfanning.com/programs/error_message.pro
+;           http://www.idlcoyote.com/programs/error_message.pro
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -137,8 +137,6 @@ FUNCTION Find_Boundary_Outline, mask, darray, boundaryPts, ptIndex, $
    xsize, ysize, from_direction
 
 On_Error, 2
-Catch, theError
-IF theError NE 0 THEN stop
 
 FOR j=1,7 DO BEGIN
 

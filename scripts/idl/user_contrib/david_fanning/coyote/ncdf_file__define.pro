@@ -17,8 +17,8 @@
 ;       1645 Sheely Drive
 ;       Fort Collins, CO 80526 USA
 ;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; CATEGORY:
 ;       File I/O
@@ -60,20 +60,20 @@
 ;     good idea to make sure you have the latest version of the Coyote Library code,
 ;     as updates are irregular and frequent.
 ;
-;              http://www.dfanning.com/programs/ncdf_attribute__define.pro
-;              http://www.dfanning.com/programs/ncdf_data__define.pro
-;              http://www.dfanning.com/programs/ncdf_browser.pro
-;              http://www.dfanning.com/programs/ncdf_castdatatype.pro
-;              http://www.dfanning.com/programs/ncdf_container__define.pro
-;              http://www.dfanning.com/programs/ncdf_dimension__define.pro
-;              http://www.dfanning.com/programs/ncdf_variable__define.pro
-;              http://www.dfanning.com/programs/errorlogger__define.pro
-;              http://www.dfanning.com/programs/error_message.pro
-;              http://www.dfanning.com/programs/centertlb.pro
-;              http://www.dfanning.com/programs/undefine.pro
-;              http://www.dfanning.com/programs/textbox.pro
-;              http://www.dfanning.com/programs/fsc_base_filename.pro
-;              http://www.dfanning.com/programs/textlineformat.pro
+;              http://www.idlcoyote.com/programs/ncdf_attribute__define.pro
+;              http://www.idlcoyote.com/programs/ncdf_data__define.pro
+;              http://www.idlcoyote.com/programs/ncdf_browser.pro
+;              http://www.idlcoyote.com/programs/ncdf_castdatatype.pro
+;              http://www.idlcoyote.com/programs/ncdf_container__define.pro
+;              http://www.idlcoyote.com/programs/ncdf_dimension__define.pro
+;              http://www.idlcoyote.com/programs/ncdf_variable__define.pro
+;              http://www.idlcoyote.com/programs/errorlogger__define.pro
+;              http://www.idlcoyote.com/programs/error_message.pro
+;              http://www.idlcoyote.com/programs/cgcentertlb.pro
+;              http://www.idlcoyote.com/programs/undefine.pro
+;              http://www.idlcoyote.com/programs/textbox.pro
+;              http://www.idlcoyote.com/programs/cgrootname.pro
+;              http://www.idlcoyote.com/programs/textlineformat.pro
 ;              
 ;     These files may be (almost certainly are!) dependent on other Coyote Library files.
 ;
@@ -162,6 +162,10 @@
 ;       I changed "missingValue" to "fillValue" some time ago, but I missed one in
 ;           the GetVarData method. Fixed. 7 June 2010. DWF.
 ;       Used the undefine procedure OBJ_DELETE, rather than OBJ_DESTROY. Sheesh! 18 June 2010. DWF.
+;       Added NETCDF4_FORMAT keyword. 13 Feb 2012. DWF.
+;       Added a bunch of new IDL 8.0 and 8.1 keyword to the WriteVarDef method to allow
+;           access to these keywords in NCDF_VarDef. Also modified the NETCDF4_FORMAT keyword
+;           to apply only in IDL versions 8.0 and higher. 21 Feb 2012. DWF.
 ;       
 ;-
 ;******************************************************************************************;
@@ -191,7 +195,7 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::Browse                                                                 
@@ -227,7 +231,7 @@ PRO NCDF_File::Browse, TITLE=title, XOFFSET=xoffset, YOFFSET=yoffset
 
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::Close_File                                                             
@@ -254,7 +258,7 @@ PRO NCDF_File::Close_File
     self.fileID = -1
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CreateVarObj                                                           
@@ -300,7 +304,7 @@ PRO NCDF_File::CreateVarObj, varName
 END   
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CreateAttrObj                                                          
@@ -346,7 +350,7 @@ PRO NCDF_File::CreateAttrObj, attrName
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CreateDimObj                                                           
@@ -392,7 +396,7 @@ PRO NCDF_File::CreateDimObj, dimensionName
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyVarAttrTo                                                          
@@ -470,7 +474,7 @@ PRO NCDF_File::CopyVarAttrTo, varName, attrName, destObj
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyVariableTo                                                           
@@ -569,7 +573,7 @@ PRO NCDF_File::CopyVariableTo, varName, destObj
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyVarDataTo                                                          
@@ -655,7 +659,7 @@ PRO NCDF_File::CopyVarDataTo, varName, destObj, COUNT=count, OFFSET=offset, STRI
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyVarDefTo                                                           
@@ -756,7 +760,7 @@ PRO NCDF_File::CopyVarDefTo, varName, destObj
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyGlobalAttrTo                                                       
@@ -835,7 +839,7 @@ PRO NCDF_File::CopyGlobalAttrTo, attrName, destObj
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::CopyDimTo                                                              
@@ -916,7 +920,7 @@ PRO NCDF_File::CopyDimTo, dimName, destObj
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetDimNames                                                            
@@ -981,7 +985,7 @@ FUNCTION NCDF_File::GetDimNames, COUNT=dimCount
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetDimValue                                                            
@@ -1054,7 +1058,7 @@ FUNCTION NCDF_File::GetDimValue, dimName
     
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetFileID                                                              
@@ -1085,7 +1089,7 @@ FUNCTION NCDF_File::GetFileID
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetGlobalAttrNames                                                     
@@ -1150,7 +1154,7 @@ FUNCTION NCDF_File::GetGlobalAttrNames, COUNT=attrCount
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetGlobalAttrValue                                                     
@@ -1224,7 +1228,7 @@ FUNCTION NCDF_File::GetGlobalAttrValue, attrName, DATATYPE=datatype
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetProperty                                                            
@@ -1374,7 +1378,7 @@ PRO NCDF_File::GetProperty, $
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetProperty                                                            
@@ -1442,7 +1446,7 @@ FUNCTION NCDF_File::GetProperty, thisProperty
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetVarAttrNames                                                        
@@ -1515,7 +1519,7 @@ FUNCTION NCDF_File::GetVarAttrNames, varName, COUNT=varAttrCount
     
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetVarAttrValue                                                        
@@ -1592,7 +1596,7 @@ FUNCTION NCDF_File::GetVarAttrValue, varName, attrName, DATATYPE=datatype
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetVarNames                                                            
@@ -1656,7 +1660,7 @@ FUNCTION NCDF_File::GetVarNames, COUNT=varCount
 
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetVarData                                                                
@@ -1772,7 +1776,7 @@ FUNCTION NCDF_File::GetVarData, varName, $
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::GetVarInfo                                                                
@@ -1857,7 +1861,7 @@ FUNCTION NCDF_File::GetVarInfo, varName
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::HasGlobalAttr                                                          
@@ -1910,7 +1914,7 @@ FUNCTION NCDF_File::HasGlobalAttr, attrName, OBJECT=object
     
 END
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::HasDim                                                                 
@@ -1964,7 +1968,7 @@ FUNCTION NCDF_File::HasDim, dimName, OBJECT=object
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::HasVar                                                                 
@@ -2019,7 +2023,7 @@ FUNCTION NCDF_File::HasVar, varName, OBJECT=object
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::HasVarAttr                                                             
@@ -2078,7 +2082,7 @@ FUNCTION NCDF_File::HasVarAttr, varName, varAttrName, OBJECT=object
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::PrintFileInfo                                                          
@@ -2176,7 +2180,7 @@ PRO NCDF_File::PrintFileInfo, outputFile
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::ParseFile                                                              
@@ -2268,7 +2272,7 @@ END
 
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::SetMode                                                                
@@ -2336,7 +2340,7 @@ PRO NCDF_File::SetMode, DATA=data, DEFINE=define
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::Sync                                                              
@@ -2386,7 +2390,7 @@ PRO NCDF_File::Sync
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::WriteVarData                                                          
@@ -2475,7 +2479,7 @@ PRO NCDF_File::WriteVarData, varName, data, COUNT=count, OFFSET=offset, STRIDE=s
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::WriteVarDef                                                            
@@ -2495,16 +2499,50 @@ END
 ;                file and that are associated with this variable. A string array.       
 ;                If dimNames is missing, then the variable is assumed to be a scalar.   
 ;                                                                           
-; Keywords:                                                                 
-;                                                                           
+; Keywords:        
+; 
+;    CHUNK_DIMENSIONS: Set this keyword equal to a vector containing the chunk dimensions for the variable.
+;                A new NetCDF variable is chunked by default, using a default chunk value that is 
+;                the full dimension size for limited dimensions, and 1 for unlimited dimensions.
+;                CHUNK_DIMENSIONS must have the same number of elements as the number of dimensions 
+;                specified by Dim. If the CONTIGUOUS keyword is set, the value of the 
+;                CHUNK_DIMENSIONS keyword is ignored. Available only in IDL 8.0 and higher.
+;    CONTINUOUS:  Set this keyword to store a NetCDF variable as a single array in a file. 
+;                Contiguous storage works well for smaller variables such as coordinate variables.
+;                Contiguous storage works only for fixed-sized datasets (those without any unlimited 
+;                dimensions). You can’t use compression or other filters with contiguous data.
+;                If the CONTIGUOUS keyword is set, the value of the CHUNK_DIMENSIONS keyword is ignored.
+;                The CONTIGUOUS keyword is ignored if the GZIP keyword is set. Available only in 
+;                IDL 8.0 and higher.
 ;    DATATYPE:   The netCDF data type of the variable. This is REQUIRED. The appropriate
 ;                netCDF data types are: "BYTE", "CHAR", "SHORT", "LONG" "FLOAT", or     
-;                "DOUBLE".                                                  
+;                "DOUBLE". In IDL 8.1, the data types "STRING", "UBYTE", UINT64",
+;                "ULONG" and "USHORT" were added.      
+;    GZIP:       Set this keyword to an integer between zero and nine to specify the level 
+;                of GZIP compression applied to the variable. Lower compression values result 
+;                in faster but less efficient compression. This keyword is ignored if the 
+;                CHUNK_DIMENSIONS keyword is not set. This keyword is ignored if the CONTIGUOUS 
+;                keyword is set. If the GZIP keyword is set, the CONTIGUOUS keyword is ignored.
+;                You can only use GZIP compression with NCDF 4 files. Available only in 
+;                IDL 8.0 and higher.
+;                
 ;    OBJECT:     If a variable is successfully defined, this keyword will return the    
-;                object reference to that variable.                           
+;                object reference to that variable.         
+;    SHUFFLE:    Set this keyword to apply the shuffle filter to the variable. If the GZIP 
+;                keyword is not set, this keyword is ignored. The shuffle filter de-interlaces blocks 
+;                of data by reordering individual bytes. Byte shuffling can sometimes 
+;                increase compression density because bytes in the same block positions 
+;                often have similar values, and grouping similar values together often 
+;                leads to more efficient compression. Available only in IDL 8.0 and higher.             
 ;                                                                           
 ;------------------------------------------------------------------------------------------;
-PRO NCDF_File::WriteVarDef, varName, dimNames, DATATYPE=datatype, OBJECT=object
+PRO NCDF_File::WriteVarDef, varName, dimNames, $
+    CHUNK_DIMENSIONS=chunk_dimensions, $
+    CONTINUOUS=continuous, $
+    DATATYPE=datatype, $
+    GZIP=gzip, $
+    OBJECT=object, $
+    SHUFFLE=shuffle
 
     ; Compiler options.
     Compile_Opt DEFINT32
@@ -2539,8 +2577,11 @@ PRO NCDF_File::WriteVarDef, varName, dimNames, DATATYPE=datatype, OBJECT=object
         'SHORT': tshort = 1
         'INT': tshort = 1
         'STRING': tchar = 1
-        'ULONG': tlong = 1
-        'UINT': tlong = 1
+        'UBYTE': tubtye = 1
+        'ULONG': tulong = 1
+        'UINT64': tuint64 = 1
+        'UINT': tuint = 1
+        'USHORT': tushort = 1
         ELSE: Message, 'Unknown DATATYPE for netCDF files: ' + datatype
     ENDCASE
     
@@ -2570,22 +2611,102 @@ PRO NCDF_File::WriteVarDef, varName, dimNames, DATATYPE=datatype, OBJECT=object
     
     ; Define the variable.
     IF N_Elements(dimIDs) EQ 0 THEN BEGIN
-        varID = NCDF_VarDef(self.fileID, varName, $
-            BYTE=tbyte, $
-            CHAR=tchar, $
-            DOUBLE=tdouble, $
-            FLOAT=tfloat, $
-            LONG=tlong, $
-            SHORT=tshort)
+    
+        release = Float(!Version.Release)
+        CASE 1 OF
+        
+            (release LT 8.0) && (!Version.Release NE '7.1.1'): BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    LONG=tlong, $
+                    SHORT=tshort)
+                 END
+                 
+            (!Version.Release EQ '7.1.1') || ((release GE 7.2) && (release LT 8.1)): BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    CHUNK_DIMENSIONS=chunk_dimensions, $
+                    CONTIGUOUS=contiguous, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    GZIP=gzip, $
+                    LONG=tlong, $
+                    SHORT=tshort, $
+                    SHUFFLE=shuffle)
+                 END
+                 
+            release GE 8.1: BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    CHUNK_DIMENSIONS=chunk_dimensions, $
+                    CONTIGUOUS=contiguous, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    GZIP=gzip, $
+                    LONG=tlong, $
+                    SHORT=tshort, $
+                    SHUFFLE=shuffle, $
+                    STRING=tchar, $
+                    UBYTE=tubyte, $
+                    UINT64=tuint64, $
+                    ULONG=tulong, $
+                    USHORT=tushort)
+                 END
+        ENDCASE
+        
     ENDIF ELSE BEGIN
     
-        varID = NCDF_VarDef(self.fileID, varName, dimIDs, $
-            BYTE=tbyte, $
-            CHAR=tchar, $
-            DOUBLE=tdouble, $
-            FLOAT=tfloat, $
-            LONG=tlong, $
-            SHORT=tshort)    
+        release = Float(!Version.Release)
+        CASE 1 OF
+        
+            (release LT 8.0) && (!Version.Release NE '7.1.1'): BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, dimIDs, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    LONG=tlong, $
+                    SHORT=tshort)
+                 END
+                 
+            (!Version.Release EQ '7.1.1') || ((release GE 7.2) && (release LT 8.1)): BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, dimIDs, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    CHUNK_DIMENSIONS=chunk_dimensions, $
+                    CONTIGUOUS=contiguous, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    GZIP=gzip, $
+                    LONG=tlong, $
+                    SHORT=tshort, $
+                    SHUFFLE=shuffle)
+                 END
+                 
+            release GE 8.1: BEGIN
+                varID = NCDF_VarDef(self.fileID, varName, dimIDs, $
+                    BYTE=tbyte, $
+                    CHAR=tchar, $
+                    CHUNK_DIMENSIONS=chunk_dimensions, $
+                    CONTIGUOUS=contiguous, $
+                    DOUBLE=tdouble, $
+                    FLOAT=tfloat, $
+                    GZIP=gzip, $
+                    LONG=tlong, $
+                    SHORT=tshort, $
+                    SHUFFLE=shuffle, $
+                    STRING=tchar, $
+                    UBYTE=tubyte, $
+                    UINT64=tuint64, $
+                    ULONG=tulong, $
+                    USHORT=tushort)
+                 END
+         ENDCASE
     ENDELSE
     
     ; Create a variable object and add it to the variable list.
@@ -2602,7 +2723,7 @@ PRO NCDF_File::WriteVarDef, varName, dimNames, DATATYPE=datatype, OBJECT=object
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::WriteDim                                                               
@@ -2679,7 +2800,7 @@ PRO NCDF_File::WriteDim, dimName, dimSize, UNLIMITED=unlimited, OBJECT=object
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::WriteGlobalAttr                                                        
@@ -2779,7 +2900,7 @@ PRO NCDF_File::WriteGlobalAttr, attrName, attrValue, DATATYPE=datatype, OBJECT=o
 END
 
 
-;+-----------------------------------------------------------------------------------------;
+;------------------------------------------------------------------------------------------;
 ;                                                                           
 ; NAME:                                                                     
 ;    NCDF_File::WriteVarAttr                                                           
@@ -2883,7 +3004,7 @@ END
 
 
 ;
-;+-------------------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------
 ; NAME:
 ;       NCDF_FILE::CLEANUP
 ;
@@ -2912,7 +3033,7 @@ PRO NCDF_File::CLEANUP
 END
    
 
-;+-------------------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------
 ; NAME:
 ;       NCDF_FILE::INIT
 ;
@@ -2950,6 +3071,13 @@ END
 ;       MODIFY:    Set this keyword if you wish to modify (write to) a file you are opening.
 ;                  If not set, the file will be opened as "read-only".
 ;                  
+;       NETCDF4_FORMAT: Set this keyowrd to create a new NetCDF 4 file. In NetCDF 4 files, data 
+;                  is created and accessed with the HDF5 library. NetCDF 4 files are valid HDF5 files, 
+;                  and may be read with HDF5 routines. Note that if a NetCDF 4 file is modified using 
+;                  the HDF5 routines, rather than with the NetCDF 4 routines, the file is no longer a 
+;                  valid NetCDF 4 file, and may no longer be readable with the NetCDF routines.
+;                  You need IDL 8.0 to use this keyword.
+;                  
 ;       NOCLUTTER: Set the keyword to set the ErrorLogger NOCLUTTER keyword.
 ;
 ;       TIMESTAMP: Set this keyword is you want the ErrorLogger filename to have a time stamp
@@ -2964,6 +3092,7 @@ FUNCTION NCDF_FILE::INIT, filename, $
     DELETE_ON_DESTROY=delete_on_destroy, $
     ERRORLOGGERNAME=errorLoggerName, $
     MODIFY=modify, $
+    NETCDF4_FORMAT=netcdf4_format, $
     NOCLUTTER=noclutter, $
     TIMESTAMP=timestamp
 
@@ -3003,12 +3132,13 @@ FUNCTION NCDF_FILE::INIT, filename, $
     ENDIF
     
     ; Set default values, if keywords are not already set.
-    SetDefaultValue, alert, 1
-    SetDefaultValue, create, 0
-    SetDefaultValue, clobber, 0
-    SetDefaultValue, modify, 0
-    SetDefaultValue, delete_on_destroy, 1
-    SetDefaultValue, noclutter, 0
+    SetDefaultValue, alert, 1, /Boolean
+    SetDefaultValue, create, 0, /Boolean
+    SetDefaultValue, clobber, 0, /Boolean
+    SetDefaultValue, modify, 0, /Boolean
+    SetDefaultValue, delete_on_destroy, 1, /Boolean
+    SetDefaultValue, noclutter, 0, /Boolean
+    SetDefaultValue, netcdf4_format, 0, /Boolean
     self.errorLogger -> SetProperty, ALERT=alert, DELETE_ON_DESTROY=delete_on_destroy, NOCLUTTER=noclutter
     
     ; If you are not going to create the file, you are going to open it.
@@ -3048,7 +3178,11 @@ FUNCTION NCDF_FILE::INIT, filename, $
                self.define = 0
                END
         'CREATE': BEGIN
-               self.fileID = NCDF_Create(self.filename, CLOBBER=clobber)
+               IF (!Version.Release EQ '7.1.1') || (Float(!Version.Release) GE 7.2) THEN BEGIN
+                   self.fileID = NCDF_Create(self.filename, CLOBBER=clobber, NETCDF4_FORMAT=netcdf4_format)
+               ENDIF ELSE BEGIN
+                   self.fileID = NCDF_Create(self.filename, CLOBBER=clobber)
+               ENDELSE
                self.define = 1
                END
     ENDCASE

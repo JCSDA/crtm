@@ -62,13 +62,14 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Change History::
 ;        Written, 24 December 2010. DWF.
 ;        Fixed a typo when first color is INTEGER and second color is STRING. 3 Jan 2011. DWF.
+;        Added error handling for out of bounds color values. 25 May 2011. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2010, Fanning Software Consulting, Inc.
@@ -91,7 +92,15 @@ FUNCTION ColorsAreIdentical, color_1, color_2
         IF (lessthan + greaterthan) EQ 0 THEN c1 = Fix(color_1)
     ENDIF
     IF N_Elements(c1) EQ 0 THEN c1 = color_1
-
+    
+    ; Colors have to be between 0 and 255.
+    IF Size(c1, /TYPE) LE 2 THEN BEGIN
+        IF (c1 LT 0) || (c1 GT 255) THEN BEGIN
+            msg = 'Color value of ' + StrTrim(c1,2) + ' is outside expected color range of 0 to 255.'
+            Message, msg
+        ENDIF
+    ENDIF
+    
     IF Size(color_2, /TNAME) EQ 'STRING' THEN BEGIN
         bytecheck = Byte(StrUpCase(color_2))
         i = Where(bytecheck LT 48, lessthan)
@@ -99,6 +108,14 @@ FUNCTION ColorsAreIdentical, color_1, color_2
         IF (lessthan + greaterthan) EQ 0 THEN c2 = Fix(color_2)
     ENDIF
     IF N_Elements(c2) EQ 0 THEN c2 = color_2
+    
+    ; Colors have to be between 0 and 255.
+    IF Size(c2, /TYPE) LE 2 THEN BEGIN
+        IF (c2 LT 0) || (c2 GT 255) THEN BEGIN
+            msg = 'Color value of ' + StrTrim(c2,2) + ' is outside expected color range of 0 to 255.'
+            Message, msg
+        ENDIF
+    ENDIF
     
     ; If the colors are the same type, compare them directly
     IF Size(c1, /TYPE) EQ Size(c2, /TYPE) THEN BEGIN
@@ -141,12 +158,12 @@ FUNCTION ColorsAreIdentical, color_1, color_2
 
             ; First color a LONG and second color an INTEGER.
            (Size(c1, /TYPE) EQ 3) AND (Size(c2, /TYPE) LE 2): BEGIN
-                answer = Array_Equal(c1, Color24([r[c2], g[c2], b[c2]]))
+                answer = Array_Equal(c1, cgColor24([r[c2], g[c2], b[c2]]))
                 END
 
            ; First color an INTEGER, second color a LONG.
            (Size(c1, /TYPE) LE 2) AND (Size(c2, /TYPE) EQ 3): BEGIN
-                answer = Array_Equal(c2, Color24([r[c1], g[c1], b[c1]]))
+                answer = Array_Equal(c2, cgColor24([r[c1], g[c1], b[c1]]))
                 END
 
            ELSE: Message, 'Colors do not meet type expectations. Unsure how to proceed.'

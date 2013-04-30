@@ -16,8 +16,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -36,10 +36,12 @@
 ;
 ;       Separated from PS_START file, 7 April 2009, by David W. Fanning.
 ;       Added PAGETYPE field to structure. 8 August 2009. DWF.
+;       Changes to handle inability to create raster files from PS encapsulated files in 
+;           landscape mode. Added "encapsulated" field to structure. 26 Aug 2011. DWF.
 ;-
 ;
 ;******************************************************************************************;
-;  Copyright (c) 2008 -2009, by Fanning Software Consulting, Inc.                          ;
+;  Copyright (c) 2008 - 2011, by Fanning Software Consulting, Inc.                         ;
 ;  All rights reserved.                                                                    ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
@@ -73,8 +75,11 @@ PRO FSC_PS_SETUP__DEFINE
                convert: "", $         ; Set to type of output file, if converting with ImageMagick.
                filename: "", $        ; PostScript filename.
                landscape: 0, $        ; Set to 1 if PostScript in landscape mode.
+               encapsulated: 0, $     ; Set to 1 if PostScript is in encapsulated mode.
                quiet: 0, $            ; Flag to indicate if messages should be suppressed.
                pagetype: "", $        ; The type of page used. (Letter, A4, Legal, Ledger).
+               tt_font:"", $          ; The name of the True-Type font in effect.
+               font: 0, $             ; The type of font being used. -1 Hershey, 0 PostScript, 1 True-type
                p: !P, $               ; The plotting system variable.
                x: !X, $               ; The X axis system variable.
                y: !Y, $               ; The Y axis system variable.

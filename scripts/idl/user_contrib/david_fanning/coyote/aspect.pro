@@ -16,8 +16,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -68,6 +68,7 @@
 ;       Added better error checking, 18 Feb 1997, DWF.
 ;       Added WindowAspect keyword. 10 Feb 2000. DWF
 ;       Added double precision tolerance for aspectRatio. 9 NOV 2001 BT
+;       Officially retired in favor of cgAspect. 11 February 2013. DWF.
 ;-
 ;
 ;******************************************************************************************;

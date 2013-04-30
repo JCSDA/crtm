@@ -23,8 +23,8 @@
 ;   1645 Sheely Drive
 ;   Fort Collins, CO 80526 USA
 ;   Phone: 970-221-0438
-;   E-mail: davidf@dfanning.com
-;   Coyote's Guide to IDL Programming: http://www.dfanning.com/
+;   E-mail: david@idlcoyote.com
+;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
 ;
 ; CATEGORY:
 ;
@@ -241,8 +241,8 @@
 ;
 ; DEPENDENCIES:
 ;
-;   Requires DBLTOSTR from the Coyote Library:
-;     http://www.dfanning.com/programs/dbltostr.pro
+;   Requires cgDblToStr from the Coyote Library:
+;     http://www.idlcoyote.com/programs/cgdbltostr.pro
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -535,7 +535,7 @@ ENDIF
 
 self.dataType = datatype
 
-IF self.dataType EQ 'DOUBLE' THEN theText = DblToStr(value) ELSE theText = StrTrim(value, 2)
+IF self.dataType EQ 'DOUBLE' THEN theText = cgDblToStr(value) ELSE theText = StrTrim(value, 2)
 theText = self->Validate(theText)
 
    ; Load the value in the widget.
@@ -1230,7 +1230,7 @@ If N_Elements(name) NE 0 Then self.name = String(name[0])
 
    ; Validate the input value.
 
-IF dataType EQ 'DOUBLE' THEN theText = DblToStr(value) ELSE theText = StrTrim(value, 2)
+IF dataType EQ 'DOUBLE' THEN theText = cgDblToStr(value) ELSE theText = StrTrim(value, 2)
 theText = self->Validate(theText)
 self.theText = theText
 

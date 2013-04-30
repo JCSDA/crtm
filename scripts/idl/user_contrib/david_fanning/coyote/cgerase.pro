@@ -36,7 +36,6 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
 ;   Provides a device-independent and color-model-independent way to erase a graphics
 ;   window with a particular color.
 ;
@@ -70,11 +69,11 @@
 ;       IDL> cgErase, 'gray'
 ;       IDL> cgErase, COLOR='charcoal'
 ;       
-;       IDL> cgPlot, Loaddata(1), /Window
+;       IDL> cgPlot, cgDemoData(1), /Window
 ;       IDL> cgErase, /Window
 ;       
-;       IDL> cgPlot, Loaddata(17), Layout=[2,2,1]
-;       IDL> cgPlot, Loaddata(17), Layout=[2,2,4]
+;       IDL> cgPlot, cgDemoData(17), Layout=[2,2,1]
+;       IDL> cgPlot, cgDemoData(17), Layout=[2,2,4]
 ;       IDL> cgErase, Layout=[2,2,1]
 ;       
 ; :Author:
@@ -83,8 +82,8 @@
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
-;           E-mail: davidf@dfanning.com
-;           Coyote's Guide to IDL Programming: http://www.dfanning.com
+;           E-mail: david@idlcoyote.com
+;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
 ;     Change History::
@@ -162,7 +161,7 @@ PRO cgErase, background_color, COLOR=color, LAYOUT=layout, WINDOW=window
                  [y[0], y[1], y[1], y[0]], /FIll, $
                  Color=thisColor, /Normal
        !P.Multi = thisMulti
-    ENDIF ELSE Erase, Color=thisColor
+    ENDIF ELSE Erase, thisColor
 
     
     ; Clean up.

@@ -1,290 +1,23 @@
-;+
+; docformat = 'rst'
+;
 ; NAME:
-;       cgCOLOR
+;   cgColor
 ;
 ; PURPOSE:
+; The purpose of this function is to obtain drawing colors
+; by name and in a device/decomposition independent way.
+; The color names and values may be read in as a file, or 192 color
+; names and values are supplied with the program. These colors were
+; obtained from the file rgb.txt, found on most X-Window distributions,
+; and from colors in the Brewer color tables (http://colorbrewer2.org/).
+; Representative colors were chosen from across the color spectrum. 
+; If the color names '0', '1', '2', ..., '255' are used, they will
+; correspond to the colors in the current color table in effect at
+; the time the cgColor program is called.
 ;
-;       The purpose of this function is to obtain drawing colors
-;       by name and in a device/decomposition independent way.
-;       The color names and values may be read in as a file, or 192 color
-;       names and values are supplied with the program. These colors were
-;       obtained from the file rgb.txt, found on most X-Window distributions,
-;       and from colors in the Brewer color tables (http://colorbrewer2.org/).
-;       Representative colors were chosen from across the color spectrum. To
-;       see a list of colors available, type:
-;
-;          Print, cgColor(/Names), Format='(6A18)'
-;          
-;        If the color names '0', '1', '2', ..., '255' are used, they will
-;        correspond to the colors in the current color table in effect at
-;        the time the cgColor program is called.
-;
-; AUTHOR:
-;
-;       FANNING SOFTWARE CONSULTING:
-;       David Fanning, Ph.D.
-;       1645 Sheely Drive
-;       Fort Collins, CO 80526 USA
-;       Phone: 970-221-0438
-;       E-mail: davidf@dfanning.com
-;       Coyote's Guide to IDL Programming: http://www.dfanning.com
-;
-; CATEGORY:
-;
-;       Graphics, Color Specification.
-;
-; CALLING SEQUENCE:
-;
-;       color = cgColor(theColor, theColorIndex)
-;
-; NORMAL CALLING SEQUENCE FOR DEVICE-INDEPENDENT COLOR:
-;
-;       If you write your graphics code *exactly* as it is written below, then
-;       the same code will work in all graphics devices I have tested.
-;       These include the PRINTER, PS, and Z devices, as well as X, WIN, and MAC.
-;
-;       In practice, graphics code is seldom written like this. (For a variety of
-;       reasons, but laziness is high on the list.) So I have made the
-;       program reasonably tolerant of poor programming practices. I just
-;       point this out as a place you might return to before you write me
-;       a nice note saying my program "doesn't work". :-)
-;
-;       axisColor = cgColor("Green", !D.Table_Size-2)
-;       backColor = cgColor("Charcoal", !D.Table_Size-3)
-;       dataColor = cgColor("Yellow", !D.Table_Size-4)
-;       thisDevice = !D.Name
-;       Set_Plot, 'toWhateverYourDeviceIsGoingToBe', /Copy
-;       Device, .... ; Whatever you need here to set things up properly.
-;       IF (!D.Flags AND 256) EQ 0 THEN $
-;         POLYFILL, [0,1,1,0,0], [0,0,1,1,0], /Normal, Color=backColor
-;       Plot, Findgen(11), Color=axisColor, Background=backColor, /NoData, $
-;          NoErase= ((!D.Flags AND 256) EQ 0)
-;       OPlot, Findgen(11), Color=dataColor
-;       Device, .... ; Whatever you need here to wrap things up properly.
-;       Set_Plot, thisDevice
-;
-; OPTIONAL INPUT PARAMETERS:
-;
-;       theColor: A string with the "name" of the color. To see a list
-;           of the color names available set the NAMES keyword. This may
-;           also be a vector of color names. Colors available are these:
-;
-;           Active            Almond     Antique White        Aquamarine             Beige            Bisque
-;             Black              Blue       Blue Violet             Brown         Burlywood        Cadet Blue
-;          Charcoal        Chartreuse         Chocolate             Coral   Cornflower Blue          Cornsilk
-;           Crimson              Cyan    Dark Goldenrod         Dark Gray        Dark Green        Dark Khaki
-;       Dark Orchid          Dark Red       Dark Salmon   Dark Slate Blue         Deep Pink       Dodger Blue
-;              Edge              Face         Firebrick      Forest Green             Frame              Gold
-;         Goldenrod              Gray             Green      Green Yellow         Highlight          Honeydew
-;          Hot Pink        Indian Red             Ivory             Khaki          Lavender        Lawn Green
-;       Light Coral        Light Cyan        Light Gray      Light Salmon   Light Sea Green      Light Yellow
-;        Lime Green             Linen           Magenta            Maroon       Medium Gray     Medium Orchid
-;          Moccasin              Navy             Olive        Olive Drab            Orange        Orange Red
-;            Orchid    Pale Goldenrod        Pale Green            Papaya              Peru              Pink
-;              Plum       Powder Blue            Purple               Red              Rose        Rosy Brown
-;        Royal Blue      Saddle Brown            Salmon       Sandy Brown         Sea Green          Seashell
-;          Selected            Shadow            Sienna          Sky Blue        Slate Blue        Slate Gray
-;              Snow      Spring Green        Steel Blue               Tan              Teal              Text
-;           Thistle            Tomato         Turquoise            Violet        Violet Red             Wheat
-;             White            Yellow
-;
-;           The color OPPOSITE is used if this parameter is absent or a color name is mis-spelled. To see a list
-;           of the color names available in the program, type this:
-;
-;              IDL> Print, cgColor(/Names), Format='(6A18)'
-;
-;       theColorIndex: The color table index (or vector of indices the same length
-;           as the color name vector) where the specified color is loaded. The color table
-;           index parameter should always be used if you wish to obtain a color value in a
-;           color-decomposition-independent way in your code. See the NORMAL CALLING
-;           SEQUENCE for details. If theColor is a vector, and theColorIndex is a scalar,
-;           then the colors will be loaded starting at theColorIndex.
-;
-;        When the BREWER keyword is set, you must use more arbitrary and less descriptive color
-;        names. To see a list of those names, use the command above with the BREWER keyword set,
-;        or call PICKCOLORNAME with the BREWER keyword set:
-;
-;               IDL> Print, cgColor(/Names, /BREWER), Format='(8A10)'
-;               IDL> color = PickColorName(/BREWER)
-;
-;         Here are the Brewer names:
-;
-;       WT1       WT2       WT3       WT4       WT5       WT6       WT7       WT8
-;      TAN1      TAN2      TAN3      TAN4      TAN5      TAN6      TAN7      TAN8
-;      BLK1      BLK2      BLK3      BLK4      BLK5      BLK6      BLK7      BLK8
-;      GRN1      GRN2      GRN3      GRN4      GRN5      GRN6      GRN7      GRN8
-;      BLU1      BLU2      BLU3      BLU4      BLU5      BLU6      BLU7      BLU8
-;      ORG1      ORG2      ORG3      ORG4      ORG5      ORG6      ORG7      ORG8
-;      RED1      RED2      RED3      RED4      RED5      RED6      RED7      RED8
-;      PUR1      PUR2      PUR3      PUR4      PUR5      PUR6      PUR7      PUR8
-;      PBG1      PBG2      PBG3      PBG4      PBG5      PBG6      PBG7      PBG8
-;      YGB1      YGB2      YGB3      YGB4      YGB5      YGB6      YGB7      YGB8
-;      RYB1      RYB2      RYB3      RYB4      RYB5      RYB6      RYB7      RYB8
-;       TG1       TG2       TG3       TG4       TG5       TG6       TG7       TG8
-;
-;       As of 3 July 2008, the Brewer names are also now available to the user without using 
-;       the BREWER keyword. If the BREWER keyword is used, *only* Brewer names are available.
-;       
-;       The color name "OPPOSITE" is also available. It chooses a color "opposite" to the 
-;       color of the pixel in the upper-right corner of the display, if a window is open.
-;       Otherwise, this color is "black" in PostScript and "white" everywhere else.
-;       
-; RETURN VALUE:
-;
-;       The value that is returned by cgColor depends upon the keywords
-;       used to call it, on the version of IDL you are using,and on the depth
-;       of the display device when the program is invoked. In general,
-;       the return value will be either a color index number where the specified
-;       color is loaded by the program, or a 24-bit color value that can be
-;       decomposed into the specified color on true-color systems. (Or a vector
-;       of such numbers.)
-;
-;       If you are running IDL 5.2 or higher, the program will determine which
-;       return value to use, based on the color decomposition state at the time
-;       the program is called. If you are running a version of IDL before IDL 5.2,
-;       then the program will return the color index number. This behavior can
-;       be overruled in all versions of IDL by setting the DECOMPOSED keyword.
-;       If this keyword is 0, the program always returns a color index number. If
-;       the keyword is 1, the program always returns a 24-bit color value.
-;
-;       If the TRIPLE keyword is set, the program always returns the color triple,
-;       no matter what the current decomposition state or the value of the DECOMPOSED
-;       keyword. Normally, the color triple is returned as a 1 by 3 column vector.
-;       This is appropriate for loading into a color index with TVLCT:
-;
-;          IDL> TVLCT, cgColor('Yellow', /Triple), !P.Color
-;
-;       But sometimes (e.g, in object graphics applications) you want the color
-;       returned as a row vector. In this case, you should set the ROW keyword
-;       as well as the TRIPLE keyword:
-;
-;          viewobj= Obj_New('IDLgrView', Color=cgColor('charcoal', /Triple, /Row))
-;
-;       If the ALLCOLORS keyword is used, then instead of a single value, modified
-;       as described above, then all the color values are returned in an array. In
-;       other words, the return value will be either an NCOLORS-element vector of color
-;       table index numbers, an NCOLORS-element vector of 24-bit color values, or
-;       an NCOLORS-by-3 array of color triples.
-;
-;       If the NAMES keyword is set, the program returns a vector of
-;       color names known to the program.
-;
-;       If the color index parameter is not used, and a 24-bit value is not being
-;       returned, then colorIndex is typically set to !D.Table_Size-1. However,
-;       this behavior is changed on 8-bit devices (e.g., the PostScript device,
-;       or the Z-graphics buffer) and on 24-bit devices that are *not* using
-;       decomposed color. On these devices, the colors are loaded at an
-;       offset of !D.Table_Size - ncolors - 2, and the color index parameter reflects
-;       the actual index of the color where it will be loaded. This makes it possible
-;       to use a formulation as below:
-;
-;          Plot, data, Color=cgColor('Dodger Blue')
-;
-;       on 24-bit displays *and* in PostScript output! Note that if you specify a color
-;       index (the safest thing to do), then it will always be honored.
-;
-; INPUT KEYWORD PARAMETERS:
-;
-;       ALLCOLORS: Set this keyword to return indices, or 24-bit values, or color
-;              triples, for all the known colors, instead of for a single color.
-;
-;       DECOMPOSED: Set this keyword to 0 or 1 to force the return value to be
-;              a color table index or a 24-bit color value, respectively.
-;
-;       FILENAME: The string name of an ASCII file that can be opened to read in
-;              color values and color names. There should be one color per row
-;              in the file. Please be sure there are no blank lines in the file.
-;              The format of each row should be:
-;
-;                  redValue  greenValue  blueValue  colorName
-;
-;              Color values should be between 0 and 255. Any kind of white-space
-;              separation (blank characters, commas, or tabs) are allowed. The color
-;              name should be a string, but it should NOT be in quotes. A typical
-;              entry into the file would look like this:
-;
-;                  255   255   0   Yellow
-;
-;       NAMES: If this keyword is set, the return value of the function is
-;              a ncolors-element string array containing the names of the colors.
-;              These names would be appropriate, for example, in building
-;              a list widget with the names of the colors. If the NAMES
-;              keyword is set, the COLOR and INDEX parameters are ignored.
-;
-;                 listID = Widget_List(baseID, Value=GetColor(/Names), YSize=16)
-;
-;
-;       ROW:   If this keyword is set, the return value of the function when the TRIPLE
-;              keyword is set is returned as a row vector, rather than as the default
-;              column vector. This is required, for example, when you are trying to
-;              use the return value to set the color for object graphics objects. This
-;              keyword is completely ignored, except when used in combination with the
-;              TRIPLE keyword.
-;
-;       SELECTCOLOR: Set this keyword if you would like to select the color name with
-;              the PICKCOLORNAME program. Selecting this keyword automaticallys sets
-;              the INDEX positional parameter. If this keyword is used, any keywords
-;              appropriate for PICKCOLORNAME can also be used. If this keyword is used,
-;              the first positional parameter can be a color name that will appear in
-;              the SelectColor box.
-;
-;       TRIPLE: Setting this keyword will force the return value of the function to
-;              *always* be a color triple, regardless of color decomposition state or
-;              visual depth of the machine. The value will be a three-element column
-;              vector unless the ROW keyword is also set.
-;
-;       In addition, any keyword parameter appropriate for PICKCOLORNAME can be used.
-;       These include BOTTOM, COLUMNS, GROUP_LEADER, INDEX, and TITLE.
-;
-; OUTPUT KEYWORD PARAMETERS:
-;
-;       CANCEL: This keyword is always set to 0, unless that SELECTCOLOR keyword is used.
-;              Then it will correspond to the value of the CANCEL output keyword in PICKCOLORNAME.
-;
-;       COLORSTRUCTURE: This output keyword (if set to a named variable) will return a
-;              structure in which the fields will be the known color names (without spaces)
-;              and the values of the fields will be either color table index numbers or
-;              24-bit color values. If you have specified a vector of color names, then
-;              this will be a structure containing just those color names as fields.
-;
-;       NCOLORS: The number of colors recognized by the program. It will be 104 by default.
-;
-; COMMON BLOCKS:
-;       None.
-;
-; SIDE EFFECTS:
-;       None.
-;
-; EXAMPLE:
-;
-;       To get drawing colors in a device-decomposed independent way:
-;
-;           axisColor = cgColor("Green", !D.Table_Size-2)
-;           backColor = cgColor("Charcoal", !D.Table_Size-3)
-;           dataColor = cgColor("Yellow", !D.Table_Size-4)
-;           Plot, Findgen(11), Color=axisColor, Background=backColor, /NoData
-;           OPlot, Findgen(11), Color=dataColor
-;
-;       To set the viewport color in object graphics:
-;
-;           theView = Obj_New('IDLgrView', Color=cgColor('Charcoal', /Triple))
-;
-;       To change the viewport color later:
-;
-;           theView->SetProperty, Color=cgColor('Antique White', /Triple)
-;
-;       To load the drawing colors "red", "green", and "yellow" at indices 100-102, type this:
-;
-;           IDL> TVLCT, cgColor(["red", "green", and "yellow"], /Triple), 100
-;
-; MODIFICATION HISTORY:
-;
-;       Written by: David W. Fanning and transferred from CTLOAD on 4 February 2011 to the
-;       Coyote Graphics system.
-;-
 ;******************************************************************************************;
-;  Copyright (c) 2011, by Fanning Software Consulting, Inc.                                ;
-;  All rights reserved.                                                                    ;
+;                                                                                          ;
+;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -309,92 +42,264 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-FUNCTION cgColor_Count_Rows, filename, MaxRows = maxrows
-
-    ; This utility routine is used to count the number of
-    ; rows in an ASCII data file.
-    
-    IF N_Elements(maxrows) EQ 0 THEN maxrows = 500L
-    IF N_Elements(filename) EQ 0 THEN BEGIN
-       filename = Dialog_Pickfile()
-       IF filename EQ "" THEN RETURN, -1
-    ENDIF
-    
-    OpenR, lun, filename, /Get_Lun
-    
-    Catch, theError
-    IF theError NE 0 THEN BEGIN
-       Catch, /Cancel
-       count = count-1
-       Free_Lun, lun
-       RETURN, count
-    ENDIF
-    
-    RESTART:
-    
-    count = 1L
-    line = ''
-    FOR j=count, maxrows DO BEGIN
-       ReadF, lun, line
-       count = count + 1
-    
-          ; Try again if you hit MAXROWS without encountering the
-          ; end of the file. Double the MAXROWS parameter.
-    
-       IF j EQ maxrows THEN BEGIN
-          maxrows = maxrows * 2
-          Point_Lun, lun, 0
-          GOTO, RESTART
-       ENDIF
-    
-    ENDFOR
-    
-    RETURN, -1
-    
-END ;-------------------------------------------------------------------------------
-
-
-
-FUNCTION cgColor_Color24, color
-
-   ; This FUNCTION accepts a [red, green, blue] triple that
-   ; describes a particular color and returns a 24-bit long
-   ; integer that is equivalent to (can be decomposed into)
-   ; that color. The triple can be either a row or column
-   ; vector of 3 elements or it can be an N-by-3 array of
-   ; color triples.
-
-    ON_ERROR, 2
-    
-    s = Size(color)
-    
-    IF s[0] EQ 1 THEN BEGIN
-       IF s[1] NE 3 THEN Message, 'Input color parameter must be a 3-element vector.'
-       RETURN, color[0] + (color[1] * 2L^8) + (color[2] * 2L^16)
-    ENDIF ELSE BEGIN
-       IF s[2] GT 3 THEN Message, 'Input color parameter must be an N-by-3 array.'
-       RETURN, color[*,0] + (color[*,1] * 2L^8) + (color[*,2] * 2L^16)
-    ENDELSE
-
-END ;--------------------------------------------------------------------------------------------
-
-
-
+;
+;+
+; The purpose of this function is to obtain drawing colors
+; by name and in a device/decomposition independent way.
+; The color names and values may be read in as a file, or 192 color
+; names and values are supplied with the program. These colors were
+; obtained from the file rgb.txt, found on most X-Window distributions,
+; and from colors in the `Brewer color tables <http://colorbrewer2.org/>`.
+; Representative colors were chosen from across the color spectrum. 
+; If the color names '0', '1', '2', ..., '255' are used, they will
+; correspond to the colors in the current color table in effect at
+; the time the `cgColor` program is called.
+; 
+; Please note that all Coyote Graphics routines use cgColor internally to specify
+; their colors in a color-model independent way. It is not necessary to call
+; cgColor yourself unless you are using it with a traditional IDL command (e.g., Plot).
+; For example::
+;  
+;     Plot, data, Color=cgColor('dodger blue')
+;     
+; But, it is not needed with Coyote Graphics commands::
+; 
+;     cgPlot, data, Color='dodger blue'
+; 
+; The program requires the `Coyote Library <http://www.idlcoyote.com/documents/programs.php>`
+; to be installed on your machine.
+;
+; :Categories:
+;    Graphics
+;    
+; :Examples:
+;    To get drawing colors in a device-decomposed independent way::
+;
+;        axisColor = cgColor("Green", !D.Table_Size-2)
+;        backColor = cgColor("Charcoal", !D.Table_Size-3)
+;        dataColor = cgColor("Yellow", !D.Table_Size-4)
+;        Plot, Findgen(11), Color=axisColor, Background=backColor, /NoData
+;        OPlot, Findgen(11), Color=dataColor
+;
+;    To set the viewport color in object graphics::
+;
+;        theView = Obj_New('IDLgrView', Color=cgColor('Charcoal', /Triple))
+;
+;    To change the viewport color later::
+;
+;        theView->SetProperty, Color=cgColor('Antique White', /Triple)
+;
+;    To load the drawing colors "red", "green", and "yellow" at indices 100-102, type this::
+;
+;        IDL> TVLCT, cgColor(["red", "green", "yellow"], /Triple), 100
+;           
+;    To interactively choose a color, set the SELECTCOLOR keyword::
+;    
+;        IDL> color = cgColor(/SelectColor)
+;        
+;    The cgPickColorName program is a good way to learn the names of the colors available::
+;    
+;        IDL> color = cgPickColorName()
+;
+; .. image:: cgpickcolorname.png
+;
+; :Author:
+;    FANNING SOFTWARE CONSULTING::
+;       David W. Fanning 
+;       1645 Sheely Drive
+;       Fort Collins, CO 80526 USA
+;       Phone: 970-221-0438
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;
+; :History:
+;     Change History::
+;        Written by: David W. Fanning
+;        Modified FSC_COLOR to create cgColor 9 February 2011. DWF.
+;        Modified to allow a three-element color triple to be used in place of the color
+;           name parameter. This allows one user-defined color to be used. 4 Dec 2011. DWF.
+;        Modified to allow byte and 16-bit integer values to be used to specify colors
+;           in the current color table. 5 Dec 2011. DWF.
+;        Modified to allow the "opposite" pixel to be determined in the Z-graphics buffer. 24 Dec 2011. DWF.
+;        Modified the code to handle long integers depending on the current color mode and the
+;            number of values passed in. 10 January 2012. DWF.
+;        Made sure the return values are BYTES not INTEGERS, in cases where this is expected. 10 Jan 2012. DWF.
+;        Added "Background" as a color name. The opposite of "Opposite". 1 Feb 2012. DWF.
+;        When returning a vector of color values, now making sure to return a byte array if 
+;             in indexed color mode. 27 Feb 2012. DWF.
+;        Added Compile Opt id2 to all file modules. 22 July 2012. DWF.
+;        Added "opposite" and "background" colors to Brewer colors. 14 August 2012. DWF.
+;        Some versions of IDL report the size of widget windows incorrectly, so instead of
+;              sampling the very top-right pixel, I now back off a little. 1 Nov 2012. DWF.
+;        For numerical values less than 256, in indexed color state, I now return the values
+;              directly to the user. This should significantly speed up many Coyote Graphics
+;              processes. 14 December 2012. DWF.
+;        Removed cgColor_Color24 module in favor of using Coyote Library routine cgColor24. 5 Jan 2013. DWF.
+;        
+; :Copyright:
+;     Copyright (c) 2009-2012, Fanning Software Consulting, Inc.
+;-
+;
+;+
+; The purpose of this function is to obtain drawing colors
+; by name and in a device and color model independent way.
+; 
+; :Returns:
+;     The return value depends on the color mode in effect at the time
+;     the program is called and which keyword is used with the program.
+;     In normal operation, if the graphics device is using indexed color
+;     mode, the program will load a color at a unique (or specified)
+;     index and return that index number. If the graphics device is using
+;     decomposed color mode, the program will create a 24-bit color value
+;     that can be used to specify the particular color desired. In this
+;     case, no color is loaded in the color table. This is the preferred
+;     mode for working with colors in IDL.
+;     
+; :Params:
+;    theColour: required, optional, type=varies
+;        Normally the name of the color desired. However, this can also be
+;        a string index number (e.g., '215') or a byte or short integer
+;        value (e.g, 215B or 215S). If this is the case, the color
+;        in the current color table at this index number is used for the 
+;        color that is returned. The value may also be a vector of color names. 
+;        The color may also be a three-element byte or integer array specifying a 
+;        user-defined color triple. Only one color triple is allowed.
+;
+;        To see a list of the color names available set the NAMES keyword. Colors available are these::
+;
+;           Active            Almond     Antique White        Aquamarine             Beige            Bisque
+;           Black               Blue       Blue Violet             Brown         Burlywood        Cadet Blue
+;           Charcoal       Chartreuse         Chocolate             Coral   Cornflower Blue          Cornsilk
+;           Crimson              Cyan    Dark Goldenrod         Dark Gray        Dark Green        Dark Khaki
+;           Dark Orchid      Dark Red       Dark Salmon   Dark Slate Blue         Deep Pink       Dodger Blue
+;           Edge                 Face         Firebrick      Forest Green             Frame              Gold
+;           Goldenrod            Gray             Green      Green Yellow         Highlight          Honeydew
+;           Hot Pink       Indian Red             Ivory             Khaki          Lavender        Lawn Green
+;           Light Coral    Light Cyan        Light Gray      Light Salmon   Light Sea Green      Light Yellow
+;           Lime Green          Linen           Magenta            Maroon       Medium Gray     Medium Orchid
+;           Moccasin             Navy             Olive        Olive Drab            Orange        Orange Red
+;           Orchid     Pale Goldenrod        Pale Green            Papaya              Peru              Pink
+;           Plum          Powder Blue            Purple               Red              Rose        Rosy Brown
+;           Royal Blue   Saddle Brown            Salmon       Sandy Brown         Sea Green          Seashell
+;           Selected           Shadow            Sienna          Sky Blue        Slate Blue        Slate Gray
+;           Snow         Spring Green        Steel Blue               Tan              Teal              Text
+;           Thistle            Tomato         Turquoise            Violet        Violet Red             Wheat
+;           White              Yellow
+;
+;        Here are the Brewer color names::
+;
+;           WT1        WT2       WT3       WT4       WT5       WT6       WT7       WT8
+;           TAN1      TAN2      TAN3      TAN4      TAN5      TAN6      TAN7      TAN8
+;           BLK1      BLK2      BLK3      BLK4      BLK5      BLK6      BLK7      BLK8
+;           GRN1      GRN2      GRN3      GRN4      GRN5      GRN6      GRN7      GRN8
+;           BLU1      BLU2      BLU3      BLU4      BLU5      BLU6      BLU7      BLU8
+;           ORG1      ORG2      ORG3      ORG4      ORG5      ORG6      ORG7      ORG8
+;           RED1      RED2      RED3      RED4      RED5      RED6      RED7      RED8
+;           PUR1      PUR2      PUR3      PUR4      PUR5      PUR6      PUR7      PUR8
+;           PBG1      PBG2      PBG3      PBG4      PBG5      PBG6      PBG7      PBG8
+;           YGB1      YGB2      YGB3      YGB4      YGB5      YGB6      YGB7      YGB8
+;           RYB1      RYB2      RYB3      RYB4      RYB5      RYB6      RYB7      RYB8
+;           TG1        TG2       TG3       TG4       TG5       TG6       TG7       TG8
+;            
+;        The color name "OPPOSITE" is also available. It chooses a color "opposite" to the 
+;        color of the pixel in the upper-right corner of the display, if a window is open.
+;        Otherwise, this color is "black" in PostScript and "white" everywhere else.
+;        The color OPPOSITE is used if this parameter is absent or a color name is mis-spelled.
+;        
+;         The color name "BACKGROUND" can similarly be used to select the color of the pixel
+;         in the upper-right corner of the display, if a window is open.
+;           
+;    colorindex: in, optional, type=byte
+;        The color table index where the color should be loaded. Colors are
+;        loaded into the color table only if using indexed color mode in the
+;        current graphics device. If this parameter is missing, the color will
+;        be loaded at a unique color index number, if necessary.
+;        
+; :Keywords:
+;     allcolors: in, optional, type=boolean, default=0
+;        Set this keyword to return indices, or 24-bit values, or color
+;        triples, for all the known colors, instead of for a single color.
+;     brewer: in, optional, type=boolean, default=0
+;        An obsolete keyword. If used, only Brewer colors are loaded into the color
+;        vectors internally.
+;     cancel: out, optional, type=boolean, default=0
+;        This keyword is always set to 0, unless that SELECTCOLOR keyword is used.
+;        Then it will correspond to the value of the CANCEL output keyword in cgPickColorName.
+;     check_connection: in, optional, type=boolean, default=0
+;         An obsolete keyword now completely ignored.
+;     colorstructure: out, optional, type=structure
+;        This output keyword (if set to a named variable) will return a
+;        structure in which the fields will be the known color names (without spaces)
+;        and the values of the fields will be either color table index numbers or
+;        24-bit color values. If you have specified a vector of color names, then
+;        this will be a structure containing just those color names as fields.
+;     decomposed: in, optional, type=boolean
+;        Set this keyword to 0 or 1 to force the return value to be
+;        a color table index or a 24-bit color value, respectively. This
+;        keyword is normally set by the color state of the current graphics device.
+;     filename: in, optional, type=string
+;        The  name of an ASCII file that can be opened to read in color values and color 
+;        names. There should be one color per row in the file. Please be sure there are 
+;        no blank lines in the file. The format of each row should be::
+;
+;           redValue  greenValue  blueValue  colorName
+;
+;        Color values should be between 0 and 255. Any kind of white-space
+;        separation (blank characters, commas, or tabs) are allowed. The color
+;        name should be a string, but it should NOT be in quotes. A typical
+;        entry into the file would look like this::
+;
+;           255   255   0   Yellow
+;     names: in, optional, type=boolian, default=0
+;        If this keyword is set, the return value of the function is a string array 
+;        containing the names of the colors. These names would be appropriate, for example, 
+;        in building a list widget with the names of the colors. If the NAMES
+;        keyword is set, the COLOR and INDEX parameters are ignored.
+;     ncolors: out, optional, type=integer
+;        Returns the number of colors that cgColor "knows" about. Currently ncolors=193.
+;     nodisplay: in, optional, type=boolean, default=0
+;        An obsolete keyword, now totally ignored.
+;     row: in, optional, type=boolean
+;        If this keyword is set, the return value of the function when the TRIPLE
+;        keyword is set is returned as a row vector, rather than as the default
+;        column vector. This is required, for example, when you are trying to
+;        use the return value to set the color for object graphics objects. This
+;        keyword is completely ignored, except when used in combination with the
+;        TRIPLE keyword.
+;     selectcolor: in, optional, type=boolean
+;       Set this keyword if you would like to select the color name with
+;       the cgPickColorName program. Selecting this keyword automaticallys sets
+;       the INDEX positional parameter. If this keyword is used, any keywords
+;       appropriate for cgPickColorName can also be used. If this keyword is used,
+;       the first positional parameter can be a color name that will appear in
+;       the SelectColor box.
+;     triple: in, optional, type=boolean
+;        Setting this keyword will force the return value of the function to
+;        always be a color triple, regardless of color decomposition state or
+;        visual depth of the machine. The value will be a three-element column
+;        vector unless the ROW keyword is also set.
+;     _ref_extra: in, optional
+;        Any keyword parameter appropriate for cgPickColorName can be used.
+;       These include BOTTOM, COLUMNS, GROUP_LEADER, INDEX, and TITLE.
+;
+;-
 FUNCTION cgColor, theColour, colorIndex, $
-   AllColors=allcolors, $
-   Brewer=brewer, $
-   Check_Connection=check_connection, $ ; This keyword is completely ignored.
-   ColorStructure=colorStructure, $
-   Cancel=cancelled, $
-   Decomposed=decomposedState, $
-   _Extra=extra, $
-   Filename=filename, $
-   Names=names, $
-   NColors=ncolors, $
+   ALLCOLORS=allcolors, $
+   BREWER=brewer, $ ; This keyword is no longer used.
+   CHECK_CONNECTION=check_connection, $ ; This keyword is completely ignored.
+   COLORSTRUCTURE=colorStructure, $
+   CANCEL=cancelled, $
+   DECOMPOSED=decomposedState, $
+   FILENAME=filename, $
+   NAMES=names, $
+   NCOLORS=ncolors, $
    NODISPLAY=nodisplay, $ ; This keyword is completely ignored.
-   Row=row, $
-   SelectColor=selectcolor, $
-   Triple=triple
+   ROW=row, $
+   SELECTCOLOR=selectcolor, $
+   TRIPLE=triple, $
+  _REF_EXTRA=extra
+  
+    Compile_Opt idl2
    
     ; Return to caller as the default error behavior.
     On_Error, 2
@@ -403,10 +308,14 @@ FUNCTION cgColor, theColour, colorIndex, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /Cancel
-       ok = Error_Message(/Traceback)
+       ok = Error_Message()
        cancelled = 1
        RETURN, !P.Color
     ENDIF
+    
+    ; Get the current color state. This will help you determine what to 
+    ; do with the input color.
+    IF N_Elements(decomposedState) NE 0 THEN colorState = Keyword_Set(decomposedState) ELSE colorState = GetDecomposedState()
     
     ; Set up PostScript device for working with colors.
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
@@ -415,9 +324,72 @@ FUNCTION cgColor, theColour, colorIndex, $
     IF N_Elements(theColour) NE 0 THEN theColor = theColour ELSE $
         theColor = 'OPPOSITE'
         
+     ; Allow the color values to be something other than a string.
+     ; There will be some ambiguity between a color triple and a number
+     ; array of three elements, but I am willing to live with this.
+     IF Size(theColor, /TNAME) NE 'STRING' THEN BEGIN
+     
+        ; Make sure this is not a 1x3 array, which we want to treat as a color triple.
+        IF (N_Elements(theColor) EQ 3) && (Size(theColor, /N_DIMENSIONS) EQ 2) THEN BEGIN
+            theColor = Reform(theColor)
+        ENDIF
+     
+        ; Allow the color to be a three-element array of byte values.
+        ; If it is, we will define the USERDEF color with these values.
+        ; Otherwise the USERDEF color will be unused.
+        IF (Size(theColor, /N_DIMENSIONS) EQ 1) && $
+           (N_Elements(theColor) EQ 3) && $
+           (Max(theColor) LE 255) && $
+           (Min(theColor) GE 0) THEN BEGIN
+           usercolor = theColor
+           theColor = 'USERDEF'
+        ENDIF
+        
+        ; If the input didn't qualify as a color triple, then see if you 
+        ; can somehow make sense of the number values.
+        IF Size(theColor, /TNAME) NE 'STRING' THEN BEGIN
+        
+          ; We can assume that any number that is a byte or short integer must
+          ; be an index into the color table. Return that value directly, if
+          ; you are currently in an indexed color state.
+          IF (Size(theColor, /TYPE) LE 2) THEN BEGIN
+             IF (colorState EQ 1) THEN theColor = StrTrim(Fix(theColor),2) ELSE RETURN, theColor
+          ENDIF 
+          
+          ; Long integers are problematic. If the current color mode is INDEXED, then
+          ; we will treat long integers as color indices. If it is DECOMPOSED, then if
+          ; there is just one value, we can handle this as a color triple.
+          IF (Size(theColor, /TYPE) EQ 3) THEN BEGIN
+             
+               IF (colorState EQ 1) THEN BEGIN
+                   IF N_Elements(theColor) EQ 1 THEN BEGIN
+                      usercolor = [theColor MOD 2L^8, (theColor MOD 2L^16)/2L^8, theColor/2L^16]
+                      theColor = 'USERDEF'
+                   ENDIF ELSE Message, 'Do not know how to handle a vector of LONG integers!
+               ENDIF ELSE BEGIN
+                   IF N_Elements(theColor) EQ 1 THEN BEGIN
+                      IF theColor LE 255 THEN BEGIN
+                          RETURN, theColor
+                      ENDIF ELSE Message, 'Long integer ' + StrTrim(theColor,2) + ' is out of indexed color range.'
+                   ENDIF ELSE Message, 'Do not know how to handle a vector of LONG integers!
+               ENDELSE
+               
+          ENDIF
+          
+          ; Anything that is not an BYTE, INTEGER, LONG, or STRING causes problems.
+          IF (Size(theColor, /TYPE) GT 4) && (Size(theColor, /TNAME) NE 'STRING') THEN BEGIN
+             IF (colorstate EQ 0) AND (theColor LE 255) THEN BEGIN
+                RETURN, theColor
+             ENDIF ELSE BEGIN
+                Message, 'Use BYTE, INTEGER, or STRING data to specify a color.'
+             ENDELSE
+          ENDIF
+        ENDIF
+     ENDIF
+        
     ; Make sure the color parameter is a string.
-    varInfo = Size(theColor)
-    IF varInfo[varInfo[0] + 1] NE 7 THEN $
+    varName = Size(theColor, /TNAME)
+    IF varName NE 'STRING' THEN $
        Message, 'The color name parameter must be a string.', /NoName
        
     ; We don't want underscores in color names. Turn all underscores
@@ -432,16 +404,25 @@ FUNCTION cgColor, theColour, colorIndex, $
     
     ; Get the pixel value of the "opposite" color. This is the pixel color
     ; opposite the pixel color in the upper right corner of the display.
-    IF (!D.Window GE 0) AND ((!D.Flags AND 256) NE 0) THEN BEGIN
-       opixel = cgSnapshot(!D.X_Size-1,  !D.Y_Size-1, 1, 1)
+    ; Because Windows versions of IDL (through at least IDL 8.2.1) report
+    ; the size of draw widget windows inaccurately until you make them the
+    ; current graphics window, I back off from the very corner pixel by two
+    ; pixels to read Windows windows.
+    IF ((!D.Window GE 0) && ((!D.Flags AND 256) NE 0)) || (!D.Name EQ 'Z') THEN BEGIN
+       IF StrUpCase(!Version.OS_Family) EQ 'WINDOWS' THEN BEGIN
+          opixel = cgSnapshot(!D.X_Size-3, !D.Y_Size-3, 1, 1)
+       ENDIF ELSE BEGIN
+          opixel = cgSnapshot(!D.X_Size-1, !D.Y_Size-1, 1, 1)
+       ENDELSE
        IF N_Elements(opixel) NE 3 THEN BEGIN
             IF (!D.Name NE 'NULL') THEN TVLCT, rrr, ggg, bbb, /Get
             opixel = [rrr[opixel], ggg[opixel], bbb[opixel]]
        ENDIF
     ENDIF ELSE BEGIN
-       IF (!D.Name EQ 'PS') THEN opixel = [255,255,255]
+       IF (!D.Name EQ 'PS') THEN opixel = [255,255,255] ELSE opixel = [0,0,0]
     ENDELSE
     IF N_Elements(opixel) EQ 0 THEN opixel = [0,0,0]
+    bgcolor = opixel
     opixel = 255 - opixel
     
     ; Read the first color as bytes. If none of the bytes are less than 48
@@ -479,7 +460,7 @@ FUNCTION cgColor, theColour, colorIndex, $
     IF N_Elements(filename) NE 0 THEN BEGIN
     
        ; Count the number of rows in the file.
-       ncolors = cgColor_Count_Rows(filename)
+       ncolors = File_Lines(filename)
     
        ; Read the data.
        OpenR, lun, filename, /Get_Lun
@@ -557,6 +538,10 @@ FUNCTION cgColor, theColour, colorIndex, $
            rvalue = [ rvalue,  84,    163,   197,   220,   105,    51,    13,     0 ]
            gvalue = [ gvalue,  48,    103,   141,   188,   188,   149,   113,    81 ]
            bvalue = [ bvalue,   5,     26,    60,   118,   177,   141,   105,    71 ]
+           colors = [ colors, 'OPPOSITE', 'BACKGROUND']
+           rvalue = [ rvalue,  opixel[0],  bgcolor[0]]
+           gvalue = [ gvalue,  opixel[1],  bgcolor[1]]
+           bvalue = [ bvalue,  opixel[2],  bgcolor[2]]
        
        ENDIF ELSE BEGIN
        
@@ -673,53 +658,24 @@ FUNCTION cgColor, theColour, colorIndex, $
            rvalue = [ rvalue,   201,    245,    253,    251,    228,    193,    114,     59 ]
            gvalue = [ gvalue,    35,    121,    206,    253,    244,    228,    171,     85 ]
            bvalue = [ bvalue,    38,    72,     127,    197,    239,    239,    207,    164 ]
-           colors = [ colors, 'TG1', 'TG2', 'TG3', 'TG4', 'TG5', 'TG6', 'TG7', 'TG8', 'OPPOSITE']
-           rvalue = [ rvalue,  84,    163,   197,   220,   105,    51,    13,     0,   opixel[0]]
-           gvalue = [ gvalue,  48,    103,   141,   188,   188,   149,   113,    81,   opixel[1]]
-           bvalue = [ bvalue,   5,     26,    60,   118,   177,   141,   105,    71,   opixel[2]]
-       ENDELSE
+           colors = [ colors, 'TG1', 'TG2', 'TG3', 'TG4', 'TG5', 'TG6', 'TG7', 'TG8']
+           rvalue = [ rvalue,  84,    163,   197,   220,   105,    51,    13,     0 ]
+           gvalue = [ gvalue,  48,    103,   141,   188,   188,   149,   113,    81 ]
+           bvalue = [ bvalue,   5,     26,    60,   118,   177,   141,   105,    71 ]
+           colors = [ colors, 'OPPOSITE', 'BACKGROUND']
+           rvalue = [ rvalue,  opixel[0],  bgcolor[0]]
+           gvalue = [ gvalue,  opixel[1],  bgcolor[1]]
+           bvalue = [ bvalue,  opixel[2],  bgcolor[2]]
+         ENDELSE
    ENDELSE
    
-   
-; I have completely removed all access to "system" colors in this code. I'll
-; leave the code here for awhile to be sure no one is using system colors, but
-; I seriously doubt it will be coming back.
-    
-   ; Add system color names for IDL version 5.6 and higher. We don't want to
-   ; do this we cannot establish a display connection (e.g., we are running
-   ; in a cron job). Check for system variable !FSC_Display_Connection. If not
-   ; defined, check the connection.
-;   DefSysV, '!FSC_Display_Connection', EXISTS=sysvarExists
-;   IF sysvarExists $
-;        THEN haveConnection = !FSC_Display_Connection $
-;        ELSE haveConnection = CanConnect()
-;      
-   ; Handle depreciated NODISPLAY keyword.
-   IF Keyword_Set(nodisplay) THEN haveConnection = 0
-
-;   IF (Float(!Version.Release) GE 5.6) && Keyword_Set(haveConnection) THEN BEGIN
-;       
-;          tlb = Widget_Base()
-;          sc = Widget_Info(tlb, /System_Colors)
-;          Widget_Control, tlb, /Destroy
-;          frame = sc.window_frame
-;          text = sc.window_text
-;          active = sc.active_border
-;          shadow = sc.shadow_3d
-;          highlight = sc.light_3d
-;          edge = sc.light_edge_3d
-;          selected = sc.highlight
-;          face = sc.face_3d
-;          colors  = [colors,  'Frame',  'Text',  'Active',  'Shadow']
-;          rvalue =  [rvalue,   frame[0], text[0], active[0], shadow[0]]
-;          gvalue =  [gvalue,   frame[1], text[1], active[1], shadow[1]]
-;          bvalue =  [bvalue,   frame[2], text[2], active[2], shadow[2]]
-;          colors  = [colors,  'Highlight',  'Edge',  'Selected',  'Face']
-;          rvalue =  [rvalue,   highlight[0], edge[0], selected[0], face[0]]
-;          gvalue =  [gvalue,   highlight[1], edge[1], selected[1], face[1]]
-;          bvalue =  [bvalue,   highlight[2], edge[2], selected[2], face[2]]
-;       
-;    ENDIF
+    ; If you have a USERDEF color (from a color triple) then load it here.
+    IF N_Elements(usercolor) NE 0 THEN BEGIN
+       colors = [colors, 'USERDEF']
+       rvalue = [rvalue, usercolor[0]]
+       gvalue = [gvalue, usercolor[1]]
+       bvalue = [bvalue, usercolor[2]]
+    ENDIF
        
     ; Load the colors from the current color table, if you need them.
     IF useCurrentColors THEN BEGIN
@@ -770,7 +726,7 @@ FUNCTION cgColor, theColour, colorIndex, $
     
        CASE N_Params() OF
           0: BEGIN
-             theColor = PickColorName(Filename=filename, _Extra=extra, Cancel=cancelled, BREWER=brewer)
+             theColor = cgPickColorName(Filename=filename, _Strict_Extra=extra, Cancel=cancelled, BREWER=brewer)
              IF cancelled THEN RETURN, !P.Color
              IF theDepth GT 8 AND (decomposedState EQ 1) THEN BEGIN
                    colorIndex = Fix(!P.Color < (!D.Table_Size - 1))
@@ -786,11 +742,11 @@ FUNCTION cgColor, theColour, colorIndex, $
                 colorIndex = Fix(theColor)
                 theColor = brewer ? 'WT1' : 'White'
              ENDIF ELSE colorIndex = Fix(!P.Color < 255)
-             theColor = PickColorName(theColor, Filename=filename, _Extra=extra, Cancel=cancelled, BREWER=brewer)
+             theColor = cgPickColorName(theColor, Filename=filename, _Strict_Extra=extra, Cancel=cancelled, BREWER=brewer)
              IF cancelled THEN RETURN, !P.Color
              END
           2: BEGIN
-             theColor = PickColorName(theColor, Filename=filename, _Extra=extra, Cancel=cancelled, BREWER=brewer)
+             theColor = cgPickColorName(theColor, Filename=filename, _Strict_Extra=extra, Cancel=cancelled, BREWER=brewer)
              IF cancelled THEN RETURN, !P.Color
              END
        ENDCASE
@@ -840,15 +796,15 @@ FUNCTION cgColor, theColour, colorIndex, $
                 ; Did the user want color triples?
     
              IF Keyword_Set(triple) THEN BEGIN
-                colors = LonArr(ncolors, 3)
+                colors = BytArr(ncolors, 3)
                 FOR j=0,ncolors-1 DO colors[j,*] = cgColor(theColor[j], colorIndex[j], Filename=filename, $
                    Decomposed=decomposedState, /Triple, BREWER=brewer)
-                RETURN, colors
+                RETURN, Byte(colors)
              ENDIF ELSE BEGIN
                 colors = LonArr(ncolors)
                 FOR j=0,ncolors-1 DO colors[j] = cgColor(theColor[j], colorIndex[j], Filename=filename, $
                    Decomposed=decomposedState, BREWER=brewer)
-                RETURN, colors
+                IF decomposedState THEN RETURN, colors ELSE RETURN, Byte(colors)
             ENDELSE
           END
     ENDCASE
@@ -878,9 +834,11 @@ FUNCTION cgColor, theColour, colorIndex, $
     ; Did the user want a color triple? If so, return it now.
     IF Keyword_Set(triple) THEN BEGIN
        IF Keyword_Set(allcolors) THEN BEGIN
-          IF Keyword_Set(row) THEN RETURN, Transpose([[rvalue], [gvalue], [bvalue]]) ELSE RETURN, [[rvalue], [gvalue], [bvalue]]
+          IF Keyword_Set(row) $
+             THEN RETURN, Byte(Transpose([[rvalue], [gvalue], [bvalue]])) $
+             ELSE RETURN, Byte([[rvalue], [gvalue], [bvalue]])
        ENDIF ELSE BEGIN
-          IF Keyword_Set(row) THEN RETURN, [r, g, b] ELSE RETURN, [[r], [g], [b]]
+          IF Keyword_Set(row) THEN RETURN, Byte([r, g, b]) ELSE RETURN, Byte([[r], [g], [b]])
        ENDELSE
     ENDIF
     
@@ -891,15 +849,15 @@ FUNCTION cgColor, theColour, colorIndex, $
     
        ; Need a color structure?
        IF Arg_Present(colorStructure) THEN BEGIN
-          theColors = cgColor_Color24([[rvalue], [gvalue], [bvalue]])
+          theColors = cgColor24([[rvalue], [gvalue], [bvalue]])
           colorStructure = Create_Struct(theNames[0], theColors[0])
           FOR j=1, ncolors-1 DO colorStructure = Create_Struct(colorStructure, theNames[j], theColors[j])
        ENDIF
     
        IF Keyword_Set(allcolors) THEN BEGIN
-          RETURN, cgColor_Color24([[rvalue], [gvalue], [bvalue]])
+          RETURN, cgColor24([[rvalue], [gvalue], [bvalue]])
        ENDIF ELSE BEGIN
-          RETURN, cgColor_Color24([r, g, b])
+          RETURN, cgColor24([r, g, b])
        ENDELSE
     
     ENDIF ELSE BEGIN
@@ -925,7 +883,7 @@ FUNCTION cgColor, theColour, colorIndex, $
              colorIndex = Fix(!D.Table_Size - ncolors - 2)
           ENDIF
           IF (!D.Name NE 'PRINTER') AND (!D.Name NE 'NULL') THEN TVLCT, rvalue, gvalue, bvalue, colorIndex
-          RETURN, IndGen(ncolors) + colorIndex
+          RETURN, BIndGen(ncolors) + colorIndex
        ENDIF ELSE BEGIN
     
           ; Need a color structure?
@@ -935,7 +893,7 @@ FUNCTION cgColor, theColour, colorIndex, $
     
           IF (!D.Name NE 'PRINTER') AND (!D.Name NE 'NULL') THEN $
               TVLCT, rvalue[theIndex], gvalue[theIndex], bvalue[theIndex], colorIndex
-          RETURN, Fix(colorIndex)
+          RETURN, Byte(colorIndex)
        ENDELSE
     
     
