@@ -76,7 +76,7 @@ MODULE CRTM_SfcOptics_Define
     ! MW Water SfcOptics options
     LOGICAL  :: Use_New_MWSSEM = .TRUE.    ! Flag for MW Water SfcOptics algorithm switch
     REAL(fp) :: Azimuth_Angle  = 999.9_fp  ! Relative azimuth angle
-    REAL(fp) :: Transmittance  = -1.0_fp   ! Total atmospheric transmittance
+    REAL(fp) :: Transmittance  = ZERO      ! Total atmospheric transmittance
 
     ! Index of the satellite view angle in the angle arrays
     INTEGER  :: Index_Sat_Ang = 1
