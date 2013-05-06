@@ -32,7 +32,7 @@ MODULE CRTM_IR_Water_SfcOptics
                                       CRTM_Compute_IRSSEM, &
                                       CRTM_Compute_IRSSEM_TL, &
                                       CRTM_Compute_IRSSEM_AD
-
+  USE CRTM_IRwaterCoeff,        ONLY: IRwaterC
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -196,6 +196,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Compute_IR_Water_SfcOptics'
     ! Local variables
     INTEGER  :: j, nZ, iZ
+    REAL(fp) :: Frequency
     REAL(fp) :: Relative_Azimuth_Radian, brdf
 
 
@@ -204,14 +205,18 @@ CONTAINS
     ! ...Short name for angle dimensions
     nZ = SfcOptics%n_Angles
     iZ = SfcOptics%Index_Sat_Ang
+    ! ...Retrieve data from structures
+    Frequency = SC(SensorIndex)%Wavenumber(ChannelIndex)
 
 
     ! Compute IR sea surface emissivity
-    Error_Status = CRTM_Compute_IRSSEM( Surface%Wind_Speed, &
-                                        SC(SensorIndex)%Wavenumber(ChannelIndex), &
-                                        SfcOptics%Angle(1:nZ), &
-                                        SfcOptics%Emissivity(1:nZ,1), &
-                                        iVar%IRSSEM )
+    Error_Status = CRTM_Compute_IRSSEM( &
+                     IRwaterC                    , &  ! Input model coefficients
+                     Surface%Wind_Speed          , &  ! Input
+                     Frequency                   , &  ! Input
+                     SfcOptics%Angle(1:nZ)       , &  ! Input
+                     iVar%IRSSEM                 , &  ! Internal variable output
+                     SfcOptics%Emissivity(1:nZ,1)  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing IR sea surface emissivity', &
@@ -389,9 +394,11 @@ CONTAINS
     iZ = SfcOptics%Index_Sat_Ang
 
     ! Compute tangent-linear IR sea surface emissivity
-    Error_Status = CRTM_Compute_IRSSEM_TL( Surface_TL%Wind_Speed, &
-                                           SfcOptics_TL%Emissivity(1:nZ,1), &
-                                           iVar%IRSSEM )
+    Error_Status = CRTM_Compute_IRSSEM_TL( &
+                     IRwaterC                       , &  ! Input model coefficients
+                     Surface_TL%Wind_Speed          , &  ! Input
+                     iVar%IRSSEM                    , &  ! Internal variable input
+                     SfcOptics_TL%Emissivity(1:nZ,1)  )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Tangent_linear IR sea surface emissivity', &
@@ -596,9 +603,11 @@ CONTAINS
     END IF
 
     ! Compute sdjoint IRSSEM sea surface emissivity
-    Error_Status = CRTM_Compute_IRSSEM_AD( SfcOptics_AD%Emissivity(1:nZ,1), &
-                                           Surface_AD%Wind_Speed, &
-                                           iVar%IRSSEM )
+    Error_Status = CRTM_Compute_IRSSEM_AD( &
+                     IRwaterC                       , &  ! Input model coefficients
+                     SfcOptics_AD%Emissivity(1:nZ,1), &  ! Input
+                     iVar%IRSSEM                    , &  ! Internal Variable Input
+                     Surface_AD%Wind_Speed            )  ! Output
     IF ( Error_Status /= SUCCESS ) THEN
       CALL Display_Message( ROUTINE_NAME, &
                             'Error computing Adjoint IR sea surface emissivity', &
