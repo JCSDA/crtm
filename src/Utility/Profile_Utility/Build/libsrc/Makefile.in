@@ -38,24 +38,16 @@ $(LIBRARY): $(OBJ_FILES)
         
 library: $(LIBRARY)
 
-#clean:
-#	cd test && $(MAKE) $@
-#	-rm *.o *.mod *.a >/dev/null 2>&1
-#
-#distclean:
-#	cd test && $(MAKE) $@
-#	-rm Makefile >/dev/null 2>&1
-#
-#check: library
-#	cd test && $(MAKE) $@
-
 clean:
+	cd test && $(MAKE) $@
 	-rm *.o *.mod *.a >/dev/null 2>&1
 
 distclean:
+	cd test && $(MAKE) $@
 	-rm Makefile >/dev/null 2>&1
 
 check: library
+	cd test && $(MAKE) $@
 
 install:
 	$(INSTALL) -d $(DESTDIR)$(installdir)/include

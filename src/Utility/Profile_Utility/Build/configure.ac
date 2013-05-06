@@ -15,7 +15,7 @@ AC_CONFIG_SRCDIR([libsrc/Profile_Utility.f90])
 
 
 # Define the configuration files
-AC_CONFIG_FILES([Makefile libsrc/Makefile])
+AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
 
 
 # Check for programs
