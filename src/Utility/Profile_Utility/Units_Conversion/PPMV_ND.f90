@@ -35,10 +35,10 @@ MODULE PPMV_ND
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
-  
+
 CONTAINS
 
 
@@ -76,7 +76,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Number_Density:    Gas number density.
 !                          Set to 0.0 if input < 0.0
@@ -103,7 +103,7 @@ CONTAINS
 !       where
 !                         Pressure          T0
 !         nd(TOT) = L0 . ---------- . -------------  molecules/m^3
-!                            p0        Temperature 
+!                            p0        Temperature
 !
 !       and L0 = Loschmidt number,
 !           p0 = Standard pressure,
@@ -159,7 +159,7 @@ CONTAINS
     ! Calculate air number density
     CALL PP_to_ND( Temperature, Pressure, Total_Density )
 
-    
+
     ! Calculate the molecular number density
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapour
@@ -211,7 +211,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:          Tangent-linear atmospheric pressure.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
@@ -229,7 +229,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Number_Density_TL:    Tangent-linear gas number density.
 !                             Set to 0.0 for invalid input
@@ -362,7 +362,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density_AD:    Adjoint gas number density.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      molecules/m^3
@@ -391,7 +391,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:          Water vapor number density. If this argument
 !                             is not supplied, the mandatory input PPMV and
@@ -488,8 +488,8 @@ CONTAINS
 
     ! Adjoint form of air number density
     CALL PP_to_ND_AD( Temperature, Pressure, Total_Density_AD, Temperature_AD, Pressure_AD )
-    
-    
+
+
     ! Adjoint form of ppmv to parts-per conversion
     ppmv_AD = ppmv_AD + (PPMV_to_PPV * ppv_AD)
 
@@ -530,7 +530,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       ppmv:              Gas volume mixing ratio.
 !                          Set to 0.0 if input < 0.0
@@ -538,7 +538,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
 !                          ATTRIBUTES: INTENT(OUT)
-! 
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument is
 !                          not supplied, the mandatory Number_Density argument
@@ -563,7 +563,7 @@ CONTAINS
 !       and
 !                         Pressure          T0
 !         nd(TOT) = L0 . ---------- . -------------  molecules/m^3
-!                            p0        Temperature 
+!                            p0        Temperature
 !
 !       with L0 = Loschmidt number,
 !            p0 = Standard pressure,
@@ -596,7 +596,7 @@ CONTAINS
     REAL(fp),           INTENT(IN)  :: Pressure
     REAL(fp),           INTENT(IN)  :: Temperature
     REAL(fp),           INTENT(IN)  :: Number_Density
-    REAL(fp),           INTENT(OUT) :: ppmv            
+    REAL(fp),           INTENT(OUT) :: ppmv
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     ! Local variables
     REAL(fp) :: ppv
@@ -609,7 +609,7 @@ CONTAINS
     IF ( PRESENT(Water_Vapor) ) THEN
       IF ( Water_Vapor < ZERO ) RETURN
     END IF
-    
+
     ! Calculate total number density
     CALL PP_to_ND( Temperature, Pressure, Total_Density )
 
@@ -625,7 +625,7 @@ CONTAINS
 
     ! Calculate the volume mixing ratio
     ppmv = PPV_TO_PPMV * Number_Density / Dry_Air_Density
-    
+
   END SUBROUTINE ND_to_PPMV
 
 
@@ -668,7 +668,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:          Tangent-linear total atmospheric pressure.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
@@ -686,7 +686,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       ppmv_TL:              Tangent-linear gas volume mixing ratio.
 !                             Set to 0.0 if invalid input
@@ -737,7 +737,7 @@ CONTAINS
     REAL(fp),           INTENT(IN)  :: Pressure_TL
     REAL(fp),           INTENT(IN)  :: Temperature_TL
     REAL(fp),           INTENT(IN)  :: Number_Density_TL
-    REAL(fp),           INTENT(OUT) :: ppmv_TL            
+    REAL(fp),           INTENT(OUT) :: ppmv_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL
     ! Local variables
@@ -758,7 +758,7 @@ CONTAINS
         wv_TL = ZERO
       END IF
     END IF
-    
+
     ! Calculate total number density
     CALL PP_to_ND( Temperature, Pressure, Total_Density )
     CALL PP_to_ND_TL( Temperature, Pressure, Temperature_TL, Pressure_TL, Total_Density_TL )
@@ -822,7 +822,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       ppmv_AD:              Adjoint gas volume mixing ratio.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      ppmv
@@ -851,7 +851,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:          Water vapor volume mixing ratio. If this
 !                             argument is not supplied, the mandatory
@@ -889,15 +889,15 @@ CONTAINS
     Water_Vapor      , &  ! Optional FWD Input
     Water_Vapor_AD     )  ! Optional AD  Output
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: Pressure         
-    REAL(fp),           INTENT(IN)     :: Temperature      
-    REAL(fp),           INTENT(IN)     :: Number_Density   
-    REAL(fp),           INTENT(IN OUT) :: ppmv_AD            
-    REAL(fp),           INTENT(IN OUT) :: Pressure_AD      
-    REAL(fp),           INTENT(IN OUT) :: Temperature_AD   
+    REAL(fp),           INTENT(IN)     :: Pressure
+    REAL(fp),           INTENT(IN)     :: Temperature
+    REAL(fp),           INTENT(IN)     :: Number_Density
+    REAL(fp),           INTENT(IN OUT) :: ppmv_AD
+    REAL(fp),           INTENT(IN OUT) :: Pressure_AD
+    REAL(fp),           INTENT(IN OUT) :: Temperature_AD
     REAL(fp),           INTENT(IN OUT) :: Number_Density_AD
-    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor      
-    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD   
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor
+    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD
     ! Local variables
     REAL(fp) :: wv_AD
     REAL(fp) :: ppv            , ppv_AD

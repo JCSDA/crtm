@@ -35,10 +35,10 @@ MODULE MR_PP
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  
-  
+
+
 CONTAINS
 
 
@@ -110,14 +110,14 @@ CONTAINS
 !
 ! PROCEDURE:
 !       First a definition. In this routine, the mass mixing ratio of a gas
-!       is defined to be, for a given volume, the ratio of the mass of the gas 
+!       is defined to be, for a given volume, the ratio of the mass of the gas
 !       in question to that of DRY air.
 !
 !       The ideal gas equation can be written as,
-! 
+!
 !         p = n.R0.T     ................................................(1)
 !
-!       for unit volume, where 
+!       for unit volume, where
 !         n  = number of moles of gas,
 !         R0 = universal gas constant
 !         T  = temperature.
@@ -136,7 +136,7 @@ CONTAINS
 !
 !       Dividing eqn(2a) by (2b) and rearranging we get,
 !
-!                     n(MOL) 
+!                     n(MOL)
 !         pp(MOL) = ----------- . pp(DryAir)     ........................(3)
 !                    n(DryAir)
 !
@@ -174,7 +174,7 @@ CONTAINS
 !       If the gas for which the mixing ratio is to be converted is water
 !       vapor, then eqn(4) can be written as,
 !
-!                   
+!
 !         pp(H2O) = WX . ( p(Total) - pp(H2O) )     .....................(5)
 !
 !                                    MW(DryAir)
@@ -182,7 +182,7 @@ CONTAINS
 !                                     MW(H2O)
 !
 !       Expanding eqn(5) further, we get
-!                   
+!
 !         pp(H2O) = ( WX . p(Total) ) - ( WX . pp(H2O) )
 !
 !       and,
@@ -685,14 +685,14 @@ CONTAINS
 !
 ! PROCEDURE:
 !       First a definition. In this routine, the mass mixing ratio of a gas
-!       is defined to be, for a given volume, the ratio of the mass of the gas 
+!       is defined to be, for a given volume, the ratio of the mass of the gas
 !       in question to that of DRY air.
 !
 !       The ideal gas equation can be written as,
-! 
+!
 !         p = n.R0.T     ................................................(1)
 !
-!       for unit volume, where 
+!       for unit volume, where
 !         n  = number of moles of gas,
 !         R0 = universal gas constant
 !         T  = temperature.
@@ -711,7 +711,7 @@ CONTAINS
 !
 !       Dividing eqn(2a) by (2b) and rearranging we get,
 !
-!                     n(MOL) 
+!                     n(MOL)
 !         pp(MOL) = ----------- . pp(DryAir)     ........................(3)
 !                    n(DryAir)
 !
@@ -767,7 +767,7 @@ CONTAINS
 !       2) MOL is *not* H2O
 !       -------------------
 !
-!       For this gas, the dry air partial pressure must be computed using the 
+!       For this gas, the dry air partial pressure must be computed using the
 !       water vapor mixing ratio supplied in the optional Water_Vapor argument.
 !
 !       Eqn(4) above can be rewritten as,
@@ -804,7 +804,7 @@ CONTAINS
 !
 !                      p(Total)
 !         p(DryAir) = ----------     ....................................(9)
-!                      1 + WX 
+!                      1 + WX
 !
 !       Eqn(9) is used to compute the dry air partial pressure which is then
 !       used in enq(5) to compute the mixing ratio of the gas in question.
@@ -858,7 +858,7 @@ CONTAINS
       Dry_Air_Pressure = Pressure - Partial_Pressure
     ELSE
       w = G_TO_KG * Water_Vapor * MW_DRYAIR / MW_H2O
-      Dry_Air_Pressure = Pressure / (ONE + w) 
+      Dry_Air_Pressure = Pressure / (ONE + w)
     END IF
 
     ! Calculate the mass mixing ratio
@@ -1020,7 +1020,7 @@ CONTAINS
       c = G_TO_KG * MW_DRYAIR / MW_H2O
       w    = c * Water_Vapor
       w_TL = c * wv_TL
-      Dry_Air_Pressure = Pressure / (ONE + w) 
+      Dry_Air_Pressure = Pressure / (ONE + w)
       Dry_Air_Pressure_TL = (((ONE + w) * Pressure_TL) - (Pressure * w_TL)) / (ONE + w)**2
     END IF
 
@@ -1203,7 +1203,7 @@ CONTAINS
       Dry_Air_Pressure = Pressure - Partial_Pressure
     ELSE
       w = Water_Vapor * G_TO_KG * MW_DRYAIR / MW_H2O
-      Dry_Air_Pressure = Pressure / (ONE + w) 
+      Dry_Air_Pressure = Pressure / (ONE + w)
     END IF
 
 

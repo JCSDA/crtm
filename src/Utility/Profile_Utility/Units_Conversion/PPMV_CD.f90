@@ -36,11 +36,11 @@ MODULE PPMV_CD
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   REAL(fp),     PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
 
-  
+
 CONTAINS
 
 
@@ -79,7 +79,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:           Layer thickness
 !                          UNITS:      metres, m
 !                          TYPE:       REAL(fp)
@@ -113,7 +113,7 @@ CONTAINS
 !
 !                         p      T0
 !         nd(TOT) = L0 . ---- . ----  molecules.m^-3
-!                         p0     T 
+!                         p0     T
 !
 !       and L0 = Loschmidt number,
 !           p0 = Standard pressure,
@@ -132,7 +132,7 @@ CONTAINS
 !                    1.0e-07
 !         cd(TOT) = --------- . dz . nd(TOT)  kmol.cm^-2
 !                      Na
-!      
+!
 !       The dry air column density is then calculated using,
 !
 !                                    1
@@ -236,7 +236,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:              Layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
@@ -260,7 +260,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z_TL:           Tangent-linear layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
@@ -312,14 +312,14 @@ CONTAINS
     Water_Vapor      , &  ! Optional FWD Input
     Water_Vapor_TL     )  ! Optional TL  Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: Pressure         
-    REAL(fp),           INTENT(IN)  :: Temperature      
-    REAL(fp),           INTENT(IN)  :: ppmv             
-    REAL(fp),           INTENT(IN)  :: Delta_Z          
-    REAL(fp),           INTENT(IN)  :: Pressure_TL      
-    REAL(fp),           INTENT(IN)  :: Temperature_TL   
-    REAL(fp),           INTENT(IN)  :: ppmv_TL          
-    REAL(fp),           INTENT(IN)  :: Delta_Z_TL       
+    REAL(fp),           INTENT(IN)  :: Pressure
+    REAL(fp),           INTENT(IN)  :: Temperature
+    REAL(fp),           INTENT(IN)  :: ppmv
+    REAL(fp),           INTENT(IN)  :: Delta_Z
+    REAL(fp),           INTENT(IN)  :: Pressure_TL
+    REAL(fp),           INTENT(IN)  :: Temperature_TL
+    REAL(fp),           INTENT(IN)  :: ppmv_TL
+    REAL(fp),           INTENT(IN)  :: Delta_Z_TL
     REAL(fp),           INTENT(OUT) :: Column_Density_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL
@@ -408,13 +408,13 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:              Layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Column_Density_AD:    Adjoint gas column density.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      kmol/cm^2
@@ -443,14 +443,14 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Delta_Z_AD:           Adjoint layer thickness.
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:          Water vapor column density. If this argument
 !                             is not supplied, the mandatory input PPMV and
@@ -490,15 +490,15 @@ CONTAINS
     Water_Vapor      , &  ! Optional FWD Input
     Water_Vapor_AD     )  ! Optional AD  Output
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: Pressure         
-    REAL(fp),           INTENT(IN)     :: Temperature      
-    REAL(fp),           INTENT(IN)     :: ppmv             
-    REAL(fp),           INTENT(IN)     :: Delta_Z          
+    REAL(fp),           INTENT(IN)     :: Pressure
+    REAL(fp),           INTENT(IN)     :: Temperature
+    REAL(fp),           INTENT(IN)     :: ppmv
+    REAL(fp),           INTENT(IN)     :: Delta_Z
     REAL(fp),           INTENT(IN OUT) :: Column_Density_AD
-    REAL(fp),           INTENT(IN OUT) :: Pressure_AD      
-    REAL(fp),           INTENT(IN OUT) :: Temperature_AD   
-    REAL(fp),           INTENT(IN OUT) :: ppmv_AD          
-    REAL(fp),           INTENT(IN OUT) :: Delta_Z_AD       
+    REAL(fp),           INTENT(IN OUT) :: Pressure_AD
+    REAL(fp),           INTENT(IN OUT) :: Temperature_AD
+    REAL(fp),           INTENT(IN OUT) :: ppmv_AD
+    REAL(fp),           INTENT(IN OUT) :: Delta_Z_AD
     REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor
     REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD
     ! Local variables
@@ -557,7 +557,7 @@ CONTAINS
     Delta_Z_AD        = Delta_Z_AD + (SCALE_FACTOR * Number_Density * Total_Density_AD )
     Number_Density_AD =               SCALE_FACTOR * Delta_Z * Total_Density_AD
     CALL PP_to_ND_AD( Temperature, Pressure, Number_Density_AD, Temperature_AD, Pressure_AD )
-    
+
     ! Adjoint form of ppmv to parts-per conversion
     ppmv_AD = ppmv_AD + (PPMV_to_PPV * ppv_AD)
 
@@ -600,7 +600,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:           Layer thickness
 !                          UNITS:      metres, m
 !                          TYPE:       REAL(fp)
@@ -614,7 +614,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
 !                          ATTRIBUTES: INTENT(OUT)
-! 
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument is
 !                          not supplied, the mandatory input COLUMN_DENSITY
@@ -636,7 +636,7 @@ CONTAINS
 !
 !                         p      T0
 !         nd(TOT) = L0 . ---- . ----  molecules.m^-3
-!                         p0     T 
+!                         p0     T
 !
 !       and L0 = Loschmidt number,
 !           p0 = Standard pressure,
@@ -655,7 +655,7 @@ CONTAINS
 !                    1.0e-07
 !         cd(TOT) = --------- . dz . nd(TOT)  kmol.cm^-2
 !                      Na
-!      
+!
 !       The dry air column density is then calculated using,
 !
 !                                    1
@@ -682,11 +682,11 @@ CONTAINS
      ppmv          , &  ! Output
      Water_Vapor     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: Pressure      
-    REAL(fp),           INTENT(IN)  :: Temperature   
+    REAL(fp),           INTENT(IN)  :: Pressure
+    REAL(fp),           INTENT(IN)  :: Temperature
     REAL(fp),           INTENT(IN)  :: Column_Density
-    REAL(fp),           INTENT(IN)  :: Delta_Z       
-    REAL(fp),           INTENT(OUT) :: ppmv            
+    REAL(fp),           INTENT(IN)  :: Delta_Z
+    REAL(fp),           INTENT(OUT) :: ppmv
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     ! Local variables
     REAL(fp) :: ppv
@@ -701,7 +701,7 @@ CONTAINS
     IF ( PRESENT(Water_Vapor) ) THEN
       IF ( Water_Vapor < ZERO ) RETURN
     END IF
-    
+
     ! Calculate air column density
     CALL PP_to_ND( Temperature, Pressure, Number_Density )
     Total_Density = SCALE_FACTOR * Delta_Z * Number_Density
@@ -762,7 +762,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:              Layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
@@ -786,7 +786,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z_TL:           Tangent-linear layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
@@ -839,15 +839,15 @@ CONTAINS
     Water_Vapor      , &  ! Optional FWD Input
     Water_Vapor_TL     )  ! Optional TL  Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: Pressure         
-    REAL(fp),           INTENT(IN)  :: Temperature      
-    REAL(fp),           INTENT(IN)  :: Column_Density   
-    REAL(fp),           INTENT(IN)  :: Delta_Z          
-    REAL(fp),           INTENT(IN)  :: Pressure_TL      
-    REAL(fp),           INTENT(IN)  :: Temperature_TL   
+    REAL(fp),           INTENT(IN)  :: Pressure
+    REAL(fp),           INTENT(IN)  :: Temperature
+    REAL(fp),           INTENT(IN)  :: Column_Density
+    REAL(fp),           INTENT(IN)  :: Delta_Z
+    REAL(fp),           INTENT(IN)  :: Pressure_TL
+    REAL(fp),           INTENT(IN)  :: Temperature_TL
     REAL(fp),           INTENT(IN)  :: Column_Density_TL
-    REAL(fp),           INTENT(IN)  :: Delta_Z_TL       
-    REAL(fp),           INTENT(OUT) :: ppmv_TL            
+    REAL(fp),           INTENT(IN)  :: Delta_Z_TL
+    REAL(fp),           INTENT(OUT) :: ppmv_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL
     ! Local variables
@@ -938,7 +938,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Delta_Z:              Layer thickness
 !                             UNITS:      metres, m
 !                             TYPE:       REAL(fp)
@@ -973,7 +973,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Delta_Z_AD:           Adjoint layer thickness
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      metres, m
@@ -1020,17 +1020,17 @@ CONTAINS
     Water_Vapor      , &  ! Optional FWD Input
     Water_Vapor_AD     )  ! Optional AD  Output
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: Pressure         
-    REAL(fp),           INTENT(IN)     :: Temperature      
-    REAL(fp),           INTENT(IN)     :: Column_Density   
-    REAL(fp),           INTENT(IN)     :: Delta_Z          
-    REAL(fp),           INTENT(IN OUT) :: ppmv_AD            
-    REAL(fp),           INTENT(IN OUT) :: Pressure_AD      
-    REAL(fp),           INTENT(IN OUT) :: Temperature_AD   
+    REAL(fp),           INTENT(IN)     :: Pressure
+    REAL(fp),           INTENT(IN)     :: Temperature
+    REAL(fp),           INTENT(IN)     :: Column_Density
+    REAL(fp),           INTENT(IN)     :: Delta_Z
+    REAL(fp),           INTENT(IN OUT) :: ppmv_AD
+    REAL(fp),           INTENT(IN OUT) :: Pressure_AD
+    REAL(fp),           INTENT(IN OUT) :: Temperature_AD
     REAL(fp),           INTENT(IN OUT) :: Column_Density_AD
-    REAL(fp),           INTENT(IN OUT) :: Delta_Z_AD       
-    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor      
-    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD   
+    REAL(fp),           INTENT(IN OUT) :: Delta_Z_AD
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor
+    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD
     ! Local variables
     REAL(fp) :: wv_AD
     REAL(fp) :: ppv            , ppv_AD

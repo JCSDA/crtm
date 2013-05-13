@@ -35,10 +35,10 @@ MODULE PP_ND
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  
-  
+
+
 CONTAINS
 
 
@@ -62,7 +62,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:  Partial pressure of gas.
 !                          NOTE: Can be the total atmospheric
 !                                pressure to compute the total
@@ -71,7 +71,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Temperature
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Number_Density:    Number density of gas.
 !                          Set to zero for invalid input.
@@ -100,7 +100,7 @@ CONTAINS
 !
 !       where NA = Avogadro's constant (number of molecules in 1 mole.)
 !
-!       Eqn.(1) can be recast to provide the number of molecules in the 
+!       Eqn.(1) can be recast to provide the number of molecules in the
 !       volume, the number density, nd,
 !
 !               N     p.NA
@@ -117,7 +117,7 @@ CONTAINS
 !               R.T0
 !
 !       Taking the ratio of eqns.(2) and (3) gives,
-!       
+!
 !         nd    p.NA     R.T0
 !         -- = ------ . -------
 !         L0    R.T      p0.NA
@@ -126,7 +126,7 @@ CONTAINS
 !
 !                    p      T0
 !         nd = L0 . ---- . ----  molecules/m^3
-!                    p0     T 
+!                    p0     T
 !
 !       The value of p0 used in this routine is expressed in pascals (Pa) whereas
 !       the input partial Pressure is expected to be hPa (more common unit). Thus
@@ -134,7 +134,7 @@ CONTAINS
 !
 !                    100.p     T0
 !         nd = L0 . ------- . ----  molecules/m^3
-!                     p0       T 
+!                     p0       T
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 15-Nov-2001
@@ -152,7 +152,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: Number_Density
     ! Local variables
     REAL(fp) :: c
-    
+
     ! Setup
     Number_Density = ZERO
     IF ( Temperature < ZERO .OR. Partial_Pressure < ZERO ) RETURN
@@ -186,7 +186,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:     Partial pressure of gas.
 !                             NOTE: Can be the total atmospheric
 !                                   pressure to compute the total
@@ -195,19 +195,19 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Temperature_TL:       Tangent-linear atmospheric temperature
 !                             UNITS:      Kelvin, K
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure_TL:  Tangent-linear partial pressure of gas.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Number_Density_TL:    Tangent-linear number density of gas.
 !                             Set to zero for invalid input.
@@ -270,7 +270,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:     Partial pressure of gas.
 !                             NOTE: Can be the total atmospheric
 !                                   pressure to compute the total
@@ -279,7 +279,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density_AD:    Adjoint number density of gas.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      molecules/m^3
@@ -294,14 +294,14 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Partial_Pressure_AD:  Adjoint partial pressure of gas.
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 25-Sep-2009
 !                       paul.vandelst@noaa.gov
@@ -360,7 +360,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density:    Number density of gas.
 !                          NOTE: Can be the total air number
 !                                density to compute the total
@@ -377,7 +377,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(OUT)
-!   
+!
 ! PROCEDURE:
 !       The ideal gas law is
 !
@@ -416,7 +416,7 @@ CONTAINS
 !               NA
 !
 !       Taking the ratio of eqns.(2) and (3) gives,
-!       
+!
 !          p      nd     T
 !         ---- = ---- . ----  Pa
 !          p0     L0     T0
@@ -425,7 +425,7 @@ CONTAINS
 !
 !                   nd      T
 !         p = p0 . ---- . ----  Pa
-!                   L0     T0 
+!                   L0     T0
 !
 !       The value of p0 used in this routine is expressed in pascals (Pa) whereas
 !       the output Pressure is returned as hPa (more common unit). Thus there
@@ -433,7 +433,7 @@ CONTAINS
 !
 !                          nd      T
 !         p = 0.01 . p0 . ---- . ----  hPa
-!                          L0     T0 
+!                          L0     T0
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 15-Nov-2001
@@ -445,13 +445,13 @@ CONTAINS
     Temperature     , &  ! Input
     Number_Density  , &  ! Input
     Partial_Pressure  )  ! Output
-    ! Arguments 
+    ! Arguments
     REAL(fp), INTENT(IN)  :: Temperature
     REAL(fp), INTENT(IN)  :: Number_Density
     REAL(fp), INTENT(OUT) :: Partial_Pressure
     ! Local variables
     REAL(fp) :: c
-    
+
     ! Setup
     Partial_Pressure = ZERO
     IF ( Temperature < ZERO .OR. Number_Density < ZERO ) RETURN
@@ -485,7 +485,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density:       Number density of gas.
 !                             NOTE: Can be the total air number
 !                                   density to compute the total
@@ -500,7 +500,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density_TL:    Tangent-linear number density of gas.
 !                             UNITS:      molecules/m^3
 !                             TYPE:       REAL(fp)
@@ -514,7 +514,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(OUT)
-!   
+!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 25-Sep-2009
 !                       paul.vandelst@noaa.gov
@@ -527,7 +527,7 @@ CONTAINS
     Temperature_TL     , &  ! TL  Input
     Number_Density_TL  , &  ! TL  Input
     Partial_Pressure_TL  )  ! TL  Output
-    ! Arguments 
+    ! Arguments
     REAL(fp), INTENT(IN)  :: Temperature
     REAL(fp), INTENT(IN)  :: Number_Density
     REAL(fp), INTENT(IN)  :: Temperature_TL
@@ -570,7 +570,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Number_Density:       Number density of gas.
 !                             NOTE: Can be the total air number
 !                                   density to compute the total
@@ -586,7 +586,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OUTPUTS:
 !       Temperature_AD:       Adjoint atmospheric temperature
 !                             *** MUST HAVE VALUE ON ENTRY ***
@@ -594,7 +594,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!  
+!
 !       Number_Density_AD:    Adjoint number density of gas.
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      molecules/m^3
@@ -614,7 +614,7 @@ CONTAINS
     Partial_Pressure_AD, &  ! AD  Input
     Temperature_AD     , &  ! AD  Output
     Number_Density_AD    )  ! AD  Output
-    ! Arguments 
+    ! Arguments
     REAL(fp), INTENT(IN)     :: Temperature
     REAL(fp), INTENT(IN)     :: Number_Density
     REAL(fp), INTENT(IN OUT) :: Partial_Pressure_AD

@@ -48,8 +48,10 @@ MODULE Level_Layer_Conversion
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
@@ -65,16 +67,14 @@ CONTAINS
 !       pressure by weighting level values with the integrated layer density.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Effective_Layer_TP( Height,                 &  ! Input
-!                                          Pressure,               &  ! Input
-!                                          Temperature,            &  ! Input
-!                                          Water_Vapor_Pressure,   &  ! Input
-!                                          Effective_Pressure,     &  ! Output
-!                                          Effective_Temperature,  &  ! Output
-!                                          RCS_Id     =RCS_Id,     &  ! Revision control
-!                                          Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Effective_Layer_TP( Height               , &
+!                                          Pressure             , &
+!                                          Temperature          , &
+!                                          Water_Vapor_Pressure , &
+!                                          Effective_Pressure   , &
+!                                          Effective_Temperature  )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Height:                 Heights of the atmospheric levels.
 !                               UNITS:      metres, m
 !                               TYPE:       REAL(fp)
@@ -99,17 +99,7 @@ CONTAINS
 !                               DIMENSION:  Same as Height
 !                               ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:            Character string specifying a filename in which any
-!                               Messages will be logged. If not specified, or if an
-!                               error occurs opening the log file, the default action
-!                               is to output Messages to standard output.
-!                               UNITS:      N/A
-!                               TYPE:       CHARACTER(*)
-!                               DIMENSION:  Scalar
-!                               ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Effective_Pressure:     Effective layer pressure.
 !                               UNITS:      hectoPascals, hPa
 !                               TYPE:       REAL(fp)
@@ -122,18 +112,9 @@ CONTAINS
 !                               DIMENSION:  Same as Effective_Pressure
 !                               ATTRIBUTES: INTENT(OUT)
 !
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:                 Character string containing the Revision Control
-!                               System Id field for the module.
-!                               UNITS:      N/A
-!                               TYPE:       CHARACTER(*)
-!                               DIMENSION:  Scalar
-!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
-!
 ! FUNCTION RESULT:
 !       Error_Status:           The return value is an integer defining the error status.
-!                               The error codes are defined in the ERROR_HANDLER module.
+!                               The error codes are defined in the Message_Handler module.
 !                               If == SUCCESS the calculation was successful
 !                                  == FAILURE an unrecoverable error occurred
 !                               UNITS:      N/A
@@ -149,26 +130,26 @@ CONTAINS
 !
 !       The effective pressure and temperature is defined as,
 !               __
-!              \           
+!              \
 !               >  p.rho.dz
-!              /__         
+!              /__
 !         _
 !         p = -----------------     ..............................................(1)
 !                 __
-!                \         
+!                \
 !                 >  rho.dz
-!                /__       
+!                /__
 !
 !       and
 !
 !               __
-!              \           
+!              \
 !               >  T.rho.dz
-!              /__         
+!              /__
 !         _
 !         T = -----------------     ..............................................(2)
 !                 __
-!                \         
+!                \
 !                 >  rho.dz
 !                /__
 !
@@ -199,16 +180,16 @@ CONTAINS
 !       and the denominator is given by,
 !
 !          __ k
-!         \           
+!         \
 !          >  rho.dz = H_rho ( rho(l-1) - rho(l) )     ...........................(5)
-!         /__         
+!         /__
 !            k-1
 !
 !       where the scale heights are defined as,
 !
-!                -( z(l) - z(l-1 ) )        
+!                -( z(l) - z(l-1 ) )
 !         H_p = ---------------------     ........................................(6)
-!                ln( p(l) / p(l-1) )        
+!                ln( p(l) / p(l-1) )
 !
 !       and
 !
@@ -221,7 +202,7 @@ CONTAINS
 !       determine this the effective molecular weight of air (as a function of pressure)
 !       must be determined.
 !
-!       Breaking down the units of the components, 
+!       Breaking down the units of the components,
 !
 !         units(p)  = hPa
 !                   = 100 Pa
@@ -231,7 +212,7 @@ CONTAINS
 !
 !                          m2
 !         units(eqn(3)) = ----( 100 kg.m^-1.s^-2  .  kg.m^-3 )
-!                          m 
+!                          m
 !
 !                       = 100 kg^2.m^-3.s^-2
 !
@@ -247,17 +228,17 @@ CONTAINS
 !                       = 0.1 K.kg.m^-2
 !
 !         units(eqn(5)) = m  .  kg.m^-3
-!                       = kg.m^-2  
-!                     
+!                       = kg.m^-2
+!
 !       So the units of the final equations are:
 !
 !               _     units(eqn(3))
 !         units(p) = ---------------
-!                     units(eqn(5))  
+!                     units(eqn(5))
 !
 !                          100 kg^2.m^-3.s^-2
 !                  = --------------------
-!                         kg.m^-2  
+!                         kg.m^-2
 !
 !                  = 100 kg.m^-1.s^-2
 !                  = 100 kg.m.s^-2.m^-2
@@ -267,11 +248,11 @@ CONTAINS
 !
 !               _     units(eqn(4))
 !         units(T) = ---------------
-!                     units(eqn(5))  
+!                     units(eqn(5))
 !
 !                     0.1 K.kg.m^-2
 !                  = ---------------
-!                       kg.m^-2  
+!                       kg.m^-2
 !
 !                  = 0.1 K
 !
@@ -284,36 +265,31 @@ CONTAINS
 !       units of J.kg^-1.K^-1, the final scaling factor for the effective
 !       temperature would be 100, not 0.1.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst,, 03-May-2000
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Effective_Layer_TP( Height,                &  ! Input
-                               Pressure,              &  ! Input
-                               Temperature,           &  ! Input
-                               Water_Vapor_Pressure,  &  ! Input
-                               Effective_Pressure,    &  ! Output
-                               Effective_Temperature, &  ! Output
-                               RCS_Id,                &  ! Revision control
-                               Message_Log )          &  ! Error messaging
-                             RESULT( Error_Status )
+  FUNCTION Effective_Layer_TP( &
+    Height               , &  ! Input
+    Pressure             , &  ! Input
+    Temperature          , &  ! Input
+    Water_Vapor_Pressure , &  ! Input
+    Effective_Pressure   , &  ! Output
+    Effective_Temperature) &  ! Output
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Height(:)
-    REAL(fp),               INTENT(IN)  :: Pressure(:)
-    REAL(fp),               INTENT(IN)  :: Temperature(:)
-    REAL(fp),               INTENT(IN)  :: Water_Vapor_Pressure(:)
-    REAL(fp),               INTENT(OUT) :: Effective_Pressure(:)
-    REAL(fp),               INTENT(OUT) :: Effective_Temperature(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp), INTENT(IN)  :: Height(:)
+    REAL(fp), INTENT(IN)  :: Pressure(:)
+    REAL(fp), INTENT(IN)  :: Temperature(:)
+    REAL(fp), INTENT(IN)  :: Water_Vapor_Pressure(:)
+    REAL(fp), INTENT(OUT) :: Effective_Pressure(:)
+    REAL(fp), INTENT(OUT) :: Effective_Temperature(:)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Effective_Layer_TP'
     REAL(fp),     PARAMETER :: SCALE_FACTOR = 0.1_fp
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: n_Levels, n_Layers
     INTEGER :: k
     REAL(fp) :: MWair
@@ -323,142 +299,96 @@ CONTAINS
     REAL(fp) :: H_p, H_rho
     REAL(fp) :: Sum_rho, sum_p_RHO, Sum_T_rho
 
- 
+
     ! Setup
-    ! -----
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
 
-    ! Check input array sizes
+
+    ! Check arguments
+    ! ...Input array sizes
     n_Levels = SIZE(Height)
-    IF ( SIZE(Pressure)             /= n_Levels .OR. & 
-         SIZE(Temperature)          /= n_Levels .OR. & 
+    IF ( SIZE(Pressure)             /= n_Levels .OR. &
+         SIZE(Temperature)          /= n_Levels .OR. &
          SIZE(Water_Vapor_Pressure) /= n_Levels ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Inconsistent input array sizes.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Inconsistent input array sizes.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check output array sizes
+    ! ...Output array sizes
     n_Layers = n_Levels - 1
-    IF ( SIZE(Effective_Pressure)    < n_Layers .OR. & 
+    IF ( SIZE(Effective_Pressure)    < n_Layers .OR. &
          SIZE(Effective_Temperature) < n_Layers      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output arrays to small to hold result.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output arrays to small to hold result.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check input array values
+    ! ...Input array values
     IF ( ANY(Pressure < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Pressures < or = 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input Pressures < or = 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     IF ( ANY(Temperature < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Temperatures < or = 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input Temperatures < or = 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     IF ( ANY(Water_Vapor_Pressure < ZERO) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input water vapor partial pressures < 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input water vapor partial pressures < 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
 
 
     ! Calculate near surface level values
-    ! -----------------------------------
-    ! Molecular weight of air
-    CALL MW_Air( Pressure( 1 ),             &
-                 Water_Vapor_Pressure( 1 ), &
-                 MWair                      )
-
-    ! Calculate the gas "constant" in J.g^-1.K^-1
-    ! Note that the units are *NOT* SI. The scaling of these
-    ! units is addressed in the final scale factor for the
-    ! computation of the effective temeprature. (The effective
-    ! pressure is not affected as it doesn't require this value)
+    ! ...Molecular weight of air
+    CALL MW_Air( Pressure(1), Water_Vapor_Pressure(1), MWair )
+    ! ...Calculate the gas "constant" in J.g^-1.K^-1
+    !    Note that the units are *NOT* SI. The scaling of these
+    !    units is addressed in the final scale factor for the
+    !    computation of the effective temeprature. (The effective
+    !    pressure is not affected as it doesn't require this value)
     Rair_km1 = R0 / MWair
+    ! ...Air density
+    CALL Density( Pressure(1), Temperature(1), MWair, RHOair_km1 )
 
-    ! Air density
-    CALL Density( Pressure( 1 ),    &
-                  Temperature( 1 ), &
-                  MWair,            &
-                  RHOair_km1        )
 
     ! Loop over layers
-    ! ----------------
     Layer_Loop: DO k = 1, n_Layers
 
       ! Calculate current top of layer values
-      ! -------------------------------------
-      ! MWair at current Level
-      CALL MW_Air( Pressure( k+1 ),             &
-                   Water_Vapor_Pressure( k+1 ), &
-                   MWair                        )
-
-      ! Calculate the gas "constant" in J.g^-1.K^-1
-      ! Note that the units are *NOT* SI. The scaling of these
-      ! units is addressed in the final scale factor for the
-      ! computation of the effective temeprature. (The effective
-      ! pressure is not affected as it doesn't require this value)
+      ! ...MWair at current Level
+      CALL MW_Air( Pressure(k+1), Water_Vapor_Pressure(k+1), MWair )
+      ! ...Calculate the gas "constant" in J.g^-1.K^-1
       Rair = R0 / MWair
+      ! ...Air density at current Level
+      CALL Density( Pressure(k+1), Temperature(k+1), MWair, RHOair )
 
-      ! Air density at current Level
-      CALL Density( Pressure( k+1 ),    &
-                    Temperature( k+1 ), &
-                    MWair,              &
-                    RHOair              )
 
       ! Calculate the layer scale heights
-      ! ---------------------------------
-      ! Calculate layer thicknesses
-      dz = Height( k+1 ) - Height( k )
-
-      ! Pressure scale height
-      H_p = dz / LOG(Pressure( k+1 ) / Pressure( k ))
-
-      ! Density scale height
+      ! ...Calculate layer thicknesses
+      dz = Height(k+1) - Height(k)
+      ! ...Pressure scale height
+      H_p = dz / LOG(Pressure(k+1) / Pressure(k))
+      ! ...Density scale height
       H_rho = dz / LOG(RHOair / RHOair_km1)
 
 
       ! Calculate the effective quantities
-      ! ----------------------------------
-      ! Calculate the density integral
+      ! ...Calculate the density integral
       Sum_rho = H_rho * ( RHOair - RHOair_km1 )
-
-      ! Effective pressure
+      ! ...Effective pressure
       Sum_p_rho = ( ( H_p * H_rho ) / ( H_p + H_rho ) ) * &
-                  ( ( Pressure( k+1 ) * RHOair ) - ( Pressure( k ) * RHOair_km1 ) )
-      Effective_Pressure( k ) = Sum_p_rho / Sum_rho
-
-
-      ! Calculate the density weighted layer gas "constant"
+                  ( ( Pressure(k+1) * RHOair ) - ( Pressure(k) * RHOair_km1 ) )
+      Effective_Pressure(k) = Sum_p_rho / Sum_rho
+      ! ...Calculate the density weighted layer gas "constant"
       layer_Rair = ( ( Rair_km1*RHOair_km1 ) + ( Rair*RHOair ) ) / ( RHOair_km1+RHOair )
+      ! ...Effective temperature
+      Sum_T_rho = ( H_p / layer_Rair ) * ( Pressure(k+1) - Pressure(k) )
+      Effective_Temperature(k) = SCALE_FACTOR * Sum_T_rho / Sum_rho
 
-      ! Effective temperature
-      Sum_T_rho = ( H_p / layer_Rair ) * ( Pressure( k+1 ) - Pressure( k ) )
-      Effective_Temperature( k ) = SCALE_FACTOR * Sum_T_rho / Sum_rho
 
-
-      ! Save top boundary values for use as bottom boundary
-      ! values for next layer
-      ! ---------------------------------------------------
+      ! Bottom boundary values for next layer
       Rair_km1   = Rair
       RHOair_km1 = RHOair
 
@@ -480,22 +410,19 @@ CONTAINS
 !       Adapted from the UMBC INTLEV.F function supplied with the AIRS RTA.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Create_Sublevels( Level_Pressure,         &  ! Input
-!                                        Level_Temperature,      &  ! Input
-!                                        Level_Absorber,         &  ! Input
-!                                        n_Per_Layer,            &  ! Input
-!                                        Sublevel_Pressure,      &  ! Output
-!                                        Sublevel_Temperature,   &  ! Output
-!                                        Sublevel_Absorber,      &  ! Output
-!                                        RCS_Id     =RCS_Id,     &  ! Revision control
-!                                        Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Create_Sublevels( Level_Pressure      , &
+!                                        Level_Temperature   , &
+!                                        Level_Absorber      , &
+!                                        n_Per_Layer         , &
+!                                        Sublevel_Pressure   , &
+!                                        Sublevel_Temperature, &
+!                                        Sublevel_Absorber     )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Level_Pressure:        Pressure of the atmospheric levels.
 !                              UNITS:      hectoPascals, hPa
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-1 (K)
-!                                            K == number of levels
+!                              DIMENSION:  Rank-1 (n_Levels)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       Level_Temperature:     Temperature of the atmospheric levels.
@@ -508,9 +435,7 @@ CONTAINS
 !                              UNITS:      Doesn't matter - as long as they are
 !                                          LEVEL specific.
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-2 (K x J)
-!                                            K == number of levels
-!                                            J == number of absorbers
+!                              DIMENSION:  Rank-2 (n_Levels x n_Absorbers)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       n_Per_Layer:           Number of sublevels to create in each layer.
@@ -520,25 +445,11 @@ CONTAINS
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: INTENT(IN)
 !
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:           Character string specifying a filename
-!                              in which any Messages will be logged.
-!                              If not specified, or if an error occurs
-!                              opening the log file, the default action
-!                              is to output Messages to standard output.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER(*)
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Sublevel_Pressure:     Pressure of the atmospheric sublevels.
 !                              UNITS:      hectoPascals, hPa
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-1 (Ks)
-!                                            Ks == number of sublevels
-!                                               == ( (K-1) * n_Per_Layer ) + 1
+!                              DIMENSION:  Rank-1 (n_Sublevels = ((n_Levels-1) * n_Per_Layer ) + 1)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       Sublevel_Temperature:  Temperature of the atmospheric sublevels.
@@ -550,24 +461,13 @@ CONTAINS
 !       Sublevel_Absorber:     Absorber concentrations at the atmospheric Levels
 !                              UNITS:      Same as input
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-2 (Ks x J)
-!                                            Ks == number of sublevels
-!                                            J  == number of absorbers
+!                              DIMENSION:  Rank-2 (n_Sublevels x n_Absorbers)
 !                              ATTRIBUTES: INTENT(IN)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:                Character string containing the Revision Control
-!                              System Id field for the module.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER(*)
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:          The return value is an integer defining the error
 !                              status. The error codes are defined in the
-!                              ERROR_HANDLER module.
+!                              Message_Handler module.
 !                              If == SUCCESS the calculation was successful
 !                                 == FAILURE an unrecoverable error occurred
 !                              UNITS:      N/A
@@ -584,7 +484,7 @@ CONTAINS
 !         ln(p[n+1]) - ln(p[n] = ---------------------
 !                                          N(k)
 !
-!       given the pressures, p(1) - p(K) of the input Levels.
+!       given the pressures, p(1) - p(n_Levels) of the input Levels.
 !
 !       Once the sublevels are defined, the level temperatures and absorber
 !       amounts are linearly interpolated at the specific number of sublevels
@@ -595,37 +495,32 @@ CONTAINS
 !       Currently, N is independent of k. That is, the same number of sublevels
 !       are created for each layer.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 19-Jan-2001
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Create_Sublevels( Level_Pressure,       &  ! Input
-                             Level_Temperature,    &  ! Input
-                             Level_Absorber,       &  ! Input
-                             n_Per_Layer,          &  ! Input
-                             Sublevel_Pressure,    &  ! Output
-                             Sublevel_Temperature, &  ! Output
-                             Sublevel_Absorber,    &  ! Output
-                             RCS_Id,               &  ! Revision control
-                             Message_Log )         &  ! Error messaging
-                           RESULT( Error_Status )
+  FUNCTION Create_Sublevels( &
+    Level_Pressure      , &  ! Input
+    Level_Temperature   , &  ! Input
+    Level_Absorber      , &  ! Input
+    n_Per_Layer         , &  ! Input
+    Sublevel_Pressure   , &  ! Output
+    Sublevel_Temperature, &  ! Output
+    Sublevel_Absorber   ) &  ! Output
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Level_Pressure(:)
-    REAL(fp),               INTENT(IN)  :: Level_Temperature(:)
-    REAL(fp),               INTENT(IN)  :: Level_Absorber(:,:)
-    INTEGER,                INTENT(IN)  :: n_Per_Layer
-    REAL(fp),               INTENT(OUT) :: Sublevel_Pressure(:)
-    REAL(fp),               INTENT(OUT) :: Sublevel_Temperature(:)
-    REAL(fp),               INTENT(OUT) :: Sublevel_Absorber(:,:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp), INTENT(IN)  :: Level_Pressure(:)
+    REAL(fp), INTENT(IN)  :: Level_Temperature(:)
+    REAL(fp), INTENT(IN)  :: Level_Absorber(:,:)
+    INTEGER,  INTENT(IN)  :: n_Per_Layer
+    REAL(fp), INTENT(OUT) :: Sublevel_Pressure(:)
+    REAL(fp), INTENT(OUT) :: Sublevel_Temperature(:)
+    REAL(fp), INTENT(OUT) :: Sublevel_Absorber(:,:)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Create_Sublevels'
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: n_Levels
     INTEGER :: n_Sublevels
     INTEGER :: n_Absorbers
@@ -641,69 +536,49 @@ CONTAINS
 
 
     ! Setup
-    ! -----
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
 
-    ! Check size of input arrays
+    ! Check arguments
+    ! ...Check size of input arrays
     n_Levels = SIZE(Level_Pressure)
     IF ( SIZE(Level_Temperature)    /= n_Levels .OR. &
          SIZE(Level_Absorber,DIM=1) /= n_Levels      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Inconsistent input array sizes.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Inconsistent input array sizes.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check sublevel multiplier
+    ! ...Check sublevel multiplier
     IF ( n_Per_Layer < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input N_PER_LAYER must be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input N_PER_LAYER must be > 0.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check size of output arrays
+    ! ...Check size of output arrays
     n_Sublevels = ( ( n_Levels - 1 ) * n_Per_Layer ) + 1
     IF ( SIZE(Sublevel_Pressure)       < n_Sublevels .OR. &
          SIZE(Sublevel_Temperature)    < n_Sublevels .OR. &
          SIZE(Sublevel_Absorber,DIM=1) < n_Sublevels      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output arrays not large enough to hold result.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output arrays not large enough to hold result.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     n_Absorbers = SIZE( Level_Absorber, DIM = 2 )
     IF ( SIZE(Sublevel_Absorber,DIM=2) < n_Absorbers ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output Sublevel_Absorber array does not have '//&
-                            'enough absorber dimension elements.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output Sublevel_Absorber array does not have enough absorber dimension elements.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-    
-    ! Check input Pressure array values
+    ! ...Check input Pressure array values
     IF ( ANY(Level_Pressure < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Pressures < or = 0.0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input pressures < or = 0.0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
 
+
     ! Calculate the log of the input pressure
-    ! ---------------------------------------
-    ! Don't really need the WHERE due to the 
-    ! input pressure check, but just to be sure
+    ! ...Don't really need the WHERE due to the
+    !    input pressure check, but just to be sure
     WHERE ( Level_Pressure > ZERO )
       Level_ln_Pressure = LOG( Level_Pressure )
     ELSEWHERE
@@ -717,33 +592,31 @@ CONTAINS
     ! the natural logarithm of pressure. Because the interpolation is done at
     ! equal intervals, rather than use a function, the interpolation code is
     ! inline. It's simpler.
-    ! -----------------------------------------------------------------------
-     
-    ! Fill the layer index array
-    ! xn = [ 0, 1, 2, ..... n_Per_Layer-1 ]
+
+    ! ...Fill the layer index array
+    !    xn = [ 0, 1, 2, ..... n_Per_Layer-1 ]
     xn           = (/ ( REAL(i, fp), i = 0, n_Per_Layer - 1 ) /)
     xn_Per_Layer = REAL(n_Per_Layer, fp)
 
-
-    ! Loop over layers and linearly interpolate
-    ! across layer k (between Levels k and k+1)
-    ! to n equally spaced Sublevels.
+    ! ...Loop over layers and linearly interpolate
+    !    across layer k (between Levels k and k+1)
+    !    to n equally spaced Sublevels.
     !
-    !        x(k+1) - x(k)
-    !   dx = -------------
-    !              n
-    ! so that
+    !           x(k+1) - x(k)
+    !      dx = -------------
+    !                 n
+    !    so that
     !
-    !   x = x(k) + ( xn*dx )
+    !      x = x(k) + ( xn*dx )
     !
-    ! where xn and x are vectors.
+    !    where xn and x are vectors.
     !
-    ! Note that although the temperature and 
-    ! absorber amount are linearly interpolated
-    ! between levels, the interpolated values 
-    ! are associated with the ln(P) interpolated
-    ! values. So, the temperature/absorber
-    ! interpolation is effectively exponential.
+    !    Note that although the temperature and
+    !    absorber amount are linearly interpolated
+    !    between levels, the interpolated values
+    !    are associated with the ln(P) interpolated
+    !    values. So, the temperature/absorber
+    !    interpolation is effectively exponential.
     Layer_Loop: DO k = 1, n_Levels - 1
 
       ! Sublevel array indices
@@ -751,30 +624,29 @@ CONTAINS
       n2 = n1 + n_Per_Layer - 1
 
       ! Interpolate ln(p)
-      dx = ( Level_ln_Pressure( k+1 ) - Level_ln_Pressure( k ) ) / xn_Per_Layer
-      Sublevel_ln_Pressure( n1:n2 ) = Level_ln_Pressure( k ) + ( xn * dx )
+      dx = ( Level_ln_Pressure(k+1) - Level_ln_Pressure(k) ) / xn_Per_Layer
+      Sublevel_ln_Pressure(n1:n2) = Level_ln_Pressure(k) + ( xn * dx )
 
       ! Interpolate T
-      dx = ( Level_Temperature( k+1 ) - Level_Temperature( k ) ) / xn_Per_Layer
-      Sublevel_Temperature( n1:n2 ) = Level_Temperature( k ) + ( xn * dx )
+      dx = ( Level_Temperature(k+1) - Level_Temperature(k) ) / xn_Per_Layer
+      Sublevel_Temperature(n1:n2) = Level_Temperature(k) + ( xn * dx )
 
       ! Interpolate absorber
       Absorber_Loop: DO j = 1, n_Absorbers
-        dx = ( Level_Absorber( k+1, j ) - Level_Absorber( k, j ) ) / xn_Per_Layer
-        Sublevel_Absorber( n1:n2, j ) = Level_Absorber( k, j ) + ( xn * dx )
+        dx = ( Level_Absorber(k+1,j) - Level_Absorber(k,j) ) / xn_Per_Layer
+        Sublevel_Absorber(n1:n2,j) = Level_Absorber(k,j) + ( xn * dx )
       END DO Absorber_Loop
 
       ! Convert ln(p) -> p
-      Sublevel_Pressure( n1:n2 ) = EXP(Sublevel_ln_Pressure( n1:n2 ))
+      Sublevel_Pressure(n1:n2) = EXP(Sublevel_ln_Pressure(n1:n2))
 
     END DO Layer_Loop
 
 
     ! Assign last Level
-    ! -----------------
-    Sublevel_Pressure( n_Sublevels )    = Level_Pressure( n_Levels )
-    Sublevel_Temperature( n_Sublevels ) = Level_Temperature( n_Levels )
-    Sublevel_Absorber( n_Sublevels, : ) = Level_Absorber( n_Levels, : )
+    Sublevel_Pressure(n_Sublevels)    = Level_Pressure(n_Levels)
+    Sublevel_Temperature(n_Sublevels) = Level_Temperature(n_Levels)
+    Sublevel_Absorber(n_Sublevels,:)  = Level_Absorber(n_Levels,:)
 
   END FUNCTION Create_Sublevels
 
@@ -792,24 +664,21 @@ CONTAINS
 !       Adapted from the UMBC INTEG.F function supplied with the AIRS RTA.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Integrate_Sublevels( Sublevel_Height,        &  ! Input
-!                                           Sublevel_Pressure,      &  ! Input
-!                                           Sublevel_Temperature,   &  ! Input
-!                                           Sublevel_Absorber,      &  ! Input
-!                                           n_Per_Layer,            &  ! Input
-!                                           H2O_J_Index,            &  ! Input
-!                                           Layer_Pressure,         &  ! Output
-!                                           Layer_Temperature,      &  ! Output
-!                                           Layer_Absorber,         &  ! Output
-!                                           RCS_Id     =RCS_Id,     &  ! Revision control
-!                                           Message_Log=Message_Log )  ! Error messaging
+!       Error_Status = Integrate_Sublevels( Sublevel_Height     , &
+!                                           Sublevel_Pressure   , &
+!                                           Sublevel_Temperature, &
+!                                           Sublevel_Absorber   , &
+!                                           n_Per_Layer         , &
+!                                           H2O_J_Index         , &
+!                                           Layer_Pressure      , &
+!                                           Layer_Temperature   , &
+!                                           Layer_Absorber        )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Sublevel_Height:       Altitude of the atmospheric sublevels.
 !                              UNITS:      metres, m
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-1 (Ks)
-!                                            Ks == number of sublevels
+!                              DIMENSION:  Rank-1 (n_Sublevels)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       Sublevel_Pressure:     Pressure of the atmospheric sublevels.
@@ -828,9 +697,7 @@ CONTAINS
 !                              sublevels
 !                              UNITS:      ppmv
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-2 (Ks x J)
-!                                            Ks == number of Sublevels
-!                                            J  == number of absorbers
+!                              DIMENSION:  Rank-2 (n_Sublevels x n_Absorbers)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       n_Per_Layer:           Number of sublevel for each layer.
@@ -851,23 +718,11 @@ CONTAINS
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:           Character string specifying a filename
-!                              in which any Messages will be logged.
-!                              If not specified, or if an error occurs
-!                              opening the log file, the default action
-!                              is to output Messages to standard output.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER(*)
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
+! OUTPUTS:
 !       Layer_Pressure:        Average pressure of the atmospheric layers
 !                              UNITS:      hectoPascals, hPa
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-1 (K-1)
-!                                            K-1 == number of layers
+!                              DIMENSION:  Rank-1 (n_Layers)
 !                              ATTRIBUTES: INTENT(IN)
 !
 !       Layer_Temperature:     Average temperature of the atmospheric layers
@@ -880,23 +735,13 @@ CONTAINS
 !                              atmospheric layers
 !                              UNITS:      kmol.cm^-2.
 !                              TYPE:       REAL(fp)
-!                              DIMENSION:  Rank-2 (K-1 x J)
-!                                            K-1 == number of layers
-!                                            J   == number of absorbers
+!                              DIMENSION:  Rank-2 (n_Layers x n_Absorbers)
 !                              ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:                Character string containing the Revision Control
-!                              System Id field for the module.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER(*)
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:          The return value is an integer defining the error
 !                              status. The error codes are defined in the
-!                              ERROR_HANDLER module.
+!                              Message_Handler module.
 !                              If == SUCCESS the calculation was successful
 !                                 == FAILURE an unrecoverable error occurred
 !                              UNITS:      N/A
@@ -976,47 +821,42 @@ CONTAINS
 !
 !       in units of kmol.cm^-2
 !
-!       This corresponds to ASUM (and eventually ALAY) in the 
+!       This corresponds to ASUM (and eventually ALAY) in the
 !       UMBC KLAYERS code.
 !
 !       Currently, N is independent of k. That is, the same number of sublevels
 !       is assumed for each layer.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 19-Jan-2001
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Integrate_Sublevels( Sublevel_Height,       &  ! Input
-                                Sublevel_Pressure,     &  ! Input
-                                Sublevel_Temperature,  &  ! Input
-                                Sublevel_Absorber,     &  ! Input
-                                n_Per_Layer,           &  ! Input
-                                H2O_J_Index,           &  ! Input
-                                Layer_Pressure,        &  ! Output
-                                Layer_Temperature,     &  ! Output
-                                Layer_Absorber,        &  ! Output
-                                RCS_Id,                &  ! Revision control
-                                Message_Log )          &  ! Error messaging
-                              RESULT( Error_Status )
+  FUNCTION Integrate_Sublevels( &
+    Sublevel_Height     , &  ! Input
+    Sublevel_Pressure   , &  ! Input
+    Sublevel_Temperature, &  ! Input
+    Sublevel_Absorber   , &  ! Input
+    n_Per_Layer         , &  ! Input
+    H2O_J_Index         , &  ! Input
+    Layer_Pressure      , &  ! Output
+    Layer_Temperature   , &  ! Output
+    Layer_Absorber      ) &  ! Output
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Sublevel_Height(:)
-    REAL(fp),               INTENT(IN)  :: Sublevel_Pressure(:)
-    REAL(fp),               INTENT(IN)  :: Sublevel_Temperature(:)
-    REAL(fp),               INTENT(IN)  :: Sublevel_Absorber(:,:)
-    INTEGER,                INTENT(IN)  :: n_Per_Layer
-    INTEGER,                INTENT(IN)  :: H2O_J_Index
-    REAL(fp),               INTENT(OUT) :: Layer_Pressure(:)
-    REAL(fp),               INTENT(OUT) :: Layer_Temperature(:)
-    REAL(fp),               INTENT(OUT) :: Layer_Absorber(:,:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp), INTENT(IN)  :: Sublevel_Height(:)
+    REAL(fp), INTENT(IN)  :: Sublevel_Pressure(:)
+    REAL(fp), INTENT(IN)  :: Sublevel_Temperature(:)
+    REAL(fp), INTENT(IN)  :: Sublevel_Absorber(:,:)
+    INTEGER,  INTENT(IN)  :: n_Per_Layer
+    INTEGER,  INTENT(IN)  :: H2O_J_Index
+    REAL(fp), INTENT(OUT) :: Layer_Pressure(:)
+    REAL(fp), INTENT(OUT) :: Layer_Temperature(:)
+    REAL(fp), INTENT(OUT) :: Layer_Absorber(:,:)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Integrate_Sublevels'
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: n_Sublevels
     INTEGER :: n_Layers
     INTEGER :: n_Absorbers
@@ -1038,71 +878,49 @@ CONTAINS
 
 
     ! Setup
-    ! -----
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-    
-    ! Check size of input arrays
+    err_stat = SUCCESS
+
+
+    ! Check arguments
+    ! ...Check size of input arrays
     n_Sublevels = SIZE(Sublevel_Height)
     IF ( SIZE(Sublevel_Pressure)       < n_Sublevels .OR. &
          SIZE(Sublevel_Temperature)    < n_Sublevels .OR. &
          SIZE(Sublevel_Absorber,DIM=1) < n_Sublevels      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Inconsistent input array sizes.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Inconsistent input array sizes.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check input array values
+    ! ...Check input array values
     IF ( ANY(Sublevel_Pressure < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Pressures < or = 0.0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input pressures < or = 0.0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     IF ( ANY(Sublevel_Temperature < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Temperatures < or = 0.0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input temperatures < or = 0.0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     IF ( ANY(Sublevel_Absorber < ZERO) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input absorber amounts < 0.0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input absorber amounts < 0.0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check sublevel multiplier
+    ! ...Check sublevel multiplier
     IF ( n_Per_Layer < 1 ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input N_PER_LAYER must be > 0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input N_PER_LAYER must be > 0.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check water vapour index
+    ! ...Check water vapour index
     IF ( H2O_J_Index < 1 .OR. &
          H2O_J_Index > SIZE(Sublevel_Absorber,DIM=2) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input H2O_J_Index value is invalid.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input H2O_J_Index value is invalid.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-
-    ! Check size of output arrays
+    ! ...Check size of output arrays
     IF ( n_Per_Layer > 1 ) THEN
       n_Layers = n_Sublevels / n_Per_Layer
     ELSE
@@ -1111,55 +929,44 @@ CONTAINS
     IF ( SIZE(Layer_Pressure)       < n_Layers .OR. &
          SIZE(Layer_Temperature)    < n_Layers .OR. &
          SIZE(Layer_Absorber,DIM=1) < n_Layers      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output arrays not large enough to hold result.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output arrays not large enough to hold result.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     n_Absorbers = SIZE(Sublevel_Absorber,DIM=2)
     IF ( SIZE(Layer_Absorber,DIM=2) < n_Absorbers ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output Layer_Absorber array does not have '//&
-                            'enough absorber dimension elements.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output Layer_Absorber array does not have enough absorber dimension elements.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-    
+
 
     ! Calculate initial level total number density
-    ! --------------------------------------------
-    CALL PP_to_ND( Sublevel_Pressure( 1 ),    &
-                   Sublevel_Temperature( 1 ), &
-                   Sublevel_RHOair_nm1        )
+    CALL PP_to_ND( Sublevel_Pressure(1), Sublevel_Temperature(1), Sublevel_RHOair_nm1 )
+
 
     ! Begin layer loop
-    ! ----------------
     Layer_Loop: DO k = 1, n_Layers
 
+
       ! Initialise sum variables
-      Layer_T_RHOair_sum      = ZERO
-      Layer_RHOair_sum        = ZERO
-      Layer_Absorber_sum( : ) = ZERO
+      Layer_T_RHOair_sum = ZERO
+      Layer_RHOair_sum   = ZERO
+      Layer_Absorber_sum = ZERO
+
 
       ! Sublevel array indices
-      n1 = ( ( k-1 ) * n_Per_Layer ) + 1
+      n1 = ( (k-1) * n_Per_Layer ) + 1
       n2 = n1 + n_Per_Layer - 1
 
 
       ! Loop over sublayers
-      ! -------------------
       Sublayer_Loop: DO n = n1, n2
 
 
         ! Calculate current top of sublayer total number density
-        ! ------------------------------------------------------
-        CALL PP_to_ND( Sublevel_Pressure( n+1 )   , &
-                       Sublevel_Temperature( n+1 ), &
-                       Sublevel_RHOair              )
+        CALL PP_to_ND( Sublevel_Pressure(n+1), Sublevel_Temperature(n+1), Sublevel_RHOair )
+
 
         ! Perform the summation for the density weighted layer temperature
         ! by summing the T.rho subLAYER product and the subLAYER density
@@ -1209,25 +1016,23 @@ CONTAINS
         ! In the UMBC KLAYERS code, the numerator corresponds to the final
         ! TSUM value (with each sublayer value corresponding to RJUNK),
         ! the denominator to AJUNK, and the result to TLAY.
-        ! ----------------------------------------------------------------
-        ! Calculate sublayer thickness, dz
-        Sublayer_dZ = ABS( Sublevel_Height( n+1 ) - Sublevel_Height( n ) )
 
-        ! Calculate sublayer pressure, p
-        Sublayer_Pressure =    ( Sublevel_Pressure( n+1 ) - Sublevel_Pressure( n ) ) / &
-        !                   --------------------------------------------------------
-                            LOG( Sublevel_Pressure( n+1 ) / Sublevel_Pressure( n ) )
+        ! ...Calculate sublayer thickness, dz
+        Sublayer_dZ = ABS(Sublevel_Height(n+1) - Sublevel_Height(n))
 
-        ! Calculate sublayer temperature, T
-        Sublayer_Temperature = ( Sublevel_Temperature( n+1 )*Sublevel_RHOair+Sublevel_Temperature( n )*Sublevel_RHOair_nm1 ) / &
-        !                      -----------------------------------------------------------------------------------------------
-                                                           ( Sublevel_RHOair+Sublevel_RHOair_nm1 )
+        ! ...Calculate sublayer pressure, p
+        Sublayer_Pressure =    ( Sublevel_Pressure(n+1) - Sublevel_Pressure(n) ) / &
+                            LOG( Sublevel_Pressure(n+1) / Sublevel_Pressure(n) )
 
-        ! Calculate the sublayer T.rho and rho variables
+        ! ...Calculate sublayer temperature, T
+        Sublayer_Temperature = ( Sublevel_Temperature(n+1)*Sublevel_RHOair + Sublevel_Temperature(n)*Sublevel_RHOair_nm1 ) / &
+                               ( Sublevel_RHOair+Sublevel_RHOair_nm1 )
+
+        ! ...Calculate the sublayer T.rho and rho variables
         Sublayer_T_RHOair = Sublayer_dZ * Sublayer_Pressure
         Sublayer_RHOair   = Sublayer_T_RHOair / Sublayer_Temperature
 
-        ! Sum the sublayer Trho and rho variables
+        ! ...Sum the sublayer Trho and rho variables
         Layer_T_RHOair_sum = Layer_T_RHOair_sum + Sublayer_T_RHOair
         Layer_RHOair_sum   = Layer_RHOair_sum   + Sublayer_RHOair
 
@@ -1251,54 +1056,46 @@ CONTAINS
         !
         ! This corresponds to ASUM (and eventually ALAY) in the
         ! UMBC KLAYERS code.
-        ! ---------------------------------------------------------
         Absorber_Sum_Loop: DO j = 1, n_Absorbers
 
           ! Calculate simple average sublayer absorber in ppmv
-          Sublayer_Absorber = 0.5_fp * ( Sublevel_Absorber( n+1, j ) + Sublevel_Absorber( n, j ) )
+          Sublayer_Absorber = 0.5_fp * ( Sublevel_Absorber(n+1,j) + Sublevel_Absorber(n,j) )
 
           ! Convert to kmol.cm^-2
-          IF ( j == H2O_J_Index ) THEN                                                  
+          IF ( j == H2O_J_Index ) THEN
             CALL PPMV_to_CD( Sublayer_Pressure   , &
                              Sublayer_Temperature, &
                              Sublayer_Absorber   , &
                              Sublayer_dZ         , &
                              Sublayer_Absorber_k   )
-            Water_Vapor = Sublayer_Absorber_k                                 
-          ELSE                                                                
-            CALL PPMV_to_CD( Sublayer_Pressure      , &          
-                             Sublayer_Temperature   , &       
-                             Sublayer_Absorber      , &                 
-                             Sublayer_dZ            , &
-                             SubLayer_Absorber_K    , &          
-                             Water_Vapor=Water_Vapor  )  
-          END IF                                                              
+            Water_Vapor = Sublayer_Absorber_k
+          ELSE
+            CALL PPMV_to_CD( Sublayer_Pressure        , &
+                             Sublayer_Temperature     , &
+                             Sublayer_Absorber        , &
+                             Sublayer_dZ              , &
+                             SubLayer_Absorber_K      , &
+                             Water_Vapor = Water_Vapor  )
+          END IF
 
           ! Sum the column density
-          Layer_Absorber_sum( j ) = Layer_Absorber_sum( j ) + Sublayer_Absorber_k
+          Layer_Absorber_sum(j) = Layer_Absorber_sum(j) + Sublayer_Absorber_k
 
         END DO Absorber_Sum_Loop
 
 
-        ! Save top boundary Density for use as bottom
-        ! boundary density for next layer
-        ! -------------------------------------------
+        ! Bottom boundary density for next layer
         Sublevel_RHOair_nm1 = Sublevel_RHOair
 
       END DO Sublayer_Loop
 
 
       ! Assign the average layer values
-      ! -------------------------------
-      Layer_dZ = ABS( Sublevel_Height( n2+1 ) - Sublevel_Height( n1 ) )
-
-      Layer_Pressure( k )    =    ( Sublevel_Pressure( n2+1 ) - Sublevel_Pressure( n1 ) ) / &
-      !                        ----------------------------------------------------------
-                               LOG( Sublevel_Pressure( n2+1 ) / Sublevel_Pressure( n1 ) )
-
-      Layer_Temperature( k ) = Layer_T_RHOair_sum / Layer_RHOair_sum
-
-      Layer_Absorber( k, : ) = Layer_Absorber_sum( : )
+      Layer_dZ             = ABS( Sublevel_Height(n2+1) - Sublevel_Height(n1) )
+      Layer_Pressure(k)    =    ( Sublevel_Pressure(n2+1) - Sublevel_Pressure(n1) ) / &
+                             LOG( Sublevel_Pressure(n2+1) / Sublevel_Pressure(n1) )
+      Layer_Temperature(k) = Layer_T_RHOair_sum / Layer_RHOair_sum
+      Layer_Absorber(k,:)  = Layer_Absorber_sum
 
     END DO Layer_Loop
 

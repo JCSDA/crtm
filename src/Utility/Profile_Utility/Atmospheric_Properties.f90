@@ -46,14 +46,10 @@ MODULE Atmospheric_Properties
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   '$Id$'
-  ! Keyword argument set value
-  INTEGER, PARAMETER :: SET = 1
-
 
   ! Scalng factor to return density in kg.m^-3
   REAL(fp), PARAMETER :: RHO_SCALE_FACTOR = 0.1_fp
-  
-  
+
   ! Coefficients for saturation vapor pressure over water
   INTEGER,  PARAMETER :: N_SVPW_COEFFICIENTS = 8
   REAL(fp), PARAMETER :: SVPW_COEFFICIENTS(0:N_SVPW_COEFFICIENTS) = &
@@ -63,7 +59,6 @@ MODULE Atmospheric_Properties
   ! ...Valid temperature range
   REAL(fp), PARAMETER :: MIN_SVPW_TEMPERATURE = 188.15_fp
   REAL(fp), PARAMETER :: MAX_SVPW_TEMPERATURE = 343.15_fp
-
 
   ! Coefficients for saturation vapor pressure over ice
   INTEGER,  PARAMETER :: N_SVPI_COEFFICIENTS = 8
@@ -75,18 +70,16 @@ MODULE Atmospheric_Properties
   REAL(fp), PARAMETER :: MIN_SVPI_TEMPERATURE = 183.15_fp
   REAL(fp), PARAMETER :: MAX_SVPI_TEMPERATURE = 273.15_fp
 
-
   ! Minimum pressure for saturation mixing ratio calculation
   REAL(fp), PARAMETER :: MIN_SMR_PRESSURE = 50.0_fp
-
 
   ! Parameters for potential temperature procedures
   ! ...Standard atmosphere in hectoPascals
   REAL(fp), PARAMETER :: PSTD = P0 * PA_TO_HPA
   ! ...Exponent term
   REAL(fp), PARAMETER :: EXPONENT_TERM = R_DRYAIR / Cp_DRYAIR
-  
-  
+
+
 CONTAINS
 
 
@@ -139,9 +132,6 @@ CONTAINS
 !
 !         MW(Air) = MW(DRY_AIR) + d(MW_Air)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 01-May-2000
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -155,13 +145,13 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: mw
     ! Local variables
     REAL(fp) :: dmw
-    
+
     ! Setup
     IF ( p < ZERO .OR. pp < ZERO ) THEN
       mw = ZERO
       RETURN
     END IF
-    
+
     ! Compute the water vapour weight air molecular weight
     dmw = (MW_H2O - MW_DRYAIR) * pp / p
     mw  = MW_DRYAIR + dmw
@@ -221,9 +211,6 @@ CONTAINS
 !                                 DIMENSION:  Same as Pressure
 !                                 ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 21-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -239,13 +226,13 @@ CONTAINS
     REAL(fp), INTENT(IN)  :: p_TL
     REAL(fp), INTENT(IN)  :: pp_TL
     REAL(fp), INTENT(OUT) :: mw_TL
-    
+
     ! Setup
     IF ( p < ZERO .OR. pp < ZERO ) THEN
       mw_TL = ZERO
       RETURN
     END IF
-    
+
     ! Tangent-linear form of the water vapour weighted air molecular weight
     mw_TL = (MW_H2O - MW_DRYAIR) * ((pp_TL / p) - (pp * p_TL / p**2))
 
@@ -306,9 +293,6 @@ CONTAINS
 !                                 DIMENSION:  Same as Pressure
 !                                 ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 21-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -324,7 +308,7 @@ CONTAINS
     REAL(fp), INTENT(IN OUT) :: mw_AD
     REAL(fp), INTENT(IN OUT) :: p_AD
     REAL(fp), INTENT(IN OUT) :: pp_AD
-    
+
     ! Setup
     IF ( p < ZERO .OR. pp < ZERO ) THEN
       mw_AD = ZERO
@@ -332,7 +316,7 @@ CONTAINS
       pp_AD = ZERO
       RETURN
     END IF
-    
+
     ! Adjoint form of the water vapour weighted air molecular weight
     p_AD  = p_AD  - ((MW_H2O - MW_DRYAIR) * pp * mw_AD / p**2)
     pp_AD = pp_AD + ((MW_H2O - MW_DRYAIR) * mw_AD / p)
@@ -411,9 +395,6 @@ CONTAINS
 !       Thus the result is scaled by 0.1 to return density in units
 !       of kg.m^-3.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 01-May-2000
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -427,7 +408,7 @@ CONTAINS
     REAL(fp), INTENT(IN)  :: T
     REAL(fp), INTENT(IN)  :: mw
     REAL(fp), INTENT(OUT) :: rho
-    
+
     ! Setup
     IF ( P < ZERO .OR. T < ZERO .OR. mw < ZERO ) THEN
       rho = ZERO
@@ -435,7 +416,7 @@ CONTAINS
     END IF
 
     ! Calculate density
-    rho = RHO_SCALE_FACTOR * P * mw / ( R0 * T ) 
+    rho = RHO_SCALE_FACTOR * P * mw / ( R0 * T )
 
   END SUBROUTINE Density
 
@@ -504,9 +485,6 @@ CONTAINS
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 21-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -528,7 +506,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: rho_TL
     ! Local variables
     REAL(fp) :: c
-    
+
     ! Setup
     IF ( P < ZERO .OR. T < ZERO .OR. mw < ZERO ) THEN
       rho_TL = ZERO
@@ -537,7 +515,7 @@ CONTAINS
 
     ! Tangent-linear form of density
     c = RHO_SCALE_FACTOR / R0
-    
+
     rho_TL = c * ((P_TL * mw / T) + (mw_TL * P / T) - (T_TL * P * mw / T**2))
 
   END SUBROUTINE Density_TL
@@ -613,9 +591,6 @@ CONTAINS
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 21-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -637,7 +612,7 @@ CONTAINS
     REAL(fp), INTENT(IN OUT) :: mw_AD
     ! Local variables
     REAL(fp) :: c
-    
+
     ! Setup
     IF ( P < ZERO .OR. T < ZERO .OR. mw < ZERO ) THEN
       rho_AD = ZERO
@@ -649,7 +624,7 @@ CONTAINS
 
     ! Tangent-linear form of density
     c = RHO_SCALE_FACTOR / R0
-    
+
     T_AD   = T_AD  - (rho_AD * c * P * mw / T**2)
     mw_AD  = mw_AD + (rho_AD * c * P / T)
     P_AD   = P_AD  + (rho_AD * c * mw / T)
@@ -696,7 +671,7 @@ CONTAINS
 !                           __ N
 !                          \            i
 !         SVP_Water = c0 +  >   c(i) . T
-!                          /__ 
+!                          /__
 !                             i=1
 !
 !       where the c(i) are the relative error norm coefficients obtained
@@ -704,9 +679,6 @@ CONTAINS
 !
 !       Horner's method is used to evaluate the above polynomial.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 24-Apr-1998
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -732,7 +704,7 @@ CONTAINS
     DO i = 1, N_SVPW_COEFFICIENTS
       Vapor_Pressure = (Vapor_Pressure * T) + SVPW_COEFFICIENTS(i)
     END DO
- 
+
   END SUBROUTINE SVP_Water
 
 
@@ -775,9 +747,6 @@ CONTAINS
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 17-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -809,7 +778,7 @@ CONTAINS
       Vapor_Pressure_TL = (T * Vapor_Pressure_TL) + (Vapor_Pressure * T_TL)
       Vapor_Pressure    = (Vapor_Pressure * T) + SVPW_COEFFICIENTS(i)
     END DO
- 
+
   END SUBROUTINE SVP_Water_TL
 
 
@@ -826,7 +795,7 @@ CONTAINS
 !       CALL SVP_Water_AD( Temperature      , &  ! FWD Input
 !                          Vapor_Pressure_AD, &  ! AD  Input
 !                          Temperature_AD     )  ! AD  Output
-!                          
+!
 ! INPUTS:
 !       Temperature:       Temperature for which the saturation vapor
 !                          pressure is required.
@@ -851,9 +820,6 @@ CONTAINS
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 17-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -883,14 +849,14 @@ CONTAINS
     DO i = 1, N_SVPW_COEFFICIENTS
       Vapor_Pressure(i) = (Vapor_Pressure(i-1) * T) + SVPW_COEFFICIENTS(i)
     END DO
-    
+
     ! Adjoint form of saturation vapor pressure calculation
     DO i = N_SVPW_COEFFICIENTS, 1, -1
       Temperature_AD    = Temperature_AD + (Vapor_Pressure(i-1) * Vapor_Pressure_AD)
       Vapor_Pressure_AD = T * Vapor_Pressure_AD
     END DO
-    Vapor_Pressure_AD = ZERO 
- 
+    Vapor_Pressure_AD = ZERO
+
   END SUBROUTINE SVP_Water_AD
 
 
@@ -932,7 +898,7 @@ CONTAINS
 !                         __ N
 !                        \            i
 !         SVP_Ice = c0 +  >   c(i) . T
-!                        /__ 
+!                        /__
 !                           i=1
 !
 !       where the c(i) are the relative error norm coefficients obtained
@@ -940,9 +906,6 @@ CONTAINS
 !
 !       Horner's method is used to evaluate the above polynomial.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 24-Apr-1998
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -955,7 +918,7 @@ CONTAINS
     ! Local variables
     INTEGER  :: i
     REAL(fp) :: T
-    
+
     ! Setup
     IF ( Temperature < MIN_SVPI_TEMPERATURE .OR. Temperature > MAX_SVPI_TEMPERATURE ) THEN
       Vapor_Pressure = ZERO
@@ -968,7 +931,7 @@ CONTAINS
     DO i = 1, N_SVPI_COEFFICIENTS
       Vapor_Pressure = (Vapor_Pressure * T) + SVPI_COEFFICIENTS(i)
     END DO
- 
+
   END SUBROUTINE SVP_Ice
 
 
@@ -1011,9 +974,6 @@ CONTAINS
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1045,7 +1005,7 @@ CONTAINS
       Vapor_Pressure_TL = (T * Vapor_Pressure_TL) + (Vapor_Pressure * T_TL)
       Vapor_Pressure    = (Vapor_Pressure * T) + SVPI_COEFFICIENTS(i)
     END DO
- 
+
   END SUBROUTINE SVP_Ice_TL
 
 
@@ -1062,7 +1022,7 @@ CONTAINS
 !       CALL SVP_Ice_AD( Temperature      , &  ! FWD Input
 !                        Vapor_Pressure_AD, &  ! AD  Input
 !                        Temperature_AD     )  ! AD  Output
-!                          
+!
 ! INPUTS:
 !       Temperature:       Temperature for which the saturation vapor
 !                          pressure is required.
@@ -1087,9 +1047,6 @@ CONTAINS
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1119,14 +1076,14 @@ CONTAINS
     DO i = 1, N_SVPI_COEFFICIENTS
       Vapor_Pressure(i) = (Vapor_Pressure(i-1) * T) + SVPI_COEFFICIENTS(i)
     END DO
-    
+
     ! Adjoint form of saturation vapor pressure calculation
     DO i = N_SVPI_COEFFICIENTS, 1, -1
       Temperature_AD    = Temperature_AD + (Vapor_Pressure(i-1) * Vapor_Pressure_AD)
       Vapor_Pressure_AD = T * Vapor_Pressure_AD
     END DO
-    Vapor_Pressure_AD = ZERO 
- 
+    Vapor_Pressure_AD = ZERO
+
   END SUBROUTINE SVP_Ice_AD
 
 
@@ -1182,7 +1139,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default, and
 !                          absolute, minimum value used in this routine is
@@ -1195,7 +1152,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 ! PROCEDURE:
 !       The saturation mixing ratio can be defined as:
 !
@@ -1203,7 +1160,7 @@ CONTAINS
 !          ws = --------     .....(1)
 !                rho_d
 !
-!       where rho_ws = the partial density of water vapour required to 
+!       where rho_ws = the partial density of water vapour required to
 !                      saturate air with respect to water at a Temperature, T
 !             rho_d  = the partial density of dry air.
 !
@@ -1244,9 +1201,6 @@ CONTAINS
 !
 !       A factor of 1000 is used to return values in units of g/kg.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Mar-1998
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1374,7 +1328,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default, and
 !                          absolute, minimum value used in this routine is
@@ -1387,10 +1341,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Aug-2009
-!                       paul.vandelst@noaa.gov
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1527,7 +1478,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:      Pressure value below which the saturation
 !                          mixing ratio is not calculated. The default, and
 !                          absolute, minimum value used in this routine is
@@ -1540,10 +1491,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Aug-2009
-!                       paul.vandelst@noaa.gov
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1568,7 +1516,7 @@ CONTAINS
     REAL(fp) :: svp, svp_AD
     REAL(fp) :: dp, dp_AD
     REAL(fp) :: c
-    
+
     ! Setup
     ! ...Check optional arguments
     IF ( PRESENT(Min_Pressure) ) THEN
@@ -1609,15 +1557,15 @@ CONTAINS
       Pressure_AD = Pressure_AD + dp_AD
     END IF
     Mixing_Ratio_AD = ZERO
-    
-    
+
+
     ! Adjoint form of the saturation vapor pressure calculation
     IF ( Temperature > Tice ) THEN
       CALL SVP_Water_AD( Temperature, svp_AD, Temperature_AD )
     ELSE
       CALL SVP_Ice_AD( Temperature, svp_AD, Temperature_AD )
     END IF
-    
+
   END SUBROUTINE Saturation_Mixing_Ratio_AD
 
 
@@ -1642,7 +1590,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -1680,7 +1628,7 @@ CONTAINS
 !            = T * [ 1 + ( 0.608 * w ) ]   .....................(2)
 !
 !       however, depending on what accuracy is required (keeping in mind that
-!       water vapor measurements are probably good to 2-5%), eqn.(2) can 
+!       water vapor measurements are probably good to 2-5%), eqn.(2) can
 !       differ from (1) by around 0.06-0.08K near the surface.
 !
 !       If virtual temperature is used to calculate geopotential heights,
@@ -1689,9 +1637,6 @@ CONTAINS
 !       So I took the slightly more computationally expensive road
 !       and use eqn.(1).
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 01-May-2000
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1705,7 +1650,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: Tv
     ! Local variables
     REAL(fp) :: mr
-    
+
     ! Setup
     IF ( T < ZERO .OR. W < ZERO ) THEN
       Tv = ZERO
@@ -1742,7 +1687,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -1755,7 +1700,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio_TL:           Tangent-linear water vapor mass mixing ratio.
 !                                  UNITS:      g/kg
 !                                  TYPE:       REAL(fp)
@@ -1770,9 +1715,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 19-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1791,7 +1733,7 @@ CONTAINS
     ! Local variables
     REAL(fp) :: mr, mr_TL
     REAL(fp) :: denom, f1, f2
-    
+
     ! Setup
     IF ( T < ZERO .OR. W < ZERO ) THEN
       Tv_TL = ZERO
@@ -1801,11 +1743,11 @@ CONTAINS
     ! Tangent-linear form of the virtual temperature calculation
     mr    = G_TO_KG * W
     mr_TL = G_TO_KG * W_TL
-    
+
     denom = (EPS * (ONE + mr))
     f1 = (EPS + mr) / denom
     f2 = T * EPS * (ONE - EPS) / denom**2
-    
+
     Tv_TL = (f1 * T_TL) + (f2 * mr_TL)
 
   END SUBROUTINE T_to_Tv_TL
@@ -1834,7 +1776,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -1856,7 +1798,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Mixing_Ratio_AD:           Adjoint water vapor mass mixing ratio.
 !                                  *** MUST HAVE VALUE ON ENTRY ***
 !                                  UNITS:      K/(g/kg)
@@ -1864,9 +1806,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 19-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1885,7 +1824,7 @@ CONTAINS
     ! Local variables
     REAL(fp) :: mr, mr_AD
     REAL(fp) :: denom, f1, f2
-    
+
     ! Setup
     IF ( T < ZERO .OR. W < ZERO ) THEN
       Tv_AD = ZERO
@@ -1930,7 +1869,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -1956,9 +1895,6 @@ CONTAINS
 !             w   = water vapour mixing ratio, and
 !             eps = ratio of the molecular weights of water and dry air.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 18-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -1972,7 +1908,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: T
     ! Local variables
     REAL(fp) :: mr
-    
+
     ! Setup
     IF ( Tv < ZERO .OR. W < ZERO ) THEN
       T = ZERO
@@ -2009,7 +1945,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -2022,7 +1958,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Virtual_Temperature
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio_TL:           Tangent-linear water vapor mass mixing ratio.
 !                                  UNITS:      g/kg
 !                                  TYPE:       REAL(fp)
@@ -2036,9 +1972,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Virtual_Temperature
 !                                  ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 12-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2057,7 +1990,7 @@ CONTAINS
     ! Local variables
     REAL(fp) :: mr, mr_TL
     REAL(fp) :: denom, f1, f2
-    
+
     ! Setup
     IF ( Tv < ZERO .OR. W < ZERO ) THEN
       T_TL = ZERO
@@ -2067,11 +2000,11 @@ CONTAINS
     ! Tangent-linear form of the Tv->T conversion
     mr    = G_TO_KG * W
     mr_TL = G_TO_KG * W_TL
-    
+
     denom = EPS + mr
     f1 = EPS * (ONE + mr) / denom
     f2 = Tv * EPS * (EPS - ONE) / denom**2
-    
+
     T_TL = (f1 * Tv_TL) + (f2 * mr_TL)
 
   END SUBROUTINE Tv_to_T_TL
@@ -2100,7 +2033,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio:              Water vapor mass mixing ratio.
 !                                  Must be > 0.
 !                                  UNITS:      g/kg
@@ -2122,7 +2055,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Virtual_Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Mixing_Ratio_AD:           Adjoint water vapor mass mixing ratio.
 !                                  *** MUST HAVE VALUE ON ENTRY ***
 !                                  UNITS:      K/(g/kg)
@@ -2130,9 +2063,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Virtual_Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2151,7 +2081,7 @@ CONTAINS
     ! Local variables
     REAL(fp) :: mr, mr_AD
     REAL(fp) :: denom, f1, f2
-    
+
     ! Setup
     IF ( Tv < ZERO .OR. W < ZERO ) THEN
       Tv_AD = ZERO
@@ -2196,7 +2126,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:          Atmospheric pressure
 !                          Must be > 0.
 !                          UNITS:      hectoPascals, hPa
@@ -2240,9 +2170,6 @@ CONTAINS
 !       where R0    = universal gas constant
 !             MWair = molecular weight of dry air
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 11-Sep-2002
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2256,7 +2183,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: Theta
     ! Local variables
     REAL(fp) :: P_term
-    
+
     ! Setup
     IF ( T < ZERO .OR. P < ZERO ) THEN
       Theta = ZERO
@@ -2293,7 +2220,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:          Atmospheric pressure
 !                          Must be > 0.
 !                          UNITS:      hectoPascals, hPa
@@ -2306,7 +2233,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Temperature
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:       Tangent-linear atmospheric pressure
 !                          UNITS:      hectoPascals, hPa
 !                          TYPE:       REAL(fp)
@@ -2321,9 +2248,6 @@ CONTAINS
 !                          DIMENSION:  Same as Temperature
 !                          ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2334,14 +2258,14 @@ CONTAINS
     P_TL    , &  ! TL  Input
     Theta_TL  )  ! TL  Output
     ! Arguments
-    REAL(fp), INTENT(IN)  :: T       
-    REAL(fp), INTENT(IN)  :: P       
-    REAL(fp), INTENT(IN)  :: T_TL    
-    REAL(fp), INTENT(IN)  :: P_TL    
+    REAL(fp), INTENT(IN)  :: T
+    REAL(fp), INTENT(IN)  :: P
+    REAL(fp), INTENT(IN)  :: T_TL
+    REAL(fp), INTENT(IN)  :: P_TL
     REAL(fp), INTENT(OUT) :: Theta_TL
     ! Local variables
     REAL(fp) :: f1, f2
-    
+
     ! Setup
     IF ( T < ZERO .OR. P < ZERO ) THEN
       Theta_TL = ZERO
@@ -2351,7 +2275,7 @@ CONTAINS
     ! Tangent-linear form of T->Theta conversion
     f1 = (PSTD / P)**EXPONENT_TERM
     f2 = f1 * EXPONENT_TERM * T / P
-    
+
     Theta_TL = (f1 * T_TL) - (f2 * P_TL)
 
   END SUBROUTINE T_to_Theta_TL
@@ -2380,7 +2304,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:                  Atmospheric pressure
 !                                  Must be > 0.
 !                                  UNITS:      hPa
@@ -2402,7 +2326,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Pressure_AD:               Adjoint atmospheric pressure.
 !                                  *** MUST HAVE VALUE ON ENTRY ***
 !                                  UNITS:      K/h_Pa
@@ -2410,9 +2334,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2423,14 +2344,14 @@ CONTAINS
     T_AD    , &  ! AD  Output
     P_AD      )  ! AD  Output
     ! Arguments
-    REAL(fp), INTENT(IN)     :: T       
-    REAL(fp), INTENT(IN)     :: P       
+    REAL(fp), INTENT(IN)     :: T
+    REAL(fp), INTENT(IN)     :: P
     REAL(fp), INTENT(IN OUT) :: Theta_AD
-    REAL(fp), INTENT(IN OUT) :: T_AD    
-    REAL(fp), INTENT(IN OUT) :: P_AD    
+    REAL(fp), INTENT(IN OUT) :: T_AD
+    REAL(fp), INTENT(IN OUT) :: P_AD
     ! Local variables
     REAL(fp) :: f1, f2
-    
+
     ! Setup
     IF ( T < ZERO .OR. P < ZERO ) THEN
       Theta_AD = ZERO
@@ -2472,7 +2393,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:          Atmospheric pressure
 !                          Must be > 0.
 !                          UNITS:      hectoPascals, hPa
@@ -2517,9 +2438,6 @@ CONTAINS
 !       where R0    = universal gas constant
 !             MWair = molecular weight of dry air
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2533,7 +2451,7 @@ CONTAINS
     REAL(fp), INTENT(OUT) :: T
     ! Local variables
     REAL(fp) :: P_term
-    
+
     ! Setup
     IF ( Theta < ZERO .OR. P < ZERO ) THEN
       T = ZERO
@@ -2570,7 +2488,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:          Atmospheric pressure
 !                          Must be > 0.
 !                          UNITS:      hectoPascals, hPa
@@ -2583,7 +2501,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Theta
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:       Tangent-linear atmospheric pressure
 !                          UNITS:      hectoPascals, hPa
 !                          TYPE:       REAL(fp)
@@ -2598,9 +2516,6 @@ CONTAINS
 !                          DIMENSION:  Same as Theta
 !                          ATTRIBUTES: INTENT(OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2611,14 +2526,14 @@ CONTAINS
     P_TL    , &  ! TL  Input
     T_TL      )  ! TL  Output
     ! Arguments
-    REAL(fp), INTENT(IN)  :: Theta   
-    REAL(fp), INTENT(IN)  :: P       
+    REAL(fp), INTENT(IN)  :: Theta
+    REAL(fp), INTENT(IN)  :: P
     REAL(fp), INTENT(IN)  :: Theta_TL
-    REAL(fp), INTENT(IN)  :: P_TL    
-    REAL(fp), INTENT(OUT) :: T_TL    
+    REAL(fp), INTENT(IN)  :: P_TL
+    REAL(fp), INTENT(OUT) :: T_TL
     ! Local variables
     REAL(fp) :: f1, f2
-    
+
     ! Setup
     IF ( Theta < ZERO .OR. P < ZERO ) THEN
       T_TL = ZERO
@@ -2628,7 +2543,7 @@ CONTAINS
     ! Tangent-linear form of Theta->T conversion
     f1 = (P / PSTD)**EXPONENT_TERM
     f2 = f1 * EXPONENT_TERM * Theta / P
-    
+
     T_TL = (f1 * Theta_TL) + (f2 * P_TL)
 
   END SUBROUTINE Theta_to_T_TL
@@ -2657,7 +2572,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar or any rank
 !                                  ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure:                  Atmospheric pressure
 !                                  Must be > 0.
 !                                  UNITS:      hPa
@@ -2679,7 +2594,7 @@ CONTAINS
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Same as Potential_Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Pressure_AD:               Adjoint atmospheric pressure.
 !                                  *** MUST HAVE VALUE ON ENTRY ***
 !                                  UNITS:      K/h_Pa
@@ -2687,9 +2602,6 @@ CONTAINS
 !                                  DIMENSION:  Same as Potential_Temperature
 !                                  ATTRIBUTES: INTENT(IN OUT)
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 20-Aug-2009
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
@@ -2700,14 +2612,14 @@ CONTAINS
     Theta_AD, &  ! AD  Output
     P_AD      )  ! AD  Output
     ! Arguments
-    REAL(fp), INTENT(IN)     :: Theta   
-    REAL(fp), INTENT(IN)     :: P       
-    REAL(fp), INTENT(IN OUT) :: T_AD    
+    REAL(fp), INTENT(IN)     :: Theta
+    REAL(fp), INTENT(IN)     :: P
+    REAL(fp), INTENT(IN OUT) :: T_AD
     REAL(fp), INTENT(IN OUT) :: Theta_AD
-    REAL(fp), INTENT(IN OUT) :: P_AD    
+    REAL(fp), INTENT(IN OUT) :: P_AD
     ! Local variables
     REAL(fp) :: f1, f2
-    
+
     ! Setup
     IF ( Theta < ZERO .OR. P < ZERO ) THEN
       T_AD     = ZERO
@@ -2726,5 +2638,5 @@ CONTAINS
     T_AD = ZERO
 
   END SUBROUTINE Theta_to_T_AD
-  
+
 END MODULE Atmospheric_Properties

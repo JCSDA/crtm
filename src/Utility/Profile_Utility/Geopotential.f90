@@ -42,8 +42,8 @@ MODULE Geopotential
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
     '$Id$'
-  ! Keyword argument set value
-  INTEGER,  PARAMETER :: SET = 1
+  ! Message string lengths
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
@@ -67,19 +67,18 @@ CONTAINS
 !       equation.
 !
 ! CALLING SEQUENCE:
-!       Error_Statusz = Geopotential_Height( Pressure,                                          &  ! Input
-!                                            Temperature,                                       &  ! Input
-!                                            Water_Vapor_Pressure,                              &  ! Input
-!                                            Height,                                            &  ! Output
-!                                            Surface_Height          =Surface_Height,           &  ! Optional input
-!                                            Gravity_Correction      =Gravity_Correction,       &  ! Optional input
-!                                            Latitude                =Latitude,                 &  ! Optional input
-!                                            Zonal_Wind_Velocity     =Zonal_Wind_Velocity,      &  ! Optional input
-!                                            Meridional_Wind_Velocity=Meridional_Wind_Velocity, &  ! Optional input
-!                                            RCS_Id                  =RCS_Id,                   &  ! Revision control
-!                                            Message_Log             =Message_Log               )  ! Error messaging
+!       Error_Status = Geopotential_Height( &
+!                        Pressure                                           , &
+!                        Temperature                                        , &
+!                        Water_Vapor_Pressure                               , &
+!                        Height                                             , &
+!                        Surface_Height           = Surface_Height          , &
+!                        Gravity_Correction       = Gravity_Correction      , &
+!                        Latitude                 = Latitude                , &
+!                        Zonal_Wind_Velocity      = Zonal_Wind_Velocity     , &
+!                        Meridional_Wind_Velocity = Meridional_Wind_Velocity  )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Pressure:                  Pressure of the atmospheric levels.
 !                                  UNITS:      hectoPascals, hPa
 !                                  TYPE:       REAL(fp)
@@ -98,7 +97,14 @@ CONTAINS
 !                                  DIMENSION:  Same as Pressure
 !                                  ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
+! OUTPUTS:
+!       Height:                    Geopotential heights of the input Pressure levels.
+!                                  UNITS:      metres, m
+!                                  TYPE:       REAL(fp)
+!                                  DIMENSION:  Same as input Pressure
+!                                  ATTRIBUTES: INTENT(OUT)
+!
+! OPTIONAL INPUTS:
 !       Surface_Height:            Height corresponding to the first element of the
 !                                  input arrays. If not specified, the default value
 !                                  is 0.0m.
@@ -109,11 +115,11 @@ CONTAINS
 !
 !       Gravity_Correction:        Set this argument to use a gravity profile rather
 !                                  than standard reference gravity in calculating
-!                                  the geopotential Heights. If PRESENT then,
-!                                  if = 0, standard gravity used,
-!                                     = 1, gravity profile is calculated and used.
+!                                  the geopotential heights.
+!                                  If .FALSE. , standard gravity used [DEFAULT],
+!                                     .TRUE.  , gravity profile is calculated and used.
 !                                  UNITS:      N/A.
-!                                  TYPE:       INTEGER
+!                                  TYPE:       LOGICAL
 !                                  DIMENSION:  Scalar
 !                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
@@ -147,37 +153,11 @@ CONTAINS
 !                                  DIMENSION:  Same as Pressure
 !                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
-!       Message_Log:               Character string specifying a filename in which any
-!                                  Messages will be logged. If not specified, or if an
-!                                  error occurs opening the log file, the default action
-!                                  is to output Messages to standard output.
-!                                  UNITS:      N/A
-!                                  TYPE:       CHARACTER(*)
-!                                  DIMENSION:  Scalar
-!                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!
-! OUTPUT ARGUMENTS:
-!       Height:                    Geopotential Heights of the input Pressure levels.
-!                                  UNITS:      metres, m
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Same as input Pressure
-!                                  ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:                    Character string containing the Revision Control
-!                                  System Id field for the module.
-!                                  UNITS:      N/A
-!                                  TYPE:       CHARACTER(*)
-!                                  DIMENSION:  Scalar
-!                                  ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
 !       Error_Status:              The return value is an integer defining the
 !                                  error status. The error codes are defined
-!                                  in the ERROR_HANDLER module.
-!                                  If == SUCCESS the geopotential calculation was
-!                                                successful
+!                                  in the Message_Handler module.
+!                                  If == SUCCESS the calculation was successful
 !                                     == FAILURE an unrecoverable error occurred
 !                                  UNITS:      N/A
 !                                  TYPE:       INTEGER
@@ -190,15 +170,15 @@ CONTAINS
 !         z2 - z1 = H.ln[ ---- ]     .....(1)
 !                       [  p2  ]
 !             _
-!       where H     = scale height, 
+!       where H     = scale height,
 !             p1,p2 = layer boundary pressures, and
 !             z1,z2 = layer boundary heights.
 !
 !       and
-!              
-!         _    R_air * T 
+!
+!         _    R_air * T
 !         H = -----------     .....(2)
-!                  g     
+!                  g
 !
 !       where R_air = gas constant for moist air
 !             T     = average temperature for an atmospheric layer,
@@ -223,7 +203,7 @@ CONTAINS
 !         layer_X = -------------------------------
 !                         rho(k) + rho(k-1)
 !
-!       The use of an optional gravity profile was introduced to make 
+!       The use of an optional gravity profile was introduced to make
 !       this code parallel that of the UMBC KLAYERS altitude calculation
 !       code.
 !
@@ -245,7 +225,7 @@ CONTAINS
 !
 !                         1000 kg.m^2.s^-2.K^-1.mol^-1
 !                      = ------------------------------
-!                                 kg.mol^-1             
+!                                 kg.mol^-1
 !
 !                      = 1000 m^2.s^-2.K^-1
 !
@@ -266,41 +246,36 @@ CONTAINS
 !            know either of these quantities, and
 !         2) Eventually, the effect due to ozone will also be included.
 !
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, 21-Feb-1999
-!                       paul.vandelst@noaa.gov
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Geopotential_Height( Pressure,                 &  ! Input
-                                Temperature,              &  ! Input
-                                Water_Vapor_Pressure,     &  ! Input
-                                Height,                   &  ! Output
-                                Surface_Height,           &  ! Optional input
-                                Gravity_Correction,       &  ! Optional input
-                                Latitude,                 &  ! Optional input
-                                Zonal_Wind_Velocity,      &  ! Optional input
-                                Meridional_Wind_Velocity, &  ! Optional input
-                                RCS_Id,                   &  ! Revision control
-                                Message_Log )             &  ! Error messaging
-                              RESULT( Error_Status )
+  FUNCTION Geopotential_Height( &
+    Pressure                , &  ! Input
+    Temperature             , &  ! Input
+    Water_Vapor_Pressure    , &  ! Input
+    Height                  , &  ! Output
+    Surface_Height          , &  ! Optional input
+    Gravity_Correction      , &  ! Optional input
+    Latitude                , &  ! Optional input
+    Zonal_Wind_Velocity     , &  ! Optional input
+    Meridional_Wind_Velocity) &  ! Optional input
+  RESULT( err_stat )
     ! Arguments
     REAL(fp),               INTENT(IN)  :: Pressure(:)
     REAL(fp),               INTENT(IN)  :: Temperature(:)
     REAL(fp),               INTENT(IN)  :: Water_Vapor_Pressure(:)
     REAL(fp),               INTENT(OUT) :: Height(:)
     REAL(fp),     OPTIONAL, INTENT(IN)  :: Surface_Height
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Gravity_Correction
+    LOGICAL,      OPTIONAL, INTENT(IN)  :: Gravity_Correction
     REAL(fp),     OPTIONAL, INTENT(IN)  :: Latitude
     REAL(fp),     OPTIONAL, INTENT(IN)  :: Zonal_Wind_Velocity(:)
     REAL(fp),     OPTIONAL, INTENT(IN)  :: Meridional_Wind_Velocity(:)
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Geopotential_Height'
     ! Local variables
+    CHARACTER(ML) :: msg
     LOGICAL :: Use_Gravity
     INTEGER :: n_Levels
     INTEGER :: k, k1, k2, dk
@@ -315,58 +290,41 @@ CONTAINS
     REAL(fp) :: H
     REAL(fp) :: dz
 
+
     ! Setup
-    ! -----
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
 
-    ! Check input array sizes
+
+    ! Check mandatory inputs
+    ! ...Check input array sizes
     n_Levels = SIZE(Pressure)
-    IF ( SIZE(Temperature)          /= n_Levels .OR. & 
+    IF ( SIZE(Temperature)          /= n_Levels .OR. &
          SIZE(Water_Vapor_Pressure) /= n_Levels ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Inconsistent input array sizes.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Inconsistent input array sizes.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check output array size
+    ! ...Check output array size
     IF ( SIZE(Height) < n_Levels  ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Output HEIGHT array too small to hold result.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Output HEIGHT array too small to hold result.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
-    ! Check input array values
+    ! ...Check input array values
     IF ( ANY(Pressure < TOLERANCE) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Pressures < or = 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input pressures < or = 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
     IF ( ANY(Temperature < TOLERANCE )) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Temperatures < or = 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input temperatures < or = 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
-
     IF ( ANY(Water_Vapor_Pressure < ZERO )) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input water vapor partial pressures < 0 found.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input water vapour partial pressures < 0 found.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     ENDIF
 
     ! Default surface height is 0.0....
@@ -382,18 +340,15 @@ CONTAINS
     Use_Gravity = .FALSE.
     ! ...unless the gravity correction argument is set.
     IF ( PRESENT(Gravity_Correction) ) THEN
-      IF ( Gravity_Correction == SET ) THEN
-        Use_Gravity = .TRUE.
+      Use_Gravity = Gravity_Correction
+      IF ( Use_Gravity ) THEN
         ! Check zonal wind velocity
         u = ZERO
         IF ( PRESENT(Zonal_Wind_Velocity) ) THEN
           IF ( SIZE(Zonal_Wind_Velocity) /= n_Levels ) THEN
-            Error_Status = WARNING
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'Input ZONAL_WIND_VELOCITY has inconsistent size. '//&
-                                  'Setting to 0.0.', &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+            err_stat = FAILURE
+            msg = 'Input ZONAL_WIND_VELOCITY has inconsistent array size.'
+            CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
           ELSE
             u = Zonal_Wind_Velocity
           END IF
@@ -402,12 +357,9 @@ CONTAINS
         v = ZERO
         IF ( PRESENT(Meridional_Wind_Velocity) ) THEN
           IF ( SIZE(Meridional_Wind_Velocity) /= n_Levels ) THEN
-            Error_Status = WARNING
-            CALL Display_Message( ROUTINE_NAME, &
-                                  'Input MERIDIONAL_WIND_VELOCITY has inconsistent size. '//&
-                                  'Setting to 0.0.', &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+            err_stat = FAILURE
+            msg = 'Input MERIDIONAL_WIND_VELOCITY has inconsistent array size.'
+            CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
           ELSE
             v = Meridional_Wind_Velocity
           END IF
@@ -417,115 +369,85 @@ CONTAINS
 
 
     ! Determine order of input pressure
-    ! ---------------------------------
-    IF ( Pressure( 2 ) < Pressure ( 1 ) ) THEN
-      ! Ascending, i.e. ground up
+    IF ( Pressure(2) < Pressure (1) ) THEN
+      ! ...Ascending, i.e. ground up
       k1 = 1
       k2 = n_Levels
       dk = 1
     ELSE
-      ! Descending, i.e. TOA down
+      ! ...Descending, i.e. TOA down
       k1 = n_Levels
       k2 = 1
       dk = -1
     END IF
 
+
     ! Calculate near surface level values
-    ! -----------------------------------
-    ! Molecular weight of air
-    CALL MW_Air( Pressure( k1 ),             &
-                 Water_Vapor_Pressure( k1 ), &
-                 MWair                       )
-
-    ! Calculate the gas "constant" in J/K/kg
+    ! ...Molecular weight of air
+    CALL MW_Air( Pressure(k1), Water_Vapor_Pressure(k1), MWair )
+    ! ...Calculate the gas "constant" in J/K/kg
     Rair_km1 = R0 / ( MWair * G_TO_KG )
-
     ! Air density
-    CALL Density( Pressure( k1 ),    &
-                  Temperature( k1 ), &
-                  MWair,             &
-                  RHOair_km1         )
+    CALL Density( Pressure(k1), Temperature(k1), MWair, RHOair_km1 )
+
 
     ! Loop over levels in ground-up order
-    ! -----------------------------------
-    ! Assign first level height
-    Height( k1 ) = Surface_Z
-
-    ! Begin level loop
+    ! ...Assign first level height
+    Height(k1) = Surface_Z
+    ! ...Begin level loop
     Level_Loop: DO k = k1+dk, k2, dk
 
+
       ! Calculate current level values
-      ! ------------------------------
-      ! MWair at current level
-      CALL MW_Air( Pressure( k ),             &
-                   Water_Vapor_Pressure( k ), &
-                   MWair                      )
-
-      ! Gas "constant" at current level in J/K/kg
+      ! ...MWair at current level
+      CALL MW_Air( Pressure(k), Water_Vapor_Pressure(k), MWair )
+      ! ...Gas "constant" at current level in J/K/kg
       Rair = R0 / ( MWair * G_TO_KG )
+      ! ...Air density at current level
+      CALL Density( Pressure(k), Temperature(k), MWair, RHOair )
 
-      ! Air density at current level
-      CALL Density( Pressure( k ),    &
-                    Temperature( k ), &
-                    MWair,            &
-                    RHOair            )
 
       ! Calculate density weighted layer averages
-      ! -----------------------------------------
-      ! Gas "constant"
+      ! ...Gas "constant"
       layer_Rair = ( ( Rair_km1*RHOair_km1 ) + ( Rair*RHOair ) ) / ( RHOair_km1+RHOair )
-
-      ! Temperature
+      ! ...Temperature
       layer_T = ( ( Temperature(k-dk)*RHOair_km1 ) + ( Temperature(k)*RHOair ) ) / ( RHOair_km1+RHOair )
 
 
       ! Calculate gravity value if required
-      ! -----------------------------------
       IF ( Use_Gravity ) THEN
-
-        ! Calculate gravity at layer lower boundary
-        g = Gravity( Height( k-dk ), &
+        ! ...Calculate gravity at layer lower boundary
+        g = Gravity( Height(k-dk), &
                      Latitude                 = Latitude, &
-                     Zonal_Wind_Velocity      = u( k-dk ), &
-                     Meridional_Wind_Velocity = v( k-dk ), &
-                     Message_Log              = Message_Log )
+                     Zonal_Wind_Velocity      = u(k-dk), &
+                     Meridional_Wind_Velocity = v(k-dk) )
         IF ( g < ZERO ) THEN
-          Error_Status = FAILURE
-          CALL Display_Message( ROUTINE_NAME, &
-                                'Gravity calculation failed.', &
-                                Error_Status, &
-                                Message_Log=Message_Log )
-          RETURN
+          err_stat = FAILURE
+          msg = 'Gravity calculation failed.'
+          CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
         END IF
-
       ELSE
-
-        ! Use standard gravity
+        ! ...Use standard gravity
         g = G0
-
       END IF
 
 
       ! Calculate scale height. Here, if a gravity profile
       ! is used, we assume that the gravity at the lower
-      ! layer boundary is a good approximation for that 
+      ! layer boundary is a good approximation for that
       ! in the middle of the layer.
-      ! --------------------------------------------------
       H = layer_Rair * layer_T / g
 
 
       ! Calculate layer thickness
-      ! -------------------------
-      dz = H * LOG( Pressure( k-dk ) / Pressure( k ) )
+      dz = H * LOG(Pressure(k-dk) / Pressure(k))
 
 
       ! Accumulate heights
-      ! ------------------
-      Height( k ) = Height( k-dk ) + dz
+      Height(k) = Height(k-dk) + dz
 
 
       ! Save current level Rair and RHOair
-      ! ----------------------------------
       Rair_km1   = Rair
       RHOair_km1 = RHOair
 
@@ -555,21 +477,19 @@ CONTAINS
 !       AIRS RTA.
 !
 ! CALLING SEQUENCE:
-!       g = Gravity( Height,                                            &  ! Input
-!                    Latitude                =Latitude,                 &  ! Optional input
-!                    Zonal_Wind_Velocity     =Zonal_Wind_Velocity,      &  ! Optional input
-!                    Meridional_Wind_Velocity=Meridional_Wind_Velocity, &  ! Optional input
-!                    Message_Log             =Message_Log               )  ! Optional input
+!       g = Gravity( Height                                             , &
+!                    Latitude                 = Latitude                , &
+!                    Zonal_Wind_Velocity      = Zonal_Wind_Velocity     , &
+!                    Meridional_Wind_Velocity = Meridional_Wind_Velocity  )
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Height:                    Height at which the gravity value is required.
 !                                  UNITS:      metres (m)
 !                                  TYPE:       REAL(fp)
 !                                  DIMENSION:  Scalar
 !                                  ATTRIBUTES: INTENT(IN)
 !
-!
-! OPTIONAL INPUT ARGUMENTS:
+! OPTIONAL INPUTS:
 !       Latitude:                  Set this argument to the latitude at which
 !                                  the gravity value is required.
 !                                  If not defined, the default value is 0.0.
@@ -591,16 +511,6 @@ CONTAINS
 !                                  If not defined, the default value is 0.0.
 !                                  UNITS:      m.s^-1, +ve S'ly, -ve N'ly
 !                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
-!
-!       Message_Log:               Character string specifying a filename
-!                                  in which any Messages will be logged.
-!                                  If not specified, or if an error occurs
-!                                  opening the log file, the default action
-!                                  is to output Messages to standard output.
-!                                  UNITS:      N/A
-!                                  TYPE:       CHARACTER(*)
 !                                  DIMENSION:  Scalar
 !                                  ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
@@ -634,14 +544,14 @@ CONTAINS
 !                                    __ 4
 !                              (    \             2i      )
 !         g_normal(lat) = g0 * ( 1 + >  c(i) . SIN  (lat) )     .....(2)
-!                              (    /__                   ) 
+!                              (    /__                   )
 !                                      i=1
 !
 !       where g0_normal = normal gravity at the equator,
 !             c(i)      = coefficients.
 !
 !       Eqn.2 provides a value for gravity due both to the Earth's mass and
-!       rotation, i.e. it contains a surface centripetal acceleration 
+!       rotation, i.e. it contains a surface centripetal acceleration
 !       component,
 !
 !         g_normal(lat) = g_surface(lat) - a_surface(lat)
@@ -723,7 +633,7 @@ CONTAINS
 !       ----------------------------------
 !
 !       From eqn.1, the variation of gravitation due only to height above
-!       the surface can be expressed as, 
+!       the surface can be expressed as,
 !
 !          g_surface(lat).f(lat,z)
 !
@@ -741,48 +651,51 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  FUNCTION Gravity( Height,                   &  ! Input
-                    Latitude,                 &  ! Optional input
-                    Zonal_Wind_Velocity,      &  ! Optional input
-                    Meridional_Wind_Velocity, &  ! Optional input
-                    Message_Log               )  ! Error messaging
+  FUNCTION Gravity( &
+    Height                  , &  ! Input
+    Latitude                , &  ! Optional input
+    Zonal_Wind_Velocity     , &  ! Optional input
+    Meridional_Wind_Velocity  )  ! Optional input
     ! Arguments
-    REAL(fp),               INTENT(IN) :: Height
-    REAL(fp),     OPTIONAL, INTENT(IN) :: Latitude
-    REAL(fp),     OPTIONAL, INTENT(IN) :: Zonal_Wind_Velocity
-    REAL(fp),     OPTIONAL, INTENT(IN) :: Meridional_Wind_Velocity
-    CHARACTER(*), OPTIONAL, INTENT(IN) :: Message_Log
+    REAL(fp),           INTENT(IN) :: Height
+    REAL(fp), OPTIONAL, INTENT(IN) :: Latitude
+    REAL(fp), OPTIONAL, INTENT(IN) :: Zonal_Wind_Velocity
+    REAL(fp), OPTIONAL, INTENT(IN) :: Meridional_Wind_Velocity
+
     ! Function result
     REAL(fp) :: Gravity
+
     ! Local parameters
     CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'Gravity'
     REAL(fp), PARAMETER :: TWO_PI = TWO * PI
     REAL(fp), PARAMETER :: DEGREES_TO_RADIANS = PI / 180.0_fp
-    ! Earth rotational speed in rad.s^-1. The number of seconds
-    ! per day is for a sidereal day, the amount of time for the
-    ! Earth to rotate 360 degrees: 23h, 56m, 4s. A solar day is
-    ! 24h long. It makes next to no difference in the calculated
-    ! gravity, but what the hell.
+    ! ...Earth rotational speed in rad.s^-1. The number of seconds
+    !    per day is for a sidereal day, the amount of time for the
+    !    Earth to rotate 360 degrees: 23h, 56m, 4s. A solar day is
+    !    24h long. It makes next to no difference in the calculated
+    !    gravity, but what the hell.
     REAL(fp), PARAMETER :: N_SECONDS_IN_DAY = 86164.0_fp
     REAL(fp), PARAMETER :: OMEGA = TWO_PI / N_SECONDS_IN_DAY
-    ! Earth radii in m.
+    ! ...Earth radii in m.
     REAL(fp), PARAMETER :: Re_Equatorial = 6.378388e+06_fp ! == a
     REAL(fp), PARAMETER :: Re_Polar      = 6.356911e+06_fp ! == b
-    ! Earth's flattening correction factor, (1 - b^2/a^2)
+    ! ...Earth's flattening correction factor, (1 - b^2/a^2)
     REAL(fp), PARAMETER :: a2      = Re_Equatorial**2
     REAL(fp), PARAMETER :: b2      = Re_Polar**2
     REAL(fp), PARAMETER :: factor  = ONE - ( b2 / a2 )
-    ! Data for normal gravity equation
+    ! ...Data for normal gravity equation
     REAL(fp), PARAMETER :: G_NORMAL_EQUATOR      = 9.7803267715_fp
     INTEGER,  PARAMETER :: N_NORMAL_COEFFICIENTS = 4
     REAL(fp), PARAMETER :: G_COEFFS(N_NORMAL_COEFFICIENTS) = (/ 5.2790414e-03_fp, &
                                                                 2.32718e-05_fp,   &
                                                                 1.262e-07_fp,     &
                                                                 7.0e-10_fp        /)
-    ! This is the number of the above coefficients to use
-    ! in the calculation. Don't really need all four.
+    ! ...This is the number of the above coefficients to use
+    !    in the calculation. Don't really need all four.
     INTEGER, PARAMETER :: N_COEFFICIENTS = 2
+
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: i
     REAL(fp) :: Lat
     REAL(fp) :: u, v
@@ -792,7 +705,7 @@ CONTAINS
     REAL(fp) :: a_Surface
     REAL(fp) :: a_Z
     REAL(fp) :: g_Surface
-    
+
     ! Setup
     IF ( PRESENT(Latitude) ) THEN
       Lat = ABS(Latitude)
@@ -813,31 +726,25 @@ CONTAINS
 
     ! Calculate trigonometric terms
     !
-    ! It's most likely faster to calculate the cosine squared terms here and   
-    ! modify the equations down the line to use the precalculated value rather 
-    ! than do cos**2 each time, but as it is now, this only occurs in two      
-    ! places (the calc for Re and a_Surface, and a_Z if the wind arguments     
-    ! aren't present) and the code reflects the equations as one would write   
-    ! them down, which makes me feel all warm and fuzzy on the inside. :o)     
-    ! ------------------------------------------------------------------------
+    ! It's most likely faster to calculate the cosine squared terms here and
+    ! modify the equations down the line to use the precalculated value rather
+    ! than do cos**2 each time, but as it is now, this only occurs in two
+    ! places (the calc for Re and a_Surface, and a_Z if the wind arguments
+    ! aren't present) and the code reflects the equations as one would write
+    ! them down, which makes me feel all warm and fuzzy on the inside. :o)
     cos_Lat = COS(DEGREES_TO_RADIANS * Lat)
     sin_Lat = SIN(DEGREES_TO_RADIANS * Lat)
 
 
     ! Calculate radius terms
-    ! ----------------------
-    ! Calculate the Earth's radius at this Latitude
+    ! ...Calculate the Earth's radius at this Latitude
     Re = SQRT(b2 / ( ONE - ( cos_Lat**2 * factor ) ))
-
-    ! Calculate total distance from Earth's center
+    ! ...Calculate total distance from Earth's center
     Rtotal = Re + Height
     IF ( Rtotal < TOLERANCE ) THEN
       Gravity = -ONE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Invalid Height (<Re) input argument', &
-                            FAILURE, &
-                            Message_Log=Message_Log )
-      RETURN
+      msg = 'Invalid Height (<Re) input argument'
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
     END IF
 
 
@@ -847,7 +754,6 @@ CONTAINS
     ! due to the mass *AND* rotation of the Earth. Note that I don't use
     ! Horner's rule here. It adds an extra iteration and the tests I performed
     ! showed no difference form the simple method below.
-    !-------------------------------------------------------------------------
     Sum_Coeffs = ZERO
     DO i = 1, N_COEFFICIENTS
       Sum_Coeffs = Sum_Coeffs + ( G_COEFFS( i ) * sin_Lat**( 2*i ) )
@@ -855,28 +761,25 @@ CONTAINS
     g_Normal = G_NORMAL_EQUATOR * ( ONE + Sum_Coeffs )
 
 
-    ! Calculate centripetal accelleration at Earth's surface
-    ! ------------------------------------------------------
+    ! Calculate centripetal acceleration at Earth's surface
     a_Surface = ( OMEGA * cos_Lat )**2 * Re
 
 
     ! Calculate centripetal accelleration at height Z
-    ! -----------------------------------------------
     IF ( PRESENT(Zonal_Wind_Velocity) .OR. PRESENT(Meridional_Wind_Velocity) ) THEN
       a_Z = ( ( ( OMEGA * Rtotal * cos_Lat ) + u )**2 + v**2 ) / Rtotal
     ELSE
       a_Z = ( OMEGA * cos_Lat )**2 * Rtotal
     END IF
 
-    ! Calcaulte the gravity at the Earth's surface, 
+
+    ! Calcaulte the gravity at the Earth's surface,
     ! *REMOVING* the effect of the Earth's rotation
-    ! ---------------------------------------------
     g_Surface = g_Normal + a_Surface
 
 
     ! Calculate the gravitational acceleration at height Z
     ! incorporating the centripetal acceleration at height Z
-    ! ------------------------------------------------------
     Gravity = g_Surface * ( Re/Rtotal )**2 - a_Z
 
   END FUNCTION Gravity

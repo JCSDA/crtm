@@ -38,19 +38,19 @@ MODULE Units_Conversion
 
   PUBLIC :: SA_to_MR, SA_to_MR_TL, SA_to_MR_AD
   PUBLIC :: MR_to_SA, MR_to_SA_TL, MR_to_SA_AD
-  
+
   PUBLIC :: RH_to_MR, RH_to_MR_TL, RH_to_MR_AD
   PUBLIC :: MR_to_RH, MR_to_RH_TL, MR_to_RH_AD
-  
+
   PUBLIC :: PPMV_to_PP, PPMV_to_PP_TL, PPMV_to_PP_AD
   PUBLIC :: PP_to_PPMV, PP_to_PPMV_TL, PP_to_PPMV_AD
-  
+
   PUBLIC :: MR_to_PP, MR_to_PP_TL, MR_to_PP_AD
   PUBLIC :: PP_to_MR, PP_to_MR_TL, PP_to_MR_AD
 
   PUBLIC :: PP_to_MD, PP_to_MD_TL, PP_to_MD_AD
   PUBLIC :: MD_to_PP, MD_to_PP_TL, MD_to_PP_AD
-  
+
   PUBLIC :: PP_to_ND, PP_to_ND_TL, PP_to_ND_AD
   PUBLIC :: ND_to_PP, ND_to_PP_TL, ND_to_PP_AD
 
@@ -64,7 +64,7 @@ MODULE Units_Conversion
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
 END MODULE Units_Conversion

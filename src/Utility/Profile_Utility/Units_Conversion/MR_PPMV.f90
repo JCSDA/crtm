@@ -36,12 +36,12 @@ MODULE MR_PPMV
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   REAL(fp), PARAMETER :: MR_TO_PPMV_SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
   REAL(fp), PARAMETER :: PPMV_TO_MR_SCALE_FACTOR = KG_TO_G * PPMV_TO_PPV
-  
-  
+
+
 CONTAINS
 
 
@@ -228,7 +228,7 @@ CONTAINS
     END IF
 
     ! Tangent-linear conversion
-    ppmv_TL = Mixing_Ratio_TL * MR_TO_PPMV_SCALE_FACTOR * MW_DRYAIR / MOLECULAR_WEIGHT(Id) 
+    ppmv_TL = Mixing_Ratio_TL * MR_TO_PPMV_SCALE_FACTOR * MW_DRYAIR / MOLECULAR_WEIGHT(Id)
 
   END SUBROUTINE MR_to_PPMV_TL
 
@@ -295,12 +295,12 @@ CONTAINS
     Mixing_Ratio_AD, &  ! Output
     Molecule_ID      )  ! Optional Input
     ! Arguments
-    REAL(fp),          INTENT(IN OUT) :: ppmv_AD 
+    REAL(fp),          INTENT(IN OUT) :: ppmv_AD
     REAL(fp),          INTENT(IN OUT) :: Mixing_Ratio_AD
     INTEGER, OPTIONAL, INTENT(IN)     :: Molecule_ID
     ! Local variables
     INTEGER :: Id
- 
+
     ! Error checks
     ! ...Do nothing for invalid id
     IF ( PRESENT(Molecule_ID) ) THEN
@@ -416,7 +416,7 @@ CONTAINS
     ELSE
       Id = 1  ! Default value is for water vapor
     END IF
-    
+
     ! Convert volume to mass mixing ratio
     Mixing_Ratio = ppmv * PPMV_TO_MR_SCALE_FACTOR * MOLECULAR_WEIGHT(Id) / MW_DRYAIR
 
@@ -501,7 +501,7 @@ CONTAINS
     ELSE
       Id = 1  ! Default value is for water vapor
     END IF
-    
+
     ! Tangent-linear conversion
     Mixing_Ratio_TL = ppmv_TL * PPMV_TO_MR_SCALE_FACTOR * MOLECULAR_WEIGHT(Id) / MW_DRYAIR
 
@@ -583,7 +583,7 @@ CONTAINS
     ELSE
       Id = 1  ! Default value is for water vapor
     END IF
-    
+
     ! Adjoint conversion
     ppmv_AD = ppmv_AD + &
               Mixing_Ratio_AD * PPMV_TO_MR_SCALE_FACTOR * MOLECULAR_WEIGHT(Id) / MW_DRYAIR

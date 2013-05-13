@@ -36,10 +36,10 @@ MODULE SA_MR
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  
-  
+
+
 CONTAINS
 
 
@@ -116,7 +116,7 @@ CONTAINS
 !              = ---- + ----.----    ( multiplying the second term by ---- )
 !                 Mg     Md   Mg                                      Md
 !
-!                  1 
+!                  1
 !              = ----- ( 1 + MRw )
 !                 MRg
 !
@@ -128,7 +128,7 @@ CONTAINS
 !
 !         MRg = SA ( 1 + 0.001*MRw )   .......(3)
 !
-!       If the input specific amount is for water vapor (specific humidity) 
+!       If the input specific amount is for water vapor (specific humidity)
 !       then (3) becomes,
 !
 !         MRw = SA ( 1 + 0.001*MRw )
@@ -395,7 +395,7 @@ CONTAINS
       Specific_Amount_AD = Specific_Amount_AD + (Mixing_Ratio_AD / (ONE - (G_TO_KG * Specific_Amount))**2)
     END IF
     Mixing_Ratio_AD = ZERO
-    
+
   END SUBROUTINE SA_to_MR_AD
 
 
@@ -445,7 +445,7 @@ CONTAINS
 !
 !         MRg = SAg ( 1 + 0.001*MRw )   .......(1)
 !
-!       and 
+!       and
 !                      SAw
 !         MRw = -------------------   .......(2)
 !                ( 1 - 0.001*SAw )
@@ -574,11 +574,11 @@ CONTAINS
     Water_Vapor       , &  ! Optional FWD Input
     Water_Vapor_TL      )  ! Optional TL  Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: Mixing_Ratio      
-    REAL(fp),           INTENT(IN)  :: Mixing_Ratio_TL    
+    REAL(fp),           INTENT(IN)  :: Mixing_Ratio
+    REAL(fp),           INTENT(IN)  :: Mixing_Ratio_TL
     REAL(fp),           INTENT(OUT) :: Specific_Amount_TL
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor       
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL    
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL
 
     ! Error checks
     ! ...Zero output for -ve input
@@ -679,11 +679,11 @@ CONTAINS
     Water_Vapor       , &  ! Optional FWD Input
     Water_Vapor_AD      )  ! Optional AD  Output
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: Mixing_Ratio      
+    REAL(fp),           INTENT(IN)     :: Mixing_Ratio
     REAL(fp),           INTENT(IN OUT) :: Specific_Amount_AD
-    REAL(fp),           INTENT(IN OUT) :: Mixing_Ratio_AD   
-    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor       
-    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD    
+    REAL(fp),           INTENT(IN OUT) :: Mixing_Ratio_AD
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor
+    REAL(fp), OPTIONAL, INTENT(IN OUT) :: Water_Vapor_AD
 
     ! Error checks
     ! ...Zero output for -ve input

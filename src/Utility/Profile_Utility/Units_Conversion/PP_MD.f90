@@ -35,10 +35,10 @@ MODULE PP_MD
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  
-  
+
+
 CONTAINS
 
 
@@ -63,13 +63,13 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:  Partial pressure of gas.
 !                          UNITS:      hectoPascals, hPa
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Temperature
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Mass_Density:      Mass density of gas.
 !                          Set to zero for invalid input.
@@ -117,7 +117,7 @@ CONTAINS
 !
 !       where NA = Avogadro's constant (number of molecules in 1 mole.)
 !
-!       Eqn.(1) can be recast to provide the number of molecules in the 
+!       Eqn.(1) can be recast to provide the number of molecules in the
 !       volume, the number density, nd,
 !
 !               N     p.NA
@@ -217,25 +217,25 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:     Partial pressure of gas.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Temperature_TL:       Tangent-linear atmospheric temperature
 !                             UNITS:      Kelvin, K
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure_TL:  Tangent-linear partial pressure of gas.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Mass_Density_TL:      Tangent-linear mass density of gas.
 !                             Set to zero for invalid input.
@@ -328,13 +328,13 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure:     Partial pressure of gas.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mass_Density_AD:      Adjoint mass density of gas.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      g/m^3
@@ -349,14 +349,14 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Partial_Pressure_AD:  Adjoint partial pressure of gas.
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Molecule_ID:          HITRAN molecular designation identifying the
 !                             molecule for which the concentration units
@@ -449,7 +449,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar or any rank
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mass_Density:      Mass density of gas.
 !                          UNITS:      g/m^3
 !                          TYPE:       REAL(fp)
@@ -463,7 +463,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Temperature
 !                          ATTRIBUTES: INTENT(OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Molecule_ID:       HITRAN molecular designation identifying the
 !                          molecule for which the concentration units
@@ -503,7 +503,7 @@ CONTAINS
 !
 !       where NA = Avogadro's constant (number of molecules in 1 mole.)
 !
-!       Eqn.(1) can be recast to provide the number of molecules in the 
+!       Eqn.(1) can be recast to provide the number of molecules in the
 !       volume, the number density, nd,
 !
 !               N     p.NA
@@ -566,7 +566,7 @@ CONTAINS
     Mass_Density    , &  ! Input
     Partial_Pressure, &  ! Output
     Molecule_ID       )  ! Optional Input
-    ! Arguments 
+    ! Arguments
     REAL(fp),          INTENT(IN)  :: Temperature
     REAL(fp),          INTENT(IN)  :: Mass_Density
     REAL(fp),          INTENT(OUT) :: Partial_Pressure
@@ -613,7 +613,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mass_Density:         Mass density of gas.
 !                             UNITS:      g/m^3
 !                             TYPE:       REAL(fp)
@@ -625,7 +625,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mass_Density_TL:      Tangent-linear mass density of gas.
 !                             UNITS:      g/m^3
 !                             TYPE:       REAL(fp)
@@ -639,7 +639,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Molecule_ID:          HITRAN molecular designation identifying the
 !                             molecule for which the concentration units
@@ -672,7 +672,7 @@ CONTAINS
     Mass_Density_TL    , &  ! TL  Input
     Partial_Pressure_TL, &  ! TL  Output
     Molecule_ID          )  ! Optional Input
-    ! Arguments 
+    ! Arguments
     REAL(fp),          INTENT(IN)  :: Temperature
     REAL(fp),          INTENT(IN)  :: Mass_Density
     REAL(fp),          INTENT(IN)  :: Temperature_TL
@@ -724,7 +724,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar or any rank
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mass_Density:         Mass density of gas.
 !                             UNITS:      g/m^3
 !                             TYPE:       REAL(fp)
@@ -737,7 +737,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OUTPUTS:
 !       Temperature_AD:       Adjoint atmospheric temperature
 !                             *** MUST HAVE VALUE ON ENTRY ***
@@ -745,7 +745,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Temperature
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 !       Mass_Density_AD:      Adjoint mass density of gas.
 !                             *** MUST HAVE VALUE ON ENTRY ***
 !                             UNITS:      g/m^3
@@ -785,7 +785,7 @@ CONTAINS
     Temperature_AD     , &  ! AD  Output
     Mass_Density_AD    , &  ! AD  Output
     Molecule_ID          )  ! Optional Input
-    ! Arguments 
+    ! Arguments
     REAL(fp),          INTENT(IN)     :: Temperature
     REAL(fp),          INTENT(IN)     :: Mass_Density
     REAL(fp),          INTENT(IN OUT) :: Partial_Pressure_AD

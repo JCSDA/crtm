@@ -34,10 +34,10 @@ MODULE PPMV_PP
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
-  
+
 CONTAINS
 
 
@@ -68,7 +68,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as Pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Partial_Pressure:  Gas partial pressure.
 !                          Set to 0.0 if input < 0.0
@@ -87,7 +87,7 @@ CONTAINS
 !                          ATTRIBUTES: OPTIONAL, INTENT(IN)
 !
 ! PROCEDURE:
-!       To convert volume mixing ratio in ppmv of a molecular species, 
+!       To convert volume mixing ratio in ppmv of a molecular species,
 !       designated by MOL, to partial pressure, the following is used,
 !
 !         pp(MOL) = 1.0e-06 . ppmv(MOL) . ( Pressure - pp(H2O) )
@@ -186,7 +186,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:          Tangent-linear atmospheric pressure.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
@@ -198,7 +198,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Partial_Pressure_TL:  Tangent-linear gas partial pressure.
 !                             Set to 0.0 for invalid input
@@ -333,7 +333,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Partial_Pressure_AD:  Adjoint gas partial pressure.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      hectoPascals, hPa
@@ -355,7 +355,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:          Water vapor partial pressure. If this argument
 !                             is not supplied, the mandatory input PPMV and
@@ -442,7 +442,7 @@ CONTAINS
     Dry_Air_Pressure_AD = ppv              * Partial_Pressure_AD
     Partial_Pressure_AD = ZERO
 
-    
+
     ! Adjoint form of dry air pressure calculation
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapor
@@ -490,7 +490,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as pressure
 !                          ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       ppmv:              Gas volume mixing ratio.
 !                          Set to 0.0 if input < 0.0
@@ -498,7 +498,7 @@ CONTAINS
 !                          TYPE:       REAL(fp)
 !                          DIMENSION:  Same as input Pressure
 !                          ATTRIBUTES: INTENT(OUT)
-! 
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:       Water vapor volume mixing ratio. If this argument is
 !                          not supplied, the mandatory Partial_Pressure argument
@@ -544,7 +544,7 @@ CONTAINS
     ! Arguments
     REAL(fp),           INTENT(IN)  :: Pressure
     REAL(fp),           INTENT(IN)  :: Partial_Pressure
-    REAL(fp),           INTENT(OUT) :: ppmv            
+    REAL(fp),           INTENT(OUT) :: ppmv
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     ! Local variables
     REAL(fp) :: ppv
@@ -561,8 +561,8 @@ CONTAINS
         RETURN
       ENDIF
     END IF
-    
-    
+
+
     ! Calculate the dry air partial pressure
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapor
@@ -611,7 +611,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:          Tangent-linear total atmospheric pressure.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
@@ -623,7 +623,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       ppmv_TL:              Tangent-linear gas volume mixing ratio.
 !                             Set to 0.0 if invalid input
@@ -669,7 +669,7 @@ CONTAINS
     REAL(fp),           INTENT(IN)  :: Partial_Pressure
     REAL(fp),           INTENT(IN)  :: Pressure_TL
     REAL(fp),           INTENT(IN)  :: Partial_Pressure_TL
-    REAL(fp),           INTENT(OUT) :: ppmv_TL            
+    REAL(fp),           INTENT(OUT) :: ppmv_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor
     REAL(fp), OPTIONAL, INTENT(IN)  :: Water_Vapor_TL
     ! Local variables
@@ -694,8 +694,8 @@ CONTAINS
         wv_TL = ZERO
       END IF
     END IF
-    
-    
+
+
     ! Tangent-linear form of dry air partial pressure
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapor
@@ -748,7 +748,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       ppmv_AD:              Adjoint gas volume mixing ratio.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      ppmv
@@ -770,7 +770,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Water_Vapor:          Water vapor partial pressure. If this argument
 !                             is not supplied, the mandatory input PPMV and
@@ -808,7 +808,7 @@ CONTAINS
     ! Arguments
     REAL(fp),           INTENT(IN)     :: Pressure
     REAL(fp),           INTENT(IN)     :: Partial_Pressure
-    REAL(fp),           INTENT(IN OUT) :: ppmv_AD            
+    REAL(fp),           INTENT(IN OUT) :: ppmv_AD
     REAL(fp),           INTENT(IN OUT) :: Pressure_AD
     REAL(fp),           INTENT(IN OUT) :: Partial_Pressure_AD
     REAL(fp), OPTIONAL, INTENT(IN)     :: Water_Vapor
@@ -839,8 +839,8 @@ CONTAINS
         wv_AD = ZERO
       END IF
     END IF
-    
-    
+
+
     ! Forward calculations
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapor
@@ -850,14 +850,14 @@ CONTAINS
       ! ...Water vapour
       Dry_Air_Pressure = Pressure - Partial_Pressure
     END IF
-    
+
 
     ! Adjoint form of volume mixing ratio calculation
     Dry_Air_Pressure_AD = -(PPV_TO_PPMV * Partial_Pressure * ppmv_AD / Dry_Air_Pressure**2)
     Partial_Pressure_AD = Partial_Pressure_AD + (PPV_TO_PPMV * ppmv_AD / Dry_Air_Pressure)
     ppmv_AD = ZERO
 
-    
+
     ! Adjoint form of dry air partial pressure
     IF ( PRESENT(Water_Vapor) ) THEN
       ! ...Gas other than water vapour

@@ -23,7 +23,7 @@ MODULE RH_MR
   USE Atmospheric_Properties, ONLY: Saturation_Mixing_Ratio, &
                                     Saturation_Mixing_Ratio_TL, &
                                     Saturation_Mixing_Ratio_AD
-                                    
+
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -39,10 +39,10 @@ MODULE RH_MR
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
-  
+
 CONTAINS
 
 
@@ -84,7 +84,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as Pressure
 !                              ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Mixing_Ratio:          Water vapor mass mixing ratio.
 !                              Set to zero for invalid input.
@@ -102,7 +102,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:          Pressure value below which the saturation
 !                              mixing ratio is not calculated. The default
 !                              is 50mb. Saturation mixing ratios below the
@@ -138,12 +138,12 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: P              
-    REAL(fp),           INTENT(IN)  :: T              
-    REAL(fp),           INTENT(IN)  :: rh             
-    REAL(fp),           INTENT(OUT) :: mr             
+    REAL(fp),           INTENT(IN)  :: P
+    REAL(fp),           INTENT(IN)  :: T
+    REAL(fp),           INTENT(IN)  :: rh
+    REAL(fp),           INTENT(OUT) :: mr
     REAL(fp), OPTIONAL, INTENT(IN)  :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr
 
@@ -211,7 +211,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as Pressure
 !                              ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:           Tangent-linear atmospheric pressure.
 !                              UNITS:      hectoPascals, hPa
 !                              TYPE:       REAL(fp)
@@ -229,7 +229,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as Pressure
 !                              ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Mixing_Ratio_TL:       Tangent-linear water vapor mass mixing ratio.
 !                              Set to zero for invalid input.
@@ -247,7 +247,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:          Pressure value below which the saturation
 !                              mixing ratio is not calculated. The default
 !                              is 50mb. Saturation mixing ratios below the
@@ -278,15 +278,15 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: P              
-    REAL(fp),           INTENT(IN)  :: T              
-    REAL(fp),           INTENT(IN)  :: rh             
-    REAL(fp),           INTENT(IN)  :: P_TL              
-    REAL(fp),           INTENT(IN)  :: T_TL              
-    REAL(fp),           INTENT(IN)  :: rh_TL             
-    REAL(fp),           INTENT(OUT) :: mr_TL             
+    REAL(fp),           INTENT(IN)  :: P
+    REAL(fp),           INTENT(IN)  :: T
+    REAL(fp),           INTENT(IN)  :: rh
+    REAL(fp),           INTENT(IN)  :: P_TL
+    REAL(fp),           INTENT(IN)  :: T_TL
+    REAL(fp),           INTENT(IN)  :: rh_TL
+    REAL(fp),           INTENT(OUT) :: mr_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr, smr_TL
 
@@ -361,7 +361,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as Pressure
 !                              ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Mixing_Ratio_AD:       Adjoint water vapor mass mixing ratio.
 !                              *** SET TO ZERO ON EXIT ***
 !                              UNITS:      g/kg
@@ -390,7 +390,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Same as input Pressure
 !                              ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUTS:
 !       Ice_Temperature:       Temperature below which the saturation vapor
 !                              pressure over ice is used in the conversion.
@@ -400,7 +400,7 @@ CONTAINS
 !                              TYPE:       REAL(fp)
 !                              DIMENSION:  Scalar
 !                              ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:          Pressure value below which the saturation
 !                              mixing ratio is not calculated. The default
 !                              is 50mb. Saturation mixing ratios below the
@@ -431,15 +431,15 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: P              
-    REAL(fp),           INTENT(IN)     :: T              
-    REAL(fp),           INTENT(IN)     :: rh             
-    REAL(fp),           INTENT(IN OUT) :: mr_AD             
-    REAL(fp),           INTENT(IN OUT) :: P_AD              
-    REAL(fp),           INTENT(IN OUT) :: T_AD              
-    REAL(fp),           INTENT(IN OUT) :: rh_AD             
+    REAL(fp),           INTENT(IN)     :: P
+    REAL(fp),           INTENT(IN)     :: T
+    REAL(fp),           INTENT(IN)     :: rh
+    REAL(fp),           INTENT(IN OUT) :: mr_AD
+    REAL(fp),           INTENT(IN OUT) :: P_AD
+    REAL(fp),           INTENT(IN OUT) :: T_AD
+    REAL(fp),           INTENT(IN OUT) :: rh_AD
     REAL(fp), OPTIONAL, INTENT(IN)     :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)     :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr, smr_AD
 
@@ -458,7 +458,7 @@ CONTAINS
                                   smr, &
                                   Ice_Temperature = Ice_Temperature, &
                                   Min_Pressure    = Min_Pressure )
-    
+
     ! Adjoint form of RH->MR conversion
     smr_AD = ZERO
     IF ( smr > ZERO ) THEN
@@ -515,7 +515,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 ! OUTPUTS:
 !       Relative_Humidity:    Relative humidity.
 !                             Set to zero for invalid input.
@@ -533,7 +533,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:         Pressure value below which the saturation
 !                             mixing ratio is not calculated. The default
 !                             is 50mb. Saturation mixing ratios below the
@@ -546,7 +546,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 ! PROCEDURE:
 !       Once the saturation mixing ratio is calculated the relative humidity
 !       corresponding to the input mixing ratio is determined using:
@@ -569,12 +569,12 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: P              
-    REAL(fp),           INTENT(IN)  :: T              
-    REAL(fp),           INTENT(IN)  :: mr             
-    REAL(fp),           INTENT(OUT) :: rh             
+    REAL(fp),           INTENT(IN)  :: P
+    REAL(fp),           INTENT(IN)  :: T
+    REAL(fp),           INTENT(IN)  :: mr
+    REAL(fp),           INTENT(OUT) :: rh
     REAL(fp), OPTIONAL, INTENT(IN)  :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr
 
@@ -642,7 +642,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Pressure_TL:          Tangent-linear atmospheric pressure.
 !                             UNITS:      hectoPascals, hPa
 !                             TYPE:       REAL(fp)
@@ -660,8 +660,8 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
-!   
+!
+!
 ! OUTPUTS:
 !       Relative_Humidity_TL: Tangent-linear relative humidity.
 !                             Set to zero for invalid input.
@@ -679,7 +679,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:         Pressure value below which the saturation
 !                             mixing ratio is not calculated. The default
 !                             is 50mb. Saturation mixing ratios below the
@@ -692,7 +692,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 17-Aug-2009
 !                       paul.vandelst@noaa.gov
@@ -710,15 +710,15 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)  :: P              
-    REAL(fp),           INTENT(IN)  :: T              
-    REAL(fp),           INTENT(IN)  :: mr             
-    REAL(fp),           INTENT(IN)  :: P_TL              
-    REAL(fp),           INTENT(IN)  :: T_TL              
-    REAL(fp),           INTENT(IN)  :: mr_TL             
-    REAL(fp),           INTENT(OUT) :: rh_TL             
+    REAL(fp),           INTENT(IN)  :: P
+    REAL(fp),           INTENT(IN)  :: T
+    REAL(fp),           INTENT(IN)  :: mr
+    REAL(fp),           INTENT(IN)  :: P_TL
+    REAL(fp),           INTENT(IN)  :: T_TL
+    REAL(fp),           INTENT(IN)  :: mr_TL
+    REAL(fp),           INTENT(OUT) :: rh_TL
     REAL(fp), OPTIONAL, INTENT(IN)  :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)  :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr, smr_TL
 
@@ -793,7 +793,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as Pressure
 !                             ATTRIBUTES: INTENT(IN)
-!   
+!
 !       Relative_Humidity_AD: Adjoint relative humidity.
 !                             *** SET TO ZERO ON EXIT ***
 !                             UNITS:      %
@@ -822,7 +822,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Same as input Pressure
 !                             ATTRIBUTES: INTENT(IN OUT)
-!   
+!
 ! OPTIONAL INPUT ARGUMENTS:
 !       Ice_Temperature:      Temperature below which the saturation vapor
 !                             pressure over ice is used in the conversion.
@@ -832,7 +832,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 !       Min_Pressure:         Pressure value below which the saturation
 !                             mixing ratio is not calculated. The default
 !                             is 50mb. Saturation mixing ratios below the
@@ -845,7 +845,7 @@ CONTAINS
 !                             TYPE:       REAL(fp)
 !                             DIMENSION:  Scalar
 !                             ATTRIBUTES: OPTIONAL, INTENT(IN)
-!   
+!
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 17-Aug-2009
 !                       paul.vandelst@noaa.gov
@@ -863,15 +863,15 @@ CONTAINS
     Ice_Temperature, &  ! Optional Input
     Min_Pressure     )  ! Optional Input
     ! Arguments
-    REAL(fp),           INTENT(IN)     :: P           
-    REAL(fp),           INTENT(IN)     :: T           
-    REAL(fp),           INTENT(IN)     :: mr          
-    REAL(fp),           INTENT(IN OUT) :: rh_AD             
-    REAL(fp),           INTENT(IN OUT) :: P_AD              
-    REAL(fp),           INTENT(IN OUT) :: T_AD              
-    REAL(fp),           INTENT(IN OUT) :: mr_AD             
+    REAL(fp),           INTENT(IN)     :: P
+    REAL(fp),           INTENT(IN)     :: T
+    REAL(fp),           INTENT(IN)     :: mr
+    REAL(fp),           INTENT(IN OUT) :: rh_AD
+    REAL(fp),           INTENT(IN OUT) :: P_AD
+    REAL(fp),           INTENT(IN OUT) :: T_AD
+    REAL(fp),           INTENT(IN OUT) :: mr_AD
     REAL(fp), OPTIONAL, INTENT(IN)     :: Ice_Temperature
-    REAL(fp), OPTIONAL, INTENT(IN)     :: Min_Pressure   
+    REAL(fp), OPTIONAL, INTENT(IN)     :: Min_Pressure
     ! Local variables
     REAL(fp) :: smr, smr_AD
 
@@ -890,7 +890,7 @@ CONTAINS
                                   smr, &
                                   Ice_Temperature = Ice_Temperature, &
                                   Min_Pressure    = Min_Pressure )
-    
+
     ! Adjoint form of MR->RH conversion
     smr_AD = ZERO
     IF ( smr > ZERO ) THEN
