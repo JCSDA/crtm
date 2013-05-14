@@ -548,7 +548,8 @@ CONTAINS
 !       Error_Status = SpcCoeff_netCDF_to_Binary( &
 !                        NC_Filename , &
 !                        BIN_Filename, &
-!                        Quiet = Quiet )
+!                        Quiet   = Quiet  , &
+!                        Version = Version  )
 !
 ! INPUTS:
 !       NC_Filename:    Character string specifying the name of the
@@ -576,6 +577,15 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Version:        Set this argument to the version number value to be
+!                       used in the output binary file.
+!                       If >  0, the value REPLACES the current Version.
+!                          <= 0, the current version is INCREMENTED by the |value|.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 ! FUNCTION RESULT:
 !       Error_Status:   The return value is an integer defining the error status.
 !                       The error codes are defined in the Message_Handler module.
@@ -596,12 +606,14 @@ CONTAINS
   FUNCTION SpcCoeff_netCDF_to_Binary( &
     NC_Filename , &  ! Input
     BIN_Filename, &  ! Input
-    Quiet       ) &  ! Optional input
+    Quiet       , &  ! Optional input
+    Version     ) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*),      INTENT(IN)  :: NC_Filename
     CHARACTER(*),      INTENT(IN)  :: BIN_Filename
     LOGICAL, OPTIONAL, INTENT(IN)  :: Quiet
+    INTEGER, OPTIONAL, INTENT(IN)  :: Version
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -613,9 +625,10 @@ CONTAINS
     
     ! Set up
     err_stat = SUCCESS
-
+    
 
     ! Read the netCDF file
+    WRITE(*,'(/5x,"Reading the input netCDF datafile(s)...")')
     err_stat = SpcCoeff_netCDF_ReadFile( NC_Filename, spccoeff, Quiet = Quiet )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading netCDF file '//TRIM(NC_Filename)
@@ -624,6 +637,16 @@ CONTAINS
     END IF
 
 
+    ! Update version number if necessary
+    IF ( PRESENT(Version) ) THEN
+      IF ( Version > 0 ) THEN
+        spccoeff%Version = Version                          ! Replace
+      ELSE
+        spccoeff%Version = spccoeff%Version + ABS(Version)  ! Increment
+      END IF
+    END IF
+      
+    
     ! Read the substructure netCDF filenames
     ! ...ACCoeff
     sub_filename = TRIM(spccoeff%Sensor_Id)//'.ACCoeff.nc'
@@ -648,6 +671,7 @@ CONTAINS
 
 
     ! Write the Binary file
+    WRITE(*,'(/5x,"Writing the output binary datafile...")')
     err_stat = SpcCoeff_WriteFile( BIN_Filename, spccoeff, Quiet = Quiet )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing Binary file '//TRIM(BIN_Filename)
@@ -657,6 +681,7 @@ CONTAINS
 
 
     ! Check the write was successful
+    WRITE(*,'(/5x,"Test reading the output binary datafile...")')
     ! ...Read the Binary file
     err_stat = SpcCoeff_ReadFile( BIN_Filename, spccoeff_copy, Quiet = Quiet )
     IF ( err_stat /= SUCCESS ) THEN

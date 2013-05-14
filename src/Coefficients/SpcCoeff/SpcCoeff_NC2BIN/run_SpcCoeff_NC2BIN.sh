@@ -5,22 +5,27 @@
 usage()
 {
   echo
-  echo " Usage: run_SpcCoeff_NC2BIN.sh -l|b[fh]"
+  echo " Usage: run_SpcCoeff_NC2BIN.sh -l|b[fih]"
   echo
   echo "   Convert any netCDF format SpcCoeff files in the current"
   echo "   directory to Binary format. File with the suffix *.SpcCoeff.nc"
   echo "   are converted into *.SpcCoeff.bin files."
   echo
-  echo "    l       Produce little-endian binary output files"
+  echo " Options:"
+  echo "   -l       Produce little-endian binary output files"
   echo
-  echo "    b       Produce big-endian binary output files"
+  echo "   -b       Produce big-endian binary output files"
   echo
-  echo "    f       Force overwrite of output file if it already exists."
+  echo "   -f       Force overwrite of output file if it already exists."
   echo "            Default behaviour is to skip conversion if the output"
   echo "            file is already present."
   echo
-  echo "    h       Print this message and exit"
+  echo "   -i       Increment the output file data version number."
+  echo "            Default behaviour is to not change the data version number."
   echo
+  echo "   -h       Print this message and exit"
+  echo
+  echo " Comments:"
   echo "   Note the endian-ness option is only setup for those compilers"
   echo "   that allow for run-time conversion via environment variables."
   echo "   Check the 'endian_wrapper.sh' script help for a listing, i.e."
@@ -42,10 +47,11 @@ error_message()
 ENDIAN_TYPE="NONE"
 OVERWRITE="NO"
 REMOVE="rm -f"
+INCREMENT_VERSION="NO"
 
 
 # Parse command line options
-while getopts :hlbf OPTVAL; do
+while getopts :hlbfi OPTVAL; do
 
   # If option argument looks like another option exit the loop
   case ${OPTARG} in
@@ -57,6 +63,7 @@ while getopts :hlbf OPTVAL; do
     l)  ENDIAN_TYPE="little"; ENDIAN_ARG="l";;
     b)  ENDIAN_TYPE="big"; ENDIAN_ARG="b";;
     f)  OVERWRITE="YES";;
+    i)  INCREMENT_VERSION="YES";;
     h)  usage; exit 0;;
     \?) OPTVAL=${OPTARG}; break;;
   esac
@@ -126,6 +133,7 @@ for NC_FILE in `ls *.SpcCoeff.nc`; do
   endian_wrapper.sh -${ENDIAN_ARG} ${EXE_FILE} <<-NoMoreInput >> ${LOG_FILE}
 	${NC_FILE}
 	${BIN_FILE}
+	${INCREMENT_VERSION}
 	NoMoreInput
 
   # Check that signal file was created

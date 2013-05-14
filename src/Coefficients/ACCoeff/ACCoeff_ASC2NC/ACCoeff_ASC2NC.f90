@@ -46,18 +46,20 @@ PROGRAM ACCoeff_ASC2NC
   ! The sensorinfo file name
   CHARACTER(*), PARAMETER :: SENSORINFO_FILENAME = 'SensorInfo'
   ! The sensors
-  INTEGER     , PARAMETER :: N_AC_SENSORS = 12
+  INTEGER     , PARAMETER :: N_AC_SENSORS = 14
   CHARACTER(*), PARAMETER :: SENSOR_ID(N_AC_SENSORS) = &
     (/ 'amsua_n15    ', &
        'amsua_n16    ', &
        'amsua_n17    ', &
        'amsua_n18    ', &
        'amsua_metop-a', &
+       'amsua_metop-b', &
        'amsub_n15    ', &
        'amsub_n16    ', &
        'amsub_n17    ', &
        'mhs_n18      ', &
        'mhs_metop-a  ', &
+       'mhs_metop-b  ', &
        'amsua_n19    ', &
        'mhs_n19      ' /)
   INTEGER, PARAMETER :: AMSUA_WMO_SENSOR_ID = 570
@@ -69,14 +71,17 @@ PROGRAM ACCoeff_ASC2NC
   CHARACTER(*), PARAMETER :: AMSUBMHS_REFERENCE = &
     'Hewison, T.J. and R.Saunders (1996), "Measurements of the AMSU-B '//&
     'antenna pattern", IEEE Transactions on Geoscience and Remote Sensing, Vol.34, pp.405-412'
-  ! The valid FDF identifiers
-  INTEGER     , PARAMETER :: N_FDF_IDS = 2
+  ! The FDF identifiers used to construct filenames
+  INTEGER     , PARAMETER :: N_FDF_IDS = 3
   CHARACTER(*), PARAMETER :: FDF_ID(N_FDF_IDS) = &
-    (/ '6.4', &
-       '6.8' /)
+    (/ '6.4', &  ! AAPP version number
+       '6.8', &  ! AAPP version number
+       '1.1' /)  ! Data version number
+  ! The FDF version id used in the ACCoeff files
   INTEGER     , PARAMETER :: FDF_VERSION(N_FDF_IDS) = &
     (/ 4, &
-       5 /)
+       5, &
+       6 /)
 
 
   ! ---------  
@@ -98,9 +103,9 @@ PROGRAM ACCoeff_ASC2NC
   
   ! Output header
   CALL Program_Message( PROGRAM_NAME, &
-                        'Program to read the AAPP AMSU-A/AMSU-B/MHS antenna correction '//&
-                        'ASCII files and output the normalised antenna efficiencies '//&
-                        'to a netCDF format ACCoeff file.', &
+                        'Program to read the AAPP-format AMSU-A/AMSU-B/MHS antenna '//&
+                        'correction ASCII files and output the normalised antenna '//&
+                        'efficiencies to a netCDF format ACCoeff file.', &
                         '$Revision$' )
 
 
@@ -120,14 +125,14 @@ PROGRAM ACCoeff_ASC2NC
 
 
   ! Get the AAPP data file identifier
-  WRITE( *,'(/5x,"Select the AAPP fdf identifier: ")' )
+  WRITE( *,'(/5x,"Select the data file identifier: ")' )
   DO n = 1, N_FDF_IDS
     WRITE( *,'(7x,i0,") ",a)' ) n, FDF_ID(n)
   END DO
   WRITE( *,'(5x,"Enter choice: ")',ADVANCE='NO' )
   READ( *,'(i10)' ) idx_FDF_Id
   IF ( idx_FDF_Id < 1 .OR. idx_FDF_Id > N_FDF_IDS ) THEN
-    Message = 'Unrecognised FDF Id selection'
+    Message = 'Unrecognised data file identifier selection'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE ); STOP
   END IF
 

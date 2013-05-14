@@ -15,7 +15,7 @@ Sort_Utility.o : Sort_Utility.f90 Type_Kinds.o
 SpcCoeff_Binary_IO.o : SpcCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.o NLTECoeff_Define.o ACCoeff_Binary_IO.o ACCoeff_Define.o SpcCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
 SpcCoeff_Define.o : SpcCoeff_Define.f90 NLTECoeff_Define.o ACCoeff_Define.o SensorInfo_Parameters.o Subset_Define.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 SpcCoeff_IO.o : SpcCoeff_IO.f90 NLTECoeff_netCDF_IO.o ACCoeff_netCDF_IO.o SpcCoeff_netCDF_IO.o SpcCoeff_Binary_IO.o SpcCoeff_Define.o File_Utility.o Message_Handler.o Type_Kinds.o 
-SpcCoeff_NC2BIN.o : SpcCoeff_NC2BIN.f90 SpcCoeff_IO.o SpcCoeff_Define.o SignalFile_Utility.o Message_Handler.o 
+SpcCoeff_NC2BIN.o : SpcCoeff_NC2BIN.f90 SpcCoeff_IO.o SpcCoeff_Define.o SignalFile_Utility.o String_Utility.o Message_Handler.o 
 SpcCoeff_netCDF_IO.o : SpcCoeff_netCDF_IO.f90 SpcCoeff_Define.o String_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
 String_Utility.o : String_Utility.f90 
 Subset_Define.o : Subset_Define.f90 Sort_Utility.o Message_Handler.o 
