@@ -1,4 +1,4 @@
-PRO List::Channel_Plot, $
+PRO RTSolution_List::Channel_Plot, $
   Diff_Input = diff_input, $  ; Input keyword
   Title      = title     , $  ; Input keyword
   Owin       = owin      , $  ; Input keyword
@@ -10,7 +10,7 @@ PRO List::Channel_Plot, $
   @rtsolution_pro_err_handler
   @rtsolution_parameters
   ; ...Check that all list members are RTSolution objects
-  IF ( ~ self->IsA_RTSolution_List(Debug = debug) ) THEN $
+  IF ( ~ self->HasOnly_RTSolutions(Debug = debug) ) THEN $
     MESSAGE, 'Non-RTSolution object found in channel list.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Process boolean keywords
@@ -26,10 +26,10 @@ PRO List::Channel_Plot, $
   ; Check difference input keyword separately (coz it's unwieldy)
   plot_difference = FALSE
   IF ( N_ELEMENTS(diff_input) GT 0 ) THEN BEGIN
-    ; Must be a list to start with
-    IF ( ISA(diff_input,'List') ) THEN BEGIN
+    ; Must be an RTSolution list to start with
+    IF ( ISA(diff_input,'RTSolution_List') ) THEN BEGIN
       ; Must be an RTSolution-object-only list
-      IF ( self->IsA_RTSolution_List(Debug = debug) ) THEN BEGIN
+      IF ( diff_input->HasOnly_RTSolutions(Debug = debug) ) THEN BEGIN
         ; Must have the same number of channels as self
         IF ( self.Count() EQ diff_input.Count() ) THEN BEGIN
           ; We can use this!

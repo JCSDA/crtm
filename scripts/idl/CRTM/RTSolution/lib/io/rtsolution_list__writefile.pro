@@ -1,17 +1,16 @@
 ;+
 ; NAME:
-;       RTSolution_WriteFile
+;       RTSolution_List::WriteFile
 ;
 ; PURPOSE:
-;       The RTSolution_WriteFile procedure writes a list of RTSolution objects
-;       to a data file.
+;       The RTSolution_List::WriteFile procedure method writes a list of
+;       RTSolution objectsto a data file.
 ;
 ;       Note: If the file already exists, it is overwritten.
 ;
 ; CALLING SEQUENCE:
-;       RTSolution_WriteFile, $
+;       Obj->[RTSolution_List::]WriteFile, $
 ;         Filename     , $
-;         RTSolutions  , $
 ;         Swap  = Swap , &
 ;         Quiet = Quiet, $
 ;         Debug = Debug     
@@ -22,12 +21,6 @@
 ;                       TYPE:       CHARACTER(*)
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
-;
-;       RTSolutions:    List containing the RTSolution objects to write to file.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(OUT)
 ;
 ; INPUT KEYWORDS:
 ;       Swap:           Set this keyword parameter to byte swap data written
@@ -151,9 +144,8 @@ END
 
 
 ; The main script
-PRO RTSolution_WriteFile, $
+PRO RTSolution_List::WriteFile, $
   filename      , $  ; Input
-  rtsolutions   , $  ; Output
   Swap   = swap , $  ; Optional input
   Quiet  = quiet, $  ; Optional input
   Debug  = debug     ; Optional input
@@ -162,30 +154,19 @@ PRO RTSolution_WriteFile, $
   @rtsolution_parameters
   @rtsolution_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
-  count = 0L
+  noisy = ~(KEYWORD_SET(Quiet)) || KEYWORD_SET(debug)
   
 
   ; Process input
+  ; ...If no data, do nothing
+  IF ( self.IsEmpty() ) THEN BEGIN
+    MESSAGE, 'RTSolution_List object is empty. Nothing to do.', /INFORMATIONAL
+    RETURN
+  ENDIF
   ; ...Check filename
   IF ( ~ Valid_String(filename) ) THEN $
     MESSAGE, 'Must specify a filename', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ; ...Check rtsolution list
-  IF ( ~ OBJ_VALID(rtsolutions) ) THEN $
-    MESSAGE, 'RTSolutions input is not a valid object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  IF ( ~ OBJ_ISA(rtsolutions,'LIST') ) THEN $
-    MESSAGE, 'RTSolutions input is not a LIST object', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
-
-
-  ; If no rtsolutions, do nothing
-  IF ( rtsolutions.IsEmpty() ) THEN BEGIN
-    MESSAGE, 'RTSolutions input LIST is empty. Nothing to do.', $
-             /INFORMATIONAL
-    RETURN
-  ENDIF
   
   
   ; Open the file
@@ -196,8 +177,8 @@ PRO RTSolution_WriteFile, $
 
 
   ; Determine the list dimensions
-  n_profiles = LONG(rtsolutions.Count())
-  n_channels = LONG(rtsolutions[0].Count())
+  n_profiles = LONG(self.Count())
+  n_channels = LONG(self[0].Count())
 
 
   ; Write the file dimensions
@@ -217,7 +198,7 @@ PRO RTSolution_WriteFile, $
     FOR l = 0L, n_channels-1L DO BEGIN
 
       ; Write an RTSolution record
-      (rtsolutions[m])[l]->RTSolution::WriteRecord, $
+      (self[m])[l]->RTSolution::WriteRecord, $
         filename, $
         fid, $
         Quiet = quiet, $

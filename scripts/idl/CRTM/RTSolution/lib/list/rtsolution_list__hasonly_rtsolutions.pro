@@ -1,4 +1,4 @@
-FUNCTION List::IsA_RTSolution_List, $
+FUNCTION RTSolution_List::HasOnly_RTSolutions, $
   Debug = debug ; Input keyword
 
   ; Set up

@@ -1,15 +1,15 @@
 ;+
 ; NAME:
-;       RTSolution_ReadFile
+;       RTSolution_List::ReadFile
 ;
 ; PURPOSE:
-;       The RTSolution_ReadFile procedure reads RTSolution object data files
-;       returning a list object of the RTSolution data in the file
+;       The RTSolution_List::ReadFile procedure method reads RTSolution object
+;       data files filling the RTSolution_List object with the RTSolution data
+;       in the file
 ;
 ; CALLING SEQUENCE:
-;       RTSolution_ReadFile, $
+;       Obj->[RTSolution_List::]ReadFile, $
 ;         Filename               , $
-;         RTSolutions            , $
 ;         Quiet      = Quiet     , $
 ;         Debug      = Debug     , $
 ;         n_Profiles = n_Profiles, $
@@ -21,16 +21,6 @@
 ;                       TYPE:       CHARACTER(*)
 ;                       DIMENSION:  Scalar
 ;                       ATTRIBUTES: INTENT(IN)
-;
-; OUTPUTS:
-;       RTSolutions:    List containing the RTSolution objects read from file.
-;                       Note that it is a "list of lists". Each profile of data
-;                       is a list entry. That list, in turn, is a list of all
-;                       the channel RTSolution objects.
-;                       UNITS:      N/A
-;                       TYPE:       LIST
-;                       DIMENSION:  Scalar
-;                       ATTRIBUTES: INTENT(OUT)
 ;
 ; INPUT KEYWORDS:
 ;       Quiet:          Set this keyword to disable informational output
@@ -179,9 +169,8 @@ END
 
 
 ; The main script
-PRO RTSolution_ReadFile, $
+PRO RTSolution_List::ReadFile, $
   filename               , $  ; Input
-  rtsolutions            , $  ; Output
   Quiet      = quiet     , $  ; Optional input
   Debug      = debug     , $  ; Optional input
   n_Profiles = n_profiles, $  ; Optional output
@@ -191,8 +180,9 @@ PRO RTSolution_ReadFile, $
   @rtsolution_parameters
   @rtsolution_pro_err_handler
   ; ...Process keywords
-  noisy = ~(KEYWORD_SET(Quiet))
-  count = 0L
+  noisy = ~(KEYWORD_SET(Quiet)) || KEYWORD_SET(debug)
+  ; ...Ensure the list is empty
+  self.Remove, /ALL
   
 
   ; Process input
@@ -214,10 +204,6 @@ PRO RTSolution_ReadFile, $
   READU, fid, n_channels, n_profiles
 
 
-  ; Create the rtsolution list
-  rtsolutions = LIST()
-  
-
   ; Loop over the number of profiles
   FOR m = 1L, n_profiles DO BEGIN
 
@@ -228,7 +214,7 @@ PRO RTSolution_ReadFile, $
 
 
     ; Create a channel list
-    channels = LIST()
+    channels = RTSolution_List()
     
 
     ; Loop over the number of channels
@@ -249,7 +235,7 @@ PRO RTSolution_ReadFile, $
     
     
     ; Add the channel list to the output list object
-    rtsolutions.Add, channels
+    self.Add, channels
     
   ENDFOR
 

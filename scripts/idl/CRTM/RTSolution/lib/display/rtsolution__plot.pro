@@ -86,12 +86,8 @@ PRO RTSolution::Plot, $
     YRANGE = yrange, $
     YLOG = ylog, $
     YTICKFORMAT = ytickformat, $
-    /NODATA, $
+    COLOR = 'red', $
     LAYOUT = [ n_col, n_row, index ], $
     CURRENT = owin )
-  !NULL = PLOT( $
-    layer_optical_depth, y, $
-    OVERPLOT = plod, $
-    COLOR = 'red' )
     
 END

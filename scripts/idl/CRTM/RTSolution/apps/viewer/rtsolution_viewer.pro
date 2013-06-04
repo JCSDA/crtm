@@ -97,8 +97,10 @@ PRO rv_menu_print_event, event
   rv_getstate, event.Top, state
   IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
 
-print, '*** File->Print not implemented ***'
-
+  filename = FILE_BASENAME(((state['data'])[0])['filename']+'.png')
+  state['rv_window_id'].Save, filename, HEIGHT=1000
+  MESSAGE, 'Created output file '+filename, /INFORMATIONAL
+  
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
 
@@ -222,8 +224,9 @@ PRO rv_load_file, file, id
   WIDGET_CONTROL, /HOURGLASS
   
   ; Read the file
-  MESSAGE, 'Loading RTSolution data file '+file+' for '+state['plot_type'], /INFORMATIONAL   
-  rtsolution_readfile, file, rtsolution, Quiet = ~ state['debug']
+  MESSAGE, 'Loading RTSolution data file '+file+' for '+state['plot_type'], /INFORMATIONAL
+  rtsolution = RTSolution_List()
+  rtsolution->RTSolution_List::ReadFile, file, Quiet = ~ state['debug']
 
 
   ; Save the data

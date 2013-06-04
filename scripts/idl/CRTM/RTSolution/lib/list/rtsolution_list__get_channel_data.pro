@@ -1,4 +1,4 @@
-FUNCTION List::Get_Channel_Data, $
+FUNCTION RTSolution_List::Get_Channel_Data, $
   data_name    , $ ; Input
   Debug = debug    ; Input keyword
 
@@ -6,10 +6,6 @@ FUNCTION List::Get_Channel_Data, $
   COMPILE_OPT HIDDEN
   @rtsolution_func_err_handler
   @rtsolution_parameters
-  ; ...Check that all list members are RTSolution objects
-  IF ( ~ self->IsA_RTSolution_List(Debug = debug) ) THEN $
-    MESSAGE, 'Non-RTSolution object found in channel list.', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Construct the data retrieval command
