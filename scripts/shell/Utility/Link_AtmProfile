@@ -48,6 +48,7 @@ usage()
   echo "         UMBC48 : The UMBC 48-profile data set."
   echo "         ECMWF52: The ECMWF 52-profile data set."
   echo "         ECMWF83: The ECMWF 83-profile data set."
+  echo "         ECMWF5K: The ECMWF 5000-profile data set."
   echo "         CIMSS32: The CIMSS 32-profile data set."
   echo "         Model6 : The Model 6-profile data set."
   echo
