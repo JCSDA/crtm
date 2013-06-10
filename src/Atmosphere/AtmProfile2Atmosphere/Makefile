@@ -25,10 +25,6 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Atmosphere_Define.f90 \
             CRTM_Cloud_Define.f90 \
             CRTM_Aerosol_Define.f90 \
-            netCDF_Utility.f90 \
-            netCDF_Dimension_Utility.f90 \
-            netCDF_Variable_Utility.f90 \
-            netCDF_Attribute_Utility.f90 \
             AtmProfile_Define.f90 \
             AtmProfile_netCDF_IO.f90
 
@@ -37,9 +33,9 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Library and include macros
-NETCDF_LIB = $(HOME)/local
-INCLUDES = -I$(NETCDF_LIB)/include
-LIBRARIES = -L$(NETCDF_LIB)/lib -lnetcdf
+NETCDF_DIR = $(HOME)/local/netcdf
+INCLUDES = -I$(NETCDF_DIR)/include
+LIBRARIES = -L$(NETCDF_DIR)/lib -lnetcdf
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets

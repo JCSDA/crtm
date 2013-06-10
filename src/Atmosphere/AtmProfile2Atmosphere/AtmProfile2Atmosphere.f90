@@ -63,8 +63,8 @@ PROGRAM AtmProfile2Atmosphere
   READ(*,FMT='(a)') AtmProfile_Filename
   AtmProfile_Filename = ADJUSTL( AtmProfile_Filename )
   ! ...Get the number of profiles
-  Error_Status = Inquire_AtmProfile_netCDF( AtmProfile_Filename, &
-                                            n_Profiles = n_profiles )
+  Error_Status = AtmProfile_netCDF_InquireFile( AtmProfile_Filename, &
+                                                n_Profiles = n_profiles )
   IF ( Error_Status /= SUCCESS ) THEN
     message = 'Error inquiring AtmProfile file '//TRIM(AtmProfile_Filename)
     CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
@@ -77,9 +77,9 @@ PROGRAM AtmProfile2Atmosphere
     CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
   END IF
   ! ...Read the data
-  Error_Status = Read_AtmProfile_netCDF( AtmProfile_Filename, &
-                                         AtmProfile, &
-                                         Reverse = .TRUE. )
+  Error_Status = AtmProfile_netCDF_ReadFile( AtmProfile_Filename, &
+                                             AtmProfile, &
+                                             Reverse = .TRUE. )
   IF ( Error_Status /= SUCCESS ) THEN
     message = 'Error reading AtmProfile file '//TRIM(AtmProfile_Filename)
     CALL Display_Message( PROGRAM_NAME, message, FAILURE ); STOP
@@ -135,11 +135,7 @@ PROGRAM AtmProfile2Atmosphere
 
 
   ! Clean up
-  Error_Status = Destroy_AtmProfile( AtmProfile )
-  IF ( Error_Status /= SUCCESS ) THEN
-    message = 'Error destroying AtmProfile structure array.'
-    CALL Display_Message( PROGRAM_NAME, message, WARNING )
-  END IF
+  CALL AtmProfile_Destroy( AtmProfile )
   CALL CRTM_Atmosphere_Destroy( Atmosphere )
   DEALLOCATE( AtmProfile, Atmosphere, STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN
