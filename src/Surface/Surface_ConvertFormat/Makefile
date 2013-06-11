@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Surface_OLD2NEW program
+# Makefile for Surface_ConvertFormat program
 #
 #==============================================================================
 
@@ -11,7 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Surface_OLD2NEW
+EXE_FILE = Surface_ConvertFormat
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
