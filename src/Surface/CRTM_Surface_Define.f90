@@ -844,6 +844,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_InquireFile'
     ! Function variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, m
@@ -864,17 +865,16 @@ CONTAINS
     END IF
 
     ! Read the number of channels,profiles
-    READ( fid, IOSTAT=io_stat ) l, m
+    READ( fid, IOSTAT=io_stat,IOMSG=io_msg ) l, m
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
     ! Close the file
-    CLOSE( fid, IOSTAT=io_stat )
+    CLOSE( fid, IOSTAT=io_stat,IOMSG=io_msg )
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
     END IF
 
@@ -885,15 +885,13 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE Inquire_CleanUp()
-      ! Close file if necessary
-      IF ( File_Open( Filename ) ) THEN
-        CLOSE( fid,IOSTAT=io_stat )
+      IF ( File_Open(fid) ) THEN
+        CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
         IF ( io_stat /= SUCCESS ) &
-          msg = TRIM(msg)//'; Error closing input file during error cleanup'
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      ! Set error status and print error message
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
 
   END FUNCTION CRTM_Surface_InquireFile
@@ -1005,7 +1003,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_ReadFile(M)'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: n_File_Channels, n_File_Profiles
@@ -1015,11 +1014,11 @@ CONTAINS
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
     ! ...Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -1037,16 +1036,15 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_File_Channels, n_File_Profiles
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check that n_Channels is zero
     IF ( n_File_Channels /= 0 ) THEN
-      WRITE( msg,'("n_Channels dimensions in ",a," is not zero for a rank-1 ",&
-                  &"(i.e. profiles only) Surface read.")' ) TRIM(Filename)
+      msg = 'n_Channels dimensions in '//TRIM(Filename)//' is not zero for a rank-1 '//&
+            '(i.e. profiles only) Surface read.'
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check if n_Profiles in file is > size of output array
@@ -1056,7 +1054,7 @@ CONTAINS
                   &" array, ",i0,". Only the first ",i0, &
                   &" profiles will be read.")' ) &
                   n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING )
+      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
     END IF
     n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
@@ -1067,17 +1065,16 @@ CONTAINS
                               Quiet = Quiet, &
                               Debug = Debug  )
       IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error reading Surface element (",i0,") from ",a)' ) &
-               m, TRIM(Filename)
+        WRITE( msg,'("Error reading Surface element (",i0,") from ",a)' ) m, TRIM(Filename)
         CALL Read_Cleanup(); RETURN
       END IF
     END DO Profile_Loop
 
 
     ! Close the file
-    CLOSE( fid, IOSTAT=io_stat )
+    CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -1088,22 +1085,22 @@ CONTAINS
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of profiles read from ",a,": ",i0)' ) TRIM(Filename), n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
 
     SUBROUTINE Read_CleanUp()
       IF ( File_Open( Filename ) ) THEN
-        CLOSE( fid,IOSTAT=io_stat )
+        CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
         IF ( io_stat /= 0 ) &
-          msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       CALL CRTM_Surface_Destroy( Surface )
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_Surface_Rank1
@@ -1130,7 +1127,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_ReadFile(L x M)'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, n_File_Channels, n_Input_Channels
@@ -1140,11 +1138,11 @@ CONTAINS
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
     ! ...Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -1162,10 +1160,9 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat ) n_File_Channels, n_File_Profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_File_Channels, n_File_Profiles
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
+      msg = 'Error reading n_Clouds data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check if n_Channels in file is > size of output array
@@ -1206,9 +1203,9 @@ CONTAINS
 
 
     ! Close the file
-    CLOSE( fid,IOSTAT=io_stat )
+    CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error closing '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -1219,23 +1216,23 @@ CONTAINS
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of channels and profiles read from ",a,": ",i0,1x,i0)' ) &
              TRIM(Filename), n_Input_Channels, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
 
     SUBROUTINE Read_CleanUp()
       IF ( File_Open( Filename ) ) THEN
-        CLOSE( fid,IOSTAT=io_stat )
+        CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
         IF ( io_stat /= 0 ) &
-          msg = TRIM(msg)//'; Error closing input file during error cleanup.'
+          msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       CALL CRTM_Surface_Destroy( Surface )
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
 
   END FUNCTION Read_Surface_Rank2
@@ -1329,7 +1326,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_WriteFile(M)'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: m, n_Output_Profiles
@@ -1337,11 +1335,11 @@ CONTAINS
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
     ! Dimensions
     n_Output_Profiles = SIZE(Surface)
@@ -1356,10 +1354,9 @@ CONTAINS
 
 
     ! Write the dimensions
-    WRITE( fid,IOSTAT=io_stat ) 0, n_Output_Profiles
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) 0, n_Output_Profiles
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing dimensions to ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
+      msg = 'Error writing dimensions to '//TRIM(Filename)//'- '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -1377,30 +1374,30 @@ CONTAINS
 
 
     ! Close the file (if error, no delete)
-    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat,IOMSG=io_msg )
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error closing '//TRIM(Filename)//'- '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of profiles written to ",a,": ",i0)' ) &
              TRIM(Filename), n_Output_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
 
     SUBROUTINE Write_CleanUp()
       IF ( File_Open( Filename ) ) THEN
-        CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+        CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
         IF ( io_stat /= 0 ) &
-          msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
+          msg = TRIM(msg)//'; Error deleting output file during error cleanup - '//TRIM(io_msg)
       END IF
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_Surface_Rank1
@@ -1423,7 +1420,8 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_WriteFile(L x M)'
     ! Function variables
     CHARACTER(ML) :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
     INTEGER :: l, n_Output_Channels
@@ -1432,11 +1430,11 @@ CONTAINS
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
     ! Dimensions
     n_Output_Channels = SIZE(Surface,DIM=1)
@@ -1452,10 +1450,9 @@ CONTAINS
 
 
     ! Write the dimensions
-    WRITE( fid,IOSTAT=io_stat ) n_Output_Channels, n_Output_Profiles
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_Output_Channels, n_Output_Profiles
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing dimensions to ",a,". IOSTAT = ",i0)' ) &
-             TRIM(Filename), io_stat
+      msg = 'Error writing dimensions to '//TRIM(Filename)//'- '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
@@ -1476,30 +1473,30 @@ CONTAINS
 
 
     ! Close the file (if error, no delete)
-    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
+    CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat,IOMSG=io_msg )
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
+      msg = 'Error closing '//TRIM(Filename)//'- '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Output an info message
-    IF ( Noisy ) THEN
+    IF ( noisy ) THEN
       WRITE( msg,'("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
              TRIM(Filename), n_Output_Channels, n_Output_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
 
     SUBROUTINE Write_CleanUp()
       IF ( File_Open( Filename ) ) THEN
-        CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+        CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
         IF ( io_stat /= 0 ) &
-          msg = TRIM(msg)//'; Error deleting output file during error cleanup.'
+          msg = TRIM(msg)//'; Error deleting output file during error cleanup - '//TRIM(io_msg)
       END IF
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION Write_Surface_Rank2
@@ -2106,7 +2103,6 @@ CONTAINS
   END FUNCTION CRTM_IceSurface_Equal
 
 
-!----------------------------------------------------------------------------------
 !
 ! NAME:
 !       Read_Record
@@ -2114,46 +2110,6 @@ CONTAINS
 ! PURPOSE:
 !       Utility function to read a single surface data record
 !
-! CALLING SEQUENCE:
-!       Error_Status = Read_Record( FileID       , &
-!                                   Surface      , &
-!                                   Quiet = Quiet  )
-!
-! INPUTS:
-!       FileID:       Logical unit number from which to read data.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OUTPUTS:
-!       Surface:      CRTM Surface object containing the data read in.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(OUT)
-!
-! OPTIONAL INPUTS:
-!       Quiet:        Set this logical argument to suppress INFORMATION
-!                     messages being printed to stdout
-!                     If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
-!                        == .TRUE.,  INFORMATION messages are SUPPRESSED.
-!                     If not specified, default is .FALSE.
-!                     UNITS:      N/A
-!                     TYPE:       LOGICAL
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS, the read was successful
-!                        == FAILURE, an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
 
   FUNCTION Read_Record( &
     fid        , &  ! Input
@@ -2171,8 +2127,9 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_ReadFile(Record)'
     ! Function variables
-    CHARACTER(ML)  :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: Coverage_Type
     INTEGER :: n_Channels
@@ -2180,22 +2137,23 @@ CONTAINS
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
 
 
     ! Read the gross surface type coverage
-    READ( fid,IOSTAT=io_stat ) Coverage_Type, &
-                               sfc%Land_Coverage, &
-                               sfc%Water_Coverage, &
-                               sfc%Snow_Coverage, &
-                               sfc%Ice_Coverage
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      Coverage_Type, &
+      sfc%Land_Coverage, &
+      sfc%Water_Coverage, &
+      sfc%Snow_Coverage, &
+      sfc%Ice_Coverage
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'( "Error reading gross surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading gross surface type data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...Check the coverage fractions
@@ -2213,67 +2171,71 @@ CONTAINS
 
 
     ! Read the surface type independent data
-    READ( fid,IOSTAT=io_stat ) sfc%Wind_Speed
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) sfc%Wind_Speed
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading surface type independent data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading surface type independent data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the land surface type data
-    READ( fid,IOSTAT=io_stat ) sfc%Land_Type, &
-                               sfc%Land_Temperature, &
-                               sfc%Soil_Moisture_Content, &
-                               sfc%Canopy_Water_Content , &
-                               sfc%Vegetation_Fraction, &
-                               sfc%Soil_Temperature, &
-                               sfc%Lai
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Land_Type, &
+      sfc%Land_Temperature, &
+      sfc%Soil_Moisture_Content, &
+      sfc%Canopy_Water_Content , &
+      sfc%Vegetation_Fraction, &
+      sfc%Soil_Temperature, &
+      sfc%Lai
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading land surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading land surface type data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the water surface type data
-    READ( fid,IOSTAT=io_stat ) sfc%Water_Type, &
-                               sfc%Water_Temperature, &
-                               sfc%Wind_Direction, &
-                               sfc%Salinity
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Water_Type, &
+      sfc%Water_Temperature, &
+      sfc%Wind_Direction, &
+      sfc%Salinity
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading water surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading water surface type data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the snow surface type data
-    READ( fid,IOSTAT=io_stat ) sfc%Snow_Type, &
-                               sfc%Snow_Temperature, &
-                               sfc%Snow_Depth, &
-                               sfc%Snow_Density, &
-                               sfc%Snow_Grain_Size
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Snow_Type, &
+      sfc%Snow_Temperature, &
+      sfc%Snow_Depth, &
+      sfc%Snow_Density, &
+      sfc%Snow_Grain_Size
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading snow surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading snow surface type data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the ice surface type data
-    READ( fid,IOSTAT=io_stat ) sfc%Ice_Type, &
-                               sfc%Ice_Temperature, &
-                               sfc%Ice_Thickness, &
-                               sfc%Ice_Density, &
-                               sfc%Ice_Roughness
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Ice_Type, &
+      sfc%Ice_Temperature, &
+      sfc%Ice_Thickness, &
+      sfc%Ice_Density, &
+      sfc%Ice_Roughness
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading ice surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading ice surface type data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
 
 
     ! Read the SensorData
     ! ...The dimensions
-    READ( fid,IOSTAT=io_stat ) n_Channels
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_Channels
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error reading SensorData dimensions. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error reading SensorData dimensions - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
     ! ...The data
@@ -2283,13 +2245,14 @@ CONTAINS
         msg = 'Error creating SensorData object.'
         CALL Read_Record_Cleanup(); RETURN
       END IF
-      READ( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &
-                                 sfc%SensorData%WMO_Satellite_ID    , &
-                                 sfc%SensorData%WMO_Sensor_ID       , &
-                                 sfc%SensorData%Sensor_Channel      , &
-                                 sfc%SensorData%Tb
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+        sfc%SensorData%Sensor_ID       , &
+        sfc%SensorData%WMO_Satellite_ID, &
+        sfc%SensorData%WMO_Sensor_ID   , &
+        sfc%SensorData%Sensor_Channel  , &
+        sfc%SensorData%Tb
       IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error reading SensorData. IOSTAT = ",i0)' ) io_stat
+        msg = 'Error reading SensorData  - '//TRIM(io_msg)
         CALL Read_Record_Cleanup(); RETURN
       END IF
     END IF
@@ -2298,63 +2261,23 @@ CONTAINS
 
     SUBROUTINE Read_Record_Cleanup()
       CALL CRTM_Surface_Destroy( sfc )
-      CLOSE( fid,IOSTAT=io_stat )
-      IF ( io_stat /= 0 ) &
-        msg = TRIM(msg)//'; Error closing file during error cleanup'
+      CLOSE( fid,IOSTAT=io_stat,IOMSG=io_msg )
+      IF ( io_stat /= SUCCESS ) &
+        msg = TRIM(msg)//'; Error closing file during error cleanup - '//TRIM(io_msg)
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_Record_Cleanup
 
   END FUNCTION Read_Record
 
 
-!----------------------------------------------------------------------------------
 !
 ! NAME:
 !       Write_Record
 !
 ! PURPOSE:
-!       Function to write a single Surface data record
+!       Utility function to write a single surface data record
 !
-! CALLING SEQUENCE:
-!       Error_Status = Write_Record( FileID       , &
-!                                    Surface      , &
-!                                    Quiet = Quiet  )
-!
-! INPUTS:
-!       FileID:       Logical unit number to which data is written
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-!       Surface:      CRTM Surface object containing the data to write.
-!                     UNITS:      N/A
-!                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUTS:
-!       Quiet:        Set this logical argument to suppress INFORMATION
-!                     messages being printed to stdout
-!                     If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
-!                        == .TRUE.,  INFORMATION messages are SUPPRESSED.
-!                     If not specified, default is .FALSE.
-!                     UNITS:      N/A
-!                     TYPE:       LOGICAL
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT(IN), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the record write was successful
-!                        == FAILURE an unrecoverable error occurred.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-!----------------------------------------------------------------------------------
 
   FUNCTION Write_Record( &
     fid  , &  ! Input
@@ -2372,107 +2295,114 @@ CONTAINS
     ! Function parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_WriteFile(Record)'
     ! Function variables
-    CHARACTER(ML)  :: msg
-    LOGICAL :: Noisy
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: io_msg
+    LOGICAL :: noisy
     INTEGER :: io_stat
 
 
     ! Set up
     err_stat = SUCCESS
     ! ...Check Quiet argument
-    Noisy = .TRUE.
-    IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) Noisy = .TRUE.
+      IF ( Debug ) noisy = .TRUE.
     END IF
-
+    
 
     ! Write the gross surface type coverage
-    WRITE( fid,IOSTAT=io_stat ) CRTM_Surface_CoverageType( sfc ), &
-                                sfc%Land_Coverage, &
-                                sfc%Water_Coverage, &
-                                sfc%Snow_Coverage, &
-                                sfc%Ice_Coverage
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      CRTM_Surface_CoverageType(sfc), &
+      sfc%Land_Coverage, &
+      sfc%Water_Coverage, &
+      sfc%Snow_Coverage, &
+      sfc%Ice_Coverage
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing gross surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing gross surface type data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the surface type independent data
-    WRITE( fid,IOSTAT=io_stat ) sfc%Wind_Speed
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) sfc%Wind_Speed
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing surface type independent data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing surface type independent data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the land surface type data
-    WRITE( fid,IOSTAT=io_stat ) sfc%Land_Type, &
-                                sfc%Land_Temperature, &
-                                sfc%Soil_Moisture_Content, &
-                                sfc%Canopy_Water_Content, &
-                                sfc%Vegetation_Fraction, &
-                                sfc%Soil_Temperature, &
-                                sfc%Lai
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Land_Type, &
+      sfc%Land_Temperature, &
+      sfc%Soil_Moisture_Content, &
+      sfc%Canopy_Water_Content, &
+      sfc%Vegetation_Fraction, &
+      sfc%Soil_Temperature, &
+      sfc%Lai
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing land surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing land surface type data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the water surface type data
-    WRITE( fid,IOSTAT=io_stat ) sfc%Water_Type, &
-                                sfc%Water_Temperature, &
-                                sfc%Wind_Direction, &
-                                sfc%Salinity
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Water_Type, &
+      sfc%Water_Temperature, &
+      sfc%Wind_Direction, &
+      sfc%Salinity
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing water surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing water surface type data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the snow surface type data
-    WRITE( fid,IOSTAT=io_stat ) sfc%Snow_Type, &
-                                sfc%Snow_Temperature, &
-                                sfc%Snow_Depth, &
-                                sfc%Snow_Density, &
-                                sfc%Snow_Grain_Size
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Snow_Type, &
+      sfc%Snow_Temperature, &
+      sfc%Snow_Depth, &
+      sfc%Snow_Density, &
+      sfc%Snow_Grain_Size
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing snow surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing snow surface type data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the ice surface type data
-    WRITE( fid,IOSTAT=io_stat ) sfc%Ice_Type, &
-                                sfc%Ice_Temperature, &
-                                sfc%Ice_Thickness, &
-                                sfc%Ice_Density, &
-                                sfc%Ice_Roughness
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+      sfc%Ice_Type, &
+      sfc%Ice_Temperature, &
+      sfc%Ice_Thickness, &
+      sfc%Ice_Density, &
+      sfc%Ice_Roughness
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing ice surface type data. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing ice surface type data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
 
     ! Write the SensorData object
     ! ...The dimensions
-    WRITE( fid,IOSTAT=io_stat ) sfc%SensorData%n_Channels
+    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) sfc%SensorData%n_Channels
     IF ( io_stat /= 0 ) THEN
-      WRITE( msg,'("Error writing SensorData dimensions. IOSTAT = ",i0)' ) io_stat
+      msg = 'Error writing SensorData dimensions - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
     ! ...The data
     IF ( sfc%SensorData%n_Channels > 0 ) THEN
-      WRITE( fid,IOSTAT=io_stat ) sfc%SensorData%Sensor_ID           , &
-                                  sfc%SensorData%WMO_Satellite_ID    , &
-                                  sfc%SensorData%WMO_Sensor_ID       , &
-                                  sfc%SensorData%Sensor_Channel      , &
-                                  sfc%SensorData%Tb
+      WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+        sfc%SensorData%Sensor_ID       , &
+        sfc%SensorData%WMO_Satellite_ID, &
+        sfc%SensorData%WMO_Sensor_ID   , &
+        sfc%SensorData%Sensor_Channel  , &
+        sfc%SensorData%Tb
       IF ( io_stat /= 0 ) THEN
-        WRITE( msg,'("Error writing SensorData. IOSTAT = ",i0)' ) io_stat
+        msg = 'Error writing SensorData - '//TRIM(io_msg)
         CALL Write_Record_Cleanup(); RETURN
       END IF
     END IF
@@ -2480,11 +2410,11 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE Write_Record_Cleanup()
-      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
+      CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= SUCCESS ) &
-        msg = TRIM(msg)//'; Error closing file during error cleanup'
+        msg = TRIM(msg)//'; Error closing file during error cleanup - '//TRIM(io_msg)
       err_stat = FAILURE
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), err_stat )
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Write_Record_Cleanup
 
   END FUNCTION Write_Record
