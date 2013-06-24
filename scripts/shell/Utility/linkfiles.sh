@@ -15,7 +15,7 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: linkfiles.sh [-hx] [-d filter-dir] dir file [file2 | file3 | ... | fileN]"
+  echo " Usage: linkfiles.sh [-hqx] [-d filter-dir] dir file [file2 | file3 | ... | fileN]"
   echo
   echo "   Script to search a directory tree and symlink in the requested"
   echo "   file(s) to the current directory."
@@ -32,6 +32,9 @@ usage()
   echo
   echo "   -h"
   echo "         Print this message and exit"
+  echo
+  echo "   -q"
+  echo "         Suppress informational output"
   echo
   echo "   -x"
   echo "         Turn on execution tracing. This also causes extra script"
@@ -73,10 +76,11 @@ SCRIPT_NAME=$(basename $0)
 SUCCESS=0
 FAILURE=1
 LINK="ln -sf"
+NOISY="YES"
 
 
 # Parse the command line options
-while getopts :hxd: OPTVAL; do
+while getopts :hqxd: OPTVAL; do
 
   # Exit if option argument looks like another option
   case ${OPTARG} in
@@ -87,6 +91,7 @@ while getopts :hxd: OPTVAL; do
   case ${OPTVAL} in
     d)    FILTER_DIR=${OPTARG} ;;
     x)    script_id; set -x ;;
+    q)    NOISY= ;;
     h)    usage | more; exit ${SUCCESS} ;;
     :|\?) OPTVAL=${OPTARG}; break ;;
   esac
@@ -126,8 +131,9 @@ LINKFILE_LIST=$*
 
 
 # Output some user info
-echo "${SCRIPT_NAME}: Searching for files to link..."
-
+if [ ${NOISY} ]; then
+  echo "${SCRIPT_NAME}: Searching for file(s) to link..."
+fi
 
 # Build argument list for find
 OR="-o"
