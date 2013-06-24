@@ -18,10 +18,10 @@ SRC_FILES = crtm_env.sh \
             unlinkfiles.sh \
             link_coeffs.sh \
             test_all_builds.sh \
-            Link_SensorInfo \
-            Link_Solar \
-            Link_SRF \
-            Link_AtmProfile
+            link_sensorinfo.sh \
+            link_solar.sh \
+            link_srf.sh \
+            link_atmprofile.sh
 
 # ------------
 # Install them
