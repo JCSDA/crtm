@@ -68,27 +68,21 @@ error_message()
 #                           MAIN SCRIPT BEGINS                         #
 ########################################################################
 
-script_id
-
 # Setup
 SCRIPT_NAME=`basename $0`
-
 # ...Defintiions
 SUCCESS=0
 FAILURE=1
-
 # ..Define defaults
 ENDIAN_TYPE="Big_Endian"
 TAUCOEFF_TYPE="ODPS"
 ALL_SENSORS="yes"
-
 # ...Define helper script, and make sure it can be found
 LINK_SCRIPT="linkfiles.sh"
 type ${LINK_SCRIPT} >/dev/null 2>&1 || {
   error_message "Cannot find ${LINK_SCRIPT} helper script. Exiting..."
   exit ${FAILURE}
 }
-
 # ...Define sensor independent coefficient files.
 COMMON_COEFF_FILES="AerosolCoeff.bin \
 CloudCoeff.bin \
@@ -122,7 +116,7 @@ while getopts :xhla OPTVAL; do
   case ${OPTVAL} in
     l)  ENDIAN_TYPE="Little_Endian" ;;
     a)  TAUCOEFF_TYPE="ODAS" ;;
-    x)  set -x ;;
+    x)  script_id; set -x ;;
     h)  usage | more; exit ${SUCCESS} ;;
     \?) OPTVAL=${OPTARG}; break ;;
   esac
