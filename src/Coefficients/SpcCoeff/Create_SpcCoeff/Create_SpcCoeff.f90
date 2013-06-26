@@ -298,7 +298,7 @@ PROGRAM Create_SpcCoeff
     ! ...Set the microwave specific items
     IF ( SpcCoeff_IsMicrowaveSensor( SpcCoeff ) ) THEN
       ! The Zeeman flag
-      IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff)
+      IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff, ChannelIndex=l)
       ! The CBR
       CALL Planck_Radiance( &
         SpcCoeff%Wavenumber(l)                , &
