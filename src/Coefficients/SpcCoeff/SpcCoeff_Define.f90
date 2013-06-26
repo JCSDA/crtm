@@ -1597,7 +1597,7 @@ CONTAINS
 !       SpcCoeff_IsFlagSet
 !
 ! PURPOSE:
-!       Private elemental function to test if SpcCoeff channels have
+!       Private elemental function to test if ANY SpcCoeff channels have
 !       the specified bitflags set in the Channel_Flag component.
 !
 ! CALLING SEQUENCE:
@@ -1631,8 +1631,8 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Status:        The return value is a logical value.
-!                       .TRUE.  - The channel flag(s) is(are) set.
-!                       .FALSE. - The channel flag(s) is(are) NOT set.
+!                       .TRUE.  - The specified flag is set on ANY channel.
+!                       .FALSE. - The specified flag is NOT set on ALL channels.
 !                      UNITS:      N/A
 !                      TYPE:       LOGICAL
 !                      DIMENSION:  Same as SpcCoeff input
@@ -1660,7 +1660,7 @@ CONTAINS
       IF ( ChannelIndex < 1 .OR. ChannelIndex > SpcCoeff%n_Channels ) RETURN
       Is_Set = BTEST(SpcCoeff%Channel_Flag(ChannelIndex),Flag_Type)
     ELSE
-      Is_Set = ALL(BTEST(SpcCoeff%Channel_Flag,Flag_Type))
+      Is_Set = ANY(BTEST(SpcCoeff%Channel_Flag,Flag_Type))
     END IF
 
   END FUNCTION SpcCoeff_IsFlagSet
