@@ -15,6 +15,9 @@
 # --no-commit  (-n)
 #    Create the release working copy, but do not commit to the repository.
 #
+# --old-version  (-o)
+#    Create the release working copy, but do not commit to the repository.
+#
 # --noop  (-x)
 #    Output the commands to be used, but do nothing.
 #
@@ -45,6 +48,12 @@ CRTM_ENV = [{:name => "CRTM_SOURCE_ROOT"    ,:dir => "/src"       },
             {:name => "CRTM_DOC_ROOT"       ,:dir => "/doc"       },
             {:name => "CRTM_VALIDATION_ROOT",:dir => "/validation"}]
 # ...Fixfile information
+FIXFILE_DIRS_RB2_0 = ["TauCoeff/ODAS",
+                      "TauCoeff/ODPS",
+                      "SpcCoeff"     ,
+                      "AerosolCoeff" ,
+                      "CloudCoeff"   ,
+                      "EmisCoeff"    ]
 FIXFILE_DIRS = ["TauCoeff/ODAS"                 ,
                 "TauCoeff/ODPS"                 ,
                 "SpcCoeff"                      ,
@@ -77,18 +86,25 @@ end
 
 # Command line option processing
 options = {}
-# ...Specify defaults
-options[:commit] = true
-options[:noop] = false
 # ...Specify the options
 opts = OptionParser.new do |opts|
   opts.banner = "Usage: create_release_tag.rb [options] tag_wcpath release_wcpath\n$Revision$"
-  opts.on("-n", "--no-commit", "Create release, but do not commit to the repository") do |n|
-    options[:commit] = n
+
+  options[:commit] = true
+  opts.on("-n", "--no-commit", "Create release, but do not commit to the repository") do
+    options[:commit] = false
   end
-  opts.on("-x", "--noop", "Output the commands to be used, but do nothing") do |x|
-    options[:noop] = x
+
+  options[:new_version] = true
+  opts.on("-o", "--old-version", "Create release using v2.0.x fixfile directory structure.") do
+    options[:new_version] = false
   end
+
+  options[:noop] = false
+  opts.on("-x", "--noop", "Output the commands to be used, but do nothing") do
+    options[:noop] = true
+  end
+
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
     exit(0)
@@ -102,6 +118,10 @@ rescue OptionParser::ParseError => error_message
   puts(opts)
   exit(1)
 end
+
+
+# Act on options as necessary at this point
+fixfile_dirs = options[:new_version] ? FIXFILE_DIRS : FIXFILE_DIRS_RB2_0
 
 
 # Begin error handling
@@ -118,7 +138,7 @@ begin
   raise "#{release_wcpath} already exists!" if File.directory?(release_wcpath)
   raise "Error creating #{release_wcpath}" unless svn.mkdir(release_wcpath)
   # ...Create subdirectories for fixfiles
-  FIXFILE_DIRS.each do |fdir|
+  fixfile_dirs.each do |fdir|
     raise "Error creating #{fdir} fixfile directory" unless svn.mkdir("#{release_wcpath}/fix/#{fdir}",:parents => true)
   end
 
@@ -141,7 +161,7 @@ begin
     end
     # Move over the fix tree from tag->release
     FileUtils.cd("fix") do
-      FIXFILE_DIRS.each do |fdir|
+      fixfile_dirs.each do |fdir|
         FIXFILE_FORMAT.each do |ffmt|
           svn.copy("#{fdir}/#{ffmt}","#{dest}/fix/#{fdir}",:parents => true)
         end
