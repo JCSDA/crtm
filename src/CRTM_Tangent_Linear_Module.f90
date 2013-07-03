@@ -65,19 +65,18 @@ MODULE CRTM_Tangent_Linear_Module
                                         CRTM_Compute_AerosolScatter_TL
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter   , &
                                         CRTM_Compute_CloudScatter_TL
-  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type        , &
+  USE CRTM_AtmOptics,             ONLY: AOvar_type  , &
+                                        AOvar_Create, &
                                         CRTM_Compute_Transmittance   , &
                                         CRTM_Compute_Transmittance_TL, &
                                         CRTM_Combine_AtmOptics       , &
                                         CRTM_Combine_AtmOptics_TL
-
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
                                         CRTM_SfcOptics_Associated, &
                                         CRTM_SfcOptics_Create    , &
                                         CRTM_SfcOptics_Destroy
   USE CRTM_SfcOptics,             ONLY: CRTM_Compute_SurfaceT   , &
                                         CRTM_Compute_SurfaceT_TL
-
   USE CRTM_RTSolution,            ONLY: CRTM_RTSolution_type      , &
                                         CRTM_Compute_nStreams     , &
                                         CRTM_Compute_RTSolution   , &
@@ -309,10 +308,10 @@ CONTAINS
     ! Component variable internals
     TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
     TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
-    TYPE(CSVar_type) :: CSvar  ! CloudScatter
-    TYPE(ASVar_type) :: ASvar  ! AerosolScatter
-    TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
-    TYPE(RTV_type) :: RTV  ! RTSolution
+    TYPE(CSvar_type)      :: CSvar  ! CloudScatter
+    TYPE(ASvar_type)      :: ASvar  ! AerosolScatter
+    TYPE(AOvar_type)      :: AOvar  ! AtmOptics
+    TYPE(RTV_type)        :: RTV    ! RTSolution
     ! NLTE correction term predictors
     TYPE(NLTE_Predictor_type)   :: NLTE_Predictor, NLTE_Predictor_TL
 
@@ -541,12 +540,13 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
-
       IF (Options_Present) THEN
         ! Set Scattering Switch
         AtmOptics%Include_Scattering = Options(m)%Include_Scattering
         AtmOptics_TL%Include_Scattering = Options(m)%Include_Scattering
       END IF
+      ! ...Allocate the atmospheric optics internal structure
+      CALL AOvar_Create( AOvar, Atm%n_Layers )
 
 
       ! Allocate the scattering internal variables if necessary
@@ -823,8 +823,8 @@ CONTAINS
 
           ! Compute the combined atmospheric optical properties
           IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
-            CALL CRTM_Combine_AtmOptics_TL( AtmOptics, AtmOptics_TL, AOV )
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOvar )
+            CALL CRTM_Combine_AtmOptics_TL( AtmOptics, AtmOptics_TL, AOvar )
           END IF
           ! ...Save vertically integrated scattering optical depth for output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth

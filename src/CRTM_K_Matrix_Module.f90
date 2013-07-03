@@ -68,7 +68,8 @@ MODULE CRTM_K_Matrix_Module
                                         CRTM_Compute_AerosolScatter_AD
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter   , &
                                         CRTM_Compute_CloudScatter_AD
-  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type        , &
+  USE CRTM_AtmOptics,             ONLY: AOvar_type  , &
+                                        AOvar_Create, &
                                         CRTM_Compute_Transmittance   , &
                                         CRTM_Compute_Transmittance_AD, &
                                         CRTM_Combine_AtmOptics       , &
@@ -323,11 +324,11 @@ CONTAINS
     TYPE(CRTM_SfcOPtics_type)    :: SfcOptics, SfcOptics_K
     ! Component variable internals
     TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
-    TYPE(CRTM_AAvar_type) :: AAvar    ! AtmAbsorption
-    TYPE(CSVar_type) :: CSvar  ! CloudScatter
-    TYPE(ASVar_type) :: ASvar  ! AerosolScatter
-    TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
-    TYPE(RTV_type) :: RTV  ! RTSolution
+    TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
+    TYPE(CSvar_type)      :: CSvar  ! CloudScatter
+    TYPE(ASvar_type)      :: ASvar  ! AerosolScatter
+    TYPE(AOvar_type)      :: AOvar  ! AtmOptics
+    TYPE(RTV_type)        :: RTV    ! RTSolution
     ! NLTE correction term predictors
     TYPE(NLTE_Predictor_type)   :: NLTE_Predictor, NLTE_Predictor_K
 
@@ -582,12 +583,13 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
-
       IF (Options_Present) THEN
         ! Set Scattering Switch
         AtmOptics%Include_Scattering   = Options(m)%Include_Scattering
         AtmOptics_K%Include_Scattering = Options(m)%Include_Scattering
       END IF
+      ! ...Allocate the atmospheric optics internal structure
+      CALL AOvar_Create( AOvar, Atm%n_Layers )
 
 
       ! Allocate the scattering internal variables if necessary
@@ -830,7 +832,7 @@ CONTAINS
 
           ! Compute the combined atmospheric optical properties
           IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOvar )
           END IF
           ! ...Save vertically integrated scattering optical depth for output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
@@ -1036,7 +1038,7 @@ CONTAINS
 
           ! Compute the adjoint of the combined atmospheric optical properties
           IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_K, AOV )
+            CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_K, AOvar )
           END IF
 
           ! Compute the adjoint aerosol absorption/scattering properties

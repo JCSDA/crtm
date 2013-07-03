@@ -61,7 +61,8 @@ MODULE CRTM_Forward_Module
                                         CRTM_AtmOptics_Zero
   USE CRTM_AerosolScatter,        ONLY: CRTM_Compute_AerosolScatter
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter
-  USE CRTM_AtmOptics,             ONLY: CRTM_AOVariables_type     , &
+  USE CRTM_AtmOptics,             ONLY: AOvar_type  , &
+                                        AOvar_Create, &
                                         CRTM_Compute_Transmittance, &
                                         CRTM_Combine_AtmOptics
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
@@ -263,10 +264,10 @@ CONTAINS
     ! Component variable internals
     TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
     TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
-    TYPE(CSVar_type)      :: CSvar  ! CloudScatter
-    TYPE(ASVar_type)      :: ASvar  ! AerosolScatter
-    TYPE(CRTM_AOVariables_type) :: AOV  ! AtmOptics
-    TYPE(RTV_type)        :: RTV  ! RTSolution
+    TYPE(CSvar_type)      :: CSvar  ! CloudScatter
+    TYPE(ASvar_type)      :: ASvar  ! AerosolScatter
+    TYPE(AOvar_type)      :: AOvar  ! AtmOptics
+    TYPE(RTV_type)        :: RTV    ! RTSolution
     ! NLTE correction term predictor
     TYPE(NLTE_Predictor_type)   :: NLTE_Predictor
 
@@ -482,6 +483,9 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
         RETURN
       END IF
+      ! ...Allocate the atmospheric optics internal structure
+      CALL AOvar_Create( AOvar, Atm%n_Layers )
+
 
       ! Process aircraft pressure altitude
       IF ( Aircraft_Pressure > ZERO ) THEN
@@ -721,7 +725,7 @@ CONTAINS
           ! Compute the combined atmospheric optical properties
 
           IF( AtmOptics%Include_Scattering ) THEN
-            CALL CRTM_Combine_AtmOptics( AtmOptics, AOV )
+            CALL CRTM_Combine_AtmOptics( AtmOptics, AOvar )
           END IF
           ! ...Save vertically integrated scattering optical depth fro output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
