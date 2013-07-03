@@ -91,7 +91,7 @@ FSRC_FILES = \
     Guillou.f90 Ellison.f90 Liu.f90 \
     Fresnel.f90 \
   CRTM_IRSSEM.f90 \
-  CRTM_AtmOptics.f90 CRTM_AtmOptics_Define.f90 \
+  CRTM_AtmOptics.f90 CRTM_AtmOptics_Define.f90 AOvar_Define.f90 \
   CRTM_Planck_Functions.f90 \
   RTV_Define.f90 \
   SOI_Module.f90 \
