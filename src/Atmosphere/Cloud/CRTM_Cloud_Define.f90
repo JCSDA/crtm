@@ -615,14 +615,11 @@ CONTAINS
     TYPE(CRTM_Cloud_type), INTENT(IN) :: x, y
     INTEGER,     OPTIONAL, INTENT(IN) :: n_SigFig
     LOGICAL :: is_comparable
-    
-    real(fp), parameter :: th = 1.0e-08_fp
-    
     ! Variables
-    INTEGER :: i, n
-    
+    INTEGER :: n
+
     ! Set up
-    is_comparable = .TRUE.
+    is_comparable = .FALSE.
     IF ( PRESENT(n_SigFig) ) THEN
       n = ABS(n_SigFig)
     ELSE
@@ -631,60 +628,23 @@ CONTAINS
 
     ! Check the structure association status
     IF ( (.NOT. CRTM_Cloud_Associated(x)) .OR. &
-         (.NOT. CRTM_Cloud_Associated(y)) ) THEN
-      is_comparable = .FALSE.
-      RETURN
-    END IF
+         (.NOT. CRTM_Cloud_Associated(y)) ) RETURN
 
     ! Check scalars
     IF ( (x%n_Layers /= y%n_Layers) .OR. &
-         (x%Type     /= y%Type    ) ) THEN
-      is_comparable = .FALSE.
-      RETURN
-    END IF
+         (x%Type     /= y%Type    ) ) RETURN
 
     ! Check arrays
-    is_comparable = compare_array(x%Effective_Radius  , y%Effective_Radius  , n) .AND. &
-                    compare_array(x%Effective_Variance, y%Effective_Variance, n) .AND. &
-                    compare_array(x%Water_Content     , y%Water_Content     , n)
+    IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius  ,y%Effective_Radius  ,n))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
+         (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n))) ) RETURN
 
-    
-!    IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius  ,y%Effective_Radius  ,n))) .OR. &
-!         (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
-!         (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n))) ) RETURN
-!
-!    ! If we get here, the structures are comparable
-!    is_comparable = .TRUE.
-!
+    ! If we get here, the structures are comparable
+    is_comparable = .TRUE.
+
   END FUNCTION CRTM_Cloud_Compare
 
-  pure function compare_array(x, y, n) result(does_compare)
-    real(fp), intent(in) :: x(:)
-    real(fp), intent(in) :: y(:)
-    integer , intent(in) :: n
-    
-    logical :: does_compare
 
-    real(fp), parameter :: th = 1.0e-08_fp
-   
-    real(fp) :: xcutoff
-    real(fp) :: ycutoff
-    integer :: i
-    
-    does_compare = .true.
-    
-    xcutoff = th*MAXVAL(ABS(x))
-    ycutoff = th*MAXVAL(ABS(y))
-    DO i = 1, size(x)
-      IF ( ABS(x(i)) > xcutoff .OR. ABS(y(i)) > ycutoff ) THEN
-        does_compare = does_compare .AND. Compares_Within_Tolerance(x(i), y(i), n)
-      END IF
-    END DO
-    
-  end function compare_array
-    
-    
-    
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
