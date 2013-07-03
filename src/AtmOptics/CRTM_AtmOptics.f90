@@ -22,6 +22,11 @@ MODULE CRTM_AtmOptics
                                    MAX_N_LAYERS, &
                                    BS_THRESHOLD
   USE CRTM_AtmOptics_Define, ONLY: CRTM_AtmOptics_type
+  ! Internal variable definition module
+  USE AOvar_Define, ONLY: AOvar_type, &
+                          AOvar_Associated, &
+                          AOvar_Destroy   , &
+                          AOvar_Create
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -32,8 +37,9 @@ MODULE CRTM_AtmOptics
   ! Everything private by default
   PRIVATE
   ! Datatypes
-  PUBLIC :: CRTM_AOVariables_type
+  PUBLIC :: AOvar_type
   ! Procedures
+  PUBLIC :: AOvar_Create
   PUBLIC :: CRTM_Compute_Transmittance
   PUBLIC :: CRTM_Compute_Transmittance_TL
   PUBLIC :: CRTM_Compute_Transmittance_AD
@@ -53,16 +59,16 @@ MODULE CRTM_AtmOptics
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
   ! ------------------------------------
-  TYPE :: CRTM_AOVariables_type
-    PRIVATE
-    ! Used in Compute_Transmittance procedures
-    REAL(fp) :: transmittance
-    ! Used in Combine_AtmOptics procedures
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs
-    REAL(fp), DIMENSION(MAX_N_LAYERS) :: w
-  END TYPE CRTM_AOVariables_type
-
+!  TYPE :: AOvar_type
+!    PRIVATE
+!    ! Used in Compute_Transmittance procedures
+!    REAL(fp) :: transmittance
+!    ! Used in Combine_AtmOptics procedures
+!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
+!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs
+!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: w
+!  END TYPE AOvar_type
+!
 
 CONTAINS
 
@@ -243,8 +249,8 @@ CONTAINS
 !       CloudScatter, and AerosolScatter calculations.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics( AtmOptics  , &
-!                                    AOVariables  )
+!       CALL CRTM_Combine_AtmOptics( AtmOptics, &
+!                                    AOvar      )
 !
 ! OUTPUTS:
 !       AtmOptics:      The combined atmospheric optical properties
@@ -253,12 +259,12 @@ CONTAINS
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
-!       AOVariables:    Structure containing internal variables required for
+!       AOvar:          Structure containing internal variables required for
 !                       subsequent tangent-linear or adjoint model calls.
 !                       The contents of this structure are NOT accessible
 !                       outside of this module.
 !                       UNITS:      N/A
-!                       TYPE:       CRTM_AOVariables_type
+!                       TYPE:       AOvar_type
 !                       DIMENSION:  Scalar
 !                       ATTRIBUTES: INTENT(IN OUT)
 !
@@ -267,10 +273,10 @@ CONTAINS
 
   SUBROUTINE CRTM_Combine_AtmOptics( &
     AtmOptics, &  ! Output
-    AOV        )  ! Internal variable output
+    AOvar      )  ! Internal variable output
     ! Arguments
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AtmOptics
-    TYPE(CRTM_AOVariables_type), INTENT(IN OUT) :: AOV
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics
+    TYPE(AOvar_type)         , INTENT(IN OUT) :: AOvar
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics'
     ! Local variables
@@ -290,16 +296,16 @@ CONTAINS
 
 
       ! Save the unmodified optical parameters
-      AOV%Optical_Depth(k) = AtmOptics%Optical_Depth(k)
-      AOV%bs(k)            = AtmOptics%Single_Scatter_Albedo(k)
+      AOvar%Optical_Depth(k) = AtmOptics%Optical_Depth(k)
+      AOvar%bs(k)            = AtmOptics%Single_Scatter_Albedo(k)
       ! ...Initialise scattering dependent terms
-      AOV%w(k) = ZERO
+      AOvar%w(k) = ZERO
 
 
       ! Only proceed if the total optical depth is significant
-      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD ) THEN
+      Significant_Scattering: IF( AOvar%bs(k) > BS_THRESHOLD ) THEN
 
-        AOV%w(k) = AtmOptics%Single_Scatter_Albedo(k) / AtmOptics%Optical_Depth(k)
+        AOvar%w(k) = AtmOptics%Single_Scatter_Albedo(k) / AtmOptics%Optical_Depth(k)
         DO i = 1, AtmOptics%n_Phase_Elements
           DO l = 1, AtmOptics%n_Legendre_Terms
             AtmOptics%Phase_Coefficient(l,i,k) = AtmOptics%Phase_Coefficient(l,i,k) / &
@@ -313,17 +319,17 @@ CONTAINS
 
         ! Redfine the total optical depth and single scattering
         ! albedo for the delta-function adjustment
-        AtmOptics%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) )) * &
+        AtmOptics%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) )) * &
                                      AtmOptics%Optical_Depth(k)
-        AtmOptics%Single_Scatter_Albedo(k) = ( ONE - AtmOptics%Delta_Truncation(k) ) * AOV%w(k)   / &
-                                             ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) )
+        AtmOptics%Single_Scatter_Albedo(k) = ( ONE - AtmOptics%Delta_Truncation(k) ) * AOvar%w(k)   / &
+                                             ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) )
 
       END IF Significant_Scattering
 
 
       ! Compute the vertically integrated scattering optical depth
       AtmOptics%Scattering_Optical_Depth = AtmOptics%Scattering_Optical_Depth + &
-                                           (AOV%w(k) * AOV%Optical_Depth(k))
+                                           (AOvar%w(k) * AOvar%Optical_Depth(k))
 
     END DO Layer_Loop
 
@@ -345,7 +351,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL CRTM_Combine_AtmOptics_TL( AtmOptics   , &
 !                                       AtmOptics_TL, &
-!                                       AOVariables   )
+!                                       AOvar         )
 ! INPUTS:
 !       AtmOptics:         Combined atmospheric optical properties.
 !                          UNITS:      N/A
@@ -353,12 +359,12 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       AOVariables:       Structure containing internal forward model variables
+!       AOvar:             Structure containing internal forward model variables
 !                          required for subsequent tangent-linear or adjoint model
 !                          calls. The contents of this structure are NOT accessible
 !                          outside of this module.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_AOVariables_type
+!                          TYPE:       AOvar_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
@@ -375,11 +381,11 @@ CONTAINS
   SUBROUTINE CRTM_Combine_AtmOptics_TL( &
     AtmOptics   , &  ! FWD Input
     AtmOptics_TL, &  ! TL Output
-    AOV           )  ! Internal variable input
+    AOvar         )  ! Internal variable input
     ! Arguments
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN)     :: AtmOptics
-    TYPE(CRTM_AtmOptics_type),   INTENT(IN OUT) :: AtmOptics_TL
-    TYPE(CRTM_AOVariables_type), INTENT(IN)     :: AOV
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AtmOptics
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_TL
+    TYPE(AOvar_type)         , INTENT(IN)     :: AOvar
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_TL'
     ! Local variables
@@ -408,16 +414,16 @@ CONTAINS
 
 
       ! Only proceed if the total optical depth is significant
-      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD ) THEN
+      Significant_Scattering: IF( AOvar%bs(k) > BS_THRESHOLD ) THEN
 
 
-        w_TL = ( AtmOptics_TL%Single_Scatter_Albedo(k) / AOV%Optical_Depth(k) ) - &
-               ( AtmOptics_TL%Optical_Depth(k) * AOV%w(k) / AOV%Optical_Depth(k) )
+        w_TL = ( AtmOptics_TL%Single_Scatter_Albedo(k) / AOvar%Optical_Depth(k) ) - &
+               ( AtmOptics_TL%Optical_Depth(k) * AOvar%w(k) / AOvar%Optical_Depth(k) )
         DO i = 1, AtmOptics%n_Phase_Elements
           DO l = 1, AtmOptics%n_Legendre_Terms
              AtmOptics_TL%Phase_Coefficient(l,i,k) = &
                ( AtmOptics_TL%Phase_Coefficient(l,i,k) - &
-                 (AtmOptics%Phase_Coefficient(l,i,k) * AtmOptics_TL%Single_Scatter_Albedo(k)) ) / AOV%bs(k)
+                 (AtmOptics%Phase_Coefficient(l,i,k) * AtmOptics_TL%Single_Scatter_Albedo(k)) ) / AOvar%bs(k)
           END DO
           ! ...Normalization requirement for energy conservation
           AtmOptics_TL%Phase_Coefficient(0,i,k) = ZERO
@@ -440,12 +446,12 @@ CONTAINS
         !
         !    tau_TL = ( 1 - d.w ).tau_TL - d.tau.w_TL - w.tau.d_TL
         !
-        !  Note that the optical depth from the AOV structure is
+        !  Note that the optical depth from the AOvar structure is
         !  used on the RHS of these expressions.
         AtmOptics_TL%Optical_Depth(k) = &
-            ( ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) * AtmOptics_TL%Optical_Depth(k) ) - &
-            ( AtmOptics%Delta_Truncation(k) * AOV%Optical_Depth(k) * w_TL ) - &
-            ( AOV%w(k) * AOV%Optical_Depth(k) * AtmOptics_TL%Delta_Truncation(k) )
+            ( ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) ) * AtmOptics_TL%Optical_Depth(k) ) - &
+            ( AtmOptics%Delta_Truncation(k) * AOvar%Optical_Depth(k) * w_TL ) - &
+            ( AOvar%w(k) * AOvar%Optical_Depth(k) * AtmOptics_TL%Delta_Truncation(k) )
 
 
         !  The single scatter albedo, SSA
@@ -463,16 +469,16 @@ CONTAINS
         AtmOptics_TL%Single_Scatter_Albedo(k) = &
           ( ( ( ONE - AtmOptics%Delta_Truncation(k) + &
                 ( AtmOptics%Single_Scatter_Albedo(k)*AtmOptics%Delta_Truncation(k) ) ) * w_TL ) + &
-            ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOV%w(k) * AtmOptics_TL%Delta_Truncation(k) ) ) / &
-          ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) )
+            ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOvar%w(k) * AtmOptics_TL%Delta_Truncation(k) ) ) / &
+          ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) )
 
       END IF Significant_Scattering
 
 
       ! Compute the tangent-linear vertically integrated scattering optical depth
       AtmOptics_TL%Scattering_Optical_Depth = AtmOptics_TL%Scattering_Optical_Depth + &
-                                              (AOV%w(k) * optical_depth_TL) + &
-                                              (AOV%Optical_Depth(k) * w_TL)
+                                              (AOvar%w(k) * optical_depth_TL) + &
+                                              (AOvar%Optical_Depth(k) * w_TL)
 
     END DO Layer_Loop
 
@@ -493,7 +499,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL CRTM_Combine_AtmOptics_AD( AtmOptics,    &
 !                                       AtmOptics_AD, &
-!                                       AOVariables   )
+!                                       AOvar   )
 !
 ! INPUTS:
 !       AtmOptics:         Structure containing the combined atmospheric optical
@@ -503,12 +509,12 @@ CONTAINS
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
-!       AOVariables:       Structure containing internal forward model variables
+!       AOvar:             Structure containing internal forward model variables
 !                          required for subsequent tangent-linear or adjoint model
 !                          calls. The contents of this structure are NOT accessible
 !                          outside of the CRTM_AtmOptics module.
 !                          UNITS:      N/A
-!                          TYPE:       CRTM_AOVariables_type
+!                          TYPE:       AOvar_type
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN)
 !
@@ -527,11 +533,11 @@ CONTAINS
   SUBROUTINE CRTM_Combine_AtmOptics_AD( &
     AtmOptics   , &  ! FWD Input
     AtmOptics_AD, &  ! AD  Input
-    AOV           )  ! Internal variable input
+    AOvar         )  ! Internal variable input
     ! Arguments
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN)     :: AtmOptics
-    TYPE(CRTM_AtmOptics_type)  , INTENT(IN OUT) :: AtmOptics_AD
-    TYPE(CRTM_AOVariables_type), INTENT(IN)     :: AOV
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: AtmOptics
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
+    TYPE(AOvar_type)         , INTENT(IN)     :: AOvar
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_AD'
     ! Local variables
@@ -550,7 +556,7 @@ CONTAINS
 
 
       ! Only proceed if the scattering is significant
-      Significant_Scattering: IF( AOV%bs(k) > BS_THRESHOLD) THEN
+      Significant_Scattering: IF( AOvar%bs(k) > BS_THRESHOLD) THEN
 
 
         ! Compute the adjoint total optical depth and single
@@ -574,13 +580,13 @@ CONTAINS
         !    SSA_AD = 0
 
         AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) + &
-          ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOV%w(k) * AtmOptics_AD%Single_Scatter_Albedo(k) / &
-            ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
+          ( ( AtmOptics%Single_Scatter_Albedo(k) - ONE ) * AOvar%w(k) * AtmOptics_AD%Single_Scatter_Albedo(k) / &
+            ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) ) )
 
         w_AD = w_AD + ( ( ONE - AtmOptics%Delta_Truncation(k) + &
                           ( AtmOptics%Single_Scatter_Albedo(k)*AtmOptics%Delta_Truncation(k) ) ) * &
                         AtmOptics_AD%Single_Scatter_Albedo(k) / &
-                        ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) )
+                        ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) ) )
 
         AtmOptics_AD%Single_Scatter_Albedo(k) = ZERO
 
@@ -597,19 +603,19 @@ CONTAINS
         !
         !    tau_AD = ( 1 - d.w ).tau_AD
         !
-        !  Note that the optical depth from the AOV structure is
+        !  Note that the optical depth from the AOvar structure is
         !  used on the RHS of the above expressions.
 
         AtmOptics_AD%Delta_Truncation(k) = AtmOptics_AD%Delta_Truncation(k) - &
-          ( AOV%w(k)                    * &  ! w
-            AOV%Optical_Depth(k)        * &  ! tau
+          ( AOvar%w(k)                    * &  ! w
+            AOvar%Optical_Depth(k)        * &  ! tau
             AtmOptics_AD%Optical_Depth(k) )  ! tau_AD
 
         w_AD = w_AD - ( AtmOptics%Delta_Truncation(k) * &  ! d
-                        AOV%Optical_Depth(k)          * &  ! tau
+                        AOvar%Optical_Depth(k)          * &  ! tau
                         AtmOptics_AD%Optical_Depth(k)   )  ! tau_AD
 
-        AtmOptics_AD%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOV%w(k) ) ) * &
+        AtmOptics_AD%Optical_Depth(k) = ( ONE - ( AtmOptics%Delta_Truncation(k) * AOvar%w(k) ) ) * &
                                         AtmOptics_AD%Optical_Depth(k)
 
 
@@ -624,15 +630,15 @@ CONTAINS
           AtmOptics_AD%Phase_Coefficient(0,i,k) = ZERO
           DO l = 1, AtmOptics%n_Legendre_Terms
              AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) - &
-               AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k)
-             AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOV%bs(k) )
+               AtmOptics%Phase_Coefficient(l,i,k)*AtmOptics_AD%Phase_Coefficient(l,i,k)/AOvar%bs(k)
+             AtmOptics_AD%Phase_Coefficient(l,i,k) = ( AtmOptics_AD%Phase_Coefficient(l,i,k)/AOvar%bs(k) )
           END DO
         END DO
 
         AtmOptics_AD%Single_Scatter_Albedo(k) = AtmOptics_AD%Single_Scatter_Albedo(k) + &
-                                                w_AD / AOV%Optical_Depth(k)
+                                                w_AD / AOvar%Optical_Depth(k)
         AtmOptics_AD%Optical_Depth(k) = AtmOptics_AD%Optical_Depth(k) - &
-                                        w_AD*AOV%w(k) / AOV%Optical_Depth(k)
+                                        w_AD*AOvar%w(k) / AOvar%Optical_Depth(k)
 
       END IF Significant_Scattering
 
