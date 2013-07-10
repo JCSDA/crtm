@@ -17,7 +17,7 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: link_coeffs.sh [-ahlx] source-dir dest-dir [sensor_id1 sensor id2 ... sensor_idN]"
+  echo " Usage: link_coeffs.sh [-achlx] source-dir dest-dir [sensor_id1 sensor id2 ... sensor_idN]"
   echo
   echo "   Link in CRTM release fixfiles into a single directory."
   echo
@@ -27,6 +27,13 @@ usage()
   echo
   echo "         Note: Currently there are no ODPS TauCoeff files"
   echo "               for visible sensors (we're working on it)."
+  echo
+  echo "   -c"
+  echo "         Perform additional special case linking for the AIRS 281 and"
+  echo "         CrIS 399 channel subset datafiles for use with the GSI satinfo"
+  echo "         file. The naming convention is:"
+  echo "           airs281SUBSET_aqua.[Spc|Tau]Coeff.bin -> airs281_aqua.[Spc|Tau]Coeff.bin"
+  echo "           cris_npp.[Spc|Tau]Coeff.bin           -> cris399_aqua.[Spc|Tau]Coeff.bin"
   echo
   echo "   -h"
   echo "         Print this message"
@@ -77,6 +84,9 @@ FAILURE=1
 ENDIAN_TYPE="Big_Endian"
 TAUCOEFF_TYPE="ODPS"
 ALL_SENSORS="yes"
+SPECIAL_CASE="no"
+# ...Define commands
+LINK="ln -sf"
 # ...Define helper script, and make sure it can be found
 LINK_SCRIPT="linkfiles.sh"
 type ${LINK_SCRIPT} >/dev/null 2>&1 || {
@@ -105,7 +115,7 @@ USGS.VISland.EmisCoeff.bin"
 
 
 # Parse command line options
-while getopts :xhla OPTVAL; do
+while getopts :xhlac OPTVAL; do
 
   # If option argument looks like another option exit the loop
   case ${OPTARG} in
@@ -116,6 +126,7 @@ while getopts :xhla OPTVAL; do
   case ${OPTVAL} in
     l)  ENDIAN_TYPE="Little_Endian" ;;
     a)  TAUCOEFF_TYPE="ODAS" ;;
+    c)  SPECIAL_CASE="yes";;
     x)  script_id; set -x ;;
     h)  usage | more; exit ${SUCCESS} ;;
     \?) OPTVAL=${OPTARG}; break ;;
@@ -212,7 +223,11 @@ else
   done
 fi
 ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
-
+# ...Perform special case linking if required
+if [ "${SPECIAL_CASE}" = "yes" ]; then
+  ${LINK} airs281_aqua.SpcCoeff.bin airs281SUBSET_aqua.SpcCoeff.bin
+  ${LINK} cris399_npp.SpcCoeff.bin  cris_npp.SpcCoeff.bin
+fi
 
 # Link the TauCoeff files
 echo; echo "...linking TauCoeff coefficient files..."
@@ -224,7 +239,11 @@ else
   done
 fi
 ${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
-
+# ...Perform special case linking if required
+if [ "${SPECIAL_CASE}" = "yes" ]; then
+  ${LINK} airs281_aqua.TauCoeff.bin airs281SUBSET_aqua.TauCoeff.bin
+  ${LINK} cris399_npp.TauCoeff.bin  cris_npp.TauCoeff.bin
+fi
 
 # Return to original directory
 cd ${CURRENT_DIR}
