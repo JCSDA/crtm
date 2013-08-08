@@ -23,6 +23,7 @@
 
 PRO OSRF__Define
 
+  COMPILE_OPT HIDDEN
   @osrf_parameters
   
   void = { OSRF, $

@@ -56,6 +56,7 @@
 PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler

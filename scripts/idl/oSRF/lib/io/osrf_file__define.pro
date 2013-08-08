@@ -5,6 +5,8 @@ PRO OSRF_File__Define
 
 ;-
 
+  COMPILE_OPT HIDDEN
+  
   void = { OSRF_File, $
            ; File information
            filename: '', $
