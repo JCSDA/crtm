@@ -75,8 +75,7 @@ PRO ov_menu_print_event, event
     GET_VALUE = channel_number
 
   ; Create the filename
-  data_filename = state['filename']
-  filename = FILE_BASENAME(data['filename'],'.osrf.nc') + $
+  filename = FILE_BASENAME(state['filename'],'.osrf.nc') + $
              '.channel'+STRTRIM(channel_number,2) + '.png'
   
   
