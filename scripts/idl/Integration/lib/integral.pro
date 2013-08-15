@@ -202,18 +202,27 @@ FUNCTION Integral, $
   ; ...Set the uniform interval
   h = (x_Int[n_Even-1] - x_Int[0])/DOUBLE(n_Even-1)
   ; ...Construct the index array to use for integration
-  iidx = (LINDGEN((n_Even - 1L)/(_n_Points-1L)) + 1L) * (_n_Points-1L)
-  ; ...Integrate
-  Sum = ZERO
-  FOR i = 0L, N_ELEMENTS(iidx)-1L DO BEGIN
+  iidx = (LINDGEN((n_Even-1L)/(_n_Points-1L)) + 1L) * (_n_Points-1L)
+  ; ...Accumulate the integral values
+  n_s = N_ELEMENTS(iidx)
+  s = DBLARR(n_s)
+  FOR i = 0L, n_s-1L DO BEGIN
     idx = LINDGEN(_n_Points) + iidx[i] - (_n_Points-1L)
-    Sum = Sum + (c0 * h * (TRANSPOSE(c)#y_Int[idx])) 
+    s[i] = (c0 * h * (TRANSPOSE(c)#y_Int[idx])) 
+  ENDFOR
+  ; ...Perform compensated summation
+  sum   = ZERO
+  error = ZERO
+  FOR i = 0L, n_s-1L DO BEGIN
+    tmp   = sum               ; Save current sum
+    se    = s[i] + error      ; Add rounding error to current value
+    sum   = tmp + se          ; Compute new sum
+    error = (tmp - sum) + se  ; Compute new rounding error
   ENDFOR
 
-
+  
   ; Done
-  CATCH, /CANCEL
-  RETURN, Sum
+  RETURN, sum
 
 END
 
