@@ -38,10 +38,9 @@
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
-;       After creating and allocating a OSRF object, e.g.
+;       After creating an oSRF object, e.g.
 ;
-;         IDL> x = OBJ_NEW('OSRF')
-;         IDL> x->Allocate, 10
+;         IDL> x = OBJ_NEW('oSRF')
 ;
 ;       the Cleanup method is invoked when the object is destroyed,
 ;
@@ -53,7 +52,7 @@
 ;
 ;-
 
-PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
+PRO OSRF::Cleanup, Debug=Debug
  
   ; Set up
   COMPILE_OPT HIDDEN
@@ -63,7 +62,7 @@ PRO OSRF::Cleanup, Debug=Debug  ; Input keyword
   @osrf_pro_err_handler
 
 
-  ; Deallocate pointers, and clear scalars
-  self->Destroy, Debug=Debug
+  ; Cleanup the object
+  self.Destroy, Debug=Debug
 
-END ; PRO OSRF::Cleanup
+END

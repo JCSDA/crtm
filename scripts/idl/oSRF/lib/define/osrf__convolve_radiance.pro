@@ -28,16 +28,16 @@
 ; EXAMPLE:
 ;       Given a valid OSRF object, x, the Planck radiance is computed,
 ;
-;         IDL> x->Compute_Planck_Radiance(300.0d0)
+;         IDL> x.Compute_Planck_Radiance(300.0d0)
 ;
 ;       The computed radiances are then convolved with the response,
 ;
-;         IDL> x->Convolve_Radiance
+;         IDL> x.Convolve_Radiance
 ;
 ;       The resultant convolved radiances can then be obtained via
 ;       the Get_Property method:
 ;
-;         IDL> x->Get_Property, Convolved_R = r
+;         IDL> x.Get_Property, Convolved_R = r
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 12-Aug-2010
@@ -56,12 +56,12 @@ PRO OSRF::Convolve_Radiance, $
 
 
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Perform the convolution
-  self.Convolved_R = self->Convolve( *self.Radiance, Debug=Debug )
+  self.Convolved_R = self.Convolve( self.Radiance, Debug=Debug )
 
-END ; PRO OSRF::Convolve_Radiance
+END

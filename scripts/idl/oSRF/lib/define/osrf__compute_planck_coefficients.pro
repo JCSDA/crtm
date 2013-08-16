@@ -69,28 +69,24 @@ PRO OSRF::Compute_Planck_Coefficients, $
   
   
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Compute the central frequency if necessary
-  IF ( ~ self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
+  IF ( ~self.Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self.Compute_Central_Frequency, Debug=Debug
   
 
   ; Check frequency units
-  self->Get_Property, $
-    f0=f0, $
-    Debug=Debug
-  IF ( self->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
+  self.Get_Property, f0=f0, Debug=Debug
+  IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
 
 
-  ; Comput ethe Planck coefficients
-  Planck_Coeffs = DBLARR(N_PLANCK_COEFFS)
-  Planck_Coeffs[0] = C1_SCALE_FACTOR * C1 * f0^3
-  Planck_Coeffs[1] = C2_SCALE_FACTOR * C2 * f0
-  self->Set_Property, $
-    Planck_Coeffs=Planck_Coeffs, $
-    Debug=Debug
+  ; Compute the Planck coefficients
+  planck_coeffs = DBLARR(N_PLANCK_COEFFS)
+  planck_coeffs[0] = C1_SCALE_FACTOR * C1 * f0^3
+  planck_coeffs[1] = C2_SCALE_FACTOR * C2 * f0
+  self.Planck_Coeffs = planck_coeffs
 
-END ; PRO OSRF::Compute_Planck_Coefficients
+END

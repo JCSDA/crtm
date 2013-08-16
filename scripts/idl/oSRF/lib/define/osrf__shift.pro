@@ -7,8 +7,17 @@
 ;       to different frequencies.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[OSRF::]Shift, $
-;         Debug=Debug         ; Input keyword
+;       Obj->[OSRF::]Shift, dFrequency, Debug=Debug
+;
+; INPUTS:
+;       dFrequency:  Array of frequency shifts which is to be applied to
+;                    the SRF passbands.
+;                    The number of elements must be the same as the number
+;                    of SRF passbands.
+;                    UNITS:      N/A
+;                    TYPE:       FLOAT
+;                    DIMENSION:  Rank-1
+;                    ATTRIBUTES: INTENT(IN)
 ;
 ; INPUT KEYWORDS:
 ;       Debug:       Set this keyword for debugging. If set then:
@@ -33,6 +42,7 @@
 ;-
 
 PRO OSRF::Shift, $
+  dFrequency, $
   Debug=Debug  ; Input keyword
 
   ; Set up
@@ -40,31 +50,35 @@ PRO OSRF::Shift, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
- 
- 
-  ; Check object
-  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
- 
+  ; ...Do nothing if unallocated
+  IF ( ~self.Associated(Debug=Debug) ) THEN RETURN
+  ; ...Check the input
+  self.Get_Property, n_Bands=n_bands, Debug=Debug
+  IF ( N_ELEMENTS(dFrequency) NE n_bands ) THEN $
+    MESSAGE, "Input frequency shift argument has different number of bands from oSRF!", $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
 
   ; Perform the shift on all bands
-  FOR i = 0, self.n_Bands-1 DO BEGIN
-    Band = i+1
-    ; Get the band frequency data
-    self->Get_Property, $
-      Band, $
-      Debug = Debug, $
-      Frequency = f
-    ; Shift it
-    f = f + (*self.delta_f)[i]
-    ; Replace the band frequency data
-    self->Set_Property, $
-      Band, $
-      Debug = Debug, $
-      Frequency = f
-  ENDFOR
-  
-  
-  ; Set the shift flag
-  self->Set_Flag, /Frequency_Shift
+  FOR i = 0, n_bands-1 DO BEGIN
+    band = i+1
     
-END ; PRO OSRF::Shift
+    ; Get the band frequency data
+    self.Get_Property, band, Debug=Debug, Frequency=f
+    
+    ; Shift it
+    f = f + dFrequency[i]
+    
+    ; Replace the band frequency data
+    self.Set_Property, band, Debug=Debug, Frequency=f
+  ENDFOR
+
+
+  ; Recompute the oSRF parameters
+  MESSAGE, "Recomputing oSRF parameters after frequency shift...", /INFORMATIONAL
+  self.Integrate, Debug=Debug
+  self.Compute_Central_Frequency, Debug=Debug
+  self.Compute_Planck_Coefficients, Debug=Debug
+  self.Compute_Polychromatic_Coefficients, Debug=Debug
+
+END

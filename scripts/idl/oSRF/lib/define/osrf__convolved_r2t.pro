@@ -70,25 +70,27 @@ PRO OSRF::Convolved_R2T, $
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Process keywords
-  Band_Correction = NOT KEYWORD_SET(No_Band_Correction)
+  apply_band_correction = ~KEYWORD_SET(No_Band_Correction)
 
 
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Compute the central frequency if necessary
-  IF ( ~ self->Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self->Compute_Central_Frequency, Debug=Debug
+  IF ( ~self.Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self.Compute_Central_Frequency, Debug=Debug
+
   
-  ; Get the req	uired object properties
-  self->Get_Property, $
+  ; Get the required object properties
+  self.Get_Property, $
     f0                   = f0, $
     Polychromatic_Coeffs = pc, $
     Convolved_R          = R , $
     Debug=Debug
-  IF ( self->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
+  IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
+
 
   ; Compute the effective temperature from the channel radiance  
   result = Planck_Temperature( f0, R, Teff )
@@ -96,16 +98,16 @@ PRO OSRF::Convolved_R2T, $
     MESSAGE, 'Error computing Planck temperature', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
+
   ; Apply the band correction if required
-  IF ( Band_Correction ) THEN BEGIN
+  IF ( apply_band_correction ) THEN BEGIN
     T = (Teff - pc[0])/pc[1]
   ENDIF ELSE BEGIN
     T = Teff
   ENDELSE
+
   
   ; Save the result
-  self->Set_Property, $
-    Convolved_T = T, $
-    Debug=Debug
+  self.Set_Property, Convolved_T=T, Debug=Debug
 
-END ; PRO OSRF::Convolved_R2T
+END

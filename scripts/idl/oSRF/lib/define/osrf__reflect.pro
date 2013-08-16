@@ -7,8 +7,7 @@
 ;       bands of a multiband SRF into the lower frequency bands.
 ;
 ; CALLING SEQUENCE:
-;       Obj->[OSRF::]Reflect, $
-;         Debug=Debug         ; Input keyword
+;       Obj->[OSRF::]Reflect, Debug=Debug
 ;
 ; INPUT KEYWORDS:
 ;       Debug:       Set this keyword for debugging. If set then:
@@ -43,50 +42,53 @@ PRO OSRF::Reflect, $
  
  
   ; Check object
-  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
-  IF ( self.n_Bands LT 2 ) THEN RETURN
-  IF ( (self.n_Bands MOD 2) NE 0 ) THEN BEGIN
-    MESSAGE, 'Number of OSRF bands is odd! No reflection performed', /INFORMATIONAL
+  ; ...Do nothing if unallocated
+  IF ( ~self.Associated(Debug=Debug) ) THEN RETURN
+  ; ...Check this SRF can be reflected
+  self.Get_Property, n_Bands=n_bands, Debug=Debug
+  IF ( n_bands LT 2 ) THEN RETURN
+  IF ( (n_bands MOD 2) NE 0 ) THEN BEGIN
+    MESSAGE, "Number of OSRF bands is odd! No reflection performed.", /INFORMATIONAL
     RETURN
   ENDIF
-  IF ( self->Flag_Is_Set(FREQUENCY_SHIFT_FLAG) ) THEN BEGIN
-    MESSAGE, 'OSRF data has been frequency shifted! No reflection performed', /INFORMATIONAL
-    RETURN
-  ENDIF
- 
+
+
+  ; Get the central frequency
+  self.Get_Property, Debug=Debug, f0=f0
+  MESSAGE, "Retrieved central frequency of "+STRING(f0,FORMAT='(e13.6)')+$
+           " for band reflection.", /INFORMATIONAL
+  
  
   ; Generate the array index positions
-  n_HalfBands = self.n_Bands/2L
-  hIdx = LINDGEN(n_HalfBands)
-  oIdx = hIdx + n_HalfBands  ; The indices of the data to reflect
-  rIdx = REVERSE(hIdx)       ; The indices into which the reflected data is inserted
+  n_halfbands = n_bands/2L
+  hidx = LINDGEN(n_halfbands)
+  oidx = hidx + n_halfbands  ; The indices of the data to reflect
+  ridx = REVERSE(hidx)       ; The indices into which the reflected data is inserted
   
   
   ; Perform the reflections
-  FOR i = 0, n_HalfBands-1 DO BEGIN
+  FOR i = 0, n_halfbands-1 DO BEGIN
+  
     ; Get the original band data
-    oBand = oIdx[i]+1
-    self->Get_Property, $
-      oBand, $
-      Debug = Debug, $
-      Frequency = f, $
-      Response = r
+    oband = oidx[i]+1
+    self.Get_Property, oband, Debug=Debug, Frequency=f, Response=r
+    
     ; Reverse the data
-    f = -ONE * REVERSE(f)
+    f = TWO*f0 - REVERSE(f)
     r = REVERSE(r)
+    
     ; Set the reflected band data
-    rBand = rIdx[i]+1
-    self->Set_Property, $
-      rBand, $
-      Debug = Debug, $
-      Frequency = f, $
-      Response = r
-    ; Set the frequency shift values also
-    (*self.delta_f)[rIdx[i]] = (*self.delta_f)[oIdx[i]]
+    rband = ridx[i]+1
+    self.Set_Property, rband, Debug=Debug, Frequency=f, Response=r
+    
   ENDFOR
 
- 
-  ; Set the reflected flag
-  self->Set_Flag, /Band_Reflect
 
-END ; PRO OSRF::Reflect
+  ; Recompute the oSRF parameters
+  MESSAGE, "Recomputing oSRF parameters after passband reflection...", /INFORMATIONAL
+  self.Integrate, Debug=Debug
+  self.Compute_Central_Frequency, Debug=Debug
+  self.Compute_Planck_Coefficients, Debug=Debug
+  self.Compute_Polychromatic_Coefficients, Debug=Debug
+  
+END

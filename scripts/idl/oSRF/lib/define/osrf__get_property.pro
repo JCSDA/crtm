@@ -24,9 +24,9 @@
 ;         Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
 ;         Convolved_R          = Convolved_R         , $  ; Output keyword
 ;         Convolved_T          = Convolved_T         , $  ; Output keyword
+;         n_Points             = n_Points            , $  ; Output keyword
 ;         f1                   = f1                  , $  ; Output keyword
 ;         f2                   = f2                  , $  ; Output keyword
-;         n_Points             = n_Points            , $  ; Output keyword
 ;         Frequency            = Frequency           , $  ; Output keyword
 ;         Response             = Response            , $  ; Output keyword
 ;         Radiance             = Radiance                 ; Output keyword
@@ -135,49 +135,51 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       n_Points:              The number of points used to represent a band of
+;                              the SRF.
+;                              If the Band argument:
+;                                - is specified:     The value for that band is returned.
+;                                - is NOT specified: An array of values for all bands is returned.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       f1:                    The begin frequency of the SRF band.
-;                              Used in conjunction with the Band keyword argument.
+;                              Used in conjunction with the Band argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       f2:                    The vector of SRF band end frequencies.
-;                              Used in conjunction with the Band keyword argument.
+;                              Used in conjunction with the Band argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
-;       n_Points:              The number of points used to represent a band of
-;                              the SRF.
-;                              Used in conjunction with the Band keyword argument.
-;                              UNITS:      N/A
-;                              TYPE:       INTEGER
-;                              DIMENSION:  Scalar
-;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
-;
 ;       Frequency:             The frequency grid for an SRF band.
-;                              Used in conjunction with the Band keyword argument.
+;                              Used in conjunction with the Band argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Response:              The response data for an SRF band.
-;                              Used in conjunction with the Band keyword argument.
+;                              Used in conjunction with the Band argument.
 ;                              UNITS:      N/A
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       Radiance:              Radiance data for an SRF band.
-;                              Used in conjunction with the Band keyword argument.
+;                              Used in conjunction with the Band argument.
 ;                              UNITS:      N/A
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
-
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -185,10 +187,10 @@
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
-;       Given a valid OSRF object, x, obtain various OSRF
+;       Given a valid oSRF object, x, obtain various oSRF
 ;       components values like so,
 ;
-;         IDL> x->Get_Property, Sensor_Id=sid, Channel=ch
+;         IDL> x.Get_Property, Sensor_Id=sid, Channel=ch
 ;         IDL> HELP, sid, ch
 ;         SID             STRING    = 'hirs4_n18           '
 ;         CH              LONG      =            7
@@ -216,9 +218,9 @@ PRO OSRF::Get_Property, $
   Polychromatic_Coeffs = Polychromatic_Coeffs, $  ; Output keyword
   Convolved_R          = Convolved_R         , $  ; Output keyword
   Convolved_T          = Convolved_T         , $  ; Output keyword
+  n_Points             = n_Points            , $  ; Output keyword
   f1                   = f1                  , $  ; Output keyword
   f2                   = f2                  , $  ; Output keyword
-  n_Points             = n_Points            , $  ; Output keyword
   Frequency            = Frequency           , $  ; Output keyword
   Response             = Response            , $  ; Output keyword
   Radiance             = Radiance                 ; Output keyword
@@ -232,23 +234,22 @@ PRO OSRF::Get_Property, $
  
   
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
-    MESSAGE, 'OSRF object has not been allocated.', $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
+    MESSAGE, "OSRF object has not been allocated.", $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Check band argument
-  _Band = 0L  ; Default
+  _band = 1L  ; Default
   IF ( N_ELEMENTS(Band) GT 0 ) THEN BEGIN
-    _Band = LONG(Band[0]) - 1
-    IF ( _Band LT 0 OR _Band GT self.n_Bands-1 ) THEN $
-      MESSAGE, 'Invalid band specified.', $
+    _band = LONG(Band[0])
+    IF ( _band LT 1 OR _band GT self.n_Bands ) THEN $
+      MESSAGE, "Invalid band specified.", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
 
 
-  ; Get data
-  ; ...Scalar data
+  ; Get Scalar/Array data
   IF ( ARG_PRESENT(n_Bands             ) ) THEN n_Bands              = self.n_Bands
   IF ( ARG_PRESENT(Version             ) ) THEN Version              = self.Version         
   IF ( ARG_PRESENT(Sensor_Id           ) ) THEN Sensor_Id            = self.Sensor_Id       
@@ -263,17 +264,23 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(Polychromatic_Coeffs) ) THEN Polychromatic_Coeffs = self.Polychromatic_Coeffs
   IF ( ARG_PRESENT(Convolved_R         ) ) THEN Convolved_R          = self.Convolved_R
   IF ( ARG_PRESENT(Convolved_T         ) ) THEN Convolved_T          = self.Convolved_T
-  ; ...Band specific data  
-  IF ( ARG_PRESENT(f1       ) ) THEN f1        = (*self.f1)[_Band]       
-  IF ( ARG_PRESENT(f2       ) ) THEN f2        = (*self.f2)[_Band]       
-  IF ( ARG_PRESENT(Frequency) ) THEN Frequency = *(*self.Frequency)[_Band]
-  IF ( ARG_PRESENT(Response ) ) THEN Response  = *(*self.Response)[_Band]
-  IF ( ARG_PRESENT(Radiance ) ) THEN Radiance  = *(*self.Radiance)[_Band]
-  ; ...Band number of points is special case
-  IF ( N_ELEMENTS(Band) EQ 0 ) THEN BEGIN
-    IF ( ARG_PRESENT(n_Points) ) THEN n_Points = *self.n_Points
-  ENDIF ELSE BEGIN
-    IF ( ARG_PRESENT(n_Points) ) THEN n_Points = (*self.n_Points)[_Band]
-  ENDELSE
+  
+  
+  ; Get band specific data  
+  IF ( ARG_PRESENT(f1       ) ) THEN f1        = self.f1[_band]       
+  IF ( ARG_PRESENT(f2       ) ) THEN f2        = self.f2[_band]       
+  IF ( ARG_PRESENT(Frequency) ) THEN Frequency = self.Frequency[_band]
+  IF ( ARG_PRESENT(Response ) ) THEN Response  = self.Response[_band]
+  IF ( ARG_PRESENT(Radiance ) ) THEN Radiance  = self.Radiance[_band]
 
-END ; PRO OSRF::Get_Property
+  ; Band number of points is special case
+  IF ( ARG_PRESENT(n_Points) ) THEN BEGIN
+    IF ( N_ELEMENTS(Band) EQ 0 ) THEN BEGIN
+      n_Points = []
+      FOR i = 1, self.n_Bands DO n_Points = [n_Points,self.n_Points[i]]
+    ENDIF ELSE BEGIN
+      n_Points = self.n_Points[_band]
+    ENDELSE  
+  ENDIF
+
+END

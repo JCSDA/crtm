@@ -34,9 +34,9 @@ PRO oSRF::Apply_Response_Threshold, $
   
   ; Extract dimension and info from oSRF
   self->Get_Property, Debug=Debug, $
-    n_Bands = n_bands, $
-    Channel = channel, $
-    Sensor_Id = sensor_id, $
+    n_Bands          = n_bands          , $
+    Channel          = channel          , $
+    Sensor_Id        = sensor_id        , $
     Sensor_Type      = sensor_type      , $
     WMO_Satellite_Id = wmo_satellite_id , $
     WMO_Sensor_Id    = wmo_sensor_id
@@ -157,10 +157,10 @@ PRO oSRF::Apply_Response_Threshold, $
     /All
   new->Set_Property, $
        Debug = Debug, $
-       Sensor_Id  = Sensor_Id        , $
-       Sensor_Type      = sensor_type      , $
-       Channel          = channel, $
-       WMO_Satellite_Id = wmo_satellite_id , $
+       Sensor_Id        = sensor_id       , $
+       Sensor_Type      = sensor_type     , $
+       Channel          = channel         , $
+       WMO_Satellite_Id = wmo_satellite_id, $
        WMO_Sensor_Id    = wmo_sensor_id
   ; ...Set the data values
   FOR n = 0, n_bands - 1 DO BEGIN
@@ -176,4 +176,4 @@ PRO oSRF::Apply_Response_Threshold, $
   ; ...Copy new object to self
   new->Assign, self, Debug=Debug
   
-END ; PRO OSRF::Apply_Response_Threshold
+END

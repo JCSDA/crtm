@@ -3,8 +3,8 @@
 ;       OSRF::Associated
 ;
 ; PURPOSE:
-;       The OSRF::Associated function determies if the pointer 
-;       components of a OSRF object are associated with a target.
+;       The OSRF::Associated function determies if an OSRF object has
+;       data associated with it and is valid for use.
 ;
 ; CALLING SEQUENCE:
 ;       Result = Obj->[OSRF::]Associated( $
@@ -60,21 +60,8 @@ FUNCTION OSRF::Associated, $
   Debug=Debug           ; Input keyword
  
   ; Set up
-  ; ...error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-    MsgSwitch = 0
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FALSE
-    ENDIF
-    MsgSwitch = 1
-  ENDELSE
+  @osrf_func_err_handler
 
   RETURN, self.Is_Allocated
  
-END ; FUNCTION OSRF::Associated
+END

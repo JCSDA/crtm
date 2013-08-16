@@ -3,8 +3,8 @@
 ;       OSRF::Allocate
 ;
 ; PURPOSE:
-;       The OSRF::Allocate procedure method allocates the SRF
-;       object data arrays.
+;       The OSRF::Allocate procedure method sets the size of 
+;       the object data arrays.
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Allocate, $
@@ -12,9 +12,8 @@
 ;         Debug=Debug         ; Input keyword
 ;
 ; INPUTS:
-;       n_Points:    The number of SRF data points to which the
-;                    data arrays are to be allocated. Can be a
-;                    scalar or vector.
+;       n_Points:    The number of SRF data points for each passband.
+;                    Can be a scalar or vector.
 ;                    If SCALAR:  n_Bands == 1
 ;                       VECTOR:  n_Bands == N_ELEMENTS(n_Points)
 ;                    UNITS:      N/A
@@ -47,7 +46,7 @@
 ;       in this example 4:
 ;
 ;         IDL> n_Points = [100,80,81,97]  ; Quadruple band SRF
-;         IDL> x->Allocate, n_Points
+;         IDL> x.Allocate, n_Points
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 20-Apr-2009
@@ -64,42 +63,41 @@ PRO OSRF::Allocate, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
-  ; ...Check dimension input
-  n_Bands = N_ELEMENTS(n_Points)
-  IF ( n_Bands EQ 0 ) THEN $
-    MESSAGE, 'Must specify N_POINTS argument.', $
+  
+  
+  ; Check dimension input
+  n_bands = N_ELEMENTS(n_Points)
+  ; ...Were ANY specified?
+  IF ( n_bands EQ 0 ) THEN $
+    MESSAGE, "Must specify N_POINTS argument.", $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  FOR i = 0, n_Bands-1 DO BEGIN
+  ; ...Was a valid number of bands specified?
+  IF ( (n_bands NE 1) AND $
+       (n_bands NE 2) AND $
+       (n_bands NE 4)     ) THEN $
+    MESSAGE, "Invalid number of bands, "+STRTRIM(n_bands,2)+", specified. Only 1, 2, or 4 is valid.", $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; ...Are the number-of-points/band meaningful?
+  FOR i = 0, n_bands-1 DO BEGIN
     IF ( n_Points[i] LT 1 ) THEN $
-      MESSAGE, 'Input N_POINTS for band '+STRTRIM(i+1,2)+'must be at least > 0.', $
+      MESSAGE, "Input N_POINTS for band "+STRTRIM(i+1,2)+" must be at least > 0.", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDFOR
-  ; ...Destroy object if already allocated
-  IF ( self->Associated(Debug=Debug) ) THEN self->Destroy, Debug=Debug
+  
+  
+  ; Destroy object if already allocated
+  IF ( self.Associated(Debug=Debug) ) THEN self.Destroy, Debug=Debug
  
  
-  ; Perform the allocations 
-  self.f1        = PTR_NEW(DBLARR(n_Bands))
-  self.f2        = PTR_NEW(DBLARR(n_Bands))
-  self.n_Points  = PTR_NEW(DBLARR(n_Bands))
-  self.Frequency = PTR_NEW(PTRARR(n_Bands))
-  self.Response  = PTR_NEW(PTRARR(n_Bands))
-  self.Radiance  = PTR_NEW(PTRARR(n_Bands))
-  FOR i = 0, n_Bands-1 DO BEGIN
-    (*self.Frequency)[i] = PTR_NEW(DBLARR(n_Points[i]))
-    (*self.Response)[i]  = PTR_NEW(DBLARR(n_Points[i]))
-    (*self.Radiance)[i]  = PTR_NEW(DBLARR(n_Points[i]))
-  ENDFOR
-  ; ...The plotting array
-  self.Plot_Reference = PTR_NEW(OBJARR(n_Bands))
+  ; Set the hash
+  self.n_Points = HASH(LINDGEN(n_bands)+1L, n_Points)
 
 
   ; Assign the dimensions
-  self.n_Bands   = n_Bands
-  *self.n_Points = n_Points
+  self.n_Bands = n_Bands
  
  
   ; Set the allocation indicator
   self.Is_Allocated = TRUE
  
-END ; PRO OSRF::Allocate
+END

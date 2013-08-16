@@ -41,7 +41,7 @@
 ;
 ;       a new instance of the data object is created by:
 ;
-;         IDL> x->Assign,y
+;         IDL> x.Assign,y
 ;         IDL> help, y
 ;         Y               OBJREF    = <ObjHeapVar12(OSRF)>
 ;
@@ -59,15 +59,15 @@ PRO OSRF::Assign, $
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
-; @osrf_pro_err_handler
+  @osrf_pro_err_handler
 
   ; ...ALL input data pointers must be associated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Some or all input OSRF members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; ...Return argument must be present
-  IF ( ~ ARG_PRESENT(new) ) THEN $
+  IF ( ~ARG_PRESENT(new) ) THEN $
     MESSAGE, 'No output object argument specified.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
              
@@ -78,7 +78,7 @@ PRO OSRF::Assign, $
       IF ( OBJ_ISA(new,'oSRF') ) THEN BEGIN
         new->Destroy, Debug=Debug
       ENDIF ELSE BEGIN
-        OBJ_DESTROY, new
+        OBJ_DESTROY, new, Debug=Debug
         new = OBJ_NEW('oSRF', Debug=Debug)
       ENDELSE
     ENDIF ELSE BEGIN
@@ -90,13 +90,13 @@ PRO OSRF::Assign, $
     
 
   ; Allocate the output object
-  new->Allocate, *self.n_Points, Debug=Debug
+  self.Get_Property, n_Points=n_points, Debug=Debug
+  new.Allocate, n_points, Debug=Debug
 
 
-  ; Assign data components  
-  new.Release = self.Release
-  new.Version = self.Version
-  
+  ; Copy scalar/array components  
+  new.Release              = self.Release
+  new.Version              = self.Version
   new.Sensor_ID            = self.Sensor_ID  
   new.WMO_Satellite_Id     = self.WMO_Satellite_Id
   new.WMO_Sensor_Id        = self.WMO_Sensor_Id
@@ -109,13 +109,13 @@ PRO OSRF::Assign, $
   new.Polychromatic_Coeffs = self.Polychromatic_Coeffs
   new.Convolved_R          = self.Convolved_R
   new.Convolved_T          = self.Convolved_T
-  *new.f1                  = *self.f1      
-  *new.f2                  = *self.f2      
-  *new.n_Points            = *self.n_Points
-  FOR i = 0, self.n_Bands-1 DO BEGIN
-    *(*new.Frequency)[i] = *(*self.Frequency)[i]
-    *(*new.Response)[i]  = *(*self.Response)[i] 
-    *(*new.Radiance)[i]  = *(*self.Radiance)[i] 
-  ENDFOR
 
-END ; PRO OSRF::Assign
+
+  ; Copy hash components
+  new.f1        = (self.f1)[*]
+  new.f2        = (self.f2)[*]
+  new.Frequency = (self.Frequency)[*]
+  new.Response  = (self.Response)[*] 
+  new.Radiance  = (self.Radiance)[*] 
+
+END

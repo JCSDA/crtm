@@ -9,11 +9,11 @@
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Clear_Flag, $
 ;         Debug                = Debug               , $  ; Input keyword
-;         Interpolated         = Interpolated        , $  ; Input keyword
-;         Integrated           = Integrated          , $  ; Input keyword
+;         Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
+;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
-;         Frequency_Units      = Frequency_Units     , $  ; Input keyword
-;         Interpolation_Method = Interpolation_Method, $  ; Input keyword
+;         Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
+;         Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
 ;         All                  = All                      ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
@@ -26,7 +26,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Interpolated:          Set this keyword to clear the corresponding flag.
+;       Is_Interpolated:       Set this keyword to clear the corresponding flag.
 ;                              Clearing this flag indicates the SRF response data
 ;                              has NOT been interpolated.
 ;                              UNITS:      N/A
@@ -34,7 +34,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Integrated:            Set this keyword to clear the corresponding flag.
+;       Is_Integrated:         Set this keyword to clear the corresponding flag.
 ;                              Clearing this flag indicates the SRF response data
 ;                              has NOT been integrated.
 ;                              UNITS:      N/A
@@ -50,7 +50,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Frequency_Units:       Set this keyword to clear the corresponding flag.
+;       Frequency_GHz:         Set this keyword to clear the corresponding flag.
 ;                              Clearing this flag indicates the SRF frequency data
 ;                              units are inverse centimetres (cm-1)
 ;                              UNITS:      N/A
@@ -58,7 +58,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Interpolation_Method:  Set this keyword to clear the corresponding flag.
+;       Linear_Interpolation:  Set this keyword to clear the corresponding flag.
 ;                              Clearing this flag indicates the SRF interpolation
 ;                              method used is spline interpolation.
 ;                              UNITS:      N/A
@@ -82,11 +82,11 @@
 ;       Given a valid, allocated, OSRF object, x, the various bit flags can
 ;       be cleared individually like so,
 ;
-;         IDL> x->Clear_Flag, /Interpolated        , $
-;                             /Integrated          , $
+;         IDL> x->Clear_Flag, /Is_Interpolated     , $
+;                             /Is_Integrated       , $
 ;                             /f0_Computed         , $
-;                             /Frequency_Units     , $
-;                             /Interpolation_Method
+;                             /Frequency_GHz       , $
+;                             /Linear_Interpolation
 ;
 ;       Alternatively, the ALL keyword can be used to clear all the flags,
 ;
@@ -100,15 +100,16 @@
 
 PRO OSRF::Clear_Flag, $
   Debug                = Debug               , $  ; Input keyword
-  Interpolated         = Interpolated        , $  ; Input keyword
-  Integrated           = Integrated          , $  ; Input keyword
+  Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
+  Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
-  Frequency_Units      = Frequency_Units     , $  ; Input keyword
-  Interpolation_Method = Interpolation_Method, $  ; Input keyword
+  Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
+  Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
   All                  = All                      ; Input keyword
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -122,11 +123,11 @@ PRO OSRF::Clear_Flag, $
 
   
   ; Clear flags
-  IF ( KEYWORD_SET(Interpolated        ) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATED_FLAG         )
-  IF ( KEYWORD_SET(Integrated          ) ) THEN self.Flags = self.Flags AND ( NOT INTEGRATED_FLAG           )
-  IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags AND ( NOT F0_COMPUTED_FLAG          )
-  IF ( KEYWORD_SET(Frequency_Units     ) ) THEN self.Flags = self.Flags AND ( NOT FREQUENCY_UNITS_FLAG      )
-  IF ( KEYWORD_SET(Interpolation_Method) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATION_METHOD_FLAG )
+  IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATED_FLAG.position         )
+  IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags AND ( NOT INTEGRATED_FLAG.position           )
+  IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags AND ( NOT F0_COMPUTED_FLAG.position          )
+  IF ( KEYWORD_SET(Frequency_GHz       ) ) THEN self.Flags = self.Flags AND ( NOT FREQUENCY_GHZ_FLAG.position        )
+  IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATION_METHOD_FLAG.position )
   IF ( KEYWORD_SET(All                 ) ) THEN self.Flags = 0L
   
-END ; PRO OSRF::Clear_Flag
+END

@@ -43,45 +43,17 @@ PRO OSRF__Define
            Polychromatic_Coeffs: DBLARR(N_POLYCHROMATIC_COEFFS), $  ; Polychromatic correction coefficients
            Convolved_R         : 0.0d0,                          $  ; Convolved radiance
            Convolved_T         : 0.0d0,                          $  ; "Convolved" brightness temperature radiance
-           f1                  : PTR_NEW(),                      $  ; Band begin frequency (nB)
-           f2                  : PTR_NEW(),                      $  ; Band end   frequency (nB)
-           n_Points            : PTR_NEW(),                      $  ; Number of points per band, nP (nB)
-           Frequency           : PTR_NEW(),                      $  ; SRF band frequencies (nP x nB)
-           Response            : PTR_NEW(),                      $  ; SRF band response    (nP x nB)
+           f1                  : HASH(),                         $  ; Band begin frequency (nB)
+           f2                  : HASH(),                         $  ; Band end   frequency (nB)
+           n_Points            : HASH(),                         $  ; Number of points per band, nP (nB)
+           Frequency           : HASH(),                         $  ; SRF band frequencies (nP x nB)
+           Response            : HASH(),                         $  ; SRF band response    (nP x nB)
            ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
-           Radiance            : PTR_NEW(),                      $  ; Array of radiances (nP x nB)
+           Radiance            : HASH(),                         $  ; Array of radiances (nP x nB)
            ; ...Variables for plotting
            ;    These are not copied if the Assign() method is used.
-           Window_Reference    : PTR_NEW(),                      $  ; Graphics window
-           Plot_Reference      : PTR_NEW()                       }  ; Passband plots
+           Window_Reference    : HASH(),                         $  ; Graphics window
+           Plot_Reference      : HASH()                          }  ; Passband plots
 
-; There is no expectation that each band will have the same number of points.
-; How the Frequency, Response, B, and R components are structured for, e.g.,
-; a channel with 4-bands is shown below.
-;
-;               ---------------
-; Frequency -> | 1 | 2 | 3 | 4 |
-;               -|---|---|---|-
-;                /   |   |   \
-;               /   /     \   \
-;              /   |       |   \
-;             /    |       |    \
-;            /     |       |     \
-;           |      |       |      |
-;           V      V       V      V
-;          ---    ---     ---    ---
-;         |   |  |   |   |   |  |   |
-;         |---|  |---|   |---|  |---|
-;         |   |  |   |   |   |  |   |
-;         |---|  |---|   |---|  |---|
-;         |   |  |   |   |   |  |   |
-;         |---|  |---|   |---|  |---|
-;         |   |  |   |   |   |  |   |
-;         |---|  |---|   |---|  |---|
-;         |   |  |   |   |   |  |   |
-;           .      .       .      .
-;           .      .       .      .
-;           .      .       .      .
-
-END ; PRO OSRF__Define
+END

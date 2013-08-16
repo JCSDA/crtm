@@ -50,7 +50,11 @@
 ; EXAMPLE:
 ;       The Init method is invoked when an OSRF object is created,
 ;
-;         IDL> x = OBJ_NEW('OSRF')
+;         IDL> x = OBJ_NEW('oSRF', n_Bands=2)
+;
+;       The following syntax will also work,
+;
+;         IDL> x = oSRF(n_Bands=2)
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 20-Apr-2009
@@ -58,46 +62,21 @@
 ;
 ;-
 
-FUNCTION OSRF::Init, Debug=Debug  ; Input keyword
+FUNCTION OSRF::Init, Debug=debug       ; Input keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-    MsgSwitch = 0
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FALSE
-    ENDIF
-    MsgSwitch = 1
-  ENDELSE
- 
+  @osrf_func_err_handler
 
-  ; Set default values
-  self.Release              = OSRF_RELEASE
-  self.Version              = OSRF_VERSION
-  self.Sensor_Id            = ''
-  self.WMO_Satellite_Id     = INVALID_WMO_SATELLITE_ID
-  self.WMO_Sensor_Id        = INVALID_WMO_SENSOR_ID
-  self.Sensor_Type          = INVALID_SENSOR
-  self.Channel              = INVALID
-  self.Integral             = ZERO
-  self.Flags                = 0L
-  self.f0                   = ZERO
-  self.Planck_Coeffs        = ZERO
-  self.Polychromatic_Coeffs = ZERO
-  self.Convolved_R          = ZERO
-  self.Convolved_T          = ZERO
 
+  ; Cleanup the object
+  self.Destroy, Debug=Debug
+  
 
   ; Done
   RETURN, TRUE
  
-END ; FUNCTION OSRF::Init
+END

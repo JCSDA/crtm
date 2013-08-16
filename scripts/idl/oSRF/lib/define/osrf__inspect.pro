@@ -48,27 +48,24 @@ PRO OSRF::Inspect, $
   IF ( KEYWORD_SET(Verbose) ) THEN BEGIN
 
     ; Get the number of bands
-    self->Get_Property, n_Bands = n_bands
+    self.Get_Property, n_Bands=n_bands, Debug=Debug
     PRINT, FORMAT='(/,"Number of passbands: ",i1)', n_bands
 
     
     ; Channel coefficients
-    self->Get_Property, Planck_Coeffs        = planck_coeffs, $
-                        Polychromatic_Coeffs = polychromatic_coeffs
+    self.Get_Property, Planck_Coeffs=planck_coeffs, $
+                       Polychromatic_Coeffs=polychromatic_coeffs, $
+                       Debug=Debug
     PRINT, FORMAT='(/,"Coefficient data:")'
-    PRINT, FORMAT='("PLANCK_COEFFS:        ",99(1x,e13.6))', planck_coeffs
-    PRINT, FORMAT='("POLYCHROMATIC_COEFFS: ",99(1x,e13.6))', polychromatic_coeffs
+    PRINT, FORMAT='("PLANCK_COEFFS:        ",5(1x,e13.6))', planck_coeffs
+    PRINT, FORMAT='("POLYCHROMATIC_COEFFS: ",5(1x,e13.6))', polychromatic_coeffs
 
     
     ; The band definition data
     PRINT, FORMAT='(/,"Band definition data:")'
     FOR n = 0, n_bands-1 DO BEGIN
       band = n+1
-      self->Get_Property, $
-        band, $
-        f1       = f1      , $
-        f2       = f2      , $
-        n_Points = n_Points
+      self.Get_Property, band, f1=f1, f2=f2, n_Points=n_Points, Debug=Debug
       PRINT, band, FORMAT='(2x,"Band ",i1," definition data:")'
       PRINT, FORMAT='("F1:       ",e13.6)', f1
       PRINT, FORMAT='("F2:       ",e13.6)', f2
@@ -80,10 +77,7 @@ PRO OSRF::Inspect, $
     PRINT, FORMAT='(/,"Band response data:")'
     FOR n = 0, n_bands-1 DO BEGIN
       band = n+1
-      self->Get_Property, $
-        band, $
-        Frequency = frequency, $
-        Response  = response
+      self.Get_Property, band, Frequency=frequency, Response=response, Debug=Debug
       PRINT, band, FORMAT='(2x,"Band ",i1," frequency and response:")'
       HELP, band, frequency, response
     ENDFOR
@@ -93,10 +87,7 @@ PRO OSRF::Inspect, $
     PRINT, FORMAT='(/,"Band radiance data:")'
     FOR n = 0, n_bands-1 DO BEGIN
       band = n+1
-      self->Get_Property, $
-        band, $
-        Frequency = frequency, $
-        Radiance  = radiance
+      self.Get_Property, band, Frequency=frequency, Response=radiance, Debug=Debug
       PRINT, band, FORMAT='(2x,"Band ",i1," frequency and radiance:")'
       HELP, band, frequency, radiance
     ENDFOR
@@ -104,8 +95,8 @@ PRO OSRF::Inspect, $
 
     ; The flag status
     PRINT, FORMAT='(/,"Flag settings:")'
-    self->Display_Flags, Debug=Debug
+    self.Display_Flags, Debug=Debug
     
   ENDIF 
   
-END ; PRO OSRF::Inspect
+END

@@ -7,42 +7,17 @@
 ;       with user supplied data.
 ;
 ; CALLING SEQUENCE:
-;       Result = Obj->[OSRF::]Convolve( ptr_array, Debug = Debug )
+;       Result = Obj->[OSRF::]Convolve( band_data, Debug = Debug )
 ;
 ; INPUTS:
-;       ptr_array:             Pointer array where each element is a pointer
-;                              to an array of band data with which the OSRF
-;                              data is be convolved. Up to four bands can
-;                              be specified, e.g. as for quadruple bandpass
-;                              microwave channels. The structure of this
-;                              array can be schematically described like 
-;                              below for the 4-passband case:
-;
-;                                 -------------------------
-;                                 |  1  |  2  |  3  |  4  |
-;                                 -------------------------
-;                                    |     |     |     |
-;                                    |     |     |     |
-;                                   \|/   \|/   \|/   \|/
-;                                    *     *     *     *
-;                                   ---   ---   ---   ---
-;                                   | |   | |   | |   | |
-;                                   ---   ---   ---   ---
-;                                   | |   | |   | |   | |
-;                                   ---   |.|   |.|   ---
-;                                   | |   |.|   |.|   | |
-;                                   |.|   |.|   |.|   |.|
-;                                   |.|   | |   | |   |.|
-;                                   |.|   ---   ---   |.|
-;                                   | |   | |   | |   | |
-;                                   ---   ---   ---   ---
-;                                   | |               | |
-;                                   ---               ---
-;
+;       band_data:             Has where each member is an array of band
+;                              data with which the OSRF data is be convolved.
+;                              One, two, or four bands can be specified, e.g.
+;                              as for quadruple bandpass microwave channels.
 ;                              For IR and VIS channels, the number of passbands is
 ;                              always one
 ;                              UNITS:      N/A
-;                              TYPE:       PTRARR
+;                              TYPE:       HASH
 ;                              DIMENSION:  n_Bands
 ;                              ATTRIBUTES: INTENT(IN)
 ;
@@ -70,19 +45,18 @@
 ;
 ; EXAMPLE:
 ;       Let's say we have a double passband microwave channel, where each passband
-;       is described by 128 points. The structure of the input "ptr_array" argument,
+;       is described by 128 points. The structure of the input "band_data" argument,
 ;       which is to be convolved with the OSRF response data, would look like:
 ;
-;         IDL> HELP, ptr_array
-;         <PtrHeapVar151> POINTER   = Array[2]
-;         IDL> n = N_ELEMENTS(ptr_array)
-;         IDL> FOR i = 0, n-1 DO HELP, *ptr_array[i]
-;         <PtrHeapVar154> DOUBLE    = Array[128]
-;         <PtrHeapVar157> DOUBLE    = Array[128]
+;         IDL> HELP, band_data
+;         BAND_DATA       LIST  <ID=10  NELEMENTS=2>
+;         IDL> FOR i = 0, band_data.Count()-1 DO HELP, band_data[i]
+;         <Expression>    DOUBLE    = Array[128]
+;         <Expression>    DOUBLE    = Array[128]
 ;
 ;       The convolution of these data with the channel OSRF object, x, is then achieved via:
 ;
-;         IDL> result = x->Convolve( ptr_array )
+;         IDL> result = x->Convolve( band_data )
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 17-Jun-2009
@@ -91,7 +65,7 @@
 ;-
 
 FUNCTION OSRF::Convolve, $
-  ptr_array, $  ; Input
+  band_data, $  ; Input
   Debug=Debug
 
   ; Set up
@@ -102,43 +76,49 @@ FUNCTION OSRF::Convolve, $
 
 
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Get the number of bands
-  self->Get_Property, $
-    n_Bands = n_Bands, $
-    Debug   = Debug
+  self.Get_Property, n_Bands=n_bands, Debug=Debug
+  
+  
+  ; Check that the number of oSRF bands agrees with the input
+  IF ( band_data.Count() NE n_bands ) THEN $
+    MESSAGE, "Number of input band_data hash elements, "+STRTRIM(band_data.Count(),2)+$
+             ", is different from the number of oSRF bands, "+STRTRIM(n_bands,2), $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Sum up band integrals
   y = ZERO
-  FOR i = 0L, n_Bands-1L DO BEGIN
-    IF ( ~ self->Flag_Is_Set(INTEGRATED_FLAG) ) THEN self->Integrate, Debug=Debug
-    ; Get band data
-    Band = i+1
+  FOR i = 0L, n_bands-1L DO BEGIN
+    ; Get current band
+    band = i+1
     self->Get_Property, $
-      Band, $
+      band, $
       Frequency = f, $
       Response  = r, $
       Debug=Debug
-    ; Integrate
-    Sum = Integral(f, (*ptr_array[i])*r)
-    IF ( Sum LE ZERO ) THEN $
-      MESSAGE, "SRF integration for band #"+STRTRIM(Band,2)+" is < zero", $
+    ; Perform the band convolution
+    sum = ABS(Integral(f, (band_data[band])*r))
+    IF ( sum LE ZERO ) THEN $
+      MESSAGE, "SRF integration for band #"+STRTRIM(band,2)+" is < zero", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; Accumulate
-    y = y + Sum
+    y = y + sum
   ENDFOR
-  self->Get_Property, $
-    Integral = IntSum, $
-    Debug    = Debug
-  y = y / IntSum
+  
+  
+  ; Normalise the result
+  IF ( ~self.Flag_Is_Set(IS_INTEGRATED_FLAG) ) THEN self.Integrate, Debug=Debug
+  self.Get_Property, Integral=intsum, Debug=Debug
+  y = y / intsum
 
 
   ; Done
   RETURN, y
  
-END ; FUNCTION OSRF::Convolve
+END

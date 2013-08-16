@@ -32,17 +32,9 @@
 ;       osrf_pro_err_handler: Error handler code for OSRF procedures.
 ;
 ; EXAMPLE:
-;       After creating a OSRF object,
+;       An OSRF object, say, x, cna be reinitialised like so,
 ;
-;         IDL> x = OBJ_NEW('OSRF')
-;
-;       and allocating it,
-;
-;         IDL> x->Allocate, 10
-;
-;       the object internals can be reinitialised like so,
-;
-;         IDL> x->Destroy
+;         IDL> x.Destroy
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 20-Apr-2009
@@ -60,7 +52,7 @@ PRO OSRF::Destroy, $
   @osrf_pro_err_handler
  
  
-  ; Initialise the non-pointer members
+  ; Initialise the scalar and array data
   self.Release              = OSRF_RELEASE
   self.Version              = OSRF_VERSION
   self.Sensor_Id            = ''
@@ -77,34 +69,26 @@ PRO OSRF::Destroy, $
   self.Convolved_T          = ZERO
 
 
-  ; If array members are NOT associated, do nothing
-  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
+  ; Empty out hashes
+  IF ( OBJ_VALID(self.f1              ) ) THEN (self.f1              ).Remove, /ALL
+  IF ( OBJ_VALID(self.f2              ) ) THEN (self.f2              ).Remove, /ALL
+  IF ( OBJ_VALID(self.n_Points        ) ) THEN (self.n_Points        ).Remove, /ALL
+  IF ( OBJ_VALID(self.Frequency       ) ) THEN (self.Frequency       ).Remove, /ALL
+  IF ( OBJ_VALID(self.Response        ) ) THEN (self.Response        ).Remove, /ALL
+  IF ( OBJ_VALID(self.Radiance        ) ) THEN (self.Radiance        ).Remove, /ALL
+  IF ( OBJ_VALID(self.Window_Reference) ) THEN (self.Window_Reference).Remove, /ALL
+  IF ( OBJ_VALID(self.Plot_Reference  ) ) THEN (self.Plot_Reference  ).Remove, /ALL
 
 
-  ; Deallocate the pointer members and nullify
-  FOR i = 0, self.n_Bands-1 DO BEGIN
-    PTR_FREE, $
-      (*self.Frequency)[i], $  
-      (*self.Response)[i] , $
-      (*self.Radiance)[i]
-  ENDFOR
-  PTR_FREE, $
-    self.f1              , $
-    self.f2              , $
-    self.n_Points        , $
-    self.Frequency       , $
-    self.Response        , $
-    self.Radiance        , $
-    self.Window_Reference, $
-    self.Plot_Reference     
-  self.f1               = PTR_NEW()
-  self.f2               = PTR_NEW()
-  self.n_Points         = PTR_NEW()
-  self.Frequency        = PTR_NEW()
-  self.Response         = PTR_NEW()
-  self.Radiance         = PTR_NEW()
-  self.Window_Reference = PTR_NEW()
-  self.Plot_Reference   = PTR_NEW()
+ ; Create new hashes
+  self.f1               = HASH()
+  self.f2               = HASH()
+  self.n_Points         = HASH()
+  self.Frequency        = HASH()
+  self.Response         = HASH()
+  self.Radiance         = HASH()
+  self.Window_Reference = HASH()
+  self.Plot_Reference   = HASH()
 
 
   ; Reinitialise the dimensions
@@ -114,4 +98,4 @@ PRO OSRF::Destroy, $
   ; Set the allocation indicator
   self.Is_Allocated = FALSE
 
-END ; PRO OSRF::Destroy
+END

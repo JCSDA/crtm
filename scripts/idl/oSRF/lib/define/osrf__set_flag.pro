@@ -9,11 +9,11 @@
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Set_Flag, $
 ;         Debug                = Debug               , $  ; Input keyword
-;         Interpolated         = Interpolated        , $  ; Input keyword
-;         Integrated           = Integrated          , $  ; Input keyword
+;         Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
+;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
-;         Frequency_Units      = Frequency_Units     , $  ; Input keyword
-;         Interpolation_Method = Interpolation_Method     ; Input keyword
+;         Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
+;         Linear_Interpolation = Linear_Interpolation     ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:                 Set this keyword for debugging.
@@ -25,7 +25,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Interpolated:          Set this keyword to indicate the SRF response
+;       Is_Interpolated:       Set this keyword to indicate the SRF response
 ;                              data has been interpolated.
 ;                              If NOT SET => SRF has NOT been interpolated. [DEFAULT]
 ;                                 SET     => SRF has been interpolated. 
@@ -34,7 +34,7 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Integrated:            Set this keyword to indicate the SRF response
+;       Is_Integrated:         Set this keyword to indicate the SRF response
 ;                              data has been integrated.
 ;                              If NOT SET => SRF has NOT been integrated. [DEFAULT]
 ;                                 SET     => SRF has been integrated. 
@@ -52,7 +52,8 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Frequency_Units:       Set this keyword to indicate the SRF frequency units.
+;       Frequency_GHz:         Set this keyword to indicate the SRF frequency is
+;                              specified in units of GHz.
 ;                              If NOT SET => Units are inverse centimetres (cm-1) [DEFAULT]
 ;                                 SET     => Units are Gigahertz (GHz). 
 ;                              UNITS:      N/A
@@ -60,7 +61,8 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Interpolation_Method:  Set this keyword to indicate the SRF interpolation method.
+;       Linear_Interpolation:  Set this keyword to indicate the SRF was/should be linearly
+;                              interpolated.
 ;                              If NOT SET => Spline interpolation is used [DEFAULT]
 ;                                 SET     => Linear interpolation is used. 
 ;                              UNITS:      N/A
@@ -78,10 +80,10 @@
 ;       Given a valid, allocated, OSRF object, x, the various bit flags can
 ;       be set like so,
 ;
-;         IDL> x->Set_Flag, /Interpolated        , $
-;                           /Integrated          , $
-;                           /Frequency_Units     , $
-;                           /Interpolation_Method
+;         IDL> x->Set_Flag, /Is_Interpolated     , $
+;                           /Is_Integrated       , $
+;                           /Frequency_GHz       , $
+;                           /Linear_Interpolation
 ;
 ; CREATION HISTORY:
 ;       Written by:     Paul van Delst, 22-May-2009
@@ -91,14 +93,15 @@
 
 PRO OSRF::Set_Flag, $
   Debug                = Debug               , $  ; Input keyword
-  Interpolated         = Interpolated        , $  ; Input keyword
-  Integrated           = Integrated          , $  ; Input keyword
+  Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
+  Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
-  Frequency_Units      = Frequency_Units     , $  ; Input keyword
-  Interpolation_Method = Interpolation_Method     ; Input keyword
+  Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
+  Linear_Interpolation = Linear_Interpolation     ; Input keyword
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -106,10 +109,10 @@ PRO OSRF::Set_Flag, $
  
   
   ; Set flags
-  IF ( KEYWORD_SET(Interpolated        ) ) THEN self.Flags = self.Flags OR INTERPOLATED_FLAG        
-  IF ( KEYWORD_SET(Integrated          ) ) THEN self.Flags = self.Flags OR INTEGRATED_FLAG          
-  IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags OR F0_COMPUTED_FLAG          
-  IF ( KEYWORD_SET(Frequency_Units     ) ) THEN self.Flags = self.Flags OR FREQUENCY_UNITS_FLAG     
-  IF ( KEYWORD_SET(Interpolation_Method) ) THEN self.Flags = self.Flags OR INTERPOLATION_METHOD_FLAG
+  IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags OR IS_INTERPOLATED_FLAG.position
+  IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags OR IS_INTEGRATED_FLAG.position          
+  IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags OR F0_COMPUTED_FLAG.position          
+  IF ( KEYWORD_SET(Frequency_GHz       ) ) THEN self.Flags = self.Flags OR FREQUENCY_GHZ_FLAG.position     
+  IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags OR LINEAR_INTERPOLATION_FLAG.position
 
-END ; PRO OSRF::Set_Flag
+END

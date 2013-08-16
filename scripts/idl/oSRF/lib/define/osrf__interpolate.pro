@@ -1,5 +1,57 @@
+;+
+; NAME:
+;       OSRF::Interpolate
+;
+; PURPOSE:
+;       The OSRF::Interpolate procedure method interpolates the response data
+;       to the frequency grid loaded in the interpolation oSRF object.
+;
+; CALLING SEQUENCE:
+;       Obj->[OSRF::]Interpolate, $
+;         Debug = Debug, $
+;         Sigma = Sigma
+;
+; INPUT KEYWORD PARAMETERS:
+;       Debug:    Set this keyword for debugging.
+;                 If NOT SET => Error handler is enabled. (DEFAULT)
+;                    SET     => Error handler is disabled; Routine
+;                               traceback output is enabled.
+;                 UNITS:      N/A
+;                 TYPE:       INTEGER
+;                 DIMENSION:  Scalar
+;                 ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Sigma:    If non-linear interpolation is specified, this is the
+;                 amount of “tension” that is applied to the spline. The
+;                 default oSRF value is 5.0. If sigma is close to 0, (e.g., .01),
+;                 then effectively there is a cubic spline fit. If sigma
+;                 is large, (e.g., greater than 10), then the fit will be
+;                 like a polynomial interpolation.
+;                 UNITS:      N/A
+;                 TYPE:       FLOAT
+;                 DIMENSION:  Scalar
+;                 ATTRIBUTES: INTENT(IN), OPTIONAL
+
+;The 
+; INCLUDE FILES:
+;       osrf_parameters: Include file containing OSRF specific
+;                        parameter value definitions.
+;
+;       osrf_pro_err_handler: Error handler code for OSRF procedures.
+;
+; EXAMPLE:
+;       Given a valid OSRF object, x, and a prepared interpolated oSRF object, x_int,
+;       the SRF data is interpolated like so,
+;
+;         IDL> x->Interpolate, x_int
+;
+; CREATION HISTORY:
+;       Written by:     Paul van Delst, 17-Jun-2009
+;                       paul.vandelst@noaa.gov
+;
+;-
 PRO OSRF::Interpolate, $
-  int_OSRF, $
+  int_oSRF, $
   Sigma = Sigma, $
   Debug = Debug
 
@@ -11,34 +63,42 @@ PRO OSRF::Interpolate, $
  
  
   ; Check if object has been allocated
-  IF ( ~ self->Associated(Debug=Debug) ) THEN $
+  IF ( ~self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Process the sigma keyword
-  _sigma = 5.0d0
-  IF ( N_ELEMENTS(Sigma) GT 0 ) THEN _sigma = DOUBLE(ABS(Sigma[0]))
+  _sigma = N_ELEMENTS(Sigma) GT 0 ? DOUBLE(ABS(Sigma[0])) : 5.0d0
 
-  
+
+    ; Get the number of bands
+  self.Get_Property, n_Bands=n_bands, Debug=Debug
+
   ; Perform the interpolation
-  FOR i = 0L, self.n_Bands-1L DO BEGIN
-    f     = *(*self.Frequency)[i]
-    r     = *(*self.Response)[i]
-    f_int = *(*int_OSRF.Frequency)[i]
-
-    IF ( self->Flag_Is_Set(INTERPOLATION_METHOD_FLAG) ) THEN BEGIN
-      *(*int_OSRF.Response)[i] = INTERPOL( r, f, f_int )
-    ENDIF ELSE BEGIN
-      *(*int_OSRF.Response)[i] = SPLINE( f, r, f_int, _sigma, /DOUBLE )
+  FOR i = 0L, n_bands-1L DO BEGIN
+    ; Get band data
+    band = i+1
+    self.Get_Property, band, Frequency=f, Response=r, Debug=Debug
+    int_oSRF.Get_Property, band, Frequency=f_int, Debug=Debug
+    
+    ; Interpolate
+    IF ( self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG) ) THEN $
+      r_int = INTERPOL( r, f, f_int ) $
+    ELSE $
+      r_int = SPLINE( f, r, f_int, _sigma, /DOUBLE )
     ENDELSE
+    
+    ; Save the result
+    int_oSRF.Set_Property, band, Response=r_int, Debug=Debug
+    
   ENDFOR
   
   
   ; Recompute the various SRF parameters
-  int_OSRF->Integrate, Debug=Debug
-  int_OSRF->Compute_Central_Frequency, Debug=Debug
-  int_OSRF->Compute_Planck_Coefficients, Debug=Debug
-  int_OSRF->Compute_Polychromatic_Coefficients, Debug=Debug
+  int_oSRF->Integrate, Debug=Debug
+  int_oSRF->Compute_Central_Frequency, Debug=Debug
+  int_oSRF->Compute_Planck_Coefficients, Debug=Debug
+  int_oSRF->Compute_Polychromatic_Coefficients, Debug=Debug
   
-END ; PRO OSRF::Interpolate
+END
