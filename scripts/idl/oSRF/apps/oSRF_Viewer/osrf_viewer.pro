@@ -121,6 +121,64 @@ END
 
 
 ;-------------------------------------------------
+PRO ov_display_info, id
+  COMPILE_OPT HIDDEN
+  @osrf_parameters
+  ov_getstate, id, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; Get the current oSRF
+  osrf = state['osrf_file'].Get( Debug    = state['debug'], $
+                                 Position = state['channel_position'] )
+  ; Get the current oSRF info
+  osrf.Get_Property, $
+    Debug                = state['debug'], $
+    Sensor_Id            = sensor_id, $
+    Sensor_Type          = sensor_type, $
+    Flags                = flags, $
+    Integral             = integral, $
+    f0                   = f0, $
+    Planck_Coeffs        = planck_coeffs, $
+    Polychromatic_Coeffs = polychromatic_coeffs
+  ; ...Set the units string
+  IF ( osrf.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN $
+    frequency_units = 'GHz' $
+  ELSE $
+    frequency_units = 'cm^-1'
+
+  ; Create the info string
+  info = [ $
+    'Sensor id                  : ' + sensor_id, $
+    'Sensor type                : ' + SENSOR_TYPE_NAME[sensor_type], $
+    'Channel                    : ' + STRTRIM(state['channel'],2), $
+    'Bit flags                  : ' + STRING(flags,FORMAT='(b32.32)'), $
+    'Integrated SRF             : ' + STRING(integral,FORMAT='(e13.6)'), $
+    'Central frequency          : ' + STRTRIM(STRING(f0,FORMAT='(1x,f12.6)'),2) + frequency_units, $
+    'Planck coefficients        :' + STRING(planck_coeffs,FORMAT='(2(1x,e16.10))'), $
+    'Polychromatic coefficients :' + STRING(polychromatic_coeffs,FORMAT='(2(1x,f16.10))') ]
+
+  
+  ; Set the text
+  WIDGET_CONTROL, $
+    state['ov_text_info_id'], $
+    SET_VALUE = info
+
+  
+  ; Display it
+  ibid = WIDGET_INFO(state['ov_text_info_id'], /PARENT)
+  WIDGET_CONTROL, ibid, /MAP
+
+ 
+  ; Save state variable
+  ov_setstate, id, state
+
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+
+END
+
+
+;-------------------------------------------------
 PRO ov_display, id
   COMPILE_OPT HIDDEN
   ov_getstate, id, state
@@ -144,6 +202,7 @@ PRO ov_display, id
     Debug   = state['debug'], $
     Channel = channel
   state['channel'] = channel
+  state['channel_position'] = channel_position
 
   ; Plot the data
   osrf.Plot, $
@@ -157,6 +216,8 @@ PRO ov_display, id
   ; Save state variable
   ov_setstate, id, state
 
+  ; Update text info
+  ov_display_info, id
 
 END
 
@@ -305,6 +366,21 @@ PRO OSRF_Viewer, File = file, Debug = debug
       UVALUE       = 'Position', $
       XSIZE        = xsize-5 )
 
+  ; Create the base for info output
+  info_base_id = WIDGET_BASE( $
+    top_level_base_id, $
+    GROUP_LEADER = top_level_base_id, $
+    FRAME        = 2, $
+    MAP          = Map, $
+    COLUMN       = 1 )
+    ; ...Create the text widget for info
+    ov_text_info_id = WIDGET_TEXT( $
+      info_base_id, $
+      XSIZE = 130, $
+      YSIZE = 8, $ ; Need to adjust this for more info output
+      GROUP_LEADER = top_level_base_id )
+
+
 
   ; Map, update and realise the widget heirarchy
   WIDGET_CONTROL, $
@@ -329,6 +405,7 @@ PRO OSRF_Viewer, File = file, Debug = debug
   state['ov_view_menu_id'] = ov_view_menu_id
   state['ov_slider_id'] = slider_id
   state['ov_window_id'] = window_id
+  state['ov_text_info_id'] = ov_text_info_id
   ; ...and save it
   ov_setstate, top_level_base_id, state
 
