@@ -64,6 +64,7 @@
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       Sensor_Type:           The flag indicating the type of sensor (IR, MW, etc)
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
