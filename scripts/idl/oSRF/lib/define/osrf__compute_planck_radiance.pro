@@ -69,13 +69,16 @@ PRO OSRF::Compute_Planck_Radiance, $
     Band = i+1
     self.Get_Property, $
       Band, $
+      Channel=channel, $
       Frequency=f, $
       Debug=Debug
     IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f = GHz_to_inverse_cm(f)
+
     result = Planck_Radiance(f, Temperature, radiance)
     IF ( result NE SUCCESS ) THEN $
       MESSAGE, 'Error computing Planck radiance for band '+STRTRIM(i+1,2), $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
     self.Set_Property, $
       Band, $
       Radiance=radiance, $

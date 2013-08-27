@@ -102,6 +102,8 @@ FUNCTION OSRF::Convolve, $
       Frequency = f, $
       Response  = r, $
       Debug=Debug
+    IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f = GHz_to_inverse_cm(f)
+
     ; Perform the band convolution
     sum = ABS(Integral(f, (band_data[band])*r))
     IF ( sum LE ZERO ) THEN $
