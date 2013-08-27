@@ -72,4 +72,17 @@
   DF_LORES = 0.1d0
   DF_HIRES = 0.0025d0
 
+  ; Data for polychromatic correction coefficient calculation.
+  ; ...Limits for IR/MW sensors
+  BC_MIN_T = 150.0d0
+  BC_MAX_T = 340.0d0
+  BC_DT_THRESHOLD = 1.0d-04
+  ; ...Limits for visible sensors
+  VISIBLE_BC_MIN_T = 3000.0d0
+  VISIBLE_BC_MAX_T = 5700.0d0
+  VISIBLE_BC_DT_THRESHOLD = 1.0d-04
+  ; ...Temperature increment
+  BC_D_T = 10.0d0
+  VISIBLE_BC_D_T = 100.0d0
+
 ;-
