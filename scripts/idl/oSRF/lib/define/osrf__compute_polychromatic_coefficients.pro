@@ -46,16 +46,17 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ; Generate the "monochromatic" temperatures
   ; ...Set min and max temps based on Sensor_Type
   IF ( sensor_type EQ VISIBLE_SENSOR ) THEN BEGIN
-    min_T = 3000.0d0
-    max_T = 5700.0d0
-    dT_threshold = 1.0d-04
+    min_T        = VISIBLE_BC_MIN_T
+    max_T        = VISIBLE_BC_MAX_T
+    d_T          = VISIBLE_BC_D_T
+    dT_threshold = VISIBLE_BC_DT_THRESHOLD
   ENDIF ELSE BEGIN 
-    min_T = 150.0d0
-    max_T = 340.0d0
-    dT_threshold = 1.0d-04
+    min_T        = BC_MIN_T
+    max_T        = BC_MAX_T
+    d_T          = BC_D_T
+    dT_threshold = BC_DT_THRESHOLD
   ENDELSE
   ; ...Compute the set of temperatures
-  d_T  = 10.0d0
   n_T  = LONG((max_T-min_T)/d_T) + 1L
   T    = DINDGEN(n_T)/DOUBLE(n_T-1L)
   T    = T*(max_T-min_T) + min_T
