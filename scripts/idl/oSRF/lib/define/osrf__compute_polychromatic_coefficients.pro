@@ -57,9 +57,8 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
     dT_threshold = BC_DT_THRESHOLD
   ENDELSE
   ; ...Compute the set of temperatures
-  n_T  = LONG((max_T-min_T)/d_T) + 1L
-  T    = DINDGEN(n_T)/DOUBLE(n_T-1L)
-  T    = T*(max_T-min_T) + min_T
+  T    = oSRF_Compute_Temperatures(min_T, max_T, d_T)
+  n_T  = N_ELEMENTS(T)
   Teff = DBLARR(n_T)
 
 
