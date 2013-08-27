@@ -143,6 +143,12 @@ PRO OSRF::Plot, $
       yshowtext = 0
     ENDELSE
 
+    ; Set sensor-specific plotting parameters
+    IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN $
+      xtitle = 'Frequency (GHz)' $
+    ELSE $
+      xtitle = 'Frequency (cm!U-1!N)'
+      
     ; Generate the title
     title = STRTRIM(Sensor_Id,2)+'   Ch.'+STRTRIM(Channel,2)
     IF ( n_bands GT 1 ) THEN title = title +', band #'+STRTRIM(i+1,2)
@@ -158,7 +164,7 @@ PRO OSRF::Plot, $
     ; Plot the band response
     gref[i] = PLOT(f, r, $
                    TITLE=title, $
-                   XTITLE='Frequency', $
+                   XTITLE=xtitle, $
                    YTITLE=ytitle, $
                    XRANGE=xrange,/XSTYLE, $
                    YRANGE=yrange,/YSTYLE, $
