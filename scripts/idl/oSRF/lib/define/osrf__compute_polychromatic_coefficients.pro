@@ -1,3 +1,16 @@
+PRO Plot_Results, T, Teff, Tfit, sensor_id, channel, terror, title_fmt
+  COMPILE_OPT HIDDEN
+
+  p = PLOT(T,Teff - tfit, $
+           XTITLE='Temperature (K)', $
+           YTITLE='T!Deff!N - T!Dfit!N (K)', $
+           TITLE=STRING(STRTRIM(sensor_id,2), channel, terror, FORMAT=title_fmt),$
+           POSITION=[0.2,0.125,0.95,0.9])
+  !NULL = PLOT(p.Xrange,[0,0],LINESTYLE='dashed',/OVERPLOT)
+
+END
+
+
 PRO OSRF::Compute_Polychromatic_Coefficients, $
   Debug=Debug
 
@@ -101,12 +114,7 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
              FORMAT='(1x,i5,3(1x,f13.8),1x,e17.10)'
     ENDFOR
     work.Plot
-    p = PLOT(T,Teff - tfit, $
-             XTITLE='Temperature (K)', $
-             YTITLE='T!Deff!N - T!Dfit!N (K)', $
-             TITLE=STRING(STRTRIM(sensor_id,2), channel, terror, FORMAT=title_fmt),$
-             POSITION=[0.2,0.125,0.95,0.9])
-    !NULL = PLOT(p.Xrange,[0,0],LINESTYLE='dashed',/OVERPLOT)
+    Plot_Results, T, Teff, Tfit, sensor_id, channel, terror, title_fmt
     MESSAGE, 'Fit of effective temperatures yielded large (Teff-Tfit) differences.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
