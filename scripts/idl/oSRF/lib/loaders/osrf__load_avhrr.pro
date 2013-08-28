@@ -61,6 +61,7 @@
 
 PRO Read_avhrr_Raw_SRF, $
   Filename     , $  ; Input
+  Sensor_Id    , $  ; Input
   n_points     , $  ; Output
   frequency    , $  ; Output
   response     , $  ; Output
@@ -93,7 +94,11 @@ PRO Read_avhrr_Raw_SRF, $
     wavelength[i] = DOUBLE(elements[IDX_SPECTRAL])
     r[i]          = DOUBLE(elements[IDX_RESPONSE])
   ENDFOR
-  
+
+  IF ( Sensor_Id EQ 'v.avhrr2_n14' ) THEN BEGIN
+    wavelength = wavelength/1000.0d0
+  ENDIF
+
   f = 10000.0d0/wavelength
   
   idx = UNIQ(f, SORT(f))
@@ -211,7 +216,7 @@ PRO oSRF::Load_avhrr, $
 
 
   ; Read the file
-  Read_avhrr_Raw_SRF, filename, n_points, frequency, response
+  Read_avhrr_Raw_SRF, filename, Sensor_Id, n_points, frequency, response
 
 
   ; Load the SRF data into the oSRF object
