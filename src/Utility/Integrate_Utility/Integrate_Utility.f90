@@ -154,8 +154,10 @@ CONTAINS
     LOGICAL  :: Spline_Interpolation
     REAL(fp) :: dx(SIZE(x)-1)
     REAL(fp) :: c0, c(MAX_N_POINTS), h
+    REAL(fp) :: error, tmp, se
     REAL(fp), ALLOCATABLE :: xi(:), yi(:)
     INTEGER , ALLOCATABLE :: jdx(:)
+    REAL(fp), ALLOCATABLE :: s(:)
 
 
     ! Set up
@@ -236,11 +238,11 @@ CONTAINS
     ! Perform the integration
     ! ...Determine the number of indexing points
     n_Jdx = (n_Even-1)/(m-1)
-    ! ...Allocate the indexing array
-    ALLOCATE( jdx(n_Jdx), STAT=alloc_stat )
+    ! ...Allocate the indexing and summation array
+    ALLOCATE( jdx(n_Jdx), s(n_Jdx), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
-      WRITE( msg,'("Error allocating integration index array. STAT = ",i0)' ) alloc_stat
+      WRITE( msg,'("Error allocating integration index and sum arrays. STAT = ",i0)' ) alloc_stat
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
       RETURN
     END IF
@@ -248,12 +250,24 @@ CONTAINS
     h = (xi(n_Even) - xi(1))/REAL(n_Even-1,fp)
     ! ...Construct the index array to use for integration
     jdx = (/ (j, j=1,n_Jdx) /) * (m-1)
-    ! ...Integrate
-    Integral_Sum = ZERO
+    ! ...Accumulate the integral value
     DO j = 1, n_Jdx
-      Integral_Sum = Integral_Sum + (c0 * h * SUM(c(1:m) * yi(idx(1:m) + jdx(j) - (m-1))))
+      s(j) = c0 * h * SUM(c(1:m) * yi(idx(1:m) + jdx(j) - (m-1)))
+    END DO
+    ! ...Perform compensated summation
+    integral_sum = ZERO
+    error = ZERO
+    DO j = 1, n_Jdx
+      tmp          = integral_sum               ! Save current sum
+      se           = s(j) + error               ! Add rounding error to current value
+      integral_sum = tmp + se                   ! Compute new sum
+      error        = (tmp - integral_sum) + se  ! Compute new rounding error
     END DO
 
+
+    ! Clean up
+    DEALLOCATE( xi, yi, jdx, s, STAT=alloc_stat )
+    
   CONTAINS
   
     SUBROUTINE Newton_Cotes_Coefficients()
