@@ -21,6 +21,7 @@ SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
             Fundamental_Constants.f90 \
             String_Utility.f90 \
+            SignalFile_Utility.f90 \
             Search_Utility.f90 \
             Interpolate_Utility.f90 \
             Linear_Interpolation.f90 \
