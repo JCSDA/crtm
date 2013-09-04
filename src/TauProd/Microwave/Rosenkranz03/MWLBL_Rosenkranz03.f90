@@ -125,10 +125,8 @@ MODULE MWLBL_Rosenkranz03
   ! -----------------
   ! Module parameters
   ! -----------------
-
-  ! -- Module RCS Id string
-  CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: MWLBL_Rosenkranz03.f90,v 1.6 2006/07/05 15:21:28 wd20pd Exp $'
+  CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
 
   ! -- Numerical constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO           =  0.0_fp_kind
@@ -2001,7 +1999,7 @@ CONTAINS
     ! Compute the water vapour number density
     ! ---------------------------------------
 
-    Density = PP_to_ND( pw, T )
+    CALL PP_to_ND( T, pw, Density)
 
 
     ! ----------------------------------------
@@ -2256,43 +2254,3 @@ CONTAINS
   END FUNCTION Compute_Wet_Continuum
 
 END MODULE MWLBL_Rosenkranz03
-
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: MWLBL_Rosenkranz03.f90,v 1.6 2006/07/05 15:21:28 wd20pd Exp $
-!
-! $Date: 2006/07/05 15:21:28 $
-!
-! $Revision: 1.6 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: MWLBL_Rosenkranz03.f90,v $
-! Revision 1.6  2006/07/05 15:21:28  wd20pd
-! Uncommented warning messages for negative absorption.
-!
-! Revision 1.5  2006/06/30 16:47:16  dgroff
-! Changed "Error_Handler" references to "Message_Handler"
-!
-! Revision 1.4  2005/01/25 21:34:18  paulv
-! - Removed type declarations of unused variables.
-!
-! Revision 1.3  2004/11/18 14:40:33  paulv
-! - Added collision induced absorption calculation (equivalent of absn2 from
-!   P.Rosenkranz's original f77 code) to the dry continuum subprogram.
-!
-! Revision 1.2  2004/11/17 19:19:08  paulv
-! - Added oxygen absorption routines.
-! - Added public wrapper routines.
-! - Updated header documentation.
-!
-! Revision 1.1  2004/11/15 21:18:47  paulv
-! Initial checkin. H2O functions only.
-!
-!
-!
