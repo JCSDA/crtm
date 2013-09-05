@@ -482,7 +482,7 @@ CONTAINS
 
     IF ( PRESENT( RCS_Id ) ) THEN
       RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+      RCS_Id = MODULE_VERSION_ID
     END IF
 
 
@@ -991,7 +991,7 @@ CONTAINS
 
     IF ( PRESENT( RCS_Id ) ) THEN
       RCS_Id = ' '
-      RCS_Id = MODULE_RCS_ID
+      RCS_Id = MODULE_VERSION_ID
     END IF
 
 
