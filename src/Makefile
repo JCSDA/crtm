@@ -14,6 +14,9 @@ include make.macros
 # Source files to link
 include $(BUILD_DIR)/$(LIBSRC_DIR)/make.filelist
 
+# Make include files to link
+MAKE_INC_FILES = make.rules
+
 # Sensor ids to link for build check target
 CHECK_SENSOR_ID_LIST = cris399_npp atms_npp
 
@@ -31,7 +34,7 @@ create_links: create_coeff_links
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR) && \
 	  echo "Creating source code links in directory `pwd`" && \
 	  echo && \
-	  $(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES) $(INC_FILES)  || exit 1
+	  $(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES) $(INC_FILES) $(MAKE_INC_FILES)  || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
@@ -41,7 +44,7 @@ remove_links: remove_coeff_links
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR) && \
 	  echo "Removing source code links in directory `pwd`" && \
 	  echo && \
-	  $(UNLINK_SCRIPT) $(SRC_FILES) $(INC_FILES) || exit 1
+	  $(UNLINK_SCRIPT) $(SRC_FILES) $(INC_FILES) $(MAKE_INC_FILES) || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
