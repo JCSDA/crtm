@@ -33,14 +33,14 @@ FUNCTION n_f_points, f1, f2, df
   RETURN, n_points
 END
 
-
+;+
 PRO OSRF::Compute_Interpolation_Frequency, $
-  new                                  , $  ; Output
+  new                                  , $  ; In/Output
   Debug             = Debug            , $  ; Input keyword
   n_Points_per_Band = n_Points_per_Band, $  ; MW Keyword
   LoRes             = LoRes            , $  ; IR/VIS Keyword
   HiRes             = HiRes                 ; IR/VIS Keyword
-
+;-
   ; Set up
   COMPILE_OPT HIDDEN
   ; ...OSRF parameters
@@ -51,7 +51,13 @@ PRO OSRF::Compute_Interpolation_Frequency, $
 
   ; Check if object has been allocated
   IF ( ~self.Associated(Debug=Debug) ) THEN $
-    MESSAGE, 'OSRF object has not been allocated.', $
+    MESSAGE, 'oSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+
+  ; Check that the object argument is an oSRF object
+  IF ( ~OBJ_ISA(new,'oSRF') ) THEN $
+    MESSAGE, 'Output object class is not oSRF.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
@@ -94,7 +100,6 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   
   
   ; Allocate the new OSRF
-  new = oSRF()                 
   new.Allocate, n_Points, Debug=Debug
 
   ; Set other frequency-independent properties
