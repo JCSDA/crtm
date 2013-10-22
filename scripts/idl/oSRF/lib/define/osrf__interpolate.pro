@@ -8,8 +8,11 @@
 ;
 ; CALLING SEQUENCE:
 ;       Obj->[OSRF::]Interpolate, $
+;         int_oSRF     , $
 ;         Debug = Debug, $
 ;         Sigma = Sigma
+;
+; OUTPUTS:
 ;
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:    Set this keyword for debugging.
@@ -31,8 +34,7 @@
 ;                 TYPE:       FLOAT
 ;                 DIMENSION:  Scalar
 ;                 ATTRIBUTES: INTENT(IN), OPTIONAL
-
-;The 
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -61,10 +63,19 @@ PRO OSRF::Interpolate, $
   ; ...Set up error handler
   @osrf_pro_err_handler
  
- 
+
   ; Check if object has been allocated
   IF ( ~self.Associated(Debug=Debug) ) THEN $
-    MESSAGE, 'OSRF object has not been allocated.', $
+    MESSAGE, 'oSRF object has not been allocated.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
+
+  ; Check that the object argument is an allocated oSRF object
+  IF ( ~OBJ_ISA(int_oSRF,'oSRF') ) THEN $
+    MESSAGE, 'Output object class is not oSRF.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  IF ( ~int_oSRF.Associated(Debug=Debug) ) THEN $
+    MESSAGE, 'Output oSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
@@ -72,11 +83,18 @@ PRO OSRF::Interpolate, $
   _sigma = N_ELEMENTS(Sigma) GT 0 ? DOUBLE(ABS(Sigma[0])) : 5.0d0
 
 
-    ; Get the number of bands
+  ; Get the number of bands
   self.Get_Property, n_Bands=n_bands, Debug=Debug
+  ; ...and check it
+  int_oSRF.Get_Property, n_Bands=int_n_bands, Debug=Debug
+  IF ( n_bands NE int_n_bands ) THEN $
+    MESSAGE, 'Number of bands is different in oSRF objects.', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+
 
   ; Perform the interpolation
   FOR i = 0L, n_bands-1L DO BEGIN
+
     ; Get band data
     band = i+1
     self.Get_Property, band, Frequency=f, Response=r, Debug=Debug
@@ -87,7 +105,6 @@ PRO OSRF::Interpolate, $
       r_int = INTERPOL( r, f, f_int ) $
     ELSE $
       r_int = SPLINE( f, r, f_int, _sigma, /DOUBLE )
-    ENDELSE
     
     ; Save the result
     int_oSRF.Set_Property, band, Response=r_int, Debug=Debug
