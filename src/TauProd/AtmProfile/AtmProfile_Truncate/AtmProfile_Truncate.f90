@@ -40,7 +40,10 @@ PROGRAM AtmProfile_Truncate
   ! ---------
   ! Variables
   ! ---------
-
+  CHARACTER(2000) :: title
+  CHARACTER(2000) :: comment, truncation_comment
+  CHARACTER(2000) :: history
+  CHARACTER(256)  :: profile_set
   CHARACTER(256) :: msg
   CHARACTER(256) :: file_in, file_out
   INTEGER :: err_stat
@@ -69,10 +72,17 @@ PROGRAM AtmProfile_Truncate
   ! ...The truncation pressure
   WRITE( *,'(/5x,"Enter the truncation pressure (hPa): ")',ADVANCE='NO' )
   READ( *,* ) truncation_pressure
+  WRITE( truncation_comment,'("Profile truncated at ",es13.6,"hPa")' ) truncation_pressure
   
 
   ! Read the AtmProfile file
-  err_stat = AtmProfile_netCDF_ReadFile( atm_in, file_in )
+  err_stat = AtmProfile_netCDF_ReadFile( &
+    atm_in, &
+    file_in, &
+    Title       = title, &
+    Comment     = comment, &
+    History     = history, &
+    Profile_set = profile_set )
   IF ( err_stat /= SUCCESS ) THEN
     msg = 'Error reading the AtmProfile file '//TRIM(file_in)
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
@@ -114,6 +124,8 @@ PROGRAM AtmProfile_Truncate
   
   
     ! Copy structure data
+    ! ...Version increment
+    atm_out(m)%Version = atm_in(m)%Version + 1
     ! ...Metadata
     atm_out(m)%Profile           = atm_in(m)%Profile          
     atm_out(m)%Description       = atm_in(m)%Description      
@@ -147,7 +159,15 @@ PROGRAM AtmProfile_Truncate
 
   ! Write the truncated data to file
   file_out = 'Truncated.'//TRIM(file_in)
-  err_stat = AtmProfile_netCDF_WriteFile( atm_out, file_out, Quiet=.TRUE., Clobber=.TRUE. )
+  err_stat = AtmProfile_netCDF_WriteFile( &
+    atm_out, &
+    file_out, &
+    Quiet   = .TRUE., &
+    Clobber = .TRUE., &
+    Title       = TRIM(title)//' - truncated', &
+    Comment     = TRIM(truncation_comment)//'; '//comment, &
+    History     = PROGRAM_VERSION_ID//'; '//TRIM(history), &
+    Profile_set = TRIM(profile_set) )
   IF ( err_stat /= SUCCESS ) THEN
     msg = 'Error writing the AtmProfile file '//TRIM(file_out)
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
