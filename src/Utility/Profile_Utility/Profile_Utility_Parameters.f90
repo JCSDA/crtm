@@ -68,12 +68,50 @@ MODULE Profile_Utility_Parameters
   REAL(fp), PUBLIC, PARAMETER :: FROM_PERCENT      = 1.0e-02_fp
   REAL(fp), PUBLIC, PARAMETER :: TO_PERCENT        = 1.0e+02_fp
 
+  ! Number of units specifiers. Same as for LBLRTM
+  INTEGER, PUBLIC, PARAMETER :: N_ABSORBER_UNITS = 8
+
   ! Units specifiers. Same as for LBLRTM
-  INTEGER, PUBLIC, PARAMETER :: PPMV_UNITS = 1  ! Units in ppmv
-  INTEGER, PUBLIC, PARAMETER :: ND_UNITS   = 2  ! Units in cm^-3  (number density)
-  INTEGER, PUBLIC, PARAMETER :: MR_UNITS   = 3  ! Units in g/kg   (mixing ratio)
-  INTEGER, PUBLIC, PARAMETER :: MD_UNITS   = 4  ! Units in g.m^-3 (mass density)
-  INTEGER, PUBLIC, PARAMETER :: PP_UNITS   = 5  ! Units in hPa    (partial pressure)
+  INTEGER, PUBLIC, PARAMETER :: INVALID_UNITS = 0  ! Invalid
+  INTEGER, PUBLIC, PARAMETER :: PPMV_UNITS    = 1  ! Volume mixing ratio (ppmv)
+  INTEGER, PUBLIC, PARAMETER :: ND_UNITS      = 2  ! Number density      (cm^-3)
+  INTEGER, PUBLIC, PARAMETER :: MR_UNITS      = 3  ! Mass mixing ratio   (g/kg)
+  INTEGER, PUBLIC, PARAMETER :: MD_UNITS      = 4  ! Mass density        (g.m^-3)
+  INTEGER, PUBLIC, PARAMETER :: PP_UNITS      = 5  ! Partial pressure    (hPa)
+  INTEGER, PUBLIC, PARAMETER :: DPK_UNITS     = 6  ! Dew point           (Kelvin)  [H2O only]
+  INTEGER, PUBLIC, PARAMETER :: DPC_UNITS     = 7  ! Dew point           (Celsius) [H2O only]
+  INTEGER, PUBLIC, PARAMETER :: RH_UNITS      = 8  ! Relative humidity   (%)       [H2O only]
+
+  INTEGER, PUBLIC, PARAMETER :: ABSORBER_UNITS_ID(0:N_ABSORBER_UNITS) = &
+    (/ INVALID_UNITS, &
+       PPMV_UNITS   , &
+       ND_UNITS     , &
+       MR_UNITS     , &
+       MD_UNITS     , &
+       PP_UNITS     , &
+       DPK_UNITS    , &  ! [H2O only]
+       DPC_UNITS    , &  ! [H2O only]
+       RH_UNITS      /)  ! [H2O only]
+  CHARACTER(*), PUBLIC, PARAMETER :: ABSORBER_UNITS_NAME(0:N_ABSORBER_UNITS) = &
+    (/ 'Invalid', &
+       'ppmv   ', &
+       'cm^-3  ', &
+       'g/kg   ', &
+       'g.m^-3 ', &
+       'hPa    ', &
+       'DP, K  ', &  ! [H2O only]
+       'DP, C  ', &  ! [H2O only]
+       'RH, %  ' /)  ! [H2O only]
+  CHARACTER(*), PUBLIC, PARAMETER :: ABSORBER_UNITS_CHAR(0:N_ABSORBER_UNITS) = &
+    (/ '-', &
+       'A', &
+       'B', &
+       'C', &
+       'D', &
+       'E', &
+       'F', &  ! [H2O only]
+       'G', &  ! [H2O only]
+       'H' /)  ! [H2O only]
 
   ! Maximum number of molecular species (as for HITRAN)
   INTEGER, PUBLIC, PARAMETER :: MAX_N_MOLECULAR_SPECIES = 32
