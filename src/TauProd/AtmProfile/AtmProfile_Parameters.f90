@@ -16,6 +16,12 @@ MODULE AtmProfile_Parameters
   ! -----------------
   ! Module use
   USE Type_Kinds, ONLY: fp
+  USE Profile_Utility_Parameters, ONLY: N_ABSORBER_UNITS   , &
+                                        ABSORBER_UNITS_ID  , &
+                                        ABSORBER_UNITS_NAME, &
+                                        ABSORBER_UNITS_CHAR, &
+                                        N_ABSORBERS   => MAX_N_MOLECULAR_SPECIES, &
+                                        ABSORBER_NAME => MOLECULAR_SYMBOL
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -24,9 +30,16 @@ MODULE AtmProfile_Parameters
   ! Visibilities
   ! ------------
   PRIVATE
+  ! Info for identifying and naming absorbers and units
+  PUBLIC :: N_ABSORBER_UNITS   
+  PUBLIC :: ABSORBER_UNITS_ID  
+  PUBLIC :: ABSORBER_UNITS_NAME
+  PUBLIC :: ABSORBER_UNITS_CHAR
+  PUBLIC :: N_ABSORBERS
+  PUBLIC :: ABSORBER_NAME
   ! Dimensioning info
   PUBLIC :: N_ATMPROFILE_SETS
-  PUBLIC :: ATMPROFILE_SET_ID_TAG
+  PUBLIC :: ATMPROFILE_SET
   PUBLIC :: N_ATMPROFILES
   PUBLIC :: ATMPROFILE_BEGIN 
   ! The standard AIRS pressure levels
@@ -38,25 +51,28 @@ MODULE AtmProfile_Parameters
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module RCS Id string
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  ! Module Version string
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
+
 
   ! The current number of profile sets and their ID tag
   INTEGER,      PARAMETER :: N_ATMPROFILE_SETS = 6
-  CHARACTER(*), PARAMETER :: ATMPROFILE_SET_ID_TAG( N_ATMPROFILE_SETS ) = (/ 'UMBC48 ', &
-                                                                             'CIMSS32', &
-                                                                             'ECMWF52', &
-                                                                             'ECMWF83', &
-                                                                             'ECMWF5K', &
-                                                                             'Model6 ' /)
+  CHARACTER(*), PARAMETER :: ATMPROFILE_SET( N_ATMPROFILE_SETS ) = &
+    (/ 'UMBC48 ', &
+       'CIMSS32', &
+       'ECMWF52', &
+       'ECMWF83', &
+       'ECMWF5K', &
+       'Model6 ' /)
   ! The number of profiles in each set
-  INTEGER, PARAMETER :: N_ATMPROFILES(N_ATMPROFILE_SETS) = (/ 48,   &
-                                                              32,   &
-                                                              52,   &
-                                                              83,   &
-                                                              5000, &
-                                                              6    /)
+  INTEGER, PARAMETER :: N_ATMPROFILES(N_ATMPROFILE_SETS) = &
+    (/ 48,   &
+       32,   &
+       52,   &
+       83,   &
+       5000, &
+       6    /)
   INTEGER, PARAMETER :: ATMPROFILE_BEGIN = 1
 
 
