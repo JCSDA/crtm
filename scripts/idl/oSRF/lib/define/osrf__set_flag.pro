@@ -12,7 +12,6 @@
 ;         Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
 ;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
-;         Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
 ;         Linear_Interpolation = Linear_Interpolation     ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
@@ -47,15 +46,6 @@
 ;                              has been computed.
 ;                              If NOT SET => SRF f0 has NOT been computed. [DEFAULT]
 ;                                 SET     => SRF f0 has been computed.
-;                              UNITS:      N/A
-;                              TYPE:       INTEGER
-;                              DIMENSION:  Scalar
-;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;
-;       Frequency_GHz:         Set this keyword to indicate the SRF frequency is
-;                              specified in units of GHz.
-;                              If NOT SET => Units are inverse centimetres (cm-1) [DEFAULT]
-;                                 SET     => Units are Gigahertz (GHz). 
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
@@ -96,7 +86,6 @@ PRO OSRF::Set_Flag, $
   Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
   Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
-  Frequency_GHz        = Frequency_GHz       , $  ; Input keyword
   Linear_Interpolation = Linear_Interpolation     ; Input keyword
 
 
@@ -112,7 +101,10 @@ PRO OSRF::Set_Flag, $
   IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags OR IS_INTERPOLATED_FLAG.position
   IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags OR IS_INTEGRATED_FLAG.position          
   IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags OR F0_COMPUTED_FLAG.position          
-  IF ( KEYWORD_SET(Frequency_GHz       ) ) THEN self.Flags = self.Flags OR FREQUENCY_GHZ_FLAG.position     
   IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags OR LINEAR_INTERPOLATION_FLAG.position
+
+
+  ; Output debug information
+  IF ( KEYWORD_SET(Debug) ) THEN self.Display_Flags
 
 END

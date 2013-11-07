@@ -65,10 +65,11 @@
 ;-
 
 FUNCTION OSRF::Convolve, $
-  band_data, $  ; Input
+  Band_Data, $  ; Input
   Debug=Debug
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -76,7 +77,7 @@ FUNCTION OSRF::Convolve, $
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -92,6 +93,10 @@ FUNCTION OSRF::Convolve, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
+  ; Check the SRF is integrated
+  IF ( ~ self.Flag_Is_Set(IS_INTEGRATED_FLAG, Debug=Debug) ) THEN self.Integrate, Debug=Debug
+
+
   ; Sum up band integrals
   y = ZERO
   FOR i = 0L, n_bands-1L DO BEGIN
@@ -102,10 +107,9 @@ FUNCTION OSRF::Convolve, $
       Frequency = f, $
       Response  = r, $
       Debug=Debug
-    IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f = GHz_to_inverse_cm(f)
 
     ; Perform the band convolution
-    sum = ABS(Integral(f, (band_data[band])*r))
+    sum = ABS(Integral(f, (Band_Data[band])*r))
     IF ( sum LE ZERO ) THEN $
       MESSAGE, "SRF integration for band #"+STRTRIM(band,2)+" is < zero", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
@@ -115,7 +119,6 @@ FUNCTION OSRF::Convolve, $
   
   
   ; Normalise the result
-  IF ( ~self.Flag_Is_Set(IS_INTEGRATED_FLAG) ) THEN self.Integrate, Debug=Debug
   self.Get_Property, Integral=intsum, Debug=Debug
   y = y / intsum
 

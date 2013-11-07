@@ -11,6 +11,8 @@ FUNCTION oSRF_Compute_Temperatures, $
   d_T       ; Input  - temperature increment
 ;-
 
+  COMPILE_OPT HIDDEN
+  
   n    = LONG((max_T-min_T)/d_T) + 1L
   T    = DINDGEN(n)/DOUBLE(n-1L)
   T    = T*(max_T-min_T) + min_T

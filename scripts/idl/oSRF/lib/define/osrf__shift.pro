@@ -46,12 +46,13 @@ PRO OSRF::Shift, $
   Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Do nothing if unallocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN RETURN
+  IF ( ~ self.Associated(Debug=Debug) ) THEN RETURN
   ; ...Check the input
   self.Get_Property, n_Bands=n_bands, Debug=Debug
   IF ( N_ELEMENTS(dFrequency) NE n_bands ) THEN $

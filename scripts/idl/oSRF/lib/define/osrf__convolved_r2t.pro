@@ -65,22 +65,23 @@ PRO OSRF::Convolved_R2T, $
   Debug=Debug
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Process keywords
-  apply_band_correction = ~KEYWORD_SET(No_Band_Correction)
+  apply_band_correction = ~ KEYWORD_SET(No_Band_Correction)
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Compute the central frequency if necessary
-  IF ( ~self.Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self.Compute_Central_Frequency, Debug=Debug
+  IF ( ~ self.Flag_Is_Set(F0_COMPUTED_FLAG, Debug=Debug) ) THEN self.Compute_Central_Frequency, Debug=Debug
 
   
   ; Get the required object properties
@@ -89,7 +90,6 @@ PRO OSRF::Convolved_R2T, $
     Polychromatic_Coeffs = pc, $
     Convolved_R          = R , $
     Debug=Debug
-  IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
 
 
   ; Compute the effective temperature from the channel radiance  

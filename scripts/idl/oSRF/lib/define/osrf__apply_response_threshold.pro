@@ -1,29 +1,18 @@
 ;+
 ; oSRF method to apply a response threshold to an SRF.
 ;
-; Plots of results are only generated if the threshold cutoffs
-; DO NOT occur at the same indices when applied from outer
-; edges in, and from the SRF centre out.
 
 PRO oSRF::Apply_Response_Threshold, $
-  Response_Threshold , $  ; Input
-  No_Plot  = No_Plot , $  ; Input keyword
-  No_Pause = No_Pause, $  ; Input keyword
-  Debug    = Debug   , $  ; Input keyword
-  gRef     = gRef         ; Output keyword
+  Response_Threshold, $  ; Input
+  Debug = Debug          ; Input keyword
 ;-
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
-  ; ...Check keywords
-  Plot_Data  = NOT KEYWORD_SET(No_Plot)
-  Plot_Pause = NOT KEYWORD_SET(No_Pause)
-  ; ...Create list for output graphics reference keyword
-  Buffer = KEYWORD_SET(No_Pause)
-  gRef = HASH()
 
 
   ; Check if structure has been allocated
@@ -94,47 +83,52 @@ PRO oSRF::Apply_Response_Threshold, $
       MESSAGE, 'Inner and outer cutoff points are different for ' + $
                sensor_id + channel_string + band_string, $
                /INFORMATIONAL
-               
-      ; Plot SRF data for inspection
-      IF ( Plot_Data ) THEN BEGIN
-        p = PLOT( f, r, $
-                  TITLE=sensor_id + channel_string + ' threshold cutoff discrepancy', $
-                  XTITLE='Frequency (cm!U-1!N)', $
-                  YTITLE='Relative Response', $
-                  XTICKFONT_SIZE=10, $
-                  YTICKFONT_SIZE=10, $
-                  SYMBOL='diamond', $
-                  SYM_SIZE=0.6, $
-                  BUFFER=Buffer )
-        p.Refresh, /DISABLE
-        ; ...Plot response threshold
-        !NULL = PLOT(p.Xrange, [Response_Threshold, Response_Threshold], $
-                     OVERPLOT=p, LINESTYLE='dash')
-        ; ...Plot maximum SRF value point
-        max_f = [f[max_idx],f[max_idx]]
-        !NULL = PLOT(max_f, p.Yrange, OVERPLOT=p, LINESTYLE='dash')
-        ; ...Plot inner cutoff points
-        inner_low_f = [f[inner_low_idx],f[inner_low_idx]]
-        !NULL = PLOT(inner_low_f, p.Yrange, OVERPLOT=p, COLOR='red')
-        inner_high_f = [f[inner_high_idx],f[inner_high_idx]]
-        !NULL = PLOT(inner_high_f, p.Yrange, OVERPLOT=p, COLOR='red')
-        ; ...Plot outer cutoff points
-        outer_low_f = [f[outer_low_idx],f[outer_low_idx]]
-        !NULL = PLOT(outer_low_f, p.Yrange, OVERPLOT=p, COLOR='green')
-        outer_high_f = [f[outer_high_idx],f[outer_high_idx]]
-        !NULL = PLOT(outer_high_f, p.Yrange, OVERPLOT=p, COLOR='green')
-        p.Refresh
-        ; ...Save the object reference for this band
-        gRef[band] = p
 
-        ; Only pause if not at last band
-        IF ( Plot_Pause AND (band LT n_bands) ) THEN BEGIN
-          PRINT, FORMAT='(/5x,"Press <ENTER> to continue, Q to quit, S to stop.")'
-          q = GET_KBRD(1)
-          IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
-          IF ( STRUPCASE(q) EQ 'S' ) THEN STOP
-        ENDIF
-      ENDIF
+
+; *** REMOVE THIS AND (somehow) PUT IN Plot METHOD ***
+; 
+;      ; Plot SRF data for inspection
+;      IF ( Plot_Data ) THEN BEGIN
+;        title = sensor_id + channel_string + ' threshold cutoff discrepancy'
+;        p = PLOT( f, r, $
+;                  TITLE=title, $
+;                  XTITLE='Frequency (cm!U-1!N)', $
+;                  YTITLE='Relative Response', $
+;                  XTICKFONT_SIZE=9, $
+;                  YTICKFONT_SIZE=9, $
+;                  SYMBOL='diamond', $
+;                  SYM_SIZE=0.6, $
+;                  BUFFER=Buffer, $
+;                  WINDOW_TITLE = title )
+;        p.Refresh, /DISABLE
+;        ; ...Plot response threshold
+;        !NULL = PLOT(p.Xrange, [Response_Threshold, Response_Threshold], $
+;                     OVERPLOT=p, LINESTYLE='dash')
+;        ; ...Plot maximum SRF value point
+;        max_f = [f[max_idx],f[max_idx]]
+;        !NULL = PLOT(max_f, p.Yrange, OVERPLOT=p, LINESTYLE='dash')
+;        ; ...Plot inner cutoff points
+;        inner_low_f = [f[inner_low_idx],f[inner_low_idx]]
+;        !NULL = PLOT(inner_low_f, p.Yrange, OVERPLOT=p, COLOR='red')
+;        inner_high_f = [f[inner_high_idx],f[inner_high_idx]]
+;        !NULL = PLOT(inner_high_f, p.Yrange, OVERPLOT=p, COLOR='red')
+;        ; ...Plot outer cutoff points
+;        outer_low_f = [f[outer_low_idx],f[outer_low_idx]]
+;        !NULL = PLOT(outer_low_f, p.Yrange, OVERPLOT=p, COLOR='green')
+;        outer_high_f = [f[outer_high_idx],f[outer_high_idx]]
+;        !NULL = PLOT(outer_high_f, p.Yrange, OVERPLOT=p, COLOR='green')
+;        p.Refresh
+;        ; ...Save the object reference for this band
+;        gRef[band] = p
+;
+;        ; Only pause if not at last band
+;        IF ( Plot_Pause AND (band LT n_bands) ) THEN BEGIN
+;          PRINT, FORMAT='(/5x,"Press <ENTER> to continue, Q to quit, S to stop.")'
+;          q = GET_KBRD(1)
+;          IF ( STRUPCASE(q) EQ 'Q' ) THEN BREAK
+;          IF ( STRUPCASE(q) EQ 'S' ) THEN STOP
+;        ENDIF
+;      ENDIF
       
     ENDIF
 
@@ -175,5 +169,12 @@ PRO oSRF::Apply_Response_Threshold, $
   ENDFOR
   ; ...Copy new object to self
   new->Assign, self, Debug=Debug
+
   
+  ; Recompute the various SRF parameters
+  self.Integrate, Debug=Debug
+  self.Compute_Central_Frequency, Debug=Debug
+  self.Compute_Planck_Coefficients, Debug=Debug
+  self.Compute_Polychromatic_Coefficients, Debug=Debug
+
 END

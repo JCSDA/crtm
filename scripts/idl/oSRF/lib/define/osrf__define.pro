@@ -48,12 +48,13 @@ PRO OSRF__Define
            n_Points            : HASH(),                         $  ; Number of points per band, nP (nB)
            Frequency           : HASH(),                         $  ; SRF band frequencies (nP x nB)
            Response            : HASH(),                         $  ; SRF band response    (nP x nB)
+           Bandwidth           : HASH(),                         $  ; Passband width (nB)
            ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
            Radiance            : HASH(),                         $  ; Array of radiances (nP x nB)
            ; ...Variables for plotting
            ;    These are not copied if the Assign() method is used.
-           Window_Reference    : HASH(),                         $  ; Graphics window
-           Plot_Reference      : HASH()                          }  ; Passband plots
+           wRef                : OBJ_NEW(),                      $  ; Graphics window
+           pRef                : HASH()                          }  ; Passband plots
 
 END

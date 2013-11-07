@@ -38,6 +38,7 @@ PRO OSRF_File::Write, $
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler
@@ -117,13 +118,13 @@ PRO OSRF_File::Write, $
     f1_VarId = NCDF_VARDEF( fid, f1_VarName, n_Bands_DimId, /DOUBLE )
     NCDF_ATTPUT, fid, f1_VarId, LONGNAME_ATTNAME   , F1_LONGNAME
     NCDF_ATTPUT, fid, f1_VarId, DESCRIPTION_ATTNAME, F1_DESCRIPTION
-    NCDF_ATTPUT, fid, f1_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS[self.Sensor_Type]
+    NCDF_ATTPUT, fid, f1_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS
     NCDF_ATTPUT, fid, f1_VarId, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
     ; The band end frequency variable
     f2_VarId = NCDF_VARDEF( fid, f2_VarName, n_Bands_DimId, /DOUBLE )
     NCDF_ATTPUT, fid, f2_VarId, LONGNAME_ATTNAME   , F2_LONGNAME
     NCDF_ATTPUT, fid, f2_VarId, DESCRIPTION_ATTNAME, F2_DESCRIPTION
-    NCDF_ATTPUT, fid, f2_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS[self.Sensor_Type]
+    NCDF_ATTPUT, fid, f2_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS
     NCDF_ATTPUT, fid, f2_VarId, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
 
 
@@ -135,7 +136,7 @@ PRO OSRF_File::Write, $
       Frequency_VarId[i] = NCDF_VARDEF( fid, Frequency_VarName[i], n_Points_DimId[i], /DOUBLE )
       NCDF_ATTPUT, fid, Frequency_VarId[i], LONGNAME_ATTNAME   , FREQUENCY_LONGNAME 
       NCDF_ATTPUT, fid, Frequency_VarId[i], DESCRIPTION_ATTNAME, FREQUENCY_DESCRIPTION
-      NCDF_ATTPUT, fid, Frequency_VarId[i], UNITS_ATTNAME      , FREQUENCY_UNITS[self.Sensor_Type]
+      NCDF_ATTPUT, fid, Frequency_VarId[i], UNITS_ATTNAME      , FREQUENCY_UNITS
       NCDF_ATTPUT, fid, Frequency_VarId[i], FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
       ; The response data for this channel's band
       Response_VarId[i] = NCDF_VARDEF( fid, Response_VarName[i], n_Points_DimId[i], /DOUBLE )

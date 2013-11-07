@@ -35,6 +35,7 @@ PRO OSRF::Reflect, $
   Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -43,7 +44,7 @@ PRO OSRF::Reflect, $
  
   ; Check object
   ; ...Do nothing if unallocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN RETURN
+  IF ( ~ self.Associated(Debug=Debug) ) THEN RETURN
   ; ...Check this SRF can be reflected
   self.Get_Property, n_Bands=n_bands, Debug=Debug
   IF ( n_bands LT 2 ) THEN RETURN

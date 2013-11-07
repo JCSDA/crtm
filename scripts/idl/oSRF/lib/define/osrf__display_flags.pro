@@ -43,6 +43,7 @@ PRO OSRF::Display_Flags, $
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -50,15 +51,13 @@ PRO OSRF::Display_Flags, $
  
   
   ; Display flags
-  PRINT, 'Interpolation status : ', $
+  PRINT, IS_INTERPOLATED_FLAG.name, ' status: ', $
     IS_INTERPOLATED_FLAG.status[self.Flag_Is_Set(IS_INTERPOLATED_FLAG)]
-  PRINT, 'Integration status   : ', $
+  PRINT, IS_INTEGRATED_FLAG.name, ' status: ', $
     IS_INTEGRATED_FLAG.status[self.Flag_Is_Set(IS_INTEGRATED_FLAG)]
-  PRINT, 'f0 computation status: ', $
+  PRINT, F0_COMPUTED_FLAG.name, ' status: ', $
     F0_COMPUTED_FLAG.status[self.Flag_Is_Set(F0_COMPUTED_FLAG)]
-  PRINT, 'Frequency units      : ', $
-    FREQUENCY_GHZ_FLAG.status[self.Flag_Is_Set(FREQUENCY_GHZ_FLAG)]
-  PRINT, 'Interpolation method : ', $
+  PRINT, LINEAR_INTERPOLATION_FLAG.name, ' status: ', $
     LINEAR_INTERPOLATION_FLAG.status[self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG)]
 
 END

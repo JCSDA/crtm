@@ -112,6 +112,7 @@ PRO OSRF_File::Get_Property, $
   Comment          = Comment              ; Output keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...netCDF parameters
   @osrf_file_parameters
   ; ...Set up error handler

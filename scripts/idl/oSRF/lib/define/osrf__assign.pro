@@ -56,18 +56,19 @@ PRO OSRF::Assign, $
   Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
 
   ; ...ALL input data pointers must be associated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Some or all input OSRF members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   ; ...Return argument must be present
-  IF ( ~ARG_PRESENT(new) ) THEN $
+  IF ( ~ ARG_PRESENT(new) ) THEN $
     MESSAGE, 'No output object argument specified.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
              
@@ -117,5 +118,10 @@ PRO OSRF::Assign, $
   new.Frequency = (self.Frequency)[*]
   new.Response  = (self.Response)[*] 
   new.Radiance  = (self.Radiance)[*] 
+  new.Bandwidth = (self.Bandwidth)[*] 
 
+  ; Output debug info
+  IF ( KEYWORD_SET(debug) ) THEN BEGIN
+    new.Set_Flag, Debug = debug
+  ENDIF
 END

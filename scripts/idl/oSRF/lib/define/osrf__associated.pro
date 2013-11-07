@@ -60,6 +60,7 @@ FUNCTION OSRF::Associated, $
   Debug=Debug           ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   @osrf_func_err_handler
 
   RETURN, self.Is_Allocated

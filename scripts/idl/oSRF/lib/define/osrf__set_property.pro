@@ -149,6 +149,7 @@ PRO OSRF::Set_Property, $
   Radiance         = Radiance             ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -156,7 +157,7 @@ PRO OSRF::Set_Property, $
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, "OSRF object has not been allocated.", $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
  
@@ -174,22 +175,13 @@ PRO OSRF::Set_Property, $
   ; Set scalar/array data
   IF ( N_ELEMENTS(Version         ) GT 0 ) THEN self.Version          = Version         
   IF ( N_ELEMENTS(Sensor_Id       ) GT 0 ) THEN self.Sensor_Id        = Sensor_Id       
+  IF ( N_ELEMENTS(Sensor_Type     ) GT 0 ) THEN self.Sensor_Type      = Sensor_Type
   IF ( N_ELEMENTS(WMO_Satellite_ID) GT 0 ) THEN self.WMO_Satellite_ID = WMO_Satellite_ID
   IF ( N_ELEMENTS(WMO_Sensor_ID   ) GT 0 ) THEN self.WMO_Sensor_ID    = WMO_Sensor_ID   
   IF ( N_ELEMENTS(Channel         ) GT 0 ) THEN self.Channel          = Channel         
   IF ( N_ELEMENTS(Convolved_R     ) GT 0 ) THEN self.Convolved_R      = Convolved_R
   IF ( N_ELEMENTS(Convolved_T     ) GT 0 ) THEN self.Convolved_T      = Convolved_T
 
-
-  ; Set flags as necessary based on sensor type
-  IF ( N_ELEMENTS(Sensor_Type) GT 0 ) THEN BEGIN
-    self.Sensor_Type = Sensor_Type
-    CASE Sensor_Type OF
-      MICROWAVE_SENSOR: self.Set_Flag, Frequency_GHz = FREQUENCY_GHZ_FLAG.on
-      ELSE:             self.Set_Flag, Frequency_GHz = FREQUENCY_GHZ_FLAG.off
-    ENDCASE
-  ENDIF
-  
 
   ; Set frequency data
   n_points = N_ELEMENTS(Frequency)
@@ -203,6 +195,9 @@ PRO OSRF::Set_Property, $
     self.f1[_band]        = Frequency[0]
     self.f2[_band]        = Frequency[n_points-1]
     self.Frequency[_band] = Frequency
+    IF ( KEYWORD_SET(debug) ) THEN $
+      MESSAGE, 'Frequency properties for band ' + STRTRIM(_band,2) + 'have been set', $
+               /INFORMATIONAL
   ENDIF
 
 
@@ -216,6 +211,9 @@ PRO OSRF::Set_Property, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; ...Assign response data
     self.Response[_band] = Response
+    IF ( KEYWORD_SET(debug) ) THEN $
+      MESSAGE, 'Response properties for band ' + STRTRIM(_band,2) + 'have been set', $
+               /INFORMATIONAL
   ENDIF
   
   
@@ -229,6 +227,9 @@ PRO OSRF::Set_Property, $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ; ...Assign radiance data
     self.Radiance[_band] = Radiance
+    IF ( KEYWORD_SET(debug) ) THEN $
+      MESSAGE, 'Radiance properties for band ' + STRTRIM(_band,2) + 'have been set', $
+               /INFORMATIONAL
   ENDIF
 
 END

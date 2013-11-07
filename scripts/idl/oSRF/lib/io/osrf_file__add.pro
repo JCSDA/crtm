@@ -51,6 +51,7 @@ PRO OSRF_File::Add, $
   _REF_EXTRA = Extra     ; Keywords passed onto IDL_Container::Add
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_file_parameters
   ; ...Set up error handler

@@ -44,6 +44,7 @@ PRO OSRF::Integrate, $
   Debug=Debug
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -51,7 +52,7 @@ PRO OSRF::Integrate, $
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -62,10 +63,13 @@ PRO OSRF::Integrate, $
 
   ; Sum up band integrals
   intsum = ZERO
-  FOR i = 0L, n_Bands-1L DO BEGIN
+  FOR band = 1L, n_Bands DO BEGIN
     ; Get band data
-    band = i+1
-    self.Get_Property, band, Frequency=f, Response=r, Debug=Debug
+    self->Get_Property, $
+      band, $
+      Frequency = f, $
+      Response  = r, $
+      Debug=Debug
     ; Integrate
     sum = Integral(f, r)
     IF ( sum LE ZERO ) THEN $

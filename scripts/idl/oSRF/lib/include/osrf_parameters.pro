@@ -32,37 +32,34 @@
                        'Infrared   ', $
                        'Visible    ', $
                        'Ultraviolet'  ]
-  SENSOR_FREQUENCY_UNITS = [ 'Invalid'                    , $
-                             'Gigahertz (GHz)'            , $
-                             'Inverse centimetres (cm^-1)', $
-                             'Inverse centimetres (cm^-1)', $
-                             'Inverse centimetres (cm^-1)'  ]
+  SENSOR_FREQUENCY_UNITS = 'Inverse centimetres (cm^-1)'
 
   ; Bit Flags
   IS_INTERPOLATED_FLAG      = { position: 1L, $
                                 off     : 0L, $  ; Is not interpolated
                                 on      : 1L, $  ; Is interpolated
-                                status  : ['Not interpolated', 'Interpolated'] }
+                                status  : ['Not interpolated', 'Interpolated'], $
+                                name    : 'Is_Interpolated_Flag' }
   IS_INTEGRATED_FLAG        = { position: 2L, $
                                 off     : 0L, $  ; Is not integrated
                                 on      : 1L, $  ; Is integrated
-                                status  : ['Not integrated', 'Integrated'] }
+                                status  : ['Not integrated', 'Integrated'], $
+                                name    : 'Is_Integrated_Flag' }
   F0_COMPUTED_FLAG          = { position: 4L, $
                                 off     : 0L, $  ; f0 is not computed
                                 on      : 1L, $  ; f0 is computed
-                                status  : ['f0 not computed', 'f0 computed'] }
-  FREQUENCY_GHZ_FLAG        = { position: 8L, $
-                                off     : 0L, $  ; Frequency units are cm^-1
-                                on      : 1L, $  ; Frequency units are GHz
-                                status  : ['cm^-1', 'GHz'] }
-  LINEAR_INTERPOLATION_FLAG = { position: 16L, $
+                                status  : ['f0 not computed', 'f0 computed'], $
+                                name    : 'f0_Computed_Flag' }
+  LINEAR_INTERPOLATION_FLAG = { position: 8L, $
                                 off     : 0L, $  ; Spline interpolation
                                 on      : 1L, $  ; Linear interpolation
-                                status  : ['Spline', 'Linear'] }
-  GAUSSIAN_INTEGRATION_FLAG = { position: 32L, $
+                                status  : ['Spline', 'Linear'], $
+                                name    : 'Linear_Interpolation_Flag' }
+  GAUSSIAN_INTEGRATION_FLAG = { position: 16L, $
                                 off     : 0L, $  ; Simpson's integration
                                 on      : 1L, $  ; Gaussian integration
-                                status  : ['Simpson', 'Gaussian'] }
+                                status  : ['Simpson', 'Gaussian'], $
+                                name    : 'Gaussian_Integration_Flag' }
 
   ; Fixed dimensions
   N_PLANCK_COEFFS        = 2L
@@ -78,11 +75,11 @@
   BC_MAX_T = 340.0d0
   BC_DT_THRESHOLD = 1.0d-04
   ; ...Limits for visible sensors
-  VISIBLE_BC_MIN_T = 3000.0d0
-  VISIBLE_BC_MAX_T = 5700.0d0
+  VISIBLE_BC_MIN_T = 2982.0d0
+  VISIBLE_BC_MAX_T = 5718.0d0
   VISIBLE_BC_DT_THRESHOLD = 1.0d-04
   ; ...Temperature increment
-  BC_D_T = 10.0d0
-  VISIBLE_BC_D_T = 100.0d0
+  BC_D_T = 5.0d0
+  VISIBLE_BC_D_T = 72.0d0
 
 ;-

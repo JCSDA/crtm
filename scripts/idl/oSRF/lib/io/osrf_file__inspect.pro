@@ -42,6 +42,8 @@ PRO OSRF_File::Inspect, $
   Verbose=Verbose, $  ; Input keyword
   Debug=Debug         ; Input keyword
 
+  COMPILE_OPT HIDDEN
+
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
   HELP, self, /OBJECTS
 

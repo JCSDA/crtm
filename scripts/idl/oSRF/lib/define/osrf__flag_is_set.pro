@@ -9,7 +9,15 @@ FUNCTION OSRF::Flag_Is_Set, $
   ; Get flag status
   Value = self.Flags AND Flag.position
   i = Value GT 0 ? ALOG(Value)/ALOG(2) : 0
-  RETURN, ISHFT(Value, -i)
+  status = ISHFT(Value, -i)
+  
+  ; Output debug info
+  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
+    MESSAGE, Flag.name + ' status : ' + Flag.status[status], /INFORMATIONAL
+  ENDIF
+  
+  ; Return status value
+  RETURN, status
   
 END
 

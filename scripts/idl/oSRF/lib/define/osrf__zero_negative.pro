@@ -55,16 +55,17 @@ PRO OSRF::Zero_Negative, $
   Debug = Debug  
   
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...oSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Check keywords
-  recalculate = ~KEYWORD_SET(No_Recalculate)
+  recalculate = ~ KEYWORD_SET(No_Recalculate)
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
  

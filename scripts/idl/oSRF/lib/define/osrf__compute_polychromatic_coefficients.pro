@@ -1,20 +1,13 @@
-PRO Plot_Results, T, Teff, Tfit, sensor_id, channel, terror, title_fmt
-  COMPILE_OPT HIDDEN
-
-  p = PLOT(T,Teff - tfit, $
-           XTITLE='Temperature (K)', $
-           YTITLE='T!Deff!N - T!Dfit!N (K)', $
-           TITLE=STRING(STRTRIM(sensor_id,2), channel, terror, FORMAT=title_fmt),$
-           POSITION=[0.2,0.125,0.95,0.9])
-  !NULL = PLOT(p.Xrange,[0,0],LINESTYLE='dashed',/OVERPLOT)
-
-END
-
+;+
+; oSRF method to compute the polychromatic coefficients for an SRF.
+;
 
 PRO OSRF::Compute_Polychromatic_Coefficients, $
-  Debug=Debug
+  Debug = Debug  ; Input keyword
+;-
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -22,7 +15,7 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -32,30 +25,13 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
 
 
   ; Compute the central frequency if necessary
-  IF ( ~self.Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self.Compute_Central_Frequency, Debug=Debug
+  IF ( ~ self.Flag_Is_Set(F0_COMPUTED_FLAG) ) THEN self.Compute_Central_Frequency, Debug=Debug
 
   
   ; Copy the SRF into a work object
   self.Assign, work, Debug=Debug
 
   
-  ; Perform conversions to units of inverse centimetres if necessary
-  IF ( sensor_type EQ MICROWAVE_SENSOR ) THEN BEGIN
-    ; ...Convert frequency arrays
-    FOR i = 0L, work.n_Bands-1L DO BEGIN
-      work.Get_Property, i+1, Frequency=f, Debug=Debug
-      f = GHz_to_inverse_cm(f)
-      work.Set_Property, i+1, Frequency=f, Debug=Debug
-    ENDFOR
-    ; ...Clear the frequency units flag to indicate cm-1
-    work.Clear_Flag, /Frequency_GHz, Debug=Debug
-    ; ...Recompute integral
-    work.Integrate, Debug=Debug
-    ; ...Recompute central frequency
-    work.Compute_Central_Frequency, Debug=Debug
-  ENDIF
-  
-
   ; Generate the "monochromatic" temperatures
   ; ...Set min and max temps based on Sensor_Type
   IF ( sensor_type EQ VISIBLE_SENSOR ) THEN BEGIN
@@ -101,25 +77,46 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
     MESSAGE, 'Error performing polynomial fit', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-  ; ...Check result
+  
+  ; Check result
   IF ( terror GT dT_threshold ) THEN BEGIN
-    work.Get_Property, Sensor_Id=sensor_id, Channel=channel, Debug=Debug
-    print_fmt='(/2x,"Polychromatic coefficient fit for ",a," channel ",i4,/2x,"StdError=",e17.10)'
-    title_fmt='(/2x,"Polychromatic coefficient fit for ",a," channel ",i4,"!CStdError=",e17.10)'
-    PRINT, STRTRIM(sensor_id,2), channel, terror, FORMAT=print_fmt
-    PRINT, FORMAT='(/," Index       T          Teff          Tfit         Teff-Tfit")'
+    work.Get_Property, Sensor_Id = sensor_id, Channel = channel, Debug = debug
+    filename = STRTRIM(sensor_id,2)+'-'+STRTRIM(channel,2)+'.tfit.dat'
+    OPENW, lun, filename, /GET_LUN
+    PRINTF, lun, $
+      STRTRIM(sensor_id,2), STRTRIM(channel,2), terror, $
+      FORMAT='("! ",/,"! Polychromatic coefficient fit for ",a," channel ",a,/2x,"StdError=",e17.10)'
+    PRINTF, lun, $
+      FORMAT='("! ",/,"! Index       T          Teff          Tfit         Teff-Tfit")'
     dT_fit = ABS(Teff - tfit)
     FOR i = 0L, n_T-1 DO BEGIN
-      PRINT, i, T[i], Teff[i], tfit[i], dT_fit[i], $
-             FORMAT='(1x,i5,3(1x,f13.8),1x,e17.10)'
+      PRINTF, lun, $
+        i, T[i], Teff[i], tfit[i], dT_fit[i], $
+        FORMAT='(1x,i5,3(1x,f13.8),1x,e17.10)'
     ENDFOR
-    work.Plot
-    Plot_Results, T, Teff, Tfit, sensor_id, channel, terror, title_fmt
-    MESSAGE, 'Fit of effective temperatures yielded large (Teff-Tfit) differences.', $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    FREE_LUN, lun
+    MESSAGE, 'Fit of effective temperatures yielded (Teff-Tfit) differences > ' + $
+             STRING(dT_threshold,FORMAT='(e13.6)') + ". See " + STRTRIM(filename,2), $
+             /INFORMATIONAL
   ENDIF
 
-  ; ...Save results in original object
+
+; *** REMOVE THIS AND PUT IN Plot METHOD ***
+;  ; Plot the fit data
+;  IF ( Plot_Data ) THEN BEGIN
+;    work.Get_Property, Sensor_Id=sensor_id, Channel=channel, Debug=Debug
+;    title_fmt='(/2x,"Polychromatic coefficient fit for ",a," channel ",a,"!CStdError=",e17.10)'
+;    gRef = PLOT(T,Teff - tfit, $
+;                XTITLE='Temperature (K)', $
+;                YTITLE='T!Deff!N - T!Dfit!N (K)', $
+;                TITLE=STRING(STRTRIM(sensor_id,2), STRTRIM(channel,2), terror, FORMAT=title_fmt),$
+;                FONT_SIZE = 9, $
+;                WINDOW_TITLE = sensor_id+', channel '+STRTRIM(channel,2)+' (Teff-Tfit) differences')
+;    !NULL = PLOT(gRef.Xrange,[0,0],LINESTYLE='dashed',/OVERPLOT)
+;  ENDIF
+
+
+  ; Save results in original object
   self.Polychromatic_Coeffs = x
 
 

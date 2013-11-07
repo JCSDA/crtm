@@ -70,6 +70,7 @@ FUNCTION OSRF_File::Get, $
   _REF_EXTRA = Extra       ; Keywords passed onto IDL_Container::Get
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...File parameters
   @osrf_file_parameters
   ; ...Set up error handler

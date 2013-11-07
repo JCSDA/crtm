@@ -29,6 +29,7 @@
 ;         f2                   = f2                  , $  ; Output keyword
 ;         Frequency            = Frequency           , $  ; Output keyword
 ;         Response             = Response            , $  ; Output keyword
+;         Bandwidth            = Bandwidth           , $  ; Output keyword
 ;         Radiance             = Radiance                 ; Output keyword
 ;
 ; OPTIONAL INPUT ARGUMENTS:
@@ -159,6 +160,13 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       Bandwidth:             The bandwidth for an SRF passband.
+;                              Used in conjunction with the Band argument.
+;                              UNITS:      N/A
+;                              TYPE:       REAL
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       Frequency:             The frequency grid for an SRF band.
 ;                              Used in conjunction with the Band argument.
 ;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
@@ -221,12 +229,15 @@ PRO OSRF::Get_Property, $
   n_Points             = n_Points            , $  ; Output keyword
   f1                   = f1                  , $  ; Output keyword
   f2                   = f2                  , $  ; Output keyword
+  Bandwidth            = Bandwidth           , $  ; Output keyword
   Frequency            = Frequency           , $  ; Output keyword
   Response             = Response            , $  ; Output keyword
-  Radiance             = Radiance                 ; Output keyword
+  Radiance             = Radiance            , $  ; Output keyword
+  pRef = pRef
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -234,7 +245,7 @@ PRO OSRF::Get_Property, $
  
   
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, "OSRF object has not been allocated.", $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -269,17 +280,19 @@ PRO OSRF::Get_Property, $
   ; Get band specific data  
   IF ( ARG_PRESENT(f1       ) ) THEN f1        = self.f1[_band]       
   IF ( ARG_PRESENT(f2       ) ) THEN f2        = self.f2[_band]       
+  IF ( ARG_PRESENT(Bandwidth) ) THEN Bandwidth = self.Bandwidth[_band]
   IF ( ARG_PRESENT(Frequency) ) THEN Frequency = self.Frequency[_band]
   IF ( ARG_PRESENT(Response ) ) THEN Response  = self.Response[_band]
   IF ( ARG_PRESENT(Radiance ) ) THEN Radiance  = self.Radiance[_band]
+  IF ( ARG_PRESENT(pRef     ) ) THEN pRef      = self.pRef
 
   ; Band number of points is special case
   IF ( ARG_PRESENT(n_Points) ) THEN BEGIN
     IF ( N_ELEMENTS(Band) EQ 0 ) THEN BEGIN
       n_Points = []
-      FOR i = 1, self.n_Bands DO n_Points = [n_Points,self.n_Points[i]]
+      FOR i = 1, self.n_Bands DO n_Points = [n_Points,LONG(self.n_Points[i])]
     ENDIF ELSE BEGIN
-      n_Points = self.n_Points[_band]
+      n_Points = LONG(self.n_Points[_band])
     ENDELSE  
   ENDIF
 

@@ -107,6 +107,7 @@ PRO OSRF_File::Set_Property, $
 
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF_File parameters
   @osrf_file_parameters
   ; ...Set up error handler

@@ -35,11 +35,10 @@ END
 
 ;+
 PRO OSRF::Compute_Interpolation_Frequency, $
-  new                                  , $  ; In/Output
-  Debug             = Debug            , $  ; Input keyword
-  n_Points_per_Band = n_Points_per_Band, $  ; MW Keyword
-  LoRes             = LoRes            , $  ; IR/VIS Keyword
-  HiRes             = HiRes                 ; IR/VIS Keyword
+  new          , $  ; Output
+  Debug = Debug, $  ; Input keyword
+  LoRes = LoRes, $  ; IR/VIS Keyword. DEFAULT. This keyword also has precendence over HiRes.
+  HiRes = HiRes     ; IR/VIS Keyword
 ;-
   ; Set up
   COMPILE_OPT HIDDEN
@@ -47,60 +46,43 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
+  ; ...Process keywords
+  df = DF_LORES
+  IF ( KEYWORD_SET(HiRes)) THEN df = DF_HIRES
+  IF ( KEYWORD_SET(LoRes)) THEN df = DF_LORES
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'oSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Check that the object argument is an oSRF object
-  IF ( ~OBJ_ISA(new,'oSRF') ) THEN $
+  IF ( ~ OBJ_ISA(new,'oSRF') ) THEN $
     MESSAGE, 'Output object class is not oSRF.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
-  ; Process keywords based on sensor type
-  CASE 1 OF
-    ; Microwave instruments
-    (self.Sensor_Type EQ MICROWAVE_SENSOR): $
-      BEGIN
-        ; ...Check keyword was set
-        IF ( N_ELEMENTS(n_Points_per_Band) EQ 0 ) THEN $
-          MESSAGE, 'Nothing to do for '+SENSOR_TYPE_NAME[self.Sensor_Type]+' sensor....', $
-                   NONAME=MsgSwitch, NOPRINT=MsgSwitch
-        ; ...Determine interpolation limit frequencies and n_Points
-        f1 = self.f1
-        f2 = self.f2
-        n_Points = REPLICATE(LONG(n_Points_per_Band[0]), self.n_Bands)
-      END
-    
-    ; Infrared or visible instruments
-    (self.Sensor_Type EQ INFRARED_SENSOR) OR $
-    (self.Sensor_Type EQ VISIBLE_SENSOR ): $
-      BEGIN
-        ; ...Process keywords
-        CASE 1 OF
-          KEYWORD_SET(HiRes): df = DF_HIRES
-          KEYWORD_SET(LoRes): df = DF_LORES
-          ELSE: MESSAGE, 'Nothing to do for '+SENSOR_TYPE_NAME[self.Sensor_Type]+' sensor....', $
-                         NONAME=MsgSwitch, NOPRINT=MsgSwitch
-        ENDCASE
-        ; ...Determine interpolation limit frequencies and n_Points
-        f1 = f1_edge(self.f1,df)
-        f2 = f2_edge(self.f2,df)
-        n_Points = n_f_points(f1, f2, df)
-      END
-    
-    ; Unknown instruments
-    ELSE: MESSAGE, 'Cannot process this sensor type, '+STRTRIM(self.Sensor_Type,2), $
-                   NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ENDCASE
+  ; If not an IR or VIS sensor, just copy and return
+  IF ( (self.Sensor_Type NE INFRARED_SENSOR) AND $
+       (self.Sensor_Type NE VISIBLE_SENSOR ) ) THEN BEGIN
+    MESSAGE, 'Just copying. No interpolation performed for this sensor type: ' + $
+             SENSOR_TYPE_NAME[self.Sensor_Type], /INFORMATIONAL
+    self.Assign, new, Debug = debug
+    RETURN
+  ENDIF
+
+
+  ; Determine interpolation limit frequencies and n_Points
+  f1 = f1_edge(self.f1,df)
+  f2 = f2_edge(self.f2,df)
+  n_Points = n_f_points(f1, f2, df)
   
   
   ; Allocate the new OSRF
   new.Allocate, n_Points, Debug=Debug
+
 
   ; Set other frequency-independent properties
   new.Set_Property, $

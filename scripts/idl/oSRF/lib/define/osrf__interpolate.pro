@@ -58,6 +58,7 @@ PRO OSRF::Interpolate, $
   Debug = Debug
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -65,16 +66,16 @@ PRO OSRF::Interpolate, $
  
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'oSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
 
   ; Check that the object argument is an allocated oSRF object
-  IF ( ~OBJ_ISA(int_oSRF,'oSRF') ) THEN $
+  IF ( ~ OBJ_ISA(int_oSRF,'oSRF') ) THEN $
     MESSAGE, 'Output object class is not oSRF.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  IF ( ~int_oSRF.Associated(Debug=Debug) ) THEN $
+  IF ( ~ int_oSRF.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'Output oSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 

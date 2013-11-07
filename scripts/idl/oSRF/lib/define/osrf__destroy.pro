@@ -46,6 +46,7 @@ PRO OSRF::Destroy, $
   Debug=Debug           ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -70,25 +71,26 @@ PRO OSRF::Destroy, $
 
 
   ; Empty out hashes
-  IF ( OBJ_VALID(self.f1              ) ) THEN (self.f1              ).Remove, /ALL
-  IF ( OBJ_VALID(self.f2              ) ) THEN (self.f2              ).Remove, /ALL
-  IF ( OBJ_VALID(self.n_Points        ) ) THEN (self.n_Points        ).Remove, /ALL
-  IF ( OBJ_VALID(self.Frequency       ) ) THEN (self.Frequency       ).Remove, /ALL
-  IF ( OBJ_VALID(self.Response        ) ) THEN (self.Response        ).Remove, /ALL
-  IF ( OBJ_VALID(self.Radiance        ) ) THEN (self.Radiance        ).Remove, /ALL
-  IF ( OBJ_VALID(self.Window_Reference) ) THEN (self.Window_Reference).Remove, /ALL
-  IF ( OBJ_VALID(self.Plot_Reference  ) ) THEN (self.Plot_Reference  ).Remove, /ALL
+  IF ( OBJ_VALID(self.f1       ) ) THEN (self.f1       ).Remove, /ALL
+  IF ( OBJ_VALID(self.f2       ) ) THEN (self.f2       ).Remove, /ALL
+  IF ( OBJ_VALID(self.n_Points ) ) THEN (self.n_Points ).Remove, /ALL
+  IF ( OBJ_VALID(self.Frequency) ) THEN (self.Frequency).Remove, /ALL
+  IF ( OBJ_VALID(self.Response ) ) THEN (self.Response ).Remove, /ALL
+  IF ( OBJ_VALID(self.Radiance ) ) THEN (self.Radiance ).Remove, /ALL
+  IF ( OBJ_VALID(self.Bandwidth) ) THEN (self.Bandwidth).Remove, /ALL
+  IF ( OBJ_VALID(self.pRef     ) ) THEN (self.pRef     ).Remove, /ALL
 
 
  ; Create new hashes
-  self.f1               = HASH()
-  self.f2               = HASH()
-  self.n_Points         = HASH()
-  self.Frequency        = HASH()
-  self.Response         = HASH()
-  self.Radiance         = HASH()
-  self.Window_Reference = HASH()
-  self.Plot_Reference   = HASH()
+  self.f1        = HASH()
+  self.f2        = HASH()
+  self.n_Points  = HASH()
+  self.Frequency = HASH()
+  self.Response  = HASH()
+  self.Radiance  = HASH()
+  self.Bandwidth = HASH()
+  self.wRef      = OBJ_NEW()
+  self.pRef      = HASH()
 
 
   ; Reinitialise the dimensions

@@ -42,6 +42,8 @@ PRO OSRF::Inspect, $
   Verbose=Verbose, $  ; Input keyword
   Debug=Debug         ; Input keyword
 
+  COMPILE_OPT HIDDEN
+
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
   HELP, self, /OBJECTS
 
@@ -65,11 +67,18 @@ PRO OSRF::Inspect, $
     PRINT, FORMAT='(/,"Band definition data:")'
     FOR n = 0, n_bands-1 DO BEGIN
       band = n+1
-      self.Get_Property, band, f1=f1, f2=f2, n_Points=n_Points, Debug=Debug
+      self.Get_Property, $
+        band, $
+        f1=f1, $
+        f2=f2, $
+        n_Points=n_Points, $
+        Bandwidth=bandwidth, $
+        Debug=Debug
       PRINT, band, FORMAT='(2x,"Band ",i1," definition data:")'
       PRINT, FORMAT='("F1:       ",e13.6)', f1
       PRINT, FORMAT='("F2:       ",e13.6)', f2
       PRINT, FORMAT='("N_POINTS: ",i13)', n_Points
+      PRINT, FORMAT='("WIDTH   : ",e13.6)', bandwidth
     ENDFOR
 
 
@@ -87,7 +96,7 @@ PRO OSRF::Inspect, $
     PRINT, FORMAT='(/,"Band radiance data:")'
     FOR n = 0, n_bands-1 DO BEGIN
       band = n+1
-      self.Get_Property, band, Frequency=frequency, Response=radiance, Debug=Debug
+      self.Get_Property, band, Frequency=frequency, Radiance=radiance, Debug=Debug
       PRINT, band, FORMAT='(2x,"Band ",i1," frequency and radiance:")'
       HELP, band, frequency, radiance
     ENDFOR

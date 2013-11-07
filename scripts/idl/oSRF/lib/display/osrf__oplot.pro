@@ -68,29 +68,34 @@
 
 PRO OSRF::OPlot, $
   osrf, $
-  Debug     = Debug    , $ ; Input keyword
-  Normalize = Normalize, $ ; Input keyword
-  _EXTRA    = Extra        ; Input keyword
+  Debug     = Debug    , $  ; Input keyword
+  Normalize = normalize, $  ; Input keyword
+  _EXTRA    = Extra         ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...ALL *input* pointers must be associated
-  IF ( NOT self->Associated(Debug=Debug) OR $
-       NOT osrf->Associated(Debug=Debug)) THEN $
+  IF ( ~ self->Associated(Debug=Debug) OR $
+       ~ osrf->Associated(Debug=Debug)) THEN $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  ; ...Get the number of SRF bands
-  self->Get_Property, n_Bands=n_Bands
+  ; ...Get some sensor info
+  self->Get_Property, $
+    Sensor_Type = sensor_type, $
+    n_Bands     = n_Bands, $
+    Debug       = debug
+  is_microwave = (sensor_type EQ MICROWAVE_SENSOR)
 
 
   ; Find maximum channel response if normalize keyword set
   IF ( KEYWORD_SET(Normalize) ) THEN BEGIN
     Max_r = -999.0d0
     FOR i = 0L, n_Bands-1L DO BEGIN
-      osrf->Get_Property, i+1, Response = r
+      osrf->Get_Property, i+1, Response = r, Debug = debug
       Max_r = Max_r > MAX(r)
     ENDFOR
   ENDIF ELSE BEGIN
@@ -98,25 +103,29 @@ PRO OSRF::OPlot, $
   ENDELSE
   
   
-  ; Restore plotting variables
-  self->Restore_PlotVars, wref, pref
-  IF ( N_ELEMENTS(pref) NE n_Bands ) THEN $
-    MESSAGE, 'Plot reference object array size different from the number of oSRF passbands.', $
+  ; Check plotting variables
+  IF ( N_ELEMENTS(self.pRef) NE n_Bands ) THEN $
+    MESSAGE, 'Plot reference object hash size different from the number of oSRF passbands.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
   
   ; Loop over bands
-  FOR i = 0L, n_Bands-1L DO BEGIN
+  FOR band = 1L, n_Bands DO BEGIN
+    
     ; Get the band response
     osrf->Get_Property, $
-      i+1, $
+      band, $
       Frequency = f, $
-      Response  = r
+      Response  = r, $
+      Debug     = debug
+      
+    ; Convert frequency units to GHz for microwave sensors
+    IF ( is_microwave ) THEN f  = inverse_cm_to_GHz(f)
+
     ; Plot it
-    !NULL = OPLOT(f, r/Max_r, $
-                  _EXTRA = Extra, $
-                  CURRENT=wref, $
-                  OVERPLOT=pref[i] )
+    !NULL = PLOT(f, r/Max_r, $
+                 _EXTRA   = Extra, $
+                 OVERPLOT = self.pRef[band] )
   ENDFOR
   
-END ; PRO OSRF::OPlot
+END

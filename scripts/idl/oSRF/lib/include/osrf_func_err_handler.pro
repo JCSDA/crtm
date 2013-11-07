@@ -7,7 +7,7 @@
     CATCH, Error_Status
     IF ( Error_Status NE 0 ) THEN BEGIN
       CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG
+      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
       RETURN, FALSE
     ENDIF
     MsgSwitch = 1

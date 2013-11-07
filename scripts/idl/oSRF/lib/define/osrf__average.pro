@@ -53,6 +53,7 @@ PRO OSRF::Average, $
   Debug = Debug  
   
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...oSRF parameters
   @osrf_parameters
   ; ...Set up error handler

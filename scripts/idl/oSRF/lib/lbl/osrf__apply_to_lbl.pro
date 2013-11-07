@@ -47,6 +47,7 @@ PRO OSRF::Apply_to_LBL, $
   Debug=Debug  ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -70,7 +71,7 @@ PRO OSRF::Apply_to_LBL, $
 
     ; Get some band-dependent oSRF properties
     Current_Band = i+1
-    self->Get_Property, Current_Band, Debug=Debug, Frequency=Frequency
+    self->Get_Property, Current_Band, Debug=Debug, Frequency=frequency
 
     ; Branch for sensor type    
     CASE 1 OF
@@ -78,7 +79,8 @@ PRO OSRF::Apply_to_LBL, $
       ; MW sensor - set up for MonoRTM
       (Sensor_Type EQ MICROWAVE_SENSOR): BEGIN
          ; Calculate monortm radiances
-         *(*self.Radiance)[i] = MonoRTM_Radiances(Frequency, gt5_File)
+         frequency = inverse_cm_to_GHz(frequency)
+         self.Radiance[Current_Band] = MonoRTM_Radiances(frequency, gt5_File)
          END
 
       
@@ -102,17 +104,12 @@ PRO OSRF::Apply_to_LBL, $
   ENDFOR
 
   ; Convolve LBL radiances with OSRF
-  R = self->Convolve(*self.Radiance)
+  self->Convolve_Radiance, Debug=Debug
 
   ; Convert the radiance into brightness temperature
-  self->Get_Property, Debug=Debug, f0=f0
-  IF ( self->Flag_Is_Set(FREQUENCY_UNITS_FLAG) ) THEN f0 = GHz_to_inverse_cm(f0)
-  result = Planck_Temperature(f0, R, T)
+  self->Convolved_R2T, Debug=Debug
 
-  ; Assign convolved data to the osrf object
-  self->Set_Property, Debug=Debug, Convolved_R = R, Convolved_T = T
- 
   ; Done
   CATCH, /CANCEL
  
-END ; PRO OSRF::Apply_to_LBL
+END

@@ -52,6 +52,7 @@ PRO OSRF::Compute_Planck_Radiance, $
   Debug=Debug
 
   ; Set up
+  COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
@@ -59,7 +60,7 @@ PRO OSRF::Compute_Planck_Radiance, $
 
 
   ; Check if object has been allocated
-  IF ( ~self.Associated(Debug=Debug) ) THEN $
+  IF ( ~ self.Associated(Debug=Debug) ) THEN $
     MESSAGE, 'OSRF object has not been allocated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
@@ -72,7 +73,6 @@ PRO OSRF::Compute_Planck_Radiance, $
       Channel=channel, $
       Frequency=f, $
       Debug=Debug
-    IF ( self.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN f = GHz_to_inverse_cm(f)
 
     result = Planck_Radiance(f, Temperature, radiance)
     IF ( result NE SUCCESS ) THEN $
