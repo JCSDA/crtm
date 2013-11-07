@@ -6,24 +6,6 @@
 ;       This proceedure is the driver for writing oSRF netCDF files from
 ;       the original SRF data.
 ;
-; INPUT ASCII SRF DATAFILE NAMING CONVENTION:
-;       Naming convention for the original data is:
-;
-;         <sensor_id>[-bN]-<L>.inp
-;
-;      where
-;
-;         sensor_id:	Is the sensor identifier, e.g."gmi_gpm" or "imgrD1_g15".
-;                       An entry for this sensor id must exist in the SensorInfo
-;                       file.
-;
-;         -bN:          Optional designator for channels that have more than one
-;                       passband where N is the passband number, e.g. "-b1", "-b2". 
-;
-;         -L:           The designator for channel L, e.g. "-3" for channel 3, 
-;                       "-10" for channel 10.
-;       
-;
 ; CALLING SEQUENCE:
 ;       oSRF_Writer, $
 ;         Sensor_Id                              , $ ; Input
@@ -104,6 +86,32 @@
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
 ;                           ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;
+; INPUT ASCII SRF DATAFILE NAMING CONVENTION:
+;       Naming convention for the original data is:
+;
+;         <sensor_id>[-bN]-<L>.inp
+;
+;       where
+;
+;         sensor_id:	Is the sensor identifier, e.g."gmi_gpm" or "imgrD1_g15".
+;                       An entry for this sensor id must exist in the SensorInfo
+;                       file.
+;
+;         -bN:          Optional designator for channels that have more than one
+;                       passband where N is the passband number, e.g. "-b1", "-b2". 
+;
+;         -L:           The designator for channel L, e.g. "-3" for channel 3, 
+;                       "-10" for channel 10.
+;
+;
+; DEPENDENCIES:       
+;       Two additional datafiles are required:
+;         1. A SensorInfo file containing an entry for the sensor in question.
+;         2. A file called "source.comment" that resides in the same directory
+;            as the "*.inp" channel data. The contents of this file will be used
+;            for the netCDF file "comment" attribute.
 ;
 ;-
 
