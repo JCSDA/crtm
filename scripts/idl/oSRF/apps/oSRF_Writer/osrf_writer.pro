@@ -27,7 +27,7 @@
 ;
 ; INPUT KEYWORDS:
 ;
-;       Path:               Location of ASCII SRF *.inp files. If not specified, 
+;       Path:               Location of ASCII SRF *.inp files. If not specified,
 ;                           the default is "./<sensor_id>"
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER
@@ -100,13 +100,13 @@
 ;                       file.
 ;
 ;         -bN:          Optional designator for channels that have more than one
-;                       passband where N is the passband number, e.g. "-b1", "-b2". 
+;                       passband where N is the passband number, e.g. "-b1", "-b2".
 ;
-;         -L:           The designator for channel L, e.g. "-3" for channel 3, 
+;         -L:           The designator for channel L, e.g. "-3" for channel 3,
 ;                       "-10" for channel 10.
 ;
 ;
-; DEPENDENCIES:       
+; DEPENDENCIES:
 ;       Two additional datafiles are required:
 ;         1. A SensorInfo file containing an entry for the sensor in question.
 ;         2. A file called "source.comment" that resides in the same directory
@@ -201,13 +201,13 @@ PRO oSRF_Writer, $
     input_glob = Path+PATH_SEP()+Sensor_Id+'*-'+STRTRIM(sensor_channel[l],2)+'.inp'
     input_file = FILE_SEARCH(input_glob, COUNT = n_bands )
     PRINT, FORMAT='(6x,"Number of passbands: ",i1)', n_bands
-    
-    
+
+
     ; Get n_pts/band
     n_pts = !NULL
     FOR n = 0, n_bands-1 DO n_pts = [n_pts, FILE_LINES(input_file[n])]
-    
-    
+
+
     ; Allocate the current oSRF object
     osrf->Allocate, n_pts
 
@@ -231,7 +231,7 @@ PRO oSRF_Writer, $
       ; ...Convert frequency units if necessary
       IF ( is_microwave ) THEN frequency = GHz_to_inverse_cm(frequency)
 
-      
+
       ; Add it to the oSRF object
       osrf->Set_Property, $
         band, $
@@ -244,7 +244,7 @@ PRO oSRF_Writer, $
         Channel          = sensor_channel[l], $
         Frequency        = Frequency        , $
         Response         = Response
-        
+
     ENDFOR  ; Band loop
 
 
@@ -255,7 +255,7 @@ PRO oSRF_Writer, $
 
     ; Interpolate the data to a regular frequency grid
     IF ( interpolate_data ) THEN BEGIN
-    
+
       ; ...Linearly interpolate visible channels
       IF ( sensor_type EQ VISIBLE_SENSOR ) THEN $
         osrf->Set_Flag, Debug=Debug, /Linear_Interpolation
@@ -268,14 +268,14 @@ PRO oSRF_Writer, $
       osrf->Interpolate, $
         isrf, $
         Debug=Debug
-        
+
     ENDIF ELSE BEGIN
-    
+
       ; ...No interpolation, so just copy
       osrf->Assign, $
         isrf, $
         Debug = debug
-        
+
     ENDELSE
 
 
@@ -293,19 +293,30 @@ PRO oSRF_Writer, $
 
     ; Plot the data for inspection
     IF ( plot_data ) THEN BEGIN
-    
+
+      IF ( interpolate_data ) THEN BEGIN
+        linestyle = 'none'
+        name      = 'Interpolated'
+      ENDIF ELSE BEGIN
+        linestyle = 'solid'
+        name      = 'Original'
+      ENDELSE
+
       isrf->Plot, $
         Debug     = debug, $
-        LINESTYLE = 'none', $
+        NAME      = name, $
+        LINESTYLE = linestyle, $
+        COLOR     = 'red', $
         SYMBOL    = 'diamond', $
         SYM_SIZE  = 0.6
-        
+
       IF ( interpolate_data ) THEN $
         isrf->Oplot, $
           osrf, $
           NAME  = 'Original', $
+          COLOR = 'blue', $
           Debug = debug
-          
+
       ; ...Only pause if not at last channel
       not_last_channel = ~ (sensor_channel[l] EQ sensor_channel[-1])
       IF ( plot_pause AND not_last_channel ) THEN BEGIN
@@ -313,9 +324,9 @@ PRO oSRF_Writer, $
         q = GET_KBRD(1)
         IF ( STRUPCASE(q) EQ 'Q' ) THEN GOTO, Done
       ENDIF
-      
+
     ENDIF
-    
+
   ENDFOR  ; Channel loop
 
 
@@ -330,7 +341,7 @@ PRO oSRF_Writer, $
     comment = 'Input data interpolated to a regular frequency grid; ' + $
               STRTRIM(comment,2)
   ENDIF
-  
+
 
   ; Write the processed SRFs
   osrf_file->Set_Property, $
