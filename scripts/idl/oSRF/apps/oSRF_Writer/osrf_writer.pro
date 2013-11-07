@@ -164,8 +164,6 @@ PRO oSRF_Writer, $
     Sensor_Channel   = sensor_channel
   ; ...Set a microwave sensor indicator
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR )
-  IF ( is_microwave ) THEN $
-    MESSAGE, 'Converting frequencies from GHz to cm^-1...', /INFORMATIONAL
 
 
   ; Get the source comment
@@ -230,6 +228,8 @@ PRO oSRF_Writer, $
       ; ...Split data into separate arrays
       frequency = REFORM(channel_data[0,*])
       response  = REFORM(channel_data[1,*])
+      ; ...Convert frequency units if necessary
+      IF ( is_microwave ) THEN frequency = GHz_to_inverse_cm(frequency)
 
       
       ; Add it to the oSRF object
@@ -344,6 +344,6 @@ PRO oSRF_Writer, $
 
   ; Cleanup
   Done:
-  OBJ_DESTROY, [isrf, osrf_file], Debug = Debug
+  OBJ_DESTROY, osrf_file, Debug = Debug
 
 END
