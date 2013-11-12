@@ -12,8 +12,9 @@ FUNCTION compute_atms_tb, $
   Sensor_Id                  , $ ; Input
   MonoRTM_InFile             , $ ; Input (generic input file with no frequencies)
   SRF_File                   , $ ; Input
-  Channel_List = channel_list    ; Input keyword (Default = [1,2,...,n_Channels] from SensorInfo)
+  Channel_List = channel_list, $ ; Input keyword (Default = [1,2,...,n_Channels] from SensorInfo)
                                  ;   Default is returned if keyword is empty on input
+  Debug = debug
 ;-
                          
   ; Set up error handler

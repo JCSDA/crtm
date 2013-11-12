@@ -15,7 +15,8 @@ PRO atms_osrf_sensitivity, $
   Result_Path   = Result_Path  , $ ; Input keyword (Default = "results")
   Begin_Profile = Begin_Profile, $ ; Input keyword (Default = 1)
   End_Profile   = End_Profile  , $ ; Input keyword (Default = n_Profiles in AtmProfile)
-  Channel_List  = Channel_List     ; Input keyword (Passed into Compute_ATMS_Tb)
+  Channel_List  = Channel_List , $ ; Input keyword (Passed into Compute_ATMS_Tb)
+  Debug         = debug
 ;-
 
   ; Set up error handler
@@ -119,7 +120,8 @@ PRO atms_osrf_sensitivity, $
       Tb = Compute_ATMS_Tb( Sensor_Id, $
                             MonoRTM_Infile , $
                             SRF_File[i], $
-                            Channel_List = Sensor_Channel )
+                            Channel_List = Sensor_Channel, $
+                            Debug = debug )
       PRINT, FORMAT='(9x,"Time: ",f5.1,"min.")', (SYSTIME(1)-time)/60.0d0
       
       ; Write the data to file
