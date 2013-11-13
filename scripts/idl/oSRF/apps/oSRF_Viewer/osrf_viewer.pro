@@ -64,25 +64,90 @@ END
 
 
 ;-------------------------------------------------
-PRO ov_menu_print_event, event
+PRO ov_menu_saveas_png_event, event
   COMPILE_OPT HIDDEN
   ov_getstate, event.Top, state
   IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
   
-  ; Get the channel number
-  WIDGET_CONTROL, $
-    state['ov_slider_id'], $
-    GET_VALUE = channel_number
+  ; Make sure there's a filename to work with
+  IF ( state.HasKey('filename') ) THEN BEGIN
+  
+    ; Get the channel number
+    WIDGET_CONTROL, $
+      state['ov_slider_id'], $
+      GET_VALUE = channel_number
 
-  ; Create the filename
-  filename = FILE_BASENAME(state['filename'],'.osrf.nc') + $
-             '.channel'+STRTRIM(channel_number,2) + '.png'
+    ; Create the filename
+    filename = FILE_BASENAME(state['filename'],'.osrf.nc') + $
+               '.channel'+STRTRIM(channel_number,2) + '.png'
   
   
-  ; Save the plot to file
-  MESSAGE, 'Creating output file ' + filename, /INFORMATIONAL
-  state['ov_window_id'].Save, filename, HEIGHT=600
+    ; Save the plot to file
+    MESSAGE, 'Creating output file ' + filename, /INFORMATIONAL
+    state['ov_window_id'].Save, filename, HEIGHT=600, BORDER=10
+    
+  ENDIF
+  
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
+
+
+;-------------------------------------------------
+PRO ov_menu_saveas_eps_event, event
+  COMPILE_OPT HIDDEN
+  ov_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+  
+  ; Make sure there's a filename to work with
+  IF ( state.HasKey('filename') ) THEN BEGIN
+  
+    ; Get the channel number
+    WIDGET_CONTROL, $
+      state['ov_slider_id'], $
+      GET_VALUE = channel_number
+
+    ; Create the filename
+    filename = FILE_BASENAME(state['filename'],'.osrf.nc') + $
+               '.channel'+STRTRIM(channel_number,2) + '.eps'
+
+    ; Get the current oSRF
+    osrf = state['osrf_file'].Get( Debug    = state['debug'], $
+                                   Position = state['channel_position'] )
+
+    ; Increase the plot font sizes for EPS output
+    osrf.Get_Property, $
+      Debug   = state['debug'], $
+      n_Bands = n_bands
+    font_size = HASH()
+    FOR band = 1, n_bands DO BEGIN
+      ; Get the band plot reference
+      osrf.Get_Property, $
+        band, $
+        Debug   = state['debug'], $
+        pRef    = pref
+      ; Save current font size
+      font_size[band] = pref.font_size
+      ; Increase it
+      pref.font_size = pref.font_size * 2.0
+    ENDFOR
+  
+    ; Save the plot to file
+    MESSAGE, 'Creating output file ' + filename, /INFORMATIONAL
+    state['ov_window_id'].Save, filename
    
+    ; Restore the original plot font sizes
+    FOR band = 1, n_bands DO BEGIN
+      ; Get the band plot reference
+      osrf.Get_Property, $
+        band, $
+        Debug   = state['debug'], $
+        pRef    = pref
+      ; Restore font size
+      pref.font_size = font_size[band]
+    ENDFOR
+    
+  ENDIF
+  
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
 
@@ -141,7 +206,7 @@ PRO ov_display_info, id
     Planck_Coeffs        = planck_coeffs, $
     Polychromatic_Coeffs = polychromatic_coeffs
   ; ...Set the units string
-  IF ( osrf.Flag_Is_Set(FREQUENCY_GHZ_FLAG) ) THEN $
+  IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN $
     frequency_units = 'GHz' $
   ELSE $
     frequency_units = 'cm^-1'
@@ -243,7 +308,10 @@ PRO ov_load_file, file, id
   state['filename']   = file
   state['n_channels'] = n_channels
   
-  ; Sensitise the view menu
+  ; Sensitise the Save-As and View menus
+  WIDGET_CONTROL, $
+    state['ov_file_saveas_menu_id'], $
+    /SENSITIVE
   WIDGET_CONTROL, $
     state['ov_view_menu_id'], $
     /SENSITIVE
@@ -304,11 +372,22 @@ PRO OSRF_Viewer, File = file, Debug = debug
       EVENT_PRO = 'ov_menu_open_event', $
       VALUE     = 'Open', $
       UVALUE    = 'FileOpen' )
-    ; ...File->Print
-    file_print_id = WIDGET_BUTTON( file_menu_id, $
-      EVENT_PRO = 'ov_menu_print_event', $
-      VALUE     = 'Print', $
-      UVALUE    = 'FilePrint' )
+    ; ...File->Save-As
+    ov_file_saveas_menu_id = WIDGET_BUTTON( $
+      file_menu_id, $
+      VALUE     = 'Save As', $
+      SENSITIVE = 0, $
+      /MENU )
+      ; ...File->Save-As->PNG
+      file_saveas_png_id = WIDGET_BUTTON( ov_file_saveas_menu_id, $
+        EVENT_PRO = 'ov_menu_saveas_png_event', $
+        VALUE     = 'PNG', $
+        UVALUE    = 'SaveAsPNG' )
+      ; ...File->Save-As->EPS
+      file_saveas_eps_id = WIDGET_BUTTON( ov_file_saveas_menu_id, $
+        EVENT_PRO = 'ov_menu_saveas_eps_event', $
+        VALUE     = 'EPS', $
+        UVALUE    = 'SaveAsEPS' )
     ; ...File->Print
     file_exit_id = WIDGET_BUTTON( file_menu_id, $
       EVENT_PRO = 'ov_menu_exit_event', $
@@ -402,6 +481,8 @@ PRO OSRF_Viewer, File = file, Debug = debug
   state['debug'] = KEYWORD_SET(debug)
   state['ylog']  = 0
   ; ...Widget ids
+  state['ov_file_saveas_menu_id'] = ov_file_saveas_menu_id
+  state['ov_view_menu_id'] = ov_view_menu_id
   state['ov_view_menu_id'] = ov_view_menu_id
   state['ov_slider_id'] = slider_id
   state['ov_window_id'] = window_id
