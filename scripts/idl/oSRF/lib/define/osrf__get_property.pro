@@ -30,7 +30,8 @@
 ;         Frequency            = Frequency           , $  ; Output keyword
 ;         Response             = Response            , $  ; Output keyword
 ;         Bandwidth            = Bandwidth           , $  ; Output keyword
-;         Radiance             = Radiance                 ; Output keyword
+;         Radiance             = Radiance            , $  ; Output keyword
+;         pRef                 = pRef                     ; Output keyword
 ;
 ; OPTIONAL INPUT ARGUMENTS:
 ;       Band:                  The 1-based band number for which the frequency and
@@ -188,6 +189,13 @@
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       pRef:                  Graphics plot reference for an SRF band.
+;                              Used in conjunction with the Band argument.
+;                              UNITS:      N/A
+;                              TYPE:       Graphics PLOT object
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -233,8 +241,7 @@ PRO OSRF::Get_Property, $
   Frequency            = Frequency           , $  ; Output keyword
   Response             = Response            , $  ; Output keyword
   Radiance             = Radiance            , $  ; Output keyword
-  pRef = pRef
-
+  pRef                 = pRef                     ; Output keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -284,7 +291,7 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(Frequency) ) THEN Frequency = self.Frequency[_band]
   IF ( ARG_PRESENT(Response ) ) THEN Response  = self.Response[_band]
   IF ( ARG_PRESENT(Radiance ) ) THEN Radiance  = self.Radiance[_band]
-  IF ( ARG_PRESENT(pRef     ) ) THEN pRef      = self.pRef
+  IF ( ARG_PRESENT(pRef     ) ) THEN pRef      = self.pRef[_band]
 
   ; Band number of points is special case
   IF ( ARG_PRESENT(n_Points) ) THEN BEGIN
@@ -295,5 +302,5 @@ PRO OSRF::Get_Property, $
       n_Points = LONG(self.n_Points[_band])
     ENDELSE  
   ENDIF
-
+  
 END
