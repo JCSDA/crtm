@@ -510,23 +510,9 @@ PRO OSRF_Viewer, File = file, Debug = debug
     'oSRF_Viewer', $
     top_level_base_id, $
     CLEANUP = 'ov_cleanup', $
-    GROUP_LEADER = top_level_base_id
+    GROUP_LEADER = top_level_base_id, $
+    /NO_BLOCK
 
   IF ( KEYWORD_SET(debug) ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
-
-
-
-;  Info = { Debug          : Debug, $
-;           PMulti         : !P.MULTI, $
-;           draw_id : draw_id, $
-;           Draw_Window_ID : Draw_Window_ID, $
-;           slider_id      : slider_id, $
-;           Full_Filename  : ' ', $
-;           Filename       : ' ', $
-;           Channel        : 0, $
-;           Position       : 0, $
-;           OSRF_File      : OBJ_NEW() }
-
-
 
 END ; OSRF_Viewer
