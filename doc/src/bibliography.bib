@@ -27,20 +27,6 @@
 % Articles
 % ========
 
-% template
-%@article{  Firstauthor_Year,
-% author = {},
-% title = {{}},
-% journal = ,
-% volume = {},
-% number = {},
-% pages = {},
-% year = {},
-% publisher = {},
-% doi = {},
-% key = {}
-%}
-
 @article{CoxMunk_1954,
  author = {C. Cox and W. Munk},
  title = {Measurements of the roughness of the sea surface from photographs of the sun's glitter},
@@ -78,13 +64,15 @@
  author = {Y. Chen and Y. Han and P. van Delst and F. Weng},
  title = {{Validation of shortwave infrared sea surface reflection and non-local thermodynamic equilibrium effects in Community Radiative Transfer Model using IASI data}},
  journal = jaot,
- year = {2013}
+ volume = {30},
+ pages = {2152--2160},
+ year = {2013},
  doi = {10.1175/JTECH-D-12-00267.1},
  publisher = {AMS}
 }
 
 @article{Chen_2012b,
- author = {Y. Chen and F. Weng and Y. Han and Q. Liu}
+ author = {Y. Chen and F. Weng and Y. Han and Q. Liu},
  title = {{Planck-weighted transmittance and correction of solar reflection for broadband infrared satellite channels}},
  journal = jaot,
  volume = {29},
@@ -96,7 +84,7 @@
 }
 
 @article{Chen_2012a,
- author = {Y. Chen and Y. Han and F. Weng}
+ author = {Y. Chen and Y. Han and F. Weng},
  title = {{Comparison of two transmittance algorithms in the community radiative transfer model: Application to AVHRR}},
  journal = jgr,
  volume = {117},
@@ -108,7 +96,7 @@
 }
 
 @article{Chen_2011,
- author = {Y. Chen and Y. Han and Q. Liu and P. van Delst and F. Weng}
+ author = {Y. Chen and Y. Han and Q. Liu and P. van Delst and F. Weng},
  title = {{Community Radiative Transfer Model for Stratospheric Sounding Unit}},
  journal = jaot,
  volume = {28},
@@ -119,7 +107,7 @@
 }
 
 @article{Chen_2010,
- author = {Y. Chen and Y. Han and P. van Delst and F. Weng}
+ author = {Y. Chen and Y. Han and P. van Delst and F. Weng},
  title = {{On water vapor Jacobian in fast radiative transfer model}},
  journal = jgr,
  volume = {115},
@@ -333,7 +321,7 @@
 }
 
 @article{Liu_2009,
- author = {Q. Liu and X. Liang and Y. Han and P. van Delst and Y. Chen and A. Ignativ and F. Weng}
+ author = {Q. Liu and X. Liang and Y. Han and P. van Delst and Y. Chen and A. Ignativ and F. Weng},
  title = {{Effect of Out-of-Band Response in NOAA-16 AVHRR Channel 3b on Top-of-Atmosphere Radiances Calculated with the Community Radiative Transfer Model}},
  journal = jaot,
  volume = {26},
@@ -802,6 +790,31 @@
 }
 
 
+% MonoRTM principal references
+@article{MonoRTM1,
+ author = {V.H. Payne and E.J. Mlawer and K.E. Cady-Pereira and J-L. Moncet},
+ title = {{Water vapor continuum absorption in the microwave}},
+ journal = tgrs,
+ volume = {49},
+ number = {6},
+ pages = {2194--2208},
+ year = {2011},
+ doi = {10.1109/TGRS.2010.209141},
+ publisher = {IEEE Geoscience and Remote Sensing Society}
+}
+
+@article{MonoRTM2,
+ author = {S.A. Clough and M.W. Shephard and E.J. Mlawer and J.S. Delamere and M. Iacono and K.E. Cady-Pereira and S. Boukabara and P.D. Brown},
+ title = {{Atmospheric radiative transfer modeling: A summary of the AER codes}},
+ journal = jqsrt,
+ volume = {91},
+ number = {2},
+ pages = {233--244},
+ year = {2005},
+ publisher = {Elsevier}
+}
+
+
 % Conference Proceedings
 % ======================
 
@@ -1059,12 +1072,32 @@
 % Miscellaneous
 % =============
 
+@misc{GMI_SER,
+ author = {S. Bennett},
+ title = {{GMI Spectral Requirements Verification}},
+ institution = {{Ball Aerospace & Technologies Corp.}},
+ number = {2346140 Rev.A},
+ year = {2010},
+ month = {October},
+ day = {30},
+ howpublished = {Systems Engineering Report, Contract No. NNG05HY12C, CAGE Code 13993}
+}
+
+@misc{GMI_SRF_Data,
+ author = {A.M. Traxler},
+ title = {{GMI Spectral Response Function (SRF, or RSR) Data}},
+ year = {2011},
+ month = {Nov.},
+ howpublished = {Private communication},
+ institution = {NASA/GSFC}
+}
+
 @misc{VIIRS_SRF_Data,
  title = {{VIIRS Spectral Response Function (SRF, or RSR) Data}},
  year = {2010},
  month = {Oct.},
  institution = {NESDIS/STAR},
- url = {http://www.star.nesdis.noaa.gov/jpss},
+ url = {http://www.star.nesdis.noaa.gov/jpss}
 }
 
 @misc{WMO_Common_Code_Tables,
