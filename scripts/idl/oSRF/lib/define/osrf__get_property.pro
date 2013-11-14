@@ -241,7 +241,8 @@ PRO OSRF::Get_Property, $
   Frequency            = Frequency           , $  ; Output keyword
   Response             = Response            , $  ; Output keyword
   Radiance             = Radiance            , $  ; Output keyword
-  pRef                 = pRef                     ; Output keyword
+  pRef                 = pRef                , $  ; Output keyword
+  wRef                 = wRef                     ; Output keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -282,6 +283,7 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(Polychromatic_Coeffs) ) THEN Polychromatic_Coeffs = self.Polychromatic_Coeffs
   IF ( ARG_PRESENT(Convolved_R         ) ) THEN Convolved_R          = self.Convolved_R
   IF ( ARG_PRESENT(Convolved_T         ) ) THEN Convolved_T          = self.Convolved_T
+  IF ( ARG_PRESENT(wRef                ) ) THEN wRef                 = self.wRef
   
   
   ; Get band specific data  

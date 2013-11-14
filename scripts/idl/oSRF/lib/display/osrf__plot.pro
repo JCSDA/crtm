@@ -45,6 +45,7 @@ PRO OSRF::Plot, $
   Normalize = normalize, $  ; Input keyword
   Debug     = debug    , $  ; Input keyword
   Ylog      = ylog     , $  ; Input keyword
+  Color     = color    , $  ; Input keyword
   Owin      = owin     , $  ; Input keyword
   _EXTRA    = extra
 
@@ -184,6 +185,7 @@ PRO OSRF::Plot, $
       POSITION=[x1,0.1,x2,0.9], $
       FONT_SIZE = 9, $                   
       CURRENT=owin, $
+      COLOR=color, $
       THICK=2, $
       _EXTRA = Extra)
 
@@ -201,7 +203,7 @@ PRO OSRF::Plot, $
   IF ( n_bands EQ 1 ) THEN BEGIN
     !NULL = PLOT([f0,f0],self.pRef[1].yrange, $
                  LINESTYLE='dash', $
-                 COLOR='blue', $
+                 COLOR=color, $
                  THICK=2, $
                  OVERPLOT=self.pRef[1])
   ENDIF

@@ -179,7 +179,7 @@ PRO OSRF_File::Read, $
     osrf->OSRF::Integrate, Debug=Debug
     osrf->OSRF::Compute_Central_Frequency, Debug=Debug
     osrf->OSRF::Compute_Planck_Coefficients, Debug=Debug
-    osrf->OSRF::Compute_Polychromatic_Coefficients, Debug=Debug, /No_Plot
+    osrf->OSRF::Compute_Polychromatic_Coefficients, Debug=Debug
 
 
     ; Compare the just calculated values with those read from file

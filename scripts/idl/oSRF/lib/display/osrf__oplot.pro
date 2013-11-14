@@ -68,9 +68,11 @@
 
 PRO OSRF::OPlot, $
   osrf, $
-  Debug     = Debug    , $  ; Input keyword
+  Debug     = debug    , $  ; Input keyword
+  Color     = color    , $  ; Input keyword
   Normalize = normalize, $  ; Input keyword
-  _EXTRA    = Extra         ; Input keyword
+  _EXTRA    = extra    , $  ; Input keyword
+  pRef      = pref          ; Output keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -79,22 +81,22 @@ PRO OSRF::OPlot, $
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...ALL *input* pointers must be associated
-  IF ( ~ self->Associated(Debug=Debug) OR $
-       ~ osrf->Associated(Debug=Debug)) THEN $
+  IF ( ~ self->Associated(Debug=debug) OR $
+       ~ osrf->Associated(Debug=debug)) THEN $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Get some sensor info
   self->Get_Property, $
     Sensor_Type = sensor_type, $
-    n_Bands     = n_Bands, $
+    n_Bands     = n_bands, $
     Debug       = debug
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR)
 
 
   ; Find maximum channel response if normalize keyword set
-  IF ( KEYWORD_SET(Normalize) ) THEN BEGIN
+  IF ( KEYWORD_SET(normalize) ) THEN BEGIN
     Max_r = -999.0d0
-    FOR i = 0L, n_Bands-1L DO BEGIN
+    FOR i = 0L, n_bands-1L DO BEGIN
       osrf->Get_Property, i+1, Response = r, Debug = debug
       Max_r = Max_r > MAX(r)
     ENDFOR
@@ -104,28 +106,47 @@ PRO OSRF::OPlot, $
   
   
   ; Check plotting variables
-  IF ( N_ELEMENTS(self.pRef) NE n_Bands ) THEN $
+  IF ( N_ELEMENTS(self.pRef) NE n_bands ) THEN $
     MESSAGE, 'Plot reference object hash size different from the number of oSRF passbands.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
+  ; Create plotting hash
+  pref = HASH()
+  
   
   ; Loop over bands
-  FOR band = 1L, n_Bands DO BEGIN
+  FOR band = 1L, n_bands DO BEGIN
     
     ; Get the band response
     osrf->Get_Property, $
       band, $
-      Frequency = f, $
-      Response  = r, $
-      Debug     = debug
+      Debug     = debug, $
+      f0        = f0   , $
+      Frequency = f    , $
+      Response  = r
       
     ; Convert frequency units to GHz for microwave sensors
-    IF ( is_microwave ) THEN f  = inverse_cm_to_GHz(f)
+    IF ( is_microwave ) THEN BEGIN
+      f0 = inverse_cm_to_GHz(f0)
+      f  = inverse_cm_to_GHz(f)
+    ENDIF
 
     ; Plot it
-    !NULL = PLOT(f, r/Max_r, $
-                 _EXTRA   = Extra, $
-                 OVERPLOT = self.pRef[band] )
+    pref[band] = PLOT( f, r/Max_r, $
+                       COLOR    = color, $
+                       _EXTRA   = extra, $
+                       OVERPLOT = self.pRef[band] )
+    
   ENDFOR
+  
+  
+  ; Plot the central frequency location for single bands
+  IF ( n_bands EQ 1 ) THEN BEGIN
+    !NULL = PLOT([f0,f0],self.pRef[1].yrange, $
+                 LINESTYLE = 'dash', $
+                 COLOR     = color, $
+                 THICK     = 2, $
+                 OVERPLOT  = self.pRef[1])
+  ENDIF
   
 END
