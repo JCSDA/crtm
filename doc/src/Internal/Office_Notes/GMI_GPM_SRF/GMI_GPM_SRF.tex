@@ -2,11 +2,11 @@
 \input{preamble}
 
 % Include files
-\includeonly{SRF_Data_Plots.app}
+\includeonly{SRF_Data_Plots.app,Tfit_Data_Plots.app}
 
 % Subversion keywords
-\SVN $Date: 2013-11-05 16:50:25 -0500 (Tue, 5 Nov 2013) $
-\SVN $Revision: -1 $
+\SVN $Date$
+\SVN $Revision$
 
 % Title info
 \title{GMI GPM Spectral Response Function Processing}
@@ -36,7 +36,7 @@
       \hline
       \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
       \hline\hline
-      2013-11-05 & Paul van Delst & Initial release.\\
+      2013-11-19 & Paul van Delst & Initial release.\\
       \hline
     \end{tabular}
   \end{table}
@@ -61,8 +61,8 @@ The specification channel information is summarised in table \ref{tab:gmi_spectr
   \centering
   \begin{tabular}{c c c c}
     \hline
-    \sffamily{Channel} & \sffamily{Centre Frequency} & \sffamily{Polarisation} & \sffamily{Passband width}\\
-      & \sffamily{(GHz)} & & \sffamily{(MHz)}\\
+    \sffamily{GMI}     & \sffamily{Centre Frequency} & \sffamily{Polarisation} & \sffamily{Passband width}\\
+    \sffamily{Channel} & \sffamily{(GHz)} & & \sffamily{(MHz)}\\
     \hline\hline
      1 & 10.65 & V & 100 \\
      2 & 10.65 & H & 100 \\
@@ -93,7 +93,7 @@ All of the GMI response data were in units of decibels ($\phi_{dB}$). For use wi
 
 \subsection{Computation of the channel central frequency}
 %--------------------------------------------------------
-The computed channel central frequencies, $\nu_0$, are the first moments of the defined SRF,
+The computed GMI channel central frequencies, $\nu_0$, are the first moments of the defined SRF,
 \begin{equation}
   \nu_0 = \frac{\displaystyle\int{\nu\:\phi_{rel}(\nu)\ud \nu}}{\displaystyle\int{\phi_{rel}(\nu)\ud \nu}}
 \end{equation}
@@ -141,8 +141,8 @@ Three common temperatures were available for all the received data files. They a
   \centering
   \begin{tabular}{c *{3}{c r@{.}l}}
     \hline
-    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{NOM}}}} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{LO}}}} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{HI}}}}\\
-                       & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}} & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}} & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}}  \\
+    \sffamily{GMI} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{NOM}}}} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{LO}}}} & & \multicolumn{2}{c}{\sffamily{T\subscript{\sffamily{HI}}}}\\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}} & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}} & & \multicolumn{2}{c}{\sffamily{(\textdegree{}C)}}  \\
     \hline\hline
     1  & & 22&9 & & -10&7 & & 45&0  \\
     2  & & 22&9 & & -10&7 & & 45&0  \\
@@ -163,16 +163,22 @@ Three common temperatures were available for all the received data files. They a
   \label{tab:gmi_test_temperatures}
 \end{table}
 
+All of the GMI SRFs had a threshold of 0.01\% applied to minimise LBL model computation time (see section \ref{sec:threshold_impact}). Plots of the SRFs data used for each test temperature and channel are shown in appendix \ref{app.srf_data_plots}.
 
-\subsection{T\subscript{NOM} SRF processing results}
-%---------------------------------------------------
+
+\subsection{SRF processing}
+%--------------------------
+The following tables list the computed central frequencies and polychromatic correction coefficients for the three test temperatures. The temperature fit residuals for each temperature and each channel are shown in appendix \ref{app.tfit_data_plots}.
+
+\subsubsection{T\subscript{NOM} results}
+%.......................................
 
 \begin{table}[htp]
   \centering
   \begin{tabular}{c *{3}{c r@{.}l}}
     \hline
-    \sffamily{Channel} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
-                       & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{GMI} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
 
     1  & &  10&647550 & & -0&00000524 & & 1&00000685 \\
@@ -190,20 +196,20 @@ Three common temperatures were available for all the received data files. They a
     13 & & 182&828245 & & -0&01864121 & & 1&00145602 \\
     \hline
   \end{tabular}
-  \caption{The computed channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{NOM}} SRF dataset.}
+  \caption{The computed GMI channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{NOM}} SRF dataset.}
   \label{tab:gmi_TNOM_results}
 \end{table}
 
 
-\subsection{T\subscript{LO} SRF processing results}
-%--------------------------------------------------
+\subsubsection{T\subscript{LO} results}
+%......................................
 
 \begin{table}[H]
   \centering
   \begin{tabular}{c *{3}{c r@{.}l}}
     \hline
-    \sffamily{Channel} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
-                       & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{GMI} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
 
     1  & &  10&648052 & & -0&00000524 & & 1&00000684 \\
@@ -221,20 +227,20 @@ Three common temperatures were available for all the received data files. They a
     13 & & 182&768792 & & -0&01874660 & & 1&00146441 \\
     \hline
   \end{tabular}
-  \caption{The computed channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{LO}} SRF dataset.}
+  \caption{The computed GMI channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{LO}} SRF dataset.}
   \label{tab:gmi_TLO_results}
 \end{table}
 
 
-\subsection{T\subscript{HI} SRF processing results}
-%--------------------------------------------------
+\subsubsection{T\subscript{HI} results}
+%......................................
 
 \begin{table}[H]
   \centering
   \begin{tabular}{c *{3}{c r@{.}l}}
     \hline
-    \sffamily{Channel} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
-                       & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{GMI} & & \multicolumn{2}{c}{$f_0$} & & \multicolumn{2}{c}{$a_0$ (offset)} & & \multicolumn{2}{c}{$a_1$ (slope)} \\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(GHz)}} & & \multicolumn{2}{c}{\sffamily{(K)}} & & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
 
     1  & &  10&647713 & & -0&00000522 & & 1&00000683 \\
@@ -252,7 +258,7 @@ Three common temperatures were available for all the received data files. They a
     13 & & 182&821958 & & -0&01867263 & & 1&00145848 \\
     \hline
   \end{tabular}
-  \caption{The computed channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{HI}} SRF dataset.}
+  \caption{The computed GMI channel central frequencies and polychromatic correction coefficients for the T\subscript{\sffamily{HI}} SRF dataset.}
   \label{tab:gmi_THI_results}
 \end{table}
 
@@ -335,6 +341,7 @@ The statistics of the brightness temperature differences due to the differences 
 %=======================
 \begin{appendix}
   \include{SRF_Data_Plots.app}
+  \include{Tfit_Data_Plots.app}
 \end{appendix}
 
 \end{document}
