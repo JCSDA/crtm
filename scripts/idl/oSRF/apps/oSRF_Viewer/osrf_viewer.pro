@@ -338,7 +338,11 @@ END
 
 
 ;--------------------------------------------
-PRO OSRF_Viewer, File = file, Debug = debug
+PRO OSRF_Viewer, $
+  File         = file, $
+  State        = state, $
+  Regular_Size = regular_size, $
+  Debug        = debug
 
   ; Setup
   ; ...Check arguments
@@ -415,8 +419,13 @@ PRO OSRF_Viewer, File = file, Debug = debug
     ROW = 1, $
     MAP = Map )
     ; ...Create the widget window
-    xsize = 800
-    ysize = 600
+    IF ( KEYWORD_SET(regular_size) ) THEN BEGIN
+      xsize = 640
+      ysize = 512
+    ENDIF ELSE BEGIN
+      xsize = 800
+      ysize = 600
+    ENDELSE
     draw_id = WIDGET_WINDOW( $
       draw_base_id, $
       GROUP_LEADER = top_level_base_id, $
