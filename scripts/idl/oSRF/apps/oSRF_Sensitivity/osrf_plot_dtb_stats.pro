@@ -83,7 +83,7 @@ PRO oSRF_Plot_dTb_Stats, $
 
   ; Graphics info
   ; ...Bar colours
-  bar_colour = ['red', 'green', 'blue', 'orange', 'magenta','cyan']
+  bar_colour = ['green', 'red', 'blue', 'orange', 'magenta','cyan']
   IF ( n_exp_datasets GT N_ELEMENTS(bar_colour) ) THEN $
     MESSAGE, "Too many experimental datasets!", $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
@@ -149,7 +149,7 @@ PRO oSRF_Plot_dTb_Stats, $
       IF ( j EQ 0 AND n_exp_datasets GT 1 ) THEN BEGIN
         IF ( i EQ 0 ) THEN $
           l = LEGEND( TARGET=b, $
-                      POSITION=[0.275,0.925], $
+                      POSITION=[0.8,0.925], $
                       FONT_SIZE=l_font_size ) $
         ELSE BEGIN
           l.Add, b

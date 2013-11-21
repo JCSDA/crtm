@@ -40,7 +40,7 @@ PRO osrf_sensitivity, $
   ; ...Get the sensor entry
   sinfo = sinfo_list->Get(Sensor_Id=Sensor_Id,COUNT=count,Debug=debug)
   IF ( count NE 1 ) THEN $
-    MESSAGE, Sensor_Id+' entry not found in '+STRTRIM(sinfo_file)e,2), $
+    MESSAGE, Sensor_Id+' entry not found in '+STRTRIM(sinfo_file,2), $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Extract the sensor properties required
   sinfo->Get_Property, $
@@ -107,7 +107,7 @@ PRO osrf_sensitivity, $
     _channel_list = sensor_channel
   ; ...and check it for invalid channels
   FOR l = 0, N_ELEMENTS(_channel_list)-1 DO BEGIN
-    idx = WHERE(sensor_channel EQ _channel_list[l], COUNT=count)
+    idx = WHERE(sensor_channel EQ _channel_list[l], count)
     IF ( count EQ 0 ) THEN $
       MESSAGE, "Invalid channel for "+STRTRIM(Sensor_Id,2)+" specified in channel list", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch

@@ -57,10 +57,10 @@ FUNCTION oSRF_Compute_Tb, $
   osrf[0]->Get_Property, $
     Debug     = debug, $
     Sensor_Id = osrf_sensor_id
-  IF ( osrf_sensor_id NE sensor_id ) THEN $
+  IF ( STRTRIM(osrf_sensor_id,2) NE STRTRIM(sensor_id,2) ) THEN $
       MESSAGE, "oSRF Sensor_Id is different from SensorInfo Sensor_Id!", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
-  
+
   
   ; Begin channel computations
   FOR l = 0, n_channels - 1 DO BEGIN    
