@@ -43,7 +43,7 @@ END
 
 ; Main procedure
 PRO OSRF_File::Read, $
-  Debug = Debug     ; Input keyword
+  Debug = debug     ; Input keyword
 
 
   ; Set up
@@ -67,95 +67,96 @@ PRO OSRF_File::Read, $
   
   
   ; Get the number of channels dimension
-  DimID = NCDF_DIMID( fid, CHANNEL_DIMNAME )
-  NCDF_DIMINQ, fid, DimID, DimName, n_Channels
+  dimid = NCDF_DIMID( fid, CHANNEL_DIMNAME )
+  NCDF_DIMINQ, fid, dimid, dimname, n_channels
 
   
   ; Read the global attributes
-  self->Read_GAtts, Debug = Debug
+  self->Read_GAtts, Debug = debug
   ; ...Pull out some for setting by oSRF 
   self->Get_Property, $
-    Debug            = Debug           , $
-    Sensor_Id        = Sensor_Id       , $
-    WMO_Satellite_Id = WMO_Satellite_Id, $
-    WMO_Sensor_Id    = WMO_Sensor_Id   , $
-    Sensor_Type      = Sensor_Type     
+    Debug            = debug           , $
+    Sensor_Id        = sensor_id       , $
+    WMO_Satellite_Id = wmo_satellite_id, $
+    WMO_Sensor_Id    = wmo_sensor_id   , $
+    Sensor_Type      = sensor_type     
   
   
   ; Loop over the number of channels
-  FOR n = 0L, n_Channels-1L DO BEGIN
+  FOR n = 0L, n_channels-1L DO BEGIN
   
 
     ; Read the channel number
-    VarId = NCDF_VARID(fid, SENSOR_CHANNEL_VARNAME)
-    NCDF_VARGET, fid, VarId, Channel, OFFSET=n, COUNT=1
+    varid = NCDF_VARID(fid, SENSOR_CHANNEL_VARNAME)
+    NCDF_VARGET, fid, varid, channel, OFFSET=n, COUNT=1
     
     
     ; Read the band dimension
     self->Create_Names, $
-      Channel, $
-      Debug             = Debug            , $
-      n_Bands_DimName   = n_Bands_DimName
-    n_Bands_DimId = NCDF_DIMID( fid, n_Bands_DimName )
-    NCDF_DIMINQ, fid, n_Bands_DimId, DimName, n_Bands
+      channel, $
+      Debug           = debug            , $
+      n_Bands_DimName = n_bands_dimname
+    n_bands_dimid = NCDF_DIMID( fid, n_bands_dimname )
+    NCDF_DIMINQ, fid, n_bands_dimid, dimname, n_bands
 
 
     ; Create the remaining dimension and variable names
     self->Create_Names, $
-      Channel, $
-      n_Bands, $
-      Debug             = Debug            , $
-      n_Points_DimName  = n_Points_DimName , $
-      f1_VarName        = f1_VarName       , $
-      f2_VarName        = f2_VarName       , $
-      Frequency_VarName = Frequency_VarName, $
-      Response_VarName  = Response_VarName
+      channel, $
+      n_bands, $
+      Debug             = debug            , $
+      n_Bands_DimName   = n_bands_dimname  , $
+      n_Points_DimName  = n_points_dimname , $
+      f1_VarName        = f1_varname       , $
+      f2_VarName        = f2_varname       , $
+      Frequency_VarName = frequency_varname, $
+      Response_VarName  = response_varname 
   
   
     ; Get the number of points for each band
-    n_Points_DimId = LONARR(n_Bands)
-    n_Points = LONARR(n_Bands)
-    FOR i = 0L, n_Bands-1L DO BEGIN
-      n_Points_DimId[i] = NCDF_DIMID( fid, n_Points_DimName[i] )
-      NCDF_DIMINQ, fid, n_Points_DimName[i], DimName, nbp
-      n_Points[i] = nbp
+    n_points_dimid = LONARR(n_Bands)
+    n_points = LONARR(n_Bands)
+    FOR i = 0L, n_bands-1L DO BEGIN
+      n_points_dimid[i] = NCDF_DIMID( fid, n_points_dimname[i] )
+      NCDF_DIMINQ, fid, n_points_dimid[i], dimname, nbp
+      n_points[i] = nbp
     ENDFOR
 
 
     ; Allocate the current OSRF
-    osrf = OBJ_NEW('OSRF', Debug = Debug)
-    osrf->Allocate, n_Points, Debug = Debug
+    osrf = OBJ_NEW('OSRF', Debug = debug)
+    osrf->Allocate, n_points, Debug = debug
 
 
     ; Set the global attribute properties for the current oSRF
     osrf->OSRF::Set_Property, $
       Debug = Debug, $
-      Sensor_Id        = Sensor_Id       , $
-      WMO_Satellite_ID = WMO_Satellite_ID, $
-      WMO_Sensor_ID    = WMO_Sensor_ID   , $
-      Sensor_Type      = Sensor_Type
+      Sensor_Id        = sensor_id       , $
+      WMO_Satellite_ID = wmo_satellite_id, $
+      WMO_Sensor_ID    = wmo_sensor_id   , $
+      Sensor_Type      = sensor_type
       
     
     ; Read the channel dependent data
     ; ...The sensor channel
     osrf->OSRF::Set_Property, $
-      Debug = Debug, $
-      Channel = Channel
+      Debug   = debug, $
+      Channel = channel
     ; ...The processing flags
-    VarId = NCDF_VARID( fid, FLAGS_VARNAME )
-    NCDF_VARGET, fid, VarId, expected_flags, OFFSET = n, COUNT = 1
+    varid = NCDF_VARID( fid, FLAGS_VARNAME )
+    NCDF_VARGET, fid, varid, expected_flags, OFFSET = n, COUNT = 1
     ; ...The integrated SRF value
-    VarId = NCDF_VARID( fid, INTEGRATED_SRF_VARNAME )
-    NCDF_VARGET, fid, VarId, expected_integral, OFFSET = n, COUNT = 1
+    varid = NCDF_VARID( fid, INTEGRATED_SRF_VARNAME )
+    NCDF_VARGET, fid, varid, expected_integral, OFFSET = n, COUNT = 1
     ; ...The central frequency
-    VarId = NCDF_VARID( fid, CENTRAL_FREQUENCY_VARNAME )
-    NCDF_VARGET, fid, VarId, expected_f0, OFFSET = n, COUNT = 1
+    varid = NCDF_VARID( fid, CENTRAL_FREQUENCY_VARNAME )
+    NCDF_VARGET, fid, varid, expected_f0, OFFSET = n, COUNT = 1
     ; ...The Planck coefficients
-    VarId = NCDF_VARID( fid, PLANCK_COEFFS_VARNAME )
-    NCDF_VARGET, fid, VarId, expected_planck_coeffs, OFFSET = [0,n], COUNT = [N_PLANCK_COEFFS,1]
+    varid = NCDF_VARID( fid, PLANCK_COEFFS_VARNAME )
+    NCDF_VARGET, fid, varid, expected_planck_coeffs, OFFSET = [0,n], COUNT = [N_PLANCK_COEFFS,1]
     ; ...The Polychromatic correction coefficients
-    VarId = NCDF_VARID( fid, POLYCHROMATIC_COEFFS_VARNAME )
-    NCDF_VARGET, fid, VarId, expected_polychromatic_coeffs, OFFSET = [0,n], COUNT = [N_POLYCHROMATIC_COEFFS,1]
+    varid = NCDF_VARID( fid, POLYCHROMATIC_COEFFS_VARNAME )
+    NCDF_VARGET, fid, varid, expected_polychromatic_coeffs, OFFSET = [0,n], COUNT = [N_POLYCHROMATIC_COEFFS,1]
 
 
     ; Read the band dependent data
@@ -266,7 +267,6 @@ PRO OSRF_File::Read, $
                     '/2x,"Threshold  : ",'+STRTRIM(N_POLYCHROMATIC_COEFFS,2)+'(1x,e13.6),/)'
     ENDIF
     
-    
         
     ; Add the current OSRF to the file object
     self->Add, osrf
@@ -275,8 +275,4 @@ PRO OSRF_File::Read, $
   ENDFOR
   NCDF_CLOSE, fid
 
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO OSRF_File::Read
+END

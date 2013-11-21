@@ -108,13 +108,17 @@
 PRO OSRF_File::Create_Names, $
   Channel, $  ; Input argument
   n_Bands, $  ; Optional input argument
-  Debug             = Debug            , $  ; Input keyword
-  n_Bands_DimName   = n_Bands_DimName  , $  ; Output keyword
-  n_Points_DimName  = n_Points_DimName , $  ; Output keyword
-  f1_VarName        = f1_VarName       , $  ; Output keyword
-  f2_VarName        = f2_VarName       , $  ; Output keyword
-  Frequency_VarName = Frequency_VarName, $  ; Output keyword
-  Response_VarName  = Response_VarName      ; Output keyword
+  Debug                  = debug                 , $  ; Input keyword
+  n_Bands_DimName        = n_bands_dimname       , $  ; Output keyword
+  n_Temperatures_DimName = n_temperatures_dimname, $  ; Output keyword
+  n_Points_DimName       = n_points_dimname      , $  ; Output keyword
+  f1_VarName             = f1_varname            , $  ; Output keyword
+  f2_VarName             = f2_varname            , $  ; Output keyword
+  Frequency_VarName      = frequency_varname     , $  ; Output keyword
+  Response_VarName       = response_varname      , $  ; Output keyword
+  T_VarName              = t_varname             , $  ; Output keyword
+  Teff_VarName           = teff_varname          , $  ; Output keyword
+  Tfit_VarName           = tfit_varname               ; Output keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -125,10 +129,10 @@ PRO OSRF_File::Create_Names, $
 
 
   ; Check n_Bands argument
-  _n_Bands = 1L  ; Default
+  _n_bands = 1L  ; Default
   IF ( N_ELEMENTS(n_Bands) GT 0 ) THEN BEGIN
-    _n_Bands = LONG(n_Bands[0])
-    IF ( _n_Bands LT 1 ) THEN $
+    _n_bands = LONG(n_Bands[0])
+    IF ( _n_bands LT 1 ) THEN $
       MESSAGE, 'Invalid number of bands specified.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
@@ -137,17 +141,17 @@ PRO OSRF_File::Create_Names, $
   ; Construct the dimension and variable names
   ; ...Channel only
   ch = STRTRIM(Channel,2)
-  n_Bands_DimName   = 'ch'+ch+'_n_Bands'
-  f1_VarName        = 'ch'+ch+'_f1'
-  f2_VarName        = 'ch'+ch+'_f2'
+  n_bands_dimname        = 'ch'+ch+'_n_Bands'
+  n_temperatures_dimname = 'ch'+ch+'_n_Temperatures'
+  f1_varname             = 'ch'+ch+'_f1'
+  f2_varname             = 'ch'+ch+'_f2'
+  t_varname              = 'ch'+ch+'_T'
+  teff_varname           = 'ch'+ch+'_Teff'
+  tfit_varname           = 'ch'+ch+'_Tfit'
   ; ...Channel and band
-  b  = STRTRIM(LINDGEN(_n_Bands)+1,2)
-  n_Points_DimName  = 'ch'+ch+'_b'+b+'_n_Points'
-  Frequency_VarName = 'ch'+ch+'_b'+b+'_Frequency'
-  Response_VarName  = 'ch'+ch+'_b'+b+'_Response'
+  b  = STRTRIM(LINDGEN(_n_bands)+1,2)
+  n_points_dimname  = 'ch'+ch+'_b'+b+'_n_Points'
+  frequency_varname = 'ch'+ch+'_b'+b+'_Frequency'
+  response_varname  = 'ch'+ch+'_b'+b+'_Response'
 
-
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO OSRF_File::Create_Names
+END

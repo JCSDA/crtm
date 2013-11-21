@@ -46,7 +46,7 @@ PRO OSRF_File::Write, $
   
   
   ; Get the OSRF references and check count
-  osrf = self->Get(/ALL, ISA='OSRF', COUNT=n_OSRFs)
+  osrf = self->Get(/ALL, ISA='OSRF', COUNT=n_osrfs)
   IF ( n_OSRFs EQ 0 ) THEN RETURN
 
 
@@ -60,39 +60,44 @@ PRO OSRF_File::Write, $
   
   
   ; Loop over contained OSRF objects
-  FOR n = 0L, n_OSRFs-1L DO BEGIN
+  FOR n = 0L, n_osrfs-1L DO BEGIN
   
   
     ; Load  file object properties from the first OSRF object
     IF ( n EQ 0 ) THEN BEGIN
       osrf[n]->OSRF::Get_Property, $
-        Debug   = Debug  , $
-        Sensor_Id        = Sensor_Id       , $
-        WMO_Satellite_Id = WMO_Satellite_Id, $
-        WMO_Sensor_Id    = WMO_Sensor_Id   , $
-        Sensor_Type      = Sensor_Type     
-      self.Sensor_Id        = Sensor_Id       
-      self.WMO_Satellite_Id = WMO_Satellite_Id
-      self.WMO_Sensor_Id    = WMO_Sensor_Id   
-      self.Sensor_Type      = Sensor_Type     
+        Debug            = debug           , $
+        Sensor_Id        = sensor_id       , $
+        WMO_Satellite_Id = wmo_satellite_id, $
+        WMO_Sensor_Id    = wmo_sensor_id   , $
+        Sensor_Type      = sensor_type     
+      self.Sensor_Id        = sensor_id       
+      self.WMO_Satellite_Id = wmo_satellite_id
+      self.WMO_Sensor_Id    = wmo_sensor_id   
+      self.Sensor_Type      = sensor_type     
     ENDIF
 
   
     ; Create the SRF dimension and variable names for the current channel
     osrf[n]->OSRF::Get_Property, $
-      Debug   = Debug  , $
-      Channel = Channel, $
-      n_Bands = n_Bands
+      Debug          = debug  , $
+      Channel        = channel, $
+      n_Bands        = n_bands, $
+      n_Temperatures = n_temperatures
     self->Create_Names, $
-      Channel, $
-      n_Bands, $
-      Debug             = Debug            , $
-      n_Bands_DimName   = n_Bands_DimName  , $
-      n_Points_DimName  = n_Points_DimName , $
-      f1_VarName        = f1_VarName       , $
-      f2_VarName        = f2_VarName       , $
-      Frequency_VarName = Frequency_VarName, $
-      Response_VarName  = Response_VarName
+      channel, $
+      n_bands, $
+      Debug                  = debug                 , $
+      n_Bands_DimName        = n_bands_dimname       , $
+      n_Temperatures_DimName = n_temperatures_dimname, $
+      n_Points_DimName       = n_points_dimname      , $
+      f1_VarName             = f1_varname            , $
+      f2_VarName             = f2_varname            , $
+      Frequency_VarName      = frequency_varname     , $
+      Response_VarName       = response_varname      , $
+      T_VarName              = t_varname             , $
+      Teff_VarName           = teff_varname          , $
+      Tfit_VarName           = tfit_varname          
 
 
     ; Put the file in define mode
@@ -101,31 +106,54 @@ PRO OSRF_File::Write, $
   
     ; Define the dimensions for this channel
     ; .. The number of bands
-    n_Bands_DimId  = NCDF_DIMDEF( fid, n_Bands_DimName, n_Bands )
+    n_bands_dimid  = NCDF_DIMDEF( fid, n_bands_dimname, n_bands )
     ; ...The number of points for each band
-    n_Points_DimId = LONARR(n_Bands)
-    FOR i = 0L, n_Bands-1L DO BEGIN
+    n_points_dimid = LONARR(n_bands)
+    FOR i = 0L, n_bands-1L DO BEGIN
       osrf[n]->OSRF::Get_Property, $
         i+1L, $
-        Debug    = Debug  , $
-        n_Points = n_Points
-      n_Points_DimId[i] = NCDF_DIMDEF( fid, n_Points_DimName[i], n_Points )
+        Debug    = debug  , $
+        n_Points = n_points
+      n_points_dimid[i] = NCDF_DIMDEF( fid, n_points_dimname[i], n_points )
     ENDFOR
+    ; .. The number of temperatures
+    n_temperatures_dimid  = NCDF_DIMDEF( fid, n_temperatures_dimname, n_temperatures )
 
   
     ; Define the band variables
     ; ...The band begin frequency variable
-    f1_VarId = NCDF_VARDEF( fid, f1_VarName, n_Bands_DimId, /DOUBLE )
-    NCDF_ATTPUT, fid, f1_VarId, LONGNAME_ATTNAME   , F1_LONGNAME
-    NCDF_ATTPUT, fid, f1_VarId, DESCRIPTION_ATTNAME, F1_DESCRIPTION
-    NCDF_ATTPUT, fid, f1_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS
-    NCDF_ATTPUT, fid, f1_VarId, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
+    f1_varid = NCDF_VARDEF( fid, f1_varname, n_bands_dimid, /DOUBLE )
+    NCDF_ATTPUT, fid, f1_varid, LONGNAME_ATTNAME   , F1_LONGNAME
+    NCDF_ATTPUT, fid, f1_varid, DESCRIPTION_ATTNAME, F1_DESCRIPTION
+    NCDF_ATTPUT, fid, f1_varid, UNITS_ATTNAME      , FREQUENCY_UNITS
+    NCDF_ATTPUT, fid, f1_varid, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
     ; The band end frequency variable
-    f2_VarId = NCDF_VARDEF( fid, f2_VarName, n_Bands_DimId, /DOUBLE )
-    NCDF_ATTPUT, fid, f2_VarId, LONGNAME_ATTNAME   , F2_LONGNAME
-    NCDF_ATTPUT, fid, f2_VarId, DESCRIPTION_ATTNAME, F2_DESCRIPTION
-    NCDF_ATTPUT, fid, f2_VarId, UNITS_ATTNAME      , FREQUENCY_UNITS
-    NCDF_ATTPUT, fid, f2_VarId, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
+    f2_varid = NCDF_VARDEF( fid, f2_varname, n_bands_dimid, /DOUBLE )
+    NCDF_ATTPUT, fid, f2_varid, LONGNAME_ATTNAME   , F2_LONGNAME
+    NCDF_ATTPUT, fid, f2_varid, DESCRIPTION_ATTNAME, F2_DESCRIPTION
+    NCDF_ATTPUT, fid, f2_varid, UNITS_ATTNAME      , FREQUENCY_UNITS
+    NCDF_ATTPUT, fid, f2_varid, FILLVALUE_ATTNAME  , FREQUENCY_FILLVALUE
+
+
+    ; Define the temperature variables
+    ; ...The true temperature
+    t_varid = NCDF_VARDEF( fid, t_varname, n_temperatures_dimid, /DOUBLE )
+    NCDF_ATTPUT, fid, t_varid, LONGNAME_ATTNAME   , T_LONGNAME
+    NCDF_ATTPUT, fid, t_varid, DESCRIPTION_ATTNAME, T_DESCRIPTION
+    NCDF_ATTPUT, fid, t_varid, UNITS_ATTNAME      , T_UNITS
+    NCDF_ATTPUT, fid, t_varid, FILLVALUE_ATTNAME  , T_FILLVALUE
+    ; ...The effective temperature
+    teff_varid = NCDF_VARDEF( fid, teff_varname, n_temperatures_dimid, /DOUBLE )
+    NCDF_ATTPUT, fid, teff_varid, LONGNAME_ATTNAME   , TEFF_LONGNAME
+    NCDF_ATTPUT, fid, teff_varid, DESCRIPTION_ATTNAME, TEFF_DESCRIPTION
+    NCDF_ATTPUT, fid, teff_varid, UNITS_ATTNAME      , T_UNITS
+    NCDF_ATTPUT, fid, teff_varid, FILLVALUE_ATTNAME  , T_FILLVALUE
+    ; ...The fit to the effective temperature
+    tfit_varid = NCDF_VARDEF( fid, tfit_varname, n_temperatures_dimid, /DOUBLE )
+    NCDF_ATTPUT, fid, tfit_varid, LONGNAME_ATTNAME   , TFIT_LONGNAME
+    NCDF_ATTPUT, fid, tfit_varid, DESCRIPTION_ATTNAME, TFIT_DESCRIPTION
+    NCDF_ATTPUT, fid, tfit_varid, UNITS_ATTNAME      , T_UNITS
+    NCDF_ATTPUT, fid, tfit_varid, FILLVALUE_ATTNAME  , T_FILLVALUE
 
 
     ; Define the actual SRF variables
@@ -188,6 +216,13 @@ PRO OSRF_File::Write, $
       Polychromatic_Coeffs = Polychromatic_Coeffs
     VarId = NCDF_VARID( fid, POLYCHROMATIC_COEFFS_VARNAME )
     NCDF_VARPUT, fid, VarId, Polychromatic_Coeffs, OFFSET = [0,n]
+    ; ...The polychromatic temperature data
+    osrf[n]->OSRF::Get_Property, $
+      Debug = Debug, $
+      poly_Tdata = poly_tdata
+    NCDF_VARPUT, fid, t_varid   , poly_tdata["T"]
+    NCDF_VARPUT, fid, teff_varid, poly_tdata["Teff"]
+    NCDF_VARPUT, fid, tfit_varid, poly_tdata["Tfit"]
 
 
     ; Write the band dependent data
@@ -216,8 +251,4 @@ PRO OSRF_File::Write, $
   ; Write the global attributes
   self->Write_GAtts, Debug=Debug
   
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO OSRF_File::Write
+END
