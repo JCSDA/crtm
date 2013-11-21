@@ -165,7 +165,7 @@ PRO OSRF::Plot, $
     dx_middle  = 1.0d0 - dx_left - dx_right
     dx = dx_middle/DOUBLE(n_bands)
     x1 = dx_left + DOUBLE(band-1)*dx
-    x2 = x1+dx-0.05d0
+    x2 = x1+dx-0.06d0
     
     
     ; Plot the band response
