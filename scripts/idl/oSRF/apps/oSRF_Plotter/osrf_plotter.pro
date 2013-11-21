@@ -8,13 +8,15 @@ PRO oSRF_Plotter, $
   SRF_Files                        , $ ; Input. Number of SRF datasets to overplot (Max. 6)
   Path            = path           , $ ; Input keyword. Same size as SRF_Files. Default is "." 
   Label           = label          , $ ; Input keyword. Same size as SRF_Files. Default is SRF_Files
-  Ylog            = ylog           , $ ; Input keyword.
-  No_Pause        = no_pause       , $ ; Input keyword. 
-  Close_As_You_Go = close_as_you_go, $ ; Input keyword.
+  Ylog            = ylog           , $ ; Input keyword. Plot SRFs with log y-axis. Default is linear.
+  No_Tfit         = no_tfit        , $ ; Input keyword. Do not plot Tfit data. Default is plot.
+  No_Pause        = no_pause       , $ ; Input keyword. Do not pause between plots. Default is pause.
+  Close_As_You_Go = close_as_you_go, $ ; Input keyword. Close window plots. Default is not to.
   Debug           = debug              ; Input keyword.
 ;-
 
   ; Setup
+  COMPILE_OPT HIDDEN
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
@@ -22,6 +24,7 @@ PRO oSRF_Plotter, $
   n_files = N_ELEMENTS(SRF_Files)
   path       = (N_ELEMENTS(path ) GT 0) ? path  : REPLICATE(".", n_files)
   label      = (N_ELEMENTS(label) GT 0) ? label : SRF_Files
+  plot_tfit  = ~ KEYWORD_SET(No_Tfit)
   plot_pause = ~ KEYWORD_SET(No_Pause)
   ; ...Set parameters
   COLOR = ['black', 'green', 'red', 'blue', 'magenta', 'cyan']
@@ -94,21 +97,27 @@ PRO oSRF_Plotter, $
       ENDELSE
     ENDFOR  ; File plot loop
 
-    ; Display the legend
-    ; ...Determine legend position
+
+    ; Get the number of bands
     osrf[0].Get_Property, n_Bands = n_bands, Debug = debug
-    CASE n_bands OF
-      2: position = [0.325,0.2]
-      4: position = [0.25,0.2]
-      ELSE: position = [0.5,0.2]
-    ENDCASE
-    ; ...Display it
-    legend = LEGEND(TARGET=pref, $
-                    POSITION=position, $
-                    HORIZONTAL_ALIGNMENT='CENTER', $
-                    VERTICAL_ALIGNMENT='CENTER', $
-                    FONT_SIZE=9, $
-                    /NORMAL)
+    
+    
+    ; Display the legend for multi-files
+    IF ( n_files GT 1 ) THEN BEGIN
+      ; ...Determine legend position
+      CASE n_bands OF
+        2: position = [0.325,0.2]
+        4: position = [0.25,0.2]
+        ELSE: position = [0.5,0.2]
+      ENDCASE
+      ; ...Display it
+      legend = LEGEND(TARGET=pref, $
+                      POSITION=position, $
+                      HORIZONTAL_ALIGNMENT='CENTER', $
+                      VERTICAL_ALIGNMENT='CENTER', $
+                      FONT_SIZE=9, $
+                      /NORMAL)
+    ENDIF
 
 
     ; Generate output plot files
@@ -136,7 +145,73 @@ PRO oSRF_Plotter, $
       osrf[0].Get_Property, band, pRef=p, Debug=debug
       p.font_size = font_size[band]
     ENDFOR
+
+
+    ; ===============================
+    ; Plot the tfit data if requested
+    IF ( plot_tfit ) THEN BEGIN
     
+      tpref = OBJARR(n_files) ; For legend
+      
+      ; Begin the file loop for display
+      FOR n = 0, n_files - 1 DO BEGIN
+        osrf[n] = osrf_file[n].Get(Position = l, Debug = debug)
+        IF ( n EQ 0 ) THEN BEGIN
+          osrf[n].Tfit_Plot, $
+            COLOR = COLOR[n], $
+            NAME  = label[n], $
+            Debug = debug
+          osrf[n].Get_Property, $
+            tpref = tp, $
+            Debug = debug
+          tpref[n] = tp     ; For legend
+        ENDIF ELSE BEGIN
+          osrf[0].Tfit_Oplot, osrf[n], $
+            COLOR = COLOR[n], $
+            NAME  = label[n], $
+            pRef  = tp
+          tpref[n] = tp  ; For legend
+        ENDELSE
+      ENDFOR  ; File plot loop
+
+    
+      ; Display the legend for multi-files
+      IF ( n_files GT 1 ) THEN BEGIN
+        ; ...Set legend position
+        position = [0.5,0.5]
+        ; ...Display it
+        legend = LEGEND(TARGET=tpref, $
+                        POSITION=position, $
+                        HORIZONTAL_ALIGNMENT='CENTER', $
+                        VERTICAL_ALIGNMENT='CENTER', $
+                        FONT_SIZE=9, $
+                        /NORMAL)
+      ENDIF
+      
+      
+      ; Generate output plot files
+      ; ...Generate a root filename
+      osrf[0].Get_Property, Channel = channel, Debug=debug
+      fileroot = sensor_id+'-'+STRTRIM(channel,2)+'.tfit'
+      ; ...Get the window reference    
+      osrf[0].Get_Property, $
+        twRef = tw, $
+        Debug = Debug
+      ; ...Output a PNG file
+      tw.Save, fileroot+'.png', HEIGHT=500, BORDER=10
+      ; ...Output an EPS file
+      ; ......Increase the font size for EPS files
+      osrf[0].Get_Property, tpRef=tp, Debug=debug
+      font_size = tp.font_size
+      tp.font_size = tp.font_size * 2.0
+      ; ......Create the EPS file
+      tw.Save, fileroot+'.eps'
+      ; ......Restore the font sizes
+      tp.font_size = font_size
+      
+    ENDIF  ; plot_tfit IF construct
+    ; ===============================
+        
 
     ; Only pause if not at last channel
     not_last_channel = ~ (l EQ n_channels-1)
@@ -147,8 +222,11 @@ PRO oSRF_Plotter, $
     ENDIF
 
 
-    ; Close this window if required
-    IF ( KEYWORD_SET(close_as_you_go) ) THEN w.Close
+    ; Close the windows if required
+    IF ( KEYWORD_SET(close_as_you_go) ) THEN BEGIN
+      w.Close
+      IF ( plot_tfit ) THEN tw.Close
+    ENDIF
       
   ENDFOR  ; Channel loop  
 
