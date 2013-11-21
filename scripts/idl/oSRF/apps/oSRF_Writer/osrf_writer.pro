@@ -1,4 +1,4 @@
-;;+
+;+
 ; NAME:
 ;       oSRF_Writer
 ;
@@ -124,7 +124,9 @@ PRO oSRF_Writer, $
   No_Interpolate     = No_Interpolate    , $ ; Input keyword
   No_Plot            = No_Plot           , $ ; Input keyword
   No_Pause           = No_Pause          , $ ; Input keyword
-  Debug              = Debug                 ; Input keyword
+  wRef               = wRef              , $ ; Input keyword
+  Debug              = Debug             , $ ; Input keyword
+  eps=eps
 ;-
 
   ; Setup
@@ -162,7 +164,8 @@ PRO oSRF_Writer, $
     WMO_Sensor_ID    = wmo_sensor_id   , $
     Sensor_Type      = sensor_type     , $
     Sensor_Channel   = sensor_channel
-  ; ...Set a microwave sensor indicator
+  ; ...Set sone sensor data
+  n_channels   = N_ELEMENTS(sensor_channel)
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR )
 
 
@@ -184,8 +187,11 @@ PRO oSRF_Writer, $
                        Comment          = comment           )
 
 
+  ; Define a window object hash for output
+  IF ( plot_data ) THEN wref = HASH()
+
+
   ; Begin channel loop
-  n_channels = N_ELEMENTS(sensor_channel)
   FOR l = 0, n_channels-1 DO BEGIN
     PRINT, FORMAT='(//4x,"===================")'
     PRINT, FORMAT='(  4x,"Processing channel: ",i5)', sensor_channel[l]
@@ -194,6 +200,7 @@ PRO oSRF_Writer, $
 
     ; Create oSRF objects for this channel
     osrf = OBJ_NEW('oSRF', Debug = Debug)
+    tsrf = OBJ_NEW('oSRF', Debug = Debug)
     isrf = OBJ_NEW('oSRF', Debug = Debug)
 
 
@@ -248,38 +255,49 @@ PRO oSRF_Writer, $
     ENDFOR  ; Band loop
 
 
+    ; Process the original SRF
+    osrf->Integrate, Debug = Debug
+    osrf->Compute_Central_Frequency, Debug = Debug
+    osrf->Compute_Planck_Coefficients, Debug = Debug
+    osrf->Compute_Polychromatic_Coefficients, Debug = Debug
+
+
     ; Apply a response threshold cutoff if requested
+    ; ...Copy the original SRF
+    osrf->Assign, $
+      tsrf, $
+      Debug = debug
+    ; ...Now apply a threshold if required    
     IF ( apply_threshold ) THEN $
-      osrf->Apply_Response_Threshold, Response_Threshold, Debug = Debug
+      tsrf->Apply_Response_Threshold, $
+        Response_Threshold, $
+        Debug = debug
 
 
-    ; Interpolate the data to a regular frequency grid
+
+    ; Interpolate SRF if required
     IF ( interpolate_data ) THEN BEGIN
-
       ; ...Linearly interpolate visible channels
       IF ( sensor_type EQ VISIBLE_SENSOR ) THEN $
-        osrf->Set_Flag, Debug=Debug, /Linear_Interpolation
+        tsrf->Set_Flag, Debug=Debug, /Linear_Interpolation
       ; ...Compute frequency grid and interpolate
-      osrf->Compute_Interpolation_Frequency, $
+      tsrf->Compute_Interpolation_Frequency, $
         isrf, $
         /LoRes, $
         Debug=Debug
       ; ...and perform the actual interpolation
-      osrf->Interpolate, $
+      tsrf->Interpolate, $
         isrf, $
         Debug=Debug
-
     ENDIF ELSE BEGIN
-
       ; ...No interpolation, so just copy
-      osrf->Assign, $
+      tsrf->Assign, $
         isrf, $
         Debug = debug
-
     ENDELSE
 
 
-    ; Process the data
+    ; Process the current SRF data
     isrf->Integrate, Debug = Debug
     isrf->Compute_Central_Frequency, Debug = Debug
     isrf->Compute_Planck_Coefficients, Debug = Debug
@@ -287,36 +305,62 @@ PRO oSRF_Writer, $
 ;    isrf->Compute_Bandwidth, Debug = Debug
 
 
-    ; Add the interpolated oSRF to the file container
+    ; Add the SRF to the file container
     osrf_file->Add, isrf, Debug=Debug
 
 
     ; Plot the data for inspection
     IF ( plot_data ) THEN BEGIN
 
-      IF ( interpolate_data ) THEN BEGIN
-        linestyle = 'none'
-        name      = 'Interpolated'
+      IF ( apply_threshold OR interpolate_data ) THEN BEGIN
+        psrf  = osrf
+        name  = 'Original'
+        color = 'red'
       ENDIF ELSE BEGIN
-        linestyle = 'solid'
-        name      = 'Original'
+        psrf  = isrf
+        name  = 'Processed'
+        color = 'blue'
       ENDELSE
 
-      isrf->Plot, $
-        Debug     = debug, $
-        NAME      = name, $
-        LINESTYLE = linestyle, $
-        COLOR     = 'red', $
-        SYMBOL    = 'diamond', $
-        SYM_SIZE  = 0.6
+      psrf->Plot, $
+        Debug = debug, $
+        NAME  = name, $
+        COLOR = color
 
-      IF ( interpolate_data ) THEN $
-        isrf->Oplot, $
-          osrf, $
-          NAME  = 'Original', $
-          COLOR = 'blue', $
-          Debug = debug
+      IF ( apply_threshold OR interpolate_data ) THEN $
+        psrf->Oplot, $
+          isrf, $
+          SYMBOL   = 'diamond', $
+          SYM_SIZE = 0.6, $
+          NAME     = 'Processed', $
+          COLOR    = 'blue', $
+          Debug    = debug
+          
+      ; ...Save the current window reference
+      psrf->Get_Property, $
+        wRef  = w, $
+        Debug = Debug
+      wref[sensor_channel[l]] = w
 
+      ; ...Output an EPS file if requested
+      IF ( KEYWORD_SET(eps) ) THEN BEGIN
+        filename = Path+PATH_SEP()+Sensor_Id+'-'+STRTRIM(sensor_channel[l],2)+'.eps'
+        ; Increase the font size for EPS files
+        font_size = HASH()
+        FOR band = 1, n_bands DO BEGIN
+          psrf->Get_Property, band, pRef=pref, Debug=debug
+          font_size[band] = pref.font_size
+          pref.font_size = pref.font_size * 2.0
+        ENDFOR
+        ; Create the EPS file
+        w.Save, filename
+        ; Restore the font sizes
+        FOR band = 1, n_bands DO BEGIN
+          psrf->Get_Property, band, pRef=pref, Debug=debug
+          pref.font_size = font_size[band]
+        ENDFOR
+      ENDIF
+      
       ; ...Only pause if not at last channel
       not_last_channel = ~ (sensor_channel[l] EQ sensor_channel[-1])
       IF ( plot_pause AND not_last_channel ) THEN BEGIN
