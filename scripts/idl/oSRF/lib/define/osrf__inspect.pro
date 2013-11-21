@@ -102,6 +102,17 @@ PRO OSRF::Inspect, $
     ENDFOR
 
 
+    ; The polychromatic temperature data
+    PRINT, FORMAT='(/,"Polychromatic temperature data:")'
+    self.Get_Property, poly_Tdata=poly_tdata, Debug=debug
+    PRINT, FORMAT='("  Index       T          Teff          Tfit         Teff-Tfit")'
+    dt_fit = poly_tdata["Teff"] - poly_tdata["tfit"]
+    FOR i = 0L, N_ELEMENTS(dt_fit)-1 DO BEGIN
+      PRINT, i, (poly_tdata["T"])[i], (poly_tdata["Teff"])[i], (poly_tdata["tfit"])[i], dt_fit[i], $
+             FORMAT='(1x,i5,3(1x,f13.8),1x,e17.10)'
+    ENDFOR
+
+
     ; The flag status
     PRINT, FORMAT='(/,"Flag settings:")'
     self.Display_Flags, Debug=Debug

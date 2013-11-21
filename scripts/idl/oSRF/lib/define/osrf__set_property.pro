@@ -145,8 +145,7 @@ PRO OSRF::Set_Property, $
   Convolved_R      = Convolved_R     , $  ; Input keyword
   Convolved_T      = Convolved_T     , $  ; Input keyword
   Frequency        = Frequency       , $  ; Input keyword
-  Response         = Response        , $  ; Input keyword
-  Radiance         = Radiance             ; Input keyword
+  Response         = Response             ; Input keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -216,20 +215,4 @@ PRO OSRF::Set_Property, $
                /INFORMATIONAL
   ENDIF
   
-  
-  ; Set radiance data
-  n_points = N_ELEMENTS(Radiance)
-  IF ( n_points GT 0 ) THEN BEGIN
-    ; ...Check point numbering is consistent
-    IF ( n_points NE self.n_Points[_band] ) THEN $
-      MESSAGE, 'Input radiance array different size from that allocated for band ' + $
-               STRTRIM(_band,2), $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
-    ; ...Assign radiance data
-    self.Radiance[_band] = Radiance
-    IF ( KEYWORD_SET(debug) ) THEN $
-      MESSAGE, 'Radiance properties for band ' + STRTRIM(_band,2) + 'have been set', $
-               /INFORMATIONAL
-  ENDIF
-
 END

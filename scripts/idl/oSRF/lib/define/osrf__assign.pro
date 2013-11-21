@@ -117,9 +117,16 @@ PRO OSRF::Assign, $
   new.f2        = (self.f2)[*]
   new.Frequency = (self.Frequency)[*]
   new.Response  = (self.Response)[*] 
-  new.Radiance  = (self.Radiance)[*] 
   new.Bandwidth = (self.Bandwidth)[*] 
+  new.Radiance  = (self.Radiance)[*] 
 
+
+  ; Copy pointer components
+  *new.T    = *self.T
+  *new.Teff = *self.Teff
+  *new.Tfit = *self.Tfit
+  
+  
   ; Output debug info
   IF ( KEYWORD_SET(debug) ) THEN BEGIN
     new.Set_Flag, Debug = debug

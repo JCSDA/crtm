@@ -31,6 +31,8 @@
 ;         Response             = Response            , $  ; Output keyword
 ;         Bandwidth            = Bandwidth           , $  ; Output keyword
 ;         Radiance             = Radiance            , $  ; Output keyword
+;         poly_Tdata           = poly_Tdata          , $  ; Output keyword
+;         n_Temperatures       = n_Temperatures      , $  ; Output keyword
 ;         pRef                 = pRef                     ; Output keyword
 ;
 ; OPTIONAL INPUT ARGUMENTS:
@@ -189,6 +191,26 @@
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       poly_Tdata:            Hash of temperature data used to generate the
+;                              polychromatic coefficients. The hash keys are:
+;                                "T"    - the true temperature (X-data).
+;                                "Teff" - the effective temperature (Y-data).
+;                                "Tfit" - the polynomial fit to the Teff=f(T) data. 
+;                              UNITS:      Kelvin (hash values)
+;                              TYPE:       HASH
+;                              DIMENSION:  N/A
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
+;       n_Temperatures:        The number of temperature points used in the
+;                              polychromatic coefficient fits.
+;                              This is syntactic sugar to avoid having to 
+;                              retrieve the poly_Tdata itself and then figure
+;                              out how many data points there are.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  SCALAR
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       pRef:                  Graphics plot reference for an SRF band.
 ;                              Used in conjunction with the Band argument.
 ;                              UNITS:      N/A
@@ -241,8 +263,12 @@ PRO OSRF::Get_Property, $
   Frequency            = Frequency           , $  ; Output keyword
   Response             = Response            , $  ; Output keyword
   Radiance             = Radiance            , $  ; Output keyword
+  poly_Tdata           = poly_Tdata          , $  ; Output keyword
+  n_Temperatures       = n_Temperatures      , $  ; Output keyword
   pRef                 = pRef                , $  ; Output keyword
-  wRef                 = wRef                     ; Output keyword
+  wRef                 = wRef                , $  ; Output keyword
+  tpRef                = tpRef                , $  ; Output keyword
+  twRef                = twRef                     ; Output keyword
 
   ; Set up
   COMPILE_OPT HIDDEN
@@ -283,8 +309,13 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(Polychromatic_Coeffs) ) THEN Polychromatic_Coeffs = self.Polychromatic_Coeffs
   IF ( ARG_PRESENT(Convolved_R         ) ) THEN Convolved_R          = self.Convolved_R
   IF ( ARG_PRESENT(Convolved_T         ) ) THEN Convolved_T          = self.Convolved_T
-  IF ( ARG_PRESENT(wRef                ) ) THEN wRef                 = self.wRef
-  
+  ; ...Assemble polychromatic temperature data 
+  IF ( ARG_PRESENT(poly_Tdata) ) THEN $
+    poly_Tdata = HASH("T"   ,*self.T   , $
+                      "Teff",*self.Teff, $
+                      "Tfit",*self.Tfit  )
+  IF ( ARG_PRESENT(n_Temperatures) ) THEN n_Temperatures = N_ELEMENTS(*self.T)
+
   
   ; Get band specific data  
   IF ( ARG_PRESENT(f1       ) ) THEN f1        = self.f1[_band]       
@@ -293,7 +324,14 @@ PRO OSRF::Get_Property, $
   IF ( ARG_PRESENT(Frequency) ) THEN Frequency = self.Frequency[_band]
   IF ( ARG_PRESENT(Response ) ) THEN Response  = self.Response[_band]
   IF ( ARG_PRESENT(Radiance ) ) THEN Radiance  = self.Radiance[_band]
-  IF ( ARG_PRESENT(pRef     ) ) THEN pRef      = self.pRef[_band]
+
+
+  ; Plot variables
+  IF ( ARG_PRESENT(pRef ) ) THEN pRef  = self.pRef[_band]
+  IF ( ARG_PRESENT(wRef ) ) THEN wRef  = self.wRef
+  IF ( ARG_PRESENT(tpRef) ) THEN tpRef = self.tpRef
+  IF ( ARG_PRESENT(twRef) ) THEN twRef = self.twRef
+
 
   ; Band number of points is special case
   IF ( ARG_PRESENT(n_Points) ) THEN BEGIN

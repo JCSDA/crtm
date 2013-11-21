@@ -66,23 +66,19 @@ PRO OSRF::Compute_Planck_Radiance, $
 
 
   ; Compute Planck radiance for each band
-  FOR i = 0L, self.n_Bands-1L DO BEGIN
-    Band = i+1
+  FOR band = 1L, self.n_Bands DO BEGIN
     self.Get_Property, $
-      Band, $
+      band, $
       Channel=channel, $
       Frequency=f, $
       Debug=Debug
 
     result = Planck_Radiance(f, Temperature, radiance)
     IF ( result NE SUCCESS ) THEN $
-      MESSAGE, 'Error computing Planck radiance for band '+STRTRIM(i+1,2), $
+      MESSAGE, 'Error computing Planck radiance for band '+STRTRIM(band,2), $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-    self.Set_Property, $
-      Band, $
-      Radiance=radiance, $
-      Debug=Debug
+    self.radiance[band] = radiance
   ENDFOR
 
 END

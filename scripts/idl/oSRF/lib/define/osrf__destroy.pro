@@ -70,27 +70,40 @@ PRO OSRF::Destroy, $
   self.Convolved_T          = ZERO
 
 
-  ; Empty out hashes
+  ; Empty out data
+  ; ...Hashes
   IF ( OBJ_VALID(self.f1       ) ) THEN (self.f1       ).Remove, /ALL
   IF ( OBJ_VALID(self.f2       ) ) THEN (self.f2       ).Remove, /ALL
   IF ( OBJ_VALID(self.n_Points ) ) THEN (self.n_Points ).Remove, /ALL
   IF ( OBJ_VALID(self.Frequency) ) THEN (self.Frequency).Remove, /ALL
   IF ( OBJ_VALID(self.Response ) ) THEN (self.Response ).Remove, /ALL
-  IF ( OBJ_VALID(self.Radiance ) ) THEN (self.Radiance ).Remove, /ALL
   IF ( OBJ_VALID(self.Bandwidth) ) THEN (self.Bandwidth).Remove, /ALL
+  IF ( OBJ_VALID(self.Radiance ) ) THEN (self.Radiance ).Remove, /ALL
   IF ( OBJ_VALID(self.pRef     ) ) THEN (self.pRef     ).Remove, /ALL
+  ; ...Pointers
+  IF ( PTR_VALID(self.T   ) ) THEN PTR_FREE, self.T   
+  IF ( PTR_VALID(self.Teff) ) THEN PTR_FREE, self.Teff
+  IF ( PTR_VALID(self.Tfit) ) THEN PTR_FREE, self.Tfit
 
 
- ; Create new hashes
+  ; Create new items
+  ; ...Hashes
   self.f1        = HASH()
   self.f2        = HASH()
   self.n_Points  = HASH()
   self.Frequency = HASH()
   self.Response  = HASH()
-  self.Radiance  = HASH()
   self.Bandwidth = HASH()
-  self.wRef      = OBJ_NEW()
+  self.Radiance  = HASH()
   self.pRef      = HASH()
+  ; ...Pointers
+  self.T    = PTR_NEW(/ALLOCATE_HEAP)
+  self.Teff = PTR_NEW(/ALLOCATE_HEAP)
+  self.Tfit = PTR_NEW(/ALLOCATE_HEAP)
+  ; ..."Regular" objects
+  self.wRef  = OBJ_NEW()
+  self.twRef = OBJ_NEW()
+  self.tpRef = OBJ_NEW()
 
 
   ; Reinitialise the dimensions
