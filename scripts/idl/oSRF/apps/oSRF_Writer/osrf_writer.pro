@@ -26,7 +26,6 @@
 ;                           ATTRIBUTES: INTENT(IN)
 ;
 ; INPUT KEYWORDS:
-;
 ;       Path:               Location of ASCII SRF *.inp files. If not specified,
 ;                           the default is "./<sensor_id>"
 ;                           UNITS:      N/A
@@ -143,6 +142,7 @@ PRO oSRF_Writer, $
   plot_pause        = ~ KEYWORD_SET(No_Pause)
   ; ...Set parameters
   HISTORY = '$Id$'
+  HISTORY_FILE = path+PATH_SEP()+'source.history'
   COMMENT_FILE = path+PATH_SEP()+'source.comment'
 
 
@@ -169,8 +169,25 @@ PRO oSRF_Writer, $
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR )
 
 
-  ; Get the source comment
+  ; **** Reset interpolation keyword if microwave instrument ****
+  ;      This may change in future. But for now, no interpolation
+  ;      for microwave instruments!
+  interpolate_reminder = FALSE
+  IF ( is_microwave AND interpolate_data ) THEN BEGIN
+    interpolate_data = FALSE
+    msg = 'Interpolation disabled for microwave instruments!'
+    MESSAGE, '**** '+msg+' ****', /INFORMATIONAL
+    interpolate_reminder = TRUE
+  ENDIF
+  
+  
+  ; Get the source comment, and history if available
   Get_Comment, COMMENT_FILE, comment
+  IF ( FILE_TEST(HISTORY_FILE) ) THEN BEGIN
+    Get_Comment, HISTORY_FILE, source_history
+    source_history = source_history + '; '
+  ENDIF ELSE $
+    source_history = ''
 
 
   ; Create an oSRF_File object array
@@ -392,7 +409,7 @@ PRO oSRF_Writer, $
       Debug   = Debug, $
       Title   = STRTRIM(satellite_name,2) + ' ' + $
                 STRTRIM(sensor_name,2) + ' Spectral Response Functions', $
-      History = HISTORY, $
+      History = source_history + HISTORY, $
       Comment = comment
   osrf_file->Write, Debug = Debug
 
@@ -400,5 +417,11 @@ PRO oSRF_Writer, $
   ; Cleanup
   Done:
   OBJ_DESTROY, osrf_file, Debug = Debug
+
+
+  ; **** Reset interpolation keyword if microwave instrument ****
+  ;      This is a reminder message output in case it was missed.
+  IF ( is_microwave AND interpolate_reminder ) THEN $
+    MESSAGE, '**** Reminder: '+msg+' ****', /INFORMATIONAL
 
 END
