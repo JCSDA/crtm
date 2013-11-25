@@ -59,9 +59,14 @@ COMMON_COEFF_FILES = AerosolCoeff.bin \
 # File link creation and removal
 # DO NOT CHANGE THESE TARGET NAMES
 create_common_coeff_links::
-	@echo && \
+	@echo
+	@echo "Creating common coefficient data links in directory `pwd`" && \
 	$(LINK_SCRIPT) -d $(ENDIAN_TYPE) $(CRTM_FIXFILE_ROOT) $(COMMON_COEFF_FILES) || exit 1
+	@echo
 
 remove_common_coeff_links::
-	@echo && \
+	@echo
+	@echo "Removing common coefficient data links in directory `pwd`" && \
 	$(UNLINK_SCRIPT) $(COMMON_COEFF_FILES) || exit 1
+	@echo
+
