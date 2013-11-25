@@ -55,16 +55,21 @@
 # File link creation and removal
 # DO NOT CHANGE THESE TARGET NAMES
 create_sensor_coeff_links::
+	@echo
 	@echo "Creating sensor coefficient data links in directory `pwd`" && \
 	for id in $(SENSOR_IDS); do \
 	  echo $$id ; \
 	  $(LINK_SCRIPT) -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/SpcCoeff $$id.SpcCoeff.bin > /dev/null ; \
 	  $(LINK_SCRIPT) -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/TauCoeff/$(TAUCOEFF_TYPE) $$id.TauCoeff.bin > /dev/null ; \
 	done || exit 1
+	@echo
 
 remove_sensor_coeff_links::
+	@echo
 	@echo "Removing sensor coefficient data links in directory `pwd`" && \
 	for id in $(SENSOR_IDS); do \
 	  $(UNLINK_SCRIPT) $$id.SpcCoeff.bin ; \
 	  $(UNLINK_SCRIPT) $$id.TauCoeff.bin ; \
 	done || exit 1
+	@echo
+
