@@ -619,6 +619,7 @@ CONTAINS
 !       Error_Status = oSRF_GetValue( &
 !                        oSRF                                           , &
 !                        Band                   = Band                  , &
+!                        n_Bands                = n_Bands               , &
 !                        Version                = Version               , &
 !                        Sensor_Id              = Sensor_Id             , &
 !                        WMO_Satellite_Id       = WMO_Satellite_Id      , &
@@ -632,6 +633,7 @@ CONTAINS
 !                        n_Polychromatic_Coeffs = n_Polychromatic_Coeffs, &
 !                        Planck_Coeffs          = Planck_Coeffs         , &
 !                        Polychromatic_Coeffs   = Polychromatic_Coeffs  , &
+!                        Total_n_Points         = Total_n_Points        , &
 !                        n_Points               = n_Points              , &
 !                        f1                     = f1                    , &
 !                        f2                     = f2                    , &
@@ -656,6 +658,12 @@ CONTAINS
 !                               ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL OUTPUTS:
+!       n_Bands:                The number of bands dimension of the SRF.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       Version:                The version number of the SRF data.
 !                               UNITS:      N/A
 !                               TYPE:       INTEGER
@@ -735,8 +743,15 @@ CONTAINS
 !                               DIMENSION:  Rank-1
 !                               ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
+!       Total_n_Points:         The number of points that specify the frequency
+!                               and response data for ALL the passbands.
+!                               UNITS:      N/A
+!                               TYPE:       INTEGER
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !       n_Points:               The number of points that specify the band frequency
-!                               and responmse data.
+!                               and response data.
 !                               Used in conjunction with the Band keyword argument.
 !                               UNITS:      N/A
 !                               TYPE:       INTEGER
@@ -787,6 +802,7 @@ CONTAINS
   FUNCTION oSRF_GetValue( &
     self                  , &  ! Input
     Band                  , &  ! Optional input
+    n_Bands               , &  ! Optional output
     Version               , &  ! Optional output
     Sensor_Id             , &  ! Optional output
     WMO_Satellite_Id      , &  ! Optional output
@@ -800,6 +816,7 @@ CONTAINS
     n_Polychromatic_Coeffs, &  ! Optional output
     Planck_Coeffs         , &  ! Optional output
     Polychromatic_Coeffs  , &  ! Optional output
+    Total_n_Points        , &  ! Optional output
     n_Points              , &  ! Optional output
     f1                    , &  ! Optional output
     f2                    , &  ! Optional output
@@ -809,6 +826,7 @@ CONTAINS
     ! Arguments
     TYPE(oSRF_type),        INTENT(IN)  :: self
     INTEGER,      OPTIONAL, INTENT(IN)  :: Band
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Bands
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Sensor_Id
     INTEGER,      OPTIONAL, INTENT(OUT) :: WMO_Satellite_Id
@@ -822,6 +840,7 @@ CONTAINS
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Polychromatic_Coeffs
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Planck_Coeffs(SIZE(self%Planck_Coeffs))
     REAL(fp),     OPTIONAL, INTENT(OUT) :: Polychromatic_Coeffs(SIZE(self%Polychromatic_Coeffs))
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Total_n_Points
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Points
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f1
     REAL(fp),     OPTIONAL, INTENT(OUT) :: f2
@@ -851,6 +870,7 @@ CONTAINS
 
 
     ! Get data with defined sizes
+    IF ( PRESENT(n_Bands               ) ) n_Bands                = self%n_Bands
     IF ( PRESENT(Version               ) ) Version                = self%Version
     IF ( PRESENT(Sensor_Id             ) ) Sensor_Id              = self%Sensor_Id
     IF ( PRESENT(WMO_Satellite_Id      ) ) WMO_Satellite_Id       = self%WMO_Satellite_Id
@@ -864,6 +884,7 @@ CONTAINS
     IF ( PRESENT(n_Polychromatic_Coeffs) ) n_Polychromatic_Coeffs = DEFAULT_N_POLYCHROMATIC_COEFFS
     IF ( PRESENT(Planck_Coeffs         ) ) Planck_Coeffs          = self%Planck_Coeffs
     IF ( PRESENT(Polychromatic_Coeffs  ) ) Polychromatic_Coeffs   = self%Polychromatic_Coeffs
+    IF ( PRESENT(Total_n_Points        ) ) Total_n_Points         = SUM(self%n_Points)
     IF ( PRESENT(n_Points              ) ) n_Points               = self%n_Points(l_Band)
     IF ( PRESENT(f1                    ) ) f1                     = self%f1(l_Band)
     IF ( PRESENT(f2                    ) ) f2                     = self%f2(l_Band)
