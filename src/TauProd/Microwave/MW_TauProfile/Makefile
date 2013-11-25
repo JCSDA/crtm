@@ -41,6 +41,7 @@ SRC_FILES = Type_Kinds.f90 \
             SensorInfo_IO.f90 \
             TauProfile_Define.f90 \
             TauProfile_netCDF_IO.f90 \
+            AtmProfile_Parameters.f90 \
             AtmProfile_Define.f90 \
             AtmProfile_netCDF_IO.f90 \
             ACCoeff_Define.f90 \
@@ -66,7 +67,8 @@ SRC_FILES = Type_Kinds.f90 \
             MWLBL_Liebe89.f90 \
             MWLBL_Liebe93.f90 \
             MWLBL_Rosenkranz03.f90 \
-            MWLBL_Transmittance.f90 \
+            MWLBL_Transmittance.f90
+INC_FILES = AtmProfile_netCDF_IO.inc
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -85,10 +87,10 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Create and remove source links
 create_links::
-	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES) $(INC_FILES)
                    
 remove_links::
-	@$(UNLINK_SCRIPT) $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES) $(INC_FILES)
 
 # Source dependencies
 include make.dependencies

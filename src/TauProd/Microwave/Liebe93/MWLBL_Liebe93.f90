@@ -14,8 +14,8 @@
 !         Peter Rayer UKMO 19-Dec-2000
 !         Roger Saunders UKMO
 !
-!       Written by:     Paul van Delst, CIMSS/SSEC 21-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 21-Apr-2002
+!                       paul.vandelst@noaa.gov
 !
 
 MODULE MWLBL_Liebe93
@@ -51,7 +51,7 @@ MODULE MWLBL_Liebe93
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
     '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO           = 0.0_fp
@@ -72,8 +72,6 @@ MODULE MWLBL_Liebe93
   ! Min/max frequencies in GHz
   REAL(fp), PARAMETER :: MIN_FREQUENCY = ONE
   REAL(fp), PARAMETER :: MAX_FREQUENCY = 1000.0_fp
-  ! Keyword set flag
-  INTEGER,  PARAMETER :: SET = 1
   ! Default message string length
   INTEGER,  PARAMETER :: ML = 256
 
@@ -90,6 +88,7 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
+!:sdoc+:
 !
 ! NAME:
 !       Liebe93
@@ -99,17 +98,16 @@ CONTAINS
 !       according to Liebe's MPM93 model.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = Liebe93( Frequency                                        , &  ! Input
-!                               Dry_Air_Pressure                                 , &  ! Input
-!                               H2O_Pressure                                     , &  ! Input
-!                               Temperature                                      , &  ! Input
-!                               WetLine_Attenuation     =WetLine_Attenuation     , &  ! Optional output
-!                               WetContinuum_Attenuation=WetContinuum_Attenuation, &  ! Optional output
-!                               DryLine_Attenuation     =DryLine_Attenuation     , &  ! Optional output
-!                               DryContinuum_Attenuation=DryContinuum_Attenuation, &  ! Optional output
-!                               Quiet                   =Quiet                   , &  ! Output message control
-!                               RCS_Id                  =RCS_Id                  , &  ! Revision control
-!                               Message_Log             =Message_Log               )  ! Error messaging
+!       Error_Status = Liebe93( &
+!         Frequency       , &  ! Input
+!         Dry_Air_Pressure, &  ! Input
+!         H2O_Pressure    , &  ! Input
+!         Temperature     , &  ! Input
+!         Quiet                    = Quiet                   , &  ! Optional input
+!         WetLine_Attenuation      = WetLine_Attenuation     , &  ! Optional output
+!         WetContinuum_Attenuation = WetContinuum_Attenuation, &  ! Optional output
+!         DryLine_Attenuation      = DryLine_Attenuation     , &  ! Optional output
+!         DryContinuum_Attenuation = DryContinuum_Attenuation  )  ! Optional output
 !
 !
 !       Two forms of argument specification are available - by FREQUENCY
@@ -132,7 +130,7 @@ CONTAINS
 !         Attenuation      - Rank-1, size n_Layers
 !
 !
-! INPUT ARGUMENTS:
+! INPUTS:
 !       Frequency:                  Frequency for which the atmospheric attenuation
 !                                   is required
 !                                   UNITS:      GHz
@@ -162,27 +160,18 @@ CONTAINS
 !                                   DIMENSION:  Same as DRY_AIR_PRESSURE argument
 !                                   ATTRIBUTES: INTENT(IN)
 !
-! OPTIONAL INPUT ARGUMENTS:
-!       Quiet:                      Set this argument to suppress the output of
-!                                   WARNING level messages. If not specified the
-!                                   default is to output the messages.
-!                                   If = 0, Output WARNING messages (default)
-!                                      = 1, Suppress WARNING message output.
+! OPTIONAL INPUTS:
+!       Quiet:                      Set this logical argument to suppress WARNING and
+!                                   INFORMATION messages being printed to stdout
+!                                   If == .FALSE., messages are OUTPUT [DEFAULT].
+!                                      == .TRUE.,  messages are SUPPRESSED.
+!                                   If not specified, default is .FALSE.
 !                                   UNITS:      N/A
-!                                   TYPE:       INTEGER
-!                                   DIMENSION:  Scalar
-!                                   ATTRIBUTES: INTENT(IN), OPTIONAL
-!                          
-!       Message_Log:                Character string specifying a filename in which any
-!                                   messages will be logged. If not specified, or if an
-!                                   error occurs opening the log file, the default action
-!                                   is to output messages to standard output.
-!                                   UNITS:      N/A
-!                                   TYPE:       CHARACTER(*)
+!                                   TYPE:       LOGICAL
 !                                   DIMENSION:  Scalar
 !                                   ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-! OPTIONAL OUTPUT ARGUMENTS:
+! OPTIONAL OUTPUTS:
 !       WetLine_Attenuation:        Power attenuation due to absorption by water
 !                                   vapour absorption lines.
 !                                   UNITS:      dB/km
@@ -213,22 +202,12 @@ CONTAINS
 !                                   DIMENSION:  Same as WETLINE_ATTENUATION argument.
 !                                   ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       RCS_Id:                     Character string containing the Revision Control
-!                                   System Id field for the module.
-!                                   UNITS:      N/A
-!                                   TYPE:       CHARACTER(*)
-!                                   DIMENSION:  Scalar
-!                                   ATTRIBUTES: OPTIONAL, INTENT(OUT)
-!
 ! FUNCTION RESULT:
-!       Error_Status:               The return value is an integer defining the error
-!                                   status. The error codes are defined in the
-!                                   ERROR_HANDLER module.
+!       Error_Status:               The return value is an integer defining the error status.
+!                                   status. The error codes are defined in the Message_Handler
+!                                   module.
 !                                   If == SUCCESS the calculation was successful
-!                                      == FAILURE an error was found with the input.
-!                                      == WARNING if any of the line and/or continuum
-!                                                 absorption calculations produced a
-!                                                 negative result and was set to zero.
+!                                      == FAILURE an unrecoverable error occurred.
 !                                   UNITS:      N/A
 !                                   TYPE:       INTEGER
 !                                   DIMENSION:  Scalar
@@ -255,352 +234,258 @@ CONTAINS
   ! --------------------------------------
   ! Multi-Frequency, Single-Layer function
   ! --------------------------------------
-  FUNCTION Liebe93_By_Frequency( Frequency               , &  ! Input
-                                 Dry_Air_Pressure        , &  ! Input
-                                 H2O_Pressure            , &  ! Input
-                                 Temperature             , &  ! Input
-                                 WetLine_Attenuation     , &  ! Optional output
-                                 WetContinuum_Attenuation, &  ! Optional output
-                                 DryLine_Attenuation     , &  ! Optional output
-                                 DryContinuum_Attenuation, &  ! Optional output
-                                 Quiet                   , &  ! Output message control
-                                 RCS_Id                  , &  ! Revision control
-                                 Message_Log             ) &  ! Error messaging
-                               RESULT( Error_Status )
+  FUNCTION Liebe93_By_Frequency( &
+    Frequency               , &  ! Input
+    Dry_Air_Pressure        , &  ! Input
+    H2O_Pressure            , &  ! Input
+    Temperature             , &  ! Input
+    Quiet,                    &  ! Optional input
+    WetLine_Attenuation     , &  ! Optional output
+    WetContinuum_Attenuation, &  ! Optional output
+    DryLine_Attenuation     , &  ! Optional output
+    DryContinuum_Attenuation) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Frequency(:)
-    REAL(fp),               INTENT(IN)  :: Dry_Air_Pressure
-    REAL(fp),               INTENT(IN)  :: H2O_Pressure
-    REAL(fp),               INTENT(IN)  :: Temperature
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: WetLine_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: WetContinuum_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: DryLine_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: DryContinuum_Attenuation(:)
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),           INTENT(IN)  :: Frequency(:)
+    REAL(fp),           INTENT(IN)  :: Dry_Air_Pressure
+    REAL(fp),           INTENT(IN)  :: H2O_Pressure
+    REAL(fp),           INTENT(IN)  :: Temperature
+    LOGICAL , OPTIONAL, INTENT(IN)  :: Quiet
+    REAL(fp), OPTIONAL, INTENT(OUT) :: WetLine_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: WetContinuum_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: DryLine_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: DryContinuum_Attenuation(:)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Liebe93'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Liebe93::By_Frequency'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
+    LOGICAL :: noisy
     LOGICAL :: Compute_WetLine
     LOGICAL :: Compute_WetContinuum
     LOGICAL :: Compute_DryLine
     LOGICAL :: Compute_DryContinuum
-    LOGICAL :: Noisy
     INTEGER :: n_Frequencies, l
     REAL(fp) :: Theta
     REAL(fp) :: O2_s1, Common_s1, O2_g1, O2_d1, H2O_s1
     REAL(fp) :: H2O_Line_Absorption
-!    REAL(fp) :: WetContinuum_Absorption
+    REAL(fp) :: WetContinuum_Absorption
     REAL(fp) :: O2_Line_Absorption
     REAL(fp) :: DryContinuum_Absorption
 
     ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    err_stat = SUCCESS
+    ! ...Process keywords
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT.Quiet
 
-    ! Determine what output arguments are
-    ! present and check their sizes
+    ! Check output argument validity
     n_Frequencies = SIZE(Frequency)
-    ! The water vapour line attenuation
+    ! ...The water vapour line attenuation
     Compute_WetLine = .FALSE.
     IF ( PRESENT(WetLine_Attenuation) ) THEN
       Compute_WetLine = .TRUE.
       IF ( SIZE(WetLine_Attenuation) /= n_Frequencies ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency/WetLine_Attenuation argument arrays have inconsistent sizes.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+        err_stat = FAILURE
+        msg = 'WetLine_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour continuum attenuation
+    ! ...The water vapour continuum attenuation
     Compute_WetContinuum = .FALSE.
     IF ( PRESENT(WetContinuum_Attenuation) ) THEN
       Compute_WetContinuum = .TRUE.
       IF ( SIZE(WetContinuum_Attenuation) /= n_Frequencies ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency/WetContinuum_Attenuation argument arrays have inconsistent sizes.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+        err_stat = FAILURE
+        msg = 'WetContinuum_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour line attenuation
+    ! ...The water vapour line attenuation
     Compute_DryLine = .FALSE.
     IF ( PRESENT(DryLine_Attenuation) ) THEN
       Compute_DryLine = .TRUE.
       IF ( SIZE(DryLine_Attenuation) /= n_Frequencies ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency/DryLine_Attenuation argument arrays have inconsistent sizes.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+        err_stat = FAILURE
+        msg = 'DryLine_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour continuum attenuation
+    ! ...The water vapour continuum attenuation
     Compute_DryContinuum = .FALSE.
-    IF ( PRESENT(DryContinuum_Attenuation) ) THEN
+    IF ( PRESENT( DryContinuum_Attenuation ) ) THEN
       Compute_DryContinuum = .TRUE.
-      IF ( SIZE(DryContinuum_Attenuation) /= n_Frequencies ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'Frequency/DryContinuum_Attenuation argument arrays have inconsistent sizes.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+      IF ( SIZE( DryContinuum_Attenuation ) /= n_Frequencies ) THEN
+        err_stat = FAILURE
+        msg = 'DryContinuum_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-
-    ! If no output arguments present, return
+    ! ...If no output arguments at all, return
     IF ( ( .NOT. Compute_WetLine      ) .AND. &
          ( .NOT. Compute_WetContinuum ) .AND. &
          ( .NOT. Compute_DryLine      ) .AND. &
-         ( .NOT. Compute_DryContinuum )       ) THEN
-      RETURN
+         ( .NOT. Compute_DryContinuum )       ) RETURN
+    ! ...Check for invalid frequencies
+    IF ( ANY( Frequency < ZERO ) ) THEN
+      err_stat = FAILURE
+        msg = 'Input frequencies must be > 0.0.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-         
-    ! Check for invalid frequencies
-    IF ( ANY(Frequency < ZERO) ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input frequencies must be > 0.0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
-    END IF
-
-    ! Issue warning if any frequencies < min value...
-    IF ( ANY(Frequency < MIN_FREQUENCY) ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input frequencies < ",f6.1," GHz found.")' ) MIN_FREQUENCY
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-    ! ....or > max_value
-    IF ( ANY(Frequency > MAX_FREQUENCY) ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input frequencies > ",f6.1," GHz found.")' ) MAX_FREQUENCY
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-
-    ! Check for invalid profile data
+    ! ...Check for invalid profile data
     IF ( Dry_Air_Pressure < TOLERANCE .OR. &
          H2O_Pressure     < TOLERANCE .OR. &
          Temperature      < TOLERANCE      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input tressure/temperature arguments must be > 0.0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input tressure/temperature arguments must be > 0.0.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
 
-    ! Issue warning if temperature < min value....
-    IF ( Temperature < MIN_TEMPERATURE ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("TEMPERATURE is < ",f6.2," K.")' ) MIN_TEMPERATURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-    ! ....or > max_value
-    IF ( Temperature > MAX_TEMPERATURE ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("TEMPERATURE is > ",f6.2," K.")' ) MAX_TEMPERATURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
 
-    ! Default is to output warning messages....
-    Noisy = .TRUE.
-    ! ....unless the QUIET argument is set
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
+    ! Issue warnings for data outside range
+    IF ( noisy )  THEN
+    
+      ! Frequencies < min value or > max_value
+      IF ( ANY(Frequency < MIN_FREQUENCY) ) THEN
+        WRITE( msg,'("Input frequencies < ",f6.1," GHz found.")' ) MIN_FREQUENCY
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+      IF ( ANY(Frequency > MAX_FREQUENCY) ) THEN
+        WRITE( msg,'("Input frequencies > ",f6.1," GHz found.")' ) MAX_FREQUENCY
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+
+      ! Temperatures < min value or > max_value
+      IF ( Temperature < MIN_TEMPERATURE ) THEN
+        WRITE( msg,'("Input temperature < ",f6.1," K.")' ) MIN_TEMPERATURE
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+      IF ( Temperature > MAX_TEMPERATURE ) THEN
+        WRITE( msg,'("Input temperature > ",f6.1," K.")' ) MAX_TEMPERATURE
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+
     END IF
 
 
     ! Calculate the relative reciprocal temperature, Theta,
     ! and common line strength factor, Common_s1
-    ! -----------------------------------------------------
     Theta     = Compute_Theta( Temperature )
     Common_s1 = Compute_Common_s1( Theta )
 
 
-    ! ------------------------------------------------------
-    ! Calculate the wet line attentuation for each frequency
-    ! ------------------------------------------------------
+    ! Calculate the wet line attentuation
     WetLine_Compute: IF ( Compute_WetLine ) THEN
-
-      ! Calculate the H2O line strength factor
+      ! ...Calculate the H2O line strength factor
       H2O_s1 = Compute_H2O_s1( H2O_Pressure, Theta )
-
-      ! Loop over the required frequencies
+      ! ...Loop over the required frequencies
       WetLine_Frequency_Loop: DO l = 1, n_Frequencies
-
-        ! Compute the water vapour line absoprtion
-        H2O_Line_Absorption = Compute_H2O_Line_Absorption( Frequency(l)    , &
-                                                           Dry_Air_Pressure, &
-                                                           H2O_Pressure    , &
-                                                           Theta           , &
-                                                           Common_s1       , &
-                                                           H2O_s1            )
+        ! ...Compute the water vapour line absoprtion
+        H2O_Line_Absorption = Compute_H2O_Line_Absorption( &
+                                Frequency(l)    , &
+                                Dry_Air_Pressure, &
+                                H2O_Pressure    , &
+                                Theta           , &
+                                Common_s1       , &
+                                H2O_s1            )
         IF ( H2O_Line_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message,'("Negative sum for H2O line absorption, ",es13.6,1x,&
-                            &"at Frequency ",f8.3,1x,&
-                            &"GHz. Setting to 0.0.")' ) &
-                            H2O_Line_Absorption, Frequency(l)
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative sum for H2O line absorption, ",es13.6,1x,&
+                        &"at Frequency ",f8.3,1x,&
+                        &"GHz. Setting to 0.0.")' ) H2O_Line_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           H2O_Line_Absorption = ZERO
         END IF
-
-        ! Compute the attenuation in dB/km
+        ! ...Compute the attenuation in dB/km
         WetLine_Attenuation(l) = ATT_K * Frequency(l) * H2O_Line_Absorption
-
       END DO WetLine_Frequency_Loop
-
     END IF WetLine_Compute
 
 
-    ! -----------------------------------------------------------
     ! Calculate the wet continuum attentuation for each frequency
-    ! -----------------------------------------------------------
     WetContinuum_Compute: IF ( Compute_WetContinuum ) THEN
-
-      ! Loop over the required frequencies
+      ! ...Loop over the required frequencies
       WetContinuum_Frequency_Loop: DO l = 1, n_Frequencies
-
-        ! Compute the water vapour continuum absoprtion
-!        WetContinuum_Absorption = Compute_Wet_Continuum( Frequency(l), &
-!                                                         Dry_Air_Pressure, &
-!                                                         H2O_Pressure, &
-!                                                         Theta )
-!
+!***TURNING OFF WET CONTINUUM***
+!        ! ...Compute the water vapour continuum absoprtion
+!        WetContinuum_Absorption = Compute_Wet_Continuum( &
+!                                    Frequency(l)    , &
+!                                    Dry_Air_Pressure, &
+!                                    H2O_Pressure    , &
+!                                    Theta             )
 !        IF ( WetContinuum_Absorption < ZERO ) THEN
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message,'("Negative sum for wet continuum absorption, ",es13.6,1x,&
-!                            &"at Frequency ",f8.3,1x,&
-!                            &"GHz. Setting to 0.0.")' ) &
-!                            WetContinuum_Absorption, Frequency(l)
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM(Message), &
-!                                  Error_Status, &
-!                                  Message_Log=Message_Log )
+!          IF ( noisy ) THEN
+!            WRITE( msg,'("Negative value for wet continuum absorption, ",es13.6,1x,&
+!                        &"at Frequency ",f8.3,1x,&
+!                        &"GHz. Setting to 0.0.")' ) WetContinuum_Absorption, Frequency(l)
+!            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
 !          END IF
 !          WetContinuum_Absorption = ZERO
 !        END IF
-!
-!        ! Compute the attenuation in dB/km
-!        WetContinuum_Attenuation(l) = ATT_K * Frequency(l) * WetContinumm_Absorption
-
-        WetContinuum_Attenuation( l ) = ZERO
-
+WetContinuum_Absorption = ZERO
+!***TURNING OFF WET CONTINUUM***
+        ! ...Compute the attenuation in dB/km
+        WetContinuum_Attenuation(l) = ATT_K * Frequency(l) * WetContinuum_Absorption
       END DO WetContinuum_Frequency_Loop
-
     END IF WetContinuum_Compute
 
 
-
-    ! ------------------------------------------------------
     ! Calculate the dry line attentuation for each frequency
-    ! ------------------------------------------------------
     DryLine_Compute: IF ( Compute_DryLine ) THEN
-
-      ! Calculate the O2 line strength,
-      ! width, and overlap factors
+      ! ...Calculate the O2 line strength, width, and overlap factors
       O2_s1 = Compute_O2_s1( Dry_Air_Pressure, Theta )
       O2_g1 = Compute_O2_g1( H2O_Pressure, Theta )
       O2_d1 = Compute_O2_d1( Dry_Air_Pressure + H2O_Pressure, Theta )
-
-      ! Loop over the required frequencies
+      ! ...Loop over the required frequencies
       DryLine_Frequency_Loop: DO l = 1, n_Frequencies
-
-        ! Compute the oxygen line absoprtion
-        O2_Line_Absorption = Compute_O2_Line_Absorption( Frequency(l), &
-                                                         Dry_Air_Pressure, &
-                                                         Theta, &
-                                                         Common_s1, &
-                                                         O2_s1, &
-                                                         O2_g1, &
-                                                         O2_d1 )
+        ! ...Compute the oxygen line absoprtion
+        O2_Line_Absorption = Compute_O2_Line_Absorption( &
+                               Frequency(l)    , &
+                               Dry_Air_Pressure, &
+                               Theta           , &
+                               Common_s1       , &
+                               O2_s1           , &
+                               O2_g1           , &
+                               O2_d1             )
         IF ( O2_Line_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message,'("Negative sum for O2 line absorption, ",es13.6,1x,&
-                            &" at Frequency ",f8.3,1x,&
-                            &"GHz. Setting to 0.0.")' ) &
-                            O2_Line_Absorption, Frequency(l)
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative sum for O2 line absorption, ",es13.6,1x,&
+                        &" at Frequency ",f8.3,1x,&
+                        &"GHz. Setting to 0.0.")' ) O2_Line_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           O2_Line_Absorption = ZERO
         END IF
-
-        ! Compute the attenuation in dB/km
+        ! ...Compute the attenuation in dB/km
         DryLine_Attenuation(l) = ATT_K * Frequency(l) * O2_Line_Absorption
-
       END DO DryLine_Frequency_Loop
-
     END IF DryLine_Compute
 
 
-    ! -----------------------------------------------------------
     ! Calculate the dry continuum attentuation for each frequency
-    ! -----------------------------------------------------------
     DryContinuum_Compute: IF ( Compute_DryContinuum ) THEN
-
-      ! Loop over the required frequencies
+      ! ...Loop over the required frequencies
       DryContinuum_Frequency_Loop: DO l = 1, n_Frequencies
-
-        ! Compute the non-resonant dry air absorption
-        DryContinuum_Absorption = Compute_Dry_Continuum( Frequency(l), &
-                                                         Dry_Air_Pressure, &
-                                                         H2O_Pressure, &
-                                                         Theta )
+        ! ...Compute the non-resonant dry air absorption
+        DryContinuum_Absorption = Compute_Dry_Continuum( &
+                                    Frequency(l)    , &
+                                    Dry_Air_Pressure, &
+                                    H2O_Pressure    , &
+                                    Theta             )
         IF ( DryContinuum_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message,'("Negative sum for dry continuum absorption, ",es13.6,1x,&
-                            &" at Frequency ",f8.3,1x,&
-                            &"GHz. Setting to 0.0.")' ) &
-                            DryContinuum_Absorption, Frequency(l)
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative sum for dry continuum absorption, ",es13.6,1x,&
+                        &" at Frequency ",f8.3,1x,&
+                        &"GHz. Setting to 0.0.")' ) DryContinuum_Absorption, Frequency(l)
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           DryContinuum_Absorption = ZERO
         END IF
-
-        ! Compute the attenuation in dB/km
+        ! ...Compute the attenuation in dB/km
         DryContinuum_Attenuation(l) = ATT_K * Frequency(l) * DryContinuum_Absorption
-
       END DO DryContinuum_Frequency_Loop
-
     END IF DryContinuum_Compute
 
   END FUNCTION Liebe93_By_Frequency
@@ -609,204 +494,152 @@ CONTAINS
   ! --------------------------------------
   ! Single-Frequency, Multi-Layer function
   ! --------------------------------------
-  FUNCTION Liebe93_By_Layer( Frequency               , &  ! Input
-                             Dry_Air_Pressure        , &  ! Input
-                             H2O_Pressure            , &  ! Input
-                             Temperature             , &  ! Input
-                             WetLine_Attenuation     , &  ! Optional output
-                             WetContinuum_Attenuation, &  ! Optional output
-                             DryLine_Attenuation     , &  ! Optional output
-                             DryContinuum_Attenuation, &  ! Optional output
-                             Quiet                   , &  ! Output message control
-                             RCS_Id                  , &  ! Revision control
-                             Message_Log             ) &  ! Error messaging
-                           RESULT( Error_Status )
+  FUNCTION Liebe93_By_Layer( &
+    Frequency               , &  ! Input
+    Dry_Air_Pressure        , &  ! Input
+    H2O_Pressure            , &  ! Input
+    Temperature             , &  ! Input
+    Quiet,                    &  ! Optional input
+    WetLine_Attenuation     , &  ! Optional output
+    WetContinuum_Attenuation, &  ! Optional output
+    DryLine_Attenuation     , &  ! Optional output
+    DryContinuum_Attenuation) &  ! Optional output
+  RESULT( err_stat )
     ! Arguments
-    REAL(fp),               INTENT(IN)  :: Frequency
-    REAL(fp),               INTENT(IN)  :: Dry_Air_Pressure(:)
-    REAL(fp),               INTENT(IN)  :: H2O_Pressure(:)
-    REAL(fp),               INTENT(IN)  :: Temperature(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: WetLine_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: WetContinuum_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: DryLine_Attenuation(:)
-    REAL(fp),     OPTIONAL, INTENT(OUT) :: DryContinuum_Attenuation(:)
-    INTEGER,      OPTIONAL, INTENT(IN)  :: Quiet
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: RCS_Id
-    CHARACTER(*), OPTIONAL, INTENT(IN)  :: Message_Log
+    REAL(fp),           INTENT(IN)  :: Frequency
+    REAL(fp),           INTENT(IN)  :: Dry_Air_Pressure(:)
+    REAL(fp),           INTENT(IN)  :: H2O_Pressure(:)
+    REAL(fp),           INTENT(IN)  :: Temperature(:)
+    LOGICAL , OPTIONAL, INTENT(IN)  :: Quiet
+    REAL(fp), OPTIONAL, INTENT(OUT) :: WetLine_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: WetContinuum_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: DryLine_Attenuation(:)
+    REAL(fp), OPTIONAL, INTENT(OUT) :: DryContinuum_Attenuation(:)
     ! Function result
-    INTEGER :: Error_Status
+    INTEGER :: err_stat
     ! Local parameters
-    CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'Liebe93'
+    CHARACTER(*),  PARAMETER :: ROUTINE_NAME = 'Liebe93::By_Layer'
     ! Local variables
-    CHARACTER(ML) :: Message
+    CHARACTER(ML) :: msg
+    LOGICAL :: noisy
     LOGICAL :: Compute_WetLine
     LOGICAL :: Compute_WetContinuum
     LOGICAL :: Compute_DryLine
     LOGICAL :: Compute_DryContinuum
-    LOGICAL :: Noisy
     INTEGER :: n_Layers, k
     REAL(fp) :: Theta
     REAL(fp) :: O2_s1, Common_s1, O2_g1, O2_d1, H2O_s1
     REAL(fp) :: H2O_Line_Absorption
-!    REAL(fp) :: WetContinuum_Absorption
+    REAL(fp) :: WetContinuum_Absorption
     REAL(fp) :: O2_Line_Absorption
     REAL(fp) :: DryContinuum_Absorption
 
-    ! Set up
-    ! ------
-    Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
-
-    ! Check for consistent array sizes
+    ! Setup
+    err_stat = SUCCESS
+    ! ...Check for consistent input array sizes
     n_Layers = SIZE(Dry_Air_Pressure)
     IF ( SIZE(H2O_Pressure) /= n_Layers .OR. &
-         SIZE(Temperature)  /= n_Layers      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Argument arrays have inconsistent sizes.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+         SIZE(Temperature ) /= n_Layers      ) THEN
+      err_stat = FAILURE
+      msg = 'Input argument arrays have inconsistent sizes.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
+    ! ...Process keywords
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT.Quiet
 
-    ! Determine what output arguments are
-    ! present and check their sizes
-    ! The water vapour line attenuation
+
+    ! Check output argument validity
+    ! ...The water vapour line attenuation
     Compute_WetLine = .FALSE.
     IF ( PRESENT(WetLine_Attenuation) ) THEN
       Compute_WetLine = .TRUE.
-      IF ( SIZE(WetLine_Attenuation) /= n_Layers ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'WetLine_Attenuation argument array has inconsistent size.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+      IF ( SIZE(WetLine_Attenuation) /= n_layers ) THEN
+        err_stat = FAILURE
+        msg = 'WetLine_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour continuum attenuation
+    ! ...The water vapour continuum attenuation
     Compute_WetContinuum = .FALSE.
     IF ( PRESENT(WetContinuum_Attenuation) ) THEN
       Compute_WetContinuum = .TRUE.
-      IF ( SIZE(WetContinuum_Attenuation) /= n_Layers ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'WetContinuum_Attenuation argument array has inconsistent size.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+      IF ( SIZE(WetContinuum_Attenuation) /= n_layers ) THEN
+        err_stat = FAILURE
+        msg = 'WetContinuum_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour line attenuation
+    ! ...The water vapour line attenuation
     Compute_DryLine = .FALSE.
     IF ( PRESENT(DryLine_Attenuation) ) THEN
       Compute_DryLine = .TRUE.
-      IF ( SIZE(DryLine_Attenuation) /= n_Layers ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'DryLine_Attenuation argument array has inconsistent size.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+      IF ( SIZE(DryLine_Attenuation) /= n_layers ) THEN
+        err_stat = FAILURE
+        msg = 'DryLine_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-    ! The water vapour continuum attenuation
+    ! ...The water vapour continuum attenuation
     Compute_DryContinuum = .FALSE.
-    IF ( PRESENT(DryContinuum_Attenuation) ) THEN
+    IF ( PRESENT( DryContinuum_Attenuation ) ) THEN
       Compute_DryContinuum = .TRUE.
-      IF ( SIZE(DryContinuum_Attenuation) /= n_Layers ) THEN
-        Error_Status = FAILURE
-        CALL Display_Message( ROUTINE_NAME, &
-                              'DryContinuum_Attenuation argument array has inconsistent size.', &
-                              Error_Status, &
-                              Message_Log=Message_Log )
-        RETURN
+      IF ( SIZE( DryContinuum_Attenuation ) /= n_layers ) THEN
+        err_stat = FAILURE
+        msg = 'DryContinuum_Attenuation argument array has inconsistent size.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
       END IF
     END IF
-
-    ! If no output arguments present, return
+    ! ...If no output arguments at all, return
     IF ( ( .NOT. Compute_WetLine      ) .AND. &
          ( .NOT. Compute_WetContinuum ) .AND. &
          ( .NOT. Compute_DryLine      ) .AND. &
-         ( .NOT. Compute_DryContinuum )       ) THEN
-      RETURN
-    END IF
-         
-    ! Check for invalid frequencies
+         ( .NOT. Compute_DryContinuum )       ) RETURN
+    ! ...Check for invalid frequency
     IF ( Frequency < ZERO ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input Frequency must be > 0.0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+        msg = 'Input frequency must be > 0.0.'
+        CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
-
-    ! Issue warning if frequency < min value...
-    IF ( Frequency < MIN_FREQUENCY ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input frequency < ",f6.1," GHz.")' ) &
-                      MIN_FREQUENCY
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-    ! ....or > max_value
-    IF ( Frequency > MAX_FREQUENCY ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input frequency > ",f6.1," GHz.")' ) &
-                      MAX_FREQUENCY
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-
-    ! Check for invalid profile data
+    ! ...Check for invalid profile data
     IF ( ANY(Dry_Air_Pressure < TOLERANCE) .OR. &
          ANY(H2O_Pressure     < TOLERANCE) .OR. &
          ANY(Temperature      < TOLERANCE)      ) THEN
-      Error_Status = FAILURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            'Input pressure/temperature must be > 0.0.', &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-      RETURN
+      err_stat = FAILURE
+      msg = 'Input tressure/temperature arguments must be > 0.0.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat ); RETURN
     END IF
+         
 
-    ! Issue warning if any Temperature < min value....
-    IF ( ANY( Temperature < MIN_TEMPERATURE ) ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input temperature < ",f6.2," K found.")' ) MIN_TEMPERATURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
-    ! ....or > max_value
-    IF ( ANY( Temperature > MAX_TEMPERATURE ) ) THEN
-      Error_Status = WARNING
-      WRITE( Message,'("Input temperature > ",f6.2," K found.")' ) MAX_TEMPERATURE
-      CALL Display_Message( ROUTINE_NAME, &
-                            TRIM(Message), &
-                            Error_Status, &
-                            Message_Log=Message_Log )
-    END IF
+    ! Issue warnings for data outside range
+    IF ( noisy )  THEN
+    
+      ! Frequency < min value or > max_value
+      IF ( Frequency < MIN_FREQUENCY ) THEN
+        WRITE( msg,'("Input frequency < ",f6.1," GHz.")' ) MIN_FREQUENCY
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+      IF ( Frequency > MAX_FREQUENCY ) THEN
+        WRITE( msg,'("Input frequency > ",f6.1," GHz.")' ) MAX_FREQUENCY
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
 
+      ! Temperatures < min value or > max_value
+      IF ( ANY(Temperature < MIN_TEMPERATURE) ) THEN
+        WRITE( msg,'("Input temperatures < ",f6.1," K found.")' ) MIN_TEMPERATURE
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
+      IF ( ANY(Temperature > MAX_TEMPERATURE) ) THEN
+        WRITE( msg,'("Input temperatures > ",f6.1," K found.")' ) MAX_TEMPERATURE
+        CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+      END IF
 
-    ! Default is to output warning messages....
-    Noisy = .TRUE.
-    ! ....unless the QUIET argument is set
-    IF ( PRESENT(Quiet) ) THEN
-      IF ( Quiet == SET ) Noisy = .FALSE.
     END IF
 
 
-    ! ----------------
-    ! Begin layer loop
-    ! ----------------
+    ! Begin the loop over atmospheric layers
     Layer_Loop: DO k = 1, n_Layers
+
 
       ! Calculate the reciprocal temperature, theta,
       ! and common line strength factor, Common_s1
@@ -814,154 +647,110 @@ CONTAINS
       Common_s1 = Compute_Common_s1( Theta )
 
 
-      ! -----------------------------------
       ! Calculate the wet line attentuation
-      ! -----------------------------------
       WetLine_Compute: IF ( Compute_WetLine ) THEN
-
-        ! Calculate the H2O absorption
-        ! equation coefficients
+        ! ...Calculate the H2O absorption equation coefficients
         H2O_s1 = Compute_H2O_s1( H2O_Pressure(k), Theta )
-
-        ! Water vapour line absorption
-        H2O_Line_Absorption = Compute_H2O_line_Absorption( Frequency          , &
-                                                           Dry_Air_Pressure(k), &
-                                                           H2O_Pressure(k)    , &
-                                                           Theta              , &
-                                                           Common_s1          , &
-                                                           H2O_s1               )
+        ! ...Water vapour line absorption
+        H2O_Line_Absorption = Compute_H2O_line_Absorption( &
+                                Frequency          , &
+                                Dry_Air_Pressure(k), &
+                                H2O_Pressure(k)    , &
+                                Theta              , &
+                                Common_s1          , &
+                                H2O_s1               )
         IF ( H2O_Line_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message, '( "Negative sum for H2O line absorption, ", es13.6, 1x, &
-                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-                              &"GHz. Setting to 0.0." )' ) &
-                            H2O_Line_Absorption, k, Frequency
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative sum for H2O line absorption, ",es13.6,1x,&
+                        &"in layer ",i0," for frequency ",f8.3,1x, &
+                        &"GHz. Setting to 0.0.")' ) H2O_Line_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           H2O_Line_Absorption = ZERO
         END IF
-
-        ! Calculate the attenuation in dB/km
+        ! ...Calculate the attenuation in dB/km
         WetLine_Attenuation(k) = ATT_K * Frequency * H2O_Line_Absorption
-
       END IF WetLine_Compute
  
 
-      ! ----------------------------------------
       ! Calculate the wet continuum attentuation
-      ! ----------------------------------------
       WetContinuum_Compute: IF ( Compute_WetContinuum ) THEN
-
-!        ! Compute the water vapour continuum
-!        WetContinuum_Absorption = Compute_Wet_Continuum( Frequency, &
-!                                                         Dry_Air_Pressure(k), &
-!                                                         H2O_Pressure(k), &
-!                                                         Theta )
+!***TURNING OFF WET CONTINUUM***
+!        ! ...Compute the water vapour continuum
+!        WetContinuum_Absorption = Compute_Wet_Continuum( &
+!                                    Frequency          , &
+!                                    Dry_Air_Pressure(k), &
+!                                    H2O_Pressure(k)    , &
+!                                    Theta                )
 !        IF ( WetContinuum_Absorption < ZERO ) THEN
-!          Error_Status = WARNING
-!          IF ( Noisy ) THEN
-!            WRITE( Message, '( "Negative sum for wet continuum absorption, ", es13.6, 1x, &
-!                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-!                              &"GHz. Setting to 0.0." )' ) &
-!                            WetContinuum_Absorption, k, Frequency
-!            CALL Display_Message( ROUTINE_NAME, &
-!                                  TRIM(Message), &
-!                                  Error_Status, &
-!                                  Message_Log=Message_Log )
+!          IF ( noisy ) THEN
+!            WRITE( msg,'("Negative value for wet continuum absorption, ",es13.6,1x,&
+!                        &"in layer ",i0," for frequency ",f8.3,1x, &
+!                        &"GHz. Setting to 0.0.")' ) WetContinuum_Absorption, k, Frequency
+!            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
 !          END IF
 !          WetContinuum_Absorption = ZERO
 !        END IF
-!
-!        ! Compute the attenuation in dB/km
-!        WetContinuum_Attenuation(k) = ATT_K * Frequency * WetContinuum_Absorption
-        WetContinuum_Attenuation(k) = ZERO
-
+WetContinuum_Absorption = ZERO
+!***TURNING OFF WET CONTINUUM***
+        ! ...Compute the attenuation in dB/km
+        WetContinuum_Attenuation(k) = ATT_K * Frequency * WetContinuum_Absorption
       END IF WetContinuum_Compute
 
 
-      ! -----------------------------------
       ! Calculate the dry line attentuation
-      ! -----------------------------------
       DryLine_Compute: IF ( Compute_DryLine ) THEN
-
-        ! Calculate the O2 line strength, width,
-        ! and overlap factors
+        ! ...Calculate the O2 line strength, width, and overlap factors
         O2_s1 = Compute_O2_s1( Dry_Air_Pressure(k), Theta )
         O2_g1 = Compute_O2_g1( H2O_Pressure(k), Theta )
         O2_d1 = Compute_O2_d1( Dry_Air_Pressure(k) + H2O_Pressure(k), Theta )
-
-        ! Summation of the absorption lines of oxygen
-        O2_Line_Absorption = Compute_O2_Line_Absorption( Frequency, &
-                                                         Dry_Air_Pressure(k), &
-                                                         Theta, &
-                                                         Common_s1, &
-                                                         O2_s1, &
-                                                         O2_g1, &
-                                                         O2_d1 )
-
-        ! Check result
+        ! ...Summation of the absorption lines of oxygen
+        O2_Line_Absorption = Compute_O2_Line_Absorption( &
+                               Frequency          , &
+                               Dry_Air_Pressure(k), &
+                               Theta              , &
+                               Common_s1          , &
+                               O2_s1              , &
+                               O2_g1              , &
+                               O2_d1                )
         IF ( O2_Line_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message, '( "Negative sum for O2 line absorption, ", es13.6, 1x, &
-                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-                              &"GHz. Setting to 0.0." )' ) &
-                            O2_Line_Absorption, k, Frequency
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative value for O2 line absorption, ",es13.6,1x,&
+                        &"in layer ",i0," for frequency ",f8.3,1x, &
+                        &"GHz. Setting to 0.0.")' ) O2_Line_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           O2_Line_Absorption = ZERO
         END IF
-
-        ! Compute the attenuation in dB/km
+        ! ...Compute the attenuation in dB/km
         DryLine_Attenuation(k) = ATT_K * Frequency * O2_Line_Absorption
-
       END IF DryLine_Compute
 
 
-      ! ----------------------------------------
       ! Calculate the dry continuum attentuation
-      ! ----------------------------------------
       DryContinuum_Compute: IF ( Compute_DryContinuum ) THEN
-
-
-        ! Compute the dry gas non-resonant absorption
-        ! Formula from Liebe 89 paper + correction of Liebe himself
+        ! ...Compute the non-resonant dry air absorption
+        !    Formula from Liebe 89 paper + correction of Liebe himself
         DryContinuum_Absorption = Compute_Dry_Continuum( Frequency, &
                                                          Dry_Air_Pressure(k), &
                                                          H2O_Pressure(k), &
                                                          Theta )
         IF ( DryContinuum_Absorption < ZERO ) THEN
-          Error_Status = WARNING
-          IF ( Noisy ) THEN
-            WRITE( Message, '( "Negative sum for dry continuum absorption, ", es13.6, 1x, &
-                              &"in layer ", i5, " for Frequency ", f8.3, 1x, &
-                              &"GHz. Setting to 0.0." )' ) &
-                            DryContinuum_Absorption, k, Frequency
-            CALL Display_Message( ROUTINE_NAME, &
-                                  TRIM(Message), &
-                                  Error_Status, &
-                                  Message_Log=Message_Log )
+          IF ( noisy ) THEN
+            WRITE( msg,'("Negative value for dry continuum absorption, ",es13.6,1x,&
+                        &"in layer ",i0," for frequency ",f8.3,1x, &
+                        &"GHz. Setting to 0.0.")' ) DryContinuum_Absorption, k, Frequency
+            CALL Display_Message( ROUTINE_NAME, msg, WARNING )
           END IF
           DryContinuum_Absorption = ZERO
         END IF
-
-        ! Compute the attenuation in dB/km
+        ! ...Compute the attenuation in dB/km
         DryContinuum_Attenuation(k) = ATT_K * Frequency * DryContinuum_Absorption
-
       END IF DryContinuum_Compute
 
     END DO Layer_Loop
 
   END FUNCTION Liebe93_By_Layer
-
-
 
 
 
@@ -1392,23 +1181,20 @@ CONTAINS
     REAL(fp) :: Sn, Fn
 
     ! Calculate the effect of the non-resonant oxygen spectrum
-    ! --------------------------------------------------------
-    ! Calculate the strength
+    ! ...Calculate the strength
     So = So_K * pd * ( Theta**2 )
-    ! Calculate the width
+    ! ...Calculate the width
     Gamma = GAMMA_K * ( pd + pw ) * ( Theta**ZEROpointEIGHT )
-    ! Calculate the lineshape
+    ! ...Calculate the lineshape
     Fo = ( f * Gamma ) / ( f**2 + Gamma**2 )
 
     ! Calculate the effect of pressure induced N2 absorption
-    ! ------------------------------------------------------
-    ! Calculate the N2 absorption strength
+    ! ...Calculate the N2 absorption strength
     Sn = Sn_K * ( pd**2 ) * ( theta**THREEpointFIVE )
-    ! Calculate the shape
+    ! ...Calculate the shape
     Fn = f / ( ONE + ( Fn_K * ( f**ONEpointFIVE ) ) )
 
     ! Sum the components
-    ! ------------------
     Dry_Continuum = ( So * Fo ) + ( Sn * Fn )
 
   END FUNCTION Compute_Dry_Continuum
@@ -1431,7 +1217,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       H2O_Line_Absorption = Compute_H2O_Line_Absorption( f,         &  ! Input
 !                                                          pd,        &  ! Input
-!                                                          pd,        &  ! Input
+!                                                          pw,        &  ! Input
 !                                                          Theta,     &  ! Input
 !                                                          Common_s1, &  ! Input
 !                                                          H2O_s1 )   &  ! Input
@@ -1586,42 +1372,41 @@ CONTAINS
 
 
     ! Initialise the return value
-    ! ---------------------------
     H2O_Line_Absorption = ZERO
 
+
     ! Loop over water vapour lines
-    ! ----------------------------
     DO i = 1, N_H2O_LINES
 
+
       ! Calculate the line strength
-      ! ---------------------------
       Si = H2O_A1(i) * H2O_s1 * EXP( H2O_A2(i) * Common_s1 )
 
+
       ! Calculate the line width
-      ! ------------------------
-      ! Calculate the pressure-broadened width
+      ! ...Calculate the pressure-broadened width
       Gamma = H2O_A3(i) * ( (             pd * ( Theta**H2O_A5(i) ) ) + &
                             ( H2O_A4(i) * pw * ( Theta**H2O_A6(i) ) )   )
-      ! Calculate the square of the Doppler width
+      ! ...Calculate the square of the Doppler width
       GammaD2 = ( ( GAMMA_D_K1 * H2O_LINE_FREQUENCY(i) )**2 ) / Theta
-      ! Approximate the Doppler broadening
+      ! ...Approximate the Doppler broadening
       Gamma   = ( GAMMA_D_K2 * Gamma ) + SQRT( ( GAMMA_D_K3 * Gamma**2 ) + GammaD2 )
       Gamma2  = Gamma * Gamma
 
+
       ! Calculate the line shape, F
-      ! ---------------------------
-      ! Frequency difference and sum from the line frequency
+      ! ...Frequency difference and sum from the line frequency
       f_diff = H2O_LINE_FREQUENCY(i) - f
       f_sum  = H2O_LINE_FREQUENCY(i) + f
-      ! The denominator of the line shape components
+      ! ...The denominator of the line shape components
       Fi_d1 = ( f_diff * f_diff ) + Gamma2
       Fi_d2 = ( f_sum  * f_sum  ) + Gamma2
-      ! Calculate the absorption line shape
+      ! ...Calculate the absorption line shape
       Fi = ( f / H2O_LINE_FREQUENCY(i) ) * ( ( Gamma/Fi_d1 ) + ( Gamma/Fi_d2 )   )
+
 
       ! Calculate the imaginary component of the
       ! water vapor refractivity - the absorption
-      ! -----------------------------------------
       H2O_Line_Absorption = H2O_Line_Absorption + ( Si * Fi )
 
     END DO

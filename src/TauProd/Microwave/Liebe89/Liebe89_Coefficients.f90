@@ -307,11 +307,11 @@ END MODULE Liebe89_Coefficients
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Liebe89_Coefficients.f90,v 1.1 2002/05/14 23:33:52 paulv Exp $
+! $Id$
 !
 ! $Date: 2002/05/14 23:33:52 $
 !
-! $Revision: 1.1 $
+! $Revision$
 !
 ! $Name:  $
 !

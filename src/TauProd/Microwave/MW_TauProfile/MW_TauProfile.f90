@@ -20,15 +20,16 @@ PROGRAM MW_TauProfile
   ! Environment set up
   ! ------------------
   ! Module usage
-  USE Type_Kinds                , ONLY : fp
+  USE Type_Kinds                , ONLY: fp
   USE Message_Handler
-  USE Profile_Utility_Parameters, ONLY : ID_H2O, &
-                                         PPMV_UNITS, &
-                                         ND_UNITS, &
-                                         MR_UNITS, &
-                                         MD_UNITS, &
-                                         PP_UNITS
+  USE Profile_Utility_Parameters, ONLY: ID_H2O, &
+                                        PPMV_UNITS, &
+                                        ND_UNITS, &
+                                        MR_UNITS, &
+                                        MD_UNITS, &
+                                        PP_UNITS
   USE Timing_Utility
+  USE Spectral_Units_Conversion , ONLY: inverse_cm_to_GHz
   USE Units_Conversion
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
@@ -112,9 +113,9 @@ PROGRAM MW_TauProfile
   INTEGER :: alloc_stat
   INTEGER :: IO_Status
   INTEGER :: direction
-  INTEGER :: downwelling
+  LOGICAL :: downwelling
   INTEGER :: Model
-  INTEGER :: rosenkranz
+  LOGICAL :: rosenkranz
   CHARACTER(256)             :: sinfo_filename
   TYPE(SensorInfo_type)      :: sinfo
   TYPE(Sensorinfo_List_type) :: sinfo_list
@@ -135,7 +136,7 @@ PROGRAM MW_TauProfile
   INTEGER :: n, n_sensors
   INTEGER :: ib, n_bands
   INTEGER :: n_points, i_f1, i_f2
-  CHARACTER(256) :: profile_set_id = ''
+  CHARACTER(256) :: profile_set = ''
   CHARACTER(512) :: mwlbl_version_id
   INTEGER :: j_idx(1)
   INTEGER :: index_h2o
@@ -174,13 +175,13 @@ PROGRAM MW_TauProfile
     msg = 'Invalid ATMOSPERIC PATH identifier value.'
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   ENDIF
-  downwelling = 0
+  downwelling = .FALSE.
   IF ( TRIM(DIRECTION_NAME(direction)) == 'downwelling' ) THEN
-    downwelling = 1
+    downwelling = .TRUE.
   END IF
   ! ...The absorption model
-  model      = 2  ! Index
-  rosenkranz = 1  ! Flag
+  model      = 2       ! Index
+  rosenkranz = .TRUE.  ! Flag
 
 
   ! Read the SensorInfo file
@@ -219,9 +220,9 @@ PROGRAM MW_TauProfile
   END IF
   ! ...Read the data
   err_stat = AtmProfile_netCDF_ReadFile( &
-    atmprofile_filename, &
     atmprofile, &
-    Profile_Set_Id = profile_set_id, &
+    atmprofile_filename, &
+    Profile_Set = profile_set, &
     Quiet = .TRUE. )
   IF ( err_stat /= SUCCESS ) THEN
     msg = 'Error reading AtmProfile file '//TRIM(atmprofile_filename)
@@ -305,6 +306,10 @@ PROGRAM MW_TauProfile
   END DO H2O_Convert_Loop
 
 
+  ! Get the LBL module id
+  CALL MWLBL_Transmittance_Version(mwlbl_version_id)
+  
+  
   ! Begin the total timer
   CALL Timing_Begin(total_timing)
 
@@ -443,7 +448,7 @@ PROGRAM MW_TauProfile
 
 
         ! Accumulate band data
-        frequency(i_f1:i_f2) = f
+        frequency(i_f1:i_f2) = inverse_cm_to_GHz(f)
         response(i_f1:i_f2)  = r
         
         
@@ -481,8 +486,7 @@ PROGRAM MW_TauProfile
                                       taudry,                                    &  ! Output
                                       Downwelling=downwelling,                   &  ! Optional input
                                       Rosenkranz =rosenkranz,                    &  ! Optional input
-                                      Quiet      =1,                             &  ! Optional input
-                                      RCS_ID     =mwlbl_version_id               )  ! Optional output
+                                      Quiet      =.TRUE.                         )  ! Optional input
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error computing MW LBL transmittance for profile #",i0,&
                       &", channel ",i0," of ",a)' ) &
@@ -602,7 +606,7 @@ PROGRAM MW_TauProfile
                                          Sensor_ID       =sinfo%Sensor_ID, &
                                          WMO_Satellite_ID=sinfo%WMO_Satellite_ID, &
                                          WMO_Sensor_ID   =sinfo%WMO_Sensor_ID, &
-                                         ID_Tag = TRIM(profile_set_id), &
+                                         ID_Tag = TRIM(profile_set), &
                                          Title = TRIM(sinfo%Sensor_Name)//' '//&
                                                  TRIM(DIRECTION_NAME(direction))//&
                                                  ' transmittances for '//&
