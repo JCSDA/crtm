@@ -60,9 +60,8 @@ PRO oSRF_Plotter, $
         Debug = debug, $
         Sensor_Id  = sid, $
         n_Channels = nch
-      IF ( (sid NE sensor_id ) OR $
-           (nch NE n_channels)    ) THEN $
-        MESSAGE, "Mismatch in sensor data for "+STRTRIM(SRF_Files[n],2), $
+      IF ( nch NE n_channels ) THEN $
+        MESSAGE, "Channel number mismatch for "+STRTRIM(SRF_Files[n],2), $
                  NONAME=MsgSwitch, NOPRINT=MsgSwitch
     ENDELSE
   ENDFOR  ; File read loop
