@@ -1359,7 +1359,7 @@ CONTAINS
     END IF
 
     ! Read the number of channels,profiles
-    READ( fid, IOSTAT=io_stat,IOMSG=io_msg ) l, m
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) l, m
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -1983,7 +1983,7 @@ CONTAINS
     IF ( noisy ) THEN
       WRITE( msg,'("Number of channels and profiles written to ",a,": ",i0,1x,i0 )' ) &
              TRIM(Filename), n_output_channels, n_output_profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
   CONTAINS
