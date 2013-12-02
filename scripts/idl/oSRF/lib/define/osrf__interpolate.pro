@@ -25,7 +25,7 @@
 ;                 ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       Sigma:    If non-linear interpolation is specified, this is the
-;                 amount of “tension” that is applied to the spline. The
+;                 amount of tension that is applied to the spline. The
 ;                 default oSRF value is 5.0. If sigma is close to 0, (e.g., .01),
 ;                 then effectively there is a cubic spline fit. If sigma
 ;                 is large, (e.g., greater than 10), then the fit will be
