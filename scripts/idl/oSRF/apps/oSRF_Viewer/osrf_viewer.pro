@@ -206,9 +206,10 @@ PRO ov_display_info, id
     Planck_Coeffs        = planck_coeffs, $
     Polychromatic_Coeffs = polychromatic_coeffs
   ; ...Set the units string
-  IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN $
-    frequency_units = 'GHz' $
-  ELSE $
+  IF ( Sensor_Type EQ MICROWAVE_SENSOR ) THEN BEGIN
+    f0 = inverse_cm_to_GHz(f0)
+    frequency_units = 'GHz'
+  ENDIF ELSE $
     frequency_units = 'cm^-1'
 
   ; Create the info string
