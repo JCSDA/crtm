@@ -116,15 +116,17 @@
 
 PRO oSRF_Writer, $
   Sensor_Id                              , $ ; Input
-  Path               = Path              , $ ; Input keyword
-  SensorInfo_File    = SensorInfo_File   , $ ; Input keyword
-  Response_Threshold = Response_Threshold, $ ; Input keyword
-  Version            = Version           , $ ; Input keyword
-  No_Interpolate     = No_Interpolate    , $ ; Input keyword
-  No_Plot            = No_Plot           , $ ; Input keyword
-  No_Pause           = No_Pause          , $ ; Input keyword
-  wRef               = wRef              , $ ; Input keyword
-  Debug              = Debug             , $ ; Input keyword
+  Path               = path              , $ ; Input keyword
+  SensorInfo_File    = sensorinfo_file   , $ ; Input keyword
+  Response_Threshold = response_threshold, $ ; Input keyword
+  Sigma              = sigma             , $ ; Input keyword
+  Channel_List       = channel_list      , $ ; Input keyword
+  Version            = version           , $ ; Input keyword
+  No_Interpolate     = no_interpolate    , $ ; Input keyword
+  No_Plot            = no_plot           , $ ; Input keyword
+  No_Pause           = no_pause          , $ ; Input keyword
+  wRef               = wref              , $ ; Input keyword
+  Debug              = debug             , $ ; Input keyword
   eps=eps
 ;-
 
@@ -133,13 +135,13 @@ PRO oSRF_Writer, $
   ; ...Set up error handler
   @osrf_pro_err_handler
   ; ...Check keywords
-  path              = Valid_String(Path)                    ? Path            : Sensor_Id
-  sensorinfo_file   = Valid_String(SensorInfo_File)         ? SensorInfo_File : "SensorInfo"
-  apply_threshold   = (N_ELEMENTS(Response_Threshold) GT 0) ? TRUE            : FALSE
-  version           = (N_ELEMENTS(Version) GT 0)            ? Version[0]      : OSRF_VERSION
-  interpolate_data  = ~ KEYWORD_SET(No_Interpolate)
-  plot_data         = ~ KEYWORD_SET(No_Plot)
-  plot_pause        = ~ KEYWORD_SET(No_Pause)
+  path              = Valid_String(path)                    ? path            : Sensor_Id
+  sensorinfo_file   = Valid_String(sensorinfo_file)         ? sensorinfo_file : "SensorInfo"
+  apply_threshold   = (N_ELEMENTS(response_threshold) GT 0) ? TRUE            : FALSE
+  version           = (N_ELEMENTS(version) GT 0)            ? version[0]      : OSRF_VERSION
+  interpolate_data  = ~ KEYWORD_SET(no_interpolate)
+  plot_data         = ~ KEYWORD_SET(no_plot)
+  plot_pause        = ~ KEYWORD_SET(no_pause)
   ; ...Set parameters
   HISTORY = '$Id$'
   HISTORY_FILE = path+PATH_SEP()+'source.history'
@@ -167,7 +169,9 @@ PRO oSRF_Writer, $
   ; ...Set sone sensor data
   n_channels   = N_ELEMENTS(sensor_channel)
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR )
-
+  ; ...Set the default channel processing list if necessary
+  channel_list = (N_ELEMENTS(chnnel_list) GT 0) ? channel_list : sensor_channel
+  
 
   ; **** Reset interpolation keyword if microwave instrument ****
   ;      This may change in future. But for now, no interpolation
@@ -210,10 +214,19 @@ PRO oSRF_Writer, $
 
   ; Begin channel loop
   FOR l = 0, n_channels-1 DO BEGIN
-    PRINT, FORMAT='(//4x,"===================")'
-    PRINT, FORMAT='(  4x,"Processing channel: ",i5)', sensor_channel[l]
-    PRINT, FORMAT='(  4x,"===================")'
-
+  
+    idx = WHERE(channel_list EQ sensor_channel[l], count)
+    IF ( count GT 0 ) THEN BEGIN
+      PRINT, FORMAT='(//4x,"===================")'
+      PRINT, FORMAT='(  4x,"Processing channel: ",i5)', sensor_channel[l]
+      PRINT, FORMAT='(  4x,"===================")'
+    ENDIF ELSE BEGIN
+      PRINT, FORMAT='(//4x,"=#=#=#=#=#=#=#=#=")'
+      PRINT, FORMAT='(  4x,"Skipping channel: ",i5)', sensor_channel[l]
+      PRINT, FORMAT='(  4x,"=#=#=#=#=#=#=#=#=")'
+      CONTINUE
+    ENDELSE
+    
 
     ; Create oSRF objects for this channel
     osrf = OBJ_NEW('oSRF', Debug = Debug)
@@ -225,6 +238,8 @@ PRO oSRF_Writer, $
     input_glob = Path+PATH_SEP()+Sensor_Id+'*-'+STRTRIM(sensor_channel[l],2)+'.inp'
     input_file = FILE_SEARCH(input_glob, COUNT = n_bands )
     PRINT, FORMAT='(6x,"Number of passbands: ",i1)', n_bands
+    ; ...Cycle loop if no data
+    IF ( n_bands EQ 0 ) THEN CONTINUE
 
 
     ; Get n_pts/band
@@ -296,16 +311,17 @@ PRO oSRF_Writer, $
     IF ( interpolate_data ) THEN BEGIN
       ; ...Linearly interpolate visible channels
       IF ( sensor_type EQ VISIBLE_SENSOR ) THEN $
-        tsrf->Set_Flag, Debug=Debug, /Linear_Interpolation
+        tsrf->Set_Flag, Debug=debug, /Linear_Interpolation
       ; ...Compute frequency grid and interpolate
       tsrf->Compute_Interpolation_Frequency, $
         isrf, $
         /LoRes, $
-        Debug=Debug
+        Debug=debug
       ; ...and perform the actual interpolation
       tsrf->Interpolate, $
         isrf, $
-        Debug=Debug
+        Sigma=sigma, $
+        Debug=debug
     ENDIF ELSE BEGIN
       ; ...No interpolation, so just copy
       tsrf->Assign, $
@@ -315,15 +331,15 @@ PRO oSRF_Writer, $
 
 
     ; Process the current SRF data
-    isrf->Integrate, Debug = Debug
-    isrf->Compute_Central_Frequency, Debug = Debug
-    isrf->Compute_Planck_Coefficients, Debug = Debug
-    isrf->Compute_Polychromatic_Coefficients, Debug = Debug
+    isrf->Integrate, Debug = debug
+    isrf->Compute_Central_Frequency, Debug = debug
+    isrf->Compute_Planck_Coefficients, Debug = debug
+    isrf->Compute_Polychromatic_Coefficients, Debug = debug
 ;    isrf->Compute_Bandwidth, Debug = Debug
 
 
     ; Add the SRF to the file container
-    osrf_file->Add, isrf, Debug=Debug
+    osrf_file->Add, isrf, Debug=debug
 
 
     ; Plot the data for inspection
