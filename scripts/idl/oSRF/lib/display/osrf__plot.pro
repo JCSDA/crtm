@@ -80,19 +80,28 @@ PRO OSRF::Plot, $
   owin.Erase
   ; ...Save it
   self.wRef = owin
-  ; ...Set some band-based plotting parameters
+  ; ...Set some plotting parameters
+  font_size = 9
+  thick     = 2
+  xticklen  = 0.02
   CASE n_bands OF
     2: BEGIN
          yticklen = 0.02
-         xtickfont_size = 8
+         n_xplots = 2
+         n_yplots = 1
+         margin = [0.155, 0.1, 0.05, 0.1]
        END
     4: BEGIN
-         yticklen = 0.035
-         xtickfont_size = 6
+         yticklen = 0.02
+         n_xplots = 2
+         n_yplots = 2
+         margin = [0.155, 0.165, 0.05, 0.1]
        END
     ELSE: BEGIN
             yticklen = 0.01
-            xtickfont_size = 9
+            n_xplots = 1
+            n_yplots = 1
+            margin = [0.09, 0.1, 0.05, 0.1]
           END
   ENDCASE
   ; ...Initialise cross-band min/max
@@ -137,7 +146,7 @@ PRO OSRF::Plot, $
       ymin = MIN(r)/2.0
       ytickformat = 'logticks_exp'
     ENDIF ELSE BEGIN
-      ymin = 0 < MIN(r)
+      ymin = -0.01*MAX(r) < MIN(r)
       ymax = MAX(r) + 0.01*MAX(r)
       ytickformat = ''
     ENDELSE
@@ -146,12 +155,9 @@ PRO OSRF::Plot, $
 
     ; Set the band-specific plotting parameters
     IF ( band EQ 1 ) THEN BEGIN
-      ytitle = 'Relative response'
       master_ymin = ymin
       master_ymax = ymax
-    ENDIF ELSE BEGIN  
-      ytitle = ''
-    ENDELSE
+    ENDIF
 
 
     ; Generate the title
@@ -159,36 +165,32 @@ PRO OSRF::Plot, $
     IF ( n_bands GT 1 ) THEN title = title +', band #'+STRTRIM(band,2)
 
 
-    ; Compute plot positions
-    dx_left    = 0.1d0
-    dx_right   = 0.0d0
-    dx_middle  = 1.0d0 - dx_left - dx_right
-    dx = dx_middle/DOUBLE(n_bands)
-    x1 = dx_left + DOUBLE(band-1)*dx
-    x2 = x1+dx-0.06d0
-    
-    
     ; Plot the band response
     self.pRef[band] = PLOT( $
       f, r, $
-      TITLE=title, $
-      XTITLE=xtitle, $
-      YTITLE=ytitle, $
-      XRANGE=xrange, /XSTYLE, $
-      YRANGE=yrange, /YSTYLE, $
-      YLOG=ylog, $
-      YTICKFORMAT=ytickformat, $
-      XTICKLEN=0.02, $
-      XTICKFONT_SIZE=xtickfont_size, $
-      YTICKLEN=yticklen, $
-      LAYOUT=[n_bands,1,band], $
-      POSITION=[x1,0.1,x2,0.9], $
-      FONT_SIZE = 9, $                   
-      CURRENT=owin, $
-      COLOR=color, $
-      THICK=2, $
-      _EXTRA = Extra)
-
+      TITLE          = title, $
+      XTITLE         = xtitle, $
+      YTITLE         = 'Relative response', $
+      XRANGE         = xrange, /XSTYLE, $
+      YRANGE         = yrange, /YSTYLE, $
+      YLOG           = ylog, $
+      YTICKFORMAT    = ytickformat, $
+      XTICKLEN       = xticklen, $
+      XTICKFONT_SIZE = font_size, $
+      YTICKLEN       = yticklen, $
+      LAYOUT         = [n_xplots, n_yplots, band], $
+      MARGIN         = margin, $
+      FONT_SIZE      = font_size, $  
+      CURRENT        = owin, $
+      COLOR          = color, $
+      THICK          = thick, $
+      _EXTRA         = Extra)
+    ; ...Plot the central frequency position
+    !NULL = PLOT([f0,f0],[1.0d-09,10.0d0], $
+                 LINESTYLE = 'dash', $
+                 COLOR     = color, $
+                 THICK     = thick, $
+                 OVERPLOT  = self.pRef[band])
 
     ; Adjust the yrange if necessary
     IF ( band GT 1 ) THEN BEGIN
@@ -198,14 +200,5 @@ PRO OSRF::Plot, $
     ENDIF                  
 
   ENDFOR
-
-  ; Plot the central frequency location for single bands
-  IF ( n_bands EQ 1 ) THEN BEGIN
-    !NULL = PLOT([f0,f0],self.pRef[1].yrange, $
-                 LINESTYLE='dash', $
-                 COLOR=color, $
-                 THICK=2, $
-                 OVERPLOT=self.pRef[1])
-  ENDIF
 
 END

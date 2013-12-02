@@ -96,7 +96,7 @@ PRO OSRF::Tfit_Plot, $
     TITLE     = title,$
     FONT_SIZE = font_size, $                   
     XTICKFONT_SIZE = xtickfont_size, $
-    POSITION=[0.2,0.1,0.95,0.9], $
+    MARGIN = [0.125, 0.1, 0.05, 0.1], $
     CURRENT = owin, $
     COLOR   = color, $
     THICK   = 2, $
