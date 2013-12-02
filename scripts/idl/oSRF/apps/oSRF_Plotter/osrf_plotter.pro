@@ -1,3 +1,33 @@
+FUNCTION Get_Colours, n_colours
+
+  COMPILE_OPT HIDDEN
+  
+  ; Sort the colours in order of RGB-ness
+  colour_names = TAG_NAMES( !color )
+  n = N_ELEMENTS(colour_names)
+  integer_colour = LONARR(n)
+  icolour = 0L
+  FOR i = 0, n-1 DO BEGIN
+    string_colour = STRING(!COLOR.(i),FORMAT='(3z2)')
+    READS, string_colour, icolour, FORMAT='(z)'
+    integer_colour[i] = icolour
+  ENDFOR
+  idx = SORT(integer_colour)
+  colour_names = colour_names(idx[0:-10])
+  
+  ; Select the colours for the plots
+  n = N_ELEMENTS(colour_names)
+  skip = n/n_colours - 1L
+  colour_list = []
+  FOR i = 0L, n-1L, skip DO BEGIN
+    colour_list = [ colour_list, colour_names[i] ]
+  ENDFOR
+  
+  RETURN, colour_list
+  
+END
+
+
 ;+
 ;
 ; Application to overplot multiple oSRF datasets, e.g. oSRF data
@@ -5,8 +35,8 @@
 ;
 
 PRO oSRF_Plotter, $
-  SRF_Files                        , $ ; Input. Number of SRF datasets to overplot (Max. 6)
-  Path            = path           , $ ; Input keyword. Same size as SRF_Files. Default is "." 
+  SRF_Files                        , $ ; Input. Number of SRF datasets to overplot
+  Path            = path           , $ ; Input keyword. Same size as SRF_Files. Default is "."
   Label           = label          , $ ; Input keyword. Same size as SRF_Files. Default is SRF_Files
   Ylog            = ylog           , $ ; Input keyword. Plot SRFs with log y-axis. Default is linear.
   No_Tfit         = no_tfit        , $ ; Input keyword. Do not plot Tfit data. Default is plot.
@@ -27,14 +57,12 @@ PRO oSRF_Plotter, $
   plot_tfit  = ~ KEYWORD_SET(No_Tfit)
   plot_pause = ~ KEYWORD_SET(No_Pause)
   ; ...Set parameters
-  COLOR = ['black', 'green', 'red', 'blue', 'magenta', 'cyan']
-  MAX_N_FILES = N_ELEMENTS(COLOR)
+  COLOR = Get_Colours(n_files)
+
+
 
 
   ; Check arguments
-  IF ( n_files GT MAX_N_FILES ) THEN $
-    MESSAGE, "Too many SRF files! Maximum of "+STRTRIM(MAX_N_FILES,2)+" accepted", $
-             NONAME=MsgSwitch, NOPRINT=MsgSwitch
   IF ( N_ELEMENTS(path)  NE n_files OR $
        N_ELEMENTS(label) NE n_files ) THEN $
     MESSAGE, "SRF path and label arrays do not match the number of files!", $
@@ -70,18 +98,24 @@ PRO oSRF_Plotter, $
   ; Begin channel loop
   FOR l = 0, n_channels - 1 DO BEGIN
 
-    ; Create hash for the channel SRFs from each file    
+    ; Create hash for the channel SRFs from each file
     osrf = HASH()
     pref = OBJARR(n_files) ; For legend
 
     ; Begin the file loop for display
     FOR n = 0, n_files - 1 DO BEGIN
       osrf[n] = osrf_file[n].Get(Position = l, Debug = debug)
+      osrf[n].Get_Property, $
+          Channel = channel, $
+          Debug = debug
       IF ( n EQ 0 ) THEN BEGIN
+        w = WINDOW( WINDOW_TITLE = sensor_id+', channel '+STRTRIM(channel,2)+' oSRF', $
+                    DIMENSIONS = [800,600] )
         osrf[n].Plot, $
           COLOR = COLOR[n], $
           NAME  = label[n], $
           YLOG  = ylog, $
+          Owin  = w, $
           Debug = debug
         osrf[n].Get_Property, $
           pref = p, $
@@ -99,21 +133,22 @@ PRO oSRF_Plotter, $
 
     ; Get the number of bands
     osrf[0].Get_Property, n_Bands = n_bands, Debug = debug
-    
-    
+
+
     ; Display the legend for multi-files
     IF ( n_files GT 1 ) THEN BEGIN
       ; ...Determine legend position
       CASE n_bands OF
-        2: position = [0.325,0.2]
-        4: position = [0.25,0.2]
-        ELSE: position = [0.5,0.2]
+        2: position = [0.325,0.3]
+        4: position = [0.25,0.3]
+;        ELSE: position = [175,435] ;[0.5,0.2]
+        ELSE: position = [0.5,0.3]
       ENDCASE
       ; ...Display it
       legend = LEGEND(TARGET=pref, $
                       POSITION=position, $
                       HORIZONTAL_ALIGNMENT='CENTER', $
-                      VERTICAL_ALIGNMENT='CENTER', $
+                      VERTICAL_ALIGNMENT='TOP', $
                       FONT_SIZE=9, $
                       /NORMAL)
     ENDIF
@@ -123,10 +158,10 @@ PRO oSRF_Plotter, $
     ; ...Generate a root filename
     osrf[0].Get_Property, Channel = channel, Debug=debug
     fileroot = sensor_id+'-'+STRTRIM(channel,2)
-    ; ...Get the window reference    
-    osrf[0].Get_Property, $
-      wRef  = w, $
-      Debug = Debug
+;    ; ...Get the window reference
+;    osrf[0].Get_Property, $
+;      wRef  = w, $
+;      Debug = Debug
     ; ...Output a PNG file
     w.Save, fileroot+'.png', HEIGHT=500, BORDER=10
     ; ...Output an EPS file
@@ -149,16 +184,19 @@ PRO oSRF_Plotter, $
     ; ===============================
     ; Plot the tfit data if requested
     IF ( plot_tfit ) THEN BEGIN
-    
+
       tpref = OBJARR(n_files) ; For legend
-      
+
       ; Begin the file loop for display
       FOR n = 0, n_files - 1 DO BEGIN
         osrf[n] = osrf_file[n].Get(Position = l, Debug = debug)
         IF ( n EQ 0 ) THEN BEGIN
+          tw = WINDOW( WINDOW_TITLE = sensor_id+', channel '+STRTRIM(channel,2)+' (Teff-Tfit) residuals', $
+                       DIMENSIONS = [800,600] )
           osrf[n].Tfit_Plot, $
             COLOR = COLOR[n], $
             NAME  = label[n], $
+            Owin  = tw, $
             Debug = debug
           osrf[n].Get_Property, $
             tpref = tp, $
@@ -173,29 +211,30 @@ PRO oSRF_Plotter, $
         ENDELSE
       ENDFOR  ; File plot loop
 
-    
+
       ; Display the legend for multi-files
       IF ( n_files GT 1 ) THEN BEGIN
         ; ...Set legend position
-        position = [0.5,0.5]
+        position = [465,435] ;[0.5,0.5]
         ; ...Display it
         legend = LEGEND(TARGET=tpref, $
                         POSITION=position, $
                         HORIZONTAL_ALIGNMENT='CENTER', $
-                        VERTICAL_ALIGNMENT='CENTER', $
+                        VERTICAL_ALIGNMENT='TOP', $
                         FONT_SIZE=9, $
-                        /NORMAL)
+;                        /NORMAL)
+                        /DEVICE )
       ENDIF
-      
-      
+
+
       ; Generate output plot files
       ; ...Generate a root filename
       osrf[0].Get_Property, Channel = channel, Debug=debug
       fileroot = sensor_id+'-'+STRTRIM(channel,2)+'.tfit'
-      ; ...Get the window reference    
-      osrf[0].Get_Property, $
-        twRef = tw, $
-        Debug = Debug
+;      ; ...Get the window reference
+;      osrf[0].Get_Property, $
+;        twRef = tw, $
+;        Debug = Debug
       ; ...Output a PNG file
       tw.Save, fileroot+'.png', HEIGHT=500, BORDER=10
       ; ...Output an EPS file
@@ -207,10 +246,10 @@ PRO oSRF_Plotter, $
       tw.Save, fileroot+'.eps'
       ; ......Restore the font sizes
       tp.font_size = font_size
-      
+
     ENDIF  ; plot_tfit IF construct
     ; ===============================
-        
+
 
     ; Only pause if not at last channel
     not_last_channel = ~ (l EQ n_channels-1)
@@ -226,7 +265,7 @@ PRO oSRF_Plotter, $
       w.Close
       IF ( plot_tfit ) THEN tw.Close
     ENDIF
-      
-  ENDFOR  ; Channel loop  
+
+  ENDFOR  ; Channel loop
 
 END
