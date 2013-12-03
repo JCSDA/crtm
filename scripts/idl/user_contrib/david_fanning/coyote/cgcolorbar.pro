@@ -41,8 +41,6 @@
 ; 
 ; .. image:: cgcolorbar4.png
 ; 
-; .. image:: cgcolorbar3.png
-; 
 ; .. image:: cgcolorbar1.png
 ; 
 ; .. image:: cgcolorbar5.png
@@ -297,6 +295,11 @@
 ;          is a big change, but I think it will lead to better results in the long run and won't affect
 ;          current IDL programs much, if at all. 27 Feb 2013. DWF.
 ;       Added TEXTTHICK keyword to change the thickness of the textual annotations. 28 Feb 2013. DWF.
+;       Added more error handling for bad POSITION values. 26 July 2013. DWF.
+;       Modified the code so that the original input POSITION values are not changed by the
+;           program code. 8 August 2013. DWF.
+;       The check for a valid position is now done before the colorbar is drawn so that
+;           a colorbar sans axes is not left dangling on the display. 25 September 2013. Matthew Argall
 ;       
 ; :Copyright:
 ;     Copyright (c) 2008-2013, Fanning Software Consulting, Inc.
@@ -327,7 +330,7 @@ PRO cgColorbar, $
     OOB_HIGH=oob_high, $
     OOB_LOW=oob_low, $
     PALETTE=palette, $
-    POSITION=position, $
+    POSITION=origpos, $
     RANGE=range, $
     REVERSE=reverse, $
     RIGHT=right, $
@@ -357,8 +360,8 @@ PRO cgColorbar, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN
     ENDIF
 
@@ -393,7 +396,7 @@ PRO cgColorbar, $
             OOB_HIGH=oob_high, $
             OOB_LOW=oob_low, $
             PALETTE=palette, $
-            POSITION=position, $
+            POSITION=origpos, $
             RANGE=range, $
             REVERSE=reverse, $
             RIGHT=right, $
@@ -422,6 +425,10 @@ PRO cgColorbar, $
          RETURN
     ENDIF
     
+    ; Do you have an original position vector? If so, copy it here to avoid
+    ; changing the original input position in the code below.
+    IF (N_Elements(origpos) NE 0) THEN position = origpos
+
     ; Get the current color table vectors. 
     TVLCT, r, g, b, /GET
     
@@ -537,8 +544,6 @@ PRO cgColorbar, $
           IF position[2]-position[0] GT position[3]-position[1] THEN BEGIN
              position = [position[1], position[0], position[3], position[2]]
           ENDIF
-          IF position[0] GE position[2] THEN Message, "Position coordinates can't be reconciled."
-          IF position[1] GE position[3] THEN Message, "Position coordinates can't be reconciled."
        ENDELSE
        IF Keyword_Set(fit) THEN BEGIN
             position[[1,3]] = !Y.Window
@@ -568,8 +573,6 @@ PRO cgColorbar, $
           IF position[3]-position[1] GT position[2]-position[0] THEN BEGIN
              position = [position[1], position[0], position[3], position[2]]
           ENDIF
-          IF position[0] GE position[2] THEN Message, "Position coordinates can't be reconciled."
-          IF position[1] GE position[3] THEN Message, "Position coordinates can't be reconciled."
        ENDELSE
        IF Keyword_Set(fit) THEN BEGIN
             position[[0,2]] = !X.Window
@@ -582,45 +585,52 @@ PRO cgColorbar, $
               IF (position[3] - position[1]) LT 0.015 THEN position[1] = (position[3] < position[1])-0.015
             ENDIF
        ENDIF
-     ENDELSE
+    ENDELSE
      
-     ; Adjust the positions if you have OOB colors.
-     IF (N_Elements(oob_high) NE 0) || (N_Elements(oob_low) NE 0) THEN BEGIN
-         IF Keyword_Set(vertical) THEN BEGIN
-            length = (position[2]-position[0]) * oob_factor
-            IF (N_Elements(oob_high) NE 0) THEN position[3] = position[3] - length
-            IF (N_Elements(oob_low) NE 0) THEN position[1] = position[1] + length
-         ENDIF ELSE BEGIN
-            length = (position[3]-position[1]) * oob_factor
-            IF (N_Elements(oob_high) NE 0) THEN position[2] = position[2] - length
-            IF (N_Elements(oob_low) NE 0) THEN position[0] = position[0] + length
-         ENDELSE
-     ENDIF
-
-     ; Scale the color bar.
-     IF N_Elements(clamp) NE 0 THEN BEGIN
-        IF N_Elements(clamp) NE 2 THEN Message, 'The CLAMP keyword must be a two-element array.'
-        byterange = BytScl(clamp, minrange, maxrange)
-        tempbar = BytScl(bar, TOP=(ncolors-1) < (255-bottom)) + bottom   
-        bar = BytScl(bar, TOP=(ncolors-1) < (255-bottom), MIN=byterange[0], MAX=byterange[1]) + bottom 
-        IF N_Elements(neutralIndex) EQ 0 THEN BEGIN
-            neutralBottom = (ncolors-1) < (255-bottom)
-            neutralTop = bottom
+    ; Adjust the positions if you have OOB colors.
+    IF (N_Elements(oob_high) NE 0) || (N_Elements(oob_low) NE 0) THEN BEGIN
+        IF Keyword_Set(vertical) THEN BEGIN
+           length = (position[2]-position[0]) * oob_factor
+           IF (N_Elements(oob_high) NE 0) THEN position[3] = position[3] - length
+           IF (N_Elements(oob_low) NE 0) THEN position[1] = position[1] + length
         ENDIF ELSE BEGIN
-            neutralBottom = neutralIndex
-            neutralTop = neutralIndex
+           length = (position[3]-position[1]) * oob_factor
+           IF (N_Elements(oob_high) NE 0) THEN position[2] = position[2] - length
+           IF (N_Elements(oob_low) NE 0) THEN position[0] = position[0] + length
         ENDELSE
-        i = Where(tempbar LT byterange[0], count)
-        IF count GT 0 THEN bar[i] = neutralBottom
-        i = Where(tempbar GT byterange[1], count)
-        IF count GT 0 THEN bar[i] = neutralTop
-     ENDIF ELSE BEGIN
-        bar = BytScl(bar, TOP=(ncolors-1) < (255-bottom)) + bottom
-     ENDELSE
+    ENDIF
+    
+    ; If the POSITION is screwed up, the user can get a weird error message from AXIS about a
+    ; "data coordinate system not established". Check the position here to make sure it is right.
+    IF position[0] GE position[2] THEN Message, 'The X POSITION coordinates cannot be reconciled.'
+    IF position[1] GE position[3] THEN Message, 'The Y POSITION coordinates cannot be reconciled.'
+    IF (position[0] LT 0) || (position[2] GT 1) THEN Message, 'The X POSITION cooordinates must be in the range 0 to 1.'
+    IF (position[1] LT 0) || (position[3] GT 1) THEN Message, 'The Y POSITION cooordinates must be in the range 0 to 1.'
 
-     IF Keyword_Set(reverse) THEN BEGIN
-       IF Keyword_Set(vertical) THEN bar = Reverse(bar,2) ELSE bar = Reverse(bar,1)
-     ENDIF
+    ; Scale the color bar.
+    IF N_Elements(clamp) NE 0 THEN BEGIN
+       IF N_Elements(clamp) NE 2 THEN Message, 'The CLAMP keyword must be a two-element array.'
+       byterange = BytScl(clamp, minrange, maxrange)
+       tempbar = BytScl(bar, TOP=(ncolors-1) < (255-bottom)) + bottom   
+       bar = BytScl(bar, TOP=(ncolors-1) < (255-bottom), MIN=byterange[0], MAX=byterange[1]) + bottom 
+       IF N_Elements(neutralIndex) EQ 0 THEN BEGIN
+           neutralBottom = (ncolors-1) < (255-bottom)
+           neutralTop = bottom
+       ENDIF ELSE BEGIN
+           neutralBottom = neutralIndex
+           neutralTop = neutralIndex
+       ENDELSE
+       i = Where(tempbar LT byterange[0], count)
+       IF count GT 0 THEN bar[i] = neutralBottom
+       i = Where(tempbar GT byterange[1], count)
+       IF count GT 0 THEN bar[i] = neutralTop
+    ENDIF ELSE BEGIN
+       bar = BytScl(bar, TOP=(ncolors-1) < (255-bottom)) + bottom
+    ENDELSE
+
+    IF Keyword_Set(reverse) THEN BEGIN
+      IF Keyword_Set(vertical) THEN bar = Reverse(bar,2) ELSE bar = Reverse(bar,1)
+    ENDIF
 
     ; Get starting locations in NORMAL coordinates.
     xstart = position[0]
@@ -632,25 +642,25 @@ PRO cgColorbar, $
 
        
     ; Let's do this in decomposed color, if possible.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
        
     ; Display the color bar in the window. Sizing is
     ; different for PostScript and regular display.
     IF scalablePixels THEN BEGIN
 
        ; Display the color bar.
-       SetDecomposedState, 0
+       cgSetColorState, 0
        TV, bar, xstart, ystart, XSIZE=xsize, YSIZE=ysize, /Normal
-       SetDecomposedState, 1 
+       cgSetColorState, 1 
 
     ENDIF ELSE BEGIN
 
        bar = CONGRID(bar, CEIL(xsize*!D.X_VSize), CEIL(ysize*!D.Y_VSize))
 
        ; Display the color bar.
-       SetDecomposedState, 0
+       cgSetColorState, 0
        TV, bar, xstart, ystart, /Normal
-       SetDecomposedState, 1
+       cgSetColorState, 1
 
     ENDELSE
    
@@ -858,7 +868,7 @@ PRO cgColorbar, $
     ENDIF
 
     ; Restore the color state.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 
     ; Restore the previous plot and map system variables.
     !P = bang_p

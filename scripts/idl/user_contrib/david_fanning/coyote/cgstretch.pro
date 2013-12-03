@@ -102,7 +102,7 @@ FUNCTION cgSTRETCH_VALIDATE_THRESHOLD, threshold, info
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, Cancel=1
-      void = Error_Message(/Traceback)
+      void = cgErrorMsg(/Traceback)
       RETURN, threshold
    ENDIF
 
@@ -149,7 +149,7 @@ FUNCTION cgSTRETCH_SCALEIMAGE, info
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, Cancel=1
-      void = Error_Message(/Traceback)
+      void = cgErrorMsg(/Traceback)
       RETURN, *info.image
    ENDIF
 
@@ -267,7 +267,7 @@ PRO cgSTRETCH_SAVETOMAIN, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -415,7 +415,7 @@ PRO cgSTRETCH_DRAWLINES, minThresh, maxThresh, info
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, Cancel=1
-      void = Error_Message(/Traceback)
+      void = cgErrorMsg(/Traceback)
       RETURN
    ENDIF
 
@@ -486,76 +486,76 @@ PRO cgSTRETCH_DRAWLINES, minThresh, maxThresh, info
 
       'LINEAR': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'LINEAR 2%': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'ADAPTIVE EQUALIZATION': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'EQUALIZATION': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'LOG': BEGIN
             line = LogScl(Findgen(101), Mean=info.mean, Exponent=info.exponent)
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'GAMMA': BEGIN
             ; Draw the gamma function.
-            line = Scale_Vector(Findgen(101), 0.0, 1.0)
+            line = cgScaleVector(Findgen(101), 0.0, 1.0)
             line = Double(line)^info.gamma
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'GAUSSIAN': BEGIN
             ; Draw the gaussian function.
-            line = Scale_Vector(Findgen(101), -!PI, !PI)
+            line = cgScaleVector(Findgen(101), -!PI, !PI)
             line = (1/(2*!PI*info.sigma^2))*EXP(-(line^2/(2*info.sigma^2)))
-            line = Scale_Vector(line, 0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'SQUARE ROOT': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'ASINH': BEGIN
             ; Draw the asinh function.
             line = ASinhScl(Findgen(101), BETA=info.beta)
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-             x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+             x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
       'STDDEV': BEGIN
             line = BytScl(Findgen(101))
-            line = Scale_Vector(line, 0.0, !Y.CRange[1])
-            x = Scale_Vector(Findgen(101), minThresh, maxThresh)
+            line = cgScaleVector(line, 0.0, !Y.CRange[1])
+            x = cgScaleVector(Findgen(101), minThresh, maxThresh)
             OPlot, x, line, Color=cgColor(info.colors[4]), LineStyle=2, Thick=2
          END
 
@@ -580,7 +580,7 @@ PRO cgSTRETCH_NOTIFYOTHERS, info
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, Cancel=1
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
    ENDIF
 
@@ -641,7 +641,7 @@ PRO cgSTRETCH_HISTOPLOT, info, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
        Catch, Cancel=1
-       void = Error_Message()
+       void = cgErrorMsg()
        RETURN
    ENDIF
 
@@ -839,7 +839,7 @@ PRO cgSTRETCH_PARAMETERS, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -927,7 +927,7 @@ PRO cgSTRETCH_FLIPIMAGE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -972,7 +972,7 @@ PRO cgSTRETCH_GAMMA, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1021,7 +1021,7 @@ PRO cgSTRETCH_NEGATIVE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1064,7 +1064,7 @@ PRO cgSTRETCH_OPENIMAGE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1251,7 +1251,7 @@ PRO cgSTRETCH_SAVEAS, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(thisDevice) NE 0 THEN Set_Plot, thisDevice
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
@@ -1284,7 +1284,7 @@ PRO cgSTRETCH_SAVEAS, event
 
             WSet, info.windex
             keys = PSWindow()
-            configureIt = PSConfig(Group_Leader=event.top, Cancel=cancelled, $
+            configureIt = cgPS_Config(Group_Leader=event.top, Cancel=cancelled, $
                Color=1, Filename='cgstretch.ps', _Extra=keys)
             IF NOT cancelled THEN BEGIN
                   thisDevice = !D.Name
@@ -1322,7 +1322,7 @@ PRO cgSTRETCH_SAVEHISTOAS, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(thisDevice) NE 0 THEN Set_Plot, thisDevice
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
@@ -1354,7 +1354,7 @@ PRO cgSTRETCH_SAVEHISTOAS, event
       'PS': BEGIN
 
             keys = PSWindow()
-            configureIt = PSConfig(Group_Leader=event.top, Cancel=cancelled, $
+            configureIt = cgPS_Config(Group_Leader=event.top, Cancel=cancelled, $
                Color=1, Filename='cgstretch_histrogram.ps', _Extra=keys)
             IF NOT cancelled THEN BEGIN
                   thisDevice = !D.Name
@@ -1397,7 +1397,7 @@ PRO cgSTRETCH_SETTHRESHOLD, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1452,7 +1452,7 @@ PRO cgSTRETCH_PRINT, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1524,7 +1524,7 @@ PRO cgSTRETCH_PROCESS_EVENTS, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1633,7 +1633,7 @@ PRO cgSTRETCH_MOVELINE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -1887,7 +1887,7 @@ PRO cgSTRETCH_RESTORE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2002,7 +2002,7 @@ PRO cgSTRETCH_STRETCHTYPE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2186,7 +2186,7 @@ PRO cgSTRETCH_COLORS, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2240,7 +2240,7 @@ PRO cgSTRETCH_MAXVALUE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2287,7 +2287,7 @@ PRO cgSTRETCH_IMAGE_RESIZE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2347,7 +2347,7 @@ PRO cgSTRETCH_HISTOGRAM_RESIZE, event
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(info) NE 0 THEN Widget_Control, event.top, Set_UValue=info, /No_Copy
       RETURN
    ENDIF
@@ -2547,7 +2547,7 @@ PRO cgSTRETCH, theImage, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(/Traceback)
+      ok = cgErrorMsg(/Traceback)
       RETURN
    ENDIF
 

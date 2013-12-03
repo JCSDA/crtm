@@ -222,8 +222,7 @@
 ;    wysize: in, optional, type=integer, default=5
 ;       The y size in device coordinates of the the graphics window.
 ;    wtitle: in, optional, type=string, default='Resizeable Graphics Window'
-;       The title of the graphics window. A window index number is appended to the
-;       title so multiple cgWindow programs can be selected.
+;       The title of the graphics window. 
 ;          
 ; :Examples:
 ;    Test code::
@@ -265,7 +264,7 @@
 ;        Numerous changes leading up to official release. 4 Feb 2011. DWF.
 ;        Added workaround for UNIX bug for draw widget creation. 5 Feb 2011. DWF.
 ;        Corrected a window aspect ratio problem with PostScript output by making the
-;           window the current window before calling PS_Start. 17 Feb 2011. DWF.
+;           window the current window before calling cgPS_Open. 17 Feb 2011. DWF.
 ;        Added machinery for programmatically generating raster files. 18 Feb 2011. Jeremy Bailin.
 ;        Problem with restoring visualizations fixed. 6 March 2011. DWF.
 ;        Fixed a problem with CALL_METHOD, which requires one positional parameter. 8 March 2011. DWF.
@@ -338,7 +337,7 @@ PRO cgWindow, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message(Traceback=0)
+        void = cgErrorMsg(Traceback=0)
         RETURN
     ENDIF
     destroyObjects = Keyword_Set(wdestroyobjects)

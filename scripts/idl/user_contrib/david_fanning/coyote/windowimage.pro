@@ -45,7 +45,7 @@ PRO WindowImage_OriginalSettings, event
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         IF N_Elements(info) NE 0 THEN $
             Widget_Control, event.top, SET_UVALUE=info, /NO_COPY
         RETURN
@@ -102,7 +102,7 @@ PRO WindowImage_Resize, event
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         IF N_Elements(info) NE 0 THEN $
             Widget_Control, event.top, SET_UVALUE=info, /NO_COPY
         RETURN
@@ -147,7 +147,7 @@ PRO WindowImage_DrawEvents, event
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         IF N_Elements(info) NE 0 THEN $
             Widget_Control, event.top, SET_UVALUE=info, /NO_COPY
         RETURN
@@ -270,7 +270,7 @@ END ;---------------------------------------------------------------------------
 
 PRO WindowImage_Display, info
 
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
 
     ; Load the color table.
     cgLoadCT, info.colortable, REVERSE=info.reverse, BREWER=info.brewer, NCOLORS=253
@@ -295,7 +295,7 @@ PRO WindowImage_Display, info
                         String(info.ilevel, FORMAT=format)
     cgText, 0.5, 0.75, /Normal, Alignment=0.5, Font=0, txt, Color='black'
   
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 
 END ;---------------------------------------------------------------------------------------
 
@@ -360,7 +360,7 @@ PRO WindowImage, image, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
 

@@ -71,9 +71,9 @@
 ;
 ; RESTRICTIONS:
 ;
-;     Requires SCALE_VECTOR from the Coyote Library:
+;     Requires cgScaleVector from the Coyote Library:
 ;
-;        http://www.idlcoyote.com/programs/scale_vector.pro
+;        http://www.idlcoyote.com/programs/cgScaleVector.pro
 ;
 ; MODIFICATION HISTORY:
 ;
@@ -119,7 +119,7 @@ FUNCTION ClipScl, image, clip, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, vector
    ENDIF
 
@@ -177,7 +177,7 @@ FUNCTION ClipScl, image, clip, $
    threshold = [minThresh, maxThresh]
    
    ; Scale the data.
-   output = Scale_Vector(Temporary(output), MIN=threshold[0], MAX=threshold [1], minOut, maxOut)
+   output = cgScaleVector(Temporary(output), MIN=threshold[0], MAX=threshold [1], minOut, maxOut)
 
    IF Keyword_Set(negative) THEN RETURN, 0B > (maxout - output + minOut) < 255B $
       ELSE RETURN, output

@@ -7,6 +7,7 @@
 ;    The purpose of this program is to convert a PostScript file to a high
 ;    resolution raster file, using the ImageMagick convert command to do the
 ;    conversion.
+;    
 ;******************************************************************************************;
 ;                                                                                          ;
 ;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
@@ -121,11 +122,11 @@
 ;    also create a PNG file named lineplot.png for display in a browser,
 ;    type these commands::
 ;
-;        PS_Start, FILENAME='lineplot.ps'
+;        cgPS_Open, FILENAME='lineplot.ps'
 ;        cgPlot, Findgen(11), COLOR='navy', /NODATA, XTITLE='Time', YTITLE='Signal'
 ;        cgPlot, Findgen(11), COLOR='indian red', /OVERPLOT
 ;        cgPlot, Findgen(11), COLOR='olive', PSYM=2, /OVERPLOT
-;        PS_End, /PNG
+;        cgPS_Close, /PNG
 ;       
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -146,7 +147,10 @@
 ;       Apparently Macs can't handle the version number, so I have removed the version number
 ;           check for Macs. 13 October 2012. DWF.
 ;       Worked on getting the WIDTH keyword to work correctly with Portrait mode files. 19 February 2013. DWF.
-;
+;       Added the ability to set the number of bits per channel with TIFF files with the IM_TIFF_DEPTH 
+;           keyword in cgWindow_SetDefs, and changed the default number of bits to 8 per channel
+;           from the previous 16. 14 May 2013. DWF.
+;           
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
 ;-
@@ -176,7 +180,7 @@ PRO cgPS2Raster, ps_filename, raster_filename, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      IF ~Keyword_Set(silent) THEN void = Error_Message()
+      IF ~Keyword_Set(silent) THEN void = cgErrorMsg()
       success = 0
       RETURN
    ENDIF
@@ -317,25 +321,42 @@ PRO cgPS2Raster, ps_filename, raster_filename, $
               IF StrMid(im_options, 0, 1) NE " " THEN im_options = " " + im_options
               cmd = cmd + im_options
           ENDIF
+          
+          ; For TIFF files, we are setting the number of bits per channel.
+          ; The values 8, 16, and 32 are allowed.
+          IF Keyword_Set(tiff) THEN BEGIN
+              cgWindow_GetDefs, IM_TIFF_DEPTH=im_tiff_depth
+              choices = [8,16,32]
+              void = Where(choices EQ im_tiff_depth, count)
+              IF count NE 1 THEN BEGIN
+                  Message, 'Unable to create TIFF file with ' + $
+                       StrTrim(im_tiff_depth,2) + ' bits per channel. Using 8.', /Informational
+                  im_tiff_depth = 8
+              ENDIF
+              cmd = cmd + ' -depth ' + StrTrim(im_tiff_depth,2) + ' '
+          ENDIF
                 
           ; If in landscape mode, rotate by 90 to allow the 
           ; resulting file to be in landscape mode.
           IF (1-portrait) THEN cmd = cmd + ' -rotate 90'
                 
-                ; Add the output filename and check for PNG output.
-                IF Keyword_Set(png) THEN BEGIN
+          ; Add the output filename and check for PNG output.
+          IF Keyword_Set(png) THEN BEGIN
                 
-                    ; Check to see whether 8-bit or 24-bit PNG files should be created.
-                    cgWindow_GetDefs, IM_PNG8=png8
-                    IF png8 THEN BEGIN
-                       cmd = cmd + ' "' + 'PNG8:' +outfilename + '"' 
-                    ENDIF ELSE BEGIN
-                       cmd = cmd + ' "' + 'PNG24:' +outfilename + '"' 
-                    ENDELSE
-                ENDIF ELSE cmd = cmd + ' "' + outfilename + '"'
+              ; Check to see whether 8-bit or 24-bit PNG files should be created.
+              cgWindow_GetDefs, IM_PNG8=png8
+               IF png8 THEN BEGIN
+                  cmd = cmd + ' "' + 'PNG8:' +outfilename + '"' 
+               ENDIF ELSE BEGIN
+                  cmd = cmd + ' "' + 'PNG24:' +outfilename + '"' 
+               ENDELSE
+         ENDIF ELSE cmd = cmd + ' "' + outfilename + '"'
+                
           IF ~silent THEN BEGIN
               IF showcmd THEN Print, 'ImageMagick CONVERT command: ',  cmd
           ENDIF
+          
+          ; Execute the spawned command.
           SPAWN, cmd, result, err_result
                 
           IF ~silent THEN BEGIN

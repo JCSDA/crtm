@@ -92,7 +92,7 @@
 ;            'tif' - TIFF raster file
 ;        All raster file output is created through PostScript intermediate files (the
 ;        PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;        to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;        to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;        details.) And also note that you should NOT use this keyword when doing multiple 
 ;        plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;        output for a single graphics command. Output parameters can be set with `cgWindow_SetDefs`.
@@ -179,9 +179,9 @@ PRO cgDotPlot, labels, values, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
-        IF (N_Elements(output) NE 0) THEN PS_END, /NOFIX
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
+        IF (N_Elements(output) NE 0) THEN cgPS_Close, /NOFIX
         RETURN
     ENDIF
     
@@ -365,7 +365,7 @@ PRO cgDotPlot, labels, values, $
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -382,7 +382,7 @@ PRO cgDotPlot, labels, values, $
     TVLCT, rr, gg, bb, /GET
     
     ; Going to do this in decomposed color, if possible.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
     
     ; Check keywords.
     IF N_Elements(title) EQ 0 THEN title = ""
@@ -488,7 +488,7 @@ PRO cgDotPlot, labels, values, $
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $
@@ -510,7 +510,7 @@ PRO cgDotPlot, labels, values, $
     ENDIF
     
     ; Restore the decomposed color state if you can.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
     
     ; Restore the color table. Can't do this for the Z-buffer or
     ; the snap shot will be incorrect.

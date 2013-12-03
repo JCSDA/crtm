@@ -41,6 +41,8 @@
 ; a graphics plot. A "discrete" color bar is one with a handful
 ; of colors. Labels are centered beneath or beside the color fields.
 ; 
+; .. image:: cgcolorbar3.png
+;
 ; .. image:: cgdcbar.png
 ; 
 ; The program requires the `Coyote Library <http://www.idlcoyote.com/documents/programs.php>`
@@ -170,6 +172,8 @@
 ;       Previous change incorrectly implemented for PS device. Fixed. 29 Dec 2011. DWF.
 ;       Added CHARPERCENT, FIT, and TREVERSE keywords. Cleaned up documentation. 20 March 2012. DWF.
 ;       Added the ability to use escape characters in plot titles to specify cgSymbol symbols. 27 July 2012. DWF.
+;       Fixed a problem in which the colors variable was set to long integers if the BOTTOM keyword was used with 
+;           NCOLORS. 2 Oct 2013. DWF.
 ;       
 ; :Copyright:
 ;     Copyright (c) 2009-2012, Fanning Software Consulting, Inc.
@@ -200,7 +204,7 @@ PRO cgDCBar, colors, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF 
     
@@ -238,18 +242,18 @@ PRO cgDCBar, colors, $
     IF (N_Elements(charPercent) EQ 0) $
         THEN charPercent = 0.85 $
         ELSE charPercent = 0.0 > charPercent < 1.0
-    IF N_Elements(bottom) EQ 0 THEN bottom = 0
+    IF N_Elements(bottom) EQ 0 THEN bottom = 0 ELSE bottom = Fix(bottom)
     SetDefaultValue, charsize, cgDefCharsize() * charPercent
     IF N_Elements(colors) EQ 0 THEN BEGIN
         IF N_Elements(ncolors) EQ 0 THEN BEGIN
             cgLoadCT, 25, /Brewer, NCOLORS=10, BOTTOM=245
-            ncolors = 10
-            bottom = 245
+            ncolors = 10S
+            bottom = 245S
         ENDIF
-        IF N_Elements(bottom) EQ 0 THEN bottom = 255 - ncolors
+        IF N_Elements(bottom) EQ 0 THEN bottom = 255S - Fix(ncolors)
         ncolors = (bottom + ncolors) - bottom
         TVLCT, r, g, b, /Get
-        colors = Indgen(ncolors) + bottom
+        colors = Indgen(ncolors) + Fix(bottom)
     ENDIF ELSE ncolors = N_Elements(colors)
     cbar_colors = colors
     IF N_Elements(font) EQ 0 THEN font = !P.Font
@@ -281,7 +285,7 @@ PRO cgDCBar, colors, $
     ; I would prefer to draw in 24-bit color if I can, since this way I can
     ; avoid loading colors into the color table. I'll have to see where I am to
     ; see if I can do this in 24-bit color.
-    SetDecomposedState, 1, CURRENT=currentState
+    cgSetColorState, 1, CURRENT=currentState
     
     cbar_colors = cgDefaultColor(cbar_colors)
     color = cgDefaultColor(color, DEFAULT='opposite')
@@ -444,5 +448,5 @@ PRO cgDCBar, colors, $
     TVLCT, rr, gg, bb
     
     ; Clean up.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 END

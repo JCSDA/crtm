@@ -80,6 +80,7 @@
 ;           have a point in the XRANGE of the projection. A fix to that problem has failed to work in all
 ;           circumstances, so I have done more work on that algorithm to see if I can solve the problem is
 ;           a better way. Now usine Value_Locate to test for point. 19 February 2013. DWF.
+;        Now implementing label formatting when using CGGRID keyword. 27 November 2013. DWF.
 ;            
 ; :Copyright:
 ;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
@@ -446,8 +447,8 @@ PRO cgMap_Grid, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(thisState) NE 0 THEN SetDecomposedState, thisState
+        void = cgErrorMsg()
+        IF N_Elements(thisState) NE 0 THEN cgSetColorState, thisState
         RETURN
     ENDIF
 
@@ -507,7 +508,7 @@ PRO cgMap_Grid, $
     ENDIF ELSE IF (N_Elements(thick) EQ 0) THEN thick = !P.Thick 
 
     ; Try to do this in decomposed color, if possible.
-    SetDecomposedState, 1, Current=thisState
+    cgSetColorState, 1, Current=thisState
     
     ; Need a color.
     IF N_Elements(scolor) NE 0 THEN BEGIN
@@ -522,7 +523,7 @@ PRO cgMap_Grid, $
     ENDIF ELSE scolor = "opposite"
     IF N_Elements(scolor) EQ 0 THEN color = !P.Color ELSE  color = sColor
     IF (Size(scolor, /TNAME) EQ 'BYTE') AND (N_Elements(scolor) EQ 3) THEN color = cgColor(scolor)
-    IF Size(color, /TYPE) EQ 3 THEN IF GetDecomposedState() EQ 0 THEN color = Byte(color)
+    IF Size(color, /TYPE) EQ 3 THEN IF cgGetColorState() EQ 0 THEN color = Byte(color)
     IF Size(color, /TYPE) LE 2 THEN color = StrTrim(Fix(color),2)
     
     ; Check for label color now. Depends on other colors and value of BOX_AXES.
@@ -543,7 +544,8 @@ PRO cgMap_Grid, $
          ; This routine is here because Map_Grid does not select good line for small areas.
          IF Keyword_Set(cgGrid) THEN BEGIN
              mapObj -> LatLonLabels, LATS=mlats, LATLAB=mlatlab, LATDELTA=latdelta, LATNAMES=mlatnames, $
-                                     LONS=mlons, LONLAB=mlonlab, LONDELTA=londelta, LONNAMES=mlonnames
+                                     LONS=mlons, LONLAB=mlonlab, LONDELTA=londelta, LONNAMES=mlonnames, $
+                                     FORMAT=format
              IF N_Elements(lats) EQ 0 THEN BEGIN
                 lats = mlats
                 IF (N_Elements(latnames) EQ 0) THEN latnames = mlatnames
@@ -696,6 +698,7 @@ PRO cgMap_Grid, $
   
   
   ;Compute longit distance between points for latitude lines.
+  IF lonmin EQ lonmax THEN lonmax = lonmin + 360.
   step = 4 < (lonmax - lonmin)/10. ;At most 4 degrees
   len = (lonmax-lonmin)/step + 1
   loni = findgen(len) * step + lonmin
@@ -1001,22 +1004,28 @@ PRO cgMap_Grid, $
                          thisMapStructure = mapObj -> GetMapStruct()
                          ll = Map_Proj_Inverse(xrange, yrange, MAP_STRUCTURE=thisMapStructure)
                          lonii = Reform(ll[0,*])
-                         lonii = Scale_Vector(Findgen(N_Elements(loni)), lonii[0], lonii[1])
+                         lonii = cgScaleVector(Findgen(N_Elements(loni)), lonii[0], lonii[1])
                          uv = MAP_PROJ_FORWARD(lonii, REPLICATE(lat, N_ELEMENTS(lonii)), $
-                              MAP_STRUCTURE=thisMapStruct)
+                              MAP_STRUCTURE=thisMapStruct, POLYLINES=polylines)
+;                          uv = MAP_PROJ_FORWARD(lonii, REPLICATE(lat, N_ELEMENTS(lonii)), $
+;                              MAP_STRUCTURE=thisMapStruct) ;;; Screws up near the poles, I think.
+;                          polylines = [N_Elements(loni), Indgen(N_Elements(loni))]
                          loni = lonii
                      ENDIF ELSE BEGIN
                         uv = MAP_PROJ_FORWARD(loni, REPLICATE(lat, N_ELEMENTS(loni)), $
-                             MAP_STRUCTURE=thisMapStruct)                     
+                             MAP_STRUCTURE=thisMapStruct, POLYLINES=polylines)  
+;                            uv = MAP_PROJ_FORWARD(loni, REPLICATE(lat, N_ELEMENTS(loni)), $
+;                               MAP_STRUCTURE=thisMapStruct) ;;; Screws up near the poles, I think.
+;                            polylines = [N_Elements(loni), Indgen(N_Elements(loni))]                   
                      ENDELSE
               ENDIF ELSE BEGIN
                   uv = MAP_PROJ_FORWARD(loni, REPLICATE(lat, N_ELEMENTS(loni)), $
-                       MAP_STRUCTURE=thisMapStruct)
+                       MAP_STRUCTURE=thisMapStruct, POLYLINES=polylines)
+                   ;   uv = MAP_PROJ_FORWARD(loni, REPLICATE(lat, N_ELEMENTS(lonii)), $
+                   ;      MAP_STRUCTURE=thisMapStruct) ;;; Screws up near the poles, I think.
+                   ;  polylines = [N_Elements(loni), Indgen(N_Elements(loni))]
               ENDELSE
 
-              ; This line has been modified by DWF to fix a bug in MAP_PROJ_FORWARD that
-              ; screws up lines near the poles.
-              polylines = [N_Elements(loni), Indgen(N_Elements(loni))]
               index = 0L
               npoly = N_ELEMENTS(polylines)
               ; Loop thru our polylines connectivity array.
@@ -1101,6 +1110,6 @@ PRO cgMap_Grid, $
   endif   ; box_thick
 
     ; Restore color mode
-    SetDecomposedState, thisState
+    cgSetColorState, thisState
     
 end

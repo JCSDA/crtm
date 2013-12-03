@@ -1,122 +1,16 @@
-;+
+; docformat = 'rst'
+;
 ; NAME:
-;    ERROR_MESSAGE
+;   cgErrorMsg
 ;
 ; PURPOSE:
+;   The purpose of this function is to have a device-independent error messaging function. 
+;   The error message is reported to the user by using DIALOG_MESSAGE if widgets are
+;    supported. Otherwise, it is just printed to standard out.
 ;
-;    The purpose of this function  is to have a device-independent
-;    error messaging function. The error message is reported
-;    to the user by using DIALOG_MESSAGE if widgets are
-;    supported and MESSAGE otherwise.
-;
-;    In general, the ERROR_MESSAGE function is not called directly.
-;    Rather, it is used in a CATCH error handler. Errors are thrown
-;    to ERROR_MESSAGE with the MESSAGE command. A typical CATCH error
-;    handler is shown below.
-;
-;       Catch, theError
-;       IF theError NE 0 THEN BEGIN
-;          Catch, /Cancel
-;          void = Error_Message()
-;          RETURN
-;       ENDIF
-;
-;    Error messages would get into the ERROR_MESSAGE function by
-;    throwing an error with the MESSAGE command, like this:
-;
-;       IF test NE 1 THEN Message, 'The test failed.'
-;
-; AUTHOR:
-;
-;   FANNING SOFTWARE CONSULTING
-;   David Fanning, Ph.D.
-;   1645 Sheely Drive
-;   Fort Collins, CO 80526 USA
-;   Phone: 970-221-0438
-;   E-mail: david@idlcoyote.com
-;   Coyote's Guide to IDL Programming: http://www.idlcoyote.com/
-;
-; CATEGORY:
-;
-;    Utility.
-;
-; CALLING SEQUENCE:
-;
-;    ok = Error_Message(the_Error_Message)
-;
-; INPUTS:
-;
-;    the_Error_Message: This is a string argument containing the error
-;       message you want reported. If undefined, this variable is set
-;       to the string in the !Error_State.Msg system variable.
-;
-; KEYWORDS:
-;
-;    ERROR: Set this keyword to cause Dialog_Message to use the ERROR
-;       reporting dialog. Note that a bug in IDL causes the ERROR dialog
-;       to be used whether this keyword is set to 0 or 1!
-;
-;    INFORMATIONAL: Set this keyword to cause Dialog_Message to use the
-;       INFORMATION dialog instead of the WARNING dialog. Note that a bug
-;       in IDL causes the ERROR dialog to be used if this keyword is set to 0!
-;       
-;    NONAME: Normally, the name of the routine in which the error occurs is
-;       added to the error message. Setting this keyword will suppress this
-;       behavior.
-;
-;    TITLE: Set this keyword to the title of the DIALOG_MESSAGE window. By
-;       default the keyword is set to 'System Error' unless !ERROR_STATE.NAME
-;       equals "IDL_M_USER_ERR", in which case it is set to "Trapped Error'.
-;
-;    TRACEBACK: Setting this keyword results in an error traceback
-;       being printed to standard output with the PRINT command. Set to
-;       1 (ON) by default. Use TRACEBACK=0 to turn this functionality off.
-;       
-;    QUIET: Set this keyword to suppress the DIALOG_MESSAGE pop-up dialog.
-;
-; OUTPUTS:
-;
-;    Currently the only output from the function is the string "OK".
-;
-; RESTRICTIONS:
-;
-;    The WARNING Dialog_Message dialog is used by default.
-;
-; EXAMPLE:
-;
-;    To handle an undefined variable error:
-;
-;    IF N_Elements(variable) EQ 0 THEN $
-;       ok = Error_Message('Variable is undefined')
-;
-; MODIFICATION HISTORY:
-;
-;    Written by: David W. Fanning, 27 April 1999.
-;    Added the calling routine's name in the message and NoName keyword. 31 Jan 2000. DWF.
-;    Added _Extra keyword. 10 February 2000. DWF.
-;    Forgot to add _Extra everywhere. Fixed for MAIN errors. 8 AUG 2000. DWF.
-;    Adding call routine's name to Traceback Report. 8 AUG 2000. DWF.
-;    Added ERROR, INFORMATIONAL, and TITLE keywords. 19 SEP 2002. DWF.
-;    Removed the requirement that you use the NONAME keyword with the MESSAGE
-;      command when generating user-trapped errors. 19 SEP 2002. DWF.
-;    Added distinctions between trapped errors (errors generated with the
-;      MESSAGE command) and IDL system errors. Note that if you call ERROR_MESSAGE
-;      directly, then the state of the !ERROR_STATE.NAME variable is set
-;      to the *last* error generated. It is better to access ERROR_MESSAGE
-;      indirectly in a Catch error handler from the MESSAGE command. 19 SEP 2002. DWF.
-;    Change on 19 SEP 2002 to eliminate NONAME requirement did not apply to object methods.
-;      Fixed program to also handle messages from object methods. 30 JULY 2003. DWF.
-;    Removed obsolete STR_SEP and replaced with STRSPLIT. 27 Oct 2004. DWF.
-;    Made a traceback the default case without setting TRACEBACK keyword. 19 Nov 2004. DWF.
-;    Added check for window connection specifically for CRON jobs. 6 May 2008. DWF.
-;    Added QUIET keyword. 18 October 2008. DWF.
-;    The traceback information was bypassed when in the PostScript device. Not what I
-;      had in mind. Fixed. 6 July 2009. DWF.
-;    The QUIET keyword was clearing traceback information. Fixed with help from Phillip Bitzer. 2 Oct 2012. DWF.
-;-
 ;******************************************************************************************;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc.                                ;
-;  All rights reserved.                                                                    ;
+;                                                                                          ;
+;  Copyright (c) 2013, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -141,7 +35,98 @@
 ;  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS           ;
 ;  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                            ;
 ;******************************************************************************************;
-FUNCTION ERROR_MESSAGE, theMessage, Error=error, Informational=information, $
+;
+;+
+; The purpose of this function is to have a device-independent error messaging function.  
+; The error message is reported to the user by using DIALOG_MESSAGE if widgets are
+; supported. Otherwise, the error message is just printed to standard out.
+;
+; :Categories:
+;    Utilities
+;
+; :Params:
+;    themessage: in, optional, type=string
+;       This is a string argument containing the error message you want reported. If undefined, 
+;       this variable is set to the string in the !Error_State.Msg system variable.
+;       
+; :Keywords:
+;    error: in, optional, type=boolean, default=1
+;       Set this keyword to cause Dialog_Message to use the ERROR reporting dialog. 
+;       Note that a longstanding bug in IDL causes the ERROR dialog to be used whether 
+;       this keyword is set to 0 or 1!
+;    informational: in, optional, type=boolean, default=0
+;       Set this keyword to cause Dialog_Message to use the INFORMATION dialog instead of the 
+;       WARNING dialog. Note that a bug in IDL causes the ERROR dialog to be used if this keyword 
+;       is set to 0!
+;    noname: in, optional, type=boolean, default=0
+;       Normally, the name of the routine in which the error occurs is prepended to the error
+;       message. Setting this keyword will suppress this behavior and no routine name will be used.
+;    quiet: in, optional, type=boolean, default=0
+;       Set this keyword to suppress the DIALOG_MESSAGE pop-up dialog.
+;    title: in, optional, type=string
+;       Set this keyword to the title of the DIALOG_MESSAGE window. By default the keyword is set to 
+;       'System Error' unless !ERROR_STATE.NAME equals "IDL_M_USER_ERR", in which case it is set to 
+;       "Trapped Error'.
+;     traceback: in, optional, type=boolean, default=1
+;        Setting this keyword results in an error traceback being printed to standard output with the 
+;        PRINT command. Use TRACEBACK=0 to turn this functionality off.
+;        
+; :Examples:
+;   In general, the cgErrorMsg function is not called directly. Rather, it is used in a 
+;   CATCH error handler. Errors are thrown to cgErrorMsg with the MESSAGE command. A typical 
+;   CATCH error handler is shown below::
+;
+;       Catch, theError
+;       IF theError NE 0 THEN BEGIN
+;          Catch, /Cancel
+;          void = cgErrorMsg()
+;          RETURN
+;       ENDIF
+;
+;   Error messages will get into the cgErrorMsg function by throwing an error with the 
+;   MESSAGE command, like this::
+;
+;       IF test NE 1 THEN Message, 'The test failed.'
+;
+; :Author:
+;    FANNING SOFTWARE CONSULTING::
+;       David W. Fanning
+;       1645 Sheely Drive
+;       Fort Collins, CO 80526 USA
+;       Phone: 970-221-0438
+;       E-mail: david@idlcoyote.com
+;       Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;
+; :History:
+;    Change History::
+;      Written by: David W. Fanning, 27 April 1999.
+;      Added the calling routine's name in the message and NoName keyword. 31 Jan 2000. DWF.
+;      Added _Extra keyword. 10 February 2000. DWF.
+;      Forgot to add _Extra everywhere. Fixed for MAIN errors. 8 AUG 2000. DWF.
+;      Adding call routine's name to Traceback Report. 8 AUG 2000. DWF.
+;      Added ERROR, INFORMATIONAL, and TITLE keywords. 19 SEP 2002. DWF.
+;      Removed the requirement that you use the NONAME keyword with the MESSAGE
+;        command when generating user-trapped errors. 19 SEP 2002. DWF.
+;      Added distinctions between trapped errors (errors generated with the
+;        MESSAGE command) and IDL system errors. Note that if you call ERROR_MESSAGE
+;        directly, then the state of the !ERROR_STATE.NAME variable is set
+;        to the *last* error generated. It is better to access ERROR_MESSAGE
+;        indirectly in a Catch error handler from the MESSAGE command. 19 SEP 2002. DWF.
+;      Change on 19 SEP 2002 to eliminate NONAME requirement did not apply to object methods.
+;        Fixed program to also handle messages from object methods. 30 JULY 2003. DWF.
+;      Removed obsolete STR_SEP and replaced with STRSPLIT. 27 Oct 2004. DWF.
+;      Made a traceback the default case without setting TRACEBACK keyword. 19 Nov 2004. DWF.
+;      Added check for window connection specifically for CRON jobs. 6 May 2008. DWF.
+;      Added QUIET keyword. 18 October 2008. DWF.
+;      The traceback information was bypassed when in the PostScript device. Not what I
+;        had in mind. Fixed. 6 July 2009. DWF.
+;      The QUIET keyword was clearing traceback information. Fixed with help from Phillip Bitzer. 2 Oct 2012. DWF.
+;      Name changed to cgErrorMsg from Error_Message, 4 November 2013, by David W. Fanning.
+;
+; :Copyright:
+;     Copyright (c) 2013, Fanning Software Consulting, Inc.
+;-
+FUNCTION cgErrorMsg, theMessage, Error=error, Informational=information, $
    Traceback=traceback, NoName=noname, Title=title, Quiet=quiet, _Extra=extra
 
    On_Error, 2
@@ -198,8 +183,8 @@ FUNCTION ERROR_MESSAGE, theMessage, Error=error, Informational=information, $
    
          IF N_Elements(title) EQ 0 THEN title = 'Trapped Error'
    
-            ; If the message has the name of the calling routine in it,
-            ; it should be stripped out. Can you find a colon in the string?
+         ; If the message has the name of the calling routine in it,
+         ; it should be stripped out. Can you find a colon in the string?
    
          ; Is the calling routine an object method? If so, special processing
          ; is required. Object methods will have two colons together.

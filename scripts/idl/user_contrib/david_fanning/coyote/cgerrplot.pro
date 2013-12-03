@@ -80,6 +80,10 @@
 ;        length as X.
 ;     device: in, optional, type=boolean
 ;        Not used. Just defined so it can't be used by the user of the program.
+;     horizontal: in, optional, type=boolean, default=0
+;        Set this keyword to draw an errorbar along the X direction.
+;        In this case, indep contains coordinates along the Y axis,
+;        and low and high along the X axis
 ;     noclip: in, optional, type=boolean, default=!P.NoClip
 ;        Defined differently than in PlotS.
 ;     psym: in, optional, type=boolean
@@ -113,6 +117,16 @@
 ;       barHigh = RandomU(seed, N_Elements(bardata)) * 1.5
 ;       cgBarPlot, bardata, BarCoords=x
 ;       cgErrPlot, x, bardata-barLow, bardata+barHigh, Color='blue'
+;       
+;    Use with horizontal bars.
+;       y = cgDemoData(1)
+;       seed = 3L
+;       x = Indgen(N_Elements(y))
+;       cgPlot, x, y, /WINDOW
+;       errLow = RandomU(seed, N_Elements(y)) * 1.5
+;       errHigh = RandomU(seed, N_Elements(y)) * 1.5
+;       cgErrPlot, x, y-errLow, y+errHigh, COLOR='red', /ADDCMD
+;       cgErrPlot, y, x-errLow, x+errHigh, COLOR='blue', /HORIZONTAL, /ADDCMD
 ;     
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -126,6 +140,8 @@
 ; :History:
 ;     Change History::
 ;        Written, 30 Jan 2012. Modeled on ErrPlot from IDL library. David W. Fanning.
+;        Added Horizontal keyword. 19 March 2013. Fabien Maussion.
+;        Forgot to allow COLOR keyword to be a vector of colors. 18 June 2013. DWF.
 ;        
 ; :Copyright:
 ;     Copyright (c) 2012, Fanning Software Consulting, Inc.
@@ -134,6 +150,7 @@ PRO cgErrPlot, indep, low, high, $
    AddCmd=addcmd, $
    Color=scolor, $
    Device=device, $
+   Horizontal=horizontal, $
    NoClip=noclip, $
    PSym=psym, $
    Thick=thick, $
@@ -144,8 +161,8 @@ PRO cgErrPlot, indep, low, high, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         IF N_Elements(dataSwitch) NE 0 THEN BEGIN
             indep = low
             low = high
@@ -167,6 +184,7 @@ PRO cgErrPlot, indep, low, high, $
            AddCmd=1, $
            Color=scolor, $
            Device=device, $
+           Horizontal=horizontal, $
            NoClip=noclip, $
            PSym=psym, $
            Thick=thick, $
@@ -184,12 +202,12 @@ PRO cgErrPlot, indep, low, high, $
     IF n_params EQ 1 THEN Message, 'At least two positional parameters are required.'
     IF (n_params EQ 2) THEN BEGIN
         high = indep
-        indep = FIndgen(N_Elements(low))
+        indep = Findgen(N_Elements(low))
         dataSwitch = 1
     ENDIF
     
     ; Going to draw the lines in decomposed color, if possible
-    SetDecomposedState, 1, CurrentState=currentState
+    cgSetColorState, 1, CurrentState=currentState
     
     ; Choose a color.
     color = cgDefaultColor(sColor, DEFAULT='OPPOSITE')
@@ -199,22 +217,41 @@ PRO cgErrPlot, indep, low, high, $
     device = 1
     psym = 0
     IF N_Elements(thick) EQ 0 THEN thick = !P.Thick
-    w = ((N_Elements(width) EQ 0) ? 0.01 : width) * (!X.Window[1] - !X.Window[0]) * !D.X_Size*0.5
+    IF Keyword_Set(horizontal) THEN BEGIN
+      w = ((N_Elements(width) EQ 0) ? 0.01 : width) * (!Y.Window[1] - !Y.Window[0]) * !D.Y_Size*0.5
+    ENDIF ELSE BEGIN
+      w = ((N_Elements(width) EQ 0) ? 0.01 : width) * (!X.Window[1] - !X.Window[0]) * !D.X_Size*0.5
+    ENDELSE
     n = N_Elements(high) < N_Elements(low) < N_Elements(indep) ;# of pnts
     
     ; If user hasn't set NOCLIP, follow what is in !P.NoClip.
-    noclip = (N_ELEMENTS(noclip) GT 0) ? noclip : !P.NOCLIP
+    noclip = (N_Elements(noclip) GT 0) ? noclip : !P.NOCLIP
+    
+    ; Make sure color is the same length as indep.
+    IF N_Elements(color) NE N_Elements(indep) THEN color = Replicate(color, N_Elements(indep))
     
     ; Draw each error bar in a loop.
-    FOR i=0,n-1 DO BEGIN           
+    IF Keyword_Set(horizontal) THEN BEGIN
+      FOR i=0,n-1 DO BEGIN
+        xy0 = Convert_Coord(low[i], indep[i], /DATA, /TO_DEVICE)
+        xy1 = Convert_Coord(high[i], indep[i], /DATA, /TO_DEVICE)
+        PlotS, [Replicate(xy0[0],3), Replicate(xy1[0],3)], $
+          [xy0[1] + [-w, w,0], xy1[1] + [0, -w, w]], $
+          DEVICE=device, NOCLIP=noclip, PSYM=psym, COLOR=color[i], THICK=thick, $
+          _STRICT_EXTRA=extra
+      ENDFOR
+    ENDIF ELSE BEGIN
+      FOR i=0,n-1 DO BEGIN
         xy0 = Convert_Coord(indep[i], low[i], /DATA, /TO_DEVICE)
         xy1 = Convert_Coord(indep[i], high[i], /DATA, /TO_DEVICE)
         PlotS, [xy0[0] + [-w, w,0], xy1[0] + [0, -w, w]], $
           [Replicate(xy0[1],3), Replicate(xy1[1],3)], $
-          DEVICE=device, NOCLIP=noclip, PSYM=psym, COLOR=color, THICK=thick, $
+          DEVICE=device, NOCLIP=noclip, PSYM=psym, COLOR=color[i], THICK=thick, $
           _STRICT_EXTRA=extra
-    ENDFOR
+      ENDFOR
+    ENDELSE
+
     
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 END
    

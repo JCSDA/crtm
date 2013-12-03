@@ -47,6 +47,12 @@
 ; 
 ; The program requires the `Coyote Library <http://www.idlcoyote.com/documents/programs.php>`
 ; to be installed on your machine.
+; 
+; If you wish to draw multiple boxplots in a display window, it will make more sense to
+; use cgLayout to set up your plot positions than to use !P.Multi. This is because the
+; labels on the plot are set up independently of the plot with the XCharsize keyword and
+; this size is not affected by !P.Multi, which normally controls not only the position of
+; plots, but the character size of plot labels, too.
 ;
 ; :Categories:
 ;    Graphics
@@ -93,9 +99,9 @@
 ;           
 ; .. image:: cgboxplot.png 
 ;
-;    An article about his program can be found here::
+;    An article about his program can be found `on my web page <http://www.idlcoyote.com/graphics_tips/box_whisker.html>`.
 ;       
-;         http://www.idlcoyote.com/graphics_tips/box_whisker.html
+;         
 ;    
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -130,6 +136,9 @@
 ;        Added the ability to send the output directly to a file via the OUTPUT keyword. 9 Dec 2011, DWF.
 ;        PostScript, PDF, and Imagemagick parameters can now be tailored with cgWindow_SetDefs. 14 Dec 2011. DWF.
 ;        Added XLOCATION and WIDTH keywords. 5 June 2012. DWF.
+;        The XCharSize keyword was not being used correctly. 2 July 2013. DWF.
+;        The program was not setting the color state back to the entry state. 22 Nov 2013. DWF.
+;        Added the fields TOP_WHISKER and BOT_WHISKER to the STATS structure. 23 Nov 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2009, Fanning Software Consulting, Inc.
@@ -305,10 +314,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
       stats.sdev = StDDev(data, /NAN, /DOUBLE)
 
       ; Color decomposition on, if allowed.
-      IF (!D.Flags AND 256) NE 0 THEN BEGIN
-         Device, Get_Visual_Depth=theDepth
-         IF theDepth GE 24 THEN Device, Decomposed=1, Get_Decomposed=theState
-      ENDIF
+      cgSetColorState, 1, Current=theState
        
       ; Draw the box.
       halfwidth = width / 2.0
@@ -337,6 +343,8 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
          index = Value_Locate(sortedData, quartile_25 - (1.5 * iqr))
          bottom = sortedData[0 > (index+1) < (N_Elements(data)-1)]
       ENDELSE
+      stats.top_whisker = top
+      stats.bot_whisker = bottom
       
       ; Draw the whiskers.
       PLOTS, [xlocation, xlocation], [quartile_75, top], COLOR=cgColor(outlinecolor)
@@ -356,7 +364,8 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
             PSYM=cgSymCat(9), COLOR=cgColor(outliercolor), NOCLIP=0
       ENDIF
       
-      IF N_Elements(theState) NE 0 THEN Device, Decomposed=theState
+      cgSetColorState, theState
+      
    END ;-----------------------------------------------------------------------------------------------------
    
 ;+
@@ -436,7 +445,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
 ;            
 ;       All raster file output is created through PostScript intermediate files (the
 ;       PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;       to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;       to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;       details.) And also note that you should NOT use this keyword when doing multiple 
 ;       plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;       output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -453,7 +462,8 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
 ;       this:
 ;
 ;           struct = { Median:0.0D, Mean: 0.0D, Min:0.0D, Max:0.0D, $
-;                      Q25:0.0D, Q75:0.0D, IQR:0.0D, SDEV:0.0D, N:0L }
+;                      Q25:0.0D, Q75:0.0D, IQR:0.0D, SDEV:0.0D, N:0L, $
+;                      Top_Whisker:0.0D, Bot_Whisker:0.0D }
 ;
 ;       Where "mean" is the median value of the data, "Q25" and "Q75" are the 25th percent
 ;       quartile and 75th percent quartile of the data, repectively, "IRG" is the
@@ -506,7 +516,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
       Catch, theError
       IF theError NE 0 THEN BEGIN
          Catch, /CANCEL
-         void = Error_Message()
+         void = cgErrorMsg()
          IF N_Elements(theState) NE 0 THEN Device, Decomposed=theState
          IF N_Elements(thisMulti) NE 0 THEN !P.Multi = thisMulti
          RETURN
@@ -671,7 +681,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -759,10 +769,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
          ENDIF ELSE BEGIN
             plotlabels = ['  ', labels, '  ']
          ENDELSE
-         IF (!D.Flags AND 256) NE 0 THEN BEGIN
-            Device, Get_Visual_Depth=theDepth
-            IF theDepth GE 24 THEN Device, Decomposed=1, Get_Decomposed=theState
-         ENDIF
+         cgSetColorState, 1, CURRENT=theState
          IF ((!D.Flags AND 256) NE 0) && (!D.Window LT 0) THEN cgDisplay
          Plot, xrange, yrange, /NODATA, _STRICT_EXTRA=extra, $
             XMINOR=1, XTICKS=numbox+1, YSTYLE=1, BACKGROUND=cgColor(background_color), $
@@ -780,18 +787,19 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
          ENDCASE
          FOR j=1,numbox DO BEGIN
              xy = Convert_Coord(xloc[j], !Y.CRange[0], /DATA, /TO_NORMAL)
-             chary = !D.Y_CH_SIZE / Float(!D.Y_Size) * charsize
+             chary = !D.Y_CH_SIZE / Float(!D.Y_Size) * xcharsize
              XYOUTS, xy[0], xy[1] - (1.5 * chary), /NORMAL, plotlabels[j], $
                 ALIGNMENT=alignment, COLOR=cgColor(axiscolor), $
-                ORIENTATION=rotate, CHARSIZE=charsize, CHARTHICK=xthick
+                ORIENTATION=rotate, CHARSIZE=xcharsize, CHARTHICK=xthick
          ENDFOR
-         IF N_Elements(theState) NE 0 THEN Device, Decomposed=theState
+         cgSetColorState, theState
       ENDIF
       
       ; Draw the boxes.
       IF N_Elements(width) EQ 0 THEN width = ((!X.CRange[1] - !X.Crange[0]) / (numbox+2.0)) * 0.9
       s = { Median:0.0D, Mean: 0.0D, Min:0.0D, Max:0.0D, $
-           Q25:0.0D, Q75:0.0D, IQR:0.0D, SDEV:0.0D, N:0L }
+           Q25:0.0D, Q75:0.0D, IQR:0.0D, SDEV:0.0D, N:0L, $
+           top_whisker:0.0D, bot_whisker:0.0D }
       IF Arg_Present(stats) THEN stats = Replicate(s, numbox)
       FOR j=1,numbox DO BEGIN
           IF passedDataType EQ 'POINTER' THEN BEGIN
@@ -824,7 +832,7 @@ FUNCTION cgBoxPlot_Prepare_Data, data, missing_data_value
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $

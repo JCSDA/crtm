@@ -1,15 +1,14 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   cgKML2KMZ
+;   cgPercentiles
 ;
 ; PURPOSE:
-;   This program simply collects files created from the cgImage2KML program and moves
-;   the files to a zip file with the *.kmz file extention.
+;   This program calculates user-specified percentiles of a data set.
 ;
 ;******************************************************************************************;
 ;                                                                                          ;
-;  Copyright (c) 2012, by Fanning Software Consulting, Inc. All rights reserved.           ;
+;  Copyright (c) 2013, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -36,32 +35,42 @@
 ;******************************************************************************************;
 ;
 ;+
-;   This program simply collects files created from the cgImage2KML program and moves
-;   the files to a zip file with a *.kmz file extention. The method used is an
-;   undocumented and unsupported method for creating KMZ files in IDL 8. It should not
-;   be relied upon, and it will not work in earlier versions of IDL. The cross-platform 
-;   zip file functionality is scheduled to be exposed to IDL users in an IDL release 
-;   sometime in 2013, but it is not known when or if this will occur.
+; This program calculates user-specified percentiles of a data set.
+; A percentile is the value of a variable below which a certain percent 
+; of observations fall. In other words, 75% of the values in a data set 
+; fall below the 75th percentile of the data. Computing percentiles is 
+; really nothing more than counting in a sorted input array. A box-and-whisker
+; plot usually will display the 25th, 50th, and 75th percentiles.
+; 
+; A `commercial version <http://www.idlcoyote.com/coyotestore/index.php?main_page=product_info&cPath=2&products_id=196>`
+; of this program, containing a DIMENSION keyword, can be purchased from the Coyote Store. The 
+; DIMENSION keyword allows the user to calculate the percentiles over a particular dimension
+; of a multi-dimensional data set.
 ;
 ; :Categories:
-;    Utility
+;    Math
+;    
+; :Returns:
+;    The return value is either a scalar or vector of data values corresponding to 
+;    the number of percentiles asked for with the `Percentiles` keyword, or a -1 if
+;    there is an error in the program.
 ;    
 ; :Params:
-;    kml_filename: in, optional, type=string
-;         The name of a KML file to package as a KMZ file.
+;    data: in, required
+;         The data from which percentiles are desired. A vector or an array.
+;       
+; :Keywords:
+;    percentiles: in, optional, type=float
+;         Set this keyword to a scalar or vector of values between 0.0 and 1.0 
+;         to indicate the percentile desired. A value of 0.5 indicates the 50th
+;         percentile. Default value is [0.25, 0.50, 0.75].
 ;         
-;    supportfiles: in, optional, type=string
-;         A scalar or vector of files to be included with the KML file to be packaged.
-;         If not present, files in the same directory as the KML file and having the
-;         same base filename will be used.
-;       
 ; :Examples:
-;    Here is how to use this program with the Google Earth Image example in the
-;    `Coyote Gallery <http://www.idlcoyote.com/gallery/>`. The result is a file
-;    named "google_earth_image.kmz" that can be loaded into Google Earth.
-;       IDL> Google_Earth_Image
-;       IDL> kml2kmz, 'google_earth_image.kml'
-;       
+;    To return percentile values for 0.25, 0.50, and 0.75 of a data set::
+;       IDL> data = Randomu(3L, 100) * 100
+;       IDL> Print, cgPercentiles(data, Percentiles=[0.25, 0.5, 0.75])
+;                27.4920      45.3172      69.3138
+;                
 ; :Author:
 ;    FANNING SOFTWARE CONSULTING::
 ;       David W. Fanning 
@@ -73,54 +82,45 @@
 ;
 ; :History:
 ;     Change History::
-;        Written, 22 Fabruary 2013 by David W. Fanning.
+;        Written, 3 June 2013 by David W. Fanning.
 ;
 ; :Copyright:
 ;     Copyright (c) 2013, Fanning Software Consulting, Inc.
 ;-
-PRO cgKML2KMZ, kml_filename, supportFiles
+FUNCTION cgPercentiles, data, Percentiles=percentiles
 
    Compile_Opt idl2
    
+   ; Error handling.
    Catch, theError
    IF theError NE 0 THEN BEGIN
-      Catch, /CANCEL
+      Catch, /Cancel
       void = cgErrorMsg()
-      RETURN
+      RETURN, -1
    ENDIF
+
+   ; Assume the worst.
+   result = -1
    
-   ; Only in IDL 8 or above.
-   IF Float(!Version.Release) LT 8.0 THEN BEGIN
-      Message, 'The kml2kmz program is only supported in IDL 8 or higher.'
-   ENDIF
+   ; Input data is required.
+   IF N_Elements(data) EQ 0 THEN Message, 'Input data is required.'
    
-   ; Initialize the object.
-   void = {IDLitWriteKML}
+   ; Need default values for percentiles?
+   IF N_Elements(percentiles) EQ 0 THEN percentiles = [0.25, 0.50, 0.75]
    
-   ; Need a KML file name?
-   IF N_Elements(kml_filename) EQ 0 THEN BEGIN
-      kml_filename = cgPickfile(Filter='*.kml', Title='Select KML File...')
-      IF kml_filename EQ "" THEN RETURN
-   ENDIF
+   ; Percentile values must be GE 0 and LE 1.0.
+   index = Where((percentiles LT 0.0) OR (percentiles GT 1.0), count)
+   IF count GT 0 THEN Message, 'Percentiles must be numbers between 0.0 and 1.0.'
    
-   ; Get the root name of the KML file.
-   rootName = cgRootname(kml_filename, Extension=kmlExt, Directory=kmlDir)
-   IF StrUpCase(kmlExt) NE 'KML' THEN Message, 'Input file does not appear to be a KML file.'
+   ; Count the data elements.
+   num = N_Elements(data)
    
-   ; Construct the output filename.
-   kmzFilename = Filepath(ROOT_Dir=kmlDir, rootName + '.kmz')
+   ; Sort the data and find percentiles.
+   sortIndex = Sort(data)
+   sortIndices = cgScaleVector(Findgen(num+1), 0.0, 1.0)
+   dataIndices = Value_Locate(sortIndices, percentiles)
+   result = data[sortIndex[dataIndices]]
    
-   ; Are there any supporting files?
-   IF N_Elements(supportFiles) EQ 0 THEN BEGIN
-      CD, kmlDir, Current=thisDir
-      supportFiles = File_Search(rootName + '*.png', Count=count)
-   ENDIF
-   
-   ; Append the KML filename to the supportFile, if there are some.
-   IF N_Elements(supportFiles) NE 0 THEN supportFiles = [kml_filename, supportFiles]
-   
-   ; Move the files to the KMZ file.
-   void = IDLKML_SaveKMZ(kmzFilename, supportFiles)
+   RETURN, result
    
 END
-   

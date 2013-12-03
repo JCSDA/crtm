@@ -206,9 +206,15 @@
 ;           image, which was in turn causing the range values to be SAVED in the plotting system variables.
 ;           This interferred with backward compatibility with the TV command, so I have removed it. 31 Jan 2013. DWF. 
 ;       Whoops! Typo in my last fix. Getting too old, I guess. 6 Feb 2013. DWF.
+;       Setting any of the MISSING_*** keywords while doing multiple plots resulted in the value
+;           of !P.Multi being ignored for the image. This is fixed for now, but just a warning. Setting
+;           these keywords creates transparent images, and makes things MUCH more complicated. So, I'm 
+;           probably at the limit of what is possible now. :-) 30 April 2013. DWF.
+;       The LAYOUT keyword went on walkabout after the last changes. Restored to operation. 12 July 2013. DWF.
+;       The YTITLE keyword was missing when passed to cgWindow. Fixed now. 24 Oct 2013. DWF.
 ;       
 ; :Copyright:
-;     Copyright (c) 2011-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
 ;-
 ;
 ;+
@@ -242,7 +248,7 @@ FUNCTION cgImage_Make_Transparent_Image, image, transparent, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         success = 0
         RETURN, 0
     ENDIF
@@ -370,7 +376,7 @@ FUNCTION cgImage_Prepare_Alpha, image, alphaBackgroundImage, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /Cancel
-       ok = Error_Message()
+       ok = cgErrorMsg()
        IF Ptr_Valid(ptr) THEN BEGIN
             image = Temporary(*ptr)
             Ptr_Free, ptr
@@ -624,7 +630,7 @@ FUNCTION cgImage_Prepare_Output, image, xsize, ysize, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /Cancel
-       ok = Error_Message()
+       ok = cgErrorMsg()
        RETURN, image
     ENDIF
     
@@ -860,7 +866,9 @@ END
 ;    axkeywords: in, optional, type=structure
 ;         A structure of AXIS keywords and values that can be used to configure the axes
 ;         in whatever way the user desires. Many of the most often used axis keywords are available 
-;         as cgImage keywords.
+;         as cgImage keywords. For example::
+;            IDL> axis_format = {XTicks:4, XTickname:['Cow', 'Pig', 'Dog', 'Cat', 'Owl']}
+;            IDL> cgImage, cgDemoData(7), AXKEYWORDS=axis_format, /Axes, XRange=[0,20]
 ;    background: in, optional, type=string, default='white'
 ;         The name of the background color for the image display. Unlike the TV command in IDL,
 ;         the cgImage command will erase the display before executing the command like other
@@ -1047,7 +1055,7 @@ END
 ;            
 ;         All raster file output is created through PostScript intermediate files (the
 ;         PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;         to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;         to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;         details.) And also note that you should NOT use this keyword when doing multiple 
 ;         plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;         output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -1226,7 +1234,7 @@ PRO cgImage, image, x, y, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /Cancel
-       ok = Error_Message()
+       ok = cgErrorMsg()
        IF N_Elements(thisMulti) NE 0 THEN !P.Multi = thisMulti
        IF transparentImage THEN image = oldImage
        RETURN
@@ -1420,6 +1428,7 @@ PRO cgImage, image, x, y, $
                XRANGE=plotxrange, $
                XTITLE=plotxtitle, $
                YRANGE=plotyrange, $
+               YTITLE=plotytitle, $
                REPLACECMD=replacecmd, $
                _EXTRA=extra
              RETURN
@@ -1427,6 +1436,9 @@ PRO cgImage, image, x, y, $
     
     ; Obtain information about the size of the image.
     void = Image_Dimensions(image, XSIZE=imgXSize, YSIZE=imgYSize)
+    
+    ; Doing multiple plots?
+    IF (Total(!P.Multi) GT 0) || (N_Elements(layout) NE 0) THEN multi = 1 ELSE multi = 0
     
     ; Did you specify a color table index?
     TVLCT, r_start, g_start, b_start, /Get
@@ -1442,7 +1454,7 @@ PRO cgImage, image, x, y, $
     ; If transparent is turned on, and you are not overplotting, and you have a position in the window, then
     ; you have to adjust alphafgpos and position.
     IF (N_Elements(transparent) NE 0) && ~Keyword_Set(overplot) && (N_Elements(position) NE 0) THEN BEGIN
-        IF N_Elements(alphafgpos) EQ 0 THEN BEGIN
+        IF (N_Elements(alphafgpos) EQ 0) THEN BEGIN
              restorePosition = position
              alphafgpos = position
              position = [0,0,1,1]
@@ -1503,9 +1515,9 @@ PRO cgImage, image, x, y, $
                    alphabackgroundimage = cgSnapshot(POSITION=[0,0,1,1])
                 ENDIF ELSE Message, 'An AlphaBackgroundImage is required to create transparent images in PostScript.'
             ENDIF
-            IF N_Elements(alphabgpos) EQ 0 THEN alphabgpos = [0,0,1,1]
-            IF N_Elements(alphafgpos) EQ 0 THEN alphafgpos = [0,0,1,1]
-            IF N_Elements(position) EQ 0 THEN position= [0,0,1,1]
+            IF ~multi THEN IF N_Elements(alphabgpos) EQ 0 THEN alphabgpos = [0,0,1,1]
+            IF ~multi THEN IF N_Elements(alphafgpos) EQ 0 THEN alphafgpos = [0,0,1,1]
+            IF ~multi THEN IF N_Elements(position) EQ 0 THEN position= [0,0,1,1]
             noerase = 1
         ENDIF ELSE BEGIN
             image = oldImage
@@ -1625,7 +1637,7 @@ PRO cgImage, image, x, y, $
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -1673,9 +1685,6 @@ PRO cgImage, image, x, y, $
     IF N_Elements(charsize) EQ 0 THEN charsize = cgDefCharSize(FONT=font)
     IF N_Elements(color) EQ 0 THEN acolorname = 'opposite' ELSE acolorname = color
     interp = Keyword_Set(interp)
-    
-    ; Doing multiple plots?
-    IF Total(!P.Multi) GT 0 THEN multi = 1 ELSE multi = 0
     
     ; Check for image parameter and keywords.
     IF N_Elements(image) EQ 0 THEN MESSAGE, 'You must pass a valid image argument.'
@@ -2031,7 +2040,7 @@ PRO cgImage, image, x, y, $
                 ENDCASE
             'PS': BEGIN
                 IF (thisRelease GE 7.1) THEN BEGIN
-                   thisDecomposed = DecomposedColor(Depth=thisDepth)
+                   thisDecomposed = cgGetColorState(Depth=thisDepth)
                    Device, Decomposed=0
                 ENDIF ELSE thisDepth = 8
                 ENDCASE
@@ -2074,7 +2083,7 @@ PRO cgImage, image, x, y, $
              ENDCASE
           'PS': BEGIN
              IF (Float(!Version.Release) GE 7.1) THEN BEGIN
-                   thisDecomposed = DecomposedColor(Depth=thisDepth)
+                   thisDecomposed = cgGetColorState(Depth=thisDepth)
                    TVLCT, r, g, b, /GET
                    LoadCT, 0, /Silent
                    Device, DECOMPOSED=1, BITS_PER_PIXEL=8, COLOR=1
@@ -2477,7 +2486,7 @@ PRO cgImage, image, x, y, $
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $

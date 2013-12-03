@@ -199,7 +199,7 @@ FUNCTION cgMapGrid::INIT, mapCoord, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN, 0
     ENDIF
     
@@ -308,7 +308,7 @@ PRO cgMapGrid::AutoDrawGrid, SUCCESS=success
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         seccess = 0
         RETURN
     ENDIF
@@ -369,7 +369,7 @@ PRO cgMapGrid::AutoDrawGrid, SUCCESS=success
     ; Make sure we don't have a center latitude at either pole. If we
     ; do, then lons are calulated differently.
     IF (center_lat GT (90.-0.05)) && (center_lat LT (90.0 + 0.05)) THEN BEGIN
-       lats = Scale_Vector(Findgen(5), 0 > lat_min < 80) 
+       lats = cgScaleVector(Findgen(5), 0 > lat_min < 80) 
        latsdone = 1 
        IF lonstep GT 40 THEN BEGIN
           lons = Findgen(11) * 36
@@ -377,7 +377,7 @@ PRO cgMapGrid::AutoDrawGrid, SUCCESS=success
        ENDIF      
     ENDIF ELSE BEGIN
        IF (center_lat LT (-90.+0.05)) && (center_lat GT (-90.0 - 0.05)) THEN BEGIN
-           lats = Scale_Vector(Findgen(5), -80, 0 < lat_max)  
+           lats = cgScaleVector(Findgen(5), -80, 0 < lat_max)  
            latsdone = 1    
            IF lonstep GT 40 THEN BEGIN
               lons = Findgen(11) * 36
@@ -516,7 +516,7 @@ PRO cgMapGrid::Draw
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
         
@@ -603,7 +603,7 @@ PRO cgMapGrid::GetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
     
@@ -674,7 +674,7 @@ PRO cgMapGrid::SetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
     

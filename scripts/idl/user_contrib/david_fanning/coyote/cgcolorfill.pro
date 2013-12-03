@@ -120,8 +120,8 @@ PRO cgColorFill, x, y, z, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN
     ENDIF
 
@@ -149,7 +149,7 @@ PRO cgColorFill, x, y, z, $
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
     
     ; We are going to draw in decomposed color, if possible.
-    SetDecomposedState, 1, Current=currentState
+    cgSetColorState, 1, Current=currentState
 
     ; Use position to set up vectors?
     IF N_Elements(position) NE 0 THEN BEGIN
@@ -178,7 +178,7 @@ PRO cgColorFill, x, y, z, $
     ENDCASE
     
     ; Clean up.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
     IF !D.Name NE 'Z' THEN TVLCT, rr, gg, bb
    
 END

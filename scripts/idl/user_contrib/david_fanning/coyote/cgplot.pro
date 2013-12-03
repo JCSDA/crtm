@@ -84,7 +84,7 @@
 ;     font: in, optional, type=integer, default=!P.Font
 ;        The type of font desired for axis annotation.
 ;     isotropic: in, optional, type=boolean, default=0
-;        A short-hand way of setting the `Aspect` keyword to 1.
+;        Maintain the same scale on both axes.
 ;     label: in, optional, type=string
 ;        A label is similar to a plot title, but it is aligned to the left edge
 ;        of the plot and is written in hardware fonts. Use of the label keyword
@@ -129,7 +129,7 @@
 ;            
 ;        All raster file output is created through PostScript intermediate files (the
 ;        PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;        to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;        to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;        details.) And also note that you should NOT use this keyword when doing multiple 
 ;        plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;        output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -156,8 +156,39 @@
 ;     window: in, optional, type=boolean, default=0
 ;        Set this keyword to replace all the commands in a current cgWindow or to
 ;        create a new cgWindow for displaying this command.
+;     xrange: in, optional
+;         Set this keyword to a two-element vector setting the X axis range for the plot.
+;         If this keyword is used, and the `XStyle` keyword is NOT used, then XSTYLE is set to 1.
+;     xstyle: in, optional, type=integer
+;         This keyword is a bit map that allows a variety of axis options, depending upon which bit
+;         is set. Bits are set by adding the following values together when setting the value of
+;         the keyword::
+;            Value    Description
+;              0      Allow axis autoscaling.
+;              1      Turn axis autoscaling off, force exact axis range.
+;              2      Extend axis range.
+;              4      Suppress entire axis.
+;              8      Suppress box style axis. Draw only main axis.
+;         To suppress box axis style and force exact axis range, for example, set the keyword to 8+1=9::
+;             cgPlot, cgDemoData(1), XRange=[15,78], XStyle=9
 ;     xtitle: in, optional, type=string
 ;         The X title of the plot.
+;     yrange: in, optional
+;         Set this keyword to a two-element vector setting the Y axis range for the plot.
+;         If this keyword is used, and the `YStyle` keyword is NOT used, then YSTYLE is set to 1.
+;     ystyle: in, optional, type=integer
+;         This keyword is a bit map that allows a variety of axis options, depending upon which bit
+;         is set. Bits are set by adding the following values together when setting the value of
+;         the keyword::
+;            Value    Description
+;              0      Allow axis autoscaling.
+;              1      Turn axis autoscaling off, force exact axis range.
+;              2      Extend axis range.
+;              4      Suppress entire axis.
+;              8      Suppress box style axis. Draw only main axis.
+;             16      Inhibt setting the Y axis minimum value to 0.
+;         To suppress box axis style and force exact axis range, for example, set the keyword to 8+1=9::
+;             cgPlot, cgDemoData(1), YRange=[15,28], YStyle=9
 ;     ytitle: in, optional, type=string
 ;         The Y title of the plot.
 ;     _ref_extra: in, optional, type=any
@@ -185,7 +216,7 @@
 ;        Written, 12 November 2010. DWF.
 ;        Added SYMCOLOR keyword, and allow all 46 symbols from cgSYMCAT. 15 November 2010. DWF.
 ;        Added NODATA keyword. 15 November 2010. DWF.
-;        Now setting decomposition state by calling SetDecomposedState. 16 November 2010. DWF.
+;        Now setting decomposition state by calling cgSetColorState. 16 November 2010. DWF.
 ;        Final color table restoration skipped in Z-graphics buffer. 17 November 2010. DWF.
 ;        Fixed a problem with overplotting with symbols. 17 November 2010. DWF.
 ;        Background keyword now applies in PostScript file as well. 17 November 2010. DWF.
@@ -233,8 +264,13 @@
 ;         Modified code that checks to see if COLOR and AXISCOLOR keywords are the same as BACKGROUND and changes them.
 ;              This precludes drawing in background color on non-white backgrounds. Now only change the
 ;              colors if it is possible to draw a background color. 12 Feb 2013. DWF.
+;         Problem using symbol names (e.g., 'opencircle') in cgWindows is fixed. 10 May 2013. DWF.
+;         Changed the meaning of ISOTROPIC to its true meaning of keeping the same scale on both axes. 21 June 2013. DWF.
+;         Added XRANGE, XSTYLE, YRANGE, and YSTYLE keywords. This allows exact axis scaling if the XRANGE or YRANGE
+;             keywords are used without setting the XSTYLE or YSTYLE keywords, which is more intuitive. 15 July 2013. DWF.
+;         
 ; :Copyright:
-;     Copyright (c) 2010-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
 ;-
 PRO cgPlot, x, y, $
     ADDCMD=addcmd, $
@@ -262,7 +298,11 @@ PRO cgPlot, x, y, $
     TITLE=title, $
     TRADITIONAL=traditional, $
     WINDOW=window, $
+    XRANGE=xrange, $
+    XSTYLE=xstyle, $
     XTITLE=xtitle, $
+    YRANGE=yrange, $
+    YSTYLE=ystyle, $
     YTITLE=ytitle, $
     _REF_EXTRA=extra
     
@@ -271,10 +311,10 @@ PRO cgPlot, x, y, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         IF N_Elements(thisMulti) NE 0 THEN !P.Multi = thisMulti
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
-        IF (N_Elements(output) NE 0) THEN PS_END, /NOFIX
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
+        IF (N_Elements(output) NE 0) THEN cgPS_Close, /NOFIX
         RETURN
     ENDIF
     
@@ -285,15 +325,6 @@ PRO cgPlot, x, y, $
     IF N_Params() EQ 0 THEN BEGIN
         Print, 'USE SYNTAX: cgPlot, x, y'
         RETURN
-    ENDIF
-    
-    ; Check to see if psymIn is a string. If so, covert it here.
-    IF N_Elements(psymIn) NE 0 THEN BEGIN
-        IF Size(psymIn, /TNAME) EQ 'STRING' THEN BEGIN
-              names = cgSymCat(/Names) 
-              index = Where(STRUPCASE(StrCompress(names, /REMOVE_ALL)) EQ STRUPCASE(StrCompress(psymIN, /REMOVE_ALL)), count)
-              IF count GT 0 THEN psym = index[0] ELSE Message, 'Cannot resolve the PSYM value: ' + psymIn
-        ENDIF ELSE psym = psymIn
     ENDIF
     
     ; Pay attention to !P.Noerase in setting the NOERASE kewyord. This must be
@@ -326,12 +357,16 @@ PRO cgPlot, x, y, $
                 OPLOTS=oplots, $
                 OVERPLOT=overplot, $
                 POSITION=position, $
-                PSYM=psym, $
+                PSYM=psymIn, $
                 SYMCOLOR=ssymcolor, $
                 SYMSIZE=symsize, $
                 TITLE=title, $
                 TRADITIONAL=traditional, $
                 XTITLE=xtitle, $
+                XRANGE=xrange, $
+                XSTYLE=xstyle, $
+                YRANGE=yrange, $
+                YSTYLE=ystyle, $
                 YTITLE=ytitle, $
                 ADDCMD=1, $
                 _Extra=extra
@@ -358,12 +393,16 @@ PRO cgPlot, x, y, $
             OPLOTS=oplots, $
             OVERPLOT=overplot, $
             POSITION=position, $
-            PSYM=psym, $
+            PSYM=psymIn, $
             SYMCOLOR=ssymcolor, $
             SYMSIZE=symsize, $
             TITLE=title, $
             TRADITIONAL=traditional, $
             XTITLE=xtitle, $
+            XRANGE=xrange, $
+            XSTYLE=xstyle, $
+            YRANGE=yrange, $
+            YSTYLE=ystyle, $
             YTITLE=ytitle, $
             REPLACECMD=replaceCmd, $
             _Extra=extra
@@ -390,6 +429,15 @@ PRO cgPlot, x, y, $
     IF N_Elements(dep) EQ 1 THEN dep = [dep]
     IF N_Elements(indep) EQ 1 THEN indep = [indep]
     
+    
+    ; Check to see if psymIn is a string. If so, covert it here.
+    IF N_Elements(psymIn) NE 0 THEN BEGIN
+        IF Size(psymIn, /TNAME) EQ 'STRING' THEN BEGIN
+            names = cgSymCat(/Names)
+            index = Where(STRUPCASE(StrCompress(names, /REMOVE_ALL)) EQ STRUPCASE(StrCompress(psymIN, /REMOVE_ALL)), count)
+            IF count GT 0 THEN psym = index[0] ELSE Message, 'Cannot resolve the PSYM value: ' + psymIn
+        ENDIF ELSE psym = psymIn
+    ENDIF
     
     ; Are we doing some kind of output?
     IF (N_Elements(output) NE 0) && (output NE "") THEN BEGIN
@@ -488,7 +536,7 @@ PRO cgPlot, x, y, $
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -506,7 +554,7 @@ PRO cgPlot, x, y, $
     TVLCT, rr, gg, bb, /GET
     
     ; Going to do this in decomposed color, if possible.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
     
     ; If current state is "indexed color" and colors are represented as long integers then "fix" them.
     IF (currentState EQ 0) THEN BEGIN
@@ -534,6 +582,12 @@ PRO cgPlot, x, y, $
     IF N_Elements(title) EQ 0 THEN title = ""
     IF N_Elements(xtitle) EQ 0 THEN xtitle = ""
     IF N_Elements(ytitle) EQ 0 THEN ytitle = ""
+    IF N_Elements(xrange) NE 0 THEN BEGIN
+       IF N_Elements(xstyle) EQ 0 THEN xstyle = 1 
+    ENDIF
+    IF N_Elements(yrange) NE 0 THEN BEGIN
+        IF N_Elements(ystyle) EQ 0 THEN ystyle = 1
+    ENDIF
     title = cgCheckForSymbols(title)
     xtitle = cgCheckForSymbols(xtitle)
     ytitle = cgCheckForSymbols(ytitle)
@@ -585,7 +639,13 @@ PRO cgPlot, x, y, $
     
     ; Other keywords.
     IF N_Elements(symsize) EQ 0 THEN symsize = 1.0
-    IF Keyword_Set(isotropic) THEN aspect = 1.0
+    IF Keyword_Set(isotropic) THEN BEGIN
+        yscale = Max(dep)-Min(dep)
+        xscale = Max(indep)-Min(indep)
+        aspect = Float(yscale)/xscale
+        xstyle=1
+        ystyle=1
+    ENDIF
     IF N_Elements(psym) EQ 0 THEN psym = 0
     IF (N_Elements(aspect) NE 0) AND (Total(!P.MULTI) EQ 0) THEN BEGIN
     
@@ -642,7 +702,8 @@ PRO cgPlot, x, y, $
                     
                     ; Draw the plot that doesn't draw anything.
                     Plot, indep, dep, POSITION=position, CHARSIZE=charsize, /NODATA, $
-                        FONT=font, _STRICT_EXTRA=extra  
+                        FONT=font, XRANGE=xrange, XSTYLE=xstyle, YRANGE=yrange, YSTYLE=ystyle, $
+                        _STRICT_EXTRA=extra  
                     
                     ; Save the "after plot" system variables. Will use later. 
                     afterx = !X
@@ -680,7 +741,8 @@ PRO cgPlot, x, y, $
     ENDIF ELSE BEGIN
       Plot, indep, dep, BACKGROUND=background, COLOR=axiscolor, CHARSIZE=charsize, $
             POSITION=position, /NODATA, NOERASE=tempNoErase, FONT=font, TITLE=title, $
-            XTITLE=xtitle, YTITLE=ytitle, _STRICT_EXTRA=extra
+            XTITLE=xtitle, YTITLE=ytitle, XRANGE=xrange, YRANGE=yrange, $
+            XSTYLE=xstyle, YSTYLE=ystyle, _STRICT_EXTRA=extra
         IF psym LE 0 THEN BEGIN
            IF ~Keyword_Set(nodata) THEN OPlot, indep, dep, COLOR=color, _EXTRA=extra  
         ENDIF  
@@ -737,7 +799,7 @@ PRO cgPlot, x, y, $
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $
@@ -759,7 +821,7 @@ PRO cgPlot, x, y, $
     ENDIF
     
     ; Restore the decomposed color state if you can.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
     
     ; Restore the color table. Can't do this for the Z-buffer or
     ; the snap shot will be incorrect.

@@ -126,7 +126,7 @@
 ;            
 ;        All raster file output is created through PostScript intermediate files (the
 ;        PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;        to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;        to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;        details.) And also note that you should NOT use this keyword when doing multiple 
 ;        plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;        output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -235,6 +235,7 @@
 ;         Fixed a typo that was interfering with the YTITLE keyword. 3 Oct 2012. DWF.
 ;         Fixed a bug in the interaction of the NOERASE and OVERPLOT keywords. 14 Jan 2013. DWF.
 ;         Added a BARTHICK keyword to change the thickness of the bar outlines. 28 Feb 2013. DWF.
+;         Further work checking for NANs in the display of the data. NAN data set to length of 0. 3 Sept 2013. DWF.
 ;         
 ; :Copyright:
 ;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
@@ -275,9 +276,9 @@ PRO cgBarPlot, values, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /CANCEL
-       void = Error_Message()
+       void = cgErrorMsg()
         IF N_Elements(thisMulti) NE 0 THEN !P.Multi = thisMulti
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN
     ENDIF
     
@@ -463,7 +464,7 @@ PRO cgBarPlot, values, $
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -483,7 +484,7 @@ PRO cgBarPlot, values, $
     TVLCT, rr, gg, bb, /GET
     
     ; Going to do this in decomposed color, if possible.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
     
     ; If current state is "indexed color" and colors are represented as long integers then "fix" them.
     IF (currentState EQ 0) THEN BEGIN
@@ -611,7 +612,11 @@ PRO cgBarPlot, values, $
     FOR i=0,nbars-1 do BEGIN               ; Draw the bars
        width = winoffset+[barstart[i],barstart[i], $     ; Compute bar width
          (barstart[i]+barsize),(barstart[i]+barsize)]
-       length = [baselines[i], baselines[i]+values[i], baselines[i]+values[i], baselines[i]]
+       IF Finite(values[i]) EQ 0 THEN BEGIN
+          length = 0.0
+       ENDIF ELSE BEGIN
+          length = [baselines[i], baselines[i]+values[i], baselines[i]+values[i], baselines[i]]
+       ENDELSE
        IF (rotate) THEN BEGIN              ; Horizontal bars
           xy = Convert_Coord(length, [0,1,1,0], /DATA, /TO_NORMAL)  ; Compute bar length
           length=Transpose(xy[0,*])
@@ -652,7 +657,7 @@ PRO cgBarPlot, values, $
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $

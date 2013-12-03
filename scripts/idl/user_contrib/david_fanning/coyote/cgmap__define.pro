@@ -89,6 +89,13 @@
 ;            is not zero. I still attempt to fix this problem in the code (SetMapProjection method). 3 Jan 2012. DWF.
 ;        I added ASPECT and ISOTROPIC keywords to allow the setting of the aspect ratio of the map. 3 Jan 2012. DWF.
 ;        Added zone to the information returned with MapInfo method if projection is UTM. 25 April 2013. DWF.
+;        The map aspect was disappearing because Total(!P.Multi) can occasionally be LT 0! Fixed. 3 July 2013. DWF.
+;        Added Hughes ellipsoid, used at NSIDC, as index 26 or as "Hughes". 11 Sept 2013. DWF.
+;        Fixed a bug in the way ellipsoids were selected when using numbers to choose elliposids. All ellipsoids
+;           with values over 20 were affected. 18 Sept 2013. DWF.
+;        Added FORMAT keyword to LanLonLabels method. 27 November 2013. DWF.
+;        Change EASTING and NORTHING keywords to FALSE_EASTING and FALSE_NOTHING to conform to Map_Proj_Init. 29 Nov 2013. DWF.
+;        Forgetting to add the false_easting and false_northing values to the structure in INIT method. 29 Nov 2013. DWF.
 ;        
 ; :Copyright:
 ;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
@@ -143,13 +150,22 @@
 ;        Set this to the name or index number of the ellopsoid or datum you wish to use
 ;        for the map projection. The value is passed directly to Map_Proj_Init. The
 ;        default is a sphere for those projections that only support a sphere, otherwise
-;        a Clark projection is used to conform to Map_Proj_Init defaults.
-;     fill: in, optional, type=boolean, default=0
-;        Set this keyword to display filled continents, if the keyword CONTINENTS is set.
+;        a Clark projection is used to conform to Map_Proj_Init defaults. Added the "Hughes"
+;        datum, which is used at NSIDC. Use "Hughes" or index number 25.
 ;     erase: in, optional, type=boolean, default=0
 ;        Set this keyword if you wish to have the object erase the current graphics display
 ;        before drawing its content in the DRAW method. The graphics display will be erased
 ;        in the background color.
+;     false_easting: in, optional, type=double, default=0.0
+;        Set this keyword to the false easting value (in meters) to be added to each x 
+;        coordinate for the forward transform, or subtracted from each x coordinate for 
+;        the inverse transform.
+;     false_northing: in, optional, type=double, default=0.0
+;        Set this keyword to the false northing value (in meters) to be added to each y 
+;        coordinate for the forward transform, or subtracted from each y coordinate for 
+;        the inverse transform.
+;     fill: in, optional, type=boolean, default=0
+;        Set this keyword to display filled continents, if the keyword CONTINENTS is set.
 ;     gcolor: in, optional, type=string, default='gray'
 ;        The name of the drawing color for the MapGrid object if this is requested.
 ;     grid: in, optional, type=boolean, default=0
@@ -248,9 +264,10 @@ FUNCTION cgMap::INIT, map_projection, $
     CONTINENTS=continents, $
     DATUM=datum, $
     DRAW=draw, $
-    EASTING=easting, $
     ELLIPSOID=ellipsoid, $
     ERASE=erase, $
+    FALSE_EASTING=easting, $
+    FALSE_NORTHING=northing, $
     FILL=fill, $
     GCOLOR=gcolor, $
     GRID=grid, $
@@ -263,7 +280,6 @@ FUNCTION cgMap::INIT, map_projection, $
     NAME=name, $
     NOBORDER=noborder, $
     NOFORWARDFIX=noForwardFix, $
-    NORTHING=northing, $
     ONIMAGE=onimage, $
     POSITION=position, $
     RADIANS=radians, $
@@ -283,7 +299,7 @@ FUNCTION cgMap::INIT, map_projection, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, 0
    ENDIF
       
@@ -376,7 +392,7 @@ FUNCTION cgMap::INIT, map_projection, $
    theDatums[5] =  { cgMap_DATUM,  5, 'WGS 72', 6378135.0, 6356750.519915  }
    theDatums[6] =  { cgMap_DATUM,  6, 'Everst', 6377276.3452 , 6356075.4133 }
    theDatums[7] =  { cgMap_DATUM,  7, 'WGS 66', 6378145.0 , 6356759.769356  }
-   theDatums[8] =  { cgMap_DATUM,  8, 'WGS 84', 6378137.0, 6356752.314245 }
+   theDatums[8] =  { cgMap_DATUM,  8, 'GRS 1980', 6378137.0, 6356752.31414 }
    theDatums[9] =  { cgMap_DATUM,  9, 'Airy', 6377563.396, 6356256.91  }
    theDatums[10] = { cgMap_DATUM, 10, 'Modified Everest', 6377304.063, 6356103.039 }
    theDatums[11] = { cgMap_DATUM, 11, 'Modified Airy', 6377340.189, 6356034.448  }
@@ -388,17 +404,23 @@ FUNCTION cgMap::INIT, map_projection, $
    theDatums[17] = { cgMap_DATUM, 17, 'Mercury 1960', 6378166.0, 6356784.283666  }
    theDatums[18] = { cgMap_DATUM, 18, 'Modified Mercury 1968', 6378150.0, 6356768.337303 }
    theDatums[19] = { cgMap_DATUM, 19, 'Sphere', 6370997.0, 6370997.0 }
-   theDatums[20] = { cgMap_DATUM,  8, 'GRS 1980', 6378137.0, 6356752.31414 }
+   IF Float(!Version.Release) GE 8.0 THEN BEGIN
+        theDatums[20] = { cgMap_DATUM,  24, 'WGS 84', 6378137.0, 6356752.314245 }
+   ENDIF ELSE BEGIN
+        theDatums[20] = { cgMap_DATUM,  8, 'WGS 84', 6378137.0, 6356752.314245 }
+   ENDELSE
    
    ; Since I already have "WGS 84" in the list, and since IDL 8 introduces an ellipsoid 
    ; with this name, I am going to use index 24 to list the more commonly used "WGS84" name.
+   ; Add "Hughes" as index 25.
    IF Float(!Version.Release) GE 8.0 THEN BEGIN
       theDatums = [theDatums, $
                   { cgMap_DATUM, 20, 'Clarke IGN', 6378249.2, 6356515.0 }, $
                   { cgMap_DATUM, 21, 'Helmert 1906', 6378200.0, 6356818.2 }, $
                   { cgMap_DATUM, 22, 'Modified Fischer 1960', 6378115.0, 6356773.3 }, $
                   { cgMap_DATUM, 23, 'South American 1969', 6378160.0, 6356774.7 }, $
-                  { cgMap_DATUM, 24, 'WGS84', 6378137.0, 6356752.314245 }]
+                  { cgMap_DATUM, 24, 'WGS84', 6378137.0, 6356752.314245 }, $
+                  { cgMap_DATUM, 26, 'Hughes', 6378273.00, 6356889.4 } ]
        
    ENDIF
    
@@ -411,18 +433,23 @@ FUNCTION cgMap::INIT, map_projection, $
         thisDatum = theDatums[19] 
    ENDIF ELSE BEGIN
         IF Size(datum, /TNAME) EQ 'STRING' THEN BEGIN
-            index = Where(StrUpCase(theDatums.name) EQ StrUpCase(datum))
+            datumIndex = Where(StrUpCase(theDatums.name) EQ StrUpCase(datum))
+            datumIndex = datumIndex[0]
             
             ; If you can't find one, try compressing the names.
-            IF index[0] EQ -1 THEN BEGIN
-               index = Where(StrCompress(StrUpCase(theDatums.name), /Remove_All) EQ $
-                    StrCompress(StrUpCase(datum), /Remove_All))
+            IF datumIndex[0] EQ -1 EQ 0 THEN BEGIN
+               datumIndex = Where(StrCompress(StrUpCase(theDatums.name), /Remove_All) EQ $
+                    StrCompress(StrUpCase(datum), /Remove_All), nameCount)
             ENDIF
             
             ; Now if you can't find one, report it.
-            IF index[0] EQ -1 THEN Message, 'Cannot find datum ' + datum + ' in datum list.' 
-            thisDatum = theDatums[index[0]]
-        ENDIF ELSE thisDatum = theDatums[0 > datum < (N_Elements(theDatums)-1)]
+            IF datumIndex[0] EQ -1 THEN Message, 'Cannot find datum ' + datum + ' in datum list.' 
+            thisDatum = theDatums[datumIndex]
+        ENDIF ELSE BEGIN
+            datumIndex = Where(theDatums.index EQ datum, count)
+            IF count GT 0 THEN thisDatum = theDatums[datumIndex[0]] ELSE Message, 'Cannot find datum ' + StrTrim(datum,2) + ' in datum list.' 
+        ENDELSE
+        IF N_Elements(thisDatum) GT 1 THEN thisDatum = thisDatum[0]
    ENDELSE
    
    ; There is a bug in all versions of IDL up to IDL 8.1 apparently that
@@ -430,8 +457,8 @@ FUNCTION cgMap::INIT, map_projection, $
    ; with a WGS84 datum (the most common datum used in this projection). Here
    ; we substitute the WALBECK datum, which is nearly identical to WGS84 are
    ; results in position errors of less than a meter typically.
-   IF ((StrUpCase(thisDatum.Name) EQ 'WGS 84') || (StrUpCase(thisDatum.Name) EQ 'WGS84')) && $
-      (StrUpCase(this_map_projection.Name) EQ 'UTM') && $
+   IF ((StrUpCase((thisDatum.Name)[0]) EQ 'WGS 84') || (StrUpCase((thisDatum.Name)[0]) EQ 'WGS84')) && $
+      (StrUpCase((this_map_projection.Name)[0]) EQ 'UTM') && $
       (Float(!version.release) LT 8.2) THEN BEGIN
           Print, 'Switching UTM datum from WGS84 to WALBECK to avoid UTM projection bug.'
           thisDatum = { cgMAP_DATUM, 12, 'Walbeck', 6378137.0, 6356752.314245 }
@@ -460,10 +487,12 @@ FUNCTION cgMap::INIT, map_projection, $
    self._cg_center_latitude = center_latitude
    self._cg_center_longitude = center_longitude
    self._cg_color = color
+   self._cg_easting = easting
    self._cg_erase = erase
    self._cg_multi_position = FltArr(4)
    self._cg_noborder = Keyword_Set(noborder)
    self._cg_noforwardfix = Keyword_Set(noforwardfix)
+   self._cg_northing = northing
    self._cg_onimage = Keyword_Set(onimage)
    self._cg_radians = Keyword_Set(radians)
    self._cg_theDatums = Ptr_New(theDatums)
@@ -677,7 +706,7 @@ PRO cgMap::Draw, ERASE=erase, NOGRAPHICS=nographics, _EXTRA=extra
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
     ENDIF
     
@@ -719,7 +748,7 @@ PRO cgMap::Draw, ERASE=erase, NOGRAPHICS=nographics, _EXTRA=extra
     ENDIF
     
     ; Do you need an aspect ratio?
-    IF (self._cg_aspect NE 0.0) AND (Total(!P.MULTI) EQ 0) THEN BEGIN
+    IF (self._cg_aspect NE 0.0) AND (Total(!P.MULTI) LT 0) THEN BEGIN
         
       position = self._cg_position
        
@@ -841,7 +870,7 @@ FUNCTION cgMap::Forward, lons, lats, mapStruct, NOFORWARDFIX=noForwardFix
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, -1
     ENDIF
     
@@ -924,7 +953,7 @@ END
 ;     latlonbox: out, optional, type=array
 ;        A four-element array giving the boundaries of the map projection in the
 ;        Google Map form of [north, south, east, west]. This is useful when you
-;        are creating image overlays to be added to Goggle Earth.
+;        are creating image overlays to be added to Google Earth.
 ;     overlays: out, optional, type=object
 ;        Set this keyword to a named variable that will return an object
 ;        array containing the overlay objects in the map object.
@@ -938,9 +967,10 @@ PRO cgMap::GetProperty, $
     COLOR=color, $
     DATUM=datum, $
     DRAW=draw, $
-    EASTING=easting, $
     ELLIPSOID=ellipsoid, $
     ERASE=erase, $
+    FALSE_EASTING=easting, $
+    FALSE_NORTHING=northing, $
     HIRES=hires, $
     LATLONBOX=latlonbox, $
     LIMIT=limit, $
@@ -948,7 +978,6 @@ PRO cgMap::GetProperty, $
     NAME=name, $
     NOBORDER=noborder, $
     NOFORWARDFIX=noforwardfix, $
-    NORTHING=northing, $
     ONIMAGE=onimage, $
     OVERLAYS=overlays, $
     POSITION=position, $
@@ -968,7 +997,7 @@ PRO cgMap::GetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
     ENDIF
    
@@ -1080,7 +1109,7 @@ FUNCTION cgMap::Inverse, x, y
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, -1
     ENDIF
     
@@ -1104,6 +1133,8 @@ END
 ;   created.
 ;
 ; :Keywords:
+;     format: in, optional, type=string
+;        The normal format string for the labels.
 ;     latdelta: in, optional, type=float
 ;        The degree spacing in latitude between latitude lines.
 ;     latlab: out, optional, type=float
@@ -1127,6 +1158,7 @@ END
 ;        this value is set to 0.
 ;--------------------------------------------------------------------------
 PRO cgMap::LatLonLabels, $
+    FORMAT=format, $
     LATDELTA=latdelta, $
     LATLAB=latlab, $
     LATNAMES=latnames, $
@@ -1141,7 +1173,7 @@ PRO cgMap::LatLonLabels, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /Cancel
-        void = Error_Message()
+        void = cgErrorMsg()
         success = 0
         RETURN
     ENDIF
@@ -1213,7 +1245,7 @@ PRO cgMap::LatLonLabels, $
     ; Make sure we don't have a center latitude at either pole. If we
     ; do, then lons are calulated differently.
     IF (center_lat GT (90.-0.05)) && (center_lat LT (90.0 + 0.05)) THEN BEGIN
-       lats = Scale_Vector(Findgen(5), 0 > Round(lat_min) < 80, 80) 
+       lats = cgScaleVector(Findgen(5), 0 > Round(lat_min) < 80, 80) 
        latsdone = 1 
        IF lonstep GT 40 THEN BEGIN
           lons = Findgen(11) * 36 
@@ -1221,7 +1253,7 @@ PRO cgMap::LatLonLabels, $
        ENDIF      
     ENDIF ELSE BEGIN
        IF (center_lat LT (-90.+0.05)) && (center_lat GT (-90.0 - 0.05)) THEN BEGIN
-           lats = Scale_Vector(Findgen(5), -80, 0 < Round(lat_max))  
+           lats = cgScaleVector(Findgen(5), -80, 0 < Round(lat_max))  
            latsdone = 1    
            IF lonstep GT 40 THEN BEGIN
               lons = Findgen(11) * 36 
@@ -1338,9 +1370,10 @@ PRO cgMap::LatLonLabels, $
     lonlab = (lats[index] - lats[index-1]) / 2.0 + lats[index-1]
 
     ; Set up the latitude and longitude names.
-    IF Total(lats-Long(lats)) EQ 0 THEN format='(I0)' ELSE format='(F0.2)'
+    IF N_Elements(format) EQ 0 THEN BEGIN
+      IF (Total(lats-Long(lats)) EQ 0) THEN format='(I0)' ELSE format='(F0.2)'
+    ENDIF
     latnames = String(lats, FORMAT=format)
-    IF Total(lons-Long(lons)) EQ 0 THEN format='(I0)' ELSE format='(F0.2)'
     lonnames = String(lons, FORMAT=format)
     
  END
@@ -1358,7 +1391,7 @@ FUNCTION cgMap::MapInfo
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, -1
     ENDIF
    
@@ -1438,6 +1471,14 @@ END
 ;        Set this keyword if you wish to have the object erase the current graphics display
 ;        before drawing its content in the DRAW method. The graphics display will be erased
 ;        in the background color.
+;     false_easting: in, optional, type=double, default=0.0
+;        Set this keyword to the false easting value (in meters) to be added to each x
+;        coordinate for the forward transform, or subtracted from each x coordinate for
+;        the inverse transform.
+;     false_northing: in, optional, type=double, default=0.0
+;        Set this keyword to the false northing value (in meters) to be added to each y
+;        coordinate for the forward transform, or subtracted from each y coordinate for
+;        the inverse transform.
 ;     gcolor: in, optional, type=string, default='gray'
 ;        The name of the drawing color for the MapGrid object if this is requested.
 ;     grid: in, optional, type=boolean, default=0
@@ -1521,9 +1562,10 @@ PRO cgMap::SetProperty, $
     CONTINENTS=continents, $
     DATUM=datum, $
     DRAW=draw, $
-    EASTING=easting, $
     ELLIPSOID=ellipsoid, $
     ERASE=erase, $
+    FALSE_EASTING=easting, $
+    FALSE_NORTHING=northing, $
     GCOLOR=gcolor, $
     GRID=grid, $
     HIRES=hires, $
@@ -1534,7 +1576,6 @@ PRO cgMap::SetProperty, $
     NAME=name, $
     NOBORDER=noborder, $
     NOFORWARDFIX=noForwardFix, $
-    NORTHING=northing, $
     ONIMAGE=onimage, $
     POSITION=position, $
     RADIANS=radians, $
@@ -1553,7 +1594,7 @@ PRO cgMap::SetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
     ENDIF
       
@@ -1577,7 +1618,7 @@ PRO cgMap::SetProperty, $
             index = Where(StrUpCase((*self._cg_theDatums).name) EQ StrUpCase(datum))
             IF index[0] EQ -1 THEN Message, 'Cannot find datum ' + datum + ' in datum list.' 
             thisDatum = (*self._cg_theDatums)[index]
-        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > datum < 19]
+        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > datum < 25]
         self._cg_thisDatum = thisDatum
    ENDIF
    
@@ -1587,7 +1628,7 @@ PRO cgMap::SetProperty, $
             index = Where(StrUpCase((*self._cg_theDatums).name) EQ StrUpCase(ellipsoid))
             IF index[0] EQ -1 THEN Message, 'Cannot find ellipsoid ' + ellipsoid + ' in datum list.' 
             thisDatum = (*self._cg_theDatums)[index]
-        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > ellipsoid < 19]
+        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > ellipsoid < 25]
         self._cg_thisDatum = thisDatum
    ENDIF
 
@@ -1754,10 +1795,10 @@ FUNCTION cgMap::SetMapProjection, map_projection, $
     CENTER_LATITUDE=center_latitude, $
     CENTER_LONGITUDE=center_longitude, $
     DATUM=datum, $
-    EASTING=easting, $
+    FALSE_EASTING=easting, $
+    FALSE_NORTHING=northing, $
     ELLIPSOID=ellipsoid, $
     LIMIT=limit, $
-    NORTHING=northing, $
     RADIANS=radians, $
     SEMIMAJOR_AXIS=semimajor_axis, $
     SEMIMINOR_AXIS=semiminor_axis, $
@@ -1770,7 +1811,7 @@ FUNCTION cgMap::SetMapProjection, map_projection, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, 1
     ENDIF
    
@@ -1795,7 +1836,7 @@ FUNCTION cgMap::SetMapProjection, map_projection, $
             index = Where(StrUpCase((*self._cg_theDatums).name) EQ StrUpCase(datum))
             IF index[0] EQ -1 THEN Message, 'Cannot find datum ' + datum + ' in datum list.' 
             thisDatum = (*self._cg_theDatums)[index]
-        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > datum < 24]
+        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > datum < 25]
         self._cg_thisDatum = thisDatum
    ENDIF
 
@@ -1805,7 +1846,7 @@ FUNCTION cgMap::SetMapProjection, map_projection, $
             index = Where(StrUpCase((*self._cg_theDatums).name) EQ StrUpCase(ellipsoid))
             IF index[0] EQ -1 THEN Message, 'Cannot find ellipsoid ' + ellipsoid + ' in datum list.' 
             thisDatum = (*self._cg_theDatums)[index]
-        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > ellipsoid < 24]
+        ENDIF ELSE thisDatum = (*self._cg_theDatums)[0 > ellipsoid < 25]
         self._cg_thisDatum = thisDatum
    ENDIF
    
@@ -1967,7 +2008,7 @@ PRO cgMap::CLEANUP
     Catch, theError
     IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
     ENDIF
    

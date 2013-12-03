@@ -130,14 +130,14 @@ PRO cgPolygon, x, y, z, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN
     ENDIF
 
     ; Did user pass parameters?
     IF (N_Params() EQ 0) AND (N_Elements(position) EQ 0) THEN BEGIN
-        Print, 'USE SYNTAX: cgColorFill, x, y, [z]'
+        Print, 'USE SYNTAX: cgPolygon, x, y, [z]'
         RETURN
     ENDIF
     
@@ -150,7 +150,7 @@ PRO cgPolygon, x, y, z, $
         
         ; If adding a command, have to do this differently.
         IF Keyword_Set(addcmd) THEN BEGIN
-           cgWindow, 'cgColorFill', x, y, z, $
+           cgWindow, 'cgPolygon', x, y, z, $
               COLOR=color, $
               FCOLOR=fcolor, $
               FILL=fill, $
@@ -165,7 +165,7 @@ PRO cgPolygon, x, y, z, $
         ENDIF ELSE BEGIN
         
            ; Otherwise, we are just replacing the commands in a new or existing window.
-           cgWindow, 'cgColorFill', x, y, z, $
+           cgWindow, 'cgPolygon', x, y, z, $
               COLOR=color, $
               FCOLOR=fcolor, $
               FILL=fill, $
@@ -184,7 +184,7 @@ PRO cgPolygon, x, y, z, $
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
     
     ; We are going to draw in decomposed color, if possible.
-    SetDecomposedState, 1, Current=currentState
+    cgSetColorState, 1, Current=currentState
        
     ; If current state is "indexed color" and colors are represented as long integers then "fix" them.
     IF (currentState EQ 0) THEN BEGIN
@@ -240,7 +240,7 @@ PRO cgPolygon, x, y, z, $
     ENDCASE
     
     ; Clean up.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
     IF !D.Name NE 'Z' THEN TVLCT, rr, gg, bb
    
 END

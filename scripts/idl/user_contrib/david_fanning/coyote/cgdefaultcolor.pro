@@ -61,7 +61,7 @@
 ;         A color of any type allowed as the `inputColour`. Used if the `inputColour` is undefined.
 ;     mode: in, optional, type=boolean
 ;         The color mode. A 0 mean indexed color mode. A 1 means decomposed color mode.
-;         If not supplied in the call, the color mode is determined at run-time with `GetDecomposedState`.
+;         If not supplied in the call, the color mode is determined at run-time with `cgGetColorState`.
 ;         The color mode is *always* determined at run time if the current graphics device 
 ;         is the PostScript device.
 ;     traditional: in, optional, type=boolean, default=0
@@ -105,6 +105,7 @@
 ;        Now setting all background colors to WHITE, not BACKGROUND. 16 Dec 2012. DWF.
 ;        Whoops! Forgot one of the background colors in the Traditional section. 11 Jan 2013. DWF.
 ;        Made the counters in the loops long integers to accommodate large color vectors. 29 Apr 2013. Joe Sapp.
+;        Better error handling if/when long integers are used in indexed color mode. 17 Sept 2013. DWF.
 ;        
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
@@ -127,7 +128,7 @@ FUNCTION cgDefaultColor, inputColour, $
     ; are in the PostScript file (since we try to draw in DECOMPOSED mode always).
     ; But, if we are TOLD what mode to use, we have to honor that, even in PostScript.
     IF ((N_Elements(mode) EQ 0) || (!D.Name EQ 'PS')) THEN BEGIN
-       thisMode = GetDecomposedState()
+       thisMode = cgGetColorState()
        IF (N_Elements(mode) NE 0) THEN thisMode = Keyword_Set(mode)
     ENDIF ELSE thisMode = Keyword_Set(mode)
     traditional = Keyword_Set(traditional)
@@ -183,6 +184,7 @@ FUNCTION cgDefaultColor, inputColour, $
     ; integer if the MODE is 0, or indexed color, and the value is 
     ; between 0 and 255. If it is a string, we can return it directly.
     thisType = Size(inputcolor, /TNAME)
+    
     TVLCT, r, g, b, /GET
     IF (thisType EQ 'BYTE') && (thisMode EQ 0) THEN BEGIN
         RETURN, inputColor 
@@ -199,6 +201,12 @@ FUNCTION cgDefaultColor, inputColour, $
     IF (thisType EQ 'INT') && (thisMode EQ 1) THEN BEGIN
         ncolors = N_Elements(inputColor)
         colors = LonArr(ncolors)
+        
+        ; Make sure the input color is in the range 0 to 255
+        index = Where((inputcolor GT 255) OR (inputcolor LT 0), count)
+        IF count GT 0 THEN BEGIN
+            Message, 'Improper input color. It is possible 24-bit colors (LONGs) are being used in indexed color mode to specify colors.'
+        ENDIF
         FOR j=0L,ncolors-1 DO colors[j] = cgColor24([r[inputColor[j]], g[inputColor[j]], b[inputColor[j]]]) 
         IF N_Elements(colors) EQ 1 THEN RETURN, colors[0] ELSE RETURN, colors
     ENDIF 

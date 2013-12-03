@@ -71,6 +71,9 @@
 ;     im_resize: in, optional, type=integer, default=25
 ;         Set this keyword to percentage that the raster image file created my ImageMagick
 ;         from PostScript output should be resized.
+;     im_tiff_depth: in, optional, type=integer, default=8
+;         Set this keyword to the number of bits per channel in TIFF file output. Allowed values
+;         are 8, 16, and 32.
 ;     im_transparent: in, optional, type=boolean, default=0
 ;         Set this keyword to allow ImageMagick to create transparent backgrounds when it
 ;         makes raster image files from PostScript output.
@@ -99,13 +102,13 @@
 ;         Set this keyword to zero if you want to keep the PostScript output ImageMagick creates
 ;         when making raster file output.
 ;     ps_encapsulated: in, optional, type=boolean, default=0
-;          Set this keyword to configure PSCONFIG to produce encapsulated PostScript output by default.
+;          Set this keyword to configure cgPS_Config to produce encapsulated PostScript output by default.
 ;     ps_font: in, optional, type=integer, default=0
 ;          Set this to the !P.Font value to use for creating PostScript files.
 ;     ps_metric: in, optional, type=boolean, default=0
-;          Set this keyword to configure PSCONFIG to use metric values and A4 page size in its interface.
+;          Set this keyword to configure cgPS_Config to use metric values and A4 page size in its interface.
 ;     ps_quiet: in, optional, type=boolean, default=0
-;          Set this keyword to suppress output messages from PS_Start and PS_End.
+;          Set this keyword to suppress output messages from cgPS_Open and cgPS_Close.
 ;     ps_scale_factor: in, optional, type=float, default=1.0
 ;          Set this keyword to the PostScript scale factor you want to use for PostScript output.
 ;     ps_tt_font: in, optional, type=string, default="Helvetica"
@@ -158,6 +161,7 @@
 ;        Added PDF_UNIX_CONVERT_CMD and PDF_PATH keywords. 7 Dec 2011. DWF.
 ;        Added IM_WIDTH keyword. 3 April 2012. DWF.
 ;        Added IM_PNG8 keyword. 3 April 2012. DWF.
+;        Added IM_TIFF_DEPTH keyowrd. 14 May 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
@@ -173,6 +177,7 @@ PRO cgWindow_SetDefs, $
    IM_Options = im_options, $                      ; Sets extra ImageMagick options on the ImageMagick convert command.
    IM_Raster = im_raster, $                        ; Sets thee raster via ImageMagick setting.
    IM_Resize = im_resize, $                        ; Sets the resize parameter on ImageMagick convert command.
+   IM_TIFF_Depth = im_tiff_depth, $                ; Set the channel depth of TIFF files on ImageMagick convert command.
    IM_Transparent = im_transparent, $              ; Sets the "alpha" keyword on ImageMagick convert command.
    IM_Width=im_width, $                            ; Set the width of raster file output from PostScript files.
    Multi = multi, $                                ; Set this in the same way !P.Multi is used.   
@@ -185,9 +190,9 @@ PRO cgWindow_SetDefs, $
    PS_Encapsulated = ps_encapsulated, $            ; Create Encapsulated PostScript output.
    PS_FONT=ps_font, $                              ; Select the font for PostScript output.
    PS_CHARSIZE=ps_charsize, $                      ; Select the character size for PostScript output.
-   PS_QUIET=ps_quiet, $                            ; Select the QUIET keyword for PS_START.
+   PS_QUIET=ps_quiet, $                            ; Select the QUIET keyword for cgPS_Open.
    PS_SCALE_FACTOR=ps_scale_factor, $              ; Select the scale factor for PostScript output.
-   PS_TT_FONT=ps_tt_font, $                           ; Select the true-type font to use for PostScript output.
+   PS_TT_FONT=ps_tt_font, $                        ; Select the true-type font to use for PostScript output.
    Reset=reset, $                                  ; Reset to original values. 
    XOMargin = xomargin, $                          ; Set the !X.OMargin. A two element array.
    YOMargin = yomargin, $                          ; Set the !Y.OMargin. A two element array
@@ -228,6 +233,7 @@ PRO cgWindow_SetDefs, $
             IF cgHasImageMagick() THEN im_raster = 1 ELSE im_raster = 0
         ENDIF
         IF N_Elements(im_resize) EQ 0 THEN im_resize = 25
+        IF N_Elements(im_tiff_depth) EQ 0 THEN im_tiff_depth = 8
         IF N_Elements(im_transparent) EQ 0 THEN im_transparent = 0
         IF N_Elements(im_width) EQ 0 THEN im_width = 0
         IF N_Elements(pdf_unix_convert_cmd) EQ 0 THEN pdf_unix_convert_cmd = ""
@@ -263,6 +269,7 @@ PRO cgWindow_SetDefs, $
            IM_Options:im_options, $                      ; Sets extra ImageMagick options on the ImageMagick convert command.
            IM_Raster:im_raster, $                        ; Sets the raster via ImageMagick setting.
            IM_Resize:im_resize, $                        ; Sets the resize parameter on ImageMagick convert command.
+           IM_TIFF_Depth:im_tiff_depth, $                ; Sets the channel depth of TIFF files on ImageMagick convert command.
            IM_Transparent:im_transparent, $              ; Sets the "alpha" keyword on ImageMagick convert command.
            IM_Width:im_width, $                          ; Sets the width of raster output on raster files created with ImageMagick.
            PDF_UNIX_Convert_Cmd: pdf_unix_convert_cmd, $ ; Sets the PDF alternative conversion command.
@@ -273,7 +280,7 @@ PRO cgWindow_SetDefs, $
            PS_Encapsulated:ps_encapsulated, $            ; Create Encapsulated PostScript output.
            PS_Charsize:ps_charsize, $                    ; PostScript character size.
            PS_Font:ps_font, $                            ; PostScript font to use.
-           PS_Quiet:ps_quiet, $                          ; PostScript QUIET keyword on PS_Start.
+           PS_Quiet:ps_quiet, $                          ; PostScript QUIET keyword on cgPS_Open.
            PS_Scale_Factor:ps_scale_factor, $            ; PostScript scale_factor
            PS_TT_Font:ps_tt_font }                       ; PostScript true-type font.
            
@@ -303,6 +310,7 @@ PRO cgWindow_SetDefs, $
         IF N_Elements(im_options) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_options = im_options
         IF N_Elements(im_raster) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_raster = im_raster
         IF N_Elements(im_resize) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_resize = im_resize
+        IF N_Elements(im_tiff_depth) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_tiff_depth = im_tiff_depth
         IF N_Elements(im_transparent) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_transparent = Keyword_Set(im_transparent)
         IF N_Elements(im_width) NE 0 THEN !FSC_WINDOW_DEFAULTS.im_width = im_width
         IF N_Elements(raster_im) NE 0 then !FSC_WINDOW_DEFAULTS.raster_im = raster_im

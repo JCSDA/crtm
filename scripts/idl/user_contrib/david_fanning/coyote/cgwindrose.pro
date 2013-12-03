@@ -63,6 +63,7 @@
 ; :History:
 ;     Change History::
 ;        Written, 7 March 2013 by David W. Fanning.
+;        Fixed error in which I was assuming some calm winds. 23 May 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2013, Fanning Software Consulting, Inc.
@@ -94,7 +95,7 @@ FUNCTION cgWindRoseArc, xcenter, ycenter, radius, angle1, angle2
     IF N_Elements(angle2) EQ 0 THEN angle2 = 360.0
     
     ; Scale 100 points between the first and second angle.
-    points = Scale_Vector(Findgen(100), angle1, angle2)
+    points = cgScaleVector(Findgen(100), angle1, angle2)
     
     
     ; Calculate the X and Y values of these points. Do this so
@@ -152,7 +153,7 @@ PRO cgWindRose_ReadSamFile, filename, SPEED=speed, DIRECTION=direction
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
 
@@ -225,7 +226,7 @@ PRO cgWindRose, speed, direction, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /CANCEL
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN
    ENDIF
    
@@ -274,7 +275,10 @@ PRO cgWindRose, speed, direction, $
    IF count GT 0 THEN BEGIN
       speed_final = speed[winds]
       direction_final = direction[winds]
-   ENDIF
+   ENDIF ELSE BEGIN
+       speed_final = speed
+       direction_final = direction
+   ENDELSE
    
    maxSpeed = Round(Max(speed)/10.)*10
 

@@ -1,10 +1,10 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   PS_START
+;   cgPS_Open
 ;
 ; PURPOSE:
-;    The purpose of PS_START and PS_END is to make it easy to set-up
+;    The purpose of cgPS_Open and cgPS_Close is to make it easy to set-up
 ;    and close a PostScript file. These programs are used extensively
 ;    in all Coyote Graphics routines.
 ;******************************************************************************************;
@@ -36,7 +36,7 @@
 ;******************************************************************************************;
 ;
 ;+
-; The purpose of PS_START and PS_END is to make it easy to set-up
+; The purpose of cgPS_Open and `cgPS_Close` is to make it easy to set-up
 ; and close a PostScript file. These programs are used extensively
 ; in all Coyote Graphics routines.
 ;
@@ -44,13 +44,13 @@
 ; on your computer, you can easily convert PostScript output to GIF, JPEG, PNG, and TIFF
 ; raster output. If `Ghostscript <http://www.ghostscript.com/download/>` is installed
 ; you can convert PostScript output to PDF files. See the appropriate keywords to
-; PS_END.
+; `cgPS_Close`.
 ; 
-; When PS_START is called, the current graphics device is set to "PS" (the PostScript 
-; device). When PS_END is called the current graphics device is returned to the device
-; in effect when PS_START was called.
+; When cgPS_Open is called, the current graphics device is set to "PS" (the PostScript 
+; device). When cgPS_Close is called the current graphics device is returned to the device
+; in effect when cgPS_Open was called.
 ; 
-; PS_Start uses the current display window as a template for the Postscript
+; cgPS_Open uses the current display window as a template for the Postscript
 ; file. Thus, if the display window is wider than it is higher, output is
 ; in Landscape mode. To set the size of the PostScript "window" yourself, be
 ; sure to set the NOMATCH keyword to 1.
@@ -76,7 +76,7 @@
 ; If true-type fonts are being used (FONT=1), the default is 1.5, or 1.25 for 
 ; multiple plots.
 ;
-; The PS_Start program contains the common block, _$FSC_PS_START_. See the FSC_PS_SETUP__DEFINE 
+; The cgPS_Open program contains the common block, _$FSC_PS_START_. See the FSC_PS_SETUP__DEFINE 
 ; program in the Coyote Library for its definition.
 ; 
 ; :Categories:
@@ -84,18 +84,22 @@
 ;    
 ; :Params:
 ;     filename: in, optional, type=string, default='idl.ps'
-;        The name of the PostScript file created.
+;        The name of the PostScript file to be created. This can also be the name of a raster 
+;        file (e.g., PNG, JPEG, TIFF, PDF, etc.) that you would like to have created from a PostScript 
+;        intermediate file. This requires that ImageMagick is installed correctly on your 
+;        machine. If you choose this kind of filename, the intermediate PostScript file is
+;        automatically deleted.
 ;    
 ; :Keywords:
 ;     cancel: out, optional, type=boolean, default=0
 ;         An output keyword that is set to 1 if the user cancelled from
 ;         PS_Config. Otherwise, set to 0.
 ;     charsize: in, optional, type=float
-;         If this keyword is set, the !P.Charsize variable is set to this value until PS_END is called.
+;         If this keyword is set, the !P.Charsize variable is set to this value until cgPS_Close is called.
 ;     default_thickness: in, optional, type=integer, default=3
 ;         Sets the following system variables to this value while creating PostScript output:
 ;         !P.Thick, !P.CharThick, !X.Thick, !Y.Thick, !Z.Thick. These variables are returned to
-;         their original values by `PS_End`. A system variable is set to this value only if it 
+;         their original values by `cgPS_Close`. A system variable is set to this value only if it 
 ;         currently contains the IDL default value of 0.0. If it is set to anything else, this 
 ;         default thickness value is ignored.
 ;     dejavusans: in, optional, type=boolean, default=0
@@ -111,7 +115,7 @@
 ;     encapsulated: in, optional, type=boolean, default=0
 ;         Set this keyword to produce encapsulated PostScript output.
 ;     gui: in, optional, type=boolean, default=0
-;         The default behavior is to use PSCONFIG to configure the PostScript device silently. 
+;         The default behavior is to use cgPS_Config to configure the PostScript device silently. 
 ;         If you wish to allow the user to interatively configure the PostScript device, set this
 ;         keyword.
 ;     keywords: out, optional, type=structure                
@@ -119,7 +123,7 @@
 ;     landscape: in, optional, type=boolean, default=0
 ;         Set this keyword to produce landscape PostScript output.
 ;     nomatch: in, optional, type=boolean, default=0                
-;         Normally, PS_Start will try to "match" the aspect ratio of the PostScript file "window" 
+;         Normally, cgPS_Open will try to "match" the aspect ratio of the PostScript file "window" 
 ;         to the current display window. If this keyword is set, then this doesn't occur, giving 
 ;         the user the option of specifying the size and offsets of the PostScript window directly 
 ;         though appropriate keywords.
@@ -127,22 +131,22 @@
 ;         If set, informational messages are not set. 
 ;     scale_factor: in, optional, type=float, default=1.0
 ;         Set this to the PostScript scale factor. By default: 1.
-;     tt_font: in, optional, type=string, default="Helvetica"
-;         The name of a true-type font to use if FONT=1.
+;     tt_font: in, optional, type=string
+;         The name of a true-type font to use. Using this keyword sets `Font` to 1.
 ;     _ref_extra: in, optional
-;         Any keyword appropriate for the PostScript configuration program PSConfig, from
-;         the Coyote Library can be used with PS_Start.
+;         Any keyword appropriate for the PostScript configuration program cgPS_Config, from
+;         the Coyote Library can be used with cgPS_Open.
 ;              
 ; :Examples:
 ;    To create a line plot in a PostScript file named lineplot.ps and
 ;    also create a PNG file named lineplot.png for display in a browser,
 ;    type these commands::
 ;
-;        PS_Start, FILENAME='lineplot.ps'
+;        cgPS_Open, FILENAME='lineplot.ps'
 ;        cgPlot, Findgen(11), COLOR='navy', /NODATA, XTITLE='Time', YTITLE='Signal'
 ;        cgPlot, Findgen(11), COLOR='indian red', /OVERPLOT
 ;        cgPlot, Findgen(11), COLOR='olive', PSYM=2, /OVERPLOT
-;        PS_End, /PNG
+;        cgPS_Close, /PNG
 ;       
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -176,11 +180,17 @@
 ;           system variables. 14 Dec 2011. DWF.
 ;       Moved the true-type font set-up to *after* changing the graphics device to PostScript. 10 Jan 2012. DWF.
 ;       Added DejaVuSans keyword to allow this true-type font to be used in PostScript Output. 21 Dec 2012. DWF.
+;       Modified so that the PostScript device can keep a consistent interface when using True-Type
+;          fonts. Requires using cgSet_TTFont to select True-Type fonts. 22 May 2013. DWF.
+;       Changed name to cgPS_Open from PS_Start. 4 November 2013. DWF. Retired PS_Start.
+;       Added ability to specify the name of the output raster file desired as the filename. If this is done,
+;          and ImageMagick is installed, the PostScript intermediate file is deleted and the raster file is
+;          created automatically without setting a raster output keyword on cgPS_Close. 29 Nov 2013. DWF.
 ;       
 ; :Copyright:
-;     Copyright (c) 2008-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2008-2013, Fanning Software Consulting, Inc.
 ;-
-PRO PS_START, filename, $
+PRO cgPS_Open, filename, $
     CANCEL=cancelled, $
     CHARSIZE=charsize, $
     DEFAULT_THICKNESS=default_thickness, $
@@ -199,9 +209,31 @@ PRO PS_START, filename, $
  
    COMMON _$FSC_PS_START_, ps_struct
    
-   ; Handle the filename parameter and keywords.
+    ; Define the PS structure.
+    IF N_Elements(ps_struct) EQ 0 THEN ps_struct = {cgPS_SETUP}
+       
+   ; Handle the filename parameter and keywords. This is necessary because "filename" can come
+   ; from both an input parameter and a keyword parameter (historical reasons).
    IF N_Elements(filename) EQ 0 THEN filename = 'idl.ps'
    IF N_Elements(ps_filename) EQ 0 THEN ps_filename = filename 
+   
+   ; Get the file extension. This will tell you what kind of raster file you need to make, if any.
+   rootname = cgRootName(ps_filename, DIRECTORY=directory, EXTENSION=extension)
+   CASE StrUpCase(extension) OF
+       'PS': 
+       'EPS':
+       '': ps_filename = Filepath(ROOT_DIR=directory, rootname + '.ps')
+       ELSE: BEGIN
+          ps_filename = Filepath(ROOT_DIR=directory, rootname + '.ps')
+          
+          ; If ImageMagick is installed, the we can create the raster file directly,
+          ; and we can delete the intermediate PostScript file.
+          IF cgHasImageMagick() THEN BEGIN
+             ps_struct.rasterFileType = extension
+             IF N_Elements(quiet) EQ 0 THEN quiet = 1
+          END
+          END
+   ENDCASE
       
    ; Need DejaVuSans fonts?
    IF Keyword_Set(dejavusans) && (Float(!Version.Release) GE 8.2) THEN BEGIN
@@ -209,21 +241,25 @@ PRO PS_START, filename, $
       font = 1
    ENDIF
    
-   ; Define the PS structure.
-   IF N_Elements(ps_struct) EQ 0 THEN ps_struct = {FSC_PS_SETUP}
+   ; Save the current True-Type font before entering the PostScript device.
+   ; Necessary for restoring it later.
+   cgWindow_GetDefs, PS_TT_FONT=ps_tt_font
+   ps_struct.tt_font_old = ps_tt_font
    
    ; PostScript hardware fonts by default.
    SetDefaultValue, font, 0
    ps_struct.font = font
    
-   ; Use Helvetica True-Type font by default.
-   SetDefaultValue, tt_font, 'Helvetica'
-   ps_struct.tt_font = tt_font
+   ; Store the current true-type font.
+   IF N_Elements(tt_font) NE 0 THEN BEGIN
+        ps_struct.tt_font = tt_font
+        font = 1
+   ENDIF
    
    gui = Keyword_Set(gui)
    quiet = Keyword_Set(quiet)
    
-   ; Handle encapsulated and landscape keywords appropriately.
+   ; Handle keywords appropriately.
    SetDefaultValue, default_thickness, 3
    encapsulated = Keyword_Set(encapsulated)
    landscape = Keyword_Set(landscape)
@@ -232,7 +268,7 @@ PRO PS_START, filename, $
 
    ; If the setup flag is on, then we have to close the previous
    ; start command before we can continue.
-   IF ps_struct.setup EQ 1 THEN PS_END, /NoFix, /NoMessage
+   IF ps_struct.setup EQ 1 THEN cgPS_Close, /NoFix, /NoMessage
    
    ; Save current setup information in the PS_STRUCT structure.
    ps_struct.setup = 1
@@ -258,12 +294,11 @@ PRO PS_START, filename, $
    
    ; Set the true-type font.
    thisWindow = !D.Window
-   IF thisWindow EQ -1 AND ((!D.Flags AND 256) NE 0)THEN BEGIN
+   IF thisWindow EQ -1 AND ((!D.Flags AND 256) NE 0) THEN BEGIN
         Window, /FREE, /PIXMAP
         pixmap = !D.Window
    ENDIF
    !P.Font = font 
-   Device, Set_Font=tt_font, /TT_FONT
    IF N_Elements(pixmap) NE 0 THEN WDelete, pixmap
 
    ; Configure the PostScript Device
@@ -272,15 +307,15 @@ PRO PS_START, filename, $
       IF !D.X_Size GT !D.Y_Size THEN landscape = 1 ELSE landscape = 0
       IF Keyword_Set(encapsulated) THEN landscape = 0
       sizes = PSWindow(_Extra=extra, LANDSCAPE=landscape)
-      keywords = PSConfig(_Strict_Extra=extra, INCHES=sizes.inches, XSIZE=sizes.xsize, YSIZE=sizes.ysize, $
+      keywords = cgPS_Config(_Strict_Extra=extra, INCHES=sizes.inches, XSIZE=sizes.xsize, YSIZE=sizes.ysize, $
          XOFFSET=sizes.xoffset, YOFFSET=sizes.yoffset, Cancel=cancelled, NOGUI=(~gui), $
          LANDSCAPE=sizes.landscape, ENCAPSULATED=encapsulated, FILENAME=ps_filename[0])
    ENDIF ELSE BEGIN
-      keywords = PSConfig(_Strict_Extra=extra, ENCAPSULATED=encapsulated, $
+      keywords = cgPS_Config(_Strict_Extra=extra, ENCAPSULATED=encapsulated, $
           LANDSCAPE=landscape, CANCEL=cancelled, NOGUI=(~gui), FILENAME=ps_filename[0])
    ENDELSE
    IF cancelled THEN BEGIN
-        PS_END, /NoFix, /NoMessage
+        cgPS_Close, /NoFix, /NoMessage
         RETURN
    ENDIF
    
@@ -288,8 +323,8 @@ PRO PS_START, filename, $
    IF ~quiet THEN Print, 'PostScript output will be created here: ', keywords.filename
    
    Set_Plot, 'PS'
-   Device, Set_Font=tt_font, /TT_FONT
    Device, _EXTRA=keywords, SCALE_FACTOR=scale_factor
+   IF N_Elements(tt_font) NE 0 THEN Device, Set_Font=tt_font, /TT_Font
    
    ; Store filename and other pertinent information.
    ps_struct.filename = keywords.filename
@@ -297,5 +332,5 @@ PRO PS_START, filename, $
    ps_struct.landscape = Fix(keywords.landscape)
    ps_struct.pagetype = keywords.pagetype
    ps_struct.quiet = Fix(quiet)
-   
+ 
 END

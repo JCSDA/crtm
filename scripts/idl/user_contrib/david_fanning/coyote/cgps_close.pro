@@ -1,10 +1,10 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   PS_END
+;   cgPS_Close
 ;
 ; PURPOSE:
-;    The purpose of PS_START and PS_END is to make it easy to set-up
+;    The purpose of cgPS_Open and cgPS_Close is to make it easy to set-up
 ;    and close a PostScript file. These programs are used extensively
 ;    in all Coyote Graphics routines.
 ;******************************************************************************************;
@@ -36,7 +36,7 @@
 ;******************************************************************************************;
 ;
 ;+
-; The purpose of PS_START and PS_END is to make it easy to set-up
+; The purpose of `cgPS_Open` and cgPS_Close is to make it easy to set-up
 ; and close a PostScript file. These programs are used extensively
 ; in all Coyote Graphics routines.
 ;
@@ -45,9 +45,9 @@
 ; raster output. If `Ghostscript <http://www.ghostscript.com/download/>` is installed
 ; you can convert PostScript output to PDF files. See the appropriate keywords below.
 ; 
-; When PS_START is called, the current graphics device is set to "PS" (the PostScript 
-; device). When PS_END is called the current graphics device is returned to the device
-; in effect when PS_START was called.
+; When cgPS_Open is called, the current graphics device is set to "PS" (the PostScript 
+; device). When cgPS_Close is called the current graphics device is returned to the device
+; in effect when cgPS_Open was called.
 
 ; :Categories:
 ;    Utilities, Graphics
@@ -90,7 +90,7 @@
 ;        PostScript files is not called.
 ;     nomessage: in, optional, type=boolean, default=0                  
 ;        If this keyword is set, then no error messages are issued. The keyword is used primarily 
-;        to allow PS_END to reset the internal structure without a lot of ruckus.  
+;        to allow cgPS_Close to reset the internal structure without a lot of ruckus.  
 ;     outfilename: out, optional, type=string
 ;        The name of the output filename created by the program.             
 ;     pdf: in, optional, type=boolean, default=0                 
@@ -98,7 +98,7 @@
 ;     png: in, optional, type=boolean, default=0                 
 ;        Set this keyword to convert the PostScript output file to a PNG image. Requires ImageMagick.
 ;        Normally, 24-bit PNG files are created. However, if the IM_PNG8 keyword is set with
-;        cgWindow_SetDefs, then PS_End will create an 8-bit PNG file instead.
+;        cgWindow_SetDefs, then cgPS_Close will create an 8-bit PNG file instead.
 ;     resize: in, optional, type=integer, default=25
 ;        If an image is being created from the PostScript file, it is often resized by some 
 ;        amount. You can use this keyword to change the value (e.g, RESIZE=100).
@@ -128,11 +128,11 @@
 ;    also create a PNG file named lineplot.png for display in a browser,
 ;    type these commands::
 ;
-;        PS_Start, FILENAME='lineplot.ps'
+;        cgPS_Open, FILENAME='lineplot.ps'
 ;        cgPlot, Findgen(11), COLOR='navy', /NODATA, XTITLE='Time', YTITLE='Signal'
 ;        cgPlot, Findgen(11), COLOR='indian red', /OVERPLOT
 ;        cgPlot, Findgen(11), COLOR='olive', PSYM=2, /OVERPLOT
-;        PS_End, /PNG
+;        cgPS_Close, /PNG
 ;       
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -184,11 +184,13 @@
 ;        Added a check for ImageMagick and an informational message for raster operations. 4 Nov 2012. DWF.
 ;        Fixed a problem in which the NOMESSAGE keyword was not getting passed along to cgPS2Raster. 5 Nov 2012. DWF.
 ;        Fixed a problem where I was not passing the PORTRAIT keyword to cgPS2Raster properly. 22 Jan 2013. DWF.
+;        Modified to restore the input True-Type font for PostScript devices. 22 May 2013. DWF.
+;        Can now create raster file output directly from the input filename of cgPS_Open. 29 Nov 2013. DWF.
 ;
 ; :Copyright:
-;     Copyright (c) 2008-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2008-2013, Fanning Software Consulting, Inc.
 ;-
-PRO PS_END, $
+PRO cgPS_Close, $
     ALLOW_TRANSPARENT=allow_transparent, $
     BMP=bmp, $
     DELETE_PS=delete_ps, $
@@ -218,7 +220,7 @@ PRO PS_END, $
        Catch, /CANCEL
    
        ; Issue an error message, unless messages are turned off.
-       IF ~Keyword_Set(nomessage) THEN void = Error_Message()
+       IF ~Keyword_Set(nomessage) THEN void = cgErrorMsg()
    
        ; Clean up.
        IF ps_struct.currentDevice NE "" THEN Set_Plot, ps_struct.currentDevice
@@ -230,6 +232,7 @@ PRO PS_END, $
        ps_struct.currentDevice = ""
        ps_struct.filename = ""
        ps_struct.convert = ""
+       ps_struct.rasterFileType = ""
        
        RETURN
        
@@ -255,7 +258,10 @@ PRO PS_END, $
    ; Need to convert the PostScript to a raster file?
    needRaster = 0
    allow_transparent = Keyword_Set(allow_transparent)
-   IF N_Elements(filetype) EQ 0 THEN filetype = ""
+   IF N_Elements(filetype) EQ 0 THEN BEGIN
+       filetype = ps_struct.rasterFileType
+       IF filetype NE "" THEN delete_ps = 1
+   ENDIF
    CASE StrUpCase(filetype) OF
        'BMP': bmp = 1
        'GIF': gif = 1
@@ -302,15 +308,19 @@ PRO PS_END, $
           WIDTH=width
        ENDIF ELSE BEGIN
            Print, ''
-           Print, 'Message from the PS_End Program:'
+           Print, 'Message from the cgPS_Close Program:'
            Print, '   The requested raster operation cannot be completed unless ImageMagick is installed.'
            delete_ps = 0
            Print, '   The requested PostScript file has been saved: ' + ps_filename + '.'
            Print, '   Please see http://www.idlcoyote.com/graphics_tips/weboutput.php for details'
            Print, '   about converting PostScript intermediate files to raster files via ImageMagick.
-           void = Dialog_Message('PS_End: ImageMagick must be installed to complete raster operation.')
+           void = Dialog_Message('cgPS_Close: ImageMagick must be installed to complete raster operation.')
        ENDELSE
    ENDIF
+   
+   ; Restore the previous True-Type font state for the PostScript device.
+   IF !D.Name EQ 'PS' THEN Device, Set_Font=ps_struct.tt_font_old, /TT_Font
+
    
    ; Clean up.
    IF ps_struct.currentDevice NE "" THEN Set_Plot, ps_struct.currentDevice
@@ -322,7 +332,9 @@ PRO PS_END, $
    ps_struct.currentDevice = ""
    ps_struct.filename = ""
    ps_struct.convert = ""
+   ps_struct.rasterFileType = ""
 
+   
 END ;---------------------------------------------------------------
 
 

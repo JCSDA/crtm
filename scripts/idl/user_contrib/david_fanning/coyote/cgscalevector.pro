@@ -1,7 +1,7 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   Scale_Vector
+;   cgScaleVector
 ;
 ; PURPOSE:
 ;   This is a utility routine to scale the elements of a vector or an array into a 
@@ -74,7 +74,7 @@
 ;       Simple example of scaling a vector::
 ;       
 ;          IDL> x = [3, 5, 0, 10]
-;          IDL> xscaled = Scale_Vector(x, -50, 50)
+;          IDL> xscaled = cgScaleVector(x, -50, 50)
 ;          IDL> Print, xscaled
 ;               -20.0000     0.000000     -50.0000      50.0000
 
@@ -83,7 +83,7 @@
 ;       a diverging color table. Thus, you want to make sure value 0.0 is scaled to 128.
 ;       You proceed like this::
 ;
-;          scaledImage = Scale_Vector(image, 0, 255, MINVALUE=-2.5, MAXVALUE=2.5)
+;          scaledImage = cgScaleVector(image, 0, 255, MINVALUE=-2.5, MAXVALUE=2.5)
 ;
 ; :Author:
 ;    FANNING SOFTWARE CONSULTING::
@@ -103,11 +103,12 @@
 ;            reversed on axes, etc. 28 Dec 2003. DWF.
 ;         Added PRESERVE_TYPE and DOUBLE keywords. 19 February 2006. DWF.
 ;         Added FPUFIX to cut down on floating underflow errors. 11 March 2006. DWF.
+;         Renamed Scale_Vector to cgScaleVector, 16 May 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 1998-2013, Fanning Software Consulting, Inc.
 ;-
-FUNCTION Scale_Vector, vector, minRange, maxRange, $
+FUNCTION cgScaleVector, vector, minRange, maxRange, $
    DOUBLE=double, $
    MAXVALUE=vectorMax, $
    MINVALUE=vectorMin, $
@@ -118,7 +119,7 @@ FUNCTION Scale_Vector, vector, minRange, maxRange, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       RETURN, vector
    ENDIF
 

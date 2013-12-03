@@ -113,7 +113,7 @@ PRO cgImageInfo, image, position
     CATCH, theError
     IF theError NE 0 THEN BEGIN
         CATCH, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         
         ; Set the cursor back to original shape.
         IF !D.Name EQ 'WIN' THEN BEGIN
@@ -224,8 +224,8 @@ PRO cgImageInfo, image, position
        IF inside THEN BEGIN
 
           ; Create vectors for locating image dimensions with VALUE_LOCATE
-          xvec = Scale_Vector(Findgen(_cgimage_xsize+1), thePos[0], thePos[2])
-          yvec = Scale_Vector(Findgen(_cgimage_ysize+1), thePos[1], thePos[3])
+          xvec = cgScaleVector(Findgen(_cgimage_xsize+1), thePos[0], thePos[2])
+          yvec = cgScaleVector(Findgen(_cgimage_ysize+1), thePos[1], thePos[3])
           xpixel = Value_Locate(xvec, x)
           ypixel = Value_Locate(yvec, y)
 

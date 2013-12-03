@@ -146,6 +146,7 @@
 ;           with cgGraphicsKeywords, so I removed previous "fix". 18 July 2012. DWF.
 ;       Modified the program to allow a "negative" string to be used as the symbol name
 ;           (e.g., PSYM="-star"). 30 July 2012. DWF.
+;       Modified to use 36 points in circle, rather than 72. 10 May 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2006-2012, Fanning Software Consulting, Inc.

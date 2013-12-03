@@ -48,7 +48,7 @@
 ;    Graphics, Map Projections
 ;    
 ; :Returns:
-;     The an output 2D grid in which the data points have been warped into the
+;     An output 2D grid in which the data points have been warped into the
 ;     particular map projection at the requested pixel resolution.
 ;       
 ; :Params:
@@ -162,7 +162,7 @@ FUNCTION cgWarpToMap, data, lons, lats, $
    Catch, theError
    IF theError NE 0 THEN BEGIN
        Catch, /CANCEL
-       void = Error_Message()
+       void = cgErrorMsg()
        RETURN, data
    ENDIF
 
@@ -198,8 +198,8 @@ FUNCTION cgWarpToMap, data, lons, lats, $
          
       2: BEGIN
          s = Size(data, /DIMENSIONS)
-         IF N_Elements(lons) EQ 0 THEN lons = Scale_Vector(Findgen(s[0]), -180, 180)
-         IF N_Elements(lats) EQ 0 THEN lats = Scale_Vector(Findgen(s[1]), -90, 90)
+         IF N_Elements(lons) EQ 0 THEN lons = cgScaleVector(Findgen(s[0]), -180, 180)
+         IF N_Elements(lats) EQ 0 THEN lats = cgScaleVector(Findgen(s[1]), -90, 90)
          IF Size(lons, /N_DIMENSIONS) EQ 1 THEN latlon2d = 0
          IF Size(lats, /N_DIMENSIONS) EQ 1 THEN latlon2d = 0
          
@@ -279,15 +279,15 @@ FUNCTION cgWarpToMap, data, lons, lats, $
 
    ; If you have a grid, you can do the gridding the fast way by interpolating the output
    ; grid from the input grid. First, create an output grid.
-   xvec = Scale_Vector(Findgen(resolution[0]), xmin-(delta_x/2.), xmax+(delta_x/2.))
-   yvec = Scale_Vector(Findgen(resolution[1]), ymin-(delta_y/2.), ymax+(delta_x/2.))
+   xvec = cgScaleVector(Findgen(resolution[0]), xmin-(delta_x/2.), xmax+(delta_x/2.))
+   yvec = cgScaleVector(Findgen(resolution[1]), ymin-(delta_y/2.), ymax+(delta_x/2.))
    x_out = Rebin(xvec, resolution[0], resolution[1])
    y_out = Rebin(Reform(yvec, 1, resolution[1]), resolution[0], resolution[1])
 
    ; Get the fractional indices of the output grid on the input grid.
    dims = Size(data, /DIMENSIONS)
-   xindex = Scale_Vector(x_out, 0, dims[0], Min=xmin, Max=xmax)
-   yindex = Scale_Vector(y_out, 0, dims[1], MIN=ymin, MAX=ymax)
+   xindex = cgScaleVector(x_out, 0, dims[0], Min=xmin, Max=xmax)
+   yindex = cgScaleVector(y_out, 0, dims[1], MIN=ymin, MAX=ymax)
    
    ; Interpolate the data. Nearest neighbor, bilinear, or cubic interpolation is possible.
    IF Keyword_Set(cubic) THEN BEGIN

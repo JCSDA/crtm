@@ -116,7 +116,7 @@
 ;            
 ;        All raster file output is created through PostScript intermediate files (the
 ;        PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;        to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;        to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;        details.) And also note that you should NOT use this keyword when doing multiple 
 ;        plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;        output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -150,6 +150,10 @@
 ;     traditional: in, optional, type=boolean, default=0
 ;         If this keyword is set, the traditional color scheme of a black background for
 ;         graphics windows on the display is used and PostScript files always use a white background.
+;     tlocation: in, optional, type=float
+;         A one or two element array in normalized coordinates that gives the location of the
+;         plot title. The plot is centered on this location. If one element, the X location is taken
+;         as 0.5 and the element is used as the Y location. Othersize, use [x,y]. Default is [0.5,0.9].
 ;     tsize: in, optional, type=float
 ;        The character size for the title. Normally, the title character size is 1.1 times
 ;        the character size of the surface annotation.
@@ -157,6 +161,7 @@
 ;        The title Y spacing. This should be a number, between 0 and 1 that is the fraction 
 ;        of the distance between !Y.Window[1] and !Y.Window[0] to locate the title above 
 ;        !Y.Window[1]. When Total(!P.MULTI) EQ 0, the default is 0.005, and it is 0.0025 otherwise.
+;        Now depreciated in favor of `TLocation`.
 ;     window: in, optional, type=boolean, default=0
 ;        Set this keyword to replace all the commands in the current cgWindow or to
 ;        create a new cgWindow, if one doesn't currenly exist, for displaying this command.
@@ -198,7 +203,7 @@
 ; :History:
 ;     Change History::
 ;        Written, 13 November 2010. DWF.
-;        Now setting decomposition state by calling SetDecomposedState. 16 November 2010. DWF.
+;        Now setting decomposition state by calling cgSetColorState. 16 November 2010. DWF.
 ;        Added TSIZE and TSPACE keywords to treak title size and placement, 
 ;           as necessary. 17 November 2010. DWF.
 ;        Background keyword now applies in PostScript file as well. 17 November 2010. DWF.
@@ -235,6 +240,9 @@
 ;        Lost the XTitle and YTitle keywords when doing shaded surfaces. 15 December 2012. DWF.
 ;        Still had some color issues with shaded surfaces having to be done in indexed color to sort out.
 ;            This appears to work now both on the display and in PostScript. 25 Jan 2013. DWF.
+;        Added the TLOCATION keyword and depreciated the TSPACE keyword. 27 May 2013. DWF.
+;        Fixed a problem with shaded surfaces that set the top color to the background color. 12 June 2013. DWF.
+;        Fixed a problem with the TITLE keyword that was resetting !P.T, even if the SAVE keyword was set. 25 Sept 2013. DWF.
 ;
 ; :Copyright:
 ;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
@@ -261,6 +269,7 @@ PRO cgSurf, data, x, y, $
     SKIRT=skirt, $
     TITLE=title, $
     TRADITIONAL=traditional, $
+    TLOCATION=tlocation, $
     TSIZE=tsize, $
     TSPACE=tspace, $
     WINDOW=window, $
@@ -277,9 +286,9 @@ PRO cgSurf, data, x, y, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         IF N_Elements(thisMulti) NE 0 THEN !P.Multi = thisMulti
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN
     ENDIF
     
@@ -323,6 +332,7 @@ PRO cgSurf, data, x, y, $
                 SKIRT=skirt, $
                 TITLE=title, $
                 TRADITIONAL=traditional, $
+                TLOCATION=tlocation, $
                 TSIZE=tsize, $
                 TSPACE=tspace, $
                 XSTYLE=xstyle, $
@@ -357,6 +367,7 @@ PRO cgSurf, data, x, y, $
             SKIRT=skirt, $
             TITLE=title, $
             TRADITIONAL=traditional, $
+            TLOCATION=tlocation, $
             TSIZE=tsize, $
             TSPACE=tspace, $
             XSTYLE=xstyle, $
@@ -468,7 +479,7 @@ PRO cgSurf, data, x, y, $
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -483,7 +494,7 @@ PRO cgSurf, data, x, y, $
     ENDIF
    
     ; Going to draw in decomposed color, if possible to avoid dirtying the color table.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
 
     ; If current state is "indexed color" and colors are represented as long integers then "fix" them.
     IF (currentState EQ 0) THEN BEGIN
@@ -679,24 +690,6 @@ PRO cgSurf, data, x, y, $
         FONT=font, CHARSIZE=charsize, NOERASE=tempNoErase, _STRICT_EXTRA=extra, $
         AX=rotx, AZ=rotz, XTITLE=xtitle, YTITLE=ytitle, ZTITLE=ztitle
         
-    ; Draw the title, if you have one.
-    IF N_Elements(title) NE 0 THEN BEGIN
-       IF N_Elements(tsize) EQ 0 THEN BEGIN
-           IF (!P.Charsize EQ 0) AND (N_Elements(charsize) EQ 0) THEN BEGIN
-                titleSize = 1.10 
-           ENDIF ELSE BEGIN
-               IF (!P.Charsize NE 0) THEN titleSize = !P.Charsize * 1.10
-               IF (N_Elements(charsize) NE 0) THEN titleSize = charsize * 1.10
-           ENDELSE
-       ENDIF ELSE titleSize = tsize
-       xloc = (!X.Window[1] - !X.Window[0]) / 2.0 + !X.Window[0]
-       distance = !Y.Window[1] - !Y.Window[0]
-       IF N_Elements(tspace) EQ 0 THEN tspace = (Total(!P.Multi) EQ 0) ? 0.0025 : 0.00125
-       yloc = !Y.Window[1] + (distance * tspace)
-        XYOutS, xloc, yloc, /NORMAL, ALIGNMENT=0.5, CHARSIZE=titleSize, $
-            title, FONT=font, COLOR=axiscolor
-    ENDIF
-
     ; Storing these system variable is *required* to make !P.MULTI work correct.
     ; Do not delete!
     newx = !X
@@ -744,12 +737,12 @@ PRO cgSurf, data, x, y, $
         ; are in the range 1-254.
         IF N_Elements(shades) NE 0 THEN BEGIN
             IF Max(shades,/NAN) GT 253 $
-                THEN checkShades = BytScl(shades, TOP=253) + 1B $
+                THEN checkShades = BytScl(shades, TOP=252) + 1B $
                 ELSE checkShades = shades
         ENDIF
         
          ; All shaded surfaces have to be done in indexed color mode.
-        SetDecomposedState, 0
+        cgSetColorState, 0
         
         ; Shaded surface plot. Should be no axes here at all.
          Shade_Surf, data, x, y, /NOERASE, SHADES=checkShades, $
@@ -757,7 +750,7 @@ PRO cgSurf, data, x, y, $
             BACKGROUND=shadebackground, AX=rotx, AZ=rotz, CHARSIZE=charsize, $
             XTITLE=xtitle, YTITLE=ytitle, ZTITLE=ztitle;;;;;, COLOR=color, BOTTOM=bottom  
             
-        SetDecomposedState, 1
+        cgSetColorState, 1
             
         ; Have to repair the axes. Do this in decomposed color mode, if possible.
         TVLCT, rl, gl, bl ; Color table after colors are loaded.
@@ -766,21 +759,6 @@ PRO cgSurf, data, x, y, $
             FONT=font, CHARSIZE=charsize, SKIRT=skirt, _STRICT_EXTRA=extra, AX=rotx, AZ=rotz, $
             XTitle=xtitle, YTitle=ytitle
             
-        ; Have to repair the title, too.
-        IF N_Elements(title) NE 0 THEN BEGIN
-           IF (!P.Charsize EQ 0) AND (N_Elements(charsize) EQ 0) THEN BEGIN
-                titleSize = 1.10 
-           ENDIF ELSE BEGIN
-               IF (!P.Charsize NE 0) THEN titleSize = !P.Charsize * 1.10
-               IF (N_Elements(charsize) NE 0) THEN titleSize = charsize * 1.10
-           ENDELSE
-           xloc = (!X.Window[1] - !X.Window[0]) / 2.0 + !X.Window[0]
-           distance = !Y.Window[1] - !Y.Window[0]
-           IF N_Elements(tspace) EQ 0 THEN tspace = (Total(!P.Multi) EQ 0) ? 0.0025 : 0.00125
-           yloc = !Y.Window[1] + (distance * tspace)
-           XYOutS, xloc, yloc, /NORMAL, ALIGNMENT=0.5, CHARSIZE=titleSize, $
-                title, FONT=font, COLOR=axiscolor
-        ENDIF
             
         ; Shading parameters are "sticky", but I can't tell what they
         ; were when I came into the program. Here I just set them back
@@ -793,13 +771,13 @@ PRO cgSurf, data, x, y, $
         ; We can draw the surface in decomposed color mode, unless the SHADES
         ; keyword is being used. Then we have to use indexed color mode.         
         IF N_Elements(shades) NE 0 THEN BEGIN
-            SetDecomposedState, 0
+            cgSetColorState, 0
             TVLCT, rl, gl, bl ; Color table after colors are loaded.
             Surface, data, x, y, NOERASE=1, SHADES=shades, $
                 XSTYLE=xxstyle, YSTYLE=yystyle, ZSTYLE=zzstyle, $
                 FONT=font, CHARSIZE=charsize, _STRICT_EXTRA=extra, AX=rotx, AZ=rotz , $
                 XTITLE=xtitle, YTITLE=ytitle, ZTITLE=ztitle    
-             SetDecomposedState, 1    
+             cgSetColorState, 1    
         ENDIF ELSE BEGIN
             TVLCT, rl, gl, bl ; Color table after colors are loaded.
             Surface, data, x, y, NOERASE=1, COLOR=color, BOTTOM=bottom, $
@@ -821,7 +799,7 @@ PRO cgSurf, data, x, y, $
     ENDIF
 
     ; Restore the decomposed color state to the input state.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 
     ; Restore the color table. Can't do this for the Z-buffer or
     ; the snap shot will be incorrect.
@@ -832,6 +810,37 @@ PRO cgSurf, data, x, y, $
     !Y = newy 
     !Z = newz 
     !P = newP
+    
+    ; Draw the title, if you have one.
+    t3d = !P.T
+    T3D, /RESET
+    IF N_Elements(title) NE 0 THEN BEGIN
+        cgSetColorState, 1, Current=currentState
+        IF N_Elements(tsize) EQ 0 THEN BEGIN
+            IF (!P.Charsize EQ 0) AND (N_Elements(charsize) EQ 0) THEN BEGIN
+                titleSize = 1.10
+            ENDIF ELSE BEGIN
+                IF (!P.Charsize NE 0) THEN titleSize = !P.Charsize * 1.10
+                IF (N_Elements(charsize) NE 0) THEN titleSize = charsize * 1.10
+            ENDELSE
+        ENDIF ELSE titleSize = tsize
+        IF (N_Elements(tlocation) EQ 0) && (N_Elements(tspace) NE 0) THEN BEGIN
+            xloc = (!X.Window[1] - !X.Window[0]) / 2.0 + !X.Window[0]
+            distance = !Y.Window[1] - !Y.Window[0]
+            tspace = (Total(!P.Multi) EQ 0) ? 0.0025 : 0.00125
+            yloc = !Y.Window[1] + (distance * tspace)
+            XYOutS, xloc, yloc, /NORMAL, ALIGNMENT=0.5, CHARSIZE=titleSize, $
+                title, FONT=font, COLOR=axiscolor
+        ENDIF ELSE BEGIN
+            IF N_Elements(tlocation) EQ 0 THEN tlocation = [0.5, 0.9]
+            IF N_Elements(tlocation) EQ 1 THEN titleLocation = [0.5, tlocation] ELSE titleLocation = tlocation
+            XYOutS, titleLocation[0],  titleLocation[1], /NORMAL, ALIGNMENT=0.5, CHARSIZE=titleSize, $
+                title, FONT=font, COLOR=axiscolor
+        ENDELSE
+        cgSetColorState, currentState
+    ENDIF
+    !P.T = t3d
+    
 
     ; Clean up if you are using a layout.
     IF N_Elements(layout) NE 0 THEN !P.Multi = thisMulti
@@ -850,7 +859,7 @@ PRO cgSurf, data, x, y, $
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $

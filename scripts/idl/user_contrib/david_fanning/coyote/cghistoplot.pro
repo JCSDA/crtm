@@ -105,6 +105,9 @@
 ;       If set, the polygons are filled with lines instead of solid color. If
 ;       this keyword is set, the following keywords can also be used: `ORIENTATION`,
 ;       `PATTERN`, `POLYCOLOR`, and `SPACING`.
+;    line_thick: in, optional, type=integer, default=1
+;       Set this keyword to set the thickness of lines used in the fill pattern. Applies only
+;       if the `Line_Fill` keyword is set.
 ;    locations: out, optional
 ;       Starting locations of each bin. (See the HISTOGRAM documentation for details.)
 ;    maxinput: in, optional
@@ -164,7 +167,7 @@
 ;            
 ;       All raster file output is created through PostScript intermediate files (the
 ;       PostScript files will be deleted), so ImageMagick and Ghostview MUST be installed 
-;       to produce anything other than PostScript output. (See cgPS2PDF and PS_END for 
+;       to produce anything other than PostScript output. (See cgPS2PDF and cgPS_Close for 
 ;       details.) And also note that you should NOT use this keyword when doing multiple 
 ;       plots. The keyword is to be used as a convenient way to get PostScript or raster 
 ;       output for a single graphics command. Output parameters can be set with cgWindow_SetDefs.
@@ -330,6 +333,11 @@
 ;        Now taking into account the MININPUT and MAXINPUT values when calculating a default bin size. 19 Feb 2013. DWF.
 ;        Added [XY]TickNames, [XY]Tickformat, [XY]TickS, and [XY]TickValues keywords. 21 Feb 2013. DWF.
 ;        Now choosing the default tick format of '(F)' when LOG is set. 28 April 2013. DWF.
+;        Added Line_Thick keyword to change thickness of fill line. 28 Aug 2013. DWF.
+;        Changed the default background color to "white" from "background" and default axis 
+;           color to "black" from "opposite". It's about time this routine behaved like other
+;           Coyote Graphic routines! 22 Oct 2013. DWF.
+;        Fixed problem with XTICKVALUES and YTICKVALUES keywords when plot is rotated. 19 Nov 2013. DWF.
 ;        
 ; :Copyright:
 ;     Copyright (c) 2007-2013, Fanning Software Consulting, Inc.
@@ -350,6 +358,7 @@ PRO cgHistoplot, $                  ; The program name.
    L64=l64, $                       ; Input for HISTOGRAM.
    LAYOUT=layout, $                 ; Select the grid layout.
    LINE_FILL=line_fill, $           ; Set if you want line-filled polygons.
+   LINE_THICK=line_thick, $         ; Change thickness of fill lines.
    LOCATIONS=locations, $
    LOG=log, $
    MAXINPUT=maxinput, $             ; The maximum value to HISTOGRAM.
@@ -399,7 +408,7 @@ PRO cgHistoplot, $                  ; The program name.
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      ok = Error_Message(!Error_State.Msg + '. Returning...')
+      ok = cgErrorMsg(!Error_State.Msg + '. Returning...')
       IF N_Elements(nancount) EQ 0 THEN BEGIN
             IF N_Elements(_data) NE 0 THEN data = Temporary(_data)
       ENDIF ELSE BEGIN
@@ -461,6 +470,7 @@ PRO cgHistoplot, $                  ; The program name.
                ;
                FILLPOLYGON=fillpolygon, $       ; Set if you want filled polygons
                LINE_FILL=line_fill, $           ; Set if you want line-filled polygons.
+               LINE_THICK=line_thick, $         ; Change thickness of fill lines.
                ORIENTATION=orientation, $       ; The orientation of the lines.
                PATTERN=pattern, $               ; The fill pattern.
                POLYCOLOR=polycolorname, $           ; The name of the polygon draw/fill color.
@@ -531,6 +541,7 @@ PRO cgHistoplot, $                  ; The program name.
                ;
                FILLPOLYGON=fillpolygon, $       ; Set if you want filled polygons
                LINE_FILL=line_fill, $           ; Set if you want line-filled polygons.
+               LINE_THICK=line_thick, $         ; Change thickness of fill lines.
                ORIENTATION=orientation, $       ; The orientation of the lines.
                PATTERN=pattern, $               ; The fill pattern.
                POLYCOLOR=polycolorname, $           ; The name of the polygon draw/fill color.
@@ -654,7 +665,7 @@ PRO cgHistoplot, $                  ; The program name.
          PS_TT_Font = ps_tt_font               ; Select the true-type font to use for PostScript output.   
        
        ; Set up the PostScript device.
-       PS_Start, $
+       cgPS_Open, $
           CHARSIZE=ps_charsize, $
           DECOMPOSED=ps_decomposed, $
           FILENAME=ps_filename, $
@@ -767,7 +778,7 @@ PRO cgHistoplot, $                  ; The program name.
    ENDELSE
 
    ; Check for keywords.
-   IF N_Elements(backColorName) EQ 0 THEN backColorName = "background"
+   IF N_Elements(backColorName) EQ 0 THEN backColorName = "white"
    IF N_Elements(dataColorName) EQ 0 THEN dataColorName = "Indian Red"
    SetDefaultValue, title, ""
    
@@ -787,7 +798,7 @@ PRO cgHistoplot, $                  ; The program name.
 
    ; Choose an axis color.
    IF N_Elements(axisColorName) EQ 0 AND N_Elements(saxescolor) NE 0 THEN axisColorName = saxescolor
-   axisColorName = cgDefaultColor(axisColorName, DEFAULT='opposite')
+   axisColorName = cgDefaultColor(axisColorName, DEFAULT='black')
    IF N_Elements(polycolorname) EQ 0 THEN polycolorname = "Rose"
    IF N_Elements(probColorname) EQ 0 THEN probColorname = "Blue"
    frequency = Keyword_Set(frequency)
@@ -802,7 +813,7 @@ PRO cgHistoplot, $                  ; The program name.
    IF N_Elements(thick) EQ 0 THEN thick = 1.0
 
    ; Do this in decomposed color, if possible.
-   SetDecomposedState, 1, CURRENT=currentState
+   cgSetColorState, 1, CURRENT=currentState
    
    ; Load plot colors.
    TVLCT, r, g, b, /GET
@@ -992,7 +1003,7 @@ PRO cgHistoplot, $                  ; The program name.
             orient = orientation[j MOD norient]
             space = spacing[j MOD nspace]
             PolyFill, x, y, COLOR=fillColor, /LINE_FILL, ORIENTATION=orient, $
-               PATTERN=pattern, SPACING=space, NOCLIP=0
+               PATTERN=pattern, SPACING=space, NOCLIP=0, THICK=line_thick
             start = start + binsize
             endpt = start + binsize
          ENDFOR
@@ -1077,11 +1088,11 @@ PRO cgHistoplot, $                  ; The program name.
              XTITLE=xtitle, $                 ; The X title.
              XTICKNAMES=xticknames, $
              XTICKS=xticks, $
-             XTICKVALUES=xtickvalues, $
+             XTICKV=xtickvalues, $
              YTITLE=ytitle, $                 ; The Y title.
              YTICKNAMES=yticknames, $
              YTICKS=yticks, $
-             YTICKVALUES=ytickvalues, $
+             YTICKV=ytickvalues, $
              NoErase=1, $
              YTicklen=-0.025, $
              _Strict_Extra=extra                      ; Pass any extra PLOT keywords.
@@ -1236,7 +1247,7 @@ PRO cgHistoplot, $                  ; The program name.
            PDF_Path = pdf_path                             ; The path to the Ghostscript conversion command.
     
         ; Close the PostScript file and create whatever output is needed.
-        PS_END, DELETE_PS=delete_ps, $
+        cgPS_Close, DELETE_PS=delete_ps, $
              ALLOW_TRANSPARENT=im_transparent, $
              BMP=bmp_flag, $
              DENSITY=im_density, $
@@ -1258,5 +1269,5 @@ PRO cgHistoplot, $                  ; The program name.
     ENDIF
     
     ; Clean up.
-    SetDecomposedState, currentState
+    cgSetColorState, currentState
 END

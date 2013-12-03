@@ -1,7 +1,7 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   ReverseIndices
+;   cgReverseIndices
 ;
 ; PURPOSE:
 ;   Provides a simple way to obtain the data indices from a Histogram REVERSE_INDICES
@@ -46,7 +46,7 @@
 ;    Utilities
 ;    
 ; :Params:
-;    reverse_indices: in, required, type=integer
+;    ri: in, required, type=integer
 ;         The REVERSE_INDICES vector that is returned from the HISTOGRAM command.
 ;    index: in, required, type=integer
 ;         The zero-based index into the REVERSE_INDICES vector from which to obtain
@@ -66,7 +66,7 @@
 ;    Used with the HISTOGRAM command::
 ;       IDL> image = cgDemoData(7)
 ;       IDL> h = Histogram(image, REVERSE_INDICES=ri)
-;       IDL> indices = ReverseIndices(ri, 4, COUNT=cnt)
+;       IDL> indices = cgReverseIndices(ri, 4, COUNT=cnt)
 ;       IDL> Help, indices, cnt, h[4]
 ;       INDICES         LONG      = Array[948]
 ;       CNT             LONG      =          948
@@ -89,7 +89,7 @@
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
 ;-
-FUNCTION ReverseIndices, ri, index, COUNT=count
+FUNCTION cgReverseIndices, ri, index, COUNT=count
 
    Compile_Opt idl2
    
@@ -97,7 +97,7 @@ FUNCTION ReverseIndices, ri, index, COUNT=count
    Catch, theError
    IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         count = 0
         RETURN, -1
    ENDIF

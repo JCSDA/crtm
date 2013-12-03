@@ -124,8 +124,8 @@ FUNCTION cgOverPlot::INIT, x, y, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
-        IF N_Elements(currentState) NE 0 THEN SetDecomposedState, currentState
+        void = cgErrorMsg()
+        IF N_Elements(currentState) NE 0 THEN cgSetColorState, currentState
         RETURN, 0
     ENDIF
     
@@ -164,7 +164,7 @@ FUNCTION cgOverPlot::INIT, x, y, $
     IF N_Elements(indep) EQ 1 THEN indep = [indep]
     
     ; Default colors.
-    SetDecomposedState, 1, CURRENTSTATE=currentState
+    cgSetColorState, 1, CURRENTSTATE=currentState
     color = cgDefaultColor(color, DEFAULT="opposite")
     symcolor = cgDefaultColor(symcolor, DEFAULT=color)
 
@@ -228,7 +228,7 @@ PRO cgOverPlot::Draw, SKIP=skip
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
     
@@ -312,7 +312,7 @@ PRO cgOverPlot::GetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
 
@@ -384,7 +384,7 @@ PRO cgOverPlot::SetProperty, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
         Catch, /CANCEL
-        void = Error_Message()
+        void = cgErrorMsg()
         RETURN
     ENDIF
 

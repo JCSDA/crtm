@@ -135,9 +135,11 @@
 ;              directly to the user. This should significantly speed up many Coyote Graphics
 ;              processes. 14 December 2012. DWF.
 ;        Removed cgColor_Color24 module in favor of using Coyote Library routine cgColor24. 5 Jan 2013. DWF.
+;        The keyword ROW was being ignored if multiple colors were specified with TRIPLE keyword. Fixed. 10 July 2013. DWF.
+;        Another fix to handle Windows 8 computers that report their window size incorrectly. 21 Oct 2013. DWF.
 ;        
 ; :Copyright:
-;     Copyright (c) 2009-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2009-2013, Fanning Software Consulting, Inc.
 ;-
 ;
 ;+
@@ -308,14 +310,15 @@ FUNCTION cgColor, theColour, colorIndex, $
     Catch, theError
     IF theError NE 0 THEN BEGIN
        Catch, /Cancel
-       ok = Error_Message()
+       ok = cgErrorMsg()
        cancelled = 1
        RETURN, !P.Color
     ENDIF
     
     ; Get the current color state. This will help you determine what to 
     ; do with the input color.
-    IF N_Elements(decomposedState) NE 0 THEN colorState = Keyword_Set(decomposedState) ELSE colorState = GetDecomposedState()
+    IF N_Elements(decomposedState) NE 0 THEN colorState = Keyword_Set(decomposedState) $
+        ELSE colorState = cgGetColorState()
     
     ; Set up PostScript device for working with colors.
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
@@ -410,7 +413,20 @@ FUNCTION cgColor, theColour, colorIndex, $
     ; pixels to read Windows windows.
     IF ((!D.Window GE 0) && ((!D.Flags AND 256) NE 0)) || (!D.Name EQ 'Z') THEN BEGIN
        IF StrUpCase(!Version.OS_Family) EQ 'WINDOWS' THEN BEGIN
-          opixel = cgSnapshot(!D.X_Size-3, !D.Y_Size-3, 1, 1)
+        
+          ; Windows computers appear to be complete screwed up with respect to
+          ; reporting the correct window size. Now Windows 8 appears to be
+          ; reporting something completely different from Windows 7. I'm
+          ; going to Catch any errors I have here, and choose the lower-left
+          ; pixel, rather than the upper-right pixel. This should not be a 
+          ; problem, since the problem comes from draw widgets that are not
+          ; yet the current graphics window.
+          Catch, theError
+          IF theError NE 0 THEN BEGIN
+             opixel = cgSnapShot(0, 0, 1, 1)
+          ENDIF
+          IF N_Elements(opixel) EQ 0 THEN opixel = cgSnapshot(!D.X_Size-3, !D.Y_Size-3, 1, 1)
+          Catch, /Cancel
        ENDIF ELSE BEGIN
           opixel = cgSnapshot(!D.X_Size-1, !D.Y_Size-1, 1, 1)
        ENDELSE
@@ -450,8 +466,8 @@ FUNCTION cgColor, theColour, colorIndex, $
     IF (!D.Flags AND 256) NE 0 THEN Device, Get_Visual_Depth=theDepth ELSE theDepth = 8
     IF (Float(!Version.Release) GE 6.4) AND (!D.NAME EQ 'Z') THEN Device, Get_Pixel_Depth=theDepth
     IF (!D.NAME EQ 'PS') AND (Float(!Version.Release) GE 7.1) THEN BEGIN
-       decomposedState = DecomposedColor(DEPTH=theDepth)
-   ENDIF
+       decomposedState = cgGetColorState(DEPTH=theDepth)
+    ENDIF
 
     ; Need brewer colors?
     brewer = Keyword_Set(brewer)
@@ -799,7 +815,7 @@ FUNCTION cgColor, theColour, colorIndex, $
                 colors = BytArr(ncolors, 3)
                 FOR j=0,ncolors-1 DO colors[j,*] = cgColor(theColor[j], colorIndex[j], Filename=filename, $
                    Decomposed=decomposedState, /Triple, BREWER=brewer)
-                RETURN, Byte(colors)
+                IF Keyword_Set(row) THEN RETURN, Transpose(Byte(colors)) ELSE RETURN, Byte(colors)
              ENDIF ELSE BEGIN
                 colors = LonArr(ncolors)
                 FOR j=0,ncolors-1 DO colors[j] = cgColor(theColor[j], colorIndex[j], Filename=filename, $

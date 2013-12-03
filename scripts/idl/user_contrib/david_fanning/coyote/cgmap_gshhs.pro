@@ -151,6 +151,8 @@
 ;        Added THICK keyword. 28 Dec 2011. DWF.
 ;        Modified so you can pass a map object with the MAP_STRUCTURE keyword and not
 ;           have it change the object to a structure. 5 April 2012. DWF.
+;        Updated to use the polygon magnitude factor when calculating polygon area that
+;           was introduced in GSSHG 2.2. 22 Nov 2013. DWF.
 ;    
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
@@ -173,9 +175,9 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
    Catch, theError
    IF theError NE 0 THEN BEGIN
       Catch, /Cancel
-      void = Error_Message()
+      void = cgErrorMsg()
       IF N_Elements(lun) NE 0 THEN Free_Lun, lun
-      IF N_Elements(thisState) NE 0 THEN SetDecomposedState, thisState
+      IF N_Elements(thisState) NE 0 THEN cgSetColorState, thisState
       IF N_Elements(r) NE 0 THEN TVLCT, r, g, b
       RETURN
    ENDIF
@@ -199,7 +201,7 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
     ENDIF
     
    ; Do this in decomposed color mode if possible.
-   SetDecomposedState, 1, CurrentState=thisState
+   cgSetColorState, 1, CurrentState=thisState
    TVLCT, r, g, b, /Get
    
    ; Default values.
@@ -278,15 +280,40 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
               
    ; Define the polygon header, for GSHHS software 2.0, which uses a 44 byte
    ; header structure. For example, gshhs_h.b from the gshhs_2.0.zip.
+;   header = { id: 0L, $        ; A unique polygon ID number, starting at 0.
+;              npoints: 0L, $   ; The number of points in this polygon.
+;              flag: 0L, $      ; Contains polygon level, version, greenwich, source, and river values.
+;              west: 0L, $      ; West extent of polygon boundary in micro-degrees.
+;              east: 0L, $      ; East extent of polygon boundary in micro-degrees.
+;              south: 0L, $     ; South extent of polygon boundary in micro-degrees.
+;              north: 0L, $     ; North extent of polygon boundary in micro-degrees.
+;              area: 0L, $      ; Area of polygon in 1/10 km^2.
+;              area_full: 0L, $ ; Area of origiinal full-resolution polygon in 1/10 km^2.
+;              container: 0L, $ ; ID of container polygon that encloses this polygon (-1 if "none").
+;              ancestor: 0L }   ; ID of ancestor polygon in the full resolution set that was the source
+;                               ; of this polygon (-1 of "none").
+;
+;  I don't have a polygon header for version 2.1 of the GSHHS software but I believe the 2.0 header will
+;  work. This version of GSHHS was pretty buggy and not used very long. Better to upgrade to 2.2.
+;  
+   ; Define the polygon header, for GSHHS software 2.2, which uses a 44 byte
+   ; header structure. For example, gshhs_h.b from the gshhg_2.2.zip.
    header = { id: 0L, $        ; A unique polygon ID number, starting at 0.
               npoints: 0L, $   ; The number of points in this polygon.
-              flag: 0L, $      ; Contains polygon level, version, greenwich, source, and river values.
+              flag: 0L, $      ; Bytes defined as:
+              ;    1st byte:    level = flag & 255: Values: 1 land, 2 lake, 3 island_in_lake, 4 pond_in_island_in_lake
+              ;    2nd byte:    version = (flag >> 8) & 255: Values: Should be 9 for GSHHS release 9
+              ;    3rd byte:    greenwich = (flag >> 16) & 3: Values: 0 if Greenwich nor Dateline are crossed,
+              ;                 1 if Greenwich is crossed, 2 if Dateline is crossed, 3 if both is crossed.
+              ;    4th byte:    source = (flag >> 24) & 1: Values: 0 = CIA WDBII, 1 = WVS
+              ;    5th byte:    river = (flag >> 25) & 1: Values: 0 = not set, 1 = river-lake and GSHHS level = 2 (or WDBII class 0)
+              ;    6th byte:    area magnitude scale p (as in 10^p) = flag >> 26.  We divide area by 10^p.
               west: 0L, $      ; West extent of polygon boundary in micro-degrees.
               east: 0L, $      ; East extent of polygon boundary in micro-degrees.
               south: 0L, $     ; South extent of polygon boundary in micro-degrees.
               north: 0L, $     ; North extent of polygon boundary in micro-degrees.
-              area: 0L, $      ; Area of polygon in 1/10 km^2.
-              area_full: 0L, $ ; Area of origiinal full-resolution polygon in 1/10 km^2.
+              area: 0L, $      ; Area of polygon in area/10^p = km^2.
+              area_full: 0L, $ ; Area of original full-resolution polygon in area_full/10^p = km2.
               container: 0L, $ ; ID of container polygon that encloses this polygon (-1 if "none").
               ancestor: 0L }   ; ID of ancestor polygon in the full resolution set that was the source
                                ; of this polygon (-1 of "none").
@@ -297,24 +324,24 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
    
       READU, lun, header
       
-      ; Parse the flag. Version 6 corresponds to 1.1x. Version 7 cooresponds to 2.0.
+      ; Parse the flag. Version 6 corresponds to 1.1x. Version 7 corresponds to 2.0.
+      ; Version 8 corresponds to 2.1 and Version 9 corresponds to 2.2.
       f = header.flag
       version = ISHFT(f, -8) AND 255B
-      IF version LT 7 THEN BEGIN
-          IF version GT 3 THEN BEGIN
-             polygonLevel = (f AND 255B) 
-          ENDIF ELSE BEGIN
-             polygonLevel = header.level
-          ENDELSE
-          greenwich = ISHFT(f, -16) AND 255B
-          source = ISHFT(f, -24) AND 255B
-      ENDIF ELSE BEGIN
-          polygonLevel = (f AND 255B) 
+
+      IF version LT 9 THEN BEGIN
+          IF version LE 3 THEN polygonLevel = header.level ELSE polygonLevel = (f AND 255B) 
           greenwich = ISHFT(f, -16) AND 1B
           source = ISHFT(f, -24) AND 1B
           river = ISHFT(f, -25) AND 1B
+      ENDIF ELSE BEGIN
+          polygonLevel = (f AND 255B) 
+          greenwich = ISHFT(f, -16) AND 3B
+          source = ISHFT(f, -24) AND 1B
+          river = ISHFT(f, -25) AND 1B
+          magnitude = ISHFT(f, -26) AND 255B ; Divide header.area by 10^magnitude to get true area.
       ENDELSE
-      
+
       ; Get the polygon coordinates. Convert to lat/lon.
       polygon = LonArr(2, header.npoints, /NoZero)
       READU, lun, polygon
@@ -323,7 +350,11 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
       Undefine, polygon
 
       ; Discriminate polygons based on header information.
-      polygonArea = header.area * 0.1
+      IF version LE 8 THEN BEGIN
+          polygonArea = Double(header.area) * 0.1 ; km^2
+      ENDIF ELSE BEGIN
+          polygonArea = Double(header.area) / 10.0^magnitude ; km^2
+      ENDELSE
    
       IF polygonLevel GT level THEN CONTINUE
       IF polygonArea LE minArea THEN CONTINUE
@@ -369,11 +400,12 @@ PRO cgMap_GSHHS, filename, $         ; The name of the GSHHS data file to open
       IF Keyword_Set(fill) AND Keyword_Set(outline) THEN $
          PLOTS, lon, lat, Color=cgColor(color), NOCLIP=noclip, Thick=thick
 
+
    ENDWHILE
    Free_Lun, lun
 
    ; Restore decomposition state.
-   SetDecomposedState, thisState
+   cgSetColorState, thisState
    
    IF !D.NAME NE 'Z' THEN TVLCT, r, g, b
 END
