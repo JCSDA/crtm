@@ -12,13 +12,12 @@ MODULE Message_Handler
   ! Visibilities
   PRIVATE
   ! Module parameters
-  PUBLIC :: SUCCESS    
+  PUBLIC :: SUCCESS
   PUBLIC :: INFORMATION
-  PUBLIC :: WARNING    
-  PUBLIC :: FAILURE    
-  PUBLIC :: EOF        
+  PUBLIC :: WARNING
+  PUBLIC :: FAILURE
   PUBLIC :: UNDEFINED
-  ! Module procedures  
+  ! Module procedures
   PUBLIC :: Program_Message
   PUBLIC :: Display_Message
   PUBLIC :: Open_Message_Log
@@ -29,24 +28,22 @@ MODULE Message_Handler
   INTEGER, PARAMETER :: INFORMATION = 1
   INTEGER, PARAMETER :: WARNING     = 2
   INTEGER, PARAMETER :: FAILURE     = 3
-  INTEGER, PARAMETER :: EOF         = 4
-  INTEGER, PARAMETER :: UNDEFINED   = 5
+  INTEGER, PARAMETER :: UNDEFINED   = 4
 
   ! Character descriptors of the error states
-  INTEGER,      PARAMETER :: MAX_N_STATES = 5
+  INTEGER,      PARAMETER :: MAX_N_STATES = 4
   CHARACTER(*), PARAMETER, DIMENSION( 0:MAX_N_STATES ) :: &
     STATE_DESCRIPTOR = (/ 'SUCCESS    ', &
                           'INFORMATION', &
                           'WARNING    ', &
                           'FAILURE    ', &
-                          'END-OF-FILE', &
                           'UNDEFINED  ' /)
 
 
 CONTAINS
 
 
-  ! Subroutine to output a program header consisting of 
+  ! Subroutine to output a program header consisting of
   ! the program name, description, and its revision
   !
   SUBROUTINE Program_Message( Name, Description, Revision )
@@ -111,7 +108,7 @@ CONTAINS
 
   ! Subroutine to display messages.
   !
-  ! This routine calls itself if the optional argument Message_Log 
+  ! This routine calls itself if the optional argument Message_Log
   ! is passed and an error occurs opening the output log file.
   !
   RECURSIVE SUBROUTINE Display_Message(Routine_Name, &
