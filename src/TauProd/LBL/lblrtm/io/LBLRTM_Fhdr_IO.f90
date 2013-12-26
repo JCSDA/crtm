@@ -22,10 +22,11 @@ MODULE LBLRTM_Fhdr_IO
                                 LBLRTM_FILE_EOL, &
                                 LBLRTM_FILE_OK , &
                                 LBLRTM_FILE_UNDEF
-  USE LBLRTM_Fhdr_Define, ONLY: LBLRTM_Fhdr_type, &
+  USE LBLRTM_Fhdr_Define, ONLY: LBLRTM_Fhdr_type    , &
                                 LBLRTM_Fhdr_SetValid, &
-                                LBLRTM_Fhdr_IsValid, &
-                                LBLRTM_Fhdr_Destroy, LBLRTM_Fhdr_inspect 
+                                LBLRTM_Fhdr_IsValid , &
+                                LBLRTM_Fhdr_Destroy , &
+                                LBLRTM_Fhdr_Inspect
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -38,6 +39,7 @@ MODULE LBLRTM_Fhdr_IO
   ! Procedures
   PUBLIC :: LBLRTM_Fhdr_Read
   PUBLIC :: LBLRTM_Fhdr_Write
+  PUBLIC :: LBLRTM_Fhdr_IOVersion
 
 
   ! -------------------------
@@ -155,7 +157,7 @@ CONTAINS
       CALL Read_CleanUp(); RETURN
     END IF
 
-print *, 'before read of fhdr data'
+
     ! Read the data
     READ( FileId,IOSTAT=io_stat,IOMSG=io_msg ) &
       Fhdr%User_ID                      , &
@@ -193,7 +195,6 @@ print *, 'before read of fhdr data'
       Fhdr%Calculation_Date             , &
       Fhdr%Calculation_Time             , &
       Fhdr%ancillary
-print *, 'after read of fhdr data'
 
 
     ! Check the read status
@@ -219,7 +220,7 @@ print *, 'after read of fhdr data'
 
     ! Tag object as valid
     CALL LBLRTM_Fhdr_SetValid(Fhdr)
-call lblrtm_fhdr_inspect(fhdr)
+    IF ( debug_output ) CALL LBLRTM_Fhdr_Inspect(fhdr)
 
   CONTAINS
 
@@ -284,11 +285,13 @@ call lblrtm_fhdr_inspect(fhdr)
 
   FUNCTION LBLRTM_Fhdr_Write( &
     Fhdr  , &  ! Input
-    FileId) &  ! Input
+    FileId, &  ! Input
+    Debug ) &  ! Input
   RESULT( err_stat )
     ! Arguments
     TYPE(LBLRTM_Fhdr_type), INTENT(IN) :: Fhdr
     INTEGER               , INTENT(IN) :: FileId
+    LOGICAL,     OPTIONAL , INTENT(IN) :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -297,9 +300,14 @@ call lblrtm_fhdr_inspect(fhdr)
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
+    LOGICAL :: debug_output
 
     ! Setup
     err_stat = SUCCESS
+    ! ...Set debug option
+    debug_output = .FALSE.
+    IF ( PRESENT(Debug) ) debug_output = Debug
+    IF ( debug_output ) CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
     ! ...Check if structure is valid
     IF ( .NOT. LBLRTM_Fhdr_IsValid(Fhdr) ) THEN
       msg = 'Invalid LBLRTM file header'
@@ -367,5 +375,35 @@ call lblrtm_fhdr_inspect(fhdr)
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION LBLRTM_Fhdr_Write
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LBLRTM_Fhdr_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the version information for the module.
+!
+! CALLING SEQUENCE:
+!       CALL LBLRTM_Fhdr_IOVersion( Id )
+!
+! OUTPUTS:
+!       Id:     Character string containing the version Id information for the
+!               module.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE LBLRTM_Fhdr_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE LBLRTM_Fhdr_IOVersion
+
 
 END MODULE LBLRTM_Fhdr_IO

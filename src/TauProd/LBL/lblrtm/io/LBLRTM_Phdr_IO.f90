@@ -23,8 +23,9 @@ MODULE LBLRTM_Phdr_IO
                                 LBLRTM_FILE_UNDEF
   USE LBLRTM_Phdr_Define, ONLY: LBLRTM_Phdr_type, &
                                 LBLRTM_Phdr_SetValid, &
-                                LBLRTM_Phdr_IsValid, &
-                                LBLRTM_Phdr_Destroy
+                                LBLRTM_Phdr_IsValid , &
+                                LBLRTM_Phdr_Destroy , &
+                                LBLRTM_Phdr_Inspect
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -37,6 +38,7 @@ MODULE LBLRTM_Phdr_IO
   ! Procedures
   PUBLIC :: LBLRTM_Phdr_Read
   PUBLIC :: LBLRTM_Phdr_Write
+  PUBLIC :: LBLRTM_Phdr_IOVersion
 
 
   ! -----------------
@@ -152,7 +154,9 @@ CONTAINS
     debug_output = .FALSE.
     IF ( PRESENT(debug) ) debug_output = debug
     IF ( debug_output ) CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
-    ! ...Check if file is open
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Read_CleanUp(); RETURN
@@ -194,6 +198,7 @@ CONTAINS
 
     ! Tag object as valid
     CALL LBLRTM_Phdr_SetValid(Phdr)
+    IF ( debug_output ) CALL LBLRTM_Phdr_Inspect(Phdr)
 
   CONTAINS
 
@@ -258,11 +263,13 @@ CONTAINS
 
   FUNCTION LBLRTM_Phdr_Write( &
     Phdr  , &  ! Input
-    FileId) &  ! Input
+    FileId, &  ! Input
+    Debug ) &  ! Input
   RESULT( err_stat )
     ! Arguments
     TYPE(LBLRTM_Phdr_type), INTENT(IN) :: Phdr
     INTEGER               , INTENT(IN) :: FileId
+    LOGICAL,     OPTIONAL , INTENT(IN) :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -271,15 +278,24 @@ CONTAINS
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
+    LOGICAL :: debug_output
 
     ! Setup
     err_stat = SUCCESS
-    ! ...Check if structure is valid
+    ! ...Set debug option
+    debug_output = .FALSE.
+    IF ( PRESENT(debug) ) debug_output = debug
+    IF ( debug_output ) CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
+
+
+    ! Check if structure is valid
     IF ( .NOT. LBLRTM_Phdr_IsValid(Phdr) ) THEN
       msg = 'Invalid LBLRTM Panel header'
       CALL Write_CleanUp(); RETURN
     END IF
-    ! ...Check if file is open
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Write_CleanUp(); RETURN
@@ -310,5 +326,34 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION LBLRTM_Phdr_Write
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LBLRTM_Phdr_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the version information for the module.
+!
+! CALLING SEQUENCE:
+!       CALL LBLRTM_Phdr_IOVersion( Id )
+!
+! OUTPUTS:
+!       Id:     Character string containing the version Id information for the
+!               module.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE LBLRTM_Phdr_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE LBLRTM_Phdr_IOVersion
 
 END MODULE LBLRTM_Phdr_IO

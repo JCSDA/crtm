@@ -27,7 +27,8 @@ MODULE LBLRTM_Panel_IO
                                  LBLRTM_Panel_SetValid  , &
                                  LBLRTM_Panel_IsValid   , &
                                  LBLRTM_Panel_Destroy   , &
-                                 LBLRTM_Panel_Create
+                                 LBLRTM_Panel_Create    , &
+                                 LBLRTM_Panel_Inspect
   USE LBLRTM_Phdr_Define , ONLY: LBLRTM_Phdr_type
   USE LBLRTM_Phdr_IO     , ONLY: LBLRTM_Phdr_Read , &
                                  LBLRTM_Phdr_Write
@@ -43,6 +44,7 @@ MODULE LBLRTM_Panel_IO
   ! Procedures
   PUBLIC :: LBLRTM_Panel_Read
   PUBLIC :: LBLRTM_Panel_Write
+  PUBLIC :: LBLRTM_Panel_IOVersion
 
 
   ! -----------------
@@ -80,7 +82,8 @@ CONTAINS
 !                        LBLRTM_Panel, &
 !                        FileId      , &
 !                        EOF         , &
-!                        Double_Panel  )
+!                        Double_Panel = Double_Panel, &
+!                        Quiet        = Quiet         )
 !
 ! OBJECTS:
 !       LBLRTM_Panel:  LBLRTM panel object to hold the data.
@@ -122,6 +125,16 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Quiet:         Set this logical argument to suppress INFORMATION
+!                      messages being printed to stdout
+!                      If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                         == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                      If not specified, default is .FALSE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
@@ -143,6 +156,7 @@ CONTAINS
     FileId      , &  ! Input
     EoF         , &  ! Output
     Double_Panel, &  ! Optional input
+    Quiet       , &  ! Optional input
     Debug       ) &  ! Optional input
   RESULT( err_stat)
     ! Arguments
@@ -150,6 +164,7 @@ CONTAINS
     INTEGER                , INTENT(IN)  :: FileId
     INTEGER                , INTENT(OUT) :: EoF
     LOGICAL,      OPTIONAL , INTENT(IN)  :: Double_Panel
+    LOGICAL,      OPTIONAL , INTENT(IN)  :: Quiet
     LOGICAL,      OPTIONAL , INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
@@ -158,8 +173,10 @@ CONTAINS
     ! Local variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: err_msg
     INTEGER :: io_stat
     LOGICAL :: single_panel
+    LOGICAL :: noisy
     LOGICAL :: debug_output
     INTEGER :: i, n_spectra
     TYPE(LBLRTM_Phdr_type) :: phdr
@@ -168,17 +185,25 @@ CONTAINS
     err_stat = SUCCESS
     ! ...Set panel count
     single_panel = .TRUE.
-    IF ( PRESENT(Double_Panel) ) single_panel = .NOT. Double_Panel 
+    IF ( PRESENT(Double_Panel) ) single_panel = .NOT. Double_Panel
     IF ( single_panel ) THEN
       n_spectra = 1
     ELSE
       n_spectra = 2
     END IF
+    ! ...Set info output status
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Set debug option
     debug_output = .FALSE.
-    IF ( PRESENT(debug) ) debug_output = debug
-    IF ( debug_output ) CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
-    ! ...Check if file is open
+    IF ( PRESENT(Debug) ) debug_output = Debug
+    IF ( debug_output ) THEN
+      CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
+      noisy = .TRUE.
+    END IF
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Read_CleanUp(); RETURN
@@ -186,28 +211,36 @@ CONTAINS
 
 
     ! Read the panel header
-    err_stat = LBLRTM_Phdr_Read( phdr,FileId,EoF,Debug=debug )
+    err_stat = LBLRTM_Phdr_Read( phdr,FileId,EoF,Debug=Debug )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading panel header'
       CALL Read_Cleanup(); RETURN
     END IF
 
-    
+
     ! Check for End-of-Layer or End-of-File
     IF ( EoF == LBLRTM_FILE_EOL .OR. &
          EoF == LBLRTM_FILE_EOF      ) RETURN
 
 
     ! Allocate the panel object
-    CALL LBLRTM_Panel_Create( Panel,phdr,n_spectra )
+    CALL LBLRTM_Panel_Create( Panel,phdr,n_spectra,Err_Msg=err_msg )
     IF ( .NOT. LBLRTM_Panel_Associated(Panel) ) THEN
-      msg = 'Panel object allocation failed'
+      msg = 'Panel object allocation failed - '//TRIM(err_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    
-    
+
+
     ! Read the spectral data
     DO i = 1, n_spectra
+
+      ! Progress info
+      IF ( noisy ) THEN
+        WRITE(msg,'(4x,"Reading spectrum #",i0,"...")') i
+        CALL Display_Message(ROUTINE_NAME,msg,INFORMATION)
+      END IF
+
+      ! Read data and process result
       READ( FileId,IOSTAT=io_stat,IOMSG=io_msg ) Panel%Spectrum(:,i)
       SELECT CASE (io_stat)
         ! ...Error occurred in read
@@ -224,10 +257,11 @@ CONTAINS
           EoF = LBLRTM_FILE_OK
       END SELECT
     END DO
-    
+
 
     ! Tag object as valid
     CALL LBLRTM_Panel_SetValid(Panel)
+    IF ( debug_output ) CALL LBLRTM_Panel_Inspect(Panel)
 
   CONTAINS
 
@@ -259,7 +293,8 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = LBLRTM_Panel_Write( &
 !                        LBLRTM_Panel, &
-!                        FileId        )
+!                        FileId      , &
+!                        Quiet = Quiet )
 !
 ! OBJECTS:
 !       LBLRTM_Panel:  LBLRTM panel object to write to file.
@@ -274,6 +309,17 @@ CONTAINS
 !                      TYPE:       INTEGER
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Quiet:         Set this logical argument to suppress INFORMATION
+!                      messages being printed to stdout
+!                      If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                         == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                      If not specified, default is .FALSE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
@@ -292,11 +338,15 @@ CONTAINS
 
   FUNCTION LBLRTM_Panel_Write( &
     Panel , &  ! Input
-    FileId) &  ! Input
+    FileId, &  ! Input
+    Quiet , &  ! Optional input
+    Debug ) &  ! Optional input
   RESULT( err_stat)
     ! Arguments
     TYPE(LBLRTM_Panel_type), INTENT(IN) :: Panel
     INTEGER                , INTENT(IN) :: FileId
+    LOGICAL,       OPTIONAL, INTENT(IN) :: Quiet
+    LOGICAL,       OPTIONAL, INTENT(IN) :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -305,16 +355,32 @@ CONTAINS
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
+    LOGICAL :: noisy
+    LOGICAL :: debug_output
     INTEGER :: i
 
     ! Setup
     err_stat = SUCCESS
-    ! ...Check input
+    ! ...Set info output status
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Set debug option
+    debug_output = .FALSE.
+    IF ( PRESENT(Debug) ) debug_output = Debug
+    IF ( debug_output ) THEN
+      CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
+      noisy = .TRUE.
+    END IF
+
+
+    ! Check input
     IF ( .NOT. LBLRTM_Panel_IsValid(Panel) ) THEN
       msg = 'Input panel does not contain valid data'
       CALL Write_CleanUp(); RETURN
     END IF
-    ! ...Check if file is open
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Write_CleanUp(); RETURN
@@ -322,22 +388,30 @@ CONTAINS
 
 
     ! Write the panel header
-    err_stat = LBLRTM_Phdr_Write( Panel%Header,FileId )
+    err_stat = LBLRTM_Phdr_Write( Panel%Header,FileId,Debug=Debug )
     IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error reading panel header'
+      msg = 'Error writing panel header'
       CALL Write_Cleanup(); RETURN
     END IF
 
 
     ! Write the spectral data
     DO i = 1, Panel%n_Spectra
+
+      ! Progress info
+      IF ( noisy ) THEN
+        WRITE(msg,'(4x,"Writing spectrum #",i0,"...")') i
+        CALL Display_Message(ROUTINE_NAME,msg,INFORMATION)
+      END IF
+
+      ! Write spectrum and process result
       WRITE( FileId,IOSTAT=io_stat,IOMSG=io_msg ) Panel%Spectrum(:,i)
       IF ( io_stat /= 0 ) THEN
         msg = 'Error writing LBLRTM panel data - '//TRIM(io_msg)
         CALL Write_CleanUp(); RETURN
       END IF
     END DO
-    
+
   CONTAINS
 
     SUBROUTINE Write_CleanUp()
@@ -351,5 +425,34 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION LBLRTM_Panel_Write
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LBLRTM_Panel_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the version information for the module.
+!
+! CALLING SEQUENCE:
+!       CALL LBLRTM_Panel_IOVersion( Id )
+!
+! OUTPUTS:
+!       Id:     Character string containing the version Id information for the
+!               module.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE LBLRTM_Panel_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE LBLRTM_Panel_IOVersion
 
 END MODULE LBLRTM_Panel_IO

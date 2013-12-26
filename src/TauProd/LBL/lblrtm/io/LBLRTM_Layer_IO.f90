@@ -42,7 +42,8 @@ MODULE LBLRTM_Layer_IO
                                  LBLRTM_Layer_SetValid  , &
                                  LBLRTM_Layer_IsValid   , &
                                  LBLRTM_Layer_Destroy   , &
-                                 LBLRTM_Layer_Create
+                                 LBLRTM_Layer_Create    , &
+                                 LBLRTM_Layer_Inspect
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -55,6 +56,7 @@ MODULE LBLRTM_Layer_IO
   ! Procedures
   PUBLIC :: LBLRTM_Layer_Read
   PUBLIC :: LBLRTM_Layer_Write
+  PUBLIC :: LBLRTM_Layer_IOVersion
 
 
   ! -----------------
@@ -92,7 +94,8 @@ CONTAINS
 !                        LBLRTM_Layer, &
 !                        FileId      , &
 !                        EOF         , &
-!                        Double_Panel  )
+!                        Double_Panel = Double_Panel, &
+!                        Quiet        = Quiet         )
 !
 ! OBJECTS:
 !       LBLRTM_Layer:  LBLRTM Layer object to hold the data.
@@ -125,9 +128,19 @@ CONTAINS
 !                      ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUTS:
-!       Double_Panel:  Set this logical flag to indicate a double-panel file.
-!                      If == .FALSE., the file is assumed to be single panel.
+!       Double_Panel:  Set this logical argument to indicate a double-panel file.
+!                      If == .FALSE., the file is assumed to be single panel [DEFAULT].
 !                         == .TRUE.,  the file is assumed to be double panel.
+!                      If not specified, default is .FALSE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Quiet:         Set this logical flag to suppress INFORMATION
+!                      messages being printed to stdout
+!                      If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                         == .TRUE.,  INFORMATION messages are SUPPRESSED.
 !                      If not specified, default is .FALSE.
 !                      UNITS:      N/A
 !                      TYPE:       LOGICAL
@@ -155,6 +168,7 @@ CONTAINS
     FileId      , &  ! Input
     EoF         , &  ! Output
     Double_Panel, &  ! Optional input
+    Quiet       , &  ! Optional input
     Debug       ) &  ! Optional input
   RESULT( err_stat)
     ! Arguments
@@ -162,6 +176,7 @@ CONTAINS
     INTEGER                , INTENT(IN)  :: FileId
     INTEGER                , INTENT(OUT) :: EoF
     LOGICAL,      OPTIONAL , INTENT(IN)  :: Double_Panel
+    LOGICAL,      OPTIONAL , INTENT(IN)  :: Quiet
     LOGICAL,      OPTIONAL , INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
@@ -172,6 +187,7 @@ CONTAINS
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     LOGICAL :: single_panel
+    LOGICAL :: noisy
     LOGICAL :: debug_output
     INTEGER :: l1, l2 !, n_points
     INTEGER :: i, n_spectra
@@ -183,17 +199,25 @@ CONTAINS
     err_stat = SUCCESS
     ! ...Set panel count
     single_panel = .TRUE.
-    IF ( PRESENT(Double_Panel) ) single_panel = .NOT. Double_Panel 
+    IF ( PRESENT(Double_Panel) ) single_panel = .NOT. Double_Panel
     IF ( single_panel ) THEN
       n_spectra = 1
     ELSE
       n_spectra = 2
     END IF
+    ! ...Set info output status
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Set debug option
     debug_output = .FALSE.
     IF ( PRESENT(debug) ) debug_output = debug
-    IF ( debug_output ) CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
-    ! ...Check if file is open
+    IF ( debug_output ) THEN
+      CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
+      noisy = .TRUE.
+    END IF
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Read_CleanUp(); RETURN
@@ -217,30 +241,36 @@ CONTAINS
       msg = 'Layer object allocation failed'
       CALL Read_Cleanup(); RETURN
     END IF
-    
-    
+
+
     ! Initialise counters and indices
     n_chunks = 0
     l1 = 1
-    
+
 
     ! Begin the panel "chunk" read loop
     Read_Chunk_loop: DO
-    
+
       ! Increment the chunk counter
       n_chunks = n_chunks + 1
-      
+
+      ! Progress info
+      IF ( noisy ) THEN
+        WRITE(msg,'(2x,"Reading spectral chunk #",i0,"...")') n_chunks
+        CALL Display_Message(ROUTINE_NAME,msg,INFORMATION)
+      END IF
+
       ! Read the panel
-      err_stat = LBLRTM_Panel_Read( panel,FileId,EoF,Double_Panel=Double_Panel,Debug=debug )
+      err_stat = LBLRTM_Panel_Read( panel,FileId,EoF,Double_Panel=Double_Panel,Quiet=Quiet,Debug=debug )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE(msg,'("Error reading spectral chunk #",i0)' ) n_chunks
         CALL Read_Cleanup(); RETURN
       END IF
-      
+
       ! Check for End-of-Layer or End-of-File
       IF ( EoF == LBLRTM_FILE_EOL .OR. &
            EoF == LBLRTM_FILE_EOF      ) EXIT Read_Chunk_loop
-      
+
       ! Determine end spectral point index for current chunk
       l2 = l1 + panel%n_Points - 1
       IF ( l2 > Layer%n_points ) THEN
@@ -254,16 +284,16 @@ CONTAINS
       DO i = 1, n_spectra
         Layer%Spectrum(l1:l2,i) = panel%Spectrum(:,i)
       END DO
-      
+
       ! Update the begin index
       l1 = l2 + 1
-      
+
       ! Cleanup
       CALL LBLRTM_Panel_Destroy( panel )
 
     END DO Read_Chunk_loop
 
-        
+
     ! Check the number of points read
     IF ( l2 /= Layer%n_points ) THEN
 
@@ -281,10 +311,11 @@ CONTAINS
                             (REAL(Layer%n_Points-1,DP)*REAL(Layer%Frequency_Interval,DP))
 
     END IF
-    
+
 
     ! Tag object as valid
     CALL LBLRTM_Layer_SetValid(Layer)
+    IF ( debug_output ) CALL LBLRTM_Layer_Inspect(Layer)
 
   CONTAINS
 
@@ -317,7 +348,8 @@ CONTAINS
 !       Error_Status = LBLRTM_Layer_Write( &
 !                        LBLRTM_Layer, &
 !                        FileId      , &
-!                        No_EoL = No_EoL )
+!                        No_EoL = No_EoL, &
+!                        Quiet  = Quiet   )
 !
 ! OBJECTS:
 !       LBLRTM_Layer:  LBLRTM Layer object to write to file.
@@ -344,6 +376,16 @@ CONTAINS
 !                      DIMENSION:  Scalar
 !                      ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       Quiet:         Set this logical argument to suppress INFORMATION
+!                      messages being printed to stdout
+!                      If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                         == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                      If not specified, default is .FALSE.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 ! FUNCTION RESULT:
 !       Error_Status:  The return value is an integer defining the error status.
 !                      The error codes are defined in the Message_Handler module.
@@ -362,21 +404,28 @@ CONTAINS
   FUNCTION LBLRTM_Layer_Write( &
     Layer , &  ! Input
     FileId, &  ! Input
-    No_EoL) &  ! Optional Input
+    No_EoL, &  ! Optional Input
+    Quiet , &  ! Optional Input
+    Debug ) &  ! Optional Input
   RESULT( err_stat)
     ! Arguments
     TYPE(LBLRTM_Layer_type), INTENT(IN) :: Layer
     INTEGER                , INTENT(IN) :: FileId
     LOGICAL,      OPTIONAL , INTENT(IN) :: No_EoL
+    LOGICAL,      OPTIONAL , INTENT(IN) :: Quiet
+    LOGICAL,      OPTIONAL , INTENT(IN) :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'LBLRTM_Layer_IO::Write'
     ! Local variables
     CHARACTER(ML) :: msg
+    CHARACTER(ML) :: err_msg
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     LOGICAL :: write_eol
+    LOGICAL :: noisy
+    LOGICAL :: debug_output
     INTEGER :: i, j, l1, l2
     INTEGER :: n_chunks
     REAL(DP) :: f1, f2
@@ -388,7 +437,19 @@ CONTAINS
     ! ...Check EoL keyword
     write_eol = .TRUE.
     IF ( PRESENT(No_EoL) ) write_eol = .NOT. No_EoL
-    ! ...Check if file is open
+    ! ...Set info output status
+    noisy = .TRUE.
+    IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
+    ! ...Set debug option
+    debug_output = .FALSE.
+    IF ( PRESENT(Debug) ) debug_output = Debug
+    IF ( debug_output ) THEN
+      CALL Display_Message(ROUTINE_NAME,'Entering...',INFORMATION)
+      noisy = .TRUE.
+    END IF
+
+
+    ! Check if file is open
     IF ( .NOT. File_Open(FileId) ) THEN
       msg = 'LBLRTM file is not open'
       CALL Write_CleanUp(); RETURN
@@ -411,49 +472,55 @@ CONTAINS
       n_chunks = n_chunks + 1
     END IF
 
-    
+
     ! Initialise spectral begin index
     l1 = 1
-    
+
 
     ! Begin the panel "chunk" write loop
     Write_Chunk_loop: DO j = 1, n_chunks
-    
+
+      ! Progress info
+      IF ( noisy ) THEN
+        WRITE(msg,'(2x,"Writing spectral chunk #",i0,"...")') j
+        CALL Display_Message(ROUTINE_NAME,msg,INFORMATION)
+      END IF
+
       ! Compute spectral chunk end index
       l2 = MIN(l1 + LBLRTM_MAX_CHUNK_POINTS - 1, Layer%n_Points )
-      
+
       ! Construct panel header
       phdr%Frequency_Interval = Layer%Frequency_Interval
       f1 = REAL(l1-1,DP) * phdr%Frequency_Interval
       f2 = REAL(l2-1,DP) * phdr%Frequency_Interval
       phdr%Begin_Frequency = Layer%Begin_Frequency + f1
       phdr%End_Frequency   = Layer%Begin_Frequency + f2
-      phdr%n_Points = l2 - l1 + 1     
+      phdr%n_Points = l2 - l1 + 1
       CALL LBLRTM_Phdr_SetValid( phdr )
-      
+
       ! Create a panel object
-      CALL LBLRTM_Panel_Create( panel,phdr,Layer%n_Spectra )
+      CALL LBLRTM_Panel_Create( panel,phdr,Layer%n_Spectra,Err_Msg=err_msg )
       IF ( .NOT. LBLRTM_Panel_Associated(panel) ) THEN
-        WRITE(msg,'("Error creating panel object for spectral chunk #",i0)') j
+        WRITE(msg,'("Error creating panel object for spectral chunk #",i0," - ",a)') j, TRIM(err_msg)
         CALL Write_Cleanup(); RETURN
       END IF
-       
+
       ! Copy over the spectral data from layer to panel
       DO i = 1, Layer%n_Spectra
         Panel%Spectrum(:,i) = Layer%Spectrum(l1:l2,i)
       END DO
       CALL LBLRTM_Panel_SetValid( panel )
-      
+
       ! Write the panel
-      err_stat = LBLRTM_Panel_Write( panel,FileId )
+      err_stat = LBLRTM_Panel_Write( panel,FileId,Quiet=Quiet )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE(msg,'("Error writing spectral chunk #",i0)' ) j
         CALL Write_Cleanup(); RETURN
       END IF
-      
+
       ! Update the begin index
       l1 = l2 + 1
-      
+
       ! Cleanup
       CALL LBLRTM_Phdr_Destroy( phdr )
       CALL LBLRTM_Panel_Destroy( panel )
@@ -468,8 +535,12 @@ CONTAINS
         msg = 'Error writing EoL marker'
         CALL Write_Cleanup(); RETURN
       END IF
+      IF ( noisy ) THEN
+        msg = 'Writing End-of-Layer marker'
+        CALL Display_Message(ROUTINE_NAME,msg,INFORMATION)
+      END IF
     END IF
-    
+
   CONTAINS
 
     SUBROUTINE Write_CleanUp()
@@ -483,5 +554,34 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION LBLRTM_Layer_Write
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LBLRTM_Layer_IOVersion
+!
+! PURPOSE:
+!       Subroutine to return the version information for the module.
+!
+! CALLING SEQUENCE:
+!       CALL LBLRTM_Layer_IOVersion( Id )
+!
+! OUTPUTS:
+!       Id:     Character string containing the version Id information for the
+!               module.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE LBLRTM_Layer_IOVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE LBLRTM_Layer_IOVersion
 
 END MODULE LBLRTM_Layer_IO

@@ -300,6 +300,8 @@ CONTAINS
     n_points = LBLRTM_n_Points( Header%Begin_Frequency   , &
                                 Header%End_Frequency     , &
                                 Header%Frequency_Interval  )
+    ! ...Add an extra point for calculation slop
+    n_points = n_points + 1
 
     ! Perform the allocation
     ALLOCATE( self%Spectrum( n_points, n_Spectra ), &
@@ -314,8 +316,8 @@ CONTAINS
     ! ...Header
     self%Header    = Header
     ! ...Frequency data
-    self%Begin_Frequency    = self%Header%Begin_Frequency   
-    self%End_Frequency      = self%Header%End_Frequency     
+    self%Begin_Frequency    = self%Header%Begin_Frequency
+    self%End_Frequency      = self%Header%End_Frequency
     self%Frequency_Interval = self%Header%Frequency_Interval
     ! ...Arrays
     self%Spectrum  = 0.0_FP
@@ -378,8 +380,8 @@ CONTAINS
     WRITE(*,'('//sp(3)//',"n_Points           : ",i0)') self%n_Points
     WRITE(*,'('//sp(3)//',"n_Spectra          : ",i0)') self%n_Spectra
     WRITE(*,'('//sp(2)//',"Scalars")')
-    WRITE(*,'('//sp(3)//',"Begin_Frequency    : ",'//FMT_STRING//')') self%Begin_Frequency   
-    WRITE(*,'('//sp(3)//',"End_Frequency      : ",'//FMT_STRING//')') self%End_Frequency     
+    WRITE(*,'('//sp(3)//',"Begin_Frequency    : ",'//FMT_STRING//')') self%Begin_Frequency
+    WRITE(*,'('//sp(3)//',"End_Frequency      : ",'//FMT_STRING//')') self%End_Frequency
     WRITE(*,'('//sp(3)//',"Frequency_Interval : ",'//FMT_STRING//')') self%Frequency_Interval
     IF ( .NOT. LBLRTM_Layer_Associated(self) ) RETURN
     WRITE(*,'('//sp(2)//',"Data")')

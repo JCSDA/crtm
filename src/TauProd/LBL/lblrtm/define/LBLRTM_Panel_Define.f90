@@ -231,7 +231,8 @@ CONTAINS
 
   ELEMENTAL SUBROUTINE LBLRTM_Panel_Destroy( self )
     TYPE(LBLRTM_Panel_type), INTENT(OUT) :: self
-    self%Is_Valid = .FALSE.
+    self%Is_Allocated = .FALSE.
+    self%Is_Valid     = .FALSE.
   END SUBROUTINE LBLRTM_Panel_Destroy
 
 
@@ -247,7 +248,8 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       CALL LBLRTM_Panel_Create( LBLRTM_Panel, &
 !                                 LBLRTM_PHdr , &
-!                                 n_Spectra     )
+!                                 n_Spectra   , &
+!                                 Err_Msg = Err_Msg )
 !
 ! OBJECTS:
 !       LBLRTM_Panel:       LBLRTM_Panel object structure.
@@ -261,7 +263,7 @@ CONTAINS
 !                           UNITS:      N/A
 !                           TYPE:       LBLRTM_Phdr_type
 !                           DIMENSION:  Conformable with LBLRTM_Panel
-!                           ATTRIBUTES: INTENT(OUT)
+!                           ATTRIBUTES: INTENT(IN)
 !
 !       n_Spectra:          Number of spectra (or "panels").
 !                           Must be > 0.
@@ -270,29 +272,57 @@ CONTAINS
 !                           DIMENSION:  Conformable with LBLRTM_Panel
 !                           ATTRIBUTES: INTENT(IN)
 !
+! OPTIONAL OUTPUTS:
+!       Err_Msg:            String containing error message text if allocation
+!                           failde.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Conformable with LBLRTM_Panel
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   ELEMENTAL SUBROUTINE LBLRTM_Panel_Create( &
     self     , &  ! Output
     Header   , &  ! Input
-    n_Spectra  )  ! Input
+    n_Spectra, &  ! Input
+    Err_Msg    )  ! Optional output
     ! Arguments
     TYPE(LBLRTM_Panel_type), INTENT(OUT) :: self
     TYPE(LBLRTM_Phdr_type) , INTENT(IN)  :: Header
     INTEGER                , INTENT(IN)  :: n_Spectra
+    CHARACTER(*),  OPTIONAL, INTENT(OUT) :: Err_Msg
     ! Local variables
+    CHARACTER(ML) :: msg
     INTEGER :: alloc_stat
 
-    ! Check input
-    IF ( .NOT. LBLRTM_Phdr_IsValid(Header) ) RETURN
-    IF ( n_Spectra < 1 ) RETURN
+
+    ! Setup
+    IF ( PRESENT(Err_Msg) ) Err_Msg = ''
+    ! ...Check input
+    IF ( .NOT. LBLRTM_Phdr_IsValid(Header) ) THEN
+      IF ( PRESENT(Err_Msg) ) Err_Msg = 'Panel header component is invalid'
+      RETURN
+    END IF
+    IF ( Header%n_Points > 1000000 ) THEN
+      WRITE(msg,'("Panel header n_Points is unreasonably large: ",i0)') Header%n_Points
+      IF ( PRESENT(Err_Msg) ) Err_Msg = msg
+      RETURN
+    END IF
+    IF ( n_Spectra < 1 ) THEN
+      IF ( PRESENT(Err_Msg) ) Err_Msg = 'Input n_Spectra must be > 0'
+      RETURN
+    END IF
 
 
     ! Perform the allocation
     ALLOCATE( self%Spectrum( Header%n_Points, n_Spectra ), &
-              STAT = alloc_stat )
-    IF ( alloc_stat /= 0 ) RETURN
+              STAT = alloc_stat, ERRMSG = msg )
+    IF ( alloc_stat /= 0 ) THEN
+      IF ( PRESENT(Err_Msg) ) Err_Msg = msg
+      RETURN
+    END IF
 
 
     ! Initialise
