@@ -1,5 +1,5 @@
 ## Put version control id tag in output configure script
-AC_REVISION($Id: $)
+AC_REVISION($Id$)
 
 
 ## Initialise autoconf
