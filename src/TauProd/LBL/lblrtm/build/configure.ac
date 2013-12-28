@@ -3,7 +3,7 @@ AC_REVISION($Id: $)
 
 
 ## Initialise autoconf
-AC_INIT([LBLRTM I/O], [v0.1.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [lblrtm_io])
+AC_INIT([LBLRTM I/O], [v0.1.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [lblrtmio])
 
 
 # Output info for user
@@ -15,8 +15,7 @@ AC_CONFIG_SRCDIR([libsrc/LBLRTM_Parameters.f90])
 
 
 # Define the configuration files
-#AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
-AC_CONFIG_FILES([Makefile libsrc/Makefile])
+AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
 
 
 # Check for programs
