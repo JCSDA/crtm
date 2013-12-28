@@ -46,7 +46,6 @@ $(distdir): FORCE
 	cp Makefile.in $(distdir)
 	cp install-sh $(distdir)
 	cp -rL libsrc $(distdir)/libsrc
-	cp -rL config-setup $(distdir)/config-setup
 
 Makefile: Makefile.in config.status
 	./config.status $@
