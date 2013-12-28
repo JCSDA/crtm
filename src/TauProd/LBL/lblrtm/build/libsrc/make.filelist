@@ -4,10 +4,7 @@ FPP_FILES = Type_Kinds.fpp \
             LBLRTM_Utility.fpp
 SRC_FILES = File_Utility.f90 \
             Message_Handler.f90 \
-            Endian_Utility.f90 \
-            Binary_File_Utility.f90 \
             Compare_Float_Numbers.f90 \
-            UnitTest_Define.f90 \
             LBLRTM_Parameters.f90 \
             LBLRTM_Phdr_Define.f90 \
             LBLRTM_Phdr_IO.f90 \
@@ -18,7 +15,8 @@ SRC_FILES = File_Utility.f90 \
             LBLRTM_Layer_Define.f90 \
             LBLRTM_Layer_IO.f90 \
             LBLRTM_File_Define.f90 \
-            LBLRTM_File_IO.f90
+            LBLRTM_File_IO.f90 \
+            LBLRTMIO_Module.f90
 
 OBJ_FILES = ${FPP_FILES:.fpp=.o} \
             ${SRC_FILES:.f90=.o} \

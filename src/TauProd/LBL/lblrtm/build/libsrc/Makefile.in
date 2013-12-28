@@ -15,11 +15,12 @@ prefix = @prefix@
 installdir = $(prefix)/$(distdir)
 
 # Tool-specific substitution variables
-FC      = @FC@
-FCFLAGS = @FCFLAGS@ -c
-AR      = @AR@
-ARFLAGS = @ARFLAGS@
-RANLIB  = @RANLIB@
+FC       = @FC@
+FCFLAGS  = @FCFLAGS@ -c
+FPPFLAGS = @FPPFLAGS@
+AR       = @AR@
+ARFLAGS  = @ARFLAGS@
+RANLIB   = @RANLIB@
 INSTALL      = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 

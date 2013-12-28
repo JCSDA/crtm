@@ -34,24 +34,26 @@ AC_FC_FREEFORM
 AC_FC_SRCEXT(f90)
 
 
-# Establish the default type of LBLRTM files
-AC_ARG_ENABLE([double],
-  [AS_HELP_STRING([--disable-double],[Build for single-precision files])],
-  [double=no],
-  [double=yes])
+# Allow user to enable a single-precision build
+AC_ARG_ENABLE([single],
+  [AS_HELP_STRING([--enable-single],[Build for single-precision files])],
+  [enable_single=yes],
+  [enable_single=no])
 
 
 # Set the default type promotion compiler flags for the double case
-file_type="single"
-if test "x$enable_double" = "xyes"; then
+if test "x$enable_single" = "xno"; then
   file_type="double"
+  FPPFLAGS="-DREAL_SIZE=8 -DINT_SIZE=8"
   case $FC in
     gfortran)    FCFLAGS="-fdefault-real-8 -fdefault-integer-8 $FCFLAGS";;
     ifort|pgf95) FCFLAGS="-r8 -i8 $FCFLAGS";;
     xlf2003)     FCFLAGS="-qrealsize=8 -qintsize=8 $FCFLAGS";;
-    *) AC_MSG_WARN([Double-precision promotion flags for $FC unknown and not set])
-       file_type="single";;
+    *) AC_MSG_ERROR([float and integer promotion flags for $FC unknown and not set]);;
   esac
+else
+  file_type="single"
+  FPPFLAGS="-DREAL_SIZE=4 -DINT_SIZE=4"
 fi
 AC_MSG_NOTICE([Building library for ${file_type} precision file I/O.])
 AC_SUBST(FILE_TYPE,[${file_type}])

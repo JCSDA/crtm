@@ -420,7 +420,7 @@ CONTAINS
       IF ( fid < 0 ) THEN
         msg = 'Could not get a valid unit number for endian test'
         CALL Open_CleanUp(); RETURN
-      ENDIF
+      END IF
       ! ...Open file as unformatted stream access
       OPEN(fid,FILE   = Filename     , &
                STATUS = 'OLD'        , &
@@ -465,7 +465,7 @@ CONTAINS
     IF ( fid < 0 ) THEN
       msg = 'Could not get a valid unit number'
       CALL Open_CleanUp(); RETURN
-    ENDIF
+    END IF
     ! ...Open file as unformatted sequential access
     OPEN(fid,FILE   = Filename     , &
              STATUS = status       , &
