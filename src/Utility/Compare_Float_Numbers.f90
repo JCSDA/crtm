@@ -589,7 +589,7 @@ CONTAINS
     INTEGER,         INTENT(IN) :: n
     COMPLEX(Single) :: Tolerance
     REAL(Single) :: tr, ti
-    tr = Tolerance_Real_Single(REAL(x),n)
+    tr = Tolerance_Real_Single(REAL(x,Single),n)
     ti = Tolerance_Real_Single(AIMAG(x),n)
     Tolerance = CMPLX(tr,ti,Single)
   END FUNCTION Tolerance_Complex_Single
@@ -599,7 +599,7 @@ CONTAINS
     INTEGER,         INTENT(IN) :: n
     COMPLEX(Double) :: Tolerance
     REAL(Double) :: tr, ti
-    tr = Tolerance_Real_Double(REAL(x),n)
+    tr = Tolerance_Real_Double(REAL(x,Double),n)
     ti = Tolerance_Real_Double(AIMAG(x),n)
     Tolerance = CMPLX(tr,ti,Double)
   END FUNCTION Tolerance_Complex_Double
@@ -703,7 +703,7 @@ CONTAINS
     ELSE
       c = CMPLX(SP_COMPARE_CUTOFF,SP_COMPARE_CUTOFF,Single)
     END IF
-    is_comparable = cwt_Real_Single(REAL(x) ,REAL(y) ,n,cutoff=REAL(c) ) .AND. &
+    is_comparable = cwt_Real_Single(REAL(x,Single),REAL(y,Single),n,cutoff=REAL(c,Single) ) .AND. &
                     cwt_Real_Single(AIMAG(x),AIMAG(y),n,cutoff=AIMAG(c))
   END FUNCTION cwt_Complex_Single
 
@@ -719,7 +719,7 @@ CONTAINS
     ELSE
       c = CMPLX(DP_COMPARE_CUTOFF,DP_COMPARE_CUTOFF,Double)
     END IF
-    is_comparable = cwt_Real_Double(REAL(x) ,REAL(y) ,n,cutoff=REAL(c) ) .AND. &
+    is_comparable = cwt_Real_Double(REAL(x,Double),REAL(y,Double),n,cutoff=REAL(c,Double) ) .AND. &
                     cwt_Real_Double(AIMAG(x),AIMAG(y),n,cutoff=AIMAG(c))
   END FUNCTION cwt_Complex_Double
 
