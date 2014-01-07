@@ -19,7 +19,7 @@ AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
 
 
 # Check for programs
-AC_PROG_FC(ifort gfortran xlf2003 pgf95 g95)
+AC_PROG_FC(ifort gfortran xlf2003 pgf95)
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 AC_CHECK_TOOL([AR], ar)
