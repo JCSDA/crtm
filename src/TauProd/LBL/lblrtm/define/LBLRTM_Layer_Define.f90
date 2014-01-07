@@ -45,6 +45,7 @@ MODULE LBLRTM_Layer_Define
   PUBLIC :: LBLRTM_Layer_Destroy
   PUBLIC :: LBLRTM_Layer_Create
   PUBLIC :: LBLRTM_Layer_Inspect
+  PUBLIC :: LBLRTM_Layer_Frequency
   PUBLIC :: LBLRTM_Layer_DefineVersion
   PUBLIC :: LBLRTM_Layer_Compare
 
@@ -390,6 +391,74 @@ CONTAINS
       WRITE(*,'(5(1x,'//FMT_STRING//'))') self%Spectrum(:,i)
     END DO
   END SUBROUTINE LBLRTM_Layer_Inspect
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       LBLRTM_Layer_Frequency
+!
+! PURPOSE:
+!       Subroutine to compute the frequency grid for a valid LBLRTM Layer object.
+!
+! CALLING SEQUENCE:
+!       CALL LBLRTM_Layer_Frequency( LBLRTM_Layer, Frequency )
+!
+! OBJECTS:
+!       LBLRTM_Layer:  LBLRTM_Layer object to display.
+!                      UNITS:      N/A
+!                      TYPE:       LBLRTM_Layer_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Frequency:     Frequency grid for the current LBLRTM Layer object.
+!                      UNITS:      Inverse centimetres (cm^-1)
+!                      TYPE:       REAL(DP)
+!                      DIMENSION:  Rank-1
+!                      ATTRIBUTES: INTENT(OUT), ALLOCATABLE
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE LBLRTM_Layer_Frequency( self, frequency )
+    ! Arguments
+    TYPE(LBLRTM_Layer_type), INTENT(IN)  :: self
+    REAL(DP),   ALLOCATABLE, INTENT(OUT) :: frequency(:)
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'LBLRTM_Layer_Define::Frequency'
+    ! Local variables
+    CHARACTER(ML) :: msg
+    CHARACTER(ML) :: err_msg
+    INTEGER  :: alloc_stat
+    INTEGER  :: i, n_points
+    REAL(DP) :: f1, f2
+
+    ! Setup
+    IF ( .NOT. LBLRTM_Layer_IsValid(self) ) RETURN
+
+
+    ! Determine the number of spectral points
+    n_points = LBLRTM_n_Points( self%Begin_Frequency   , &
+                                self%End_Frequency     , &
+                                self%Frequency_Interval  )
+
+
+    ! Allocate the frequency array
+    ALLOCATE( frequency(n_points), STAT=alloc_stat, ERRMSG=err_msg )
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating frequency array - '//TRIM(err_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, FAILURE ); RETURN
+    END IF
+    
+    
+    ! Construct the unit grid
+    f1 = self%Begin_Frequency
+    f2 = self%End_Frequency
+    frequency = REAL([(i,i=0,n_points-1)],DP)/REAL(n_points-1,DP)
+    frequency = frequency*(f2-f1) + f1
+    
+  END SUBROUTINE LBLRTM_Layer_Frequency
 
 
 !--------------------------------------------------------------------------------
