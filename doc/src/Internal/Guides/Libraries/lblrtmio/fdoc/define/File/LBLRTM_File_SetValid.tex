@@ -1,0 +1,25 @@
+\subsection{\texttt{LBLRTM\_File\_SetValid} interface}
+  \label{sec:LBLRTM_File_SetValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_File_SetValid
+ 
+  PURPOSE:
+        Elemental subroutine to mark an instance of an LBLRTM_File object
+        as containing valid data.
+ 
+        Valid flag is set only if the LBLRTM_File object is allocated AND
+        if the embedded LBLRTM_Layer object array is also valid.
+ 
+  CALLING SEQUENCE:
+        CALL LBLRTM_File_SetValid( LBLRTM_File )
+ 
+  OBJECTS:
+        LBLRTM_File:   Instance which is to have its validity set.
+                       UNITS:      N/A
+                       TYPE:       LBLRTM_File_type
+                       DIMENSION:  Scalar or any rank
+                       ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

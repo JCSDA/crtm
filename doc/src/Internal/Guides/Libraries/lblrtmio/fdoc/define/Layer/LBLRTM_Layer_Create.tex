@@ -1,0 +1,37 @@
+\subsection{\texttt{LBLRTM\_Layer\_Create} interface}
+  \label{sec:LBLRTM_Layer_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Layer_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of an LBLRTM_Layer object.
+ 
+  CALLING SEQUENCE:
+        CALL LBLRTM_Layer_Create( LBLRTM_Layer, &
+                                  LBLRTM_Fhdr , &
+                                  n_Spectra     )
+ 
+  OBJECTS:
+        LBLRTM_Layer:       LBLRTM_Layer object structure.
+                            UNITS:      N/A
+                            TYPE:       LBLRTM_Layer_type
+                            DIMENSION:  Scalar or any rank
+                            ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        LBLRTM_Fhdr:        LBLRTM_Fhdr object for the current Layer.
+                            UNITS:      N/A
+                            TYPE:       LBLRTM_Fhdr_type
+                            DIMENSION:  Conformable with LBLRTM_Layer
+                            ATTRIBUTES: INTENT(OUT)
+ 
+        n_Spectra:          Number of spectra (or "panels").
+                            Must be > 0.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Conformable with LBLRTM_Layer
+                            ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

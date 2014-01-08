@@ -1,0 +1,30 @@
+\subsection{\texttt{LBLRTM\_Panel\_Associated} interface}
+  \label{sec:LBLRTM_Panel_Associated_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Panel_Associated
+ 
+  PURPOSE:
+        Elemental function to test the status of the allocatable components
+        of the LBLRTM_Panel object.
+ 
+  CALLING SEQUENCE:
+        Status = LBLRTM_Panel_Associated( LBLRTM_Panel )
+ 
+  OBJECTS:
+        LBLRTM_Panel:  Structure which is to have its member's
+                       status tested.
+                       UNITS:      N/A
+                       TYPE:       LBLRTM_Panel_type
+                       DIMENSION:  Scalar or any rank
+                       ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Status:        The return value is a logical value indicating if the
+                       object has been allocated.
+                       UNITS:      N/A
+                       TYPE:       LOGICAL
+                       DIMENSION:  Same as input
+ 
+  \end{alltt}

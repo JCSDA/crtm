@@ -1,0 +1,28 @@
+\subsection{\texttt{LBLRTM\_Layer\_Frequency} interface}
+  \label{sec:LBLRTM_Layer_Frequency_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Layer_Frequency
+ 
+  PURPOSE:
+        Subroutine to compute the frequency grid for a valid LBLRTM Layer object.
+ 
+  CALLING SEQUENCE:
+        CALL LBLRTM_Layer_Frequency( LBLRTM_Layer, Frequency )
+ 
+  OBJECTS:
+        LBLRTM_Layer:  LBLRTM_Layer object to display.
+                       UNITS:      N/A
+                       TYPE:       LBLRTM_Layer_type
+                       DIMENSION:  Scalar
+                       ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUTS:
+        Frequency:     Frequency grid for the current LBLRTM Layer object.
+                       UNITS:      Inverse centimetres (cm^-1)
+                       TYPE:       REAL(DP)
+                       DIMENSION:  Rank-1
+                       ATTRIBUTES: INTENT(OUT), ALLOCATABLE
+ 
+  \end{alltt}
