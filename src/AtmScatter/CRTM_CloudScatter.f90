@@ -299,8 +299,8 @@ CONTAINS
         ! Compute the optical depth (absorption + scattering)
         !   tau = rho.ke
         ! where
-        !   rho = integrated cloud water density for a layer (g/m^2) [M.L^-2]
-        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+        !   rho = integrated cloud water density for a layer (kg/m^2) [M.L^-2]
+        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
         ! Note that since all these computations are done for a given
         ! layer, the optical depth is the same as the volume extinction
         ! coefficient, be. Usually,
@@ -324,9 +324,9 @@ CONTAINS
         !   bs = rho.w.ke
         ! where
         !   bs  = volume scattering coefficient for a layer [dimensionless]
-        !   rho = integrated cloud water density for a layer (g/m^2) [M.L^-2]
+        !   rho = integrated cloud water density for a layer (kg/m^2) [M.L^-2]
         !   w   = single scatter albedo [dimensionless]
-        !   ke  = mass extintion coefficient (m^2/g) [L^2.M^-1]
+        !   ke  = mass extintion coefficient (m^2/kg) [L^2.M^-1]
         bs = Atm%Cloud(n)%Water_Content(kc) * CSV%ke(kc,n) * CSV%w(kc,n) 
         CSV%Total_bs(kc) = CSV%Total_bs(kc) + bs
         CScat%Single_Scatter_Albedo(kc) = CScat%Single_Scatter_Albedo(kc) + bs
