@@ -1,6 +1,7 @@
 PRO Atmosphere_List::Channel_Plot, $
   layer, $  ; Input
   Diff_Input = diff_input, $  ; Input keyword
+  Channel    = channel   , $  ; Input keyword
   Title      = title     , $  ; Input keyword
   Owin       = owin      , $  ; Input keyword
   Png        = png       , $  ; Input keyword
@@ -19,7 +20,9 @@ PRO Atmosphere_List::Channel_Plot, $
   ; ...Process other keywords
   _title = Valid_String(title) ? title : 'Atmosphere Channel'
   create_window = KEYWORD_SET(owin) ? ~ ISA(owin,'GraphicsWin') : 1
-
+  display_current_channel = N_ELEMENTS(channel) GT 0
+  IF ( display_current_channel ) THEN _channel = [LONG(channel[0]), LONG(channel[0])]
+  
 
   ; Get some dimension and absorber information from the first list entry
   self[0]->Get_Property, $
@@ -117,6 +120,12 @@ PRO Atmosphere_List::Channel_Plot, $
       pt.Xrange, [0,0], $
       LINESTYLE = 'dash', $
       OVERPLOT = pt )
+  ; ...Overplot the current channel indicator if supplied
+  IF ( display_current_channel ) THEN $
+    !NULL = PLOT( $
+      _channel, pt.Yrange, $
+      COLOR = 'green', $
+      OVERPLOT = pt )
 
 
   ; Display the absorber data
@@ -148,6 +157,11 @@ PRO Atmosphere_List::Channel_Plot, $
       !NULL = PLOT( $
         pa.Xrange, [0,0], $
         LINESTYLE = 'dash', $
+        OVERPLOT = pa )
+    IF ( display_current_channel ) THEN $
+      !NULL = PLOT( $
+        _channel, pa.Yrange, $
+        COLOR = 'green', $
         OVERPLOT = pa )
   ENDFOR
 

@@ -636,6 +636,11 @@ PRO av_spectrum_display, id
     GET_VALUE = profile_number
   profile_index = profile_number - 1
 
+  ; Get the channel number
+  WIDGET_CONTROL, $
+    state['av_slider_channel_id'], $
+    GET_VALUE = channel_number
+
   ; Get the layer number
   WIDGET_CONTROL, $
     state['av_slider_layer_id'], $
@@ -655,6 +660,7 @@ PRO av_spectrum_display, id
       atm.Channel_Plot, $
         layer_number, $
         Diff_Input = diff_input, $
+        Channel = channel_number, $
         Owin = state['av_window_id'], $
         Debug = state['debug']
     END
@@ -1162,7 +1168,8 @@ PRO Atmosphere_Viewer, $
     'Atmosphere_Viewer', $
     top_level_base_id, $
     CLEANUP = 'av_cleanup', $
-    GROUP_LEADER = top_level_base_id
+    GROUP_LEADER = top_level_base_id, $
+    /NO_BLOCK
 
   IF ( KEYWORD_SET(debug) ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
   
