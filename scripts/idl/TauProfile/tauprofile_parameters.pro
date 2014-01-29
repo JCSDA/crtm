@@ -1,3 +1,5 @@
+  @error_codes
+  
   ; Some parameters for reinitialisation
   INVALID_WMO_SATELLITE_ID = 1023L
   INVALID_WMO_SENSOR_ID    = 2047L
@@ -24,10 +26,19 @@
                       15, $  ;  wco    
                       16, $  ;  doz    
                       17, $  ;  wvd    
+                      18, $  ;  ch4
+                      19, $  ;  co
+                      20, $  ;  n2o
+                      21, $  ;  co2
+                      22, $  ;  unknown
                      101, $  ;  effmol1
                      112, $  ;  effwet 
                      113, $  ;  effdry 
-                     114  ]  ;  effozo 
+                     114, $  ;  effozo 
+                     118, $  ;  effch4
+                     119, $  ;  effco
+                     120, $  ;  effn2o
+                     121  ]  ;  effco2
 
   MOLECULE_SET_NAME = [ 'mol1   ', $  ;   1
                         'mol2   ', $  ;   2
@@ -46,7 +57,16 @@
                         'wco    ', $  ;  15
                         'doz    ', $  ;  16
                         'wvd    ', $  ;  17
+                        'ch4    ', $  ;  18
+                        'co     ', $  ;  19
+                        'n2o    ', $  ;  20
+                        'co2    ', $  ;  21
+                        'unk    ', $  ;  22
                         'effmol1', $  ; 101
                         'effwet ', $  ; 112
                         'effdry ', $  ; 113
-                        'effozo '  ]  ; 114
+                        'effozo ', $  ; 114
+                        'effch4 ', $  ; 118
+                        'effco  ', $  ; 119
+                        'effn2o ', $  ; 120
+                        'effco2 '  ]  ; 121
