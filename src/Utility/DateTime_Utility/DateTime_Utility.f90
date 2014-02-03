@@ -14,14 +14,10 @@ MODULE DateTime_Utility
   ! -----------------
   ! Environment setup
   ! -----------------
-  USE Date_Utility, ONLY: N_MONTHS, &
-                          DAYS_PER_MONTH_IN_NONLEAP, &
-                          MONTH_NAME, &
-                          N_DAYS, &
-                          DAY_NAME, &
-                          Date_Is_Leap_Year  => Is_Leap_Year, &
-                          Date_Day_of_Year   => Day_of_Year, &
-                          Date_Days_in_Month => Days_in_Month
+  USE Date_Utility, ONLY: Date_IsLeapYear  => IsLeapYear , &
+                          Date_DayOfYear   => DayOfYear  , &
+                          Date_DaysInMonth => DaysInMonth, &
+                          Date_NameOfMonth => NameOfMonth
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -33,29 +29,35 @@ MODULE DateTime_Utility
   ! Datatpye
   PUBLIC :: DateTime_type
   ! Procedures
-  PUBLIC :: Get_DateTime
-  PUBLIC :: Is_Leap_Year
-  PUBLIC :: Day_of_Year
-  PUBLIC :: Days_in_Month
+  PUBLIC :: DateTime_Now
+  PUBLIC :: IsLeapYear
+  PUBLIC :: DayOfYear
+  PUBLIC :: DaysInMonth
+  PUBLIC :: NameOfMonth
 
 
   ! -------------------
   ! Procedure overloads
   ! -------------------
-  INTERFACE Is_Leap_Year
-    MODULE PROCEDURE Date_Is_Leap_Year
-    MODULE PROCEDURE DateTime_Is_Leap_Year
-  END INTERFACE Is_Leap_Year
+  INTERFACE IsLeapYear
+    MODULE PROCEDURE Date_IsLeapYear
+    MODULE PROCEDURE DateTime_IsLeapYear
+  END INTERFACE IsLeapYear
 
-  INTERFACE Day_of_Year
-    MODULE PROCEDURE Date_Day_of_Year
-    MODULE PROCEDURE DateTime_Day_of_Year
-  END INTERFACE Day_of_Year
+  INTERFACE DayOfYear
+    MODULE PROCEDURE Date_DayOfYear
+    MODULE PROCEDURE DateTime_DayOfYear
+  END INTERFACE DayOfYear
 
-  INTERFACE Days_in_Month
-    MODULE PROCEDURE Date_Days_in_Month
-    MODULE PROCEDURE DateTime_Days_in_Month
-  END INTERFACE Days_in_Month
+  INTERFACE DaysInMonth
+    MODULE PROCEDURE Date_DaysInMonth
+    MODULE PROCEDURE DateTime_DaysInMonth
+  END INTERFACE DaysInMonth
+
+  INTERFACE NameOfMonth
+    MODULE PROCEDURE Date_NameOfMonth
+    MODULE PROCEDURE DateTime_NameOfMonth
+  END INTERFACE NameOfMonth
 
 
   ! -----------------
@@ -63,8 +65,9 @@ MODULE DateTime_Utility
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  INTEGER, PARAMETER :: NL = 20
 
-  
+
   ! -----------------------
   ! Derived type definition
   ! -----------------------
@@ -79,6 +82,7 @@ MODULE DateTime_Utility
     INTEGER :: Second      = 0
     INTEGER :: Millisecond = 0
     INTEGER :: DoY         = 0
+    CHARACTER(NL) :: Month_Name
   END TYPE DateTime_type
   !:tdoc-:
 
@@ -89,14 +93,14 @@ CONTAINS
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       Get_DateTime
+!       DateTime_Now
 !
 ! PURPOSE:
 !       Function to return a DateTime structure with the current
 !       date and time
 !
 ! CALLING SEQUENCE:
-!       DateTime = Get_DateTime()
+!       DateTime = DateTime_Now()
 !
 ! FUNCTION RESULT:
 !       DateTime:  DateTime structure containing current date and time.
@@ -106,7 +110,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION Get_DateTime() RESULT(DateTime)
+  FUNCTION DateTime_Now() RESULT(DateTime)
     TYPE(DateTime_type) :: DateTime
     INTEGER :: Values(8)
     CALL DATE_AND_TIME(VALUES=Values)
@@ -118,21 +122,22 @@ CONTAINS
     DateTime%Minute      = Values(6)
     DateTime%Second      = Values(7)
     DateTime%Millisecond = Values(8)
-    DateTime%DoY = Day_of_Year( DateTime )
-  END FUNCTION Get_DateTime
+    DateTime%DoY        = DayOfYear( DateTime )
+    DateTime%Month_Name = NameOfMonth( DateTime )
+  END FUNCTION DateTime_Now
 
-  
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       Is_Leap_Year
+!       IsLeapYear
 !
 ! PURPOSE:
 !       Elemental function to determine if a specified DateTime structure
 !       is for a leap year.
 !
 ! CALLING SEQUENCE:
-!       Result = Is_Leap_Year( DateTime )
+!       Result = IsLeapYear( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -152,24 +157,24 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION DateTime_Is_Leap_Year( DateTime ) RESULT( Is_Leap_Year )
+  ELEMENTAL FUNCTION DateTime_IsLeapYear( DateTime ) RESULT( IsLeapYear )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
-    LOGICAL :: Is_Leap_Year
-    Is_Leap_Year = Date_Is_Leap_Year( DateTime%Year )
-  END FUNCTION DateTime_Is_Leap_Year
+    LOGICAL :: IsLeapYear
+    IsLeapYear = Date_IsLeapYear( DateTime%Year )
+  END FUNCTION DateTime_IsLeapYear
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       Day_of_Year
+!       DayOfYear
 !
 ! PURPOSE:
 !       Elemental function to determine the day-of-year value for a
 !       a DateTime structure.
 !
 ! CALLING SEQUENCE:
-!       DoY = Day_of_Year( DateTime )
+!       DoY = DayOfYear( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -187,24 +192,24 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION DateTime_Day_of_Year( DateTime ) RESULT( DoY )
+  ELEMENTAL FUNCTION DateTime_DayOfYear( DateTime ) RESULT( DoY )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
     INTEGER :: DoY
-    DoY = Date_Day_of_Year( DateTime%Day, DateTime%Month, DateTime%Year )
-  END FUNCTION DateTime_Day_of_Year
+    DoY = Date_DayOfYear( DateTime%Day, DateTime%Month, DateTime%Year )
+  END FUNCTION DateTime_DayOfYear
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       Days_in_Month
+!       DaysInMonth
 !
 ! PURPOSE:
 !       Elemental function to return the number of days in a given
 !       month and year.
 !
 ! CALLING SEQUENCE:
-!       n_Days = Days_in_Month( DateTime )
+!       n_Days = DaysInMonth( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -222,10 +227,45 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION DateTime_Days_in_Month( DateTime ) RESULT( n_Days )
+  ELEMENTAL FUNCTION DateTime_DaysInMonth( DateTime ) RESULT( n_Days )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
     INTEGER :: n_Days
-    n_Days = Date_Days_in_Month( DateTime%Month, DateTime%Year )
-  END FUNCTION DateTime_Days_in_Month
+    n_Days = Date_DaysInMonth( DateTime%Month, DateTime%Year )
+  END FUNCTION DateTime_DaysInMonth
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       NameOfMonth
+!
+! PURPOSE:
+!       Elemental function to return the name of the month.
+!
+! CALLING SEQUENCE:
+!       name = NameOfMonth( DateTime )
+!
+! INPUT ARGUMENTS:
+!       DateTime:  DateTime structure containing date information.
+!                  UNITS:      N/A
+!                  TYPE:       DateTime_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:      The return value is a character string containing the
+!                  name of the month.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Conformable with input DateTime arugment
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION DateTime_NameOfMonth( DateTime ) RESULT( name )
+    TYPE(DateTime_type), INTENT(IN) :: DateTime
+    CHARACTER(NL) :: name
+    name = Date_NameOfMonth( DateTime%Month )
+  END FUNCTION DateTime_NameOfMonth
 
 END MODULE DateTime_Utility

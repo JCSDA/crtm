@@ -10,10 +10,14 @@
 
 MODULE Date_Utility
 
+  ! -----------------
   ! Environment setup
   ! -----------------
   IMPLICIT NONE
 
+
+
+  ! ------------
   ! Visibilities
   ! ------------
   PRIVATE
@@ -24,17 +28,19 @@ MODULE Date_Utility
   PUBLIC :: N_DAYS
   PUBLIC :: DAY_NAME
   ! Procedures
-  PUBLIC :: Is_Leap_Year
-  PUBLIC :: Day_of_Year
-  PUBLIC :: Days_in_Month
+  PUBLIC :: IsLeapYear
+  PUBLIC :: DayOfYear
+  PUBLIC :: DaysInMonth
+  PUBLIC :: NameOfMonth
 
 
-  ! Module parameters
-  ! -----------------
-  ! RCS Id for the module
+  ! ----------
+  ! Parameters
+  ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-
+  ! String length for character functions
+  INTEGER, PARAMETER :: NL = 20
   ! Number of Months in a Year
   INTEGER, PARAMETER :: N_MONTHS = 12
   ! Days per Month in a non leap Year
@@ -44,27 +50,27 @@ MODULE Date_Utility
   CHARACTER(*), PARAMETER :: MONTH_NAME(N_MONTHS) = &
   (/'January  ','February ','March    ','April    ','May      ','June     ', &
     'July     ','August   ','September','October  ','November ','December ' /)
-
   ! Number of Days in a Week
   INTEGER, PARAMETER :: N_DAYS = 7
   ! Day names
   CHARACTER(*), PARAMETER :: DAY_NAME(N_DAYS) = &
   (/'Sunday   ','Monday   ','Tuesday  ','Wednesday','Thursday ','Friday   ','Saturday '/)
-  
+
 
 CONTAINS
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
+!
 ! NAME:
-!       Is_Leap_Year
+!       IsLeapYear
 !
 ! PURPOSE:
 !       Elemental function to determine if a specified year is a leap year.
 !
 ! CALLING SEQUENCE:
-!       Result = Is_Leap_Year( Year )
+!       Result = IsLeapYear( Year )
 !
 ! INPUT ARGUMENTS:
 !       Year:     The year in 4-digit format, e.g. 1997.
@@ -84,28 +90,28 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Is_Leap_Year( Year )
+  ELEMENTAL FUNCTION IsLeapYear( Year )
     INTEGER, INTENT(IN) :: Year
-    LOGICAL :: Is_Leap_Year
+    LOGICAL :: IsLeapYear
 
-    Is_Leap_Year = ( (MOD(Year,4)   == 0) .AND. &
-                     (MOD(Year,100) /= 0)       ) .OR. &
-                   (MOD(Year,400) == 0)
+    IsLeapYear = ( (MOD(Year,4)   == 0) .AND. (MOD(Year,100) /= 0) ) .OR. &
+                 (MOD(Year,400) == 0)
 
-  END FUNCTION Is_Leap_Year
+  END FUNCTION IsLeapYear
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
+!
 ! NAME:
-!       Day_of_Year
+!       DayOfYear
 !
 ! PURPOSE:
 !       Elemental function to convert input numeric (e.g. DD,MM,YYYY) date
-!       information to a day of year.
+!       information to a sequential day of year.
 !
 ! CALLING SEQUENCE:
-!       DoY = Day_of_Year ( Day, Month, Year )
+!       DoY = DayOfYear ( Day, Month, Year )
 !
 ! INPUTS:
 !       Day:       The day-of-month.
@@ -135,15 +141,15 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Day_of_Year( &
+  ELEMENTAL FUNCTION DayOfYear( &
     Day  , &  ! Input
     Month, &  ! Input
     Year ) &  ! Input
   RESULT( DoY )
     ! Arguments
-    INTEGER, INTENT(IN) :: Day  
+    INTEGER, INTENT(IN) :: Day
     INTEGER, INTENT(IN) :: Month
-    INTEGER, INTENT(IN) :: Year 
+    INTEGER, INTENT(IN) :: Year
     ! Function result
     INTEGER :: DoY
     ! Local variables
@@ -157,26 +163,26 @@ CONTAINS
          Month > N_MONTHS ) RETURN
     ! ...Check the day of month
     Days_per_Month = DAYS_PER_MONTH_IN_NONLEAP
-    IF ( Is_Leap_Year(Year) ) Days_per_Month(2) = 29
+    IF ( IsLeapYear(Year) ) Days_per_Month(2) = 29
     IF ( Day > Days_per_Month(Month) ) RETURN
 
     ! Compute the day of year
     DoY = SUM(Days_per_Month(1:Month-1)) + Day
 
-  END FUNCTION Day_of_Year
-  
-  
+  END FUNCTION DayOfYear
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       Days_in_Month
+!       DaysInMonth
 !
 ! PURPOSE:
 !       Elemental function to return the number of days in a given
 !       month and year.
 !
 ! CALLING SEQUENCE:
-!       n_Days = Days_in_Month( Month, Year )
+!       n_Days = DaysInMonth( Month, Year )
 !
 ! INPUTS:
 !       Month:     The month of the year (1-12).
@@ -200,7 +206,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION Days_in_Month(Month, Year) RESULT(n_Days)
+  ELEMENTAL FUNCTION DaysInMonth(Month, Year) RESULT(n_Days)
     ! Arguments
     INTEGER, INTENT(IN) :: Month
     INTEGER, INTENT(IN) :: Year
@@ -218,11 +224,48 @@ CONTAINS
 
     ! Assemble the days of month
     Days_per_Month = DAYS_PER_MONTH_IN_NONLEAP
-    IF ( Is_Leap_Year(Year=Year) ) Days_per_Month(2) = 29
+    IF ( IsLeapYear(Year=Year) ) Days_per_Month(2) = 29
 
     ! Set the number of days
     n_Days = Days_per_Month(Month)
 
-  END FUNCTION Days_in_Month
+  END FUNCTION DaysInMonth
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       NameOfMonth
+!
+! PURPOSE:
+!       Elemental function to return the name of the month.
+!
+! CALLING SEQUENCE:
+!       name = NameOfMonth( Month )
+!
+! INPUT ARGUMENTS:
+!       Month:    The month of year.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  Scalar or any rank.
+!                 ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:     The return value is a character string containing the
+!                 name of the month.
+!                 UNITS:      N/A
+!                 TYPE:       CHARACTER
+!                 DIMENSION:  Conformable with input Month arugment
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION NameOfMonth( Month )
+    INTEGER, INTENT(IN) :: Month
+    CHARACTER(NL) :: NameOfMonth
+    NameOfMonth = 'Invalid'
+    IF ( Month < 1 .OR. Month > N_MONTHS ) RETURN
+    NameOfMonth = MONTH_NAME( Month )
+  END FUNCTION NameOfMonth
 
 END MODULE Date_Utility
