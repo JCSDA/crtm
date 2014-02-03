@@ -20,7 +20,7 @@ MODULE CRTM_GeometryInfo
   ! Module use
   USE Type_Kinds     , ONLY: fp
   USE Message_Handler, ONLY: SUCCESS, WARNING, FAILURE, Display_Message
-  USE Date_Utility   , ONLY: Day_Of_Year
+  USE Date_Utility   , ONLY: DayOfYear
   USE CRTM_Parameters, ONLY: ZERO, ONE, TWO  , &
                              TWOPI           , &
                              EARTH_RADIUS    , &
@@ -755,8 +755,8 @@ CONTAINS
     REAL(fp) :: DoY, Max_DoY, t, it
 
     ! Determine the days-of-year
-    DoY     = REAL(Day_of_Year( Day, Month, Year ), fp)
-    Max_DoY = REAL(Day_of_Year( 31, 12, Year ), fp)
+    DoY     = REAL(DayOfYear( Day, Month, Year ), fp)
+    Max_DoY = REAL(DayOfYear( 31, 12, Year ), fp)
     
     ! Location of Earth in orbit relative to perihelion
     t = TWOPI * (DoY-ONE)/Max_DoY

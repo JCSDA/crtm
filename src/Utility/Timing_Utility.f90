@@ -287,7 +287,26 @@ CONTAINS
     IF ( PRESENT(End_Clock  ) ) End_Clock   = self%End_Clock
     IF ( PRESENT(Is_Valid   ) ) Is_Valid    = self%Is_Valid
   END SUBROUTINE Timing_Get
-
+  
+  ! Subroutine to write timing information in
+  ! seconds and the date for a given timing object
+  SUBROUTINE Timing_WriteFile( &
+    self    , &
+    filename  )
+    ! Arguments
+    TYPE(Timing_type), INTENT(IN OUT) :: self
+    CHARACTER(*),      INTENT(IN) :: filename
+    ! Local Variables
+    REAL(fp) :: Total_Time
+    ! Local Parameters
+    INTEGER :: LUN = 1
+    ! Compute the total time in seconds
+    Total_Time = REAL(self%End_Clock - self%Begin_Clock, fp) / REAL(self%Hertz, fp)
+    ! Write the total time in seconds to file
+    OPEN(Unit=LUN, FILE=filename, POSITION="APPEND", Action="WRITE")
+    WRITE(LUN, FMT='(1X, F12.2)') Total_Time
+    CLOSE(LUN)
+  END SUBROUTINE Timing_WriteFile  
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -354,106 +373,107 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION Timing_WriteFile( &
-    Timing_Array, &
-    Filename    , &
-    Clobber     , &
-    Heading     ) &
-  RESULT( err_stat )
-    ! Arguments
-    TYPE(Timing_type),           INTENT(IN) :: Timing_Array(:)
-    CHARACTER(*)     ,           INTENT(IN) :: Filename
-    LOGICAL          , OPTIONAL, INTENT(IN) :: Clobber
-    CHARACTER(*)     , OPTIONAL, INTENT(IN) :: Heading(:)
-    ! Function result
-    INTEGER :: err_stat
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Timing_WriteFile'
-    ! Local variables
-    CHARACTER(ML) :: msg, err_msg, io_msg
-    CHARACTER(ML), ALLOCATABLE :: title(:)
-    CHARACTER(8) :: status, position
-    CHARACTER(8)  :: date
-    CHARACTER(10) :: time
-    LOGICAL :: append
-    INTEGER :: fid
-    INTEGER :: alloc_stat, io_stat
-    INTEGER :: i, n_times
+!  FUNCTION Timing_WriteFile( &
+!    Timing_Array, &
+!    Filename    , &
+!    Clobber     , &
+!    Heading     ) &
+!  RESULT( err_stat )
+!    ! Arguments
+!    TYPE(Timing_type),           INTENT(IN) :: Timing_Array(:)
+!    CHARACTER(*)     ,           INTENT(IN) :: Filename
+!    LOGICAL          , OPTIONAL, INTENT(IN) :: Clobber
+!    CHARACTER(*)     , OPTIONAL, INTENT(IN) :: Heading(:)
+!    ! Function result
+!    INTEGER :: err_stat
+!    ! Local parameters
+!    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Timing_WriteFile'
+!    ! Local variables
+!    CHARACTER(ML) :: msg, err_msg, io_msg
+!    CHARACTER(ML), ALLOCATABLE :: title(:)
+!    CHARACTER(8) :: status, position
+!    CHARACTER(8)  :: date
+!    CHARACTER(10) :: time
+!    LOGICAL :: append
+!    INTEGER :: fid
+!    INTEGER :: alloc_stat, io_stat
+!    INTEGER :: i, n_times
+!
+!    ! Set up
+!    err_stat = SUCCESS
+!    ! ...Check structures
+!    IF ( .NOT. ALL(Timing_Array%Is_Valid) ) THEN
+!      err_stat = FAILURE
+!      msg = 'Input timing array contains invalid elements'
+!      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!    END IF
+!    n_times = SIZE(Timing_Array)
+!    ! ...Check clobber argument
+!    append = .TRUE.
+!    IF ( PRESENT(Clobber) ) append = .NOT. Clobber
+!    ! ...Check header argument
+!    ALLOCATE(title(n_times), STAT=alloc_stat, ERRMSG=err_msg)
+!    IF ( alloc_stat /= 0 ) THEN
+!      err_stat = FAILURE
+!      msg = 'Local title array allocation failed - '//TRIM(err_msg)
+!      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!    END IF
+!    IF ( PRESENT(Heading) ) THEN
+!      IF ( SIZE(Heading) /= n_times ) THEN
+!        err_stat = FAILURE
+!        msg = 'Input heading array different size from timing array'
+!        CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!      END IF
+!      title = Heading
+!    ELSE
+!      DO i = 1, n_times
+!        WRITE(title(i),'("Time ",i0)') i
+!      END DO
+!    END IF
+!
+!
+!    ! Open the file
+!    IF ( append ) THEN
+!      status   = 'UNKNOWN'
+!      position = 'APPEND'
+!    ELSE
+!      status   = 'REPLACE'
+!      position = 'REWIND'
+!    END IF
+!    fid = Get_Lun()
+!    IF ( fid < 0 ) THEN
+!      err_stat = FAILURE
+!      msg = 'Error obtaining free logical unit number'
+!      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!    END IF
+!    OPEN( fid, FILE     = filename   , &
+!               FORM     = 'FORMATTED', &
+!               STATUS   = status     , &
+!               POSITION = position   , &
+!               IOSTAT   = io_stat    , &
+!               IOMSG    = io_msg       )
+!    IF ( io_stat /= 0 ) THEN
+!      err_stat = FAILURE
+!      msg = 'Error opening file '//TRIM(filename)//' - '//TRIM(io_msg)
+!      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!    END IF
+!
+!
+!    ! Get the current date/time for output
+!    CALL DATE_AND_TIME(DATE=date, TIME=time)
+!print *, date, ' ', time
+!
+!
+!    ! Done
+!    CLOSE(fid, IOSTAT = io_stat, &
+!               IOMSG  = io_msg   )
+!    IF ( io_stat /= 0 ) THEN
+!      err_stat = FAILURE
+!      msg = 'Error closing file '//TRIM(filename)//' - '//TRIM(io_msg)
+!      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+!    END IF
+!
+!  END FUNCTION Timing_WriteFile
 
-    ! Set up
-    err_stat = SUCCESS
-    ! ...Check structures
-    IF ( .NOT. ALL(Timing_Array%Is_Valid) ) THEN
-      err_stat = FAILURE
-      msg = 'Input timing array contains invalid elements'
-      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-    END IF
-    n_times = SIZE(Timing_Array)
-    ! ...Check clobber argument
-    append = .TRUE.
-    IF ( PRESENT(Clobber) ) append = .NOT. Clobber
-    ! ...Check header argument
-    ALLOCATE(title(n_times), STAT=alloc_stat, ERRMSG=err_msg)
-    IF ( alloc_stat /= 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Local title array allocation failed - '//TRIM(err_msg)
-      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-    END IF
-    IF ( PRESENT(Heading) ) THEN
-      IF ( SIZE(Heading) /= n_times ) THEN
-        err_stat = FAILURE
-        msg = 'Input heading array different size from timing array'
-        CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-      END IF
-      title = Heading
-    ELSE
-      DO i = 1, n_times
-        WRITE(title(i),'("Time ",i0)') i
-      END DO
-    END IF
-
-
-    ! Open the file
-    IF ( append ) THEN
-      status   = 'UNKNOWN'
-      position = 'APPEND'
-    ELSE
-      status   = 'REPLACE'
-      position = 'REWIND'
-    END IF
-    fid = Get_Lun()
-    IF ( fid < 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Error obtaining free logical unit number'
-      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-    END IF
-    OPEN( fid, FILE     = filename   , &
-               FORM     = 'FORMATTED', &
-               STATUS   = status     , &
-               POSITION = position   , &
-               IOSTAT   = io_stat    , &
-               IOMSG    = io_msg       )
-    IF ( io_stat /= 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Error opening file '//TRIM(filename)//' - '//TRIM(io_msg)
-      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-    END IF
-
-
-    ! Get the current date/time for output
-    CALL DATE_AND_TIME(DATE=date, TIME=time)
-print *, date, ' ', time
-
-
-    ! Done
-    CLOSE(fid, IOSTAT = io_stat, &
-               IOMSG  = io_msg   )
-    IF ( io_stat /= 0 ) THEN
-      err_stat = FAILURE
-      msg = 'Error closing file '//TRIM(filename)//' - '//TRIM(io_msg)
-      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
-    END IF
-
-  END FUNCTION Timing_WriteFile
 
 END MODULE Timing_Utility

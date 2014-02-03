@@ -24,7 +24,7 @@ MODULE CRTM_Geometry_Define
   USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
                                    WriteGAtts_Binary_File, &
                                    ReadGAtts_Binary_File
-  USE Date_Utility         , ONLY: Days_in_Month
+  USE Date_Utility         , ONLY: DaysInMonth
   USE CRTM_Parameters      , ONLY: MIN_SURFACE_ALTITUDE    , &
                                    MAX_SURFACE_ALTITUDE    , &
                                    MAX_SENSOR_SCAN_ANGLE   , &
@@ -33,7 +33,7 @@ MODULE CRTM_Geometry_Define
                                    MAX_SOURCE_ZENITH_ANGLE , &
                                    MAX_SOURCE_AZIMUTH_ANGLE, &
                                    MAX_FLUX_ZENITH_ANGLE   , &
-                                   DIFFUSIVITY_ANGLE       
+                                   DIFFUSIVITY_ANGLE
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -717,7 +717,7 @@ CONTAINS
     END IF
     ! ...Only test Day value if Month and Year are valid
     IF ( IsValid ) THEN
-      IF ( geo%Day < 1 .OR. geo%Day > Days_in_Month(geo%Month,geo%Year) ) THEN
+      IF ( geo%Day < 1 .OR. geo%Day > DaysInMonth(geo%Month,geo%Year) ) THEN
         CALL Display_Message( ROUTINE_NAME, 'Invalid day-of-month.', INFORMATION )
         IsValid = .FALSE.
       END IF
