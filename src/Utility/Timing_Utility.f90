@@ -5,7 +5,8 @@ MODULE Timing_Utility
 
   ! Module usage
   USE Type_Kinds     , ONLY: fp
-  USE Message_Handler, ONLY: INFORMATION, FAILURE, Display_Message
+  USE Message_Handler, ONLY: SUCCESS, INFORMATION, FAILURE, Display_Message
+  USE File_Utility   , ONLY: Get_Lun
 
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -22,6 +23,7 @@ MODULE Timing_Utility
   PUBLIC :: Timing_Inspect
   PUBLIC :: Timing_Set
   PUBLIC :: Timing_Get
+  PUBLIC :: Timing_WriteFile
   ! ...Old named procedures
   PUBLIC :: Begin_Timing
   PUBLIC :: End_Timing
@@ -31,22 +33,23 @@ MODULE Timing_Utility
   ! Parameters
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  INTEGER, PARAMETER :: ML = 256
 
 
   ! Overloads
   INTERFACE Begin_Timing
     MODULE PROCEDURE Timing_Begin
   END INTERFACE Begin_Timing
-  
+
   INTERFACE End_Timing
     MODULE PROCEDURE Timing_End
   END INTERFACE End_Timing
-  
+
   INTERFACE Display_Timing
     MODULE PROCEDURE Timing_Display
   END INTERFACE Display_Timing
-  
-  
+
+
   ! Derived type definitions
   !:tdoc+:
   TYPE :: Timing_type
@@ -144,11 +147,10 @@ CONTAINS
 !
 ! INPUTS:
 !   timing:  Timing object.
-!            *** OBJECT is destroyed upon exit ***
 !            UNITS:      N/A
 !            TYPE:       Timing_type
 !            DIMENSION:  Scalar
-!            ATTRIBUTES: INTENT(IN OUT)
+!            ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
 !   caller:  String containing the name of the calling routine.
@@ -164,20 +166,20 @@ CONTAINS
   SUBROUTINE Timing_Display( self  , &  ! Input
                              Caller  )  ! Optional input
     ! Arguments
-    TYPE(Timing_type),      INTENT(IN OUT) :: self
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
+    TYPE(Timing_type),      INTENT(IN) :: self
+    CHARACTER(*), OPTIONAL, INTENT(IN) :: Caller
     ! Local parameters
     REAL(fp), PARAMETER :: N_SECONDS_IN_HOUR        = 3600.0_fp
     REAL(fp), PARAMETER :: N_SECONDS_IN_MINUTE      =   60.0_fp
     REAL(fp), PARAMETER :: N_MILLISECONDS_IN_SECOND = 1000.0_fp
     ! Local variables
-    CHARACTER(256) :: Routine_Name
-    CHARACTER(256) :: Elapsed_Time
-    REAL(fp)       :: Total_Time
-    INTEGER        :: n_Hours
-    INTEGER        :: n_Minutes
-    INTEGER        :: n_Seconds
-    INTEGER        :: n_milliSeconds
+    CHARACTER(ML) :: Routine_Name
+    CHARACTER(ML) :: Elapsed_Time
+    REAL(fp)      :: Total_Time
+    INTEGER       :: n_Hours
+    INTEGER       :: n_Minutes
+    INTEGER       :: n_Seconds
+    INTEGER       :: n_milliSeconds
 
     ! Set up
     Routine_Name = 'Timing_Display'
@@ -205,10 +207,7 @@ CONTAINS
     CALL Display_Message( TRIM(Routine_Name), &
                           TRIM(Elapsed_Time), &
                           INFORMATION )
-    
-    ! Destroy the timing information
-    CALL Timing_Destroy(self)
-    
+
   END SUBROUTINE Timing_Display
 
 
@@ -237,13 +236,15 @@ CONTAINS
   SUBROUTINE Timing_Inspect( self )
     TYPE(Timing_type), INTENT(IN) :: self
     WRITE(*,'(1x,"Timing OBJECT")')
-    WRITE(*,'(3x,"Hertz       : ",i0)') self%Hertz      
+    WRITE(*,'(3x,"Hertz       : ",i0)') self%Hertz
     WRITE(*,'(3x,"Begin_Clock : ",i0)') self%Begin_Clock
-    WRITE(*,'(3x,"End_Clock   : ",i0)') self%End_Clock  
-    WRITE(*,'(3x,"Is_Valid    : ",l1)') self%Is_Valid   
+    WRITE(*,'(3x,"End_Clock   : ",i0)') self%End_Clock
+    WRITE(*,'(3x,"Is_Valid    : ",l1)') self%Is_Valid
   END SUBROUTINE Timing_Inspect
-  
-  
+
+
+
+
   ! Subroutine to set the components of a timing object
   ! Public, but only for testing so it's undocumented.
   SUBROUTINE Timing_Set( &
@@ -265,7 +266,7 @@ CONTAINS
     IF ( PRESENT(Is_Valid   ) ) self%Is_Valid    = Is_Valid
   END SUBROUTINE Timing_Set
 
-    
+
   ! Subroutine to get the components of a timing object
   ! Public, but only for testing so it's undocumented.
   SUBROUTINE Timing_Get( &
@@ -288,19 +289,171 @@ CONTAINS
   END SUBROUTINE Timing_Get
 
 
-    
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                        ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   Timing_WriteFile
+!
+! PURPOSE:
+!   Function to write timing object information to an ASCII file.
+!
+! CALLING SEQUENCE:
+!   Error_Status = Timing_WriteFile( &
+!                    Timing_Array, &
+!                    Filename    , &
+!                    Clobber = clobber, &
+!                    Heading = heading  )
+!
+! OBJECTS:
+!   Timing_Array:  Array of Timing objects to write to file. All elements
+!                  must be valid.
+!                  UNITS:      N/A
+!                  TYPE:       Timing_type
+!                  DIMENSION:  Rank-1
+!                  ATTRIBUTES: INTENT(IN)
+!
+! INPUTS:
+!   Filename:      Name of the file to write.
+!                  - If file does not exist, it is created.
+!                  - If file does exist, it is opened for appending data.
+!                  UNITS:      N/A
+!                  TYPE:       Timing_type
+!                  DIMENSION:  Rank-1
+!                  ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!   Clobber:       Set this logical argument to overwrite an existing filename.
+!                  If == .FALSE., an existing file is opened with OLD status and
+!                                 positioned at end-of-file for appending data [DEFAULT].
+!                     == .TRUE.,  an existing file is opened with REPLACE status.
+!                  If not specified, default is .FALSE.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!   Heading:       Array of character strings to use as heading labels for each
+!                  timing object element.
+!                  - If not specified, default is "Time 1", "Time 2", etc..
+!                  - If specified, size must be same as Timing_Array.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Rank-1
+!                  ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!   Error_Status:  The return value is an integer defining the error status.
+!                  The error codes are defined in the Message_Handler module.
+!                  If == SUCCESS the data write was successful
+!                     == FAILURE an unrecoverable error occurred.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
 
-  ! Subroutine to reinitialise a timing object
-  SUBROUTINE Timing_Destroy(self)
-    TYPE(Timing_type), INTENT(OUT) :: self
-    self%Is_Valid = .FALSE.
-  END SUBROUTINE Timing_Destroy
+  FUNCTION Timing_WriteFile( &
+    Timing_Array, &
+    Filename    , &
+    Clobber     , &
+    Heading     ) &
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(Timing_type),           INTENT(IN) :: Timing_Array(:)
+    CHARACTER(*)     ,           INTENT(IN) :: Filename
+    LOGICAL          , OPTIONAL, INTENT(IN) :: Clobber
+    CHARACTER(*)     , OPTIONAL, INTENT(IN) :: Heading(:)
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'Timing_WriteFile'
+    ! Local variables
+    CHARACTER(ML) :: msg, err_msg, io_msg
+    CHARACTER(ML), ALLOCATABLE :: title(:)
+    CHARACTER(8) :: status, position
+    CHARACTER(8)  :: date
+    CHARACTER(10) :: time
+    LOGICAL :: append
+    INTEGER :: fid
+    INTEGER :: alloc_stat, io_stat
+    INTEGER :: i, n_times
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check structures
+    IF ( .NOT. ALL(Timing_Array%Is_Valid) ) THEN
+      err_stat = FAILURE
+      msg = 'Input timing array contains invalid elements'
+      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+    END IF
+    n_times = SIZE(Timing_Array)
+    ! ...Check clobber argument
+    append = .TRUE.
+    IF ( PRESENT(Clobber) ) append = .NOT. Clobber
+    ! ...Check header argument
+    ALLOCATE(title(n_times), STAT=alloc_stat, ERRMSG=err_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Local title array allocation failed - '//TRIM(err_msg)
+      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+    END IF
+    IF ( PRESENT(Heading) ) THEN
+      IF ( SIZE(Heading) /= n_times ) THEN
+        err_stat = FAILURE
+        msg = 'Input heading array different size from timing array'
+        CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+      END IF
+      title = Heading
+    ELSE
+      DO i = 1, n_times
+        WRITE(title(i),'("Time ",i0)') i
+      END DO
+    END IF
+
+
+    ! Open the file
+    IF ( append ) THEN
+      status   = 'UNKNOWN'
+      position = 'APPEND'
+    ELSE
+      status   = 'REPLACE'
+      position = 'REWIND'
+    END IF
+    fid = Get_Lun()
+    IF ( fid < 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error obtaining free logical unit number'
+      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+    END IF
+    OPEN( fid, FILE     = filename   , &
+               FORM     = 'FORMATTED', &
+               STATUS   = status     , &
+               POSITION = position   , &
+               IOSTAT   = io_stat    , &
+               IOMSG    = io_msg       )
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error opening file '//TRIM(filename)//' - '//TRIM(io_msg)
+      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+    END IF
+
+
+    ! Get the current date/time for output
+    CALL DATE_AND_TIME(DATE=date, TIME=time)
+print *, date, ' ', time
+
+
+    ! Done
+    CLOSE(fid, IOSTAT = io_stat, &
+               IOMSG  = io_msg   )
+    IF ( io_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Error closing file '//TRIM(filename)//' - '//TRIM(io_msg)
+      CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
+    END IF
+
+  END FUNCTION Timing_WriteFile
 
 END MODULE Timing_Utility
