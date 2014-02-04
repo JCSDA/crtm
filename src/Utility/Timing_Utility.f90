@@ -298,13 +298,16 @@ CONTAINS
     CHARACTER(*),      INTENT(IN) :: filename
     ! Local Variables
     REAL(fp) :: Total_Time
+    CHARACTER(8) :: date
+    CHARACTER(10) :: time
     ! Local Parameters
     INTEGER :: LUN = 1
     ! Compute the total time in seconds
     Total_Time = REAL(self%End_Clock - self%Begin_Clock, fp) / REAL(self%Hertz, fp)
     ! Write the total time in seconds to file
+    CALL DATE_AND_TIME(DATE=date, TIME=time)
     OPEN(Unit=LUN, FILE=filename, POSITION="APPEND", Action="WRITE")
-    WRITE(LUN, FMT='(1X, F12.2)') Total_Time
+    WRITE(LUN, FMT='(1X, A10, 3X, A10, F12.2)') date, time, Total_Time
     CLOSE(LUN)
   END SUBROUTINE Timing_WriteFile  
 
