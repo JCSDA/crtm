@@ -32,6 +32,7 @@ MODULE Date_Utility
   PUBLIC :: DayOfYear
   PUBLIC :: DaysInMonth
   PUBLIC :: NameOfMonth
+  PUBLIC :: DayOfWeek
 
 
   ! ----------
@@ -59,6 +60,14 @@ MODULE Date_Utility
 
 CONTAINS
 
+
+!##############################################################################
+!##############################################################################
+!##                                                                          ##
+!##                       ## PUBLIC MODULE ROUTINES ##                       ##
+!##                                                                          ##
+!##############################################################################
+!##############################################################################
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -245,7 +254,7 @@ CONTAINS
 !       name = NameOfMonth( Month )
 !
 ! INPUT ARGUMENTS:
-!       Month:    The month of year.
+!       Month:    The month of the year (1-12).
 !                 UNITS:      N/A
 !                 TYPE:       INTEGER
 !                 DIMENSION:  Scalar or any rank.
@@ -267,5 +276,220 @@ CONTAINS
     IF ( Month < 1 .OR. Month > N_MONTHS ) RETURN
     NameOfMonth = MONTH_NAME( Month )
   END FUNCTION NameOfMonth
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       DayOfWeek
+!
+! PURPOSE:
+!       Elemental function to return the name of the day of week.
+!
+!       NOTE:
+!       - Only valid for Gregorian calendar.
+!       - Since different places switched to the Gregorian calendar at
+!         different times, this routine will only output day of week names
+!         for dates AFTER 1918 (the year Russia adopted the Gregorian
+!         calendar).
+!
+! CALLING SEQUENCE:
+!       name = DayOfWeek ( Day, Month, Year )
+!
+! INPUTS:
+!       Day:       The day of the month.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Month:     The month of the year (1-12).
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Conformable with input Day argument.
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Year:      The year in 4-digit format, e.g. 1997.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Conformable with input Day argument.
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:      The return value is a character string containing the
+!                  name of the day-of-week.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Conformable with input Day argument.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION DayOfWeek( Day, Month, Year )
+    INTEGER, INTENT(IN) :: Day
+    INTEGER, INTENT(IN) :: Month
+    INTEGER, INTENT(IN) :: Year
+    CHARACTER(NL) :: DayOfWeek
+    INTEGER :: i
+    DayOfWeek = 'Invalid'
+    i = iDayOfWeek( Day, Month, Year )
+    IF ( i == 0 ) RETURN
+    DayOfWeek = DAY_NAME(i)
+  END FUNCTION DayOfWeek
+
+
+
+!##############################################################################
+!##############################################################################
+!##                                                                          ##
+!##                      ## PRIVATE MODULE ROUTINES ##                       ##
+!##                                                                          ##
+!##############################################################################
+!##############################################################################
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       iDayOfWeek
+!
+! PURPOSE:
+!       Elemental function to convert input numeric (e.g. DD,MM,YYYY) date
+!       information to a day of week index, 1-7.
+!
+!       NOTE:
+!       - Only valid for Gregorian calendar.
+!       - Since different places switched to the Gregorian calendar at
+!         different times, this routine will only output valid day of week
+!         indices for dates AFTER 1918 (the year Russia adopted the Gregorian
+!         calendar).
+!
+! CALLING SEQUENCE:
+!       iDoW = iDayOfWeek ( Day, Month, Year )
+!
+! INPUTS:
+!       Day:       The day of the month.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Month:     The month of the year (1-12).
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Year:      The year in 4-digit format, e.g. 1997.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       iDoW:      Integer defining the day-of-week (1-7).
+!                  Return value is 0 for invalid input.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION iDayOfWeek( Day, Month, Year ) RESULT( iDoW )
+    ! Arguments
+    INTEGER, INTENT(IN) :: Day
+    INTEGER, INTENT(IN) :: Month
+    INTEGER, INTENT(IN) :: Year
+    ! Function result
+    INTEGER :: iDoW
+    ! Local variables
+    INTEGER :: jdn
+
+    iDoW = 0
+    jdn = JulianDay( Day, Month, Year )
+    IF ( jdn < 0 ) RETURN
+
+    iDoW = MOD(jdn+1, 7) + 1
+    IF ( iDoW < 1 .OR. iDoW > 7 ) iDow = 0
+
+  END FUNCTION iDayOfWeek
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       JulianDay
+!
+! PURPOSE:
+!       Elemental function to convert input numeric (e.g. DD,MM,YYYY) date
+!       information to a Julian Day Number, which is defined as the number of
+!       days since noon January 1, 4713 BCE.
+!
+!       NOTE:
+!       - Only valid for Gregorian calendar.
+!       - Since different places switched to the Gregorian calendar at different
+!         times, this routine will only output valid Julian day numbers for dates
+!         AFTER 1918 (the year Russia adopted the Gregorian calendar).
+!
+! CALLING SEQUENCE:
+!       jdn = JulianDay( Day, Month, Year )
+!
+! INPUTS:
+!       Day:       The day of the month.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Month:     The month of the year (1-12).
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!       Year:      The year in 4-digit format, e.g. 1997.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       jdn:       Julian Day Number.
+!                  Return value is negative for invalid input.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Same as Day input
+!
+! REFERENCES:
+!   - http://en.wikipedia.org/wiki/Julian_day
+!   - http://www.cs.utsa.edu/~cs1063/projects/Spring2011/Project1/jdn-explanation.html
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION JulianDay( Day, Month, Year ) RESULT( jdn )
+    ! Arguments
+    INTEGER, INTENT(IN) :: Day
+    INTEGER, INTENT(IN) :: Month
+    INTEGER, INTENT(IN) :: Year
+    ! Function result
+    INTEGER :: jdn
+    ! Local variables
+    INTEGER :: m, y, a
+
+    jdn = -1
+    IF ( year <= 1918 ) RETURN
+
+    ! Compute the number of years and months since March 1, 4801 BCE
+    a = (14 - month)/12       !  1 for Jan, 2 for Feb, 0 for other months.
+    y = year + 4800 - a       !  Add 4800 to start counting from -4800.
+    m = month + (12*a) - 3    !  Pretend the year begins in March and ends in Feb.
+
+    jdn = day + &
+          (153*m + 2)/5 + &               !  Number of days in the previous months
+          (365*y) + &                     !  Duh.
+          (y/4) - (y/100) + (y/400) - &   !  Number of leap years since -4800
+          32045                           !  Ensure result is 0 for Jan 1, 4713 BCE.
+
+  END FUNCTION JulianDay
 
 END MODULE Date_Utility

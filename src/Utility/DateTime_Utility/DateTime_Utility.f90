@@ -14,10 +14,11 @@ MODULE DateTime_Utility
   ! -----------------
   ! Environment setup
   ! -----------------
-  USE Date_Utility, ONLY: Date_IsLeapYear  => IsLeapYear , &
-                          Date_DayOfYear   => DayOfYear  , &
-                          Date_DaysInMonth => DaysInMonth, &
-                          Date_NameOfMonth => NameOfMonth
+  USE Date_Utility, ONLY: IsLeapYear , &
+                          DayOfYear  , &
+                          DaysInMonth, &
+                          NameOfMonth, &
+                          DayOfWeek
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -30,34 +31,12 @@ MODULE DateTime_Utility
   PUBLIC :: DateTime_type
   ! Procedures
   PUBLIC :: DateTime_Now
-  PUBLIC :: IsLeapYear
-  PUBLIC :: DayOfYear
-  PUBLIC :: DaysInMonth
-  PUBLIC :: NameOfMonth
-
-
-  ! -------------------
-  ! Procedure overloads
-  ! -------------------
-  INTERFACE IsLeapYear
-    MODULE PROCEDURE Date_IsLeapYear
-    MODULE PROCEDURE DateTime_IsLeapYear
-  END INTERFACE IsLeapYear
-
-  INTERFACE DayOfYear
-    MODULE PROCEDURE Date_DayOfYear
-    MODULE PROCEDURE DateTime_DayOfYear
-  END INTERFACE DayOfYear
-
-  INTERFACE DaysInMonth
-    MODULE PROCEDURE Date_DaysInMonth
-    MODULE PROCEDURE DateTime_DaysInMonth
-  END INTERFACE DaysInMonth
-
-  INTERFACE NameOfMonth
-    MODULE PROCEDURE Date_NameOfMonth
-    MODULE PROCEDURE DateTime_NameOfMonth
-  END INTERFACE NameOfMonth
+  PUBLIC :: DateTime_IsLeapYear
+  PUBLIC :: DateTime_DayOfYear
+  PUBLIC :: DateTime_DaysInMonth
+  PUBLIC :: DateTime_NameOfMonth
+  PUBLIC :: DateTime_DayOfWeek
+  PUBLIC :: DateTime_Inspect
 
 
   ! -----------------
@@ -83,6 +62,7 @@ MODULE DateTime_Utility
     INTEGER :: Millisecond = 0
     INTEGER :: DoY         = 0
     CHARACTER(NL) :: Month_Name
+    CHARACTER(NL) :: Day_Name
   END TYPE DateTime_type
   !:tdoc-:
 
@@ -122,22 +102,23 @@ CONTAINS
     DateTime%Minute      = Values(6)
     DateTime%Second      = Values(7)
     DateTime%Millisecond = Values(8)
-    DateTime%DoY        = DayOfYear( DateTime )
-    DateTime%Month_Name = NameOfMonth( DateTime )
+    DateTime%DoY        = DateTime_DayOfYear( DateTime )
+    DateTime%Month_Name = DateTime_NameOfMonth( DateTime )
+    DateTime%Day_Name   = DateTime_DayOfWeek( DateTime )
   END FUNCTION DateTime_Now
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       IsLeapYear
+!       DateTime_IsLeapYear
 !
 ! PURPOSE:
 !       Elemental function to determine if a specified DateTime structure
 !       is for a leap year.
 !
 ! CALLING SEQUENCE:
-!       Result = IsLeapYear( DateTime )
+!       Result = DateTime_IsLeapYear( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -157,24 +138,24 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION DateTime_IsLeapYear( DateTime ) RESULT( IsLeapYear )
+  ELEMENTAL FUNCTION DateTime_IsLeapYear( DateTime )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
-    LOGICAL :: IsLeapYear
-    IsLeapYear = Date_IsLeapYear( DateTime%Year )
+    LOGICAL :: DateTime_IsLeapYear
+    DateTime_IsLeapYear = IsLeapYear( DateTime%Year )
   END FUNCTION DateTime_IsLeapYear
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       DayOfYear
+!       DateTime_DayOfYear
 !
 ! PURPOSE:
 !       Elemental function to determine the day-of-year value for a
 !       a DateTime structure.
 !
 ! CALLING SEQUENCE:
-!       DoY = DayOfYear( DateTime )
+!       DoY = DateTime_DayOfYear( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -195,21 +176,21 @@ CONTAINS
   ELEMENTAL FUNCTION DateTime_DayOfYear( DateTime ) RESULT( DoY )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
     INTEGER :: DoY
-    DoY = Date_DayOfYear( DateTime%Day, DateTime%Month, DateTime%Year )
+    DoY = DayOfYear( DateTime%Day, DateTime%Month, DateTime%Year )
   END FUNCTION DateTime_DayOfYear
 
 
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:
-!       DaysInMonth
+!       DateTime_DaysInMonth
 !
 ! PURPOSE:
 !       Elemental function to return the number of days in a given
 !       month and year.
 !
 ! CALLING SEQUENCE:
-!       n_Days = DaysInMonth( DateTime )
+!       n_Days = DateTime_DaysInMonth( DateTime )
 !
 ! INPUTS:
 !       DateTime:  DateTime structure containing date information.
@@ -230,7 +211,7 @@ CONTAINS
   ELEMENTAL FUNCTION DateTime_DaysInMonth( DateTime ) RESULT( n_Days )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
     INTEGER :: n_Days
-    n_Days = Date_DaysInMonth( DateTime%Month, DateTime%Year )
+    n_Days = DaysInMonth( DateTime%Month, DateTime%Year )
   END FUNCTION DateTime_DaysInMonth
 
 
@@ -238,13 +219,13 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       NameOfMonth
+!       DateTime_NameOfMonth
 !
 ! PURPOSE:
 !       Elemental function to return the name of the month.
 !
 ! CALLING SEQUENCE:
-!       name = NameOfMonth( DateTime )
+!       name = DateTime_NameOfMonth( DateTime )
 !
 ! INPUT ARGUMENTS:
 !       DateTime:  DateTime structure containing date information.
@@ -265,7 +246,82 @@ CONTAINS
   ELEMENTAL FUNCTION DateTime_NameOfMonth( DateTime ) RESULT( name )
     TYPE(DateTime_type), INTENT(IN) :: DateTime
     CHARACTER(NL) :: name
-    name = Date_NameOfMonth( DateTime%Month )
+    name = NameOfMonth( DateTime%Month )
   END FUNCTION DateTime_NameOfMonth
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       DateTime_DayOfWeek
+!
+! PURPOSE:
+!       Elemental function to return the name of the day of week.
+!
+! CALLING SEQUENCE:
+!       name = DateTime_DayOfWeek( DateTime )
+!
+! INPUT ARGUMENTS:
+!       DateTime:  DateTime structure containing date information.
+!                  UNITS:      N/A
+!                  TYPE:       DateTime_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       name:      The return value is a character string containing the
+!                  name of the day of the week.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Conformable with input DateTime argument.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION DateTime_DayOfWeek( DateTime ) RESULT( name )
+    TYPE(DateTime_type), INTENT(IN) :: DateTime
+    CHARACTER(NL) :: name
+    name = DayOfWeek( DateTime%Day, DateTime%Month, DateTime%Year )
+  END FUNCTION DateTime_DayOfWeek
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   DateTime_Inspect
+!
+! PURPOSE:
+!   Subroutine to print the contents of a DateTime object to stdout.
+!
+! CALLING SEQUENCE:
+!   CALL DateTime_Inspect( datetime )
+!
+! OBJECTS:
+!   DateTime:  DateTime object to display.
+!              UNITS:      N/A
+!              TYPE:       DateTime_type
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE DateTime_Inspect( self )
+    TYPE(DateTime_type), INTENT(IN) :: self
+    WRITE(*,'(1x,"DateTime OBJECT")')
+    WRITE(*,'(3x,"Year        : ",i0)') self%Year
+    WRITE(*,'(3x,"Month       : ",i0)') self%Month
+    WRITE(*,'(3x,"Day         : ",i0)') self%Day
+    WRITE(*,'(3x,"UTC_Delta   : ",i0)') self%UTC_Delta
+    WRITE(*,'(3x,"Hour        : ",i0)') self%Hour
+    WRITE(*,'(3x,"Minute      : ",i0)') self%Minute
+    WRITE(*,'(3x,"Second      : ",i0)') self%Second
+    WRITE(*,'(3x,"Millisecond : ",i0)') self%Millisecond
+    WRITE(*,'(3x,"DoY         : ",i0)') self%DoY
+    WRITE(*,'(3x,"Month_Name  : ",a)') TRIM(self%Month_Name)
+    WRITE(*,'(3x,"Day_Name    : ",a)') TRIM(self%Day_Name)
+  END SUBROUTINE DateTime_Inspect
 
 END MODULE DateTime_Utility
