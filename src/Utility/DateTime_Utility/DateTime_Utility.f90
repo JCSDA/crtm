@@ -14,6 +14,7 @@ MODULE DateTime_Utility
   ! -----------------
   ! Environment setup
   ! -----------------
+  USE Type_Kinds  , ONLY: fp
   USE Date_Utility, ONLY: IsLeapYear , &
                           DayOfYear  , &
                           DaysInMonth, &
@@ -37,6 +38,7 @@ MODULE DateTime_Utility
   PUBLIC :: DateTime_NameOfMonth
   PUBLIC :: DateTime_DayOfWeek
   PUBLIC :: DateTime_Inspect
+  PUBLIC :: DateTime_ToString
 
 
   ! -----------------
@@ -323,5 +325,157 @@ CONTAINS
     WRITE(*,'(3x,"Month_Name  : ",a)') TRIM(self%Month_Name)
     WRITE(*,'(3x,"Day_Name    : ",a)') TRIM(self%Day_Name)
   END SUBROUTINE DateTime_Inspect
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       DateTime_ToString
+!
+! PURPOSE:
+!       Elemental function to return the equivalent string representation
+!       of the DateTime object.
+!
+! CALLING SEQUENCE:
+!       string = DateTime_ToString( DateTime, Format=format )
+!
+! OBJECTS:
+!       DateTime:  DateTime structure containing date information.
+!                  UNITS:      N/A
+!                  TYPE:       DateTime_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Format:    A single character code to determine the output
+!                  string format. Valid format codes are:
+!
+!   'd'        Short Date pattern.               6/15/2009 1:45:30 PM -> 06/15/2009
+!   'D'        Long Date pattern.                6/15/2009 1:45:30 PM -> Monday, June 15, 2009
+!   'f'        Full Date Short Time pattern.     6/15/2009 1:45:30 PM -> Monday, June 15, 2009 13:45
+!   'F'        Full Date Long Time pattern.      6/15/2009 1:45:30 PM -> Monday, June 15, 2009 13:45:30
+!   'g'        General Date Short Time pattern.  6/15/2009 1:45:30 PM -> 06/15/2009 13:45
+!   'G'        General Date Long Time pattern.   6/15/2009 1:45:30 PM -> 06/15/2009 13:45:30
+!   'm','M'    Month pattern.                    6/15/2009 1:45:30 PM -> June 15
+!   'o','O'    Round-trip pattern.               6/15/2009 1:45:30 PM -> 2009-06-15T13:45:30.0900000
+!   'r','R'  * RFC1123 pattern.                  6/15/2009 1:45:30 PM -> Mon, 15 Jun 2009 20:45:30 GMT
+!   's'        Sortable pattern.                 6/15/2009 1:45:30 PM -> 2009-06-15T13:45:30
+!   't'        Short Time pattern.               6/15/2009 1:45:30 PM -> 13:45
+!   'T'        Long Time pattern.                6/15/2009 1:45:30 PM -> 13:45:30
+!   'u'      * Universal Sortable pattern.       6/15/2009 1:45:30 PM -> 2009-06-15 20:45:30Z
+!   'U'      * Universal Full pattern.           6/15/2009 1:45:30 PM -> Monday, June 15, 2009 20:45:30
+!   'y','Y'    Year Month pattern.               6/15/2009 1:45:30 PM -> June, 2009
+!
+!                  Format codes marked with a "*" are not yet implemented.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Conformable with the DateTime input.
+!                  ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       string:    Equivalent string representation of the DateTime object.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER
+!                  DIMENSION:  Conformable with input DateTime argument.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION DateTime_ToString( DateTime, Format ) RESULT( string )
+    ! Arguments
+    TYPE(DateTime_type),           INTENT(IN) :: DateTime
+    CHARACTER(*)       , OPTIONAL, INTENT(IN) :: Format
+    ! Function result
+    CHARACTER(80) :: string
+    ! Local variables
+    CHARACTER(1) :: string_format
+    REAL(fp) :: seconds
+
+    ! Define default format
+    string_format = 'd'
+    IF ( PRESENT(Format) ) string_format = TRIM(ADJUSTL(Format))
+
+
+    ! Begin monster select construct
+    ! NOTE: This is a brain dead way to implement. But quick. :o)
+    SELECT CASE(string_format)
+
+      CASE('d')      ! Short Date pattern.  6/15/2009 1:45:30 PM -> 06/15/2009
+        WRITE(string,'(i2.2,"/",i2.2,"/",i4)') &
+                     DateTime%Month, DateTime%Day, DateTime%Year
+
+      CASE('D')      ! Long Date pattern.  6/15/2009 1:45:30 PM -> Monday, June 15, 2009
+        WRITE(string,'(a,", ",a,1x,i0,", ",i4)') &
+                     TRIM(DateTime_DayOfWeek(DateTime)), &
+                     TRIM(DateTime_NameOfMonth(DateTime)), &
+                     DateTime%Day, DateTime%Year
+
+      CASE('f')      ! Full Date Short Time pattern.  6/15/2009 1:45:30 PM -> Monday, June 15, 2009 13:45
+        WRITE(string,'(a,", ",a,1x,i0,", ",i4,1x,i2.2,":",i2.2)') &
+                     TRIM(DateTime_DayOfWeek(DateTime)), &
+                     TRIM(DateTime_NameOfMonth(DateTime)), &
+                     DateTime%Day, DateTime%Year, &
+                     DateTime%Hour, DateTime%Minute
+
+      CASE('F')      ! Full Date Long Time pattern.  6/15/2009 1:45:30 PM -> Monday, June 15, 2009 13:45:30
+        WRITE(string,'(a,", ",a,1x,i0,", ",i4,1x,i2.2,":",i2.2,":",i2.2)') &
+                     TRIM(DateTime_DayOfWeek(DateTime)), &
+                     TRIM(DateTime_NameOfMonth(DateTime)), &
+                     DateTime%Day, DateTime%Year, &
+                     DateTime%Hour, DateTime%Minute, DateTime%Second
+
+      CASE('g')      ! General Date Short Time pattern.  6/15/2009 1:45:30 PM -> 06/15/2009 13:45
+        WRITE(string,'(i2.2,"/",i2.2,"/",i4,1x,i2.2,":",i2.2)') &
+                     DateTime%Month, DateTime%Day, DateTime%Year, &
+                     DateTime%Hour, DateTime%Minute
+
+      CASE('G')      ! General Date Long Time pattern.  6/15/2009 1:45:30 PM -> 06/15/2009 13:45:30
+        WRITE(string,'(i2.2,"/",i2.2,"/",i4,1x,i2.2,":",i2.2,":",i2.2)') &
+                     DateTime%Month, DateTime%Day, DateTime%Year, &
+                     DateTime%Hour, DateTime%Minute, DateTime%Second
+
+      CASE('m','M')  ! Month pattern.  6/15/2009 1:45:30 PM -> June 15
+        WRITE(string,'(a,1x,i0)') &
+                     TRIM(DateTime_NameOfMonth(DateTime)), DateTime%Day
+
+      CASE('o','O')  ! Round-trip pattern.  6/15/2009 1:45:30 PM -> 2009-06-15T13:45:30.0900000
+        seconds = REAL(DateTime%Second,fp) + &
+                  REAL(DateTime%Millisecond,fp)*1.0e-03_fp
+        WRITE(string,'(i4,"-",i2.2,"-",i2.2,"T",i2.2,":",i2.2,":",f10.7)') &
+                     DateTime%Year, DateTime%Month, DateTime%Day, &
+                     DateTime%Hour, DateTime%Minute, seconds
+
+      CASE('r','R')  ! RFC1123 pattern.  6/15/2009 1:45:30 PM -> Mon, 15 Jun 2009 20:45:30 GMT
+        string = 'RFC1123 format not yet implemented'
+
+      CASE('s')      ! Sortable pattern.  6/15/2009 1:45:30 PM -> 2009-06-15T13:45:30
+        WRITE(string,'(i4,"-",i2.2,"-",i2.2,"T",i2.2,":",i2.2,":",i2.2)') &
+                     DateTime%Year, DateTime%Month, DateTime%Day, &
+                     DateTime%Hour, DateTime%Minute, DateTime%Second
+
+      CASE('t')      ! Short Time pattern.  6/15/2009 1:45:30 PM -> 13:45
+        WRITE(string,'(i2.2,":",i2.2)') &
+                     DateTime%Hour, DateTime%Minute
+
+      CASE('T')      ! Long Time pattern.  6/15/2009 1:45:30 PM -> 13:45:30
+        WRITE(string,'(i2.2,":",i2.2,":",i2.2)') &
+                     DateTime%Hour, DateTime%Minute, DateTime%Second
+
+      CASE('u')      ! Universal Sortable pattern.  6/15/2009 1:45:30 PM -> 2009-06-15 20:45:30Z
+        string = 'Universal Sortable format not yet implemented'
+
+      CASE('U')      ! Universal Full pattern.  6/15/2009 1:45:30 PM -> Monday, June 15, 2009 20:45:30
+        string = 'Universal Full format not yet implemented'
+
+      CASE('y','Y')  ! Year Month pattern. 6/15/2009 1:45:30 PM -> June, 2009
+        WRITE(string,'(a,", ",i4)') &
+                     TRIM(DateTime_NameOfMonth(DateTime)), DateTime%Year
+      CASE DEFAULT
+        string = 'Invalid DateTime string format!'
+
+    END SELECT
+
+  END FUNCTION DateTime_ToString
 
 END MODULE DateTime_Utility
