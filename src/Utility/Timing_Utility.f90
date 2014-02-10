@@ -25,7 +25,7 @@ MODULE Timing_Utility
   PUBLIC :: Timing_Inspect
   PUBLIC :: Timing_Set
   PUBLIC :: Timing_Get
-  PUBLIC :: Timing_WriteFile, xTiming_WriteFile
+  PUBLIC :: Timing_WriteFile
   ! ...Old named procedures
   PUBLIC :: Begin_Timing
   PUBLIC :: End_Timing
