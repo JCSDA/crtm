@@ -370,29 +370,6 @@ CONTAINS
     IF ( PRESENT(Is_Valid   ) ) Is_Valid    = self%Is_Valid
   END SUBROUTINE Timing_Get
 
-  ! Subroutine to write timing information in
-  ! seconds and the date for a given timing object
-  SUBROUTINE Timing_WriteFile( &
-    self    , &
-    filename  )
-    ! Arguments
-    TYPE(Timing_type), INTENT(IN OUT) :: self
-    CHARACTER(*),      INTENT(IN) :: filename
-    ! Local Variables
-    REAL(fp) :: Total_Time
-    CHARACTER(8) :: date
-    CHARACTER(10) :: time
-    ! Local Parameters
-    INTEGER :: LUN = 1
-    ! Compute the total time in seconds
-    Total_Time = REAL(self%End_Clock - self%Begin_Clock, fp) / REAL(self%Hertz, fp)
-    ! Write the total time in seconds to file
-    CALL DATE_AND_TIME(DATE=date, TIME=time)
-    OPEN(Unit=LUN, FILE=filename, POSITION="APPEND", Action="WRITE")
-    WRITE(LUN, FMT='(1X, A10, 3X, A10, F12.2)') date, time, Total_Time
-    CLOSE(LUN)
-  END SUBROUTINE Timing_WriteFile
-
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -458,7 +435,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  FUNCTION xTiming_WriteFile( &
+  FUNCTION Timing_WriteFile( &
     Timing_Array, &
     Filename    , &
     Clobber     , &
@@ -593,7 +570,7 @@ CONTAINS
       CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
     END IF
 
-  END FUNCTION xTiming_WriteFile
+  END FUNCTION Timing_WriteFile
 
 
 
