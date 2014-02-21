@@ -172,23 +172,23 @@ CONTAINS
       Fhdr%End_Frequency                , &
       Fhdr%Boundary_Temperature         , &
       Fhdr%Boundary_Emissivity          , &
-      Fhdr%RunFlags%hirac               , &
-      Fhdr%RunFlags%lblf4               , &
-      Fhdr%RunFlags%xscnt               , &
-      Fhdr%RunFlags%aersl               , &
-      Fhdr%RunFlags%emit                , &
-      Fhdr%RunFlags%scan                , &
-      Fhdr%RunFlags%plot                , &
-      Fhdr%RunFlags%path                , &
-      Fhdr%RunFlags%jrad                , &
-      Fhdr%RunFlags%test                , &
-      Fhdr%RunFlags%merge               , &
-      Fhdr%RunFlags%scnid               , &
-      Fhdr%RunFlags%hwhm                , &
-      Fhdr%RunFlags%idabs               , &
-      Fhdr%RunFlags%atm                 , &
-      Fhdr%RunFlags%layr1               , &
-      Fhdr%RunFlags%nlayr               , &
+      Fhdr%hirac , &
+      Fhdr%lblf4 , &
+      Fhdr%xscnt , &
+      Fhdr%aersl , &
+      Fhdr%emit  , &
+      Fhdr%scan  , &
+      Fhdr%plot  , &
+      Fhdr%path  , &
+      Fhdr%jrad  , &
+      Fhdr%test  , &
+      Fhdr%merge , &
+      Fhdr%scnid , &
+      Fhdr%hwhm  , &
+      Fhdr%idabs , &
+      Fhdr%atm   , &
+      Fhdr%layr1 , &
+      Fhdr%nlayr , &
       Fhdr%n_Molecules                  , &
       Fhdr%n_Layer                      , &
       Fhdr%OD_Layering_Control_Flag     , &
@@ -334,23 +334,23 @@ CONTAINS
       Fhdr%End_Frequency                , &
       Fhdr%Boundary_Temperature         , &
       Fhdr%Boundary_Emissivity          , &
-      Fhdr%RunFlags%hirac               , &
-      Fhdr%RunFlags%lblf4               , &
-      Fhdr%RunFlags%xscnt               , &
-      Fhdr%RunFlags%aersl               , &
-      Fhdr%RunFlags%emit                , &
-      Fhdr%RunFlags%scan                , &
-      Fhdr%RunFlags%plot                , &
-      Fhdr%RunFlags%path                , &
-      Fhdr%RunFlags%jrad                , &
-      Fhdr%RunFlags%test                , &
-      Fhdr%RunFlags%merge               , &
-      Fhdr%RunFlags%scnid               , &
-      Fhdr%RunFlags%hwhm                , &
-      Fhdr%RunFlags%idabs               , &
-      Fhdr%RunFlags%atm                 , &
-      Fhdr%RunFlags%layr1               , &
-      Fhdr%RunFlags%nlayr               , &
+      Fhdr%hirac, &
+      Fhdr%lblf4, &
+      Fhdr%xscnt, &
+      Fhdr%aersl, &
+      Fhdr%emit , &
+      Fhdr%scan , &
+      Fhdr%plot , &
+      Fhdr%path , &
+      Fhdr%jrad , &
+      Fhdr%test , &
+      Fhdr%merge, &
+      Fhdr%scnid, &
+      Fhdr%hwhm , &
+      Fhdr%idabs, &
+      Fhdr%atm  , &
+      Fhdr%layr1, &
+      Fhdr%nlayr, &
       Fhdr%n_Molecules                  , &
       Fhdr%n_Layer                      , &
       Fhdr%OD_Layering_Control_Flag     , &
