@@ -3,7 +3,7 @@ AC_REVISION($Id$)
 
 
 ## Initialise autoconf
-AC_INIT([LBLRTM I/O], [v0.1.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [lblrtmio])
+AC_INIT([LBLRTM I/O], [v0.2.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [lblrtmio])
 
 
 # Output info for user
@@ -66,6 +66,19 @@ if test "x${FC}" = xxlf2003; then
   FPPFLAGS="-WF,-DAIX -WF,-P $FPPFLAGS"
 fi
 AC_SUBST(FPPFLAGS)
+
+
+# Append netCDF library information to standard flags
+AC_MSG_NOTICE([Using NETCDF_DIR location: "${NETCDF_DIR}"])
+FCFLAGS="${FCFLAGS} -I${NETCDF_DIR}/include"
+LDFLAGS="${LDFLAGS} -L${NETCDF_DIR}/lib"
+LIBS="${LIBS} -lnetcdff"
+# ...and now check for Fortran netCDF library
+AC_MSG_CHECKING([for library containing nf90_inq_libvers])
+AC_LINK_IFELSE(
+  [AC_LANG_SOURCE([program main; use netcdf; character(80)::ver; ver=nf90_inq_libvers(); end])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_FAILURE([Unable to find netCDF Fortran library.],[1])])
 
 
 # Create the configure script
