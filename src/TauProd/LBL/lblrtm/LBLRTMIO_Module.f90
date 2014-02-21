@@ -30,6 +30,9 @@ MODULE LBLRTMIO_Module
   USE LBLRTM_Layer_IO
   USE LBLRTM_File_IO
 
+  ! LBLRTM netCDF I/O definition modules
+  USE LBLRTM_netCDF_IO
+
 
   ! Visibility
   ! ----------
@@ -41,7 +44,7 @@ MODULE LBLRTMIO_Module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   CHARACTER(*), PRIVATE, PARAMETER :: LBLRTMIO_VERSION_ID = &
-  'v0.1.0'
+  'v0.2.0'
 
 
 CONTAINS
