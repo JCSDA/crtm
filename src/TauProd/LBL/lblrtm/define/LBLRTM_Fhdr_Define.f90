@@ -48,12 +48,10 @@ MODULE LBLRTM_Fhdr_Define
   ! ---------------------
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE LBLRTM_Fhdr_Equal
-    MODULE PROCEDURE RunFlags_Equal
   END INTERFACE OPERATOR(==)
 
   INTERFACE OPERATOR(/=)
     MODULE PROCEDURE LBLRTM_Fhdr_NotEqual
-    MODULE PROCEDURE RunFlags_NotEqual
   END INTERFACE OPERATOR(/=)
 
 
@@ -69,9 +67,28 @@ MODULE LBLRTM_Fhdr_Define
   ! ------------------------
   ! Derived type definitions
   ! ------------------------
-  ! LBLRTM file header run flags
-  TYPE :: RunFlags_type
+  !:tdoc+:
+  TYPE :: LBLRTM_Fhdr_type
     LOGICAL :: Is_Valid = .FALSE.
+    CHARACTER(80) :: User_ID                        = ''
+    REAL(DP)      :: Column_Scale_Factor            = 0.0_DP
+    REAL(FP)      :: Average_Layer_Pressure         = 0.0_FP
+    REAL(FP)      :: Average_Layer_Temperature      = 0.0_FP
+    CHARACTER(8)  :: Molecule_Id(N_MOL)             = ''
+    REAL(FP)      :: Molecule_Column_Density(N_MOL) = 0.0_FP
+    REAL(FP)      :: Broadening_Gas_Column_Density  = 0.0_FP
+    REAL(FP)      :: Frequency_Interval             = 0.0_FP
+    REAL(DP)      :: Begin_Frequency                = 0.0_DP
+    REAL(DP)      :: End_Frequency                  = 0.0_DP
+    REAL(FP)      :: Boundary_Temperature           = 0.0_FP
+    REAL(FP)      :: Boundary_Emissivity            = 0.0_FP
+    INTEGER(IP)   :: n_Molecules                    = 0_IP
+    INTEGER(IP)   :: n_Layer                        = 0_IP
+    INTEGER(IP)   :: OD_Layering_Control_Flag       = 0_IP
+    CHARACTER(8)  :: Calculation_Date               = ''
+    CHARACTER(8)  :: Calculation_Time               = ''
+    CHARACTER(8)  :: ancillary(8)                   = ''
+    ! The RunFlags
     INTEGER(IP) :: hirac   = -1_IP
     INTEGER(IP) :: lblf4   = -1_IP
     INTEGER(IP) :: xscnt   = -1_IP
@@ -89,31 +106,6 @@ MODULE LBLRTM_Fhdr_Define
     INTEGER(IP) :: atm     = -1_IP
     INTEGER(IP) :: layr1   = -1_IP
     INTEGER(IP) :: nlayr   = -1_IP
-  END TYPE RunFlags_type
-
-  ! LBLRTM file header
-  !:tdoc+:
-  TYPE :: LBLRTM_Fhdr_type
-    LOGICAL :: Is_Valid = .FALSE.
-    CHARACTER(80)       :: User_ID                        = ''
-    REAL(DP)            :: Column_Scale_Factor            = 0.0_DP
-    REAL(FP)            :: Average_Layer_Pressure         = 0.0_FP
-    REAL(FP)            :: Average_Layer_Temperature      = 0.0_FP
-    CHARACTER(8)        :: Molecule_Id(N_MOL)             = ''
-    REAL(FP)            :: Molecule_Column_Density(N_MOL) = 0.0_FP
-    REAL(FP)            :: Broadening_Gas_Column_Density  = 0.0_FP
-    REAL(FP)            :: Frequency_Interval             = 0.0_FP
-    REAL(DP)            :: Begin_Frequency                = 0.0_DP
-    REAL(DP)            :: End_Frequency                  = 0.0_DP
-    REAL(FP)            :: Boundary_Temperature           = 0.0_FP
-    REAL(FP)            :: Boundary_Emissivity            = 0.0_FP
-    INTEGER(IP)         :: n_Molecules                    = 0_IP
-    INTEGER(IP)         :: n_Layer                        = 0_IP
-    INTEGER(IP)         :: OD_Layering_Control_Flag       = 0_IP
-    CHARACTER(8)        :: Calculation_Date               = ''
-    CHARACTER(8)        :: Calculation_Time               = ''
-    CHARACTER(8)        :: ancillary(8)                   = ''
-    TYPE(RunFlags_type) :: RunFlags
   END TYPE LBLRTM_Fhdr_type
   !:tdoc-:
 
@@ -155,13 +147,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE LBLRTM_Fhdr_SetValid(self)
     TYPE(LBLRTM_Fhdr_type), INTENT(IN OUT) :: self
     self%Is_Valid = .TRUE.
-    CALL RunFlags_SetValid(self%RunFlags)
   END SUBROUTINE LBLRTM_Fhdr_SetValid
-
-  ELEMENTAL SUBROUTINE RunFlags_SetValid(self)
-    TYPE(RunFlags_type), INTENT(IN OUT) :: self
-    self%Is_Valid = .TRUE.
-  END SUBROUTINE RunFlags_SetValid
 
 
 !--------------------------------------------------------------------------------
@@ -197,14 +183,8 @@ CONTAINS
   ELEMENTAL FUNCTION LBLRTM_Fhdr_IsValid( self ) RESULT( Status )
     TYPE(LBLRTM_Fhdr_type), INTENT(IN) :: self
     LOGICAL :: Status
-    Status = self%Is_Valid .AND. RunFlags_IsValid(self%RunFlags)
-  END FUNCTION LBLRTM_Fhdr_IsValid
-
-  ELEMENTAL FUNCTION RunFlags_IsValid( self ) RESULT( Status )
-    TYPE(RunFlags_type), INTENT(IN) :: self
-    LOGICAL :: Status
     Status = self%Is_Valid
-  END FUNCTION RunFlags_IsValid
+  END FUNCTION LBLRTM_Fhdr_IsValid
 
 
 !--------------------------------------------------------------------------------
@@ -300,44 +280,25 @@ CONTAINS
     WRITE(*,'('//sp(3)//',"Calculation_Time              : ",a8)') self%Calculation_Time
     WRITE(*,'('//sp(3)//',"ancillary                     : ")')
     WRITE(*,'(10a8)') self%ancillary
-    CALL RunFlags_Inspect(self%RunFlags, offset = offset)
+    WRITE(*,'('//sp(2)//',"RunFlags")')
+    WRITE(*,'('//sp(3)//',"hirac : ",i0)') self%hirac
+    WRITE(*,'('//sp(3)//',"lblf4 : ",i0)') self%lblf4
+    WRITE(*,'('//sp(3)//',"xscnt : ",i0)') self%xscnt
+    WRITE(*,'('//sp(3)//',"aersl : ",i0)') self%aersl
+    WRITE(*,'('//sp(3)//',"emit  : ",i0)') self%emit
+    WRITE(*,'('//sp(3)//',"scan  : ",i0)') self%scan
+    WRITE(*,'('//sp(3)//',"plot  : ",i0)') self%plot
+    WRITE(*,'('//sp(3)//',"path  : ",i0)') self%path
+    WRITE(*,'('//sp(3)//',"jrad  : ",i0)') self%jrad
+    WRITE(*,'('//sp(3)//',"test  : ",i0)') self%test
+    WRITE(*,'('//sp(3)//',"merge : ",i0)') self%merge
+    WRITE(*,'('//sp(3)//',"scnid : ",'//FMT_STRING//')') self%scnid
+    WRITE(*,'('//sp(3)//',"hwhm  : ",'//FMT_STRING//')') self%hwhm
+    WRITE(*,'('//sp(3)//',"idabs : ",i0)') self%idabs
+    WRITE(*,'('//sp(3)//',"atm   : ",i0)') self%atm
+    WRITE(*,'('//sp(3)//',"layr1 : ",i0)') self%layr1
+    WRITE(*,'('//sp(3)//',"nlayr : ",i0)') self%nlayr
   END SUBROUTINE LBLRTM_Fhdr_Inspect
-
-  SUBROUTINE RunFlags_Inspect( self, offset )
-    TYPE(RunFlags_type), INTENT(IN) :: self
-    INTEGER,   OPTIONAL, INTENT(IN) :: offset
-    CHARACTER(*), PARAMETER :: FMT_STRING = 'es22.15'
-    INTEGER      :: n_spaces(2)
-    CHARACTER(3) :: sp(2), cr
-    IF ( .NOT. RunFlags_IsValid(self) ) RETURN
-    ! Compute indent for stand-alone, or embedded, object
-    n_spaces = [3,5]
-    cr       = '/'
-    IF ( PRESENT(offset) ) THEN
-      n_spaces = n_spaces + ABS(offset)
-      cr       = ''
-    END IF
-    WRITE(sp,'(i0,"x")') n_spaces
-    ! Output data
-    WRITE(*,'('//cr//sp(1)//',"LBLRTM_Fhdr RunFlags OBJECT")')
-    WRITE(*,'('//sp(2)//',"hirac : ",i0)') self%hirac
-    WRITE(*,'('//sp(2)//',"lblf4 : ",i0)') self%lblf4
-    WRITE(*,'('//sp(2)//',"xscnt : ",i0)') self%xscnt
-    WRITE(*,'('//sp(2)//',"aersl : ",i0)') self%aersl
-    WRITE(*,'('//sp(2)//',"emit  : ",i0)') self%emit
-    WRITE(*,'('//sp(2)//',"scan  : ",i0)') self%scan
-    WRITE(*,'('//sp(2)//',"plot  : ",i0)') self%plot
-    WRITE(*,'('//sp(2)//',"path  : ",i0)') self%path
-    WRITE(*,'('//sp(2)//',"jrad  : ",i0)') self%jrad
-    WRITE(*,'('//sp(2)//',"test  : ",i0)') self%test
-    WRITE(*,'('//sp(2)//',"merge : ",i0)') self%merge
-    WRITE(*,'('//sp(2)//',"scnid : ",'//FMT_STRING//')') self%scnid
-    WRITE(*,'('//sp(2)//',"hwhm  : ",'//FMT_STRING//')') self%hwhm
-    WRITE(*,'('//sp(2)//',"idabs : ",i0)') self%idabs
-    WRITE(*,'('//sp(2)//',"atm   : ",i0)') self%atm
-    WRITE(*,'('//sp(2)//',"layr1 : ",i0)') self%layr1
-    WRITE(*,'('//sp(2)//',"nlayr : ",i0)') self%nlayr
-  END SUBROUTINE RunFlags_Inspect
 
 
 !--------------------------------------------------------------------------------
@@ -420,7 +381,7 @@ CONTAINS
       CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
     END IF
 
-    ! Check the contents
+    ! Check the data
     IF ( x%User_ID /= y%User_ID ) THEN
       msg = 'User_ID components are different'
       CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
@@ -493,31 +454,8 @@ CONTAINS
       msg = 'ancillary components are different'
       CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
     END IF
-
-    ! If we get here, then...
-    is_equal = RunFlags_Compare(x%RunFlags, y%RunFlags)
-
-  END FUNCTION LBLRTM_Fhdr_Compare
-
-
-  FUNCTION RunFlags_Compare( x, y ) RESULT( is_equal )
-    TYPE(RunFlags_type), INTENT(IN) :: x, y
-    LOGICAL :: is_equal
-    ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'RunFlags_Define::Compare'
-    ! Local variable
-    CHARACTER(ML) :: msg
-
-    ! Set up
-    is_equal = .FALSE.
-
-    ! Check the object association status
-    IF ( RunFlags_IsValid(x) .NEQV. RunFlags_IsValid(y) ) THEN
-      msg = 'Object association statuses are different'
-      CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
-    END IF
-
-    ! Check the contents
+    
+    ! Check the run flags
     IF ( x%hirac /= y%hirac ) THEN
       msg = 'hirac components are different'
       CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
@@ -587,12 +525,10 @@ CONTAINS
       CALL Display_Message(ROUTINE_NAME, msg, FAILURE); RETURN
     END IF
 
-
     ! If we get here, then...
     is_equal = .TRUE.
 
-  END FUNCTION RunFlags_Compare
-
+  END FUNCTION LBLRTM_Fhdr_Compare
 
 
 
@@ -666,24 +602,7 @@ CONTAINS
                (x%Calculation_Date                  ==    y%Calculation_Date             ) .AND. &
                (x%Calculation_Time                  ==    y%Calculation_Time             ) .AND. &
                ALL(x%ancillary                      ==    y%ancillary                    ) .AND. &
-               (x%RunFlags                          ==    y%RunFlags                     )) ) RETURN
-
-    ! If we get here, then...
-    is_equal = .TRUE.
-  END FUNCTION LBLRTM_Fhdr_Equal
-
-  ELEMENTAL FUNCTION RunFlags_Equal( x, y ) RESULT( is_equal )
-    TYPE(RunFlags_type), INTENT(IN) :: x, y
-    LOGICAL :: is_equal
-
-    ! Set up
-    is_equal = .FALSE.
-
-    ! Check the object association status
-    IF ( RunFlags_IsValid(x) .NEQV. RunFlags_IsValid(y) ) RETURN
-
-    ! Check contents
-    IF ( .NOT.((x%hirac     ==    y%hirac) .AND. &
+               (x%hirac     ==    y%hirac) .AND. &
                (x%lblf4     ==    y%lblf4) .AND. &
                (x%xscnt     ==    y%xscnt) .AND. &
                (x%aersl     ==    y%aersl) .AND. &
@@ -703,7 +622,7 @@ CONTAINS
 
     ! If we get here, then...
     is_equal = .TRUE.
-  END FUNCTION RunFlags_Equal
+  END FUNCTION LBLRTM_Fhdr_Equal
 
 
 !------------------------------------------------------------------------------
@@ -746,11 +665,5 @@ CONTAINS
     LOGICAL :: not_equal
     not_equal = .NOT. (x == y)
   END FUNCTION LBLRTM_Fhdr_NotEqual
-
-  ELEMENTAL FUNCTION RunFlags_NotEqual( x, y ) RESULT( not_equal )
-    TYPE(RunFlags_type), INTENT(IN) :: x, y
-    LOGICAL :: not_equal
-    not_equal = .NOT. (x == y)
-  END FUNCTION RunFlags_NotEqual
 
 END MODULE LBLRTM_Fhdr_Define
