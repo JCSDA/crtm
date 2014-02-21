@@ -5,6 +5,7 @@ FPP_FILES = Type_Kinds.fpp \
 SRC_FILES = File_Utility.f90 \
             Message_Handler.f90 \
             Compare_Float_Numbers.f90 \
+            String_Utility.f90 \
             LBLRTM_Parameters.f90 \
             LBLRTM_Phdr_Define.f90 \
             LBLRTM_Phdr_IO.f90 \
@@ -16,7 +17,14 @@ SRC_FILES = File_Utility.f90 \
             LBLRTM_Layer_IO.f90 \
             LBLRTM_File_Define.f90 \
             LBLRTM_File_IO.f90 \
+            LBLRTM_Fhdr_netCDF_IO.f90 \
+            LBLRTM_Layer_netCDF_IO.f90 \
+            LBLRTM_File_netCDF_IO.f90 \
+            LBLRTM_netCDF_IO.f90 \
             LBLRTMIO_Module.f90
-
+INC_FILES = LBLRTM_Fhdr_netCDF_IO.inc \
+            LBLRTM_Layer_netCDF_IO.inc \
+            LBLRTM_File_netCDF_IO.inc
+            
 OBJ_FILES = ${FPP_FILES:.fpp=.o} \
             ${SRC_FILES:.f90=.o} \
