@@ -1,0 +1,15 @@
+---
+- :var: Begin_Frequency
+  :name: BEGIN_FREQ
+  :dims: ""
+- :var: End_Frequency
+  :name: END_FREQ
+  :dims: ""
+- :var: Frequency_Interval
+  :name: FREQ_INTERVAL
+  :dims: ""
+- :var: Spectrum
+  :name: SPECTRUM
+  :dims:
+  - n_points_dimid
+  - n_spectra_dimid

@@ -1,0 +1,9 @@
+--- 
+- :desc: Number of spectral points
+  :var: n_Points
+  :name: POINTS
+  :value: ""
+- :desc: Number of spectra
+  :var: n_Spectra
+  :name: SPECTRA
+  :value: ""
