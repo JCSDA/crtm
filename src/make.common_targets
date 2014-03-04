@@ -96,6 +96,8 @@ ibm_debug:
 ibm:
 	make -f $(MAKE_FILE) build $(AIX_FLAGS_PROD)
 
+ibm-debug: ibm_debug
+
 
 # ...HP-UX Compiler
 hp_debug:
@@ -103,6 +105,8 @@ hp_debug:
 
 hp:
 	make -f $(MAKE_FILE) build $(HPUX_FLAGS_PROD)
+
+hp-debug: hp_debug
 
 
 # ...SGI MIPSpro Compiler
@@ -112,6 +116,8 @@ sgi_debug:
 sgi:
 	make -f $(MAKE_FILE) build $(IRIX64_FLAGS_PROD)
 
+sgi-debug: sgi_debug
+
 
 # ...SunOS Compiler
 sun_debug:
@@ -119,6 +125,8 @@ sun_debug:
 
 sun:
 	make -f $(MAKE_FILE) build $(SUNOS_FLAGS_PROD)
+
+sun-debug: sun_debug
 
 
 # ...various linux compilers
@@ -128,6 +136,8 @@ gfortran_debug:
 gfortran:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_PROD)
 
+gfortran-debug: gfortran_debug
+
 
 intel_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_DEBUG)
@@ -135,9 +145,13 @@ intel_debug:
 intel:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_INTEL_PROD)
 
+intel-debug: intel_debug
+
 ifort_debug: intel_debug
 
 ifort: intel
+
+ifort-debug: intel_debug
 
 
 lahey_debug:
@@ -146,12 +160,16 @@ lahey_debug:
 lahey:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_PROD)
 
+lahey-debug: lahey_debug
+
 
 pgi_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_PGI_DEBUG)
 
 pgi:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_PGI_PROD)
+
+pgi-debug: pgi_debug
 
 
 g95_debug:
@@ -160,6 +178,8 @@ g95_debug:
 g95:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_G95_PROD)
 
+g95-debug: g95_debug
+
 
 absoft_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_ABSOFT_DEBUG)
@@ -167,3 +187,4 @@ absoft_debug:
 absoft:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_ABSOFT_PROD)
 
+absoft-debug: absoft_debug
