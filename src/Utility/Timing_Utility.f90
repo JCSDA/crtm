@@ -483,10 +483,12 @@ CONTAINS
         msg = 'Input heading array different size from timing array'
         CALL Display_Message(ROUTINE_NAME, msg, err_stat); RETURN
       END IF
-      title = Heading
+      DO i = 1, n_times
+        title(i) = '| '//TRIM(Heading(i))
+      END DO
     ELSE
       DO i = 1, n_times
-        WRITE(title(i),'("Time ",i0)') i
+        WRITE(title(i),'("| Time ",i0)') i
       END DO
     END IF
 
