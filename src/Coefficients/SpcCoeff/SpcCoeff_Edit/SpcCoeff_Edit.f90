@@ -23,6 +23,8 @@ PROGRAM SpcCoeff_Edit
                                    SpcCoeff_Inspect
   USE SpcCoeff_Binary_IO   , ONLY: SpcCoeff_Binary_ReadFile, &
                                    SpcCoeff_Binary_WriteFile
+  USE ACCoeff_Define       , ONLY: ACCoeff_Associated
+  USE NLTECoeff_Define     , ONLY: NLTECoeff_Associated
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -92,10 +94,12 @@ PROGRAM SpcCoeff_Edit
     IF ( iedit > N_EDITABLE_COMPONENTS ) CYCLE Edit_Loop
     
     WRITE(*,'(/5x,"Editing the ",a)') TRIM(EDITABLE_COMPONENT(iedit))
+
     
     ! Make the changes
     Edit_Case: SELECT CASE (iedit)
-      ! ...Sensor id
+
+      ! Sensor id
       CASE(1)
         WRITE(*,'(7x,"Current value  : ",a)') sc%Sensor_Id
         sensor_id_loop: DO
@@ -109,9 +113,17 @@ PROGRAM SpcCoeff_Edit
             EXIT sensor_id_loop
           END IF
         END DO sensor_id_loop
+        ! ...The main structure
         sc%Sensor_Id = ADJUSTL(sensor_id)
+        ! ...The substructures
+        IF ( ACCoeff_Associated(sc%AC) ) THEN
+          sc%AC%Sensor_Id = sc%Sensor_Id
+        END IF
+        IF ( NLTECoeff_Associated(sc%NC) ) THEN
+          sc%NC%Sensor_Id = sc%Sensor_Id
+        END IF
          
-      ! ...WMO Satellite Id
+      ! WMO Satellite Id
       CASE(2)
         WRITE(*,'(7x,"Current value  : ",i0)') sc%WMO_Satellite_Id
         wmo_satellite_id_loop: DO
@@ -129,9 +141,17 @@ PROGRAM SpcCoeff_Edit
             EXIT wmo_satellite_id_loop
           END IF
         END DO wmo_satellite_id_loop
+        ! ...The main structure
         sc%WMO_Satellite_Id = wmo_satellite_id
+        ! ...The substructures
+        IF ( ACCoeff_Associated(sc%AC) ) THEN
+          sc%AC%WMO_Satellite_Id = sc%WMO_Satellite_Id
+        END IF
+        IF ( NLTECoeff_Associated(sc%NC) ) THEN
+          sc%NC%WMO_Satellite_Id = sc%WMO_Satellite_Id
+        END IF
            
-      ! ...WMO Sensor Id
+      ! WMO Sensor Id
       CASE(3)
         WRITE(*,'(7x,"Current value  : ",i0)') sc%WMO_Sensor_Id
         wmo_sensor_id_loop: DO
@@ -149,9 +169,17 @@ PROGRAM SpcCoeff_Edit
             EXIT wmo_sensor_id_loop
           END IF
         END DO wmo_sensor_id_loop
+        ! ...The main structure
         sc%WMO_Sensor_Id = wmo_sensor_id
+        ! ...The substructures
+        IF ( ACCoeff_Associated(sc%AC) ) THEN
+          sc%AC%WMO_Sensor_Id = sc%WMO_Sensor_Id
+        END IF
+        IF ( NLTECoeff_Associated(sc%NC) ) THEN
+          sc%NC%WMO_Sensor_Id = sc%WMO_Sensor_Id
+        END IF
     
-      ! ...Version
+      ! Version
       CASE(4)
         WRITE(*,'(7x,"Current value  : ",i0)') sc%Version
         version_loop: DO
