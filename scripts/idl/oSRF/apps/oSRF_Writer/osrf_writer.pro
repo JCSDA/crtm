@@ -9,13 +9,16 @@
 ; CALLING SEQUENCE:
 ;       oSRF_Writer, $
 ;         Sensor_Id                              , $ ; Input
-;         Path               = Path              , $ ; Input keyword
-;         SensorInfo_File    = SensorInfo_File   , $ ; Input keyword
-;         Response_Threshold = Response_Threshold, $ ; Input keyword
-;         Version            = Version           , $ ; Input keyword, If not specified, default is OSRF_VERSION
-;         No_Plot            = No_Plot           , $ ; Input keyword, If set plotting in driver turned off
-;         No_Pause           = No_Pause          , $ ; Input keyword, If set then no pause between plots for channel
-;         Debug              = Debug                 ; Input keyword, If set debug error messaging is turned on
+;         Path               = path              , $ ; Input keyword
+;         SensorInfo_File    = sensorinfo_file   , $ ; Input keyword
+;         Response_Threshold = response_threshold, $ ; Input keyword
+;         Sigma              = sigma             , $ ; Input keyword
+;         Channel_List       = channel_list      , $ ; Input keyword
+;         Linear_Interpolate = linear_interpolate, $ ; Input keyword
+;         No_Interpolate     = no_interpolate    , $ ; Input keyword
+;         No_Plot            = no_plot           , $ ; Input keyword
+;         No_Pause           = no_pause          , $ ; Input keyword
+;         Debug              = debug                 ; Input keyword
 ;
 ;
 ; INPUTS:
@@ -26,56 +29,83 @@
 ;                           ATTRIBUTES: INTENT(IN)
 ;
 ; INPUT KEYWORDS:
-;       Path:               Location of ASCII SRF *.inp files. If not specified,
-;                           the default is "./<sensor_id>"
+;       Path:               The location of the ASCII SRF *.inp files.
+;                           If not specified, the default is "./<sensor_id>"
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       SensorInfo_File:    The sensor information file to use. If not specified,
-;                           the default is "SensorInfo"
+;       SensorInfo_File:    The sensor information file to use.
+;                           If not specified, the default is "SensorInfo"
 ;                           UNITS:      N/A
 ;                           TYPE:       CHARACTER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Response_Threshold: Specify this keyword to apply a response threshold. SRF
-;                           data BELOW this threshold are not used.
+;       Response_Threshold: The threshold level BELOW which the SRF data are not used.
+;                           If not specified, the default is to use ALL data (even if
+;                           negative).
 ;                           UNITS:      N/A
 ;                           TYPE:       DOUBLE
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
-;       Version:            The version number of the data. If not specified, the
-;                           parameter OSRF_VERSION is used.
+;       Sigma:              The amount of tension that is applied to the spline
+;                           interpolation of the SRF data. If sigma is close to 0,
+;                           (e.g., .01), then effectively there is a cubic spline
+;                           fit. If sigma is large, (e.g., greater than 10), then
+;                           the fit will be like a polynomial interpolation.
+;                           - If not specified, the default value is 5.0.
+;                           - This keyword is ignored if the LINEAR_INTERPOLATE keyword
+;                             is set.
+;                           UNITS:      N/A
+;                           TYPE:       FLOAT
+;                           DIMENSION:  Scalar
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Channel_List:       The list of sensor channels to process.
+;                           If not specified, all of the sensor channels are processed.
+;                           UNITS:      N/A
+;                           TYPE:       INTEGER
+;                           DIMENSION:  Rank-1
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
+;
+;       Linear_Interpolate: Set this keyword to indicate the SRF should be LINEARLY
+;                           interpolated.
+;                           If NOT SET => Spline interpolation is used [DEFAULT]
+;                              SET     => Linear interpolation is used.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       No_Interpolate:     Set this keyword to prevent the SRF data being interpolated
-;                           to a fixed frequency grid. If not specified, the data are
-;                           interpolated.
+;                           to a fixed frequency grid.
+;                           If NOT SET => Data are interpolated [DEFAULT]
+;                              SET     => Data are not interpolated.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       No_Plot:            Set this keyword to prevent each channel's SRF being plotted.
-;                           If not specified, the data are plotted.
+;                           If NOT SET => Data are plotted [DEFAULT]
+;                              SET     => Data are not plotted.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       No_Pause:           Set this keyword to prevent execution pausing after each SRF
-;                           data plot. Keyword is ignored if the No_Plot keyword is set.
-;                           If not specified, execution pauses.
+;                           data plot.
+;                           If NOT SET => Execution pauses after each channel plot [DEFAULT]
+;                              SET     => Execution continues after each channel plot.
+;                           This keyword is ignored if the NO_PLOT keyword is set.
 ;                           UNITS:      N/A
 ;                           TYPE:       INTEGER
 ;                           DIMENSION:  Scalar
-;                           ATTRIBUTES: INTENT(IN)
+;                           ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
 ;       Debug:              Set this keyword for debugging. If set then:
 ;                           - the error handler for this function is disabled
@@ -106,12 +136,20 @@
 ;
 ;
 ; DEPENDENCIES:
-;       Two additional datafiles are required:
+;       Three additional datafiles are REQUIRED:
 ;         1. A SensorInfo file containing an entry for the sensor in question.
-;         2. A file called "source.comment" that resides in the same directory
+;         2. A file called "source.version" that resides in the same directory
+;            as the "*.inp" channel data. The contents of this file will be used
+;            for the netCDF file "Version" attribute. It corresponds to the version
+;            of the data used to generate the oSRF file.
+;         3. A file called "source.comment" that resides in the same directory
 ;            as the "*.inp" channel data. The contents of this file will be used
 ;            for the netCDF file "comment" attribute.
 ;
+;       One additional datafile is OPTIONAL:
+;         4. A file called "source.history" that resides in the same directory
+;            as the "*.inp" channel data. The contents of this file will be used
+;            for the netCDF file "history" attribute.
 ;-
 
 PRO oSRF_Writer, $
@@ -121,31 +159,61 @@ PRO oSRF_Writer, $
   Response_Threshold = response_threshold, $ ; Input keyword
   Sigma              = sigma             , $ ; Input keyword
   Channel_List       = channel_list      , $ ; Input keyword
-  Version            = version           , $ ; Input keyword
+  Linear_Interpolate = linear_interpolate, $ ; Input keyword
   No_Interpolate     = no_interpolate    , $ ; Input keyword
   No_Plot            = no_plot           , $ ; Input keyword
   No_Pause           = no_pause          , $ ; Input keyword
-  wRef               = wref              , $ ; Input keyword
-  Debug              = debug             , $ ; Input keyword
-  eps=eps
+  EPS                = eps               , $ ; Input keyword
+  wRef               = wref              , $ ; Output keyword
+  Debug              = debug
 ;-
 
   ; Setup
   @osrf_parameters
   ; ...Set up error handler
   @osrf_pro_err_handler
-  ; ...Check keywords
-  path              = Valid_String(path)                    ? path            : Sensor_Id
-  sensorinfo_file   = Valid_String(sensorinfo_file)         ? sensorinfo_file : "SensorInfo"
-  apply_threshold   = (N_ELEMENTS(response_threshold) GT 0) ? TRUE            : FALSE
-  version           = (N_ELEMENTS(version) GT 0)            ? version[0]      : OSRF_VERSION
+
+
+  ; Get hash of...
+  ; ...arguments
+  arguments = ORDEREDHASH()
+  arguments['sensor_id'] = Sensor_Id
+  ; ...keywords
+  keywords = ORDEREDHASH()
+  keywords['sensorinfo_file'   ] = sensorinfo_file
+  keywords['response_threshold'] = response_threshold
+  keywords['sigma'             ] = sigma
+  keywords['channel_list'      ] = channel_list
+  keywords['linear_interpolate'] = linear_interpolate
+  keywords['no_interpolate'    ] = no_interpolate
+  keywords['no_plot'           ] = no_plot
+  keywords['no_pause'          ] = no_pause
+  keywords['eps'               ] = eps
+  ; ...and convert it to a string for output to the output file history attribute
+  passed_history = '  ARGUMENTS => ' + STRJOIN(STRING(arguments,/PRINT),'; ') + '; ' + $
+                   'KEYWORDS => ' + STRJOIN(STRING(keywords,/PRINT),'; ')
+
+
+  ; Check inputs
+  ; ...Check arguments
+  IF ( N_PARAMS() LT 1 ) THEN $
+    MESSAGE, 'Sensor_Id argument not supplied', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  IF ( ~ Valid_String(Sensor_Id) ) THEN $
+    MESSAGE, 'Sensor_Id argument is not a valid string', $
+             NONAME=MsgSwitch, NOPRINT=MsgSwitch
+  ; ...Process keywords
+  path              = Valid_String(path)            ? path            : Sensor_Id
+  sensorinfo_file   = Valid_String(sensorinfo_file) ? sensorinfo_file : "SensorInfo"
+  apply_threshold   = (N_ELEMENTS(response_threshold) GT 0)
   interpolate_data  = ~ KEYWORD_SET(no_interpolate)
   plot_data         = ~ KEYWORD_SET(no_plot)
   plot_pause        = ~ KEYWORD_SET(no_pause)
   ; ...Set parameters
   HISTORY = '$Id$'
-  HISTORY_FILE = path+PATH_SEP()+'source.history'
+  VERSION_FILE = path+PATH_SEP()+'source.version'
   COMMENT_FILE = path+PATH_SEP()+'source.comment'
+  HISTORY_FILE = path+PATH_SEP()+'source.history'
 
 
   ; Get the sensor information
@@ -170,8 +238,8 @@ PRO oSRF_Writer, $
   n_channels   = N_ELEMENTS(sensor_channel)
   is_microwave = (sensor_type EQ MICROWAVE_SENSOR )
   ; ...Set the default channel processing list if necessary
-  channel_list = (N_ELEMENTS(chnnel_list) GT 0) ? channel_list : sensor_channel
-  
+  channel_list = (N_ELEMENTS(channel_list) GT 0) ? channel_list : sensor_channel
+
 
   ; **** Reset interpolation keyword if microwave instrument ****
   ;      This may change in future. But for now, no interpolation
@@ -183,10 +251,15 @@ PRO oSRF_Writer, $
     MESSAGE, '**** '+msg+' ****', /INFORMATIONAL
     interpolate_reminder = TRUE
   ENDIF
-  
-  
-  ; Get the source comment, and history if available
+
+
+  ; Get the source information
+  ; ...Data version attribute
+  Get_Comment, VERSION_FILE, version
+  version = LONG(version)
+  ; ...Data comment attribute
   Get_Comment, COMMENT_FILE, comment
+  ; ...Data history attribute
   IF ( FILE_TEST(HISTORY_FILE) ) THEN BEGIN
     Get_Comment, HISTORY_FILE, source_history
     source_history = source_history + '; '
@@ -213,8 +286,8 @@ PRO oSRF_Writer, $
 
 
   ; Begin channel loop
-  FOR l = 0, n_channels-1 DO BEGIN
-  
+  FOR l = 0L, n_channels-1L DO BEGIN
+
     idx = WHERE(channel_list EQ sensor_channel[l], count)
     IF ( count GT 0 ) THEN BEGIN
       PRINT, FORMAT='(//4x,"===================")'
@@ -226,7 +299,7 @@ PRO oSRF_Writer, $
       PRINT, FORMAT='(  4x,"=#=#=#=#=#=#=#=#=")'
       CONTINUE
     ENDELSE
-    
+
 
     ; Create oSRF objects for this channel
     osrf = OBJ_NEW('oSRF', Debug = Debug)
@@ -299,7 +372,7 @@ PRO oSRF_Writer, $
     osrf->Assign, $
       tsrf, $
       Debug = debug
-    ; ...Now apply a threshold if required    
+    ; ...Now apply a threshold if required
     IF ( apply_threshold ) THEN $
       tsrf->Apply_Response_Threshold, $
         Response_Threshold, $
@@ -309,7 +382,9 @@ PRO oSRF_Writer, $
 
     ; Interpolate SRF if required
     IF ( interpolate_data ) THEN BEGIN
-      ; ...Linearly interpolate visible channels
+      ; ...Set linear interpolation flag if necessary
+      tsrf->Set_Flag, Debug=debug, Linear_Interpolation = linear_interpolate
+      ; ...ALWAYS linearly interpolate visible channels
       IF ( sensor_type EQ VISIBLE_SENSOR ) THEN $
         tsrf->Set_Flag, Debug=debug, /Linear_Interpolation
       ; ...Compute frequency grid and interpolate
@@ -358,7 +433,9 @@ PRO oSRF_Writer, $
       psrf->Plot, $
         Debug = debug, $
         NAME  = name, $
-        COLOR = color
+        COLOR = color, $
+        EPS   = eps, $
+        SYMBOL = 'diamond'
 
       IF ( apply_threshold OR interpolate_data ) THEN $
         psrf->Oplot, $
@@ -368,7 +445,7 @@ PRO oSRF_Writer, $
           NAME     = 'Processed', $
           COLOR    = 'blue', $
           Debug    = debug
-          
+
       ; ...Save the current window reference
       psrf->Get_Property, $
         wRef  = w, $
@@ -378,22 +455,9 @@ PRO oSRF_Writer, $
       ; ...Output an EPS file if requested
       IF ( KEYWORD_SET(eps) ) THEN BEGIN
         filename = Path+PATH_SEP()+Sensor_Id+'-'+STRTRIM(sensor_channel[l],2)+'.eps'
-        ; Increase the font size for EPS files
-        font_size = HASH()
-        FOR band = 1, n_bands DO BEGIN
-          psrf->Get_Property, band, pRef=pref, Debug=debug
-          font_size[band] = pref.font_size
-          pref.font_size = pref.font_size * 2.0
-        ENDFOR
-        ; Create the EPS file
         w.Save, filename
-        ; Restore the font sizes
-        FOR band = 1, n_bands DO BEGIN
-          psrf->Get_Property, band, pRef=pref, Debug=debug
-          pref.font_size = font_size[band]
-        ENDFOR
       ENDIF
-      
+
       ; ...Only pause if not at last channel
       not_last_channel = ~ (sensor_channel[l] EQ sensor_channel[-1])
       IF ( plot_pause AND not_last_channel ) THEN BEGIN
@@ -410,14 +474,17 @@ PRO oSRF_Writer, $
   ; Modify file comment as necessary
   IF ( apply_threshold ) THEN BEGIN
     comment = 'Response threshold cutoff of ' + $
-              STRING(Response_Threshold,FORMAT='(e13.6)') + $
+              STRING(response_threshold,FORMAT='(e13.6)') + $
               ' applied to data; ' + $
               STRTRIM(comment,2)
   ENDIF
   IF ( interpolate_data ) THEN BEGIN
     comment = 'Input data interpolated to a regular frequency grid; ' + $
               STRTRIM(comment,2)
-  ENDIF
+  ENDIF ELSE BEGIN
+    comment = 'No interpolation of input data performed; ' + $
+              STRTRIM(comment,2)
+  ENDELSE
 
 
   ; Write the processed SRFs
@@ -425,7 +492,7 @@ PRO oSRF_Writer, $
       Debug   = Debug, $
       Title   = STRTRIM(satellite_name,2) + ' ' + $
                 STRTRIM(sensor_name,2) + ' Spectral Response Functions', $
-      History = source_history + HISTORY, $
+      History = source_history + HISTORY + passed_history, $
       Comment = comment
   osrf_file->Write, Debug = Debug
 

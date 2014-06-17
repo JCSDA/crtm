@@ -13,6 +13,7 @@
 ;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
 ;         Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
+;         Is_Difference        = Is_Difference       , $  ; Input keyword
 ;         All                  = All                      ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
@@ -57,6 +58,14 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Is_Difference:         Set this keyword to clear the corresponding flag.
+;                              Clearing this flag indicates the SRF response data
+;                              is NOT a difference comparison.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       All:                   Set this keyword to clear ALL the OSRF bit flags.
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
@@ -88,12 +97,13 @@
 ;
 ;-
 
-PRO OSRF::Clear_Flag, $
+PRO oSRF::Clear_Flag, $
   Debug                = Debug               , $  ; Input keyword
   Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
   Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
   Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
+  Is_Difference        = Is_Difference       , $  ; Input keyword
   All                  = All                      ; Input keyword
 
 
@@ -112,10 +122,11 @@ PRO OSRF::Clear_Flag, $
 
   
   ; Clear flags
-  IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATED_FLAG.position         )
-  IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags AND ( NOT INTEGRATED_FLAG.position           )
+  IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags AND ( NOT IS_INTERPOLATED_FLAG.position      )
+  IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags AND ( NOT IS_INTEGRATED_FLAG.position        )
   IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags AND ( NOT F0_COMPUTED_FLAG.position          )
-  IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags AND ( NOT INTERPOLATION_METHOD_FLAG.position )
+  IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags AND ( NOT LINEAR_INTERPOLATION_FLAG.position )
+  IF ( KEYWORD_SET(Is_Difference       ) ) THEN self.Flags = self.Flags AND ( NOT IS_DIFFERENCE_FLAG.position        )
   IF ( KEYWORD_SET(All                 ) ) THEN self.Flags = 0L
   
 END

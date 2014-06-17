@@ -47,6 +47,8 @@ PRO OSRF::Plot, $
   Ylog      = ylog     , $  ; Input keyword
   Color     = color    , $  ; Input keyword
   Owin      = owin     , $  ; Input keyword
+  gTitle    = gTitle   , $  ; Input keyword
+  EPS       = eps      , $  ; Input keyword (increase font size for eps output)
   _EXTRA    = extra
 
   ; Set up
@@ -81,27 +83,27 @@ PRO OSRF::Plot, $
   ; ...Save it
   self.wRef = owin
   ; ...Set some plotting parameters
-  font_size = 9
+  font_size = KEYWORD_SET(eps) ? 15 : 9
   thick     = 2
   xticklen  = 0.02
   CASE n_bands OF
     2: BEGIN
-         yticklen = 0.02
-         n_xplots = 2
-         n_yplots = 1
-         margin = [0.155, 0.1, 0.05, 0.1]
+       yticklen = 0.02
+       n_xplots = 2
+       n_yplots = 1
+       margin = [0.155, 0.1, 0.05, 0.1]
        END
     4: BEGIN
-         yticklen = 0.02
-         n_xplots = 2
-         n_yplots = 2
-         margin = [0.155, 0.165, 0.05, 0.1]
+       yticklen = 0.02
+       n_xplots = 2
+       n_yplots = 2
+       margin = [0.155, 0.165, 0.05, 0.1]
        END
     ELSE: BEGIN
-            yticklen = 0.01
-            n_xplots = 1
-            n_yplots = 1
-            margin = [0.09, 0.1, 0.05, 0.1]
+          yticklen = 0.01
+          n_xplots = 1
+          n_yplots = 1
+          margin = [0.09, 0.1, 0.05, 0.1]
           END
   ENDCASE
   ; ...Initialise cross-band min/max
@@ -160,17 +162,25 @@ PRO OSRF::Plot, $
     ENDIF
 
 
-    ; Generate the title
-    title = STRTRIM(sensor_id,2)+'   Ch.'+STRTRIM(channel,2)
+    ; Generate the titles
+    ; ...The plot title
+    IF ( KEYWORD_SET(gTitle) ) THEN $
+      title = 'Ch.'+STRTRIM(channel,2) $
+    ELSE $
+      title = STRTRIM(sensor_id,2)+' Ch.'+STRTRIM(channel,2)
+    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN title = title + ' difference'
     IF ( n_bands GT 1 ) THEN title = title +', band #'+STRTRIM(band,2)
-
+    ; ...The yaxis title
+    ytitle = 'Relative response'
+    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN ytitle = ytitle + ' difference'
+    
 
     ; Plot the band response
     self.pRef[band] = PLOT( $
       f, r, $
       TITLE          = title, $
       XTITLE         = xtitle, $
-      YTITLE         = 'Relative response', $
+      YTITLE         = ytitle, $
       XRANGE         = xrange, /XSTYLE, $
       YRANGE         = yrange, /YSTYLE, $
       YLOG           = ylog, $
@@ -185,12 +195,7 @@ PRO OSRF::Plot, $
       COLOR          = color, $
       THICK          = thick, $
       _EXTRA         = Extra)
-    ; ...Plot the central frequency position
-    !NULL = PLOT([f0,f0],[1.0d-09,10.0d0], $
-                 LINESTYLE = 'dash', $
-                 COLOR     = color, $
-                 THICK     = thick, $
-                 OVERPLOT  = self.pRef[band])
+
 
     ; Adjust the yrange if necessary
     IF ( band GT 1 ) THEN BEGIN
@@ -199,6 +204,21 @@ PRO OSRF::Plot, $
       FOR j = 1, band DO self.pRef[j].yrange = [master_ymin,master_ymax]
     ENDIF                  
 
+  ENDFOR
+  
+  
+  ; Additional overplots
+  FOR band = 1L, n_bands DO BEGIN
+    ; ...Plot the central frequency position
+    !NULL = PLOT([f0,f0],(self.pRef[band]).YRANGE, $
+                 LINESTYLE = 'dash', $
+                 COLOR     = color, $
+                 OVERPLOT  = self.pRef[band])
+    ; ...Plot a zero line
+    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
+      !NULL = PLOT((self.pRef[band]).XRANGE, [0,0], $
+                   LINESTYLE = 'dash', $
+                   OVERPLOT  = self.pRef[band])
   ENDFOR
 
 END

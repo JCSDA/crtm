@@ -60,6 +60,11 @@
                                 on      : 1L, $  ; Gaussian integration
                                 status  : ['Simpson', 'Gaussian'], $
                                 name    : 'Gaussian_Integration_Flag' }
+  IS_DIFFERENCE_FLAG        = { position: 32L, $
+                                off     : 0L, $  ; Is not a difference
+                                on      : 1L, $  ; Is a difference
+                                status  : ['Not a difference', 'Difference'], $
+                                name    : 'Is_Difference_Flag' }
 
   ; Fixed dimensions
   N_PLANCK_COEFFS        = 2L

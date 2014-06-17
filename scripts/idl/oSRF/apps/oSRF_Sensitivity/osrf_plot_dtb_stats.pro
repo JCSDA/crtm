@@ -1,6 +1,7 @@
 PRO Read_All_Tb_Data, atmprofile_id, $  ; Input
                       path         , $  ; Input
-                      tb                ; Output
+                      tb           , $  ; Output
+                      Debug = debug
   ; Setup
   COMPILE_OPT HIDDEN
 
@@ -9,7 +10,7 @@ PRO Read_All_Tb_Data, atmprofile_id, $  ; Input
   ; Read the profile data results
   FOR m = 0, info.DIMENSIONS[0]-1 DO BEGIN
     filename = path+"/"+atmprofile_id+'.profile'+STRING(m+1,FORMAT='(i4.4)')+'.Tb.dat'
-    oSRF_Read_Tb, filename, x
+    oSRF_Read_Tb, filename, x, Debug = debug
     tb[m,*] = x
   ENDFOR
 END
@@ -27,7 +28,8 @@ PRO oSRF_Plot_dTb_Stats, $
   Exp_Id          = exp_id         , $  ; Input keyword. (Default is "experiment"). Can be an array.       
   Legend_Name     = legend_name    , $  ; Input keyword. (Default is Exp_Id)                 
   EPS             = eps            , $  ; Input keyword. Set to output EPS plot. Default is PNG.                   
-  PlotRef         = plotref             ; Output keyword. Object plot reference.
+  PlotRef         = plotref        , $  ; Output keyword. Object plot reference.
+  Debug           = debug
 ;-
  
   ; Setup
@@ -99,11 +101,11 @@ PRO oSRF_Plot_dTb_Stats, $
   ; Read all LBL output
   ; ...The reference data first
   ref_tb = DBLARR(n_profiles, n_channels)
-  Read_All_Tb_Data, atmprofile_id, r_path+PATH_SEP()+ref_dataset, ref_tb
+  Read_All_Tb_Data, atmprofile_id, r_path+PATH_SEP()+ref_dataset, ref_tb, Debug=debug
   ; ...All the other data
   exp_tb = DBLARR(n_profiles, n_channels)
   FOR i = 0, n_exp_datasets-1 DO BEGIN
-    Read_All_Tb_Data, atmprofile_id, r_path+PATH_SEP()+exp_dataset[i], exp_tb
+    Read_All_Tb_Data, atmprofile_id, r_path+PATH_SEP()+exp_dataset[i], exp_tb, Debug=debug
     IF ( i EQ 0 ) THEN $
       dtb = exp_tb - ref_tb $
     ELSE $

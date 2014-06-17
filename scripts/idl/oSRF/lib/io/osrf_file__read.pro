@@ -202,8 +202,8 @@ PRO OSRF_File::Read, $
     ENDIF
     ; ...The integrated value
     osrf->OSRF::Get_Property, Integral=actual_integral, Debug=Debug
-    difference = ABS(actual_integral-expected_integral)
-    IF ( difference GT THRESHOLD ) THEN BEGIN
+    difference = actual_integral-expected_integral
+    IF ( ABS(difference) GT THRESHOLD ) THEN BEGIN
       IF ( output_header ) THEN BEGIN
         Print_Header, sensor_id, channel
         output_header = FALSE
@@ -218,8 +218,8 @@ PRO OSRF_File::Read, $
     ENDIF
     ; ...The central frequency
     osrf->OSRF::Get_Property, f0=actual_f0, Debug=Debug
-    difference = ABS(actual_f0-expected_f0)
-    IF ( difference GT THRESHOLD ) THEN BEGIN
+    difference = actual_f0-expected_f0
+    IF ( ABS(difference) GT THRESHOLD ) THEN BEGIN
       IF ( output_header ) THEN BEGIN
         Print_Header, sensor_id, channel
         output_header = FALSE
@@ -234,8 +234,8 @@ PRO OSRF_File::Read, $
     ENDIF
     ; ...The Planck coefficients
     osrf->OSRF::Get_Property, Planck_Coeffs=actual_planck_coeffs, Debug=Debug
-    difference = ABS(actual_planck_coeffs-expected_planck_coeffs)
-    loc = WHERE(difference GT threshold, count)
+    difference = actual_planck_coeffs-expected_planck_coeffs
+    loc = WHERE(ABS(difference) GT threshold, count)
     IF ( count GT 0 ) THEN BEGIN
       IF ( output_header ) THEN BEGIN
         Print_Header, sensor_id, channel
@@ -251,8 +251,8 @@ PRO OSRF_File::Read, $
     ENDIF
     ; ...The band correction coefficients coefficients
     osrf->OSRF::Get_Property, Polychromatic_Coeffs=actual_polychromatic_coeffs, Debug=Debug
-    difference = ABS(actual_polychromatic_coeffs-expected_polychromatic_coeffs)
-    loc = WHERE(difference GT threshold, count)
+    difference = actual_polychromatic_coeffs-expected_polychromatic_coeffs
+    loc = WHERE(ABS(difference) GT threshold, count)
     IF ( count GT 0 ) THEN BEGIN
       IF ( output_header ) THEN BEGIN
         Print_Header, sensor_id, channel

@@ -45,6 +45,7 @@ PRO OSRF::Tfit_Plot, $
   Debug     = debug    , $  ; Input keyword
   Color     = color    , $  ; Input keyword
   Owin      = owin     , $  ; Input keyword
+  gTitle    = gTitle   , $  ; Input keyword
   _EXTRA    = extra
 
   ; Set up
@@ -84,19 +85,35 @@ PRO OSRF::Tfit_Plot, $
   ; ...Set some plotting parameters
   yticklen = 0.01
   font_size = 9
-  title = "Polychromatic coefficient fit residual for " + $
-          STRTRIM(sensor_id,2)+' channel '+STRTRIM(channel,2)
-
+  
+  ; Generate the titles
+  ; ...The plot title
+  IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
+    dtitle = 'difference' $
+  ELSE $
+    dtitle = ''
+  IF ( KEYWORD_SET(gTitle) ) THEN $
+    title = "Polychromatic coefficient fit residual " + dtitle + " for " + $
+            "channel "+STRTRIM(channel,2) $
+  ELSE $
+    title = "Polychromatic coefficient fit residual " + dtitle + " for " + $
+            STRTRIM(sensor_id,2)+" channel "+STRTRIM(channel,2)
+  ; ...The yaxis title
+  IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
+    ytitle = '$\Delta$T$_{eff}$ - $\Delta$T$_{fit}$ (K)' $
+  ELSE $
+    ytitle = 'T$_{eff}$ - T$_{fit}$ (K)'
+  
 
   ; Plot the residuals
   self.tpRef = PLOT( $
     T,Teff - tfit, $
-    XTITLE = 'Temperature (K)', $
-    YTITLE = 'T!Deff!N - T!Dfit!N (K)', $
+    XTITLE    = 'Temperature (K)', $
+    YTITLE    = ytitle, $
     TITLE     = title,$
     FONT_SIZE = font_size, $                   
     XTICKFONT_SIZE = xtickfont_size, $
-    MARGIN = [0.125, 0.1, 0.05, 0.1], $
+    MARGIN  = [0.15, 0.1, 0.05, 0.1], $
     CURRENT = owin, $
     COLOR   = color, $
     THICK   = 2, $

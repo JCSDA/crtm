@@ -71,7 +71,12 @@ PRO OSRF::Apply_to_LBL, $
 
     ; Get some band-dependent oSRF properties
     Current_Band = i+1
-    self->Get_Property, Current_Band, Debug=Debug, Frequency=frequency
+    self->Get_Property, Current_Band, $
+      Debug     = debug, $
+      f1        = f1, $
+      f2        = f2, $
+      Frequency = frequency, $
+      Response  = response
 
     ; Branch for sensor type    
     CASE 1 OF
@@ -81,35 +86,23 @@ PRO OSRF::Apply_to_LBL, $
          ; Calculate monortm radiances
          frequency = inverse_cm_to_GHz(frequency)
          self.Radiance[Current_Band] = MonoRTM_Radiances(frequency, gt5_File)
+         ; Convolve LBL radiances with OSRF
+         self->Convolve_Radiance, Debug=Debug
          END
-
       
       ; IR/Vis sensor - set up for LBLRTM
       (Sensor_Type EQ INFRARED_SENSOR OR Sensor_Type EQ VISIBLE_SENSOR): BEGIN
-
-        ; Create LBLRTM input file for current band
-        
-        ; Spawn run of LBLRTM for current band
-        
-        ; Read LBLRTM output into OSRF self.Radiance
-    
+         ; Calculate LBLRTM convolved radiance
+         self.Convolved_R = LBLRTM_Convolved_Radiance(f1,f2,response,gt5_File,Debug=debug)
         END
       
       ; Invalid sensor type
-      ELSE: BEGIN
-      
-        END
+      ELSE: MESSAGE, 'Invalid sensor type', NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
     ENDCASE
   ENDFOR
 
-  ; Convolve LBL radiances with OSRF
-  self->Convolve_Radiance, Debug=Debug
-
   ; Convert the radiance into brightness temperature
   self->Convolved_R2T, Debug=Debug
 
-  ; Done
-  CATCH, /CANCEL
- 
 END

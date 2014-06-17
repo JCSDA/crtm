@@ -145,8 +145,15 @@ PRO OSRF::Set_Property, $
   Convolved_R      = Convolved_R     , $  ; Input keyword
   Convolved_T      = Convolved_T     , $  ; Input keyword
   Frequency        = Frequency       , $  ; Input keyword
-  Response         = Response             ; Input keyword
-
+  Response         = Response        , $  ; Input keyword
+  ; The following keywords are undocumented
+  Special    = special   , $ ; Must be set for the following
+  Integral   = integral  , $
+  Flags      = flags     , $
+  f0         = f0        , $
+  poly_Tdata = poly_tdata
+  
+  
   ; Set up
   COMPILE_OPT HIDDEN
   ; ...OSRF parameters
@@ -195,7 +202,7 @@ PRO OSRF::Set_Property, $
     self.f2[_band]        = Frequency[n_points-1]
     self.Frequency[_band] = Frequency
     IF ( KEYWORD_SET(debug) ) THEN $
-      MESSAGE, 'Frequency properties for band ' + STRTRIM(_band,2) + 'have been set', $
+      MESSAGE, 'Frequency properties for band ' + STRTRIM(_band,2) + ' have been set', $
                /INFORMATIONAL
   ENDIF
 
@@ -211,8 +218,21 @@ PRO OSRF::Set_Property, $
     ; ...Assign response data
     self.Response[_band] = Response
     IF ( KEYWORD_SET(debug) ) THEN $
-      MESSAGE, 'Response properties for band ' + STRTRIM(_band,2) + 'have been set', $
+      MESSAGE, 'Response property for band ' + STRTRIM(_band,2) + ' have been set', $
                /INFORMATIONAL
+  ENDIF
+
+
+  ; The special cases
+  IF ( KEYWORD_SET(special) ) THEN BEGIN
+    IF ( N_ELEMENTS(integral  ) GT 0 ) THEN self.Integral = integral     
+    IF ( N_ELEMENTS(flags     ) GT 0 ) THEN self.Flags    = flags        
+    IF ( N_ELEMENTS(f0        ) GT 0 ) THEN self.f0       = f0
+    IF ( N_ELEMENTS(poly_tdata) GT 0 ) THEN BEGIN
+      *self.T    = poly_tdata["T"]
+      *self.Teff = poly_tdata["Teff"]
+      *self.Tfit = poly_tdata["Tfit"]
+    ENDIF
   ENDIF
   
 END

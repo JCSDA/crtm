@@ -8,7 +8,7 @@
 ; CALLING SEQUENCE:
 ;       This definition procedure is not called directly, but during the
 ;       creation of an object, e.g.
-; 
+;
 ;       Obj = OBJ_NEW( 'OSRF' )
 ;
 ; INCLUDE FILES:
@@ -21,11 +21,25 @@
 ;
 ;-
 
+;===============================================================================
+;
+; SPECIAL NOTES:
+;       The following components are set explicitly in methods/functions other
+;       than the Set_Property method:
+;       - Integral: Set in the oSRF_Subtract function.
+;       - Flags   : Set in the oSRF_Subtract function.
+;       - f0      : Set in the oSRF_Subtract function.
+;       - T       : Set in the oSRF_Subtract function.
+;       - Teff    : Set in the oSRF_Subtract function.
+;       - Tfit    : Set in the oSRF_Subtract function.
+;
+;===============================================================================
+
 PRO OSRF__Define
 
   COMPILE_OPT HIDDEN
   @osrf_parameters
-  
+
   void = { OSRF, $
            Is_Allocated        : 0L,                             $  ; Allocation indicator
            Release             : 0L,                             $  ; Release: this identified structure and file format
@@ -54,7 +68,7 @@ PRO OSRF__Define
            pRef                : HASH(),                         $  ; SRF Passband plots
            twRef               : OBJ_NEW(),                      $  ; Tfit Graphics window
            tpRef               : OBJ_NEW(),                      $  ; Tfit plot
-           
+
            ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
            Radiance            : HASH(),                         $  ; Array of radiances (nP x nB)

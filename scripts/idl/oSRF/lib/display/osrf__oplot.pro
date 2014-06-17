@@ -70,6 +70,7 @@ PRO OSRF::OPlot, $
   osrf, $
   Debug     = debug    , $  ; Input keyword
   Color     = color    , $  ; Input keyword
+  Thick     = thick    , $  ; Input keyword
   Normalize = normalize, $  ; Input keyword
   _EXTRA    = extra    , $  ; Input keyword
   pRef      = pref          ; Output keyword
@@ -134,19 +135,16 @@ PRO OSRF::OPlot, $
     ; Plot it
     pref[band] = PLOT( f, r/Max_r, $
                        COLOR    = color, $
+                       THICK    = thick, $
                        _EXTRA   = extra, $
                        OVERPLOT = self.pRef[band] )
-    
-  ENDFOR
-  
-  
-  ; Plot the central frequency location for single bands
-  IF ( n_bands EQ 1 ) THEN BEGIN
-    !NULL = PLOT([f0,f0],self.pRef[1].yrange, $
+    ; ...Plot the central frequency position
+    !NULL = PLOT([f0,f0],[1.0d-09,10.0d0], $
                  LINESTYLE = 'dash', $
                  COLOR     = color, $
-                 THICK     = 2, $
-                 OVERPLOT  = self.pRef[1])
-  ENDIF
+                 THICK     = thick, $
+                 OVERPLOT  = self.pRef[band])
+    
+  ENDFOR
   
 END

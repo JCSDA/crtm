@@ -59,5 +59,7 @@ PRO OSRF::Display_Flags, $
     F0_COMPUTED_FLAG.status[self.Flag_Is_Set(F0_COMPUTED_FLAG)]
   PRINT, LINEAR_INTERPOLATION_FLAG.name, ' status: ', $
     LINEAR_INTERPOLATION_FLAG.status[self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG)]
+  PRINT, IS_DIFFERENCE_FLAG.name, ' status: ', $
+    IS_DIFFERENCE_FLAG.status[self.Flag_Is_Set(IS_DIFFERENCE_FLAG)]
 
 END

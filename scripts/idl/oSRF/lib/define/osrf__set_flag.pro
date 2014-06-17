@@ -12,7 +12,8 @@
 ;         Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
 ;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
-;         Linear_Interpolation = Linear_Interpolation     ; Input keyword
+;         Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
+;         Is_Difference        = Is_Difference            ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:                 Set this keyword for debugging.
@@ -59,7 +60,16 @@
 ;                              TYPE:       INTEGER
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
-;;
+;
+;       Is_Difference:         Set this keyword to indicate the SRF response data is a 
+;                              difference comparison.
+;                              If NOT SET => Response data is a regular SRF. [DEFAULT]
+;                                 SET     => Response data is a difference comparison. 
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -86,7 +96,8 @@ PRO OSRF::Set_Flag, $
   Is_Interpolated      = Is_Interpolated     , $  ; Input keyword
   Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
-  Linear_Interpolation = Linear_Interpolation     ; Input keyword
+  Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
+  Is_Difference        = Is_Difference            ; Input keyword
 
 
   ; Set up
@@ -102,6 +113,7 @@ PRO OSRF::Set_Flag, $
   IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags OR IS_INTEGRATED_FLAG.position          
   IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags OR F0_COMPUTED_FLAG.position          
   IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags OR LINEAR_INTERPOLATION_FLAG.position
+  IF ( KEYWORD_SET(Is_Difference       ) ) THEN self.Flags = self.Flags OR IS_DIFFERENCE_FLAG.position          
 
 
   ; Output debug information
