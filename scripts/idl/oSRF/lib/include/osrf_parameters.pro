@@ -87,4 +87,8 @@
   BC_D_T = 5.0d0
   VISIBLE_BC_D_T = 72.0d0
 
+  ; Some plotting parameters
+  WIN_FONT_SIZE = 9
+  EPS_FONT_SIZE = 18
+  
 ;-

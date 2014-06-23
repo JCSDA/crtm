@@ -45,6 +45,7 @@ PRO oSRF_Plotter, $
   No_Pause        = no_pause       , $ ; Input keyword. Do not pause between plots. Default is pause.
   No_Symbol       = no_symbol      , $ ; Input keyword. Do not plot initial SRF with symbol. Default is symbol.
   Close_As_You_Go = close_as_you_go, $ ; Input keyword. Close window plots. Default is not to.
+  EPS             = eps            , $ ; Input keyword. Generate EPS output. Default is PNG output.
   Debug           = debug              ; Input keyword.
 ;-
 
@@ -59,7 +60,7 @@ PRO oSRF_Plotter, $
   _label          = (N_ELEMENTS(label) GT 0) ? label : SRF_Files
   plot_difference = KEYWORD_SET(difference)
   plot_tfit       = ~ KEYWORD_SET(no_tfit)
-  plot_pause      = ~ KEYWORD_SET(no_pause)
+  plot_pause      = (~ KEYWORD_SET(no_pause)) AND (~ KEYWORD_SET(eps))
   plot_symbol     = ~ KEYWORD_SET(no_symbol)
   ; ...Check complex keywords
   IF ( N_ELEMENTS(frange) GT 0 ) THEN BEGIN
@@ -71,7 +72,8 @@ PRO oSRF_Plotter, $
     use_frange = FALSE
   ENDELSE
   ; ...Set plotting parameters
-  thick = 2
+  font_size = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
+  thick     = 2
   IF ( n_files LE 6 ) THEN $
     color = ['black', 'green', 'red', 'blue', 'magenta', 'cyan'] $
   ELSE $
@@ -154,8 +156,9 @@ PRO oSRF_Plotter, $
         xstyle = 1
       ENDIF
       IF ( first_plot ) THEN BEGIN
-        w = WINDOW( WINDOW_TITLE = sid + ' Channel '+STRTRIM(channel,2)+' oSRF', $
-                    DIMENSIONS = [800,600] )
+        w = WINDOW( WINDOW_TITLE = sensor_id + ' Channel '+STRTRIM(channel,2)+' oSRF', $
+                    DIMENSIONS = [800,600], $
+                    BUFFER = KEYWORD_SET(eps) )
         osrf[n].Plot, $
           COLOR  = color[n], $
           THICK  = thick, $
@@ -166,6 +169,7 @@ PRO oSRF_Plotter, $
           SYMBOL = plot_symbol ? 'diamond' : 'none', $
           Owin   = w, $
           /gTitle, $
+          EPS    = eps, $
           Debug  = debug
         osrf[n].Get_Property, $
           pref = p, $
@@ -183,8 +187,8 @@ PRO oSRF_Plotter, $
     ENDFOR  ; File plot loop
 
 
-    ; Get the number of bands
-    osrf[0].Get_Property, n_Bands = n_bands, Debug = debug
+    ; Get the number of bands and central frequency
+    osrf[0].Get_Property, n_Bands = n_bands, f0 = f0, Debug = debug
 
 
     ; Display the legend for multi-plots
@@ -193,7 +197,11 @@ PRO oSRF_Plotter, $
       CASE n_bands OF
         2: position = [0.325,0.3]
         4: position = [0.25,0.3]
-        ELSE: position = [0.5,0.3]
+        ELSE: BEGIN
+                yrange   = pref[0].Yrange
+                y        = (yrange[1]-yrange[0])*0.3 + yrange[0]
+                position = pref[0].ConvertCoord(f0,y,/DATA,/TO_RELATIVE)
+              END
       ENDCASE
       ; ...Display it
       legend = LEGEND(TARGET=pref, $
@@ -201,8 +209,7 @@ PRO oSRF_Plotter, $
                       /RELATIVE, $
                       HORIZONTAL_ALIGNMENT='CENTER', $
                       VERTICAL_ALIGNMENT='TOP', $
-                      FONT_SIZE=9, $
-                      /NORMAL)
+                      FONT_SIZE=font_size)
     ENDIF
 
 
@@ -211,23 +218,12 @@ PRO oSRF_Plotter, $
     osrf[0].Get_Property, Channel = channel, Debug=debug
     fileroot = sensor_id+'-'+STRTRIM(channel,2)
     IF ( plot_difference ) THEN fileroot = fileroot + '.difference'
-    ; ...Output a PNG file
-    w.Save, fileroot+'.png', HEIGHT=500, BORDER=10
-    ; ...Output an EPS file
-    ; ......Increase the font size for EPS files
-    font_size = HASH()
-    FOR band = 1, n_bands DO BEGIN
-      osrf[0].Get_Property, band, pRef=p, Debug=debug
-      font_size[band] = p.font_size
-      p.font_size = p.font_size * 2.0
-    ENDFOR
-    ; ......Create the EPS file
-    w.Save, fileroot+'.eps'
-    ; ......Restore the font sizes
-    FOR band = 1, n_bands DO BEGIN
-      osrf[0].Get_Property, band, pRef=p, Debug=debug
-      p.font_size = font_size[band]
-    ENDFOR
+    ; ...Output the desired format
+    IF ( KEYWORD_SET(eps) ) THEN BEGIN
+      w.Save, fileroot+'.eps'
+    ENDIF ELSE BEGIN
+      w.Save, fileroot+'.png', HEIGHT=500, BORDER=10
+    ENDELSE
 
 
     ; ===============================
@@ -240,7 +236,8 @@ PRO oSRF_Plotter, $
       FOR n = 0, n_plots - 1 DO BEGIN
         IF ( n EQ 0 ) THEN BEGIN
           tw = WINDOW( WINDOW_TITLE = 'Channel '+STRTRIM(channel,2)+' (Teff-Tfit) residuals', $
-                       DIMENSIONS = [800,600] )
+                       DIMENSIONS = [800,600], $
+                       BUFFER = KEYWORD_SET(eps) )
           osrf[n].Tfit_Plot, $
             COLOR  = color[n], $
             THICK  = thick, $
@@ -248,6 +245,7 @@ PRO oSRF_Plotter, $
             SYMBOL = 'diamond', $
             Owin   = tw, $
             /gTitle, $
+            EPS    = eps, $
             Debug  = debug
           osrf[n].Get_Property, $
             tpref = tp, $
@@ -274,7 +272,7 @@ PRO oSRF_Plotter, $
                         /RELATIVE, $
                         HORIZONTAL_ALIGNMENT='CENTER', $
                         VERTICAL_ALIGNMENT='TOP', $
-                        FONT_SIZE=9, $
+                        FONT_SIZE=font_size, $
                         /NORMAL )
       ENDIF
 
@@ -284,17 +282,12 @@ PRO oSRF_Plotter, $
       osrf[0].Get_Property, Channel = channel, Debug=debug
       fileroot = sensor_id+'-'+STRTRIM(channel,2)+'.tfit'
       IF ( plot_difference ) THEN fileroot = fileroot + '.difference'
-      ; ...Output a PNG file
-      tw.Save, fileroot+'.png', HEIGHT=500, BORDER=10
-      ; ...Output an EPS file
-      ; ......Increase the font size for EPS files
-      osrf[0].Get_Property, tpRef=tp, Debug=debug
-      font_size = tp.font_size
-      tp.font_size = tp.font_size * 2.0
-      ; ......Create the EPS file
-      tw.Save, fileroot+'.eps'
-      ; ......Restore the font sizes
-      tp.font_size = font_size
+      ; ...Output the desired format
+      IF ( KEYWORD_SET(eps) ) THEN BEGIN
+        tw.Save, fileroot+'.eps'
+      ENDIF ELSE BEGIN
+        tw.Save, fileroot+'.png', HEIGHT=500, BORDER=10
+      ENDELSE
 
     ENDIF  ; plot_tfit IF construct
     ; ===============================
@@ -310,7 +303,7 @@ PRO oSRF_Plotter, $
 
 
     ; Close the windows if required
-    IF ( KEYWORD_SET(close_as_you_go) ) THEN BEGIN
+    IF ( KEYWORD_SET(close_as_you_go) OR KEYWORD_SET(eps) ) THEN BEGIN
       w.Close
       IF ( plot_tfit ) THEN tw.Close
     ENDIF

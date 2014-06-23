@@ -42,10 +42,11 @@
 ;-
 
 PRO OSRF::Tfit_Plot, $
-  Debug     = debug    , $  ; Input keyword
-  Color     = color    , $  ; Input keyword
-  Owin      = owin     , $  ; Input keyword
-  gTitle    = gTitle   , $  ; Input keyword
+  Debug     = debug , $  ; Input keyword
+  Color     = color , $  ; Input keyword
+  Owin      = owin  , $  ; Input keyword
+  gTitle    = gTitle, $  ; Input keyword
+  EPS       = eps   , $  ; Input keyword (increase font size for eps output)
   _EXTRA    = extra
 
   ; Set up
@@ -59,7 +60,15 @@ PRO OSRF::Tfit_Plot, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Process keywords
-  create_window = KEYWORD_SET(owin) ? ~ ISA(owin,'GraphicsWin') : 1
+  IF ( KEYWORD_SET(eps) ) THEN BEGIN
+    create_window = TRUE
+  ENDIF ELSE BEGIN
+    IF ( KEYWORD_SET(owin) ) THEN BEGIN
+      create_window = ~ ISA(owin,'GraphicsWin')
+    ENDIF ELSE BEGIN
+      create_window = TRUE
+    ENDELSE
+  ENDELSE
 
 
   ; Get the srf info and Tdata
@@ -77,14 +86,18 @@ PRO OSRF::Tfit_Plot, $
 
   ; Set the graphics window
   IF ( create_window ) THEN $
-    owin = WINDOW( WINDOW_TITLE = sensor_id+' channel '+STRTRIM(channel,2)+' (Teff-Tfit) residuals' )
+    owin = WINDOW( WINDOW_TITLE = sensor_id+' channel '+STRTRIM(channel,2)+' (Teff-Tfit) residuals', $
+                   BUFFER = KEYWORD_SET(eps) )
   owin.SetCurrent
   owin.Erase
   ; ...Save it
   self.twRef = owin
   ; ...Set some plotting parameters
-  yticklen = 0.01
-  font_size = 9
+  font_size = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
+  xticklen  = 0.02
+  yticklen  = 0.02
+  margin    = KEYWORD_SET(eps) ? [0.2, 0.15, 0.05, 0.1] : [0.15, 0.1, 0.05, 0.1]
+  
   
   ; Generate the titles
   ; ...The plot title
@@ -93,10 +106,10 @@ PRO OSRF::Tfit_Plot, $
   ELSE $
     dtitle = ''
   IF ( KEYWORD_SET(gTitle) ) THEN $
-    title = "Polychromatic coefficient fit residual " + dtitle + " for " + $
+    title = "T$_{fit}$ residual " + dtitle + " for " + $
             "channel "+STRTRIM(channel,2) $
   ELSE $
-    title = "Polychromatic coefficient fit residual " + dtitle + " for " + $
+    title = "T$_{fit}$ residual " + dtitle + " for " + $
             STRTRIM(sensor_id,2)+" channel "+STRTRIM(channel,2)
   ; ...The yaxis title
   IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
@@ -108,16 +121,19 @@ PRO OSRF::Tfit_Plot, $
   ; Plot the residuals
   self.tpRef = PLOT( $
     T,Teff - tfit, $
-    XTITLE    = 'Temperature (K)', $
-    YTITLE    = ytitle, $
-    TITLE     = title,$
-    FONT_SIZE = font_size, $                   
-    XTICKFONT_SIZE = xtickfont_size, $
-    MARGIN  = [0.15, 0.1, 0.05, 0.1], $
-    CURRENT = owin, $
-    COLOR   = color, $
-    THICK   = 2, $
-    _EXTRA  = Extra)
-  !NULL = PLOT(self.tpRef.Xrange,[0,0],LINESTYLE='dashed',/OVERPLOT)
+    XTITLE         = 'Temperature (K)', $
+    YTITLE         = ytitle, $
+    TITLE          = title, $
+    FONT_SIZE      = font_size, $              
+    XTICKLEN       = xticklen, $
+    XTICKFONT_SIZE = font_size, $
+    YTICKLEN       = yticklen, $
+    MARGIN         = margin, $
+    CURRENT        = owin, $
+    COLOR          = color, $
+    _EXTRA         = extra)
+  !NULL = PLOT(self.tpRef.Xrange,[0,0], $
+               LINESTYLE = 'dashed', $
+               OVERPLOT  = self.tpRef)
 
 END

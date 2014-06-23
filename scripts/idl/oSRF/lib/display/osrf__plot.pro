@@ -62,7 +62,15 @@ PRO OSRF::Plot, $
     MESSAGE, 'Some or all input OSRF pointer members are NOT associated.', $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Process keywords
-  create_window = KEYWORD_SET(owin) ? ~ ISA(owin,'GraphicsWin') : 1
+  IF ( KEYWORD_SET(eps) ) THEN BEGIN
+    create_window = TRUE
+  ENDIF ELSE BEGIN
+    IF ( KEYWORD_SET(owin) ) THEN BEGIN
+      create_window = ~ ISA(owin,'GraphicsWin')
+    ENDIF ELSE BEGIN
+      create_window = TRUE
+    ENDELSE
+  ENDELSE
 
 
   ; Get the sensor info
@@ -77,21 +85,23 @@ PRO OSRF::Plot, $
 
   ; Set the graphics window
   IF ( create_window ) THEN $
-    owin = WINDOW( WINDOW_TITLE = sensor_id+', channel '+STRTRIM(Channel,2)+' oSRF' )
+    owin = WINDOW( WINDOW_TITLE = sensor_id+', channel '+STRTRIM(Channel,2)+' oSRF', $
+                   BUFFER = KEYWORD_SET(eps) )
   owin.SetCurrent
   owin.Erase
   ; ...Save it
   self.wRef = owin
-  ; ...Set some plotting parameters
-  font_size = KEYWORD_SET(eps) ? 15 : 9
-  thick     = 2
+  
+  
+  ; Set some plotting parameters
+  font_size = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
   xticklen  = 0.02
   CASE n_bands OF
     2: BEGIN
        yticklen = 0.02
        n_xplots = 2
        n_yplots = 1
-       margin = [0.155, 0.1, 0.05, 0.1]
+       margin = [0.155, 0.1, 0.05, 0.1] 
        END
     4: BEGIN
        yticklen = 0.02
@@ -103,7 +113,7 @@ PRO OSRF::Plot, $
           yticklen = 0.01
           n_xplots = 1
           n_yplots = 1
-          margin = [0.09, 0.1, 0.05, 0.1]
+          margin = KEYWORD_SET(eps) ? [0.2, 0.15, 0.05, 0.1] : [0.1, 0.1, 0.05, 0.1]
           END
   ENDCASE
   ; ...Initialise cross-band min/max
@@ -133,7 +143,7 @@ PRO OSRF::Plot, $
     ENDIF
 
     ; Normalise data if required
-    IF ( KEYWORD_SET(Normalize) ) THEN r = r/MAX(r)
+    IF ( KEYWORD_SET(normalize) ) THEN r = r/MAX(r)
 
 
     ; Generate the xrange based on -/+ % of bandwidth
@@ -165,14 +175,14 @@ PRO OSRF::Plot, $
     ; Generate the titles
     ; ...The plot title
     IF ( KEYWORD_SET(gTitle) ) THEN $
-      title = 'Ch.'+STRTRIM(channel,2) $
+      title = "Ch." + STRTRIM(channel,2) $
     ELSE $
-      title = STRTRIM(sensor_id,2)+' Ch.'+STRTRIM(channel,2)
-    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN title = title + ' difference'
-    IF ( n_bands GT 1 ) THEN title = title +', band #'+STRTRIM(band,2)
+      title = STRTRIM(sensor_id,2) + " Ch." + STRTRIM(channel,2)
+    IF ( n_bands GT 1 ) THEN title = title +", band #" + STRTRIM(band,2)
     ; ...The yaxis title
-    ytitle = 'Relative response'
-    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN ytitle = ytitle + ' difference'
+    ytitle = "Relative response"
+    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
+      ytitle = "$\Delta$(" + ytitle + ")"
     
 
     ; Plot the band response
@@ -193,9 +203,7 @@ PRO OSRF::Plot, $
       FONT_SIZE      = font_size, $  
       CURRENT        = owin, $
       COLOR          = color, $
-      THICK          = thick, $
-      _EXTRA         = Extra)
-
+      _EXTRA         = extra)
 
     ; Adjust the yrange if necessary
     IF ( band GT 1 ) THEN BEGIN
