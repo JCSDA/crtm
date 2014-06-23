@@ -63,7 +63,9 @@ FUNCTION oSRF_Subtract, left, right, $
   ; Get the matching frequency indices
   left_idx  = HASH()
   right_idx = HASH()
-  n_points = LONARR(n_bands)
+  frequency = HASH()
+  n_points  = LONARR(n_bands)
+
   FOR band = 1, n_bands DO BEGIN
 
     IF ( n_bands GT 1 ) THEN $
@@ -74,46 +76,63 @@ FUNCTION oSRF_Subtract, left, right, $
     ; Get band frequency data
     left.Get_Property, $
       band, $
-      Frequency  = f, $
+      Frequency  = left_f, $
       Debug      = debug
     right.Get_Property, $
       band, $
       Frequency  = right_f, $
       Debug      = debug
 
+
     ; Get the encompassing frequency bounds
-    f1 = MIN(f) > MIN(right_f)
-    f2 = MAX(f) < MAX(right_f)
+    f1 = MIN(left_f) > MIN(right_f)
+    f2 = MAX(left_f) < MAX(right_f)
     
-    idx = WHERE((f GE f1) AND (f LE f2), count)
-    IF ( count EQ 0 ) THEN BEGIN
+    idx = WHERE((left_f GE f1) AND (left_f LE f2), left_count)
+    IF ( left_count EQ 0 ) THEN BEGIN
       MESSAGE, 'Left oSRF object' + cband + ' has no matching frequencies', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
-    left_idx[band] = idx
-    avgdf = MEAN(f[idx[1:-1]] - f[idx[0:-2]], /DOUBLE)
+    left_avgdf = MEAN(left_f[idx[1:-1]] - left_f[idx[0:-2]], /DOUBLE)
     
     idx = WHERE((right_f GE f1) AND (right_f LE f2), right_count)
     IF ( right_count EQ 0 ) THEN BEGIN
       MESSAGE, 'Right oSRF object' + cband + ' has no matching frequencies', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
-    right_idx[band] = idx
     right_avgdf = MEAN(right_f[idx[1:-1]] - right_f[idx[0:-2]], /DOUBLE)
     
     ; Check the count...
-    IF ( count NE right_count ) THEN BEGIN
+    IF ( left_count NE right_count ) THEN BEGIN
       MESSAGE, 'oSRF objects' + cband + ' frequency match failed', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
     ; ...and average frequency interval (not sure if this will work for microwave)
-    IF ( ABS(avgdf-right_avgdf) GT (MACHAR(/DOUBLE)).EPS ) THEN BEGIN
+    IF ( ABS(left_avgdf-right_avgdf) GT (MACHAR(/DOUBLE)).EPS ) THEN BEGIN
       MESSAGE, 'oSRF objects' + cband + ' frequency intervals are different', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
 
-    ; Save the band point count for allcoation
-    n_points[band-1] = count
+    ; Construct an array with ALL the frequencies
+    f = [left_f, right_f]
+    f = f[UNIQ(f,SORT(f))]
+    frequency[band] = f
+    
+    ; Save the band point count for allocation
+    n_points[band-1] = N_ELEMENTS(f)
+
+    ; Now get the indices to slot in SRF to ALL-frequency array
+    left_idx[band] = WHERE(f GE left_f[0]  AND f LE left_f[-1] , left_count)
+    IF ( left_count EQ 0 ) THEN BEGIN
+      MESSAGE, 'Left oSRF object' + cband + ' full index slot determination failed', /INFORMATIONAL
+      RETURN, !NULL
+    ENDIF
+    right_idx[band] = WHERE(f GE right_f[0] AND f LE right_f[-1], right_count)
+    IF ( left_count EQ 0 ) THEN BEGIN
+      MESSAGE, 'Right oSRF object' + cband + ' full index slot determination failed', /INFORMATIONAL
+      RETURN, !NULL
+    ENDIF
+    
   ENDFOR
     
 
@@ -136,20 +155,27 @@ FUNCTION oSRF_Subtract, left, right, $
     ; Get band data
     left.Get_Property, $
       band, $
-      Frequency  = f, $
-      Response   = r, $
-      Debug      = debug
+      Response = left_r, $
+      Debug    = debug
     right.Get_Property, $
       band, $
-      Response   = right_r, $
-      Debug      = debug
+      Response = right_r, $
+      Debug    = debug
 
+
+    ; Slot the response spectra into the full frequency arrays
+    left_response  = DBLARR(n_points[band-1])
+    left_response[left_idx[band]] = left_r
+    
+    right_response = DBLARR(n_points[band-1])
+    right_response[right_idx[band]] = right_r
+    
 
     ; Difference them
     diff.Set_Property, $
       band, $
-      Frequency = f[left_idx[band]]                         , $
-      Response  = r[left_idx[band]]-right_r[right_idx[band]], $
+      Frequency = frequency[band]               , $
+      Response  = left_response - right_response, $
       Debug     = debug
     
   ENDFOR

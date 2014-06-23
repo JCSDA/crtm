@@ -146,12 +146,6 @@ PRO OSRF::Plot, $
     IF ( KEYWORD_SET(normalize) ) THEN r = r/MAX(r)
 
 
-    ; Generate the xrange based on -/+ % of bandwidth
-    fdelta = f[-1] - f[0]
-    df = 0.1*fdelta
-    xrange = [f[0]-df,f[-1]+df]
-
-
     ; Generate the yrange from 0->ymax+1%
     IF ( KEYWORD_SET(ylog) ) THEN BEGIN
       ymax = 2.0*MAX(r)

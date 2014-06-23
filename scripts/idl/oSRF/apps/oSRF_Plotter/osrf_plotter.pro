@@ -40,6 +40,7 @@ PRO oSRF_Plotter, $
   Label           = label          , $ ; Input keyword. Same size as SRF_Files. Default is SRF_Files
   Ylog            = ylog           , $ ; Input keyword. Plot SRFs with log y-axis. Default is linear.
   Frange          = frange         , $ ; Input keyword. Hash containing channel frequency range values.
+  Channel_List    = channel_list   , $ ; Input keyword. Array containing list of channels to plot.
   Difference      = difference     , $ ; Input keyword. Plot SRF differences from first SRF file.
   No_Tfit         = no_tfit        , $ ; Input keyword. Do not plot Tfit data. Default is plot.
   No_Pause        = no_pause       , $ ; Input keyword. Do not pause between plots. Default is pause.
@@ -103,8 +104,9 @@ PRO oSRF_Plotter, $
     IF ( n EQ 0 ) THEN BEGIN
       osrf_file[n].Get_Property, $
         Debug = debug, $
-        Sensor_Id  = sensor_id, $
-        n_Channels = n_channels
+        Sensor_Id      = sensor_id , $
+        n_Channels     = n_channels, $
+        Sensor_Channel = sensor_channel
     ENDIF ELSE BEGIN
       osrf_file[n].Get_Property, $
         Debug = debug, $
@@ -117,8 +119,13 @@ PRO oSRF_Plotter, $
   ENDFOR  ; File read loop
 
 
+  ; Process the channel list keyword
+  _channel_list = (N_ELEMENTS(channel_list) GT 0) ? channel_list  : sensor_channel
+
+
   ; Begin channel loop
   FOR l = 0, n_channels - 1 DO BEGIN
+
 
     ; Create hash for the channel SRFs from each file
     osrf = HASH()
@@ -139,14 +146,19 @@ PRO oSRF_Plotter, $
             Debug = debug
       ENDFOR
     ENDELSE
-    
-    
+
+
     ; Get the channel number
     osrf[0].Get_Property, $
       Channel = channel, $
       Debug = debug
-
-
+    
+    
+    ; Skip this channel if not in the selected list
+    idx = WHERE(_channel_list EQ channel, n_match )
+    IF ( n_match EQ 0 ) THEN CONTINUE
+    
+    
     ; Begin the plotting loop
     first_plot = TRUE
     FOR n = 0, n_plots - 1 DO BEGIN
