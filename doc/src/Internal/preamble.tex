@@ -17,7 +17,16 @@
 \usepackage{float}
 \usepackage{svn}
 \usepackage{longtable}
+\usepackage{array}
 
+
+% Some new columntypes to allow fixed widths but
+% with alignment the same as the regular c,l,r
+% (requires array package). An example:
+%   \begin{tabular}{C{2cm} *{3}{R{1cm}@{.}L{2cm}}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
 % Redefine default paragraph
 \setlength{\parindent}{0pt}
