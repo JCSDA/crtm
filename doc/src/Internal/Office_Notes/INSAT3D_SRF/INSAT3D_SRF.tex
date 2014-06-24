@@ -114,8 +114,8 @@ Plots of the Imager SRF data, and their differences, are shown in appendix \ref{
   \centering
   \begin{tabular}{C{1.5cm} R{1.5cm}@{.}L{1.5cm} *{2}{R{1cm}@{.}L{2cm}}}
     \hline
-    \sffamily{Imager} & \multicolumn{2}{c}{$f_0$} & \multicolumn{2}{c}{$a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$a_1$ \textsf{(slope)}} \\
-    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{Imager} & \multicolumn{2}{c}{$\nu_0$} & \multicolumn{2}{c}{$a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$a_1$ \textsf{(slope)}} \\
+    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(\invcm)}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
     3  & 2548&42014 & 0&39830363 & 0&99942687 \\
     4  & 1454&40973 & 0&62372841 & 0&99852040 \\
@@ -132,8 +132,8 @@ Plots of the Imager SRF data, and their differences, are shown in appendix \ref{
   \centering
   \begin{tabular}{C{1.5cm} *{3}{R{1cm}@{.}L{2cm}}}
     \hline
-    \sffamily{Imager} & \multicolumn{2}{c}{$\Delta f_0$} & \multicolumn{2}{c}{$\Delta a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$\Delta a_1$ \textsf{(slope)}} \\
-    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{Imager} & \multicolumn{2}{c}{$\Delta \nu_0$} & \multicolumn{2}{c}{$\Delta a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$\Delta a_1$ \textsf{(slope)}} \\
+    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(\invcm)}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
     3  &  1&222473e-01 &  5&340637e-03 & -7&614884e-06 \\
     4  & -2&330886e-01 & -5&954575e-03 &  1&229867e-05 \\
@@ -152,14 +152,14 @@ Plots of the Imager SRF data, and their differences, are shown in appendix \ref{
 
 Plots of the Sounder SRF data, and their differences, are shown in appendix \ref{app.sndr_srf_data_plots}. The temperature fit residuals for each channel, and their differences from those of the previous SRF dataset, are shown in appendix \ref{app.sndr_tfit_data_plots}.
 
-It should be noted here that there are significant SRF differences for some of the sounder channels, in particular the shortware channels 13-18. For these channels there is a sgnificant shift of the SRFs to lower frequencies. This is reflected in the central frequency differences shown in table \ref{tab:sndr_insat3d_results_difference}, with $\Delta f_0$ values for channels 13-18 ranging from 7-15\invcm. See figures \ref{fig:sndr_ch13} to \ref{fig:sndr_ch18} for plots of those particular SRFs.
+It should be noted here that there are significant SRF differences for some of the sounder channels, in particular the shortware channels 13-18. For these channels there is a sgnificant shift of the SRFs to lower frequencies. This is reflected in the central frequency differences shown in table \ref{tab:sndr_insat3d_results_difference}, with $\Delta \nu_0$ values for channels 13-18 ranging from 7-15\invcm. See figures \ref{fig:sndr_ch13} to \ref{fig:sndr_ch18} for plots of those particular SRFs.
 
 \begin{table}[htp]
   \centering
   \begin{tabular}{C{1.5cm} R{1.5cm}@{.}L{1.5cm} *{2}{R{1cm}@{.}L{2cm}}}
     \hline
-    \sffamily{Sounder} & \multicolumn{2}{c}{$f_0$} & \multicolumn{2}{c}{$a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$a_1$ \textsf{(slope)}} \\
-    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{Sounder} & \multicolumn{2}{c}{$\nu_0$} & \multicolumn{2}{c}{$a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$a_1$ \textsf{(slope)}} \\
+    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(\invcm)}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
     1 &  681&62206 & 0&03046981 & 0&99986043 \\
     2 &  698&62139 & 0&01879741 & 0&99991614 \\
@@ -189,8 +189,8 @@ It should be noted here that there are significant SRF differences for some of t
   \centering
   \begin{tabular}{C{1.5cm} *{3}{R{1cm}@{.}L{2cm}}}
     \hline
-    \sffamily{Sounder} & \multicolumn{2}{c}{$\Delta f_0$} & \multicolumn{2}{c}{$\Delta a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$\Delta a_1$ \textsf{(slope)}} \\
-    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
+    \sffamily{Sounder} & \multicolumn{2}{c}{$\Delta \nu_0$} & \multicolumn{2}{c}{$\Delta a_0$ \textsf{(offset)}} & \multicolumn{2}{c}{$\Delta a_1$ \textsf{(slope)}} \\
+    \sffamily{Channel} & \multicolumn{2}{c}{\sffamily{(\invcm)}} & \multicolumn{2}{c}{\sffamily{(K)}} & \multicolumn{2}{c}{\sffamily{(K/K)}}  \\
     \hline\hline
     1 & -2&384271e-02 & -3&624546e-03 &  1&668416e-05 \\
     2 &  8&865027e-02 & -1&526845e-02 &  6&818310e-05 \\
@@ -233,8 +233,8 @@ The truncation frequencies for the imager instrument are shown in table \ref{tab
   \centering
   \begin{tabular}{c *{2}{c r@{.}l}}
     \hline
-    \sffamily{Sounder} & & \multicolumn{2}{c}{$f_1$} & & \multicolumn{2}{c}{$f_2$}  \\
-    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} \\
+    \sffamily{Sounder} & & \multicolumn{2}{c}{$\nu_1$} & & \multicolumn{2}{c}{$\nu_2$}  \\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(\invcm)}} & & \multicolumn{2}{c}{\sffamily{(\invcm)}} \\
     \hline\hline
     3 & & 2449&10 & & 2647&40  \\
     4 & & 1338&60 & & 1564&40  \\
@@ -269,8 +269,8 @@ The truncation frequencies for the sounder instrument are shown in table \ref{ta
   \centering
   \begin{tabular}{c *{2}{c r@{.}l}}
     \hline
-    \sffamily{Sounder} & & \multicolumn{2}{c}{$f_1$} & & \multicolumn{2}{c}{$f_2$}  \\
-    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} & & \multicolumn{2}{c}{\sffamily{(cm\superscript{-1})}} \\
+    \sffamily{Sounder} & & \multicolumn{2}{c}{$\nu_1$} & & \multicolumn{2}{c}{$\nu_2$}  \\
+    \sffamily{Channel} & & \multicolumn{2}{c}{\sffamily{(\invcm)}} & & \multicolumn{2}{c}{\sffamily{(\invcm)}} \\
     \hline\hline
      1 & &   660&90 & &  704&70 \\
      2 & &   683&30 & &  715&20 \\
