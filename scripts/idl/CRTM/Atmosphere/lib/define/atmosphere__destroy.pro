@@ -1,4 +1,4 @@
-
+;+
 ; NAME:
 ;       Atmosphere::Destroy
 ;
@@ -24,6 +24,7 @@ PRO Atmosphere::Destroy, $
   Debug = Debug  ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   @atmosphere_parameters
   @atmosphere_pro_err_handler
  

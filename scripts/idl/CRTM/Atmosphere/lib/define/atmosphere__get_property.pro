@@ -3,7 +3,7 @@
 ;       Atmosphere::Get_Property
 ;
 ; PURPOSE:
-;       The Atmosphere::Get_Property procedure method sets the value of a property
+;       The Atmosphere::Get_Property procedure method gets the value of a property
 ;       or group of properties for this object.
 ;
 ; CALLING SEQUENCE:

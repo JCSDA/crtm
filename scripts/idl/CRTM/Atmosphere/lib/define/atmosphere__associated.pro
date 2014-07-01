@@ -34,6 +34,7 @@ FUNCTION Atmosphere::Associated, $
   Debug=Debug           ; Input keyword
  
   ; Set up
+  COMPILE_OPT HIDDEN
   @atmosphere_func_err_handler
 
   

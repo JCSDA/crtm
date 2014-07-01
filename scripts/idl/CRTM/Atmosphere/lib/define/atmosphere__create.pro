@@ -30,7 +30,7 @@
 ;                  
 ; INPUT KEYWORDS:
 ;       Debug:        Set this keyword for debugging. If set then:
-;                     - the error handler for this function is disabled
+;                     - the error handler for this procedure is disabled
 ;                       so that execution halts where the error occurs,
 ;                     - more verbose output is produced.
 ;                     UNITS:      N/A

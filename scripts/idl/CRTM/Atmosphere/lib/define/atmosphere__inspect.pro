@@ -33,6 +33,7 @@ PRO Atmosphere::Inspect, $
   Debug=Debug         ; Input keyword
 
   ; Set up
+  COMPILE_OPT HIDDEN
   @atmosphere_pro_err_handler
  
  
