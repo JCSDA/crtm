@@ -1,6 +1,8 @@
 ;+
-; Parameters for SensorInfo routines
+; Setup and parameters for SensorInfo routines
 
+  COMPILE_OPT HIDDEN
+  
   ; Literal constants
   ZERO = 0.0d0
   ONE  = 1.0d0
