@@ -87,8 +87,4 @@ PRO SensorInfo::Allocate, $
     MESSAGE, 'Allocation counter /= 1, Value = ' + STRTRIM(self.n_Allocates,2), $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
- 
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO SensorInfo::Allocate
+END

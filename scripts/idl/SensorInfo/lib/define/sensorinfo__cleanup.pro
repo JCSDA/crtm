@@ -65,8 +65,4 @@ PRO SensorInfo::Cleanup, Debug=Debug  ; Input keyword
   ; Deallocate pointers, and clear scalars
   self->Destroy, Debug=Debug
 
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo::Cleanup
+END

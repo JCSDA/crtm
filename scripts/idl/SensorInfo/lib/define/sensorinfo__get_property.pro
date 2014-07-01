@@ -164,8 +164,4 @@ PRO SensorInfo::Get_Property, $
   IF ( ARG_PRESENT( Use_Flag         ) ) THEN Use_Flag         = *self.Use_Flag      
   IF ( ARG_PRESENT( Noise            ) ) THEN Noise            = *self.Noise         
   
-  
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO SensorInfo::Get_Property
+END

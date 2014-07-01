@@ -171,8 +171,4 @@ PRO SensorInfo::Set_Property, $
   IF ( N_ELEMENTS(Use_Flag        ) GT 0 ) THEN *self.Use_Flag        = Use_Flag
   IF ( N_ELEMENTS(Noise           ) GT 0 ) THEN *self.Noise           = Noise
   
-  
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO SensorInfo::Set_Property
+END

@@ -73,7 +73,7 @@ PRO SensorInfo::Destroy, $
 
  
   ; Initialise the non-pointer members
-  IF ( NOT KEYWORD_SET(No_Clear) ) THEN BEGIN
+  IF ( ~ KEYWORD_SET(No_Clear) ) THEN BEGIN
     self.Sensor_Name      = ' '
     self.Satellite_Name   = ' '
     self.Sensor_Id        = ' '
@@ -84,7 +84,7 @@ PRO SensorInfo::Destroy, $
 
 
   ; If ALL pointer members are NOT associated, do nothing
-  IF ( NOT self->Associated(Debug=Debug) ) THEN GOTO, Done
+  IF ( ~ self->Associated(Debug=Debug) ) THEN RETURN
 
 
   ; Deallocate the pointer members and nullify
@@ -107,8 +107,4 @@ PRO SensorInfo::Destroy, $
     MESSAGE, 'Allocation counter /= 0, Value = ' + STRTRIM(self.n_Allocates, 2), $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
 
-  ; Done
-  Done:
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo::Destroy
+END

@@ -3,6 +3,8 @@
 ;
 PRO SensorInfo__Define
 
+  COMPILE_OPT HIDDEN
+  
   void = { SensorInfo, $
            n_Allocates     : 0L,        $  ; Allocation counter
            n_Channels      : 0L,        $  ; Number of sensor channels (L)
@@ -17,4 +19,4 @@ PRO SensorInfo__Define
            Noise           : PTR_NEW()  }  ; Noise level in Kelvin for sensor channels
 ;
 ;-
-END ; PRO SensorInfo__Define
+END

@@ -87,8 +87,4 @@ PRO SensorInfo::Assign, $
   *new.Use_Flag        = *self.Use_Flag      
   *new.Noise           = *self.Noise          
 
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo::Assign
+END

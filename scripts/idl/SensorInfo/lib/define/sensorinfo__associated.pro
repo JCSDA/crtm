@@ -74,18 +74,12 @@ FUNCTION SensorInfo::Associated, $
   ANY_Test=ANY_Test, $  ; Input keyword
   Debug=Debug           ; Input keyword
  
-  ; Set up error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FALSE
-    ENDIF
-  ENDELSE
+  ; Set up
+  ; ...Parameters
+  @sensorinfo_parameters
+  ; ...Set up error handler
+  @sensorinfo_func_err_handler
+
  
   ; Test association status
   Association_Status = FALSE
@@ -101,4 +95,4 @@ FUNCTION SensorInfo::Associated, $
  
   RETURN, Association_Status
  
-END ; FUNCTION SensorInfo::Associated
+END

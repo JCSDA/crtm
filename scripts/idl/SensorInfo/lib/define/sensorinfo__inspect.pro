@@ -42,6 +42,11 @@ PRO SensorInfo::Inspect, $
   Verbose=Verbose, $  ; Input keyword
   Debug=Debug         ; Input keyword
   
+  ; Set up
+  ; ...Parameters
+  @sensorinfo_parameters
+
+  ; Display information  
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
   HELP, self, /OBJECTS
 
@@ -51,4 +56,4 @@ PRO SensorInfo::Inspect, $
           *self.Noise         
   ENDIF 
   
-END ; PRO SensorInfo::Inspect
+END
