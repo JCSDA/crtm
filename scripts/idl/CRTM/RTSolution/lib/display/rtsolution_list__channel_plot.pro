@@ -95,13 +95,15 @@ PRO RTSolution_List::Channel_Plot, $
       LAYOUT = [ n_col, n_row, index ], $
       COLOR = 'red', $
       SYMBOL = symbol, $
+      MARGIN = [0.125,0.16,0.05,0.1], $
+      FONT_SIZE = 9, $
       CURRENT = owin )
     IF ( plot_difference ) THEN $
       !NULL = PLOT( $
         pdi.Xrange, [0,0], $
         LINESTYLE = 'dash', $
         OVERPLOT = pdi )
-  
+
   ENDFOR
 
 END
