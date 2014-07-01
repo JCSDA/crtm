@@ -28,10 +28,11 @@
 
 FUNCTION Valid_String, Input_String
 
+  COMPILE_OPT HIDDEN
   @error_codes
 
-  IF ( N_ELEMENTS( Input_String ) EQ 0 ) THEN RETURN, FALSE
-  IF ( STRLEN( STRTRIM( Input_String, 2 ) ) EQ 0 ) THEN RETURN, FALSE
+  IF ( N_ELEMENTS(Input_String) EQ 0 ) THEN RETURN, FALSE
+  IF ( STRLEN(STRTRIM(Input_String,2)) EQ 0 ) THEN RETURN, FALSE
 
   RETURN, TRUE
 
