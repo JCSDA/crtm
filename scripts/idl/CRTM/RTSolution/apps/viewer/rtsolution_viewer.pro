@@ -451,7 +451,8 @@ PRO RTSolution_Viewer, $
     'RTSolution_Viewer', $
     top_level_base_id, $
     CLEANUP = 'rv_cleanup', $
-    GROUP_LEADER = top_level_base_id
+    GROUP_LEADER = top_level_base_id, $
+    /NO_BLOCK
 
   IF ( KEYWORD_SET(debug) ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
