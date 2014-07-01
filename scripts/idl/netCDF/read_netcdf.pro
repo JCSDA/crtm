@@ -144,6 +144,9 @@ FUNCTION check_vectors, ncId         , $
                         count_vector , $
                         offset_vector, $
                         stride_vector
+
+  COMPILE_OPT HIDDEN
+
   ; Set up error handler
   @error_codes
   CATCH, Error_Status
@@ -254,6 +257,8 @@ FUNCTION convert_string, data_type, $
                          input_string, $
                          NO_CONVERT=no_convert
 
+  COMPILE_OPT HIDDEN
+
   ; Set the IDL version with the bug fix
   fixed_IDL_version = 5.3
 
@@ -271,6 +276,31 @@ FUNCTION convert_string, data_type, $
   RETURN, input_string
 
 END ; FUNCTION convert_string
+
+
+; --------------------------------------------------------
+; Local procedure to convert a string to a value that can
+; be used as an IDL structure tag.
+;
+; First, all leading and trailing blanck are removed,
+; then all remaining spaces ' ' and dashes '-' are
+; converted to underscores, '_'
+; --------------------------------------------------------
+PRO make_taggable_string, char_string
+  SPACE      = 32B
+  DASH       = 45B
+  UNDERSCORE = 95B
+  
+  COMPILE_OPT HIDDEN
+
+  char_string = STRTRIM(char_string,2)
+  byte_array  = BYTE(char_string)
+  
+  idx = WHERE((byte_array EQ SPACE) OR (byte_array EQ DASH), count)
+  IF ( count GT 0 ) THEN byte_array[idx] = UNDERSCORE
+  
+  char_string = STRING(byte_array)
+END
 
 
 ;###############################################################################
@@ -377,6 +407,10 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
         attribute = convert_string( attribute_info.datatype           , $  ; Input
                                     attribute                         , $  ; Input
                                     NO_CONVERT = no_att_byte_to_string  )  ; Input keyword
+
+        ; Convert attribute name so it can be used as a structure tag
+        make_taggable_string, attribute_name
+        
         ; Append to structure
         data = CREATE_STRUCT( data          , $  ; Input
                               attribute_name, $  ; Input
@@ -447,7 +481,7 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
       IF ( result NE SUCCESS ) THEN BEGIN
         MESSAGE, 'COUNT, OFFSET, and/or STRIDE vector check failed.', /NONAME, /NOPRINT
       ENDIF
-;     Read the variable data
+      ; Read the variable data
       NCDF_VARGET, ncId                  , $  ; Input
                    variable_id           , $  ; Input
                    variable_data         , $  ; Output
@@ -456,12 +490,12 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
                    STRIDE = stride_vector     ; Input keyword
     ENDELSE ; Variable dimensions IF statement
 
-;   If necessary and required, convert BYTE/CHAR variable data to STRING
+    ; If necessary and required, convert BYTE/CHAR variable data to STRING
     variable_data = convert_string( variable_info.datatype            , $  ; Input
                                     variable_data                     , $  ; Input
                                     NO_CONVERT = no_var_byte_to_string  )  ; Input keyword
 
-;   Retrieve the variable attributes if required
+    ; Retrieve the variable attributes if required
     n_variable_attributes = variable_info.NATTS
     IF ( KEYWORD_SET( variable_attributes ) AND $
          n_variable_attributes GT 0             ) THEN BEGIN
@@ -493,6 +527,10 @@ FUNCTION Read_netCDF, ncFile                                       , $  ; Input
         attribute = convert_string( attribute_info.datatype           , $  ; Input
                                     attribute                         , $  ; Input
                                     NO_CONVERT = no_att_byte_to_string  )  ; Input keyword
+
+        ; Convert attribute name so it can be used as a structure tag
+        make_taggable_string, attribute_name
+        
 
         ; Add current attribute to variable structure
         variable_data = CREATE_STRUCT( variable_data , $  ; Input
