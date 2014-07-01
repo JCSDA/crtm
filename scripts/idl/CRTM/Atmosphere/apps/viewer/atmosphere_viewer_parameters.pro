@@ -12,3 +12,4 @@
   ; ...Display types
   DISPLAY_TYPE_PROFILE  = 'profile'
   DISPLAY_TYPE_SPECTRUM = 'spectrum'
+  DISPLAY_TYPE_TARTAN   = 'tartan'

@@ -385,6 +385,34 @@ END
 
 
 ;-------------------------------------------------
+PRO av_button_tartan_event, event
+  COMPILE_OPT HIDDEN
+  @atmosphere_viewer_parameters
+  av_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; DEsensitise both the layer and channel index slider
+  WIDGET_CONTROL, $
+    state['av_slider_layer_id'], $
+    SENSITIVE = 0
+  WIDGET_CONTROL, $
+    state['av_slider_channel_id'], $
+    SENSITIVE = 0
+
+  ; Update the display type indicator
+  state['display_type'] = DISPLAY_TYPE_TARTAN
+ 
+  ; Save the updated state
+  av_setstate, event.Top, state
+  
+  ; Display the tartan
+  av_tartan_display, event.Top
+      
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
+
+
+;-------------------------------------------------
 PRO av_slider_profile_event, event
   COMPILE_OPT HIDDEN
   av_getstate, event.Top, state
@@ -691,16 +719,87 @@ END
 
 
 ;-------------------------------------------------
+PRO av_tartan_display, id
+  COMPILE_OPT HIDDEN
+  @atmosphere_viewer_parameters
+  av_getstate, id, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+
+  ; Setup window for (re)display
+  state['av_window_id'].Refresh, /DISABLE
+  state['av_window_id'].Erase
+
+  ; Get the profile index
+  WIDGET_CONTROL, $
+    state['av_slider_profile_id'], $
+    GET_VALUE = profile_number
+  profile_index = profile_number - 1
+
+  ; Get the channel number
+  WIDGET_CONTROL, $
+    state['av_slider_channel_id'], $
+    GET_VALUE = channel_number
+
+  ; Get the layer number
+  WIDGET_CONTROL, $
+    state['av_slider_layer_id'], $
+    GET_VALUE = layer_number
+
+
+  ; Get the atmosphere lists to display
+  atm = av_get_atmosphere_list(state)
+  IF ( state['plot_type'] EQ PLOT_TYPE_DIFFERENCE ) THEN $
+    diff_input = av_get_atmosphere_list(state, /from_diff_input)
+  
+
+  ; Plot the data
+  CASE state['component'] OF
+
+    COMPONENT_ATMOSPHERE: BEGIN
+      atm.Tartan_Plot, $
+        Diff_Input = diff_input, $
+        Channel = channel_number, $
+        Owin = state['av_window_id'], $
+        Debug = state['debug']
+    END
+
+    COMPONENT_CLOUD: BEGIN
+      MESSAGE, '**** Not implemented yet ****', /INFORMATIONAL
+    END
+
+    COMPONENT_AEROSOL: BEGIN
+      MESSAGE, '**** Not implemented yet ****', /INFORMATIONAL
+    END
+
+    ELSE: MESSAGE, 'Invalid component: ' + state['component']
+  ENDCASE
+
+  ; and display it
+  state['av_window_id'].Refresh
+
+  ; Save state variable
+  av_setstate, id, state
+
+  ; Update text info
+  av_display_info, id
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+
+END
+
+
+;-------------------------------------------------
 PRO av_display, id
   COMPILE_OPT HIDDEN
   @atmosphere_viewer_parameters
   av_getstate, id, state
   IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
 
-  IF ( state['display_type'] EQ DISPLAY_TYPE_PROFILE ) THEN $
-    av_profile_display, id $
-  ELSE $
-    av_spectrum_display, id
+  CASE state['display_type'] OF
+    DISPLAY_TYPE_PROFILE : av_profile_display, id
+    DISPLAY_TYPE_SPECTRUM: av_spectrum_display, id
+    DISPLAY_TYPE_TARTAN  : av_tartan_display, id
+  ENDCASE
   
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
@@ -859,10 +958,7 @@ PRO av_load_file, file, id
   av_setstate, id, state
 
   ; Display the new data
-  IF ( state['display_type'] EQ DISPLAY_TYPE_PROFILE ) THEN $
-    av_profile_display, id $
-  ELSE $
-    av_spectrum_display, id
+  av_display, id
 
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 
@@ -1003,6 +1099,13 @@ PRO Atmosphere_Viewer, $
           EVENT_PRO    = 'av_button_channel_event', $
           NO_RELEASE   = 1, $
           VALUE        = 'Spectrum' )
+        ; ...Create the tartan radio button
+        av_button_tartan_id = WIDGET_BUTTON( $
+          av_displaytype_button_base_id, $
+          GROUP_LEADER = top_level_base_id, $
+          EVENT_PRO    = 'av_button_tartan_event', $
+          NO_RELEASE   = 1, $
+          VALUE        = 'Tartan' )
       ; ...Create the slider base for data selection
       slider_base_id = WIDGET_BASE( $
         left_upper_base_id, $
