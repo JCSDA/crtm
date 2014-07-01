@@ -29,7 +29,6 @@ MODULE LBLRTM_File_netCDF_IO
   USE LBLRTM_Layer_netCDF_IO, ONLY: LBLRTM_Layer_netCDF_WriteGroup, &
                                     LBLRTM_Layer_netCDF_ReadGroup , &
                                     LBLRTM_Layer_netCDF_IOVersion
-use lblrtm_layer_define
   USE netcdf  
   ! Disable all implicit typing
   IMPLICIT NONE
@@ -489,10 +488,9 @@ CONTAINS
 
 
     ! Output an info message
-     IF ( noisy ) THEN
-!       CALL LBLRTM_Info( LBLRTM, msg, NoComponents = .TRUE. )
-!       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//'; '//TRIM(msg), INFORMATION )
-     END IF
+    IF ( noisy ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//' written', INFORMATION )
+    END IF
 
   CONTAINS
 
@@ -708,12 +706,10 @@ CONTAINS
     IF ( debug_output ) CALL LBLRTM_File_Inspect(LBLRTM_File)
 
     ! Output an info message
-     IF ( noisy ) THEN
-       CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//' read', INFORMATION )
-     END IF
+    IF ( noisy ) THEN
+      CALL Display_Message( ROUTINE_NAME, 'FILE: '//TRIM(Filename)//' read', INFORMATION )
+    END IF
 
-print *, LBLRTM_Layer_IsValid(LBLRTM_File%Layer)
-                                   
   CONTAINS
 
     SUBROUTINE Read_CleanUp()
