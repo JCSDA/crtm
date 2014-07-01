@@ -65,8 +65,4 @@ PRO SensorInfo_List::Get_Property, $
   IF ( ARG_PRESENT(Filename ) GT 0 ) THEN Filename  = self.Filename
   IF ( ARG_PRESENT(n_Sensors) GT 0 ) THEN n_Sensors = self.n_Sensors
   
-  
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO SensorInfo_List::Get_Property
+END

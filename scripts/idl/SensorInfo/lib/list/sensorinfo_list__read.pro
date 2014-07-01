@@ -160,8 +160,4 @@ PRO SensorInfo_List::Read, $
   MESSAGE, 'FILE: ' + STRTRIM(self.Filename,2) + ', N_SENSORS=' + STRTRIM(self.n_Sensors,2), $
     /INFORMATIONAL
 
-     
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo_List::Read
+END

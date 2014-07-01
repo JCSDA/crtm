@@ -82,22 +82,10 @@ FUNCTION SensorInfo_List::Init, $
   ; ...Parameters
   @sensorinfo_parameters
   ; ...Set up error handler
-  @error_codes
-  IF ( KEYWORD_SET(Debug) ) THEN BEGIN
-    MESSAGE, '--> Entered.', /INFORMATIONAL
-  ENDIF ELSE BEGIN
-    CATCH, Error_Status
-    IF ( Error_Status NE 0 ) THEN BEGIN
-      CATCH, /CANCEL
-      MESSAGE, !ERROR_STATE.MSG, /CONTINUE
-      RETURN, FAILURE
-    ENDIF
-  ENDELSE
-  ; ..Check input
-  IF ( Valid_String(Filename) ) THEN $
-    _Filename = Filename $
-  ELSE $
-    _Filename = 'SensorInfo'
+  @sensorinfo_func_err_handler
+  ; ...Check input
+  _filename = ( Valid_String(Filename) ) ? Filename : 'SensorInfo'
+
 
   ; Set default values
   self.Filename  = _Filename
@@ -109,7 +97,6 @@ FUNCTION SensorInfo_List::Init, $
   
   
   ; Done
-  CATCH, /CANCEL
   RETURN, TRUE
  
-END ; FUNCTION SensorInfo_List::Init
+END

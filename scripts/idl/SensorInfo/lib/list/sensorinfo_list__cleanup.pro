@@ -62,8 +62,4 @@ PRO SensorInfo_List::Cleanup, $
   ; Empty container
   self->IDL_Container::Cleanup
 
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo_List::Cleanup
+END

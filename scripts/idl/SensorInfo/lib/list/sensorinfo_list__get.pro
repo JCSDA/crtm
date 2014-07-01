@@ -108,7 +108,6 @@ FUNCTION SensorInfo_List::Get, $
 
   ; Done
   Done:
-  CATCH, /CANCEL
   RETURN, objref
 
-END ; FUNCTION SensorInfo_File::Get
+END

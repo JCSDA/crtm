@@ -54,8 +54,4 @@ PRO SensorInfo_List::Set_Property, $
   ; Set data
   IF ( Valid_String(Filename) ) THEN self.Filename = Filename
   
-  
-  ; Done
-  CATCH, /CANCEL
- 
-END ; PRO SensorInfo_List::Set_Property
+END

@@ -42,6 +42,13 @@ PRO SensorInfo_List::Inspect, $
   Verbose=Verbose, $  ; Input keyword
   Debug=Debug         ; Input keyword
 
+  ; Setup
+  ; ...Parameters
+  @sensorinfo_parameters
+  ; ...Set up error handler
+  @sensorinfo_pro_err_handler
+  
+  ; Display contents
   IF ( KEYWORD_SET(Debug) ) THEN HELP, /ROUTINES
   HELP, self, /OBJECTS
 
@@ -62,4 +69,4 @@ PRO SensorInfo_List::Inspect, $
     
   ENDIF 
 
-END ; PRO SensorInfo_List::Inspect
+END

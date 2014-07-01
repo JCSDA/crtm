@@ -29,6 +29,8 @@
 
 PRO SensorInfo_List__Define
 
+  COMPILE_OPT HIDDEN
+  
   void = { SensorInfo_List, $
            ; File information
            Filename: '', $

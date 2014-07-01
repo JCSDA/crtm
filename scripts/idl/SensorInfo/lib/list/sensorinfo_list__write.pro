@@ -87,7 +87,6 @@ PRO SensorInfo_List::Write, $
     ENDIF ELSE BEGIN
       MESSAGE, STRTRIM(_Filename,2) + ' already exists and FORCE keyword not set. Nothing done.', $
                /INFORMATIONAL
-      CATCH, /CANCEL
       RETURN
     ENDELSE
   ENDIF
@@ -140,8 +139,4 @@ PRO SensorInfo_List::Write, $
   MESSAGE, 'FILE: ' + STRTRIM(_Filename,2) + ', N_SENSORS=' + STRTRIM(n_Sensors,2), $
     /INFORMATIONAL
 
-     
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo_List::Write
+END

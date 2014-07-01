@@ -65,8 +65,4 @@ PRO SensorInfo_List::Add, $
   loc = WHERE( OBJ_ISA(objects, 'SensorInfo'), n_Sensors )
   IF ( n_Sensors GT 0 ) THEN self.n_Sensors = self.n_Sensors + n_Sensors
 
-
-  ; Done
-  CATCH, /CANCEL
-
-END ; PRO SensorInfo_File::Add
+END
