@@ -9,6 +9,7 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
     MESSAGE, !ERROR_STATE.MSG
+    IF ( N_ELEMENTS(lun) GT 0 ) THEN FREE_LUN, lun
     RETURN, FAILURE
   ENDIF
 
@@ -18,11 +19,11 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   n_Frequencies = N_ELEMENTS(f)
   IF ( n_Frequencies EQ 0 ) THEN $
     MESSAGE, 'Must supply frequencies', /NONAME, /NOPRINT
-  IF ( NOT Valid_String(Infile) ) THEN $
+  IF ( ~ Valid_String(Infile) ) THEN $
     MESSAGE, 'Must supply generic input filename', /NONAME, /NOPRINT
   ; ...Check the file exists
   fInfo = FILE_INFO(Infile)
-  IF ( NOT fInfo.EXISTS ) THEN $
+  IF ( ~ fInfo.EXISTS ) THEN $
     MESSAGE, Infile+' not found', /NONAME, /NOPRINT
     
     
@@ -60,10 +61,10 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
 
   ; Run MonoRTM
   ; ...Check that spectral line file is present
-  IF ( NOT (FILE_INFO(MONORTM_SPECTRALFILE)).EXISTS ) THEN $
+  IF ( ~ (FILE_INFO(MONORTM_SPECTRALFILE)).EXISTS ) THEN $
     MESSAGE, MONORTM_SPECTRALFILE+' not found', /NONAME, /NOPRINT
   ; ...Spawn the executable
-  SPAWN, 'monortm_v4.0_dbl', Std_Out, Std_Err, EXIT_STATUS = Exit_Status
+  SPAWN, 'monortm', Std_Out, Std_Err, EXIT_STATUS = Exit_Status
   IF ( Exit_Status NE 0 ) THEN MESSAGE, 'Error running MonoRTM:'+Std_Err, /NONAME, /NOPRINT
 
   
