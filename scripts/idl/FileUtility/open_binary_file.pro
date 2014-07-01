@@ -63,6 +63,7 @@
 ;
 ; FUNCTION RESULT:
 ;       fileId:           File unit number used for subsequent file access.
+;                         Is < 0 if an error occurs.
 ;                         UNITS:      N/A
 ;                         TYPE:       INTEGER
 ;                         DIMENSION:  Scalar
@@ -77,11 +78,11 @@ FUNCTION Check_Binary_File, fileName, $
                             STREAM=Stream, $
                             DEBUG =Debug
 
-  ; Include the parameters file
+  ; Setup
+  COMPILE_OPT HIDDEN
   @binary_file_parameters
 
   ; Define error handler
-  @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
@@ -90,6 +91,11 @@ FUNCTION Check_Binary_File, fileName, $
     RETURN, CHECK_FAILURE
   ENDIF
 
+  ; Check the file exists
+  IF ( ~ FILE_TEST(fileName) ) THEN $
+    MESSAGE, 'File '+fileName+' not found.', $
+             /NONAME, /NOPRINT
+  
   ; Define variables to read the record markers
   ; (if required) and the magic number
   r1 = 0L & mN = 0L & r2 = 0L
@@ -117,7 +123,7 @@ FUNCTION Check_Binary_File, fileName, $
     RETURN, CHECK_SWAP
   ENDIF
 
-  ; Not a recognised BinFile
+  ; Not a recognised Binary File
   MESSAGE, 'Unrecognised file type. Invalid magic number', $
            /NONAME, /NOPRINT
 
@@ -134,13 +140,12 @@ FUNCTION Open_Binary_File, fileName, $
   @binary_file_parameters
 
   ; Define error handler
-  @error_codes
   CATCH, Error_Status
   IF ( Error_Status NE 0 ) THEN BEGIN
     CATCH, /CANCEL
     MESSAGE, !ERROR_STATE.MSG, /CONTINUE
     IF ( N_ELEMENTS(fileId) NE 0 ) THEN FREE_LUN, fileId
-    RETURN, FAILURE
+    RETURN, OPEN_FAILURE
   ENDIF
 
   ; Check fileName
@@ -157,7 +162,7 @@ FUNCTION Open_Binary_File, fileName, $
   ; ...unless WRITE keyword is set.
   IF ( KEYWORD_SET(Write) ) THEN input=FALSE
 
-  
+
   ; -------------------------
   ; Open the file accordingly
   ; -------------------------
@@ -165,7 +170,7 @@ FUNCTION Open_Binary_File, fileName, $
     ; Check the file
     swapFlag=Check_Binary_File(fileName, STREAM=Stream, DEBUG=Debug)
     IF ( swapFlag EQ CHECK_FAILURE ) THEN $
-      MESSAGE, 'Binary file check failed', /NONAME, /NOPRINT
+      MESSAGE, 'Input binary file check failed', /NONAME, /NOPRINT
     ; Open the file for reading
     OPENR, fileId, fileName, /GET_LUN, $
                    F77_UNFORMATTED=seqUnfmt, $
@@ -186,4 +191,4 @@ FUNCTION Open_Binary_File, fileName, $
 
   RETURN, fileId
 
-END ; FUNCTION Open_BinFile
+END
