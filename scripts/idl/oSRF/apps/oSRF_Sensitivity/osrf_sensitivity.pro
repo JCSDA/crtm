@@ -15,8 +15,9 @@ PRO osrf_sensitivity, $
   SRF_Id                           , $ ; Input
   SensorInfo_File = sensorinfo_file, $ ; Input keyword (Default = "SensorInfo")
   Result_Path     = result_path    , $ ; Input keyword (Default = "results")
-  Begin_Profile   = begin_profile  , $ ; Input keyword (Default = 1)
-  End_Profile     = end_profile    , $ ; Input keyword (Default = n_Profiles in AtmProfile)
+  Begin_Profile   = begin_profile  , $ ; Input keyword (Default = 1. Ignored if Profile_List set)
+  End_Profile     = end_profile    , $ ; Input keyword (Default = n_Profiles. Ignored if Profile_List set)
+  Profile_List    = profile_list   , $ ; Input keyword (Default = all profiles)
   Channel_List    = channel_list   , $ ; Input keyword (Passed into oSRF_Compute_Tb)
   Debug           = debug
 ;-
@@ -98,6 +99,23 @@ PRO osrf_sensitivity, $
       MESSAGE, "Invalid end profile index", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDIF
+  _n_profiles   = _end_profile - _begin_profile + 1
+  _profile_list = LINDGEN(_n_profiles) + _begin_profile
+
+
+  ; Check the profile list
+  IF ( N_ELEMENTS(profile_list) GT 0 ) THEN BEGIN
+    _profile_list  = LONG(profile_list)
+    _begin_profile = MIN(_profile_list)
+    _end_profile   = MAX(_profile_list)
+    IF ( (_begin_profile LT 1) OR (_begin_profile GT n_profiles) ) THEN $
+      MESSAGE, "Invalid begin profile in Profile_List", $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    IF ( (_end_profile LT _begin_profile) OR (_end_profile GT n_profiles) ) THEN $
+      MESSAGE, "Invalid end profile in Profile_List", $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    _n_profiles = N_ELEMENTS(_profile_list)
+  ENDIF
 
   
   ; Get the channel list
@@ -115,13 +133,13 @@ PRO osrf_sensitivity, $
 
 
   ; Loop over profiles
-  FOR m = _begin_profile, _end_profile DO BEGIN
+  FOR m = 0L, _n_profiles - 1L DO BEGIN
 
-    PRINT, FORMAT='(/5x,"Processing profile #:",i5)', m
+    PRINT, FORMAT='(/5x,"Processing profile #:",i5)', _profile_list[m]
 
     
     ; Construct the generic LBL input filenames
-    c_profile = STRING(FORMAT='(i4.4)',m)
+    c_profile = STRING(FORMAT='(i4.4)',_profile_list[m])
     lbl_infile = "generic_input/TAPE5."+atmprofile_id+".profile"+c_profile
 
 
