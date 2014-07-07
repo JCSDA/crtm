@@ -22,7 +22,7 @@
 \begin{document}
 \maketitle
 
-\draftwatermark
+%\draftwatermark
 
 % The front matter
 %=================
@@ -38,7 +38,7 @@
       \hline\hline
       2013-11-21 & Paul van Delst & Initial draft.\\
       \hline
-      2014-06-23 & Paul van Delst & Modified for updated SRF data.\\
+      2014-07-07 & Paul van Delst & Modified for updated SRF data.\\
       \hline
     \end{tabular}
   \end{table}
@@ -56,9 +56,9 @@
 
 \section{Introduction}
 %=====================
-This document describes the pre-processing applied to the INSAT-3D Imager and Sounder instruments spectral response functions (SRFs), obtained from \cite{INSAT3D_SRF_Data2}, to prepare for use in the CRTM processing chain. The SRFs are used to generate channel central frequencies, as well as in the convolution of monochromatic quantities such as Planck radiances or line-by-line (LBL) model generated transmittances to produce such things as polychromatic correction coefficients and instrument resolution transmittances. The latter, for a diverse set of atmospheric profiles, are then regressed against a set of predictors to produce the fast transmittance model coefficients used by the CRTM.
+This document describes the pre-processing applied to the INSAT-3D Imager and Sounder instruments updated spectral response functions (SRFs), obtained from \cite{INSAT3D_SRF_Data2} in June 2014, to prepare for use in the CRTM processing chain. The SRFs are used to generate channel central frequencies, as well as in the convolution of monochromatic quantities such as Planck radiances or line-by-line (LBL) model generated transmittances to produce such things as polychromatic correction coefficients and instrument resolution transmittances. The latter, for a diverse set of atmospheric profiles, are then regressed against a set of predictors to produce the fast transmittance model coefficients used by the CRTM.
 
-Comparisons are also made with the original SRF dataset \citep{INSAT3D_SRF_Data}.
+Comparisons are also made with the original SRF dataset \citep{INSAT3D_SRF_Data} obtained in October 2013.
 
 
 \subsection{Computation of the channel central frequency}
@@ -103,12 +103,12 @@ Currently the number of coefficients is fixed at two (i.e. $M=1$).
 \section{Summary}
 %================
 
-The following tables list the computed central frequencies and polychromatic correction coefficients for the imager and sounder instruments, as well the differences from the original set of SRFs.
+The following tables list the computed central frequencies and polychromatic correction coefficients for the imager and sounder instruments, as well the differences with the same quantities obtained from the original set of SRFs.
 
 \subsection{Imager}
 %------------------
 
-Plots of the Imager SRF data, and their differences, are shown in appendix \ref{app.imgr_srf_data_plots}. The temperature fit residuals for each channel, and their differences from those of the previous SRF dataset, are shown in appendix \ref{app.imgr_tfit_data_plots}.
+Plots of the Imager SRF data, and their differences, are shown in appendix \ref{app.imgr_srf_data_plots}. The temperature fit residuals for each channel, and their differences from those of the original SRF dataset, are shown in appendix \ref{app.imgr_tfit_data_plots}.
 
 \begin{table}[htp]
   \centering
@@ -141,7 +141,7 @@ Plots of the Imager SRF data, and their differences, are shown in appendix \ref{
     6  &  5&192023e-01 &  1&575004e-03 & -5&534034e-06 \\
     \hline
   \end{tabular}
-  \caption{The difference between the computed INSAT-3D Imager channel central frequencies and polychromatic correction coefficients for the new SRFs.}
+  \caption{The difference between the computed INSAT-3D Imager channel central frequencies and polychromatic correction coefficients for the updated SRFs.}
   \label{tab:imgr_insat3d_results_difference}
 \end{table}
 
@@ -150,7 +150,7 @@ Plots of the Imager SRF data, and their differences, are shown in appendix \ref{
 \subsection{Sounder}
 %-------------------
 
-Plots of the Sounder SRF data, and their differences, are shown in appendix \ref{app.sndr_srf_data_plots}. The temperature fit residuals for each channel, and their differences from those of the previous SRF dataset, are shown in appendix \ref{app.sndr_tfit_data_plots}.
+Plots of the Sounder SRF data, and their differences, are shown in appendix \ref{app.sndr_srf_data_plots}. The temperature fit residuals for each channel, and their differences from those of the original SRF dataset, are shown in appendix \ref{app.sndr_tfit_data_plots}.
 
 It should be noted here that there are significant SRF differences for some of the sounder channels, in particular the shortware channels 13-18. For these channels there is a sgnificant shift of the SRFs to lower frequencies. This is reflected in the central frequency differences shown in table \ref{tab:sndr_insat3d_results_difference}, with $\Delta \nu_0$ values for channels 13-18 ranging from 7-15\invcm. See figures \ref{fig:sndr_ch13} to \ref{fig:sndr_ch18} for plots of those particular SRFs.
 
@@ -212,17 +212,17 @@ It should be noted here that there are significant SRF differences for some of t
    18 & -1&554782e+01 &  2&980200e-02 & -4&402094e-05 \\
     \hline
   \end{tabular}
-  \caption{The difference between the computed INSAT-3D Sounder channel central frequencies and polychromatic correction coefficients for the new SRFs.}
+  \caption{The difference between the computed INSAT-3D Sounder channel central frequencies and polychromatic correction coefficients for the updated SRFs.}
   \label{tab:sndr_insat3d_results_difference}
 \end{table}
 
 
 \newpage
-\section{Truncation of original data}
-%====================================
+\section{Truncation of SRF data}
+%===============================
 \label{sec:data_truncation}
 
-The original SRFs were reported on the same frequency grid for all channels in an instrument, with out-of-band responses set to zero. To minimise the number of frequencies for which LBL calculations would be done, the SRF data were truncated to eliminate the zero-valued out-of-band elements. The truncation points were selected automatically by determining the first non-zero point either side of the SRF, and then extending back 20 data points.
+The SRFs were reported on the same frequency grid for all channels in an instrument, with out-of-band responses set to zero. To minimise the number of frequencies for which LBL calculations would be done, the SRF data were truncated to eliminate the zero-valued out-of-band elements. The truncation points were selected automatically by determining the first non-zero point either side of the SRF, and then extending back 20 data points.
 
 \subsection{Imager}
 %------------------
@@ -242,7 +242,7 @@ The truncation frequencies for the imager instrument are shown in table \ref{tab
     6 & &  788&00 & &  882&20  \\
     \hline
   \end{tabular}
-  \caption{The frequencies at which the original INSAT-3D Imager channel SRFs were truncated prior to processing.}
+  \caption{The frequencies at which the INSAT-3D Imager channel SRFs were truncated prior to processing.}
   \label{tab:imgr_insat3d_truncation}
 \end{table}
 
@@ -254,7 +254,7 @@ The truncation frequencies for the imager instrument are shown in table \ref{tab
     \includegraphics[scale=0.35]{graphics/imgr/trunc/imgr_insat3d-5.trunc.eps} &
     \includegraphics[scale=0.35]{graphics/imgr/trunc/imgr_insat3d-6.trunc.eps}
   \end{tabular}
-  \caption{INSAT-3D Imager channels 3-6 SRFs at low response levels near the trunctiopn frequencies.}
+  \caption{INSAT-3D Imager channels 3-6 SRFs at low response levels near the truncation frequencies.}
   \label{fig:imgr_ch3-6_trunc}
 \end{figure}
 
@@ -292,7 +292,7 @@ The truncation frequencies for the sounder instrument are shown in table \ref{ta
     18 & &  2552&00 & & 2736&80 \\
     \hline
   \end{tabular}
-  \caption{The frequencies at which the original INSAT-3D Sounder channel SRFs were truncated prior to processing.}
+  \caption{The frequencies at which the INSAT-3D Sounder channel SRFs were truncated prior to processing.}
   \label{tab:sndr_insat3d_truncation}
 \end{table}
 
@@ -308,6 +308,28 @@ The truncation frequencies for the sounder instrument are shown in table \ref{ta
   \label{fig:sndr_selection_trunc}
 \end{figure}
 
+
+\newpage
+\section{Impact of updated SRFs on convolved radiances}
+%======================================================
+\label{sec:updated_impact}
+To determine the impact of the updated SRFs on the convolved channel radiancesd, both sets of data (original and updated SRFs) were convolved with LBL-model generated radiances.
+
+LBLRTM \citep{Clough_2005} v12.2 was used with the ECMWF83 atmospheric profile dataset to generate radiance spectra. The radiance spectra were convovled with the SRFs to yield channel resolution radiances which were then converted to brightness temperatures for each SRF set. The statistics of the brightness temperature differences for the Imager instrument are shown in figure \ref{fig:imgr_dTb_stats}, and in \ref{fig:sndr_dTb_stats} for the Sounder. For the Imager, the largest individual differences are the hundredths of a Kelvin level. For the Sounder, however, the large differences between the original and updated SRF datasets for the shortwave channels, 13-18 (see figures \ref{fig:sndr_ch13}-\ref{fig:sndr_ch18}), are reflected in the 4-8K brightness temperatures differences for some of those channels, 13-16. Channels 17 and 18 are less affected by the SRF shifts as they are window channels.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.8]{graphics/imgr/imgr_insat3d.dTb_stats.eps}
+  \caption{Statistics of the brightness temperature differences between the original and updated INSAT-3D Imager SRFs. The calculations used LBLRTM v12.2 and the ECMWF83 profile dataset with a surface emissivity of 0.95.}
+  \label{fig:imgr_dTb_stats}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.8]{graphics/sndr/sndr_insat3d.dTb_stats.eps}
+  \caption{Statistics of the brightness temperature differences between the original and updated INSAT-3D Sounder SRFs. The calculations used LBLRTM v12.2 and the ECMWF83 profile dataset with a surface emissivity of 0.95.}
+  \label{fig:sndr_dTb_stats}
+\end{figure}
 
 % The references section
 %=======================

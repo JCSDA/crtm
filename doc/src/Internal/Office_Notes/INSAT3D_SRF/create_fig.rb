@@ -59,13 +59,13 @@ end
 
 \\subsection{Channel #{i}}
 \\begin{figure}[H]
+  \\label{fig:#{sensor}_ch#{i}_tfit}
   \\centering
   \\begin{tabular}{c}
     \\includegraphics[scale=0.55]{graphics/#{sensor}/tfit/#{sensor}_insat3d-#{i}.tfit.eps} \\\\
     \\includegraphics[scale=0.55]{graphics/#{sensor}/tfit/#{sensor}_insat3d-#{i}.tfit.difference.eps}
   \\end{tabular}
   \\caption{INSAT-3D #{full_name} channel #{i} polychromatic correction temperature fit residuals. \\emph{(Top)} Comparison of residuals for original and new SRFs. \\emph{(Bottom)} Residual differences for the original and new SRFs.}
-  \\label{fig:#{sensor}_ch#{i}_tfit}
 \\end{figure}
 EOF
 
@@ -76,13 +76,13 @@ EOF
 
 \\subsection{Channel #{i}}
 \\begin{figure}[H]
+  \\label{fig:#{sensor}_ch#{i}}
   \\centering
   \\begin{tabular}{c}
     \\includegraphics[scale=0.55]{graphics/#{sensor}/srf/#{sensor}_insat3d-#{i}.eps} \\\\
     \\includegraphics[scale=0.55]{graphics/#{sensor}/srf/#{sensor}_insat3d-#{i}.difference.eps}
   \\end{tabular}
   \\caption{INSAT-3D #{full_name} channel #{i} spectral responses. Vertical dashed lines are the locations of the computed central frequencies. \\emph{(Top)} Comparison of original and new SRFs. \\emph{(Bottom)} Response difference between the original and new SRFs.}
-  \\label{fig:#{sensor}_ch#{i}}
 \\end{figure}
 EOF
   end
