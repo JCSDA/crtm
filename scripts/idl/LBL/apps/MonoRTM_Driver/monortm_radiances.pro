@@ -30,9 +30,14 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   ; Set MONORTM default files
   MONORTM_INFILE  = 'MONORTM.IN'
   MONORTM_OUTFILE = 'MONORTM.OUT'
-  MONORTM_SPECTRALFILE = 'spectral_lines.dat'
-  FILE_WIDTH = 200
-
+  MONORTM_SPECTRALFILE = 'TAPE3'
+  
+  ; Other parameters
+  FILE_WIDTH        = 200      ; IDL default for ASCII is only 80 or so.
+  N_OUTFILE_HEADER  = 4        ; Output file has 4 lines of header info
+  N_OUTFILE_COLUMNS = 22       ; Output file has 22 columns
+  IDX_RADIANCE      = 4        ; The radiance data is index 4 (column 5)
+  WpCM2_TO_mWpM2    = 1.0d+07  ; Conversion factor for W/(cm2.sr.cm-1) to mW/(m2.sr.cm-1)
   
   ; Convert input frequencies in GHz to inverse
   ; centimeters
@@ -70,18 +75,16 @@ FUNCTION MonoRTM_Radiances, f     , $  ; Input frequencies in GHz
   
   ; Read the MonoRTM output file
   OPENR, lun, MONORTM_OUTFILE, /GET_LUN, WIDTH = FILE_WIDTH
-  header = STRARR(4)
+  header = STRARR(N_OUTFILE_HEADER)
   READF, lun, header
-  data=DBLARR(21, N_ELEMENTS(f))
+  data=DBLARR(N_OUTFILE_COLUMNS, N_ELEMENTS(f))
   READF, lun, data
   FREE_LUN, lun
   
   
   ; Reformat output
-  ; ...Radiance is index #3
-  radiance=REFORM(data[3,*])
-  ; ...Put units into mW/(m2.sr.cm-1)
-  radiance = radiance * 1.0d+07
+  radiance=REFORM(data[IDX_RADIANCE,*])
+  radiance = radiance * WpCM2_TO_mWpM2  ; Put units into mW/(m2.sr.cm-1)
   RETURN, radiance
 
 END
