@@ -26,7 +26,7 @@ PRO ov_cleanup, id
   ov_getstate, id, state
   debug = state['debug']
   IF ( debug ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
-  av_freestate, id
+  ov_freestate, id
   IF ( debug ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
 
