@@ -148,7 +148,7 @@ for OSRF_FILE in `ls *.osrf.nc`; do
   
   # Create the SpcCoeff file
   echo " Creating ${SPCCOEFF_FILE}..."
-  ./${EXE_FILE} <<-NoMoreInput >> ${LOG_FILE}
+  ${EXE_FILE} <<-NoMoreInput >> ${LOG_FILE}
 	${OSRF_FILE}
 	${VERSION}
 	NoMoreInput
