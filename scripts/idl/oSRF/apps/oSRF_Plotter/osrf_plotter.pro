@@ -200,7 +200,7 @@ PRO oSRF_Plotter, $
 
 
     ; Get the number of bands and central frequency
-    osrf[0].Get_Property, n_Bands = n_bands, f0 = f0, Debug = debug
+    osrf[0].Get_Property, n_Bands = n_bands, f0 = f0, Sensor_Type = sensor_type, Debug = debug
 
 
     ; Display the legend for multi-plots
@@ -210,6 +210,7 @@ PRO oSRF_Plotter, $
         2: position = [0.325,0.3]
         4: position = [0.25,0.3]
         ELSE: BEGIN
+                f0 = sensor_type EQ MICROWAVE_SENSOR ? Inverse_cm_to_GHz(f0) : f0
                 yrange   = pref[0].Yrange
                 y        = (yrange[1]-yrange[0])*0.3 + yrange[0]
                 position = pref[0].ConvertCoord(f0,y,/DATA,/TO_RELATIVE)
