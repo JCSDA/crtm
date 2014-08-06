@@ -131,7 +131,9 @@ CONTAINS
     iVar%zcoeff_invalid = .TRUE.
     iVar%wind_speed     = Wind_Speed
     iVar%sec_z          = ONE/cos_Z
-
+    ! The large correction coefficient was derived for valid sensor zenith angles.
+    IF( Var%sec_z > TWO ) Var%sec_z = TWO
+    
     ! Compute the frequency polynomial coefficients
     CALL Compute_ZCoeff(LSCCoeff%C(:,:,1), Frequency, iVar%zcoeff_v)
     CALL Compute_ZCoeff(LSCCoeff%C(:,:,2), Frequency, iVar%zcoeff_h)
