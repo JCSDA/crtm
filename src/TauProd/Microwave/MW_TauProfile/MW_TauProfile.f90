@@ -21,16 +21,23 @@ PROGRAM MW_TauProfile
   ! ------------------
   ! Module usage
   USE Type_Kinds                , ONLY: fp
-  USE Message_Handler
-  USE Profile_Utility_Parameters, ONLY: ID_H2O, &
+  USE Message_Handler           , ONLY: SUCCESS, FAILURE, WARNING, &
+                                        Display_Message, Program_Message
+  USE Profile_Utility           , ONLY: ID_H2O    , &
                                         PPMV_UNITS, &
-                                        ND_UNITS, &
-                                        MR_UNITS, &
-                                        MD_UNITS, &
-                                        PP_UNITS
-  USE Timing_Utility
+                                        ND_UNITS  , &
+                                        MR_UNITS  , &
+                                        MD_UNITS  , &
+                                        PP_UNITS  , &
+                                        PPMV_to_PP, & 
+                                        ND_to_PP  , & 
+                                        MR_to_PP  , & 
+                                        MD_to_PP   
+  USE Timing_Utility            , ONLY: Timing_type , &
+                                        Timing_Begin, &
+                                        Timing_End  , &
+                                        Timing_Display
   USE Spectral_Units_Conversion , ONLY: inverse_cm_to_GHz
-  USE Units_Conversion
   USE SensorInfo_Define
   USE SensorInfo_LinkedList
   USE SensorInfo_IO
@@ -38,11 +45,13 @@ PROGRAM MW_TauProfile
   USE AtmProfile_netCDF_IO
   USE TauProfile_Define
   USE TauProfile_netCDF_IO
+  USE PtrArr_Define             , ONLY: PtrArr_type, &
+                                        PtrArr_FromVector, &
+                                        PtrArr_ToVector
   USE oSRF_Define               , ONLY: oSRF_type, &
                                         oSRF_Destroy , &
                                         oSRF_GetValue, &
-                                        oSRF_Convolve, &
-                                        oSRF_IsFrequencyGHz
+                                        oSRF_Convolve
   USE oSRF_File_Define          , ONLY: oSRF_File_type, &
                                         oSRF_File_GetValue, &
                                         oSRF_File_GetFrom , &
@@ -64,23 +73,23 @@ PROGRAM MW_TauProfile
   INTEGER, PARAMETER :: SET = 1
   ! direction names
   INTEGER, PARAMETER :: N_DIRECTIONS = 2
-  CHARACTER(*), PARAMETER :: DIRECTION_NAME(N_DIRECTIONS) = (/ 'upwelling  ', &
-                                                               'downwelling' /)
+  CHARACTER(*), PARAMETER :: DIRECTION_NAME(N_DIRECTIONS) = [ 'upwelling  ', &
+                                                              'downwelling'  ]
 
   ! Model names
   INTEGER, PARAMETER :: N_MODELS = 2
   INTEGER, PARAMETER :: MODEL_LIEBE      = 1
   INTEGER, PARAMETER :: MODEL_ROSENKRANZ = 2
-  INTEGER, PARAMETER :: MODEL_INDEX(N_MODELS) = (/ MODEL_LIEBE, &
-                                                   MODEL_ROSENKRANZ /)
-  CHARACTER(*), PARAMETER :: MODEL_NAME(N_MODELS) = (/ 'Liebe89/93  ', &
-                                                       'Rosenkranz03' /)
+  INTEGER, PARAMETER :: MODEL_INDEX(N_MODELS) = [ MODEL_LIEBE, &
+                                                  MODEL_ROSENKRANZ ]
+  CHARACTER(*), PARAMETER :: MODEL_NAME(N_MODELS) = [ 'Liebe89/93  ', &
+                                                      'Rosenkranz03'  ]
   ! Define the secant of the zenith angles to be used
   INTEGER, PARAMETER :: N_ANGLES = 7
   REAL(fp), PARAMETER :: ANGLE_SECANT(N_ANGLES) = &
-    (/ 1.00_fp, 1.25_fp, 1.50_fp, &
-       1.75_fp, 2.00_fp, 2.25_fp, &
-       3.00_fp /)
+    [ 1.00_fp, 1.25_fp, 1.50_fp, &
+      1.75_fp, 2.00_fp, 2.25_fp, &
+      3.00_fp ]
   ! The molecular set IDs.
   !   1 == WLO; Wet lines only
   !  10 == ALL; All absorbers with continua
@@ -90,8 +99,10 @@ PROGRAM MW_TauProfile
   ! 101 == EffWLO; Effective wet lines (wet/wco)
   ! 113 == EffDRY; Effective dry (all/wet)
   INTEGER, PARAMETER :: N_MOLECULE_SETS = 7
-  INTEGER, PARAMETER, DIMENSION( N_MOLECULE_SETS ) :: MOLECULE_SET_LIST = &
-    (/ 1, 10, 12, 13, 15, 101, 113 /)
+  INTEGER, PARAMETER :: MOLECULE_SET_LIST( N_MOLECULE_SETS ) = &
+    [ 1, 10, 12, 13, 15, 101, 113 ]
+  CHARACTER(*), PARAMETER :: MOLECULE_SET_NAME( N_MOLECULE_SETS ) = & 
+    [ 'wlo   ', 'all   ', 'wet   ', 'dry   ', 'wco   ', 'effwlo', 'effdry' ]
   INTEGER, PARAMETER :: WLO_IDX = 1
   INTEGER, PARAMETER :: ALL_IDX = 2
   INTEGER, PARAMETER :: WET_IDX = 3
@@ -131,27 +142,29 @@ PROGRAM MW_TauProfile
   INTEGER :: i ! N_ANGLES
   INTEGER :: j ! N_MOLECULE_SETS
   INTEGER :: k, n_layers
-  INTEGER :: l, n_channels, lf, n_frequencies
+  INTEGER :: l, n_channels
+  INTEGER :: n_frequencies
   INTEGER :: m, n_profiles
   INTEGER :: n, n_sensors
-  INTEGER :: ib, n_bands
-  INTEGER :: n_points, i_f1, i_f2
+  INTEGER :: n_bands
+  INTEGER, ALLOCATABLE :: n_points(:)
   CHARACTER(256) :: profile_set = ''
   CHARACTER(512) :: mwlbl_version_id
   INTEGER :: j_idx(1)
   INTEGER :: index_h2o
   REAL(fp), ALLOCATABLE :: h2o_pressure(:)
-  REAL(fp), ALLOCATABLE :: f(:), frequency(:)
-  REAL(fp), ALLOCATABLE :: r(:), response(:)
+  REAL(fp), ALLOCATABLE :: frequency(:), wavenumber(:)
   REAL(fp), ALLOCATABLE, TARGET  :: tauall(:,:,:)     ! L x K x I
   REAL(fp), ALLOCATABLE, TARGET  :: tauwlo(:,:,:)     ! L x K x I
   REAL(fp), ALLOCATABLE, TARGET  :: tauwco(:,:,:)     ! L x K x I
   REAL(fp), ALLOCATABLE, TARGET  :: tauwet(:,:,:)     ! L x K x I
   REAL(fp), ALLOCATABLE, TARGET  :: taudry(:,:,:)     ! L x K x I
   REAL(fp),              POINTER :: tau(:,:,:) => NULL()
-  REAL(fp) :: sum_tau, sum_error, sum_tmp, sum_y
+  REAL(fp) :: integrated_srf
   REAL(fp) :: zenith_radian
   TYPE(Timing_type) :: sensor_timing, total_timing
+  TYPE(PtrArr_type), ALLOCATABLE :: passband_frequency(:)
+  TYPE(PtrArr_type), ALLOCATABLE :: tau_bands(:)
   
 
   ! Program header
@@ -229,6 +242,8 @@ PROGRAM MW_TauProfile
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
   END IF
   WRITE( *,'(7x,"Number of profiles read: ",i0)' ) n_profiles
+  ! ...Assign layer dimension to local variable
+  n_layers = atmprofile(1)%n_Layers 
 
 
 
@@ -332,7 +347,7 @@ PROGRAM MW_TauProfile
     IF ( sinfo%Sensor_Type /= MICROWAVE_SENSOR ) CYCLE Sensor_Loop
 
     ! Output an info message
-    WRITE( *,'(//5x,"Calculating ",a," transmittances for ",a,/)' ) &
+    WRITE( *,'(//2x,"Calculating ",a," transmittances for ",a,/)' ) &
              TRIM(DIRECTION_NAME(direction)), TRIM(sinfo%Sensor_id)
 
     ! Construct sensor filenames
@@ -358,12 +373,12 @@ PROGRAM MW_TauProfile
 
 
     ! Allocate the TauProfile structure
-    err_stat = Allocate_TauProfile( atmprofile(1)%n_Layers, &
-                                    n_Channels, &
-                                    N_ANGLES, &
-                                    n_Profiles, &
+    err_stat = Allocate_TauProfile( n_layers       , &
+                                    n_channels     , &
+                                    N_ANGLES       , &
+                                    n_profiles     , &
                                     N_MOLECULE_SETS, &
-                                    tauprofile )
+                                    tauprofile       )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error allocating TauProfile structure for '//TRIM(sinfo%Sensor_Id)
       CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
@@ -373,7 +388,7 @@ PROGRAM MW_TauProfile
     ! Begin loop over channels
     Channel_Loop: DO l = 1, n_channels
 
-      WRITE( *,'(/7x,"Processing channel #",i0,"....")' ) sinfo%Sensor_Channel(l)
+      WRITE( *,'(/4x,"Processing channel #",i0,"....")' ) sinfo%Sensor_Channel(l)
 
 
       ! Get the current oSRF object from the file container
@@ -387,91 +402,53 @@ PROGRAM MW_TauProfile
       END IF
 
 
-      ! Get the band and frequency dimensions
-      err_stat = oSRF_GetValue( osrf, n_Bands = n_bands, Total_n_Points = n_frequencies )
+      ! Get the band and frequency dimensions, and the SRF integral
+      err_stat = oSRF_GetValue( &
+        osrf, &
+        n_Bands            = n_bands, &
+        n_Points           = n_points, &
+        Integral           = integrated_srf, &
+        Passband_Frequency = passband_frequency )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error retrieving oSRF #",i0," attributes")') l
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
+      ! ...The total number of points for all bands
+      n_frequencies = SUM(n_points)
 
 
-      ! Allocate the LBL transmittance arrays
-      ALLOCATE( frequency( n_frequencies ), &
-                response(n_frequencies ), &
-                tauall( n_frequencies, atmprofile(1)%n_Layers, N_ANGLES ), &
-                tauwlo( n_frequencies, atmprofile(1)%n_Layers, N_ANGLES ), &
-                tauwco( n_frequencies, atmprofile(1)%n_Layers, N_ANGLES ), &
-                tauwet( n_frequencies, atmprofile(1)%n_Layers, N_ANGLES ), &
-                taudry( n_frequencies, atmprofile(1)%n_Layers, N_ANGLES ), &
+      ! Allocate the LBL and PtrArr transmittance arrays
+      ALLOCATE( tauall( n_frequencies, n_layers, N_ANGLES ), &
+                tauwlo( n_frequencies, n_layers, N_ANGLES ), &
+                tauwco( n_frequencies, n_layers, N_ANGLES ), &
+                tauwet( n_frequencies, n_layers, N_ANGLES ), &
+                taudry( n_frequencies, n_layers, N_ANGLES ), &
+                tau_bands( n_bands ), &
                 STAT=alloc_stat )
       IF ( alloc_stat /= 0 ) THEN
         WRITE( msg,'("Error allocating frequency and transmittance arrays for ",a," oSRF #",i0)') &
                    TRIM(sinfo%Sensor_Id), l
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
-
-
-      ! Initialise begin frequency point counter
-      i_f1 = 1
+      
+      
+      ! Transfer frequencies to contiguous vector
+      err_stat = PtrArr_ToVector( passband_frequency, wavenumber )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error transferring passband frequencies to array for oSRF #",i0)') l
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      frequency = inverse_cm_to_GHz(wavenumber)
 
       
-      ! Begin loop over passbands
-      Band_Loop: DO ib = 1, n_bands
-
-
-        ! Get the size of the current passband
-        err_stat = oSRF_GetValue( osrf, ib, n_Points = n_points )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error retrieving oSRF #",i0,", band #",i0," size data")') l, ib
-          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-        END IF
-        
-        
-        ! Set end frequency point counter
-        i_f2 = i_f1 + n_points - 1
-        
-
-        ! Allocate the data arrays
-        ALLOCATE( f(n_points), r(n_points), STAT=alloc_stat )
-        IF ( alloc_stat /= 0 ) THEN
-          WRITE( msg,'("Error allocating oSRF #",i0,", band #",i0," data arrays")') l, ib
-          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-        END IF
-
-
-        ! Retrieve band data from the oSRF object
-        err_stat = oSRF_GetValue( osrf, ib, Frequency = f, Response = r )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error retrieving oSRF #",i0,", band #",i0," data")') l, ib
-          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-        END IF
-
-
-        ! Accumulate band data
-        frequency(i_f1:i_f2) = inverse_cm_to_GHz(f)
-        response(i_f1:i_f2)  = r
-        
-        
-        ! Deallocate the data arrays
-        DEALLOCATE( f, r, STAT=alloc_stat )
-        IF ( alloc_stat /= 0 ) THEN
-          WRITE( msg,'("Error deallocating oSRF #",i0,", band #",i0," data arrays")') l, ib
-          CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-        END IF
-        
-        
-        ! Update begin point counter
-        i_f1 = i_f2 + 1
-        
-      END DO Band_Loop
-
 
       ! Begin profile loop
       Profile_Loop: DO m = 1, n_profiles
 
-        WRITE( *,'(9x,"Processing profile #",i0,"....")' ) m
+        WRITE( *,'(6x,"Processing profile #",i0,"....")' ) m
         n_layers = atmprofile(m)%n_Layers
 
+   
         ! Call the LBL transmittance function
         err_stat = MWLBL_Compute_Tau( atmprofile(m)%Layer_Pressure,              &  ! Input
                                       atmprofile(m)%Layer_Temperature,           &  ! Input
@@ -517,24 +494,32 @@ PROGRAM MW_TauProfile
               CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
           END SELECT
 
+
           ! Loop over the other transmittance dimensions.
           DO i = 1, N_ANGLES
             DO k = 1, n_layers
-              ! Sum over all frequencies using Kahan's
-              ! compensated summation algorithm
-              sum_tau   = ZERO
-              sum_error = ZERO
-              DO lf = 1, n_frequencies
-                sum_tmp   = sum_tau
-                sum_y     = tau(lf,k,i)*response(lf) + sum_error
-                sum_tau   = sum_tmp + sum_y
-                sum_error = ( sum_tmp - sum_tau ) + sum_y
-              END DO  ! lf
-              ! Normalise the result
-              tauprofile%Tau(k,l,i,m,j) = sum_tau / REAL(n_frequencies,fp)
-            END DO  ! k
-          END DO  ! i
-        END DO  ! j
+
+              ! Construct a PtrArr of the transmittance for convolution
+              err_stat = PtrArr_FromVector( tau_bands, n_points, tau(:,k,i) )
+              IF ( err_stat /= SUCCESS ) THEN
+                WRITE( msg,'("Error extracting transmittance vector for layer# ",i0,&
+                            &", angle# ",i0,", and molecule set ",a)' ) &
+                            k, i, MOLECULE_SET_NAME(j)
+                CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+              END IF
+           
+              ! Convolve the LBL transmittance with the SRF data
+              err_stat = oSRF_Convolve( osrf, tau_bands, tauprofile%Tau(k,l,i,m,j) )
+              IF ( err_stat /= SUCCESS ) THEN
+                WRITE( msg,'("Error convolving transmittance for layer# ",i0,&
+                            &", angle# ",i0,", and molecule set ",a)' ) &
+                            k, i, MOLECULE_SET_NAME(j)
+                CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+              END IF
+
+            END DO  ! k : 1, n_layers
+          END DO  ! i : 1, N_ANGLES
+        END DO  ! j : 1, N_MOLECULE_SETS-2
         
         ! Nullify the transmittance array pointer
         NULLIFY( Tau )
@@ -559,8 +544,8 @@ PROGRAM MW_TauProfile
               tauprofile%Tau( k,l,i,m,EFFECTIVE_DRY_IDX ) = -ONE
             END IF
             
-          END DO  ! k
-        END DO  ! i
+          END DO  ! k : 1, n_layers
+        END DO  ! i : 1, N_ANGLES
       
       
         ! Compute the geometric angle profiles
@@ -569,14 +554,15 @@ PROGRAM MW_TauProfile
           CALL SACONV( zenith_radian, &
                        atmprofile(m)%Level_Altitude(1:atmprofile(m)%n_Layers), &
                        tauprofile%Geometric_Angle(:,i,m) )
-        END DO  ! i
+        END DO  ! i : 1, N_ANGLES
         
       END DO Profile_Loop
       
       
       ! Deallocate the LBL arrays
-      DEALLOCATE( frequency, response, &
+      DEALLOCATE( wavenumber, frequency, &
                   tauall, tauwlo, tauwco, tauwet, taudry, &
+                  tau_bands, &
                   STAT=alloc_stat )
       IF ( alloc_stat /= 0 ) THEN
         WRITE( msg,'("Error deallocating frequency and transmittance arrays for ",a," oSRF #",i0)') &

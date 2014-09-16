@@ -8,6 +8,7 @@ CRTM_GeometryInfo_Define.o : CRTM_GeometryInfo_Define.f90 CRTM_Geometry_Define.o
 CRTM_Geometry_Define.o : CRTM_Geometry_Define.f90 CRTM_Parameters.o Date_Utility.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
+DateTime_Utility.o : DateTime_Utility.f90 Date_Utility.o Type_Kinds.o 
 Date_Utility.o : Date_Utility.f90 
 Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
 File_Utility.o : File_Utility.f90 
@@ -23,7 +24,7 @@ MWLBL_Liebe93.o : MWLBL_Liebe93.f90 Liebe92_Coefficients.o Message_Handler.o Typ
 MWLBL_Rosenkranz03.o : MWLBL_Rosenkranz03.f90 Rosenkranz03_Coefficients.o Fundamental_Constants.o Message_Handler.o Type_Kinds.o 
 MWLBL_Transmittance.o : MWLBL_Transmittance.f90 MWLBL_Rosenkranz03.o MWLBL_Liebe93.o MWLBL_Liebe89.o Message_Handler.o Type_Kinds.o 
 MW_SensorData_Define.o : MW_SensorData_Define.f90 SensorInfo_Parameters.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-MW_TauProfile.o : MW_TauProfile.f90 CRTM_GeometryInfo.o MWLBL_Transmittance.o oSRF_File_Define.o oSRF_Define.o TauProfile_netCDF_IO.o TauProfile_Define.o AtmProfile_netCDF_IO.o AtmProfile_Define.o SensorInfo_IO.o SensorInfo_LinkedList.o SensorInfo_Define.o Spectral_Units_Conversion.o Timing_Utility.o Message_Handler.o Type_Kinds.o 
+MW_TauProfile.o : MW_TauProfile.f90 CRTM_GeometryInfo.o MWLBL_Transmittance.o oSRF_File_Define.o oSRF_Define.o PtrArr_Define.o TauProfile_netCDF_IO.o TauProfile_Define.o AtmProfile_netCDF_IO.o AtmProfile_Define.o SensorInfo_IO.o SensorInfo_LinkedList.o SensorInfo_Define.o Spectral_Units_Conversion.o Timing_Utility.o Message_Handler.o Type_Kinds.o 
 Message_Handler.o : Message_Handler.f90 File_Utility.o 
 NLTECoeff_Define.o : NLTECoeff_Define.f90 SensorInfo_Parameters.o Subset_Define.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Planck_Functions.o : Planck_Functions.f90 Message_Handler.o Fundamental_Constants.o Type_Kinds.o 
@@ -43,11 +44,12 @@ String_Utility.o : String_Utility.f90
 Subset_Define.o : Subset_Define.f90 Sort_Utility.o Message_Handler.o 
 TauProfile_Define.o : TauProfile_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 TauProfile_netCDF_IO.o : TauProfile_netCDF_IO.f90 netCDF_Utility.o TauProfile_Define.o Message_Handler.o Type_Kinds.o 
-Timing_Utility.o : Timing_Utility.f90 Message_Handler.o Type_Kinds.o 
+Timing_Utility.o : Timing_Utility.f90 DateTime_Utility.o File_Utility.o Message_Handler.o Type_Kinds.o 
 Type_Kinds.o : Type_Kinds.f90 
 netCDF_Attribute_Utility.o : netCDF_Attribute_Utility.f90 Message_Handler.o Type_Kinds.o 
 netCDF_Dimension_Utility.o : netCDF_Dimension_Utility.f90 Message_Handler.o Type_Kinds.o 
 netCDF_Utility.o : netCDF_Utility.f90 netCDF_Attribute_Utility.o netCDF_Variable_Utility.o netCDF_Dimension_Utility.o Message_Handler.o Type_Kinds.o 
 netCDF_Variable_Utility.o : netCDF_Variable_Utility.f90 Message_Handler.o Type_Kinds.o 
-oSRF_Define.o : oSRF_Define.f90 Spectral_Units_Conversion.o Fundamental_Constants.o Planck_Functions.o PtrArr_Define.o SensorInfo_Parameters.o Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-oSRF_File_Define.o : oSRF_File_Define.f90 oSRF_Define.o SensorInfo_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
+oSRF_Define.o : oSRF_Define.f90 oSRF_Sensor_Procedures.inc oSRF_Flag_Procedures.inc oSRF_Sensor_Visibilities.inc oSRF_Flag_Visibilities.inc oSRF_Parameters.o Spectral_Units_Conversion.o Fundamental_Constants.o Planck_Functions.o PtrArr_Define.o SensorInfo_Parameters.o Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+oSRF_File_Define.o : oSRF_File_Define.f90 oSRF_Flag_Usage.inc oSRF_Parameters.o oSRF_Define.o SensorInfo_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
+oSRF_Parameters.o : oSRF_Parameters.f90 oSRF_Flag_Parameters.inc Type_Kinds.o 
