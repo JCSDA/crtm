@@ -174,7 +174,7 @@ CONTAINS
 !   oSRF_Associated
 !
 ! PURPOSE:
-!   Pure function to test the status of the allocatable components
+!   Elemental function to test the status of the allocatable components
 !   of an oSRF object.
 !
 ! CALLING SEQUENCE:
@@ -202,7 +202,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  PURE FUNCTION oSRF_Associated(self) RESULT(alloc_status)
+  ELEMENTAL FUNCTION oSRF_Associated(self) RESULT(alloc_status)
     TYPE(oSRF_type), INTENT(IN) :: self
     LOGICAL :: alloc_status
     alloc_status = self%Is_Allocated
@@ -217,7 +217,7 @@ CONTAINS
 !   oSRF_Destroy
 !
 ! PURPOSE:
-!   Pure subroutine to re-initialize oSRF objects.
+!   Elemental subroutine to re-initialize oSRF objects.
 !
 ! CALLING SEQUENCE:
 !   CALL oSRF_Destroy( oSRF )
@@ -232,7 +232,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  PURE SUBROUTINE oSRF_Destroy(self)
+  ELEMENTAL SUBROUTINE oSRF_Destroy(self)
     TYPE(oSRF_type), INTENT(OUT) :: self
     self%Is_Allocated = .FALSE.
   END SUBROUTINE oSRF_Destroy
@@ -245,7 +245,7 @@ CONTAINS
 !   oSRF_Create
 !
 ! PURPOSE:
-!   Pure subroutine to create an instance of the oSRF object.
+!   Elemental subroutine to create an instance of the oSRF object.
 !
 ! CALLING SEQUENCE:
 !   CALL oSRF_Create( &
@@ -291,7 +291,7 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  PURE SUBROUTINE oSRF_Create( &
+  ELEMENTAL SUBROUTINE oSRF_Create( &
     self                  , &
     n_Bands               , &
     n_Temperatures        , &
@@ -434,7 +434,7 @@ CONTAINS
 !
 !   Integral:              The integrated SRF value.
 !                          UNITS:      N/A
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -446,40 +446,44 @@ CONTAINS
 !
 !   f0:                    The central frequency of the SRF.
 !                          UNITS:      Inverse centimetres (cm^-1)
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Scalar
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Planck_Coeffs:         Vector of Planck function coefficients for the SRF.
 !                          UNITS:      Variable
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Polychromatic_Coeffs:  Vector of polychromatic correction coefficients for the SRF.
 !                          UNITS:      Variable
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Frequency:             The frequency grid for an SRF band.
 !                          Used in conjunction with the Band keyword argument.
+!                          NOTE: If this argument is supplied, the Response argument
+!                                must also be supplied.
 !                          UNITS:      Inverse centimetres (cm^-1)
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Response:              The response data for an SRF band.
 !                          Used in conjunction with the Band keyword argument.
+!                          NOTE: If this argument is supplied, the Frequency argument
+!                                must also be supplied.
 !                          UNITS:      N/A
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Temperature:           The array of temperatures used in determining the
 !                          polychromatic correction coefficients.
 !                          UNITS:      N/A
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -487,14 +491,14 @@ CONTAINS
 !                          determining the polychromatic correction
 !                          coefficients.
 !                          UNITS:      N/A
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !   Fit_Temperature:       The array of temperatures derived from using
 !                          the polychromatic correction coefficients.
 !                          UNITS:      N/A
-!                          TYPE:       REAL
+!                          TYPE:       REAL(fp)
 !                          DIMENSION:  Rank-1
 !                          ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -741,6 +745,8 @@ CONTAINS
 !                    f2                     = f2                    , &
 !                    Frequency              = Frequency             , &
 !                    Response               = Response              , &
+!                    Passband_Frequency     = Passband_Frequency    , &
+!                    Passband_Response      = Passband_Response     , &
 !                    Temperature            = Temperature           , &
 !                    Effective_Temperature  = Effective_Temperature , &
 !                    Fit_Temperature        = Fit_Temperature         )
@@ -821,7 +827,7 @@ CONTAINS
 !
 !   Integral:               The integrated SRF value.
 !                           UNITS:      N/A
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
@@ -833,19 +839,19 @@ CONTAINS
 !
 !   f0:                     The central frequency of the SRF.
 !                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !   Planck_Coeffs:          Vector of Planck function coefficients for the SRF.
 !                           UNITS:      Variable
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
 !   Polychromatic_Coeffs:   Vector of polychromatic correction coefficient for the SRF.
 !                           UNITS:      Variable
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
@@ -866,35 +872,47 @@ CONTAINS
 !   f1:                     The begin frequency of the SRF passband.
 !                           - Used in conjunction with the Band keyword argument.
 !                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !   f2:                     The end frequency of the SRF passband.
 !                           - Used in conjunction with the Band keyword argument.
 !                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !   Frequency:              The frequency grid for an SRF band.
 !                           - Used in conjunction with the Band keyword argument.
 !                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
 !   Response:               The response data for an SRF band.
 !                           - Used in conjunction with the Band keyword argument.
 !                           UNITS:      N/A
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
+!                           DIMENSION:  Rank-1
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
+!
+!   Passband_Frequency:     The frequency arrays for all the SRF bands.
+!                           UNITS:      Inverse centimetres (cm^-1)
+!                           TYPE:       TYPE(PtrArr_type)
+!                           DIMENSION:  Rank-1
+!                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
+!
+!   Passband_Response:      The response data for ALL the SRF bands.
+!                           UNITS:      N/A
+!                           TYPE:       TYPE(PtrArr_type)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
 !   Temperature:            The array of temperatures used in determining the
 !                           polychromatic correction coefficients.
 !                           UNITS:      N/A
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
@@ -902,26 +920,26 @@ CONTAINS
 !                           determining the polychromatic correction
 !                           coefficients.
 !                           UNITS:      N/A
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
 !   Fit_Temperature:        The array of temperatures derived from using
 !                           the polychromatic correction coefficients.
 !                           UNITS:      N/A
-!                           TYPE:       REAL
+!                           TYPE:       REAL(fp)
 !                           DIMENSION:  Rank-1
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL, ALLOCATABLE
 !
 ! FUNCTION RESULT:
-!   Error_Status:          The return value is an integer defining the error
-!                          status. The error codes are defined in the
-!                          Message_Handler module.
-!                          If == SUCCESS the property get succeeded
-!                             == FAILURE an error occurred
-!                          UNITS:      N/A
-!                          TYPE:       INTEGER
-!                          DIMENSION:  Scalar
+!   Error_Status:           The return value is an integer defining the error
+!                           status. The error codes are defined in the
+!                           Message_Handler module.
+!                           If == SUCCESS the property get succeeded
+!                              == FAILURE an error occurred
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
@@ -949,36 +967,40 @@ CONTAINS
     f2                    , &  ! Optional output
     Frequency             , &  ! Optional output
     Response              , &  ! Optional output
+    Passband_Frequency    , &  ! Optional output
+    Passband_Response     , &  ! Optional output
     Temperature           , &  ! Optional output
     Effective_Temperature , &  ! Optional output
     Fit_Temperature       ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
-    TYPE(oSRF_type),                     INTENT(IN)  :: self
-    INTEGER,      OPTIONAL,              INTENT(IN)  :: Band
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: n_Bands
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: n_Temperatures        
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: n_Polychromatic_Coeffs
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: Version
-    CHARACTER(*), OPTIONAL,              INTENT(OUT) :: Sensor_Id
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: WMO_Satellite_Id
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: WMO_Sensor_Id
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: Sensor_Type
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: Channel
-    REAL(fp),     OPTIONAL,              INTENT(OUT) :: Integral
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: Flags
-    REAL(fp),     OPTIONAL,              INTENT(OUT) :: f0
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Planck_Coeffs(:)
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Polychromatic_Coeffs(:)
-    INTEGER,      OPTIONAL, ALLOCATABLE, INTENT(OUT) :: n_Points(:)
-    INTEGER,      OPTIONAL,              INTENT(OUT) :: n_Band_Points
-    REAL(fp),     OPTIONAL,              INTENT(OUT) :: f1
-    REAL(fp),     OPTIONAL,              INTENT(OUT) :: f2
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Frequency(:)
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Response(:)
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Temperature(:)          
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Effective_Temperature(:)
-    REAL(fp),     OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Fit_Temperature(:)      
+    TYPE(oSRF_type),                          INTENT(IN)  :: self
+    INTEGER,           OPTIONAL,              INTENT(IN)  :: Band
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: n_Bands
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: n_Temperatures        
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: n_Polychromatic_Coeffs
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: Version
+    CHARACTER(*),      OPTIONAL,              INTENT(OUT) :: Sensor_Id
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: WMO_Satellite_Id
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: WMO_Sensor_Id
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: Sensor_Type
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: Channel
+    REAL(fp),          OPTIONAL,              INTENT(OUT) :: Integral
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: Flags
+    REAL(fp),          OPTIONAL,              INTENT(OUT) :: f0
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Planck_Coeffs(:)
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Polychromatic_Coeffs(:)
+    INTEGER,           OPTIONAL, ALLOCATABLE, INTENT(OUT) :: n_Points(:)
+    INTEGER,           OPTIONAL,              INTENT(OUT) :: n_Band_Points
+    REAL(fp),          OPTIONAL,              INTENT(OUT) :: f1
+    REAL(fp),          OPTIONAL,              INTENT(OUT) :: f2
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Frequency(:)
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Response(:)
+    TYPE(PtrArr_type), OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Passband_Frequency(:)
+    TYPE(PtrArr_type), OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Passband_Response(:)
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Temperature(:)          
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Effective_Temperature(:)
+    REAL(fp),          OPTIONAL, ALLOCATABLE, INTENT(OUT) :: Fit_Temperature(:)      
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -1074,6 +1096,13 @@ CONTAINS
         CALL CleanUp(); RETURN
       END IF
     END IF
+    IF ( PRESENT(Passband_Frequency) ) THEN
+      Passband_Frequency = self%Frequency
+      IF ( .NOT. ALL(PtrArr_Associated(Passband_Frequency)) ) THEN
+        msg = 'Error retrieving passband frequency array'
+        CALL CleanUp(); RETURN
+      END IF
+    END IF
 
 
     ! Get Response data
@@ -1084,6 +1113,14 @@ CONTAINS
         CALL CleanUp(); RETURN
       END IF
     END IF
+    IF ( PRESENT(Passband_Response) ) THEN
+      Passband_Response = self%Response
+      IF ( .NOT. ALL(PtrArr_Associated(Passband_Response)) ) THEN
+        msg = 'Error retrieving passband response array'
+        CALL CleanUp(); RETURN
+      END IF
+    END IF
+
 
     ! Get temperature data
     IF ( PRESENT(Temperature) ) THEN
@@ -2029,7 +2066,7 @@ CONTAINS
 !   oSRF_Equal
 !
 ! PURPOSE:
-!   Function to test the equality of two oSRF objects.
+!   Elemental function to test the equality of two oSRF objects.
 !   Used in OPERATOR(==) interface block.
 !
 ! CALLING SEQUENCE:
@@ -2056,7 +2093,7 @@ CONTAINS
 !
 !--------------------------------------------------------------------------------
 
-  PURE FUNCTION oSRF_Equal( x, y ) RESULT( is_equal )
+  ELEMENTAL FUNCTION oSRF_Equal( x, y ) RESULT( is_equal )
     TYPE(oSRF_type) , INTENT(IN)  :: x, y
     LOGICAL :: is_equal
 
