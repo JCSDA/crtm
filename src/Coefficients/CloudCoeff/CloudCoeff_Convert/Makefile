@@ -21,11 +21,10 @@ SRC_FILES = Type_Kinds.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
             String_Utility.f90 \
-            SignalFile_Utility.f90 \
             CloudCoeff_Define.f90 \
             CloudCoeff_IO.f90 \
-              CloudCoeff_Binary_IO.f90 \
-              CloudCoeff_netCDF_IO.f90
+            CloudCoeff_Binary_IO.f90 \
+            CloudCoeff_netCDF_IO.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
