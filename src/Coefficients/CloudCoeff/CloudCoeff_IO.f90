@@ -39,6 +39,7 @@ MODULE CloudCoeff_IO
   PUBLIC :: CloudCoeff_ReadFile
   PUBLIC :: CloudCoeff_WriteFile
   PUBLIC :: CloudCoeff_netCDF_to_Binary
+  PUBLIC :: CloudCoeff_Binary_to_netCDF
   PUBLIC :: CloudCoeff_IOVersion
 
 
@@ -684,6 +685,118 @@ CONTAINS
     END IF
 
   END FUNCTION CloudCoeff_netCDF_to_Binary
+
+
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CloudCoeff_Binary_to_netCDF
+!
+! PURPOSE:
+!       Function to convert a Binary CloudCoeff file to netCDF format.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CloudCoeff_Binary_to_netCDF( &
+!                        BIN_Filename , &
+!                        NC_Filename  , &
+!                        Quiet = Quiet  )
+!
+! INPUTS:
+!       BIN_Filename:   Character string specifying the name of the
+!                       Binary format CloudCoeff data file to read.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+!       NC_Filename:    Character string specifying the name of the
+!                       netCDF format CloudCoeff data file to write.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Quiet:          Set this logical argument to suppress INFORMATION
+!                       messages being printed to stdout
+!                       If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+!                          == .TRUE.,  INFORMATION messages are SUPPRESSED.
+!                       If not specified, default is .FALSE.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+! FUNCTION RESULT:
+!       Error_Status:   The return value is an integer defining the error status.
+!                       The error codes are defined in the Message_Handler module.
+!                       If == SUCCESS the file conversion was successful
+!                          == FAILURE an unrecoverable error occurred.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!
+! SIDE EFFECTS:
+!       - If the output file already exists, it is overwritten.
+!       - If an error occurs, the output file is deleted before
+!         returning to the calling routine.
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  FUNCTION CloudCoeff_Binary_to_netCDF( &
+    BIN_Filename, &  ! Input
+    NC_Filename , &  ! Input
+    Quiet       ) &  ! Optional input
+  RESULT( err_stat )
+    ! Arguments
+    CHARACTER(*),      INTENT(IN)  :: BIN_Filename
+    CHARACTER(*),      INTENT(IN)  :: NC_Filename
+    LOGICAL, OPTIONAL, INTENT(IN)  :: Quiet
+    ! Function result
+    INTEGER :: err_stat
+    ! Function parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CloudCoeff_Binary_to_netCDF'
+    ! Function variables
+    CHARACTER(256) :: msg
+    TYPE(CloudCoeff_type) :: cc, cc_copy
+    
+    ! Set up
+    err_stat = SUCCESS
+
+    ! Read the Binary file
+    err_stat = CloudCoeff_ReadFile( BIN_Filename, cc, Quiet = Quiet )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading Binary file '//TRIM(BIN_Filename)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+    ! Write the netCDF file
+    err_stat = CloudCoeff_WriteFile( NC_Filename, cc, Quiet = Quiet, netCDF = .TRUE. )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error writing netCDF file '//TRIM(NC_Filename)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+    ! Check the write was successful
+    ! ...Read the netCDF file
+    err_stat = CloudCoeff_ReadFile( NC_Filename, cc_copy, Quiet = Quiet, netCDF = .TRUE. )
+    IF ( err_stat /= SUCCESS ) THEN
+      msg = 'Error reading netCDF file '//TRIM(NC_Filename)//' for test'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    ! ...Compare the CloudCoeff objects
+    IF ( .NOT. (cc == cc_copy) ) THEN
+      msg = 'CloudCoeff object comparison failed.'
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+
+  END FUNCTION CloudCoeff_Binary_to_netCDF
 
 
 !--------------------------------------------------------------------------------
