@@ -1,5 +1,5 @@
 !
-! CloudCoeff_NC2BIN
+! CloudCoeff_Convert
 !
 ! Program to convert a CRTM CloudCoeff data file
 ! from netCDF to Binary format
@@ -10,7 +10,7 @@
 !                   paul.vandelst@noaa.gov
 !
 
-PROGRAM CloudCoeff_NC2BIN
+PROGRAM CloudCoeff_Convert
 
   ! -----------------
   ! Environment setup
@@ -26,7 +26,7 @@ PROGRAM CloudCoeff_NC2BIN
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CloudCoeff_NC2BIN'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CloudCoeff_Convert'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
   
@@ -76,5 +76,5 @@ PROGRAM CloudCoeff_NC2BIN
                           FAILURE )
   END IF
 
-END PROGRAM CloudCoeff_NC2BIN
+END PROGRAM CloudCoeff_Convert
 

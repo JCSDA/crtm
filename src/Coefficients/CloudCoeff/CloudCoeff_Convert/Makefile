@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for CloudCoeff_NC2BIN program
+# Makefile for CloudCoeff_Convert program
 #
 #==============================================================================
 
@@ -11,8 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = CloudCoeff_NC2BIN
-SCRIPT_FILE = run_$(EXE_FILE).sh
+EXE_FILE = CloudCoeff_Convert
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -33,25 +32,18 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
             $(EXE_FILE).o
 
 # Include and library definitions
-INCLUDES = -I$(HOME)/local/netcdf/include
-LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
+INCLUDES = -I$(HOME)/local/include
+LIBRARIES = -L$(HOME)/local/lib -lnetcdff
 
 # Define common make targets (all, build, clean, install)
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
+create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
+remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
-
-# Script install target
-install_script:
-	@$(COPY) $(SCRIPT_FILE) ${HOME}/bin
-
-# Squeaky clean target
-realclean: clean remove_links
 
 # Source dependency lists
 include make.dependencies
