@@ -31,14 +31,11 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
+create_links::
 	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
+remove_links::
 	@$(UNLINK_SCRIPT) $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
 
 # Source dependency lists
 include make.dependencies
