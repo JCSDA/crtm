@@ -38,11 +38,20 @@ SRC_FILES = Type_Kinds.f90 \
             SpcCoeff_netCDF_IO.f90 \
             MW_SensorData_Define.f90 \
             PtrArr_Define.f90 \
+            oSRF_Parameters.f90 \
             oSRF_Define.f90 \
             oSRF_File_Define.f90 \
             Solar_Define.f90 \
             Solar_IO.f90  
             
+INC_FILES = oSRF_Flag_Parameters.inc \
+            oSRF_Flag_Visibilities.inc \
+            oSRF_Flag_Procedures.inc \
+            oSRF_Flag_Usage.inc \
+            oSRF_Sensor_Visibilities.inc \
+            oSRF_Sensor_Procedures.inc \
+            oSRF_Sensor_Usage.inc
+
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -57,10 +66,10 @@ include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
 create_links::
-	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES) $(INC_FILES)
 
 remove_links::
-	@$(UNLINK_SCRIPT) $(SRC_FILES)
+	@$(UNLINK_SCRIPT) $(SRC_FILES) $(INC_FILES)
 
 # Squeaky clean target
 realclean:: clean remove_links

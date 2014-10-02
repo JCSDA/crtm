@@ -25,5 +25,6 @@ Spline_Interpolation.o : Spline_Interpolation.f90 Search_Utility.o Message_Handl
 String_Utility.o : String_Utility.f90 
 Subset_Define.o : Subset_Define.f90 Sort_Utility.o Message_Handler.o 
 Type_Kinds.o : Type_Kinds.f90 
-oSRF_Define.o : oSRF_Define.f90 Spectral_Units_Conversion.o Fundamental_Constants.o Planck_Functions.o PtrArr_Define.o SensorInfo_Parameters.o Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-oSRF_File_Define.o : oSRF_File_Define.f90 oSRF_Define.o SensorInfo_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
+oSRF_Define.o : oSRF_Define.f90 oSRF_Sensor_Procedures.inc oSRF_Flag_Procedures.inc oSRF_Sensor_Visibilities.inc oSRF_Flag_Visibilities.inc oSRF_Parameters.o Spectral_Units_Conversion.o Fundamental_Constants.o Planck_Functions.o PtrArr_Define.o SensorInfo_Parameters.o Integrate_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+oSRF_File_Define.o : oSRF_File_Define.f90 oSRF_Flag_Usage.inc oSRF_Parameters.o oSRF_Define.o SensorInfo_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
+oSRF_Parameters.o : oSRF_Parameters.f90 oSRF_Flag_Parameters.inc Type_Kinds.o 

@@ -56,8 +56,7 @@ PROGRAM Create_SpcCoeff
   USE oSRF_Define              , ONLY: oSRF_type, &
                                        oSRF_Destroy , &
                                        oSRF_GetValue, &
-                                       oSRF_Convolve, &
-                                       oSRF_IsFrequencyGHz
+                                       oSRF_Convolve
   USE oSRF_File_Define         , ONLY: oSRF_File_type, &
                                        oSRF_File_GetValue, &
                                        oSRF_File_GetFrom , &
@@ -99,16 +98,16 @@ PROGRAM Create_SpcCoeff
   INTEGER :: err_stat
   INTEGER :: sensor_type     
   INTEGER :: wmo_satellite_id, wmo_sensor_id
-  INTEGER :: n_channels, n_points
+  INTEGER :: n_channels, n_band_points
   INTEGER :: channel      
   INTEGER :: idx_f1, idx_f2
   INTEGER :: l
-  INTEGER :: n_coeffs
   INTEGER :: spccoeff_file_version
+  INTEGER, ALLOCATABLE :: n_points(:)
   REAL(fp) :: f0, f1, f2
   REAL(fp) :: df_osrf, df_solar
-  REAL(fp) :: planck_coeffs(N_PLANCK_COEFFS)
-  REAL(fp) :: polychromatic_coeffs(N_POLYCHROMATIC_COEFFS)
+  REAL(fp), ALLOCATABLE :: planck_coeffs(:)
+  REAL(fp), ALLOCATABLE :: polychromatic_coeffs(:)
   TYPE(PtrArr_type)        :: solar_irradiance(1)
   TYPE(oSRF_File_type)     :: osrf_file
   TYPE(oSRF_type)          :: osrf
@@ -184,15 +183,14 @@ PROGRAM Create_SpcCoeff
   ! Set some sensor dependent stuff
   SELECT CASE( sensor_type )
     CASE( MICROWAVE_SENSOR )
-!**      err_stat = MW_SensorData_Load( MW_SensorData, Sensor_Id )
-!**      IF ( err_stat /= SUCCESS ) THEN
-!**        msg = 'Error loading MW sensor data for '//TRIM(sensor_id)
-!**        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-!**      END IF
-!**      spccoeff%Polarization = mw_sensordata%Polarization
-!**      CALL MW_SensorData_DefineVersion( MW_SensorData_History )
-!**      MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
-spccoeff%polarization = hl_polarization
+      err_stat = MW_SensorData_Load( MW_SensorData, Sensor_Id )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading MW sensor data for '//TRIM(sensor_id)
+        CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
+      END IF
+      spccoeff%Polarization = mw_sensordata%Polarization
+      CALL MW_SensorData_DefineVersion( MW_SensorData_History )
+      MW_SensorData_History = '; '//TRIM(MW_SensorData_History)
        
     CASE( INFRARED_SENSOR )
       spccoeff%Polarization = UNPOLARIZED
@@ -236,7 +234,7 @@ spccoeff%polarization = hl_polarization
 
 
     ! Get the current oSRF object from the file container
-    err_stat = osrf_file_GetFrom( &
+    err_stat = oSRF_File_GetFrom( &
       osrf_file, &
       osrf     , &
       pos = l    )
@@ -249,31 +247,16 @@ spccoeff%polarization = hl_polarization
     ! Retrieve information from the oSRF object
     err_stat = oSRF_GetValue( &
       osrf, &
-      Sensor_Id              = sensor_id       , &
-      WMO_Satellite_Id       = wmo_satellite_id, &
-      WMO_Sensor_Id          = wmo_sensor_id   , &
-      Sensor_Type            = sensor_type     , &
-      Channel                = channel         , &
-      f0                     = f0              , &
-      Planck_Coeffs          = planck_coeffs   , &
-      n_Polychromatic_Coeffs = n_coeffs          )
+      Sensor_Id            = sensor_id           , &
+      WMO_Satellite_Id     = wmo_satellite_id    , &
+      WMO_Sensor_Id        = wmo_sensor_id       , &
+      Sensor_Type          = sensor_type         , &
+      Channel              = channel             , &
+      f0                   = f0                  , &
+      Planck_Coeffs        = planck_coeffs       , &
+      Polychromatic_Coeffs = polychromatic_coeffs  )    
     IF ( err_stat /= SUCCESS ) THEN
       WRITE( msg,'("Error retrieving oSRF #",i0," attributes")') l
-      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-    END IF
-    ! ...Check that we can handle the number of polychromatic coefficients
-    IF ( n_coeffs /= N_POLYCHROMATIC_COEFFS ) THEN
-      WRITE( msg,'("The number of polychromatic correction coefficients for oSRF #",i0,&
-                  &", ",i0,", is different from that for the SpcCoeff file, ",i0)' ) &
-                  l, n_coeffs, N_POLYCHROMATIC_COEFFS
-      CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
-    END IF
-    ! ...Get the polychromatic coefficients
-    err_stat = oSRF_GetValue( &
-      osrf, &
-      Polychromatic_Coeffs = polychromatic_coeffs )    
-    IF ( err_stat /= SUCCESS ) THEN
-      WRITE( msg,'("Error retrieving oSRF #",i0," polychromatic correction coefficients")') l
       CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
     END IF
 
@@ -290,14 +273,8 @@ spccoeff%polarization = hl_polarization
 
     ! Assign (ostensibly) sensor independent data
     spccoeff%Sensor_Channel(l) = channel
-    ! ...Frequency information
-    IF ( oSRF_IsFrequencyGHz( osrf ) ) THEN
-      spccoeff%Frequency(l)  = f0 
-      spccoeff%Wavenumber(l) = GHz_to_inverse_cm( f0 )
-    ELSE
-      spccoeff%Frequency(l)  = Inverse_cm_to_GHz( f0 )
-      spccoeff%Wavenumber(l) = f0
-    END IF
+    spccoeff%Frequency(l)  = Inverse_cm_to_GHz( f0 )
+    spccoeff%Wavenumber(l) = f0
     ! ...Planck coefficients
     spccoeff%Planck_C1(l) = planck_coeffs(1)
     spccoeff%Planck_C2(l) = planck_coeffs(2)
@@ -307,7 +284,7 @@ spccoeff%polarization = hl_polarization
     ! ...Set the microwave specific items
     IF ( SpcCoeff_IsMicrowaveSensor( SpcCoeff ) ) THEN
       ! The Zeeman flag
-!**      IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff, ChannelIndex=l)
+      IF ( mw_sensordata%Zeeman(l) == SET ) CALL SpcCoeff_SetZeeman(SpcCoeff, ChannelIndex=l)
       ! The CBR
       CALL Planck_Radiance( &
         spccoeff%Wavenumber(l)                , &
@@ -319,13 +296,19 @@ spccoeff%polarization = hl_polarization
     ! Add the solar information to the SpcCoeff if necessary
     Add_Solar: IF ( SpcCoeff_IsSolar( spccoeff ) ) THEN
       ! ...Get the number of oSRF points, the begin and end frequencies
-      err_stat = oSRF_GetValue( osrf, n_Points = n_points, f1 = f1, f2 = f2 )
+      err_stat = oSRF_GetValue( &
+        osrf, &
+        Band          = 1            , &  ! Assumption is a single band!!
+        n_Points      = n_points     , &
+        n_Band_Points = n_band_points, &
+        f1            = f1           , &
+        f2            = f2             )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error retrieving oSRF #",i0," n_Points, f1, and f2")') l
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
       ! ...Compute the frequency intervals
-      df_osrf  = (f2-f1)/REAL(n_points-1,fp)
+      df_osrf  = (f2-f1)/REAL(n_band_points-1,fp)
       df_solar = (solar%f2-solar%f1)/REAL(solar%n_frequencies-1,fp)
       IF ( ABS(df_osrf-df_solar) > 1.0e-06_fp ) THEN
         WRITE( msg,'("df values for oSRF(",es23.16,") ",&
@@ -340,7 +323,7 @@ spccoeff%polarization = hl_polarization
         msg = 'Solar indices for oSRF end points are invalid'
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
-      IF ( (idx_f2 - idx_f1 + 1) /= n_points ) THEN
+      IF ( (idx_f2 - idx_f1 + 1) /= n_band_points ) THEN
         msg = 'No. of solar points corresponding to oSRF are different'
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
       END IF
@@ -401,6 +384,6 @@ spccoeff%polarization = hl_polarization
   CALL SpcCoeff_Destroy( spccoeff )
   CALL oSRF_File_Destroy( osrf_file )
   CALL Solar_Destroy( solar )
-!**  CALL MW_SensorData_Destroy( mw_sensordata )
+  CALL MW_SensorData_Destroy( mw_sensordata )
 
 END PROGRAM Create_SpcCoeff
