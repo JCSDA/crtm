@@ -16,11 +16,11 @@ PROGRAM AtmProfile2Atmosphere
   ! Environment setup
   ! -----------------
   ! Module usage
-  USE Type_Kinds
+  USE Type_Kinds               , ONLY: fp
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, WARNING, &
                                        Display_Message, Program_Message
-  USE Binary_File_Utility
-  USE AtmProfile_Define
+  USE AtmProfile_Define        , ONLY: AtmProfile_type, &
+                                       
   USE AtmProfile_netCDF_IO
   USE CRTM_Atmosphere_Define
   ! Disable all implicit typing
@@ -31,7 +31,7 @@ PROGRAM AtmProfile2Atmosphere
   ! Parameters
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'AtmProfile2Atmosphere'
-  CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*),  PARAMETER :: PROGRAM_VERSION_ID = &
     '$Id$'
 
   INTEGER, PARAMETER :: N_CLOUDS   = 0  ! No cloud data
