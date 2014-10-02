@@ -19,8 +19,8 @@ MODULE MW_SensorData_Define
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
-  USE SensorInfo_Parameters, ONLY: INVALID_WMO_SATELLITE_ID, &
-                                   INVALID_WMO_SENSOR_ID   , &
+  USE SensorInfo_Parameters, ONLY: XSAT => INVALID_WMO_SATELLITE_ID, &
+                                   XSEN => INVALID_WMO_SENSOR_ID   , &
                                    INVALID_POLARIZATION    , &
                                    UNPOLARIZED             , &
                                    INTENSITY               , &
@@ -109,8 +109,8 @@ MODULE MW_SensorData_Define
     INTEGER :: n_Channels    = 0  ! L
     ! Sensor IDs
     CHARACTER(SL) :: Sensor_ID        = ''
-    INTEGER       :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    INTEGER       :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID   
+    INTEGER       :: WMO_Satellite_ID = XSAT
+    INTEGER       :: WMO_Sensor_ID    = XSEN   
     ! Sensor data
     INTEGER , ALLOCATABLE :: Sensor_Channel(:)     ! L
     INTEGER , ALLOCATABLE :: Zeeman(:)             ! L
@@ -134,10 +134,10 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 59
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 66
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
-  (/'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
+  [ 'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
     'msu_n09             ','msu_n10             ','msu_n11             ','msu_n12             ',&
     'msu_n14             ','amsua_n15           ','amsua_n16           ','amsua_n17           ',&
     'amsub_n15           ','amsub_n16           ','amsub_n17           ','ssmi_f13            ',&
@@ -151,53 +151,54 @@ MODULE MW_SensorData_Define
     'mwri_fy3b           ','mwhs_fy3a           ','mwhs_fy3b           ','mwts_fy3a           ',&
     'mwts_fy3b           ','tmi_trmm            ','gmi_gpm             '                       ,&
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
-    'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ','hamsr_grip          ' /)
+    'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ','hamsr_grip          ',&
+    'micromas_cs00       ','micromas_cs01       ','micromas_cs02       ','micromas_cs03       ',&
+    'micromas_cs04       ','micromas_cs05       ','geostorm_proposed   ' ]
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
-  (/ 708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
+  [  708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
      206, 207, 208, 206, 207, 208, &                        ! NOAA-15 to -17 AMSU-A; AMSU-B
      246, 247, 248, 246, 247, 248, 246, 247, 248, &         ! DMSP-13 to -15 SSM/I; SSM/T-1; SSM/T-2
      249, &                                                 ! DMSP-16 SSMIS
      784, 784, 784, &                                       ! AQUA AMSU-A, HSB, and AMSR-E
      209, 209, &                                            ! NOAA-18 AMSU-A and MHS
      283, &                                                 ! Coriolis WindSat
-     INVALID_WMO_SATELLITE_ID, &                            ! NPOESS Prepatory Project ATMS
+     224, &                                                 ! NPP ATMS
      210, 210, &                                            ! NOAA-N' AMSU-A and MHS (GUESS. NOT LISTED IN C-5)
      4, 4, 3, 3, 5, 5, &                                    ! MetOp-A - C AMSU-A; MHS
      241, 243, 244, &                                       ! DMSP-08,-10,-11 SSM/I
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWRI
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWRI
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWHS
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWHS
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3A MWTS
-     INVALID_WMO_SATELLITE_ID, &                            ! Fengyun-3B MWTS
-     282, INVALID_WMO_SATELLITE_ID, &                       ! TRMM TMI; GPM GMI
+     520, 521, 520, 521, 520, 521, &                        ! Fengyun-3A/3B MWRI, MWHS, MWTS
+     282, 288, &                                            ! TRMM TMI; GPM GMI
      285, 286, &                                            ! DMSP-17,18
-     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! DMSP-19,20
-     INVALID_WMO_SATELLITE_ID, INVALID_WMO_SATELLITE_ID, &  ! Megha-Tropiques MADRAS; SAPHIR
-     INVALID_WMO_SATELLITE_ID, &                            ! GCOM-W1 AMSR2
-     INVALID_WMO_SATELLITE_ID /)                            ! Hamsr-Grip, GRIP aircraft experiment
+     287, XSAT, &                                           ! DMSP-19,20
+     440, 440, &                                            ! Megha-Tropiques MADRAS; SAPHIR
+     122, &                                                 ! GCOM-W1 AMSR2
+     XSAT, &                                                ! Hamsr-Grip, GRIP aircraft experiment
+     XSAT, XSAT, XSAT, XSAT, XSAT, XSAT, &                  ! MicroMAS CubeSat-00 to -05
+     XSAT ]                                                 ! GeoStorm
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
-  (/ 623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
+  [  623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
      570, 570, 570, 574, 574, 574, &                 ! NOAA-15 to -17 AMSU-A; AMSU-B
      905, 905, 905, 906, 906, 906, 907, 907, 907, &  ! DMSP-13 to -15 SSM/I; SSM/T-1; SSM/T-2
      908, &                                          ! DMSP-16 SSMIS
      570, 246, 479, &                                ! AQUA AMSU-A, HSB, and AMSR-E
      570, 203, &                                     ! NOAA-18 AMSU-A and MHS
      283, &                                          ! Coriolis WindSat
-     621, &                                          ! NPOESS-NPP ATMS
+     621, &                                          ! NPP ATMS
      570, 203, &                                     ! NOAA-N' AMSU-A and MHS
      570, 203, 570, 203, 570, 203, &                 ! MetOp-A - C AMSU-A; MHS
      905, 905, 905, &                                ! DMSP-08,-10,-11 SSM/I
-     938, 938, 936, 936, &                           ! Fengyun 3A to 3B MWRI; MWHS
-     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID,&  ! Fengyun 3A to 3B MWTS
-     365, INVALID_WMO_SENSOR_ID, &                   ! TRMM TMI; GPM GMI
+     938, 938, 936, 936, XSEN, XSEN, &               ! Fengyun 3A/3B MWRI, MWHS, MWTS
+     365, 519, &                                     ! TRMM TMI; GPM GMI
      908, 908, &                                     ! DMSP-17,18 SSMIS
      908, 908, &                                     ! DMSP-19,20 SSMIS
-     INVALID_WMO_SENSOR_ID, INVALID_WMO_SENSOR_ID, & ! Megha-Tropiques MADRAS; SAPHIR
-     INVALID_WMO_SENSOR_ID, &                        ! GCOM-W1 AMSR2
-     INVALID_WMO_SENSOR_ID /)                        ! Hamsr-Grip, GRIP aircraft experiment
+     942, 941, &                                     ! Megha-Tropiques MADRAS; SAPHIR
+     478, &                                          ! GCOM-W1 AMSR2
+     XSEN, &                                         ! Hamsr-Grip, GRIP aircraft experiment
+     XSEN, XSEN, XSEN, XSEN, XSEN, XSEN, &           ! MicroMAS CubeSat-00 to -05
+     XSEN ]                                          ! GeoStorm
+
 
   !#----------------------------------------------------------------------------#
   !                             Sensor channel data
@@ -225,58 +226,64 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_SAPHIR_CHANNELS  =  6
   INTEGER, PARAMETER :: N_AMSR2_CHANNELS   = 14
   INTEGER, PARAMETER :: N_HAMSR_CHANNELS   = 25
+  INTEGER, PARAMETER :: N_MICROMAS_CHANNELS = 10
+  INTEGER, PARAMETER :: N_GEOSTORM_CHANNELS = 10
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
-    (/ N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! TIROS-N to NOAA-08 MSU
-       N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! NOAA-09 to -12 MSU
-       N_MSU_CHANNELS, &                                                 ! NOAA-14 MSU (no NOAA-13)
-       N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, &           ! NOAA-15 to -17 AMSU-A
-       N_AMSUB_CHANNELS, N_AMSUB_CHANNELS, N_AMSUB_CHANNELS, &           ! NOAA-15 to -17 AMSU-B
-       N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  &           ! DMSP-13 to -15 SSM/I
-       N_SSMT1_CHANNELS, N_SSMT1_CHANNELS, N_SSMT1_CHANNELS, &           ! DMSP-13 to -15 SSM/T-1
-       N_SSMT2_CHANNELS, N_SSMT2_CHANNELS, N_SSMT2_CHANNELS, &           ! DMSP-13 to -15 SSM/T-2
-       N_SSMIS_CHANNELS, &                                               ! DMSP-16 SSMIS
-       N_AMSUA_CHANNELS, N_HSB_CHANNELS, N_AMSRE_CHANNELS, &             ! AQUA AMSU-A, HSB, and AMSR-E
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-18 AMSU-A and MHS
-       N_WINDSAT_CHANNELS, &                                             ! Coriolis WindSat 
-       N_ATMS_CHANNELS, &                                                ! NPOESS-NPP ATMS
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-N' AMSU-A and MHS
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-A AMSU-A and MHS
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
-       N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
-       N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
-       N_MWRI_CHANNELS,  N_MWRI_CHANNELS, &                              ! Fengyun 3A to 3B MWRI   
-       N_MWHS_CHANNELS,  N_MWHS_CHANNELS, &                              ! Fengyun 3A to 3B MWHS 
-       N_MWTS_CHANNELS,  N_MWTS_CHANNELS, &                              ! Fengyun 3A to 3B MWTS
-       N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
-       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-17,18 SSMIS
-       N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, &                             ! DMSP-19,20 SSMIS
-       N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS, &                            ! Megha-Tropiques MADRAS; SAPHIR
-       N_AMSR2_CHANNELS, &                                               ! GCOM-W1 AMSR2
-       N_HAMSR_CHANNELS /)                                               ! Hamsr-Grip, GRIP aircraft experiment
+  [ N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! TIROS-N to NOAA-08 MSU
+    N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, N_MSU_CHANNELS, & ! NOAA-09 to -12 MSU
+    N_MSU_CHANNELS, &                                                 ! NOAA-14 MSU (no NOAA-13)
+    N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, N_AMSUA_CHANNELS, &           ! NOAA-15 to -17 AMSU-A
+    N_AMSUB_CHANNELS, N_AMSUB_CHANNELS, N_AMSUB_CHANNELS, &           ! NOAA-15 to -17 AMSU-B
+    N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  &           ! DMSP-13 to -15 SSM/I
+    N_SSMT1_CHANNELS, N_SSMT1_CHANNELS, N_SSMT1_CHANNELS, &           ! DMSP-13 to -15 SSM/T-1
+    N_SSMT2_CHANNELS, N_SSMT2_CHANNELS, N_SSMT2_CHANNELS, &           ! DMSP-13 to -15 SSM/T-2
+    N_SSMIS_CHANNELS, &                                               ! DMSP-16 SSMIS
+    N_AMSUA_CHANNELS, N_HSB_CHANNELS, N_AMSRE_CHANNELS, &             ! AQUA AMSU-A, HSB, and AMSR-E
+    N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-18 AMSU-A and MHS
+    N_WINDSAT_CHANNELS, &                                             ! Coriolis WindSat 
+    N_ATMS_CHANNELS, &                                                ! NPOESS-NPP ATMS
+    N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! NOAA-N' AMSU-A and MHS
+    N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-A AMSU-A and MHS
+    N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-B AMSU-A and MHS
+    N_AMSUA_CHANNELS, N_MHS_CHANNELS, &                               ! MetOp-C AMSU-A and MHS
+    N_SSMI_CHANNELS,  N_SSMI_CHANNELS,  N_SSMI_CHANNELS, &            ! DMSP-08,-10,-11 SSM/I
+    N_MWRI_CHANNELS,  N_MWRI_CHANNELS, &                              ! Fengyun 3A to 3B MWRI   
+    N_MWHS_CHANNELS,  N_MWHS_CHANNELS, &                              ! Fengyun 3A to 3B MWHS 
+    N_MWTS_CHANNELS,  N_MWTS_CHANNELS, &                              ! Fengyun 3A to 3B MWTS
+    N_TMI_CHANNELS, N_GMI_CHANNELS, &                                 ! TRMM TMI; GPM GMI
+    N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, N_SSMIS_CHANNELS, & ! DMSP-17,18,19,20 SSMIS
+    N_MADRAS_CHANNELS,N_SAPHIR_CHANNELS, &                            ! Megha-Tropiques MADRAS; SAPHIR
+    N_AMSR2_CHANNELS, N_HAMSR_CHANNELS, &                             ! GCOM-W1 AMSR2, Hamsr-Grip
+    N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-00 to -02 MicroMAS
+    N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-03 to -05 MicroMAS
+    N_GEOSTORM_CHANNELS ]                                             ! Proposed GeoStorm
+    
   ! The sensor channel numbers
-  INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)        =(/(i,i=1,N_MSU_CHANNELS    )/)
-  INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)    =(/(i,i=1,N_AMSUA_CHANNELS  )/)
-  INTEGER, PARAMETER :: AMSUB_SENSOR_CHANNEL(N_AMSUB_CHANNELS)    =(/(i,i=1,N_AMSUB_CHANNELS  )/)
-  INTEGER, PARAMETER :: SSMI_SENSOR_CHANNEL(N_SSMI_CHANNELS)      =(/(i,i=1,N_SSMI_CHANNELS   )/)
-  INTEGER, PARAMETER :: SSMT1_SENSOR_CHANNEL(N_SSMT1_CHANNELS)    =(/(i,i=1,N_SSMT1_CHANNELS  )/)
-  INTEGER, PARAMETER :: SSMT2_SENSOR_CHANNEL(N_SSMT2_CHANNELS)    =(/(i,i=1,N_SSMT2_CHANNELS  )/)
-  INTEGER, PARAMETER :: SSMIS_SENSOR_CHANNEL(N_SSMIS_CHANNELS)    =(/(i,i=1,N_SSMIS_CHANNELS  )/)
-  INTEGER, PARAMETER :: HSB_SENSOR_CHANNEL(N_HSB_CHANNELS)        =(/(i,i=1,N_HSB_CHANNELS    )/)
-  INTEGER, PARAMETER :: MHS_SENSOR_CHANNEL(N_MHS_CHANNELS)        =(/(i,i=1,N_MHS_CHANNELS    )/)
-  INTEGER, PARAMETER :: AMSRE_SENSOR_CHANNEL(N_AMSRE_CHANNELS)    =(/(i,i=1,N_AMSRE_CHANNELS  )/)
-  INTEGER, PARAMETER :: WINDSAT_SENSOR_CHANNEL(N_WINDSAT_CHANNELS)=(/(i,i=1,N_WINDSAT_CHANNELS)/)
-  INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)      =(/(i,i=1,N_ATMS_CHANNELS   )/)
-  INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)      =(/(i,i=1,N_MWRI_CHANNELS   )/)
-  INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)      =(/(i,i=1,N_MWHS_CHANNELS   )/)
-  INTEGER, PARAMETER :: MWTS_SENSOR_CHANNEL(N_MWTS_CHANNELS)      =(/(i,i=1,N_MWTS_CHANNELS   )/)
-  INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )       =(/(i,i=1,N_TMI_CHANNELS    )/)
-  INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )       =(/(i,i=1,N_GMI_CHANNELS    )/)
-  INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS ) =(/(i,i=1,N_MADRAS_CHANNELS )/)
-  INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS ) =(/(i,i=1,N_SAPHIR_CHANNELS )/)
-  INTEGER, PARAMETER :: AMSR2_SENSOR_CHANNEL(N_AMSR2_CHANNELS)    =(/(i,i=1,N_AMSR2_CHANNELS  )/)
-  INTEGER, PARAMETER :: HAMSR_SENSOR_CHANNEL(N_HAMSR_CHANNELS )   =(/(i,i=1,N_HAMSR_CHANNELS  )/)
+  INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)           =[(i,i=1,N_MSU_CHANNELS     )]
+  INTEGER, PARAMETER :: AMSUA_SENSOR_CHANNEL(N_AMSUA_CHANNELS)       =[(i,i=1,N_AMSUA_CHANNELS   )]
+  INTEGER, PARAMETER :: AMSUB_SENSOR_CHANNEL(N_AMSUB_CHANNELS)       =[(i,i=1,N_AMSUB_CHANNELS   )]
+  INTEGER, PARAMETER :: SSMI_SENSOR_CHANNEL(N_SSMI_CHANNELS)         =[(i,i=1,N_SSMI_CHANNELS    )]
+  INTEGER, PARAMETER :: SSMT1_SENSOR_CHANNEL(N_SSMT1_CHANNELS)       =[(i,i=1,N_SSMT1_CHANNELS   )]
+  INTEGER, PARAMETER :: SSMT2_SENSOR_CHANNEL(N_SSMT2_CHANNELS)       =[(i,i=1,N_SSMT2_CHANNELS   )]
+  INTEGER, PARAMETER :: SSMIS_SENSOR_CHANNEL(N_SSMIS_CHANNELS)       =[(i,i=1,N_SSMIS_CHANNELS   )]
+  INTEGER, PARAMETER :: HSB_SENSOR_CHANNEL(N_HSB_CHANNELS)           =[(i,i=1,N_HSB_CHANNELS     )]
+  INTEGER, PARAMETER :: MHS_SENSOR_CHANNEL(N_MHS_CHANNELS)           =[(i,i=1,N_MHS_CHANNELS     )]
+  INTEGER, PARAMETER :: AMSRE_SENSOR_CHANNEL(N_AMSRE_CHANNELS)       =[(i,i=1,N_AMSRE_CHANNELS   )]
+  INTEGER, PARAMETER :: WINDSAT_SENSOR_CHANNEL(N_WINDSAT_CHANNELS)   =[(i,i=1,N_WINDSAT_CHANNELS )]
+  INTEGER, PARAMETER :: ATMS_SENSOR_CHANNEL(N_ATMS_CHANNELS)         =[(i,i=1,N_ATMS_CHANNELS    )]
+  INTEGER, PARAMETER :: MWRI_SENSOR_CHANNEL(N_MWRI_CHANNELS)         =[(i,i=1,N_MWRI_CHANNELS    )]
+  INTEGER, PARAMETER :: MWHS_SENSOR_CHANNEL(N_MWHS_CHANNELS)         =[(i,i=1,N_MWHS_CHANNELS    )]
+  INTEGER, PARAMETER :: MWTS_SENSOR_CHANNEL(N_MWTS_CHANNELS)         =[(i,i=1,N_MWTS_CHANNELS    )]
+  INTEGER, PARAMETER :: TMI_SENSOR_CHANNEL(N_TMI_CHANNELS )          =[(i,i=1,N_TMI_CHANNELS     )]
+  INTEGER, PARAMETER :: GMI_SENSOR_CHANNEL(N_GMI_CHANNELS )          =[(i,i=1,N_GMI_CHANNELS     )]
+  INTEGER, PARAMETER :: MADRAS_SENSOR_CHANNEL(N_MADRAS_CHANNELS )    =[(i,i=1,N_MADRAS_CHANNELS  )]
+  INTEGER, PARAMETER :: SAPHIR_SENSOR_CHANNEL(N_SAPHIR_CHANNELS )    =[(i,i=1,N_SAPHIR_CHANNELS  )]
+  INTEGER, PARAMETER :: AMSR2_SENSOR_CHANNEL(N_AMSR2_CHANNELS)       =[(i,i=1,N_AMSR2_CHANNELS   )]
+  INTEGER, PARAMETER :: HAMSR_SENSOR_CHANNEL(N_HAMSR_CHANNELS )      =[(i,i=1,N_HAMSR_CHANNELS   )]
+  INTEGER, PARAMETER :: MICROMAS_SENSOR_CHANNEL(N_MICROMAS_CHANNELS) =[(i,i=1,N_MICROMAS_CHANNELS)]
+  INTEGER, PARAMETER :: GEOSTORM_SENSOR_CHANNEL(N_GEOSTORM_CHANNELS) =[(i,i=1,N_GEOSTORM_CHANNELS)]
 
 
   !#----------------------------------------------------------------------------#
@@ -316,11 +323,10 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: GMI_N_SIDEBANDS(N_GMI_CHANNELS) = 1
   INTEGER, PARAMETER :: MADRAS_N_SIDEBANDS(N_MADRAS_CHANNELS) = 1
   INTEGER, PARAMETER :: SAPHIR_N_SIDEBANDS(N_SAPHIR_CHANNELS) = 1
-  INTEGER, PARAMETER :: AMSR2_N_SIDEBANDS(N_AMSR2_CHANNELS)    =1
-  INTEGER, PARAMETER :: HAMSR_N_SIDEBANDS(N_HAMSR_CHANNELS)   = (/ 1, 1, 1, 1, 1, 1, &
-                                                                   1, 1, 1, 1, 1, 1, &
-                                                                   1, 1, 1, 1, 1, 1, &
-                                                                   1, 1, 1, 1, 1, 1, 1 /)
+  INTEGER, PARAMETER :: AMSR2_N_SIDEBANDS(N_AMSR2_CHANNELS)   = 1
+  INTEGER, PARAMETER :: HAMSR_N_SIDEBANDS(N_HAMSR_CHANNELS)   = 1
+  INTEGER, PARAMETER :: MICROMAS_N_SIDEBANDS(N_MICROMAS_CHANNELS) = 1
+  INTEGER, PARAMETER :: GEOSTORM_N_SIDEBANDS(N_GEOSTORM_CHANNELS) = 1
  
 
   !#----------------------------------------------------------------------------#
@@ -1554,8 +1560,27 @@ MODULE MW_SensorData_Define
                 0.73120_fp, 1.26880_fp, ZERO, ZERO /), & ! ch25
              (/ 2, MAX_N_SIDEBANDS, N_HAMSR_CHANNELS /) )
 
+
+  ! MicroMAS CubeSat-00 to -05 dummy entries
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: MICROMAS_F0( N_MICROMAS_CHANNELS ) = ZERO
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MICROMAS_IF_BAND( 2, MAX_N_SIDEBANDS, N_MICROMAS_CHANNELS ) = ZERO
+
+
+  ! GeoStorm dummy entry  
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: GEOSTORM_F0( N_GEOSTORM_CHANNELS ) = ZERO
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: GEOSTORM_IF_BAND( 2, MAX_N_SIDEBANDS, N_GEOSTORM_CHANNELS ) = ZERO
+
+
   !#----------------------------------------------------------------------------#
-  !                           Sensor polariztion data
+  !                           Sensor polarization data
   !#----------------------------------------------------------------------------#
 
   ! Parameter definitions inherited from the MW_SensorData_DEFINE module. Note
@@ -1893,7 +1918,16 @@ MODULE MW_SensorData_Define
      VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch23
      VL_MIXED_POLARIZATION, &  ! HAMSR  ! ch24
      VL_MIXED_POLARIZATION /)  ! HAMSR  ! ch25
-                                        
+
+  ! MicroMAS CubeSat
+  ! -------
+  INTEGER, PARAMETER :: MICROMAS_POLARIZATION( N_MICROMAS_CHANNELS ) = HL_POLARIZATION
+
+  ! GeoStorm
+  ! -------
+  INTEGER, PARAMETER :: GEOSTORM_POLARIZATION( N_GEOSTORM_CHANNELS ) = HL_POLARIZATION
+
+
 CONTAINS
 
 
@@ -1984,8 +2018,8 @@ CONTAINS
     MW_SensorData%n_Frequencies    = 0
     MW_SensorData%n_Channels       = 0
     MW_SensorData%Sensor_ID        = ''
-    MW_SensorData%WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
-    MW_SensorData%WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID   
+    MW_SensorData%WMO_Satellite_ID = XSAT
+    MW_SensorData%WMO_Sensor_ID    = XSEN   
   END SUBROUTINE MW_SensorData_Destroy
 
 
@@ -2726,6 +2760,21 @@ CONTAINS
         MW_SensorData%Polarization      = HAMSR_POLARIZATION
         MW_SensorData%n_Sidebands       = HAMSR_N_SIDEBANDS
         MW_SensorData%IF_Band           = HAMSR_GRIP_IF_BAND
+
+      CASE ('micromas_cs00','micromas_cs01','micromas_cs02','micromas_cs03','micromas_cs04','micromas_cs05')
+        MW_SensorData%Sensor_Channel    = MICROMAS_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MICROMAS_F0
+        MW_SensorData%Polarization      = MICROMAS_POLARIZATION
+        MW_SensorData%n_Sidebands       = MICROMAS_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MICROMAS_IF_BAND
+
+      CASE ('geostorm_proposed')
+        MW_SensorData%Sensor_Channel    = GEOSTORM_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = GEOSTORM_F0
+        MW_SensorData%Polarization      = GEOSTORM_POLARIZATION
+        MW_SensorData%n_Sidebands       = GEOSTORM_N_SIDEBANDS
+        MW_SensorData%IF_Band           = GEOSTORM_IF_BAND
+
 
       ! No match! Should never get here!
       CASE DEFAULT
