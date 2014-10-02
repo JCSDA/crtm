@@ -35,6 +35,7 @@ MODULE UnitTest_Define
   PUBLIC :: UnitTest_n_Passed
   PUBLIC :: UnitTest_n_Failed
   PUBLIC :: UnitTest_Passed
+  PUBLIC :: UnitTest_Failed
   PUBLIC :: UnitTest_Assert
   PUBLIC :: UnitTest_IsEqual
   PUBLIC :: UnitTest_IsEqualWithin
@@ -119,6 +120,11 @@ MODULE UnitTest_Define
   CHARACTER(*), PARAMETER :: RFMT = 'es25.18'
   CHARACTER(*), PARAMETER :: ZFMT = '"(",'//RFMT//',",",'//RFMT//',")"'
   LOGICAL,      PARAMETER :: DEFAULT_VERBOSE = .FALSE.
+
+  ! Message colours
+  CHARACTER(*), PARAMETER :: GREEN_COLOUR = ACHAR(27)//'[1;32m'
+  CHARACTER(*), PARAMETER :: RED_COLOUR   = ACHAR(27)//'[1;31m'
+  CHARACTER(*), PARAMETER :: NO_COLOUR    = ACHAR(27)//'[0m'
 
   ! Message levels
   INTEGER, PARAMETER :: N_MESSAGE_LEVELS = 5
@@ -358,7 +364,7 @@ CONTAINS
     INTEGER :: n_Failed_Tests
     CHARACTER(SL) :: Message
     CHARACTER(SL) :: Attention
-
+    CHARACTER(SL) :: colour
     ! Retrieve required properties
     CALL Get_Property( &
       UnitTest, &
@@ -367,24 +373,29 @@ CONTAINS
       n_Failed_Tests = n_Failed_Tests  )
       
     ! Test fail attention-grabber
+    colour    = GREEN_COLOUR
     Attention = ''
-    IF ( n_Failed_Tests /= 0 ) Attention = '  <----<<<  **WARNING**'
+    IF ( n_Failed_Tests /= 0 ) THEN
+      colour    = RED_COLOUR
+      Attention = '  <----<<<  **WARNING**'
+    END IF
 
     ! Output results
     WRITE( Message, &
-      '(a,3x,"Passed ",i0," of ",i0," tests", &
-       &a,3x,"Failed ",i0," of ",i0," tests",a)') &
-      CRLF, &
+      '(a,a,3x,"Passed ",i0," of ",i0," tests", &
+         &a,3x,"Failed ",i0," of ",i0," tests",a,a)') &
+      TRIM(colour), CRLF, &
       n_Passed_Tests, n_Tests, &
       CRLF, &
       n_Failed_Tests, n_Tests, &
-      TRIM(Attention)
+      TRIM(Attention), NO_COLOUR
     CALL Set_Property( &
       UnitTest, &
       Level = REPORT_LEVEL, &
       Procedure = PROCEDURE_NAME, &
       Message = Message )
     CALL Display_Message( UnitTest )
+
   END SUBROUTINE UnitTest_Report
 
 
@@ -423,6 +434,7 @@ CONTAINS
     INTEGER :: n_Failed_AllTests
     CHARACTER(SL) :: Message
     CHARACTER(SL) :: Attention
+    CHARACTER(SL) :: colour
     
     ! Retrieve required properties
     CALL Get_Property( &
@@ -432,18 +444,22 @@ CONTAINS
       n_Failed_AllTests = n_Failed_AllTests  )
       
     ! Test fail attention-grabber
+    colour    = GREEN_COLOUR
     Attention = ''
-    IF ( n_Failed_AllTests /= 0 ) Attention = '  <----<<<  **WARNING**'
+    IF ( n_Failed_AllTests /= 0 ) THEN
+      colour    = RED_COLOUR
+      Attention = '  <----<<<  **WARNING**'
+    END IF
 
     ! Output results
     WRITE( Message, &
-      '(a,1x,"Passed ",i0," of ",i0," total tests",&
-       &a,1x,"Failed ",i0," of ",i0," total tests",a)') &
-      CRLF, &
+      '(a,a,1x,"Passed ",i0," of ",i0," total tests",&
+         &a,1x,"Failed ",i0," of ",i0," total tests",a,a)') &
+      TRIM(colour), CRLF, &
       n_Passed_AllTests, n_AllTests, &
       CRLF, &
       n_Failed_AllTests, n_AllTests, &
-      TRIM(Attention)
+      TRIM(Attention), NO_COLOUR
     CALL Set_Property( &
       UnitTest, &
       Level = SUMMARY_LEVEL, &
@@ -558,6 +574,45 @@ CONTAINS
     LOGICAL :: Passed
     CALL Get_Property( UnitTest, Test_Result = Passed )
   END FUNCTION UnitTest_Passed
+  
+  
+!------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       UnitTest_Failed
+!
+! PURPOSE:
+!       Function to inform if the last test performed failed.
+!
+!       Syntactic sugar procedure.
+!
+! CALLING SEQUENCE:
+!       result = UnitTest_Failed( UnitTest )
+!
+! OBJECT:
+!       UnitTest:      UnitTest object.
+!                      UNITS:      N/A
+!                      TYPE:       TYPE(UnitTest_type)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:        Logical to indicate if the last test performed failed.
+!                      If == .TRUE.,  the last test failed,
+!                         == .FALSE., the last test passed.
+!                      UNITS:      N/A
+!                      TYPE:       LOGICAL
+!                      DIMENSION:  Scalar
+!
+!:sdoc-:
+!------------------------------------------------------------------------------
+
+  PURE FUNCTION UnitTest_Failed( UnitTest ) RESULT( Failed )
+    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
+    LOGICAL :: Failed
+    Failed = .NOT. UnitTest_Passed( UnitTest )
+  END FUNCTION UnitTest_Failed
   
   
 !------------------------------------------------------------------------------
