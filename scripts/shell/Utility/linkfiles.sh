@@ -15,14 +15,13 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: linkfiles.sh [-hqx] [-d filter-dir] dir file [file2 | file3 | ... | fileN]"
+  echo " Usage: linkfiles.sh [-hqsx] [-d filter-dir] dir file [file2 | file3 | ... | fileN]"
   echo
   echo "   Script to search a directory tree and symlink in the requested"
   echo "   file(s) to the current directory."
   echo
   echo "   * If multiple files of the same name exist in the directory tree,"
   echo "     the first one found is linked in."
-  echo '   * Only regular files are linked in. No symlinks will be "chain"-linked.'
   echo
   echo
   echo " Options:"
@@ -31,10 +30,14 @@ usage()
   echo "         of the requested file(s) to symlink."
   echo
   echo "   -h"
-  echo "         Print this message and exit"
+  echo "         Print this message and exit."
   echo
   echo "   -q"
-  echo "         Suppress informational output"
+  echo "         Suppress informational output."
+  echo
+  echo "   -s"
+  echo '         Allow symbolic links to themselves be linked, i.e. "chain-linking"'
+  echo "         the files. Default action is to *NOT* link in symlinks."
   echo
   echo "   -x"
   echo "         Turn on execution tracing. This also causes extra script"
@@ -76,11 +79,12 @@ SCRIPT_NAME=$(basename $0)
 SUCCESS=0
 FAILURE=1
 LINK="ln -sf"
+EXCLUDE_SYMLINK="YES"
 NOISY="YES"
 
 
 # Parse the command line options
-while getopts :hqxd: OPTVAL; do
+while getopts :hqsxd: OPTVAL; do
 
   # Exit if option argument looks like another option
   case ${OPTARG} in
@@ -90,9 +94,10 @@ while getopts :hqxd: OPTVAL; do
   # Parse the valid options
   case ${OPTVAL} in
     d)    FILTER_DIR=${OPTARG} ;;
-    x)    script_id; set -x ;;
-    q)    NOISY= ;;
     h)    usage | more; exit ${SUCCESS} ;;
+    q)    NOISY= ;;
+    s)    EXCLUDE_SYMLINK= ;;
+    x)    script_id; set -x ;;
     :|\?) OPTVAL=${OPTARG}; break ;;
   esac
 done
@@ -173,12 +178,21 @@ if [ $? -ne 0 ]; then
 fi
 
 
+# Set the condition for skipping existing files or symlinks
+if [ ${EXCLUDE_SYMLINK} ]; then
+  SKIP_CONDITION='[ -f $(basename ${FILE}) ] || [ -h ${FILE} ]'
+else
+  SKIP_CONDITION='[ -f $(basename ${FILE}) ]'
+fi
+
+
 # Link in the files found
 for FILE in ${LINKFILES}; do
-  # Skip if file already exists OR if the file is itself a link
-  if [ -f $(basename ${FILE}) ] || [ -h ${FILE} ]; then
+  # Skip file if necessary
+  if eval "${SKIP_CONDITION}"; then
     continue
   fi
+  # Link in the file
   ${LINK} ${FILE} .
   if [ $? -ne 0 ]; then
     error_message "Link command failed for ${FILE}"
