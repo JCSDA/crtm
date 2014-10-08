@@ -2,10 +2,12 @@
 ;
 ; Procedure to update a netCDF file string global attribute.
 ;
-PRO Update_netCDF_String_GAtt, NCfile, $  ; Input. File to modify.
-                               Name  , $  ; Input. Name of GAtt to update
-                               Update, $  ; Input. String to prepend to GAtt.
-                               New = New  ; Optional Input. Set keyword if attribute doesn't yet exist.
+PRO Update_netCDF_String_GAtt, $
+  NCfile       , $  ; Input. File to modify.
+  Name         , $  ; Input. Name of GAtt to update
+  Update       , $  ; Input. String to prepend/replace
+  New     = New, $  ; Optional Input. Set keyword if attribute doesn't yet exist.
+  Replace = Replace ; Optional input. Set keyword to replace, no prepend. Ignored if "New" keyword set.
 ;-
 
   ; Set up error handler
@@ -19,11 +21,12 @@ PRO Update_netCDF_String_GAtt, NCfile, $  ; Input. File to modify.
   ENDIF
   
   ; Process keywords
-  Old = NOT KEYWORD_SET(New)
+  Old     = ~ KEYWORD_SET(New)
+  Prepend = ~ KEYWORD_SET(Replace)
 
   ; Update the attribute
   NCid = NCDF_OPEN(NCfile,/WRITE)
-  IF ( Old ) THEN BEGIN
+  IF ( Old AND Prepend ) THEN BEGIN
     NCDF_ATTGET, NCid, /GLOBAL, Name, GAtt
     GAtt = STRTRIM(Update,2) + '; ' + STRING(GAtt)
   ENDIF ELSE BEGIN
