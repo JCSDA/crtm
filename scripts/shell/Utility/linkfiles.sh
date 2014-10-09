@@ -168,9 +168,9 @@ FILES_TO_FIND="-type f ${FINDFILE_LIST}"  # The list of files to actually find
 EXPRESSION="${IGNORE_SVN} -o ${FILES_TO_FIND}"
 # ...Run the command
 if [ -z "${FILTER_DIR}" ]; then
-  LINKFILES=$(find ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | sort -r)
+  LINKFILES=$(find -L ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | sort -r)
 else
-  LINKFILES=$(find ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | grep ${FILTER_DIR} | sort -r)
+  LINKFILES=$(find -L ${LINKFILE_ROOT}/ \( ${EXPRESSION} \) | grep ${FILTER_DIR} | sort -r)
 fi
 if [ $? -ne 0 ]; then
   error_message "Find command failed for: ${FINDFILE_LIST}"
