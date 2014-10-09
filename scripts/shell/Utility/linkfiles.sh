@@ -181,6 +181,9 @@ fi
 # Set the condition for skipping existing files or symlinks
 if [ ${EXCLUDE_SYMLINK} ]; then
   SKIP_CONDITION='[ -f $(basename ${FILE}) ] || [ -h ${FILE} ]'
+  if [ ${NOISY} ]; then
+    echo "${SCRIPT_NAME}: Skipping symbolic links..."
+  fi
 else
   SKIP_CONDITION='[ -f $(basename ${FILE}) ]'
 fi
