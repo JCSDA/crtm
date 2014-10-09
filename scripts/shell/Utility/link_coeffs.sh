@@ -210,7 +210,7 @@ fi
 
 # Link common files
 echo; echo "...linking sensor-independent coefficient files..."
-${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${COMMON_COEFF_FILES}
+${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${COMMON_COEFF_FILES}
 
 
 # Link the SpcCoeff files
@@ -222,7 +222,7 @@ else
     SPCCOEFF_FILES="${SPCCOEFF_FILES} ${SENSOR_ID}.SpcCoeff.bin"
   done
 fi
-${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
+${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
 # ...Perform special case linking if required
 if [ "${SPECIAL_CASE}" = "yes" ]; then
   ${LINK} airs281_aqua.SpcCoeff.bin airs281SUBSET_aqua.SpcCoeff.bin
@@ -238,7 +238,7 @@ else
     TAUCOEFF_FILES="${TAUCOEFF_FILES} ${SENSOR_ID}.TauCoeff.bin"
   done
 fi
-${LINK_SCRIPT} -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
+${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
 # ...Perform special case linking if required
 if [ "${SPECIAL_CASE}" = "yes" ]; then
   ${LINK} airs281_aqua.TauCoeff.bin airs281SUBSET_aqua.TauCoeff.bin
