@@ -59,8 +59,8 @@ create_sensor_coeff_links::
 	@echo "Creating sensor coefficient data links in directory `pwd`" && \
 	for id in $(SENSOR_IDS); do \
 	  echo $$id ; \
-	  $(LINK_SCRIPT) -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/SpcCoeff $$id.SpcCoeff.bin > /dev/null ; \
-	  $(LINK_SCRIPT) -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/TauCoeff/$(TAUCOEFF_TYPE) $$id.TauCoeff.bin > /dev/null ; \
+	  $(LINK_SCRIPT) -s -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/SpcCoeff $$id.SpcCoeff.bin > /dev/null ; \
+	  $(LINK_SCRIPT) -s -d $(ENDIAN_TYPE) ${CRTM_FIXFILE_ROOT}/TauCoeff/$(TAUCOEFF_TYPE) $$id.TauCoeff.bin > /dev/null ; \
 	done || exit 1
 	@echo
 
