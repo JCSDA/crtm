@@ -59,9 +59,8 @@
 ; RESTRICTIONS:
 ;       - Both the central frequency and bandwidth must be greater than zero.
 ;
-;       - The minimum and maximum powers allowed are 1 and 8 respectively. If
-;       the supplied value is outside this range, the value is set to either the
-;       minimum or maximum value.
+;       - The minimum powers allowed is 1. If the supplied value is less, the
+;         value is set to 1.
 ;
 ;       - Only positive input frequencies are allowed.
 ;
@@ -220,12 +219,10 @@ FUNCTION Gaussian_SRF, Input_Central_Frequency, $       ; Input
   ; -- Make sure it's floating point and scalar
   Power = DOUBLE( Input_Power[ 0 ] )
 
-  ; -- Is it 1 <= Power <= 8?
-  Min_Power = 1.0d0
-  Max_Power = 8.0d0
-  IF ( Power LT Min_Power OR $
-       Power GT max_Power    ) THEN BEGIN
-    Power = ( Power > Min_Power ) < Max_Power
+  ; -- Is it >= 1?
+  Min_Power =  1.0d0
+  IF ( Power LT Min_Power ) THEN BEGIN
+    Power = Min_Power
     MESSAGE, 'Invalid Power. Setting to ' + $
              STRING( Power, FORMAT = '( f3.1 )' ), /INFO
   ENDIF
