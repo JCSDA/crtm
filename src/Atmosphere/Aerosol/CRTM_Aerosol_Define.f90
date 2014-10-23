@@ -37,7 +37,7 @@ MODULE CRTM_Aerosol_Define
   ! Everything private by default
   PRIVATE
   ! Aerosol parameters
-  PUBLIC :: N_VALID_AEROSOL_TYPES
+  PUBLIC :: N_VALID_AEROSOL_CATEGORIES
   PUBLIC :: INVALID_AEROSOL
   PUBLIC :: DUST_AEROSOL
   PUBLIC :: SEASALT_SSAM_AEROSOL
@@ -47,7 +47,7 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: ORGANIC_CARBON_AEROSOL
   PUBLIC :: BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL
-  PUBLIC :: AEROSOL_TYPE_NAME
+  PUBLIC :: AEROSOL_CATEGORY_NAME
   ! Datatypes
   PUBLIC :: CRTM_Aerosol_type
   ! Operators
@@ -55,6 +55,9 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Procedures
+  PUBLIC :: CRTM_Aerosol_CategoryName
+  PUBLIC :: CRTM_Aerosol_CategoryId
+  PUBLIC :: CRTM_Aerosol_CategoryList
   PUBLIC :: CRTM_Aerosol_Associated
   PUBLIC :: CRTM_Aerosol_Destroy
   PUBLIC :: CRTM_Aerosol_Create
@@ -98,26 +101,36 @@ MODULE CRTM_Aerosol_Define
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Aerosol types and names
-  INTEGER, PARAMETER :: N_VALID_AEROSOL_TYPES = 8
-  INTEGER, PARAMETER :: INVALID_AEROSOL        = 0
-  INTEGER, PARAMETER :: DUST_AEROSOL           = 1
-  INTEGER, PARAMETER :: SEASALT_SSAM_AEROSOL   = 2
-  INTEGER, PARAMETER :: SEASALT_SSCM1_AEROSOL  = 3
-  INTEGER, PARAMETER :: SEASALT_SSCM2_AEROSOL  = 4
-  INTEGER, PARAMETER :: SEASALT_SSCM3_AEROSOL  = 5
+  INTEGER, PARAMETER :: N_VALID_AEROSOL_CATEGORIES = 8
+  INTEGER, PARAMETER ::        INVALID_AEROSOL = 0
+  INTEGER, PARAMETER ::           DUST_AEROSOL = 1
+  INTEGER, PARAMETER ::   SEASALT_SSAM_AEROSOL = 2
+  INTEGER, PARAMETER ::  SEASALT_SSCM1_AEROSOL = 3
+  INTEGER, PARAMETER ::  SEASALT_SSCM2_AEROSOL = 4
+  INTEGER, PARAMETER ::  SEASALT_SSCM3_AEROSOL = 5
   INTEGER, PARAMETER :: ORGANIC_CARBON_AEROSOL = 6
-  INTEGER, PARAMETER :: BLACK_CARBON_AEROSOL   = 7
-  INTEGER, PARAMETER :: SULFATE_AEROSOL        = 8
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_AEROSOL_TYPES ) :: &
-    AEROSOL_TYPE_NAME = (/ 'Invalid         ', &
-                           'Dust            ', &
-                           'Sea salt (SSAM) ', &
-                           'Sea salt (SSCM1)', &
-                           'Sea salt (SSCM2)', &
-                           'Sea salt (SSCM3)', &
-                           'Organic carbon  ', &
-                           'Black carbon    ', &
-                           'Sulfate         ' /)
+  INTEGER, PARAMETER ::   BLACK_CARBON_AEROSOL = 7
+  INTEGER, PARAMETER ::        SULFATE_AEROSOL = 8
+  INTEGER, PARAMETER :: AEROSOL_CATEGORY_LIST(0:N_VALID_AEROSOL_CATEGORIES) = &
+    [        INVALID_AEROSOL, &
+                DUST_AEROSOL, &
+        SEASALT_SSAM_AEROSOL, &
+       SEASALT_SSCM1_AEROSOL, &
+       SEASALT_SSCM2_AEROSOL, &
+       SEASALT_SSCM3_AEROSOL, &
+      ORGANIC_CARBON_AEROSOL, &
+        BLACK_CARBON_AEROSOL, &
+             SULFATE_AEROSOL  ]
+  CHARACTER(*), PARAMETER :: AEROSOL_CATEGORY_NAME(0:N_VALID_AEROSOL_CATEGORIES) = &
+    [ 'Invalid         ', &
+      'Dust            ', &
+      'Sea salt (SSAM) ', &
+      'Sea salt (SSCM1)', &
+      'Sea salt (SSCM2)', &
+      'Sea salt (SSCM3)', &
+      'Organic carbon  ', &
+      'Black carbon    ', &
+      'Sulfate         '  ]
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -158,6 +171,39 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
+
+  PURE FUNCTION CRTM_Aerosol_CategoryId(aerosol) RESULT(id)
+    TYPE(CRTM_Aerosol_type), INTENT(IN) :: aerosol
+    INTEGER :: id
+    id = aerosol%type
+    IF ( id < 1 .OR. id > N_VALID_AEROSOL_CATEGORIES ) id = INVALID_AEROSOL
+  END FUNCTION CRTM_Aerosol_CategoryId
+
+  PURE FUNCTION CRTM_Aerosol_CategoryName(aerosol) RESULT(name)
+    TYPE(CRTM_Aerosol_type), INTENT(IN) :: aerosol
+    CHARACTER(LEN(AEROSOL_CATEGORY_NAME(1))) :: name
+    INTEGER  :: id
+    id = CRTM_Aerosol_CategoryId(aerosol)
+    name = AEROSOL_CATEGORY_NAME(id)
+  END FUNCTION CRTM_Aerosol_CategoryName
+
+  FUNCTION CRTM_Aerosol_CategoryList(list) RESULT(err_stat)
+    INTEGER, ALLOCATABLE, INTENT(OUT) :: list(:)
+    INTEGER :: err_stat
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_CategoryList'
+    CHARACTER(ML) :: alloc_msg, msg
+    INTEGER :: alloc_stat
+    err_stat = SUCCESS
+    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Aerosol category list result not allocated -'//TRIM(alloc_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    list = AEROSOL_CATEGORY_LIST
+  END FUNCTION CRTM_Aerosol_CategoryList
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -459,7 +505,7 @@ CONTAINS
     ! ...Change default so all entries can be checked
     IsValid = .TRUE.
     ! ...The type of Aerosol
-    IF ( Aerosol%Type < 1 .OR. Aerosol%Type > N_VALID_Aerosol_TYPES ) THEN
+    IF ( Aerosol%Type < 1 .OR. Aerosol%Type > N_VALID_AEROSOL_CATEGORIES ) THEN
       msg = 'Invalid Aerosol type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -503,17 +549,12 @@ CONTAINS
 
   SUBROUTINE Scalar_Inspect( Aerosol )
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol
-    INTEGER :: lType
 
     WRITE(*, '(1x,"AEROSOL OBJECT")')
     ! Dimensions
     WRITE(*, '(3x,"n_Layers :",1x,i0)') Aerosol%n_Layers
-    ! Aerosol type and name
-    lType = Aerosol%Type
-    IF ( lType < 1 .OR. lType > N_VALID_AEROSOL_TYPES ) lType = INVALID_AEROSOL
-    WRITE(*, '(3x,"Type     :",1x,a)') AEROSOL_TYPE_NAME(lType)
+    WRITE(*, '(3x,"Category :",1x,a)') CRTM_Aerosol_CategoryName(aerosol)
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
-    ! Profile information
     WRITE(*, '(3x,"Effective radius:")')
     WRITE(*, '(5(1x,es13.6,:))') Aerosol%Effective_Radius
     WRITE(*, '(3x,"Concentration:")')
@@ -755,11 +796,6 @@ CONTAINS
 
     ! Setup
     err_stat = SUCCESS
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Inquire_Cleanup(); RETURN
-    END IF
 
 
     ! Open the aerosol data file
@@ -926,11 +962,6 @@ CONTAINS
       END IF
     ELSE
       ! No, the file is not open
-      ! ...Check that the file exists
-      IF ( .NOT. File_Exists( Filename ) ) THEN
-        msg = 'File '//TRIM(Filename)//' not found.'
-        CALL Read_Cleanup(); RETURN
-      END IF
       ! ...Open the file
       err_stat = Open_Binary_File( Filename, fid )
       IF ( err_stat /= SUCCESS ) THEN
@@ -1377,8 +1408,8 @@ CONTAINS
     aerosol) &  ! Output
   RESULT( err_stat )
     ! Arguments
-    INTEGER                , INTENT(IN)     :: fid
-    TYPE(CRTM_Aerosol_type), INTENT(IN OUT) :: aerosol
+    INTEGER                , INTENT(IN)  :: fid
+    TYPE(CRTM_Aerosol_type), INTENT(OUT) :: aerosol
     ! Function result
     INTEGER :: err_stat
     ! Function parameters

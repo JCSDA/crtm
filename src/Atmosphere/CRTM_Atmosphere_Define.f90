@@ -26,7 +26,7 @@ MODULE CRTM_Atmosphere_Define
                                    WriteGAtts_Binary_File, &
                                    ReadGAtts_Binary_File
   USE CRTM_Parameters      , ONLY: MAX_N_LAYERS
-  USE CRTM_Cloud_Define    , ONLY: N_VALID_CLOUD_TYPES, &
+  USE CRTM_Cloud_Define    , ONLY: N_VALID_CLOUD_CATEGORIES, &
                                    INVALID_CLOUD, &
                                    WATER_CLOUD, &
                                    ICE_CLOUD, &
@@ -34,11 +34,14 @@ MODULE CRTM_Atmosphere_Define
                                    SNOW_CLOUD, &
                                    GRAUPEL_CLOUD, &
                                    HAIL_CLOUD, &
-                                   CLOUD_TYPE_NAME, &
+                                   CLOUD_CATEGORY_NAME, &
                                    CRTM_Cloud_type, &
                                    OPERATOR(==), &
                                    OPERATOR(+), &
                                    OPERATOR(-), &
+                                   CRTM_Cloud_CategoryName, &
+                                   CRTM_Cloud_CategoryId, &
+                                   CRTM_Cloud_CategoryList, &
                                    CRTM_Cloud_Associated, &
                                    CRTM_Cloud_Destroy, &
                                    CRTM_Cloud_Create, &
@@ -51,7 +54,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Cloud_SetLayers, &
                                    CRTM_Cloud_ReadFile, &
                                    CRTM_Cloud_WriteFile
-  USE CRTM_Aerosol_Define  , ONLY: N_VALID_AEROSOL_TYPES, &
+  USE CRTM_Aerosol_Define  , ONLY: N_VALID_AEROSOL_CATEGORIES, &
                                    INVALID_AEROSOL       , &
                                    DUST_AEROSOL          , &
                                    SEASALT_SSAM_AEROSOL  , &
@@ -61,11 +64,14 @@ MODULE CRTM_Atmosphere_Define
                                    ORGANIC_CARBON_AEROSOL, &
                                    BLACK_CARBON_AEROSOL  , &
                                    SULFATE_AEROSOL       , &
-                                   AEROSOL_TYPE_NAME, &
+                                   AEROSOL_CATEGORY_NAME, &
                                    CRTM_Aerosol_type, &
                                    OPERATOR(==), &
                                    OPERATOR(+), &
                                    OPERATOR(-), &
+                                   CRTM_Aerosol_CategoryName, &
+                                   CRTM_Aerosol_CategoryId, &
+                                   CRTM_Aerosol_CategoryList, &
                                    CRTM_Aerosol_Associated, &
                                    CRTM_Aerosol_Destroy, &
                                    CRTM_Aerosol_Create, &
@@ -93,7 +99,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: OPERATOR(-)
   ! Cloud entities
   ! ...Parameters
-  PUBLIC :: N_VALID_CLOUD_TYPES
+  PUBLIC :: N_VALID_CLOUD_CATEGORIES
   PUBLIC :: INVALID_CLOUD
   PUBLIC :: WATER_CLOUD
   PUBLIC :: ICE_CLOUD
@@ -101,10 +107,13 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: SNOW_CLOUD
   PUBLIC :: GRAUPEL_CLOUD
   PUBLIC :: HAIL_CLOUD
-  PUBLIC :: CLOUD_TYPE_NAME
+  PUBLIC :: CLOUD_CATEGORY_NAME
   ! ...Structures
   PUBLIC :: CRTM_Cloud_type
   ! ...Procedures
+  PUBLIC :: CRTM_Cloud_CategoryName
+  PUBLIC :: CRTM_Cloud_CategoryId
+  PUBLIC :: CRTM_Cloud_CategoryList
   PUBLIC :: CRTM_Cloud_Associated
   PUBLIC :: CRTM_Cloud_Destroy
   PUBLIC :: CRTM_Cloud_Create
@@ -115,7 +124,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Cloud_SetLayers
   ! Aerosol entities
   ! ...Parameters
-  PUBLIC :: N_VALID_AEROSOL_TYPES
+  PUBLIC :: N_VALID_AEROSOL_CATEGORIES
   PUBLIC :: INVALID_AEROSOL
   PUBLIC :: DUST_AEROSOL
   PUBLIC :: SEASALT_SSAM_AEROSOL
@@ -125,10 +134,13 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: ORGANIC_CARBON_AEROSOL
   PUBLIC :: BLACK_CARBON_AEROSOL
   PUBLIC :: SULFATE_AEROSOL
-  PUBLIC :: AEROSOL_TYPE_NAME
+  PUBLIC :: AEROSOL_CATEGORY_NAME
   ! ...Structures
   PUBLIC :: CRTM_Aerosol_type
   ! ...Procedures
+  PUBLIC :: CRTM_Aerosol_CategoryName
+  PUBLIC :: CRTM_Aerosol_CategoryId
+  PUBLIC :: CRTM_Aerosol_CategoryList
   PUBLIC :: CRTM_Aerosol_Associated
   PUBLIC :: CRTM_Aerosol_Destroy
   PUBLIC :: CRTM_Aerosol_Create
@@ -1345,11 +1357,6 @@ CONTAINS
 
     ! Set up
     err_stat = SUCCESS
-    ! Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Inquire_Cleanup(); RETURN
-    END IF
 
     ! Open the file
     err_stat = Open_Binary_File( Filename, fid )
@@ -1403,11 +1410,11 @@ CONTAINS
 !       Function to read CRTM Atmosphere object files.
 !
 ! CALLING SEQUENCE:
-!       Error_Status = CRTM_Atmosphere_ReadFile( Filename                , &
-!                                                Atmosphere              , &
-!                                                Quiet      = Quiet      , &
-!                                                n_Channels = n_Channels , &
-!                                                n_Profiles = n_Profiles , &
+!       Error_Status = CRTM_Atmosphere_ReadFile( Filename               , &
+!                                                Atmosphere             , &
+!                                                Quiet      = Quiet     , &
+!                                                n_Channels = n_Channels, &
+!                                                n_Profiles = n_Profiles  )
 !
 ! INPUTS:
 !       Filename:     Character string specifying the name of an
@@ -1421,13 +1428,11 @@ CONTAINS
 !       Atmosphere:   CRTM Atmosphere object array containing the Atmosphere
 !                     data. Note the following meanings attributed to the
 !                     dimensions of the object array:
-!                     Rank-1: M profiles.
-!                             Only profile data are to be read in. The file
+!                     Rank-1: Only profile data are to be read in. The file
 !                             does not contain channel information. The
 !                             dimension of the structure is understood to
 !                             be the PROFILE dimension.
-!                     Rank-2: L channels  x  M profiles
-!                             Channel and profile data are to be read in.
+!                     Rank-2: Channel and profile data are to be read in.
 !                             The file contains both channel and profile
 !                             information. The first dimension of the
 !                             structure is the CHANNEL dimension, the second
@@ -1436,8 +1441,8 @@ CONTAINS
 !                             same function.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Atmosphere_type
-!                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
-!                     ATTRIBUTES: INTENT(OUT)
+!                     DIMENSION:  Rank-1 or Rank-2
+!                     ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !       Quiet:        Set this logical argument to suppress INFORMATION
@@ -1487,12 +1492,12 @@ CONTAINS
     Debug      ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),               INTENT(IN)  :: Filename
-    TYPE(CRTM_Atmosphere_type), INTENT(OUT) :: Atmosphere(:)  ! M
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                            INTENT(IN)  :: Filename
+    TYPE(CRTM_Atmosphere_type), ALLOCATABLE, INTENT(OUT) :: Atmosphere(:)  ! M
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Channels
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1500,10 +1505,12 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
     LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: n_file_channels, n_file_profiles
+    INTEGER :: n_input_channels
     INTEGER :: m, n_input_profiles
 
 
@@ -1514,11 +1521,6 @@ CONTAINS
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) noisy = Debug
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
-    END IF
 
 
     ! Open the file
@@ -1530,29 +1532,25 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_file_channels, n_file_profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_channels, n_input_profiles
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check that n_Channels is zero
-    IF ( n_file_channels /= 0 ) THEN
+    IF ( n_input_channels /= 0 ) THEN
       msg = 'n_Channels dimensions in '//TRIM(Filename)//' is not zero for a rank-1 '//&
             '(i.e. profiles only) Atmosphere read.'
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if n_Profiles in file is > size of output array
-    n_input_profiles = SIZE(Atmosphere)
-    IF ( n_file_profiles > n_input_profiles ) THEN
-      WRITE( msg,'("Number of profiles, ",i0," > size of the output Atmosphere", &
-                  &" array, ",i0,". Only the first ",i0, &
-                  &" profiles will be read.")' ) &
-                  n_file_profiles, n_input_profiles, n_input_profiles
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_input_profiles = MIN(n_input_profiles, n_file_profiles)
-
-
+    
+    
     ! Loop over all the profiles
     Profile_Loop: DO m = 1, n_input_profiles
       err_stat = Read_Record( fid, Atmosphere(m), &
@@ -1592,7 +1590,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Atmosphere_Destroy( Atmosphere )
+      IF ( ALLOCATED(Atmosphere) ) THEN 
+        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -1609,12 +1612,12 @@ CONTAINS
     Debug      ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),               INTENT(IN)  :: Filename
-    TYPE(CRTM_Atmosphere_type), INTENT(OUT) :: Atmosphere(:,:)  ! L x M
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                            INTENT(IN)  :: Filename
+    TYPE(CRTM_Atmosphere_type), ALLOCATABLE, INTENT(OUT) :: Atmosphere(:,:)  ! L x M
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Channels
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1622,11 +1625,13 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
     LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: l, n_file_channels, n_input_channels
-    INTEGER :: m, n_file_profiles, n_input_profiles
+    INTEGER :: l, n_input_channels
+    INTEGER :: m, n_input_profiles
 
 
     ! Set up
@@ -1636,11 +1641,6 @@ CONTAINS
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) noisy = Debug
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
-    END IF
 
 
     ! Open the file
@@ -1652,31 +1652,18 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_file_channels, n_file_profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_channels, n_input_profiles
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading n_Clouds data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if n_Channels in file is > size of output array
-    n_input_channels = SIZE(Atmosphere,DIM=1)
-    IF ( n_file_channels > n_input_channels ) THEN
-      WRITE( msg,'("Number of channels, ",i0," > size of the output Atmosphere", &
-                  &" array dimension, ",i0,". Only the first ",i0, &
-                  &" channels will be read.")' ) &
-                  n_file_channels, n_input_channels, n_input_channels
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(Atmosphere(n_input_channels, n_input_profiles), &
+             STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_input_channels = MIN(n_input_channels, n_file_channels)
-    ! ...Check if n_Profiles in file is > size of output array
-    n_input_profiles = SIZE(Atmosphere,DIM=2)
-    IF ( n_file_profiles > n_input_profiles ) THEN
-      WRITE( msg, '( "Number of profiles, ",i0," > size of the output Atmosphere", &
-                    &" array dimension, ",i0,". Only the first ",i0, &
-                    &" profiles will be read.")' ) &
-                    n_file_profiles, n_input_profiles, n_input_profiles
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
-    END IF
-    n_input_profiles = MIN(n_input_profiles, n_file_profiles)
 
 
     ! Loop over all the profiles and channels
@@ -1721,7 +1708,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Atmosphere_Destroy( Atmosphere )
+      IF ( ALLOCATED(Atmosphere) ) THEN 
+        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp

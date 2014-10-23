@@ -38,7 +38,7 @@ MODULE CRTM_Cloud_Define
   ! Everything private by default
   PRIVATE
   ! Cloud Parameters
-  PUBLIC :: N_VALID_CLOUD_TYPES
+  PUBLIC :: N_VALID_CLOUD_CATEGORIES
   PUBLIC :: INVALID_CLOUD
   PUBLIC ::   WATER_CLOUD
   PUBLIC ::     ICE_CLOUD
@@ -46,7 +46,7 @@ MODULE CRTM_Cloud_Define
   PUBLIC ::    SNOW_CLOUD
   PUBLIC :: GRAUPEL_CLOUD
   PUBLIC ::    HAIL_CLOUD
-  PUBLIC :: CLOUD_TYPE_NAME
+  PUBLIC :: CLOUD_CATEGORY_NAME
   ! Datatypes
   PUBLIC :: CRTM_Cloud_type
   ! Operators
@@ -54,6 +54,9 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Procedures
+  PUBLIC :: CRTM_Cloud_CategoryName
+  PUBLIC :: CRTM_Cloud_CategoryId
+  PUBLIC :: CRTM_Cloud_CategoryList
   PUBLIC :: CRTM_Cloud_Associated
   PUBLIC :: CRTM_Cloud_Destroy
   PUBLIC :: CRTM_Cloud_Create
@@ -96,8 +99,8 @@ MODULE CRTM_Cloud_Define
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  ! The valid cloud types and names
-  INTEGER, PARAMETER :: N_VALID_CLOUD_TYPES = 6
+  ! The valid cloud categories and names
+  INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6
   INTEGER, PARAMETER :: INVALID_CLOUD = 0
   INTEGER, PARAMETER ::   WATER_CLOUD = 1
   INTEGER, PARAMETER ::     ICE_CLOUD = 2
@@ -105,14 +108,22 @@ MODULE CRTM_Cloud_Define
   INTEGER, PARAMETER ::    SNOW_CLOUD = 4
   INTEGER, PARAMETER :: GRAUPEL_CLOUD = 5
   INTEGER, PARAMETER ::    HAIL_CLOUD = 6
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_CLOUD_TYPES ) :: &
-    CLOUD_TYPE_NAME = (/ 'Invalid', &
-                         'Water  ', &
-                         'Ice    ', &
-                         'Rain   ', &
-                         'Snow   ', &
-                         'Graupel', &
-                         'Hail   ' /)
+  INTEGER, PARAMETER :: CLOUD_CATEGORY_LIST(0:N_VALID_CLOUD_CATEGORIES) = &
+    [ INVALID_CLOUD, &
+        WATER_CLOUD, &
+          ICE_CLOUD, &
+         RAIN_CLOUD, &
+         SNOW_CLOUD, &
+      GRAUPEL_CLOUD, &
+         HAIL_CLOUD  ]
+  CHARACTER(*), PARAMETER :: CLOUD_CATEGORY_NAME(0:N_VALID_CLOUD_CATEGORIES) = &
+    [ 'Invalid', &
+      'Water  ', &
+      'Ice    ', &
+      'Rain   ', &
+      'Snow   ', &
+      'Graupel', &
+      'Hail   '  ]
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -155,6 +166,39 @@ CONTAINS
 !################################################################################
 !################################################################################
 
+  PURE FUNCTION CRTM_Cloud_CategoryId(cloud) RESULT(id)
+    TYPE(CRTM_Cloud_type), INTENT(IN) :: cloud
+    INTEGER :: id
+    id = cloud%type
+    IF ( id < 1 .OR. id > N_VALID_CLOUD_CATEGORIES ) id = INVALID_CLOUD
+  END FUNCTION CRTM_Cloud_CategoryId
+
+  PURE FUNCTION CRTM_Cloud_CategoryName(cloud) RESULT(name)
+    TYPE(CRTM_Cloud_type), INTENT(IN) :: cloud
+    CHARACTER(LEN(CLOUD_CATEGORY_NAME(1))) :: name
+    INTEGER  :: id
+    id = CRTM_Cloud_CategoryId(cloud)
+    name = CLOUD_CATEGORY_NAME(id)
+  END FUNCTION CRTM_Cloud_CategoryName
+
+  FUNCTION CRTM_Cloud_CategoryList(list) RESULT(err_stat)
+    INTEGER, ALLOCATABLE, INTENT(OUT) :: list(:)
+    INTEGER :: err_stat
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Cloud_CategoryList'
+    CHARACTER(ML) :: alloc_msg, msg
+    INTEGER :: alloc_stat
+    err_stat = SUCCESS
+    ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    IF ( alloc_stat /= 0 ) THEN
+      err_stat = FAILURE
+      msg = 'Cloud category list result not allocated -'//TRIM(alloc_msg)
+      CALL Display_Message( ROUTINE_NAME, msg, err_stat )
+      RETURN
+    END IF
+    list = CLOUD_CATEGORY_LIST
+  END FUNCTION CRTM_Cloud_CategoryList
+  
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -460,7 +504,7 @@ CONTAINS
     ! ...Change default so all entries can be checked
     IsValid = .TRUE.
     ! ...The type of cloud
-    IF ( Cloud%Type < 1 .OR. Cloud%Type > N_VALID_CLOUD_TYPES ) THEN
+    IF ( Cloud%Type < 1 .OR. Cloud%Type > N_VALID_CLOUD_CATEGORIES ) THEN
       msg = 'Invalid cloud type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -509,12 +553,9 @@ CONTAINS
 
   SUBROUTINE Scalar_Inspect( Cloud )
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
-    INTEGER :: lType
     WRITE(*, '(1x,"CLOUD OBJECT")')
     WRITE(*, '(3x,"n_Layers :",1x,i0)') Cloud%n_Layers
-    lType = Cloud%Type
-    IF ( lType < 1 .OR. lType > N_VALID_CLOUD_TYPES ) lType = INVALID_CLOUD
-    WRITE(*, '(3x,"Type     :",1x,a)') CLOUD_TYPE_NAME(lType)
+    WRITE(*, '(3x,"Category :",1x,a)') CRTM_Cloud_CategoryName(cloud)
     IF ( .NOT. CRTM_Cloud_Associated(Cloud) ) RETURN
     WRITE(*, '(3x,"Effective radius:")')
     WRITE(*, '(5(1x,es13.6,:))') Cloud%Effective_Radius
@@ -758,11 +799,6 @@ CONTAINS
 
     ! Setup
     err_stat = SUCCESS
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Inquire_Cleanup(); RETURN
-    END IF
 
 
     ! Open the cloud data file
@@ -836,7 +872,7 @@ CONTAINS
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_Cloud_type
 !                       DIMENSION:  Rank-1
-!                       ATTRIBUTES: INTENT(OUT)
+!                       ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !       Quiet:          Set this logical argument to suppress INFORMATION
@@ -886,12 +922,12 @@ CONTAINS
     Debug   ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),           INTENT(IN)  :: Filename
-    TYPE(CRTM_Cloud_type) , INTENT(OUT) :: Cloud(:)
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Quiet
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: No_Close
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Clouds
-    LOGICAL,      OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                        INTENT(IN)  :: Filename
+    TYPE(CRTM_Cloud_type) , ALLOCATABLE, INTENT(OUT) :: Cloud(:)
+    LOGICAL,      OPTIONAL,              INTENT(IN)  :: Quiet
+    LOGICAL,      OPTIONAL,              INTENT(IN)  :: No_Close
+    INTEGER,      OPTIONAL,              INTENT(OUT) :: n_Clouds
+    LOGICAL,      OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -899,7 +935,9 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
     LOGICAL :: noisy
     LOGICAL :: yes_close
     INTEGER :: fid
@@ -929,11 +967,6 @@ CONTAINS
       END IF
     ELSE
       ! No, the file is not open
-      ! ...Check that the file exists
-      IF ( .NOT. File_Exists( Filename ) ) THEN
-        msg = 'File '//TRIM(Filename)//' not found.'
-        CALL Read_Cleanup(); RETURN
-      END IF
       ! ...Open the file
       err_stat = Open_Binary_File( Filename, fid )
       IF ( err_stat /= SUCCESS ) THEN
@@ -949,10 +982,10 @@ CONTAINS
       msg = 'Error reading n_Clouds data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if output array large enough
-    IF ( nc > SIZE(Cloud) ) THEN
-      WRITE( msg,'("Number of clouds, ",i0," > size of the output ",&
-             &"Cloud object array, ",i0,".")' ) nc, SIZE(Cloud)
+    ! ...Allocate the return structure array
+    ALLOCATE(Cloud(nc), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Cloud array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
     END IF
 
@@ -995,7 +1028,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Cloud_Destroy( Cloud )
+      IF ( ALLOCATED(Cloud) ) THEN 
+        DEALLOCATE(Cloud, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Cloud array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -1381,8 +1419,8 @@ CONTAINS
     cloud) &  ! Output
   RESULT( err_stat )
     ! Arguments
-    INTEGER               , INTENT(IN)     :: fid
-    TYPE(CRTM_Cloud_type) , INTENT(IN OUT) :: cloud
+    INTEGER               , INTENT(IN)  :: fid
+    TYPE(CRTM_Cloud_type) , INTENT(OUT) :: cloud
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
