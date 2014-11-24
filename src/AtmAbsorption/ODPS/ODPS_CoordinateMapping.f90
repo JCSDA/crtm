@@ -635,80 +635,6 @@ CONTAINS
 
   END SUBROUTINE Geopotential_Height
 
-  SUBROUTINE Geopotential_Height_TL( Level_Pressure,           &  ! Input
-                                     Temperature,              &  ! Input
-                                     Water_Vapor,              &  ! Input
-                                     Temperature_TL,           &  ! input
-                                     Water_Vapor_TL,           &  ! input
-                                     Level_Height_TL)             ! Output
-
-    ! Arguments
-    REAL(fp),               INTENT(IN)  :: Level_Pressure(0:)
-    REAL(fp),               INTENT(IN)  :: Temperature(:)
-    REAL(fp),               INTENT(IN)  :: Water_Vapor(:)
-    REAL(fp),               INTENT(IN)  :: Temperature_TL(:)
-    REAL(fp),               INTENT(IN)  :: Water_Vapor_TL(:)
-    REAL(fp),               INTENT(OUT) :: Level_Height_TL(0:)
-
-    ! Function result
-    REAL(fp) :: Tv_TL, H_TL
-    INTEGER  :: k, n_Layers
-
-    n_Layers =  SIZE(Temperature)
-
-    Level_Height_TL(n_layers) = ZERO
-    DO k = n_Layers, 1, -1
-      ! virtual temperature computed using an approximation of the exact formula:
-      !  Tv = T*(1+w/epsilon)/(1+w), where w is the water vapor mixing ratio
-      Tv_TL = Temperature_TL(k)*(ONE + C*Water_Vapor(k)) &
-             +Temperature(k)*C*Water_Vapor_TL(k)
-
-      H_TL = CC*Tv_TL
-
-      Level_Height_TL(k-1) = Level_Height_TL(k) &
-                           + H_TL*LOG(Level_Pressure(k)/Level_Pressure(k-1))
-
-    END DO
-
-  END SUBROUTINE Geopotential_Height_TL
-
-  SUBROUTINE Geopotential_Height_AD( Level_Pressure,           &  ! Input
-                                     Temperature,              &  ! Input
-                                     Water_Vapor,              &  ! Input
-                                     Level_Height_AD,          &  ! input
-                                     Temperature_AD,           &  ! output
-                                     Water_Vapor_AD)              ! output
-
-    ! Arguments
-    REAL(fp),               INTENT(IN)     :: Level_Pressure(0:)
-    REAL(fp),               INTENT(IN)     :: Temperature(:)
-    REAL(fp),               INTENT(IN)     :: Water_Vapor(:)
-    REAL(fp),               INTENT(INOUT)  :: Level_Height_AD(0:)
-    REAL(fp),               INTENT(INOUT)  :: Temperature_AD(:)
-    REAL(fp),               INTENT(INOUT)  :: Water_Vapor_AD(:)
-
-    ! Function result
-    REAL(fp) :: Tv_AD, H_AD
-    INTEGER  :: k, n_Layers
-
-    n_Layers =  SIZE(Temperature)
-
-    DO k = 1, n_Layers
-      ! note, direct assignments for Tv_AD & H_AD are used below since they
-      ! are not cumulative
-      H_AD = Level_Height_AD(k-1)*LOG(Level_Pressure(k)/Level_Pressure(k-1))
-      Level_Height_AD(k) = Level_Height_AD(k-1)
-      Level_Height_AD(k-1) = ZERO
-
-      Tv_AD = CC*H_AD
-
-      Temperature_AD(k) = Temperature_AD(k) + Tv_AD*(ONE + C*Water_Vapor(k))
-      Water_Vapor_AD(k) = Water_Vapor_AD(k) + Temperature(k)*C*Tv_AD
-
-    END DO
-    Level_Height_AD(n_layers) = ZERO
-
-  END SUBROUTINE Geopotential_Height_AD
 
 !---------------------------------------------------------------------------------------------
 ! NAME: Interpolate_Profile
@@ -893,55 +819,6 @@ CONTAINS
 
   END SUBROUTINE Interpolate_Profile_F1_TL
 
-  SUBROUTINE Interpolate_Profile_F2_TL(interp_index, y, x, u, y_TL, u_TL, y_int_TL)
-    ! Arguments
-    INTEGER,  DIMENSION(:,:), INTENT(IN)  :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: y
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: x
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: u
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: y_TL
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: u_TL
-    REAL(fp), DIMENSION(:),   INTENT(OUT) :: y_int_TL
-    ! Local variables
-    INTEGER :: i, n, k1, k2
-
-    n = SIZE(interp_index, DIM=2)
-    DO i = 1, n
-      k1 = interp_index(1, i)
-      k2 = interp_index(2, i)
-      IF( k1 == k2)THEN
-        y_int_TL(i) = y_TL(k1)
-      ELSE
-        CALL Interp_linear_F2_TL(y(k1), x(k1), y(k2), x(k2), u(i), y_TL(k1), y_TL(k2), u_TL(i), y_int_TL(i))
-      END IF
-    END DO
-
-  END SUBROUTINE Interpolate_Profile_F2_TL
-
-  SUBROUTINE Interpolate_Profile_F3_TL(interp_index, y, x, u, y_TL, x_TL, y_int_TL)
-    ! Arguments
-    INTEGER,  DIMENSION(:,:), INTENT(IN)  :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: y
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: x
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: u
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: y_TL
-    REAL(fp), DIMENSION(:),   INTENT(IN)  :: x_TL
-    REAL(fp), DIMENSION(:),   INTENT(OUT) :: y_int_TL
-    ! Local variables
-    INTEGER :: i, n, k1, k2
-
-    n = SIZE(interp_index, DIM=2)
-    DO i = 1, n
-      k1 = interp_index(1, i)
-      k2 = interp_index(2, i)
-      IF( k1 == k2)THEN
-        y_int_TL(i) = y_TL(k1)
-      ELSE
-        CALL Interp_linear_F3_TL(y(k1), x(k1), y(k2), x(k2), u(i), y_TL(k1), x_TL(k1), y_TL(k2), x_TL(k2), y_int_TL(i))
-      END IF
-    END DO
-
-  END SUBROUTINE Interpolate_Profile_F3_TL
 
 !---------------------------------------------------------------------------------------------
 ! NAME: Interpolate_Profile_AD
@@ -1038,57 +915,6 @@ CONTAINS
 
   END SUBROUTINE Interpolate_Profile_F1_AD
 
-  SUBROUTINE Interpolate_Profile_F2_AD(interp_index, y, x, u, y_int_AD, y_AD, u_AD)
-    ! Arguments
-    INTEGER,  DIMENSION(:,:), INTENT(IN)      :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: y
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: x
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: u
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: y_int_AD
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: y_AD
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: u_AD
-    ! Local variables
-    INTEGER :: i, n, k1, k2
-
-    n = SIZE(interp_index, DIM=2)
-    DO i = n, 1, -1
-      k1 = interp_index(1, i)
-      k2 = interp_index(2, i)
-      IF( k1 == k2)THEN
-        y_AD(k1) = y_AD(k1) + y_int_AD(i)
-        y_int_AD(i) = ZERO
-      ELSE
-        CALL Interp_linear_F2_AD(y(k1), x(k1), y(k2), x(k2), u(i), y_int_AD(i), y_AD(k1), y_AD(k2), u_AD(i))
-      END IF
-    END DO
-
-  END SUBROUTINE Interpolate_Profile_F2_AD
-
-  SUBROUTINE Interpolate_Profile_F3_AD(interp_index, y, x, u, y_int_AD, y_AD, x_AD)
-    ! Arguments
-    INTEGER,  DIMENSION(:,:), INTENT(IN)      :: interp_index
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: y
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: x
-    REAL(fp), DIMENSION(:),   INTENT(IN)      :: u
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: y_int_AD
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: y_AD
-    REAL(fp), DIMENSION(:),   INTENT(IN OUT)  :: x_AD
-    ! Local variables
-    INTEGER :: i, n, k1, k2
-
-    n = SIZE(interp_index, DIM=2)
-    DO i = n, 1, -1
-      k1 = interp_index(1, i)
-      k2 = interp_index(2, i)
-      IF( k1 == k2)THEN
-        y_AD(k1) = y_AD(k1) + y_int_AD(i)
-        y_int_AD(i) = ZERO
-      ELSE
-        CALL Interp_linear_F3_AD(y(k1), x(k1), y(k2), x(k2), u(i), y_int_AD(i), y_AD(k1), x_AD(k1), y_AD(k2), x_AD(k2))
-      END IF
-    END DO
-
-  END SUBROUTINE Interpolate_Profile_F3_AD
 
 !---------------------------------------------------------------------------------------------
 ! NAME: Compute_Interp_Index
@@ -1217,54 +1043,6 @@ CONTAINS
     y_AD = ZERO
   END SUBROUTINE Interp_linear_F1_AD
 
-  SUBROUTINE Interp_linear_F2_TL(y1, x1, y2, x2, x, y1_TL, y2_TL, x_TL, y_TL)
-    REAL(fp), INTENT(IN)  :: y1, x1, y2, x2, x
-    REAL(fp), INTENT(IN)  :: y1_TL, y2_TL, x_TL
-    REAL(fp), INTENT(OUT) :: y_TL
-    y_TL = y1_TL + ( (y2_TL-y1_TL)*(x - x1) + x_TL*(y2-y1) )/(x2 - x1)
-  END SUBROUTINE Interp_linear_F2_TL
-
-  SUBROUTINE Interp_linear_F2_AD(y1, x1, y2, x2, x, y_AD, y1_AD, y2_AD, x_AD)
-    REAL(fp), INTENT(IN)  :: y1, x1, y2, x2, x
-    REAL(fp), INTENT(INOUT) :: y_AD
-    REAL(fp), INTENT(INOUT) :: y1_AD, y2_AD, x_AD
-    ! Local variables
-    REAL(fp) :: fac
-    fac = (x - x1)/(x2 - x1)
-
-    y1_AD = y1_AD + (ONE - fac)*y_AD
-    y2_AD = y2_AD + fac*y_AD
-    x_AD  = x_AD  + y_AD*(y2-y1)/(x2 - x1)
-    y_AD = ZERO
-
-  END SUBROUTINE Interp_linear_F2_AD
-
-  SUBROUTINE Interp_linear_F3_TL(y1, x1, y2, x2, x, y1_TL, x1_TL, y2_TL, x2_TL, y_TL)
-    REAL(fp), INTENT(IN)  :: y1, x1, y2, x2, x
-    REAL(fp), INTENT(IN)  :: y1_TL, x1_TL, y2_TL, x2_TL
-    REAL(fp), INTENT(OUT) :: y_TL
-    y_TL = y1_TL + ( (y2_TL-y1_TL) - (x2_TL-x1_TL)*(y2-y1)/(x2 - x1) )*(x - x1)/(x2-x1)
-
-  END SUBROUTINE Interp_linear_F3_TL
-
-  SUBROUTINE Interp_linear_F3_AD(y1, x1, y2, x2, x, y_AD, y1_AD, x1_AD, y2_AD, x2_AD)
-    REAL(fp), INTENT(IN)  :: y1, x1, y2, x2, x
-    REAL(fp), INTENT(INOUT) :: y_AD
-    REAL(fp), INTENT(INOUT) :: y1_AD, x1_AD, y2_AD, x2_AD
-    ! Local variables
-    REAL(fp) :: fac, fac2
-
-    fac = (x - x1)/(x2 - x1)
-    fac2 = ((y2-y1)/(x2 - x1))*fac
-
-    y1_AD = y1_AD + (ONE - fac)*y_AD
-    y2_AD = y2_AD + fac*y_AD
-    x1_AD  = x1_AD  + fac2*y_AD
-    x2_AD  = x2_AD  - fac2*y_AD
-
-    y_AD = ZERO
-
-  END SUBROUTINE Interp_linear_F3_AD
 
 !--------------------------------------------------------------------------------
 !
