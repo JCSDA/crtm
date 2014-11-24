@@ -127,14 +127,20 @@ MODULE UnitTest_Define
   CHARACTER(*), PARAMETER :: NO_COLOUR    = ACHAR(27)//'[0m'
 
   ! Message levels
-  INTEGER, PARAMETER :: N_MESSAGE_LEVELS = 5
-  INTEGER, PARAMETER :: INIT_LEVEL    = 1
-  INTEGER, PARAMETER :: SETUP_LEVEL   = 2
-  INTEGER, PARAMETER :: TEST_LEVEL    = 3
-  INTEGER, PARAMETER :: REPORT_LEVEL  = 4
-  INTEGER, PARAMETER :: SUMMARY_LEVEL = 5
+  INTEGER, PARAMETER :: N_MESSAGE_LEVELS = 6
+  INTEGER, PARAMETER :: INIT_LEVEL          = 1
+  INTEGER, PARAMETER :: SETUP_LEVEL         = 2
+  INTEGER, PARAMETER :: TEST_LEVEL          = 3
+  INTEGER, PARAMETER :: REPORT_LEVEL        = 4
+  INTEGER, PARAMETER :: SUMMARY_LEVEL       = 5
+  INTEGER, PARAMETER :: INTERNAL_FAIL_LEVEL = 6
   CHARACTER(*), PARAMETER :: MESSAGE_LEVEL(N_MESSAGE_LEVELS) = &
-    (/ 'INIT   ', 'SETUP  ', 'TEST   ', 'REPORT ', 'SUMMARY' /)
+    [ 'INIT            ', &
+      'SETUP           ', &
+      'TEST            ', &
+      'REPORT          ', &
+      'SUMMARY         ', &
+      'INTERNAL FAILURE' ]
 
   ! ------------------------
   ! Derived type definitions
@@ -837,7 +843,7 @@ CONTAINS
   SUBROUTINE intshort_isequal_scalar( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Short),       INTENT(IN)     :: Expected, Actual
+    INTEGER(Short),      INTENT(IN)     :: Expected, Actual
     ! Parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Short)]'
     ! Variables
@@ -2905,13 +2911,14 @@ CONTAINS
         Prefix = '/,1x,16("="),/'
         n_Spaces = 1
       CASE DEFAULT
+        Level = INTERNAL_FAIL_LEVEL
         Prefix = '/,"INVALID MESSAGE LEVEL!!",/'
         n_Spaces = 15
     END SELECT
 
     ! Write the message to stdout
-    WRITE(Fmt, '("(",a,i0,"x,a,"": "",a,1x,a)")') TRIM(Prefix), n_Spaces
-    WRITE( *,FMT=Fmt ) TRIM(Procedure), TRIM(Test_Info), TRIM(Message)
+    WRITE(Fmt, '("(",a,i0,"x,""("",a,"") "",a,"": "",a,1x,a)")') TRIM(Prefix), n_Spaces
+    WRITE( *,FMT=Fmt ) TRIM(MESSAGE_LEVEL(Level)), TRIM(Procedure), TRIM(Test_Info), TRIM(Message)
 
   END SUBROUTINE Display_Message
 
