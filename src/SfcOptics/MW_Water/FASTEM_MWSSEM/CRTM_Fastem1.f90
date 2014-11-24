@@ -302,7 +302,7 @@ CONTAINS
            perm_imag2=del2*fen*tau2/den2
            perm_real=perm_real1+perm_real2+einf
            perm_imag=perm_imag1+perm_imag2
-           xperm=cmplx(perm_real,perm_imag)
+           xperm=cmplx(perm_real,perm_imag,fp)
 
 !          calculate complex fresnel reflection coefficients
 !          to calculate vertical and horizontal polarised reflectivities
