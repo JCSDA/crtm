@@ -2,7 +2,7 @@
 ! UnitTest_Define
 !
 ! Module defining the UnitTest object
-!       
+!
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 05-Feb-2007
@@ -19,7 +19,7 @@ MODULE UnitTest_Define
   USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
   ! Disable implicit typing
   IMPLICIT NONE
-  
+
   ! ------------
   ! Visibilities
   ! ------------
@@ -80,7 +80,7 @@ MODULE UnitTest_Define
     MODULE PROCEDURE char_isequal_rank1
     MODULE PROCEDURE char_isequal_rank2
   END INTERFACE UnitTest_IsEqual
-  
+
   INTERFACE UnitTest_IsEqualWithin
     ! REAL(Single) procedures
     MODULE PROCEDURE realsp_isequalwithin_scalar
@@ -99,15 +99,15 @@ MODULE UnitTest_Define
     MODULE PROCEDURE complexdp_isequalwithin_rank1
     MODULE PROCEDURE complexdp_isequalwithin_rank2
   END INTERFACE UnitTest_IsEqualWithin
-  
-  
+
+
   ! PRIVATE procedures
   INTERFACE Get_Multiplier
     MODULE PROCEDURE realsp_get_multiplier
     MODULE PROCEDURE realdp_get_multiplier
   END INTERFACE Get_Multiplier
-  
-  
+
+
   ! -----------------
   ! Module parameters
   ! -----------------
@@ -163,7 +163,7 @@ MODULE UnitTest_Define
     INTEGER :: n_Failed_AllTests = 0
   END TYPE UnitTest_type
   !:tdoc-:
-  
+
 CONTAINS
 
 
@@ -217,7 +217,7 @@ CONTAINS
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Init'
     ! Variables
     LOGICAL :: local_Verbose
-    
+
     ! Check optional arguments
     local_Verbose = DEFAULT_VERBOSE
     IF ( PRESENT(Verbose) ) local_Verbose = Verbose
@@ -325,7 +325,7 @@ CONTAINS
       n_Passed_Tests = 0, &
       n_Failed_Tests = 0  )
     CALL Display_Message( UnitTest )
-                            
+
   END SUBROUTINE UnitTest_Setup
 
 
@@ -359,7 +359,7 @@ CONTAINS
     ! Parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Report'
     ! Variables
-    INTEGER :: n_Tests       
+    INTEGER :: n_Tests
     INTEGER :: n_Passed_Tests
     INTEGER :: n_Failed_Tests
     CHARACTER(SL) :: Message
@@ -371,7 +371,7 @@ CONTAINS
       n_Tests        = n_Tests       , &
       n_Passed_Tests = n_Passed_Tests, &
       n_Failed_Tests = n_Failed_Tests  )
-      
+
     ! Test fail attention-grabber
     colour    = GREEN_COLOUR
     Attention = ''
@@ -429,20 +429,20 @@ CONTAINS
     ! Parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Summary'
     ! Variables
-    INTEGER :: n_AllTests       
+    INTEGER :: n_AllTests
     INTEGER :: n_Passed_AllTests
     INTEGER :: n_Failed_AllTests
     CHARACTER(SL) :: Message
     CHARACTER(SL) :: Attention
     CHARACTER(SL) :: colour
-    
+
     ! Retrieve required properties
     CALL Get_Property( &
       UnitTest, &
       n_AllTests        = n_AllTests       , &
       n_Passed_AllTests = n_Passed_AllTests, &
       n_Failed_AllTests = n_Failed_AllTests  )
-      
+
     ! Test fail attention-grabber
     colour    = GREEN_COLOUR
     Attention = ''
@@ -574,8 +574,8 @@ CONTAINS
     LOGICAL :: Passed
     CALL Get_Property( UnitTest, Test_Result = Passed )
   END FUNCTION UnitTest_Passed
-  
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -613,8 +613,8 @@ CONTAINS
     LOGICAL :: Failed
     Failed = .NOT. UnitTest_Passed( UnitTest )
   END FUNCTION UnitTest_Failed
-  
-  
+
+
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -653,7 +653,7 @@ CONTAINS
     ! Variables
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     Message = ''
     ! ...Locally modify properties for this test
@@ -661,14 +661,14 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
     ! Assert the test
     IF ( Test ) THEN
       CALL Test_Passed( UnitTest )
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     CALL Test_Info_String( UnitTest, Message )
     CALL Set_Property( &
@@ -677,9 +677,9 @@ CONTAINS
       Procedure = PROCEDURE_NAME, &
       Message = Message )
     IF ( Verbose ) CALL Display_Message( UnitTest )
-    
+
   END SUBROUTINE UnitTest_Assert
-  
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -735,7 +735,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected == Actual)
@@ -744,7 +744,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -752,7 +752,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
     CALL Set_Property( &
@@ -763,7 +763,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE intbyte_isequal_scalar
 
-  
+
   SUBROUTINE intbyte_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -789,14 +789,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL intbyte_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE intbyte_isequal_rank1
 
-  
+
   SUBROUTINE intbyte_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -806,7 +806,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -824,7 +824,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -844,7 +844,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected == Actual)
@@ -853,7 +853,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -861,7 +861,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
     CALL Set_Property( &
@@ -872,7 +872,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE intshort_isequal_scalar
 
-  
+
   SUBROUTINE intshort_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -898,14 +898,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL intshort_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE intshort_isequal_rank1
 
-  
+
   SUBROUTINE intshort_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -915,7 +915,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -933,7 +933,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -953,7 +953,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected == Actual)
@@ -962,7 +962,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -970,7 +970,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
     CALL Set_Property( &
@@ -981,7 +981,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE intlong_isequal_scalar
 
-  
+
   SUBROUTINE intlong_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1007,14 +1007,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL intlong_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE intlong_isequal_rank1
 
-  
+
   SUBROUTINE intlong_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1024,7 +1024,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1042,7 +1042,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1062,7 +1062,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected .EqualTo. Actual)
@@ -1071,7 +1071,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1079,7 +1079,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected: ",'//RFMT//',a,&
@@ -1093,7 +1093,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE realsp_isequal_scalar
 
-  
+
   SUBROUTINE realsp_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1119,14 +1119,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL realsp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE realsp_isequal_rank1
 
-  
+
   SUBROUTINE realsp_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1136,7 +1136,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1154,7 +1154,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1174,7 +1174,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected .EqualTo. Actual)
@@ -1183,7 +1183,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1191,7 +1191,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected: ",'//RFMT//',a,&
@@ -1205,7 +1205,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE realdp_isequal_scalar
 
-  
+
   SUBROUTINE realdp_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1231,14 +1231,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL realdp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE realdp_isequal_rank1
 
-  
+
   SUBROUTINE realdp_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1248,7 +1248,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1266,7 +1266,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1286,7 +1286,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected .EqualTo. Actual)
@@ -1295,7 +1295,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1303,7 +1303,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected: ",'//ZFMT//',a,&
@@ -1317,7 +1317,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE complexsp_isequal_scalar
 
-  
+
   SUBROUTINE complexsp_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1343,14 +1343,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL complexsp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE complexsp_isequal_rank1
 
-  
+
   SUBROUTINE complexsp_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1360,7 +1360,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1378,7 +1378,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1398,7 +1398,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected .EqualTo. Actual)
@@ -1407,7 +1407,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1415,7 +1415,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected: ",'//ZFMT//',a,&
@@ -1429,7 +1429,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE complexdp_isequal_scalar
 
-  
+
   SUBROUTINE complexdp_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1455,14 +1455,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL complexdp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE complexdp_isequal_rank1
 
-  
+
   SUBROUTINE complexdp_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1472,7 +1472,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1490,7 +1490,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1498,7 +1498,7 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE complexdp_isequal_rank2
-  
+
 
   SUBROUTINE char_isequal_scalar( UnitTest, Expected, Actual )
     ! Arguments
@@ -1510,7 +1510,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Assign the test
     Test = (Expected == Actual)
@@ -1519,7 +1519,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1527,7 +1527,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message,'("Expected >",a,"< and got >",a,"<")') Expected, Actual
     CALL Set_Property( &
@@ -1538,7 +1538,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE char_isequal_scalar
 
-  
+
   SUBROUTINE char_isequal_rank1( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1564,14 +1564,14 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL char_isequal_scalar( UnitTest, Expected(i), Actual(i) )
     END DO
   END SUBROUTINE char_isequal_rank1
 
-  
+
   SUBROUTINE char_isequal_rank2( UnitTest, Expected, Actual )
     ! Arguments
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
@@ -1581,7 +1581,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1599,7 +1599,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1693,7 +1693,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Default tolerance
     tol = Tolerance
@@ -1708,7 +1708,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1716,7 +1716,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected:     ",'//RFMT//',a,&
@@ -1732,7 +1732,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE realsp_isequalwithin_scalar
 
-  
+
   SUBROUTINE realsp_isequalwithin_rank1(  &
     UnitTest     , &
     Expected     , &
@@ -1765,7 +1765,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL realsp_isequalwithin_scalar( &
@@ -1777,7 +1777,7 @@ CONTAINS
     END DO
   END SUBROUTINE realsp_isequalwithin_rank1
 
-  
+
   SUBROUTINE realsp_isequalwithin_rank2( &
     UnitTest     , &
     Expected     , &
@@ -1793,7 +1793,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1815,7 +1815,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -1847,7 +1847,7 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Default tolerance
     tol = Tolerance
@@ -1862,7 +1862,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -1870,7 +1870,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected:     ",'//RFMT//',a,&
@@ -1886,7 +1886,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE realdp_isequalwithin_scalar
 
-  
+
   SUBROUTINE realdp_isequalwithin_rank1(  &
     UnitTest     , &
     Expected     , &
@@ -1919,7 +1919,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL realdp_isequalwithin_scalar( &
@@ -1931,7 +1931,7 @@ CONTAINS
     END DO
   END SUBROUTINE realdp_isequalwithin_rank1
 
-  
+
   SUBROUTINE realdp_isequalwithin_rank2( &
     UnitTest     , &
     Expected     , &
@@ -1947,7 +1947,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -1969,7 +1969,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -2003,14 +2003,14 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Split expected into real and imag
     zr = REAL(Expected,Single)
     zi = AIMAG(Expected)
     ! ...Default tolerance
     tolr = REAL(Tolerance,Single)
-    toli = AIMAG(Tolerance) 
+    toli = AIMAG(Tolerance)
     ! ...Check optional arguments
     IF ( PRESENT(Epsilon_Scale) ) THEN
       IF ( Epsilon_Scale ) THEN
@@ -2027,7 +2027,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -2035,7 +2035,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected:     ",'//ZFMT//',a,&
@@ -2051,7 +2051,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE complexsp_isequalwithin_scalar
 
-  
+
   SUBROUTINE complexsp_isequalwithin_rank1( &
     UnitTest     , &
     Expected     , &
@@ -2084,7 +2084,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL complexsp_isequalwithin_scalar( &
@@ -2096,7 +2096,7 @@ CONTAINS
     END DO
   END SUBROUTINE complexsp_isequalwithin_rank1
 
-  
+
   SUBROUTINE complexsp_isequalwithin_rank2( &
     UnitTest     , &
     Expected     , &
@@ -2112,7 +2112,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -2134,7 +2134,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -2168,14 +2168,14 @@ CONTAINS
     LOGICAL :: Test
     LOGICAL :: Verbose
     CHARACTER(SL) :: Message
-    
+
     ! Setup
     ! ...Split expected into real and imag
     zr = REAL(Expected,Double)
     zi = AIMAG(Expected)
     ! ...Default tolerance
     tolr = REAL(Tolerance,Double)
-    toli = AIMAG(Tolerance) 
+    toli = AIMAG(Tolerance)
     ! ...Check optional arguments
     IF ( PRESENT(Epsilon_Scale) ) THEN
       IF ( Epsilon_Scale ) THEN
@@ -2192,7 +2192,7 @@ CONTAINS
       UnitTest, &
       Verbose = Verbose )
     Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-    
+
 
     ! Assert the test
     IF ( Test ) THEN
@@ -2200,7 +2200,7 @@ CONTAINS
     ELSE
       CALL Test_Failed( UnitTest )
     END IF
-    
+
     ! Output message
     WRITE( Message, &
       '(a,7x,"Expected:     ",'//ZFMT//',a,&
@@ -2216,7 +2216,7 @@ CONTAINS
     IF ( Verbose ) CALL Display_Message( UnitTest )
   END SUBROUTINE complexdp_isequalwithin_scalar
 
-  
+
   SUBROUTINE complexdp_isequalwithin_rank1( &
     UnitTest     , &
     Expected     , &
@@ -2249,7 +2249,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO i = 1, isize
       CALL complexdp_isequalwithin_scalar( &
@@ -2261,7 +2261,7 @@ CONTAINS
     END DO
   END SUBROUTINE complexdp_isequalwithin_rank1
 
-  
+
   SUBROUTINE complexdp_isequalwithin_rank2( &
     UnitTest     , &
     Expected     , &
@@ -2277,7 +2277,7 @@ CONTAINS
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-    
+
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
@@ -2299,7 +2299,7 @@ CONTAINS
       CALL Display_Message( UnitTest )
       RETURN
     ENDIF
-    
+
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
@@ -2312,7 +2312,7 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE complexdp_isequalwithin_rank2
-  
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -2341,7 +2341,7 @@ CONTAINS
     CHARACTER(*), INTENT(OUT) :: Id
     Id = MODULE_VERSION_ID
   END SUBROUTINE UnitTest_DefineVersion
-  
+
 
 !################################################################################
 !################################################################################
@@ -2415,7 +2415,7 @@ CONTAINS
 !
 !       Level:              Integer flag specifying the output message level.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER     
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -2506,30 +2506,30 @@ CONTAINS
     ! Arguments
     TYPE(UnitTest_type)   , INTENT(IN OUT) :: UnitTest
     LOGICAL     , OPTIONAL, INTENT(IN)     :: Verbose
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller 
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Title
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
     INTEGER     , OPTIONAL, INTENT(IN)     :: Level
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Procedure
-    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message   
+    CHARACTER(*), OPTIONAL, INTENT(IN)     :: Message
     LOGICAL     , OPTIONAL, INTENT(IN)     :: Test_Result
-    INTEGER     , OPTIONAL, INTENT(IN)     :: n_Tests       
+    INTEGER     , OPTIONAL, INTENT(IN)     :: n_Tests
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Passed_Tests
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Failed_Tests
-    INTEGER     , OPTIONAL, INTENT(IN)     :: n_AllTests       
+    INTEGER     , OPTIONAL, INTENT(IN)     :: n_AllTests
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Passed_AllTests
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Failed_AllTests
     ! Set the object properties
     IF ( PRESENT(Verbose          ) ) UnitTest%Verbose           = Verbose
-    IF ( PRESENT(Title            ) ) UnitTest%Title             = Title  
-    IF ( PRESENT(Caller           ) ) UnitTest%Caller            = Caller 
-    IF ( PRESENT(Level            ) ) UnitTest%Level             = Level 
+    IF ( PRESENT(Title            ) ) UnitTest%Title             = Title
+    IF ( PRESENT(Caller           ) ) UnitTest%Caller            = Caller
+    IF ( PRESENT(Level            ) ) UnitTest%Level             = Level
     IF ( PRESENT(Procedure        ) ) UnitTest%Procedure         = Procedure
-    IF ( PRESENT(Message          ) ) UnitTest%Message           = Message   
+    IF ( PRESENT(Message          ) ) UnitTest%Message           = Message
     IF ( PRESENT(Test_Result      ) ) UnitTest%Test_Result       = Test_Result
-    IF ( PRESENT(n_Tests          ) ) UnitTest%n_Tests           = n_Tests       
+    IF ( PRESENT(n_Tests          ) ) UnitTest%n_Tests           = n_Tests
     IF ( PRESENT(n_Passed_Tests   ) ) UnitTest%n_Passed_Tests    = n_Passed_Tests
     IF ( PRESENT(n_Failed_Tests   ) ) UnitTest%n_Failed_Tests    = n_Failed_Tests
-    IF ( PRESENT(n_AllTests       ) ) UnitTest%n_AllTests        = n_AllTests       
+    IF ( PRESENT(n_AllTests       ) ) UnitTest%n_AllTests        = n_AllTests
     IF ( PRESENT(n_Passed_AllTests) ) UnitTest%n_Passed_AllTests = n_Passed_AllTests
     IF ( PRESENT(n_Failed_AllTests) ) UnitTest%n_Failed_AllTests = n_Failed_AllTests
   END SUBROUTINE Set_Property
@@ -2595,7 +2595,7 @@ CONTAINS
 !
 !       Level:              Integer flag specifying the output message level.
 !                           UNITS:      N/A
-!                           TYPE:       INTEGER     
+!                           TYPE:       INTEGER
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
@@ -2686,30 +2686,30 @@ CONTAINS
     ! Arguments
     TYPE(UnitTest_type)   , INTENT(IN)  :: UnitTest
     LOGICAL     , OPTIONAL, INTENT(OUT) :: Verbose
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title  
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Caller 
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Level  
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Procedure   
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Message   
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Caller
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Level
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Procedure
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Message
     LOGICAL     , OPTIONAL, INTENT(OUT) :: Test_Result
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Tests       
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Tests
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Passed_Tests
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Failed_Tests
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_AllTests       
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_AllTests
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Passed_AllTests
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Failed_AllTests
     ! Get the object properties
-    IF ( PRESENT(Verbose          ) ) Verbose           = UnitTest%Verbose          
-    IF ( PRESENT(Title            ) ) Title             = UnitTest%Title            
-    IF ( PRESENT(Caller           ) ) Caller            = UnitTest%Caller           
-    IF ( PRESENT(Level            ) ) Level             = UnitTest%Level            
-    IF ( PRESENT(Procedure        ) ) Procedure         = UnitTest%Procedure        
-    IF ( PRESENT(Message          ) ) Message           = UnitTest%Message          
-    IF ( PRESENT(Test_Result      ) ) Test_Result       = UnitTest%Test_Result      
-    IF ( PRESENT(n_Tests          ) ) n_Tests           = UnitTest%n_Tests          
-    IF ( PRESENT(n_Passed_Tests   ) ) n_Passed_Tests    = UnitTest%n_Passed_Tests   
-    IF ( PRESENT(n_Failed_Tests   ) ) n_Failed_Tests    = UnitTest%n_Failed_Tests   
-    IF ( PRESENT(n_AllTests       ) ) n_AllTests        = UnitTest%n_AllTests       
+    IF ( PRESENT(Verbose          ) ) Verbose           = UnitTest%Verbose
+    IF ( PRESENT(Title            ) ) Title             = UnitTest%Title
+    IF ( PRESENT(Caller           ) ) Caller            = UnitTest%Caller
+    IF ( PRESENT(Level            ) ) Level             = UnitTest%Level
+    IF ( PRESENT(Procedure        ) ) Procedure         = UnitTest%Procedure
+    IF ( PRESENT(Message          ) ) Message           = UnitTest%Message
+    IF ( PRESENT(Test_Result      ) ) Test_Result       = UnitTest%Test_Result
+    IF ( PRESENT(n_Tests          ) ) n_Tests           = UnitTest%n_Tests
+    IF ( PRESENT(n_Passed_Tests   ) ) n_Passed_Tests    = UnitTest%n_Passed_Tests
+    IF ( PRESENT(n_Failed_Tests   ) ) n_Failed_Tests    = UnitTest%n_Failed_Tests
+    IF ( PRESENT(n_AllTests       ) ) n_AllTests        = UnitTest%n_AllTests
     IF ( PRESENT(n_Passed_AllTests) ) n_Passed_AllTests = UnitTest%n_Passed_AllTests
     IF ( PRESENT(n_Failed_AllTests) ) n_Failed_AllTests = UnitTest%n_Failed_AllTests
   END SUBROUTINE Get_Property
@@ -2753,7 +2753,7 @@ CONTAINS
     ! ...Increment
     n_Passed_Tests    = n_Passed_Tests    + 1
     n_Passed_AllTests = n_Passed_AllTests + 1
-    ! ...Save 'em and set successful test result 
+    ! ...Save 'em and set successful test result
     CALL Set_Property( &
       UnitTest, &
       Test_Result = .TRUE., &
@@ -2800,7 +2800,7 @@ CONTAINS
     ! ...Increment
     n_Failed_Tests    = n_Failed_Tests    + 1
     n_Failed_AllTests = n_Failed_AllTests + 1
-    ! ...Save 'em and set unsuccessful test result 
+    ! ...Save 'em and set unsuccessful test result
     CALL Set_Property( &
       UnitTest, &
       Test_Result = .FALSE., &
@@ -2832,15 +2832,15 @@ CONTAINS
   SUBROUTINE Test_Increment( UnitTest )
     TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
     INTEGER :: n_Tests, n_AllTests
-    
+
     CALL Get_Property( &
       UnitTest, &
       n_Tests    = n_Tests, &
       n_AllTests = n_AllTests )
-      
+
     n_Tests    = n_Tests    + 1
     n_AllTests = n_AllTests + 1
-    
+
     CALL Set_Property( &
       UnitTest, &
       n_Tests    = n_Tests, &
@@ -2878,13 +2878,13 @@ CONTAINS
     CHARACTER(SL) :: Prefix
     CHARACTER(SL) :: Test_Info
     INTEGER :: n_Spaces
-    
+
     CALL Get_Property( &
       UnitTest, &
       Level = Level, &
       Procedure = Procedure, &
       Message = Message )
-    
+
     ! Set output bits manually
     Test_Info = ''
     SELECT CASE(Level)
@@ -2908,11 +2908,11 @@ CONTAINS
         Prefix = '/,"INVALID MESSAGE LEVEL!!",/'
         n_Spaces = 15
     END SELECT
-    
+
     ! Write the message to stdout
     WRITE(Fmt, '("(",a,i0,"x,a,"": "",a,1x,a)")') TRIM(Prefix), n_Spaces
     WRITE( *,FMT=Fmt ) TRIM(Procedure), TRIM(Test_Info), TRIM(Message)
-    
+
   END SUBROUTINE Display_Message
 
 
@@ -3000,7 +3000,7 @@ CONTAINS
       e = 1.0_Single
     END IF
   END FUNCTION realsp_get_multiplier
-  
+
   ELEMENTAL FUNCTION realdp_get_multiplier(x) RESULT(e)
     REAL(Double), INTENT(IN) :: x
     REAL(Double) :: e
@@ -3010,5 +3010,5 @@ CONTAINS
       e = 1.0_Double
     END IF
   END FUNCTION realdp_get_multiplier
-  
+
 END MODULE UnitTest_Define
