@@ -293,10 +293,10 @@ CONTAINS
      REAL(fp) :: em_vector(2),esh1,esv1,esh2,esv2,desh,desv,dem
      REAL(fp) :: Ts = 273.15 ! default skin-surface temperature
      INTEGER :: Snow_Type = 4 ! default snow type
-     INTEGER :: i, k
+     INTEGER :: i
 
      LOGICAL  :: VALID_SNOW_DEPTH = .FALSE.
-     INTEGER  :: input_type = ZERO
+     INTEGER  :: input_type = 0
 
    ! Analyze the input types and determine which algorithms to be used
 
@@ -428,12 +428,11 @@ CONTAINS
      IMPLICIT NONE
 
      INTEGER,PARAMETER:: ncand = N_SNOW_TYPES,nch = N_FREQ_ATMS
-     INTEGER:: ich,ichmin,ichmax,i,k,snow_type
-     REAL(fp)   :: dem,demmin0
+     INTEGER:: i,snow_type
      REAL(fp)   :: em(ncand,nch)
      REAL(fp)   :: em_vector(2)
      REAL(fp)   :: frequency,freq(nch),emissivity,emis(nch)
-     REAL(fp)   :: cor_factor,adjust_check,kratio, bconst
+     REAL(fp)   :: kratio, bconst
 
    ! Sixteen candidate snow emissivity spectra
      IF (snow_type == INVALID_SNOW_TYPE)snow_type = 4
@@ -514,7 +513,7 @@ CONTAINS
 
      INTEGER , PARAMETER  :: ntype = N_SNOW_TYPES, nch = N_FREQ_ATMS, nwch = 5
      REAL(fp), PARAMETER  :: earthrad = 6374._fp, satheight = 833.4_fp
-     INTEGER  :: i,j,k,freq_idx,snow_type
+     INTEGER  :: freq_idx,snow_type
      REAL(fp) :: frequency
      REAL(fp) :: em(nch,ntype), em_vector(:)
      REAL(fp) :: tb(:),freq(nch)
@@ -523,15 +522,14 @@ CONTAINS
      REAL(fp) :: XX,XY,del,dem,dem2,delta,deltb
      INTEGER  :: minlc(1)
      REAL(fp) :: theta,deg2rad,sinthetas,costhetas
-     INTEGER  :: ipols(nch)=(/1,1,0,0,0,0,0,0,0,0,0,1,1/) ! polarisation at nadir 1-vertical 0-horizontal
      INTEGER  :: windex(nwch)=(/1,2,3,11,12/)             ! window channel index of the library spectrum
      ! Coefficients of quadratic equations used to estimate the emissivity difference
      ! between Ch-31.4GHz and 88.2GHZ
-     REAL(fp) :: coe1(6)=(/ -0.837001E+00, 0.954882E-02, -0.271471E-04, &
-                             -0.536112E-02, 0.144279E-04, 0.218317E-02/)
+     REAL(fp) :: coe1(6)=(/ -0.837001E+00_fp, 0.954882E-02_fp, -0.271471E-04_fp, &
+                             -0.536112E-02_fp, 0.144279E-04_fp, 0.218317E-02_fp/)
      ! between Ch-31.4GHz and 165.5GHZ
-     REAL(fp) :: coe2(6)=(/ -0.854226E+00, 1.203220E-02, -0.216043E-04, &
-                             -0.887216E-02, 0.118303E-04, 0.263699E-02/)
+     REAL(fp) :: coe2(6)=(/ -0.854226E+00_fp, 1.203220E-02_fp, -0.216043E-04_fp, &
+                             -0.887216E-02_fp, 0.118303E-04_fp, 0.263699E-02_fp/)
      ! Quadratic EQ terms (1.0,tb(4),tb(4)^2,tb(5),tb(5)^2,Ts)
      REAL(fp) :: coe3(6)
 
@@ -542,12 +540,7 @@ CONTAINS
      deg2rad = pi/180.0_fp
      sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
      sinthetas = sinthetas*sinthetas
-     costhetas = 1.0 - sinthetas
-
-     DO i=1, nch
-      ! em(i,:)=(ipols(i)*costhetas+(one-ipols(i))*sinthetas)*SNOW_EMISS_ATMS_V(i,:) +&
-      !     ((one-ipols(i))*costhetas+ipols(i)*sinthetas)*SNOW_EMISS_ATMS_H(i,:)
-     END DO
+     costhetas = 1.0_fp - sinthetas
 
      minlc =minloc(ABS(freq-frequency)); freq_idx=minlc(1)
 
@@ -558,8 +551,8 @@ CONTAINS
 
    !*** adjustment from the library values
      emw=em(windex,snow_type)
-     X=1.0/emw ; Y=LOG(Tb/(Ts*emw))
-     IF(frequency >100_fp) THEN
+     X=1.0_fp/emw ; Y=LOG(Tb/(Ts*emw))
+     IF(frequency > 100.0_fp) THEN
        XX=DOT_PRODUCT(X((/1,2,4,5/)),X((/1,2,4,5/)))
        XY=DOT_PRODUCT(X((/1,2,4,5/)),Y((/1,2,4,5/)))
        del=XY/XX
@@ -571,21 +564,21 @@ CONTAINS
        deltb=Tb(3)-Tb(4)
      ENDIF
 
-     IF(frequency <= 30.0_fp ) dem = 1.1*del
-     IF(frequency > 30._fp .AND. frequency <= 40.0_fp ) dem = 1.05*del
-     IF(frequency > 40._fp .AND. frequency <= 50.0_fp ) dem = 1.0*del
+     IF(frequency <= 30.0_fp ) dem = 1.1_fp*del
+     IF(frequency > 30._fp .AND. frequency <= 40.0_fp ) dem = 1.05_fp*del
+     IF(frequency > 40._fp .AND. frequency <= 50.0_fp ) dem = 1.0_fp*del
      IF(frequency > 50_fp) THEN
-        IF(del .LE. 0.0_fp .AND. ABS(deltb) .LT. 30.0_fp) delta=0.5+deltb/50.0
-        IF(del .LE. 0.0_fp .AND. ABS(deltb) .GE. 30.0_fp) delta=1.0+deltb/50.0
-        IF(del .GT. 0.0_fp .AND. ABS(deltb) .LT. 35.0_fp) delta=1.05-deltb/70.0
-        IF(del .GT. 0.0_fp .AND. ABS(deltb) .GE. 35.0_fp) delta=.85-deltb/70.0
-        IF(frequency <= 100.0_fp) dem  = del+(delta*del-del)*(frequency-50.0)/(100.0-50.0)
-        IF(frequency >  100.0_fp) dem  = 0.65*delta*del
+        IF(del .LE. 0.0_fp .AND. ABS(deltb) .LT. 30.0_fp) delta=0.5_fp+deltb/50.0_fp
+        IF(del .LE. 0.0_fp .AND. ABS(deltb) .GE. 30.0_fp) delta=1.0_fp+deltb/50.0_fp
+        IF(del .GT. 0.0_fp .AND. ABS(deltb) .LT. 35.0_fp) delta=1.05_fp-deltb/70.0_fp
+        IF(del .GT. 0.0_fp .AND. ABS(deltb) .GE. 35.0_fp) delta=.85_fp-deltb/70.0_fp
+        IF(frequency <= 100.0_fp) dem  = del+(delta*del-del)*(frequency-50.0_fp)/(100.0_fp-50.0_fp)
+        IF(frequency >  100.0_fp) dem  = 0.65_fp*delta*del
      ENDIF
      dem2=dem
      IF (frequency > 80.0_fp  )THEN
        coe3=(/1.0_fp,tb(4),tb(4)*tb(4),tb(5),tb(5)*tb(5),Ts/)
-       IF(del<-0.13)del=-0.13
+       IF(del<-0.13_fp)del=-0.13_fp
        IF(frequency <= 100.0_fp )THEN
          dem2=del-SUM(coe1*coe3)
        ELSE
@@ -593,7 +586,7 @@ CONTAINS
        ENDIF
      ENDIF
 
-     emissivity = em(freq_idx,snow_type)+(dem+dem2)/2.0
+     emissivity = em(freq_idx,snow_type)+(dem+dem2)/2.0_fp
      IF (emissivity >  1.0_fp )emissivity = 1.0_fp
      IF (emissivity <= 0.3_fp )emissivity = 0.3_fp
 
@@ -655,7 +648,7 @@ CONTAINS
      INTEGER,PARAMETER:: nch =  N_FREQ_ATMS, nwch = 5,ncoe = 10
      REAL(fp) :: tb(:),frequency
      REAL(fp) :: em_vector(:),emissivity,discriminator(nwch)
-     INTEGER  :: i,snow_type,k,ich,nvalid_ch
+     INTEGER  :: i,snow_type,ich,nvalid_ch
      REAL(fp),SAVE :: coe(nwch*(ncoe+1))
 
 
@@ -770,7 +763,7 @@ CONTAINS
      INTEGER,PARAMETER:: nch = N_FREQ_ATMS,nwch = 5,ncoe = 8
      REAL(fp)    :: tba(:)
      REAL(fp)    :: em_vector(:),emissivity,frequency,discriminator(nwch)
-     INTEGER :: snow_type,i,k,ich,nvalid_ch
+     INTEGER :: snow_type,i,ich,nvalid_ch
      REAL(fp),SAVE  :: coe(50)
 
 
@@ -1259,7 +1252,7 @@ CONTAINS
      INTEGER,PARAMETER:: nch = 10, nwch = 5,ncoe = 9
      REAL(fp)  :: tba(:)
      REAL(fp)  :: em_vector(:),emissivity,ts,frequency,discriminator(nwch)
-     INTEGER   :: snow_type,i,k,ich,nvalid_ch
+     INTEGER   :: snow_type,i,ich,nvalid_ch
      REAL(fp),SAVE  :: coe(nch*(ncoe+1))
 
 
@@ -1366,7 +1359,7 @@ CONTAINS
      INTEGER,PARAMETER:: nch =10,nwch = 3,ncoe = 5
      REAL(fp)    :: tbb(:)
      REAL(fp)    :: em_vector(:),emissivity,ts,frequency,ed0(nwch),discriminator(5)
-     INTEGER :: snow_type,i,k,ich,nvalid_ch
+     INTEGER :: snow_type,i,ich,nvalid_ch
      REAL(fp),SAVE  :: coe(nch*(ncoe+1))
 
 
@@ -1468,10 +1461,10 @@ CONTAINS
      REAL(fp) esv,esh,esh0,esv0,theta0
      INTEGER snow_type,ich
      REAL(fp)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
-     COMPLEX  eair
+     COMPLEX(fp)  eair
      DATA   freq_3w/31.4_fp,89.0_fp,150.0_fp/
 
-     eair = cmplx(one,-zero)
+     eair = cmplx(one,-zero,fp)
 
      snow_type = -999
 
@@ -1800,7 +1793,7 @@ CONTAINS
      INTEGER,PARAMETER:: nch=10,nw_3=3
      INTEGER,PARAMETER:: ncoe=6
      REAL(fp),PARAMETER  :: earthrad = 6374._fp, satheight = 833.4_fp
-     INTEGER  :: snow_type,ich,k
+     INTEGER  :: snow_type,ich
      REAL(fp) :: theta,frequency,depth,ts,esv_3w(:),esh_3w(:)
      REAL(fp) :: discriminator(5),emmod(nw_3),dem(nw_3)
      REAL(fp) :: emissivity,em_vector(2)

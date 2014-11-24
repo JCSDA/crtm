@@ -1687,10 +1687,10 @@ subroutine AMSU_ALandEM_Snow(theta,frequency,snow_depth,ts,snow_type,em_vector)
   real(fp) esv,esh,esh0,esv0,theta0
   integer snow_type,ich
   real(fp)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
-  complex  eair
+  complex(fp)  eair
   data   freq_3w/31.4_fp,89.0_fp,150.0_fp/
 
-  eair = cmplx(one,-zero)
+  eair = cmplx(one,-zero,fp)
 
   snow_type = -999
 
