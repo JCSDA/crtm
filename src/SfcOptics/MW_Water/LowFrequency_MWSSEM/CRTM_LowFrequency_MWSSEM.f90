@@ -850,7 +850,7 @@ CONTAINS
     w_AD = ZERO
     sdd_AD = ZERO
     sdd_int_AD = ZERO
-    Permittivity_AD = CMPLX(ZERO,ZERO)
+    Permittivity_AD = CMPLX(ZERO,ZERO,fp)
     CALL Clear_LPoly(flp_AD)
     CALL Clear_LPoly(wlp_AD)
 
