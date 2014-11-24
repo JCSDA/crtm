@@ -65,16 +65,6 @@ MODULE CRTM_MW_Land_SfcOptics
   INTEGER, PARAMETER :: MEDIUM_FINE     =  6
   INTEGER, PARAMETER :: COARSE_MED_FINE =  7
   INTEGER, PARAMETER :: ORGANIC         =  8
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_SOIL_TYPES ) :: &
-    SOIL_TYPE_NAME = (/ 'Invalid soil type', &
-                        'Coarse           ', &
-                        'Medium           ', &
-                        'Fine             ', &
-                        'Coarse-Medium    ', &
-                        'Coarse-Fine      ', &
-                        'Medium-Fine      ', &
-                        'Coarse-Med-Fine  ', &
-                        'Organic          ' /)
   ! ...The vegetation types
   INTEGER, PARAMETER :: N_VALID_VEGETATION_TYPES       = 12
   INTEGER, PARAMETER :: INVALID_VEGETATION             =  0
@@ -90,20 +80,6 @@ MODULE CRTM_MW_Land_SfcOptics
   INTEGER, PARAMETER :: DWARF_TREES_SHRUBS_GROUNDCOVER = 10
   INTEGER, PARAMETER :: BARE_SOIL                      = 11
   INTEGER, PARAMETER :: CULTIVATIONS                   = 12
-  CHARACTER(*), PARAMETER, DIMENSION( 0:N_VALID_VEGETATION_TYPES ) :: &
-    VEGETATION_TYPE_NAME=(/'Invalid vegetation surface type         ', &
-                           'Broadleaf-Evergreen Trees               ', &
-                           'Broadleaf-Deciduous Trees               ', &
-                           'Broadleaf & Needleleaf Trees            ', &
-                           'Needleleaf-Evergreen Trees              ', &
-                           'Needleleaf-Deciduous Trees              ', &
-                           'Broadleaf Trees with Groundcover        ', &
-                           'Groundcover only                        ', &
-                           'Broadlead Shrubs + Perennial Groundcover', &
-                           'Broadlead Shrubs with Bare Soil         ', &
-                           'Dwarf Trees & Shrubs with Groundcover   ', &
-                           'Bare Soil                               ', &
-                           'Cultivations                            ' /)
 
 
   ! --------------------------------------
