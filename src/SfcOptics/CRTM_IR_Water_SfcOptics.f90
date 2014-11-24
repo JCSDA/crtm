@@ -819,10 +819,10 @@ CONTAINS
 
     ! Fresnel reflectivity
 
-    z = CMPLX(SIN(Ang_i), ZERO)/n
-    CCos_t = SQRT(CMPLX(ONE, ZERO) - z*z)
+    z = CMPLX(SIN(Ang_i), ZERO, fp)/n
+    CCos_t = SQRT(CMPLX(ONE, ZERO, fp) - z*z)
 
-    CCos_i = CMPLX(COS(Ang_i), ZERO)
+    CCos_i = CMPLX(COS(Ang_i), ZERO, fp)
 
     rv = ( ABS( (n*CCos_i - CCos_t) / (n*CCos_i + CCos_t) ) )**2
     rh = ( ABS( (CCos_i - n*CCos_t) / (CCos_i + n*CCos_t) ) )**2
@@ -908,15 +908,16 @@ CONTAINS
     REAL(fp) :: c
 
     IF(Frequency < freq(1))THEN
-      ref = CMPLX( nr(1), ni(1) )
+      ref = CMPLX( nr(1), ni(1), fp )
     ELSE IF( Frequency > freq(nf) )THEN
-      ref = CMPLX( nr(nf), ni(nf) )
+      ref = CMPLX( nr(nf), ni(nf), fp )
     ELSE
       ! Linear interpolation
       idx = INT((Frequency - freq(1))/df) + 1  ! find the starting index
       c = (Frequency - freq(idx))/(freq(idx+1) - freq(idx))
       ref = CMPLX( nr(idx) + c*(nr(idx+1) - nr(idx)), &
-                   ni(idx) + c*(ni(idx+1) - ni(idx)) )
+                   ni(idx) + c*(ni(idx+1) - ni(idx)), &
+                   fp )
     END IF
 
   END FUNCTION Ref_Index
