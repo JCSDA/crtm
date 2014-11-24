@@ -263,7 +263,7 @@ CONTAINS
                       iVar%ei%a_int(i), iVar%ei%i1(i), iVar%ei%i2(i), iVar%ei%a_outbound(i))
       iVar%ei%a(:,i) = IRwaterCoeff%Angle(iVar%ei%i1(i):iVar%ei%i2(i))
 
-!! Secant interpolation test      
+!! Secant interpolation test
 !iVar%ei%a_int(i) = sec_angle(i)
 !CALL find_index(IRwaterCoeff%Secant_Angle, &
 !                iVar%ei%a_int(i), iVar%ei%i1(i), iVar%ei%i2(i), iVar%ei%a_outbound(i))
@@ -587,13 +587,6 @@ CONTAINS
     LOGICAL :: Status
     Status = ei%Is_Allocated
   END FUNCTION Einterp_Associated
-
-  ELEMENTAL SUBROUTINE Einterp_Destroy( ei )
-    TYPE(Einterp_type), INTENT(OUT) :: ei
-    ei%n_Angles = 0
-    ei%n_Pts    = 0
-    ei%Is_Allocated = .FALSE.
-  END SUBROUTINE Einterp_Destroy
 
   ELEMENTAL SUBROUTINE Einterp_Create( ei, n_Pts, n_Angles )
     TYPE(Einterp_type), INTENT(OUT) :: ei
