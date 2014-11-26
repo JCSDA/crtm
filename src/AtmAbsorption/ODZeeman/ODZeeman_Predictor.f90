@@ -62,32 +62,20 @@ MODULE ODZeeman_Predictor
   !----------------------------------------------------------------
   INTEGER, PARAMETER :: ODPS_gINDEX_ZSSMIS = 4  ! ODPS group index
   INTEGER, PARAMETER :: MAX_N_PREDICTORS_ZSSMIS = 18
-  ! Four SSMIS upper air sounding channels affected by Zeeman splitting
-  INTEGER, PARAMETER :: N_CHANNELS_ZSSMIS = 4
-  INTEGER, PARAMETER :: CHANNEL_INDEX_SSMIS(N_CHANNELS_ZSSMIS) = &
-                         (/19, 20, 21, 22/)
   ! Global to ZSSMIS channel index mapping
   INTEGER, PARAMETER :: N_CHANNELS_SSMIS = 24
   INTEGER, PARAMETER :: ZSSMIS_ChannelMap(N_CHANNELS_SSMIS) = (/&
                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &
                                       0, 0, 0, 0, 0, 0, 0, 0, 1, 2, &
                                       3, 4, 0, 0 /)
-  ! Predictor Mask: 1 - included; 0 - not included
-  INTEGER, PARAMETER :: PREDICTOR_MASK(MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS) = &
-    RESHAPE((/ &
-             ! 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18
-               1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, &
-               1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, &
-               1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, &
-               1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1 /), &
-            (/MAX_N_PREDICTORS_ZSSMIS, N_CHANNELS_ZSSMIS/))
+
 
   !----------------------------------------------------------------
   !  ZAMSUA parameters (AMSUA channel 14)
   !----------------------------------------------------------------
   INTEGER, PARAMETER :: MAX_N_PREDICTORS_ZAMSUA = 7
   INTEGER, PARAMETER :: ODPS_gINDEX_ZAMSUA = 5  ! ODPS group index
-  ! Global to ZSSMIS channel index mapping
+  ! Global to ZAMSUA channel index mapping
   INTEGER, PARAMETER :: N_CHANNELS_AMSUA = 15
   INTEGER, PARAMETER :: ZAMSUA_ChannelMap(N_CHANNELS_AMSUA) = (/&
                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &
