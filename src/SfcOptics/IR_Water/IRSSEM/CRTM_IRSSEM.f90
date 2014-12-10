@@ -533,10 +533,7 @@ CONTAINS
       RETURN
     END IF
     ! ...No AD if wind speed is out of bounds
-    IF ( iVar%ei%v_outbound ) THEN
-      Wind_Speed_AD = ZERO
-      RETURN
-    END IF
+    IF ( iVar%ei%v_outbound ) RETURN
     ! ...Initialize local variables
     CALL Clear_LPoly(wlp_AD)
     CALL Clear_LPoly(xlp_AD)
