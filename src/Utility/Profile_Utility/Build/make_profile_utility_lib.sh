@@ -16,7 +16,7 @@
 usage()
 {
   echo
-  echo " Usage: make_profile_utility_lib.sh [-n|-h] setup-file"
+  echo " Usage: make_profile_utility_lib.sh [-h] setup-file"
   echo
   echo "   Script to configure, build, test, and install the library."
   echo
