@@ -1,0 +1,5 @@
+ByteSwap.o : ByteSwap.f90 Endian_Utility.o Message_Handler.o Type_Kinds.o 
+Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
+File_Utility.o : File_Utility.f90 
+Message_Handler.o : Message_Handler.f90 File_Utility.o 
+Type_Kinds.o : Type_Kinds.f90 
