@@ -18,6 +18,8 @@ MODULE CRTM_Cloud_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -539,46 +541,79 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM Cloud object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Cloud_Inspect( Cloud )
+!       CALL CRTM_Cloud_Inspect( Cloud, Unit=unit )
 !
 ! INPUTS:
-!       Cloud:         CRTM Cloud object to display.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Cloud_type
-!                      DIMENSION:  Scalar, Rank-1, or Rank-2 array
-!                      ATTRIBUTES: INTENT(IN)
+!       Cloud:  CRTM Cloud object to display.
+!               UNITS:      N/A
+!               TYPE:       CRTM_Cloud_type
+!               DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!               ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:   Unit number for an already open file to which the output
+!               will be written.
+!               If the argument is specified and the file unit is not
+!               connected, the output goes to stdout.
+!               UNITS:      N/A
+!               TYPE:       INTEGER
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Scalar_Inspect( Cloud )
+  SUBROUTINE Scalar_Inspect( Cloud, Unit )
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud
-    WRITE(*, '(1x,"CLOUD OBJECT")')
-    WRITE(*, '(3x,"n_Layers :",1x,i0)') Cloud%n_Layers
-    WRITE(*, '(3x,"Category :",1x,a)') CRTM_Cloud_CategoryName(cloud)
+    INTEGER,     OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+    
+    WRITE(fid,'(1x,"CLOUD OBJECT")')
+    WRITE(fid,'(3x,"n_Layers :",1x,i0)') Cloud%n_Layers
+    WRITE(fid,'(3x,"Category :",1x,a)') CRTM_Cloud_CategoryName(cloud)
     IF ( .NOT. CRTM_Cloud_Associated(Cloud) ) RETURN
-    WRITE(*, '(3x,"Effective radius:")')
-    WRITE(*, '(5(1x,es13.6,:))') Cloud%Effective_Radius
-    WRITE(*, '(3x,"Water content:")')
-    WRITE(*, '(5(1x,es13.6,:))') Cloud%Water_Content
+    WRITE(fid,'(3x,"Effective radius:")')
+    WRITE(fid,'(5(1x,es13.6,:))') Cloud%Effective_Radius
+    WRITE(fid,'(3x,"Water content:")')
+    WRITE(fid,'(5(1x,es13.6,:))') Cloud%Water_Content
   END SUBROUTINE Scalar_Inspect
 
-  SUBROUTINE Rank1_Inspect( Cloud )
+  SUBROUTINE Rank1_Inspect( Cloud, Unit )
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud(:)
+    INTEGER,     OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO i = 1, SIZE(Cloud)
-      WRITE(*, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
-      CALL Scalar_Inspect(Cloud(i))
+      WRITE(fid, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
+      CALL Scalar_Inspect(Cloud(i), Unit=Unit)
     END DO
   END SUBROUTINE Rank1_Inspect
 
-  SUBROUTINE Rank2_Inspect( Cloud )
+  SUBROUTINE Rank2_Inspect( Cloud, Unit )
     TYPE(CRTM_Cloud_type), INTENT(IN) :: Cloud(:,:)
+    INTEGER,     OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i, j
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO j = 1, SIZE(Cloud,2)
       DO i = 1, SIZE(Cloud,1)
-        WRITE(*, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
-        CALL Scalar_Inspect(Cloud(i,j))
+        WRITE(fid, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
+        CALL Scalar_Inspect(Cloud(i,j), Unit=Unit)
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect

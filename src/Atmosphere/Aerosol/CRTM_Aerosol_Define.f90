@@ -17,6 +17,8 @@ MODULE CRTM_Aerosol_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -535,48 +537,81 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM Aerosol object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Aerosol_Inspect( Aerosol )
+!       CALL CRTM_Aerosol_Inspect( Aerosol, Unit=unit )
 !
 ! INPUTS:
-!       Aerosol:       CRTM Aerosol object to display.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_Aerosol_type
-!                      DIMENSION:  Scalar, Rank-1, or Rank-2 array
-!                      ATTRIBUTES: INTENT(IN)
+!       Aerosol:  CRTM Aerosol object to display.
+!                 UNITS:      N/A
+!                 TYPE:       CRTM_Aerosol_type
+!                 DIMENSION:  Scalar, Rank-1, or Rank-2 array
+!                 ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:     Unit number for an already open file to which the output
+!                 will be written.
+!                 If the argument is specified and the file unit is not
+!                 connected, the output goes to stdout.
+!                 UNITS:      N/A
+!                 TYPE:       INTEGER
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Scalar_Inspect( Aerosol )
+  SUBROUTINE Scalar_Inspect( Aerosol, Unit )
+    ! Arguments
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
 
-    WRITE(*, '(1x,"AEROSOL OBJECT")')
+    
+    WRITE(fid,'(1x,"AEROSOL OBJECT")')
     ! Dimensions
-    WRITE(*, '(3x,"n_Layers :",1x,i0)') Aerosol%n_Layers
-    WRITE(*, '(3x,"Category :",1x,a)') CRTM_Aerosol_CategoryName(aerosol)
+    WRITE(fid,'(3x,"n_Layers :",1x,i0)') Aerosol%n_Layers
+    WRITE(fid,'(3x,"Category :",1x,a)') CRTM_Aerosol_CategoryName(aerosol)
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
-    WRITE(*, '(3x,"Effective radius:")')
-    WRITE(*, '(5(1x,es13.6,:))') Aerosol%Effective_Radius
-    WRITE(*, '(3x,"Concentration:")')
-    WRITE(*, '(5(1x,es13.6,:))') Aerosol%Concentration
+    WRITE(fid,'(3x,"Effective radius:")')
+    WRITE(fid,'(5(1x,es13.6,:))') Aerosol%Effective_Radius
+    WRITE(fid,'(3x,"Concentration:")')
+    WRITE(fid,'(5(1x,es13.6,:))') Aerosol%Concentration
   END SUBROUTINE Scalar_Inspect
 
-  SUBROUTINE Rank1_Inspect( Aerosol )
+  SUBROUTINE Rank1_Inspect( Aerosol, Unit )
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol(:)
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO i = 1, SIZE(Aerosol)
-      WRITE(*, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
-      CALL Scalar_Inspect(Aerosol(i))
+      WRITE(fid, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
+      CALL Scalar_Inspect(Aerosol(i), Unit=Unit)
     END DO
   END SUBROUTINE Rank1_Inspect
 
-  SUBROUTINE Rank2_Inspect( Aerosol )
+  SUBROUTINE Rank2_Inspect( Aerosol, Unit )
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: Aerosol(:,:)
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i, j
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO j = 1, SIZE(Aerosol,2)
       DO i = 1, SIZE(Aerosol,1)
-        WRITE(*, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
-        CALL Scalar_Inspect(Aerosol(i,j))
+        WRITE(fid, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
+        CALL Scalar_Inspect(Aerosol(i,j), Unit=Unit)
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect

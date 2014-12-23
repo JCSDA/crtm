@@ -15,6 +15,8 @@ MODULE CRTM_GeometryInfo_Define
   ! ------------------
   ! Environment set up
   ! ------------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -542,7 +544,7 @@ CONTAINS
 !       to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_GeometryInfo_Inspect( gInfo )
+!       CALL CRTM_GeometryInfo_Inspect( gInfo, Unit=unit )
 !
 ! INPUTS:
 !       gInfo:  CRTM GeometryInfo object to display.
@@ -551,36 +553,58 @@ CONTAINS
 !               DIMENSION:  Scalar
 !               ATTRIBUTES: INTENT(IN)
 !
+! OPTIONAL INPUTS:
+!       Unit:   Unit number for an already open file to which the output
+!               will be written.
+!               If the argument is specified and the file unit is not
+!               connected, the output goes to stdout.
+!               UNITS:      N/A
+!               TYPE:       INTEGER
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN), OPTIONAL
+!
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_GeometryInfo_Inspect( gInfo )
+  SUBROUTINE CRTM_GeometryInfo_Inspect( gInfo, Unit )
+    ! Arguments
     TYPE(CRTM_GeometryInfo_type), INTENT(IN) :: gInfo
+    INTEGER,            OPTIONAL, INTENT(IN) :: Unit
+    ! Local parameters
     CHARACTER(*), PARAMETER :: RFMT = 'es13.6'
+    ! Local variables
+    INTEGER :: fid
 
-    WRITE(*, '(1x,"GeometryInfo OBJECT")')
-    WRITE(*, '(3x,"Distance ratio        :",1x,'//RFMT//')') gInfo%Distance_Ratio     
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+
+    WRITE(fid, '(1x,"GeometryInfo OBJECT")')
+    WRITE(fid, '(3x,"Distance ratio        :",1x,'//RFMT//')') gInfo%Distance_Ratio     
     ! ...Sensor angle information
-    WRITE(*, '(3x,"Sensor scan radian    :",1x,'//RFMT//')') gInfo%Sensor_Scan_Radian   
-    WRITE(*, '(3x,"Sensor zenith radian  :",1x,'//RFMT//')') gInfo%Sensor_Zenith_Radian 
-    WRITE(*, '(3x,"Sensor azimuth radian :",1x,'//RFMT//')') gInfo%Sensor_Azimuth_Radian
-    WRITE(*, '(3x,"Secant sensor zenith  :",1x,'//RFMT//')') gInfo%Secant_Sensor_Zenith 
-    WRITE(*, '(3x,"Cosine sensor zenith  :",1x,'//RFMT//')') gInfo%Cosine_Sensor_Zenith
+    WRITE(fid, '(3x,"Sensor scan radian    :",1x,'//RFMT//')') gInfo%Sensor_Scan_Radian   
+    WRITE(fid, '(3x,"Sensor zenith radian  :",1x,'//RFMT//')') gInfo%Sensor_Zenith_Radian 
+    WRITE(fid, '(3x,"Sensor azimuth radian :",1x,'//RFMT//')') gInfo%Sensor_Azimuth_Radian
+    WRITE(fid, '(3x,"Secant sensor zenith  :",1x,'//RFMT//')') gInfo%Secant_Sensor_Zenith 
+    WRITE(fid, '(3x,"Cosine sensor zenith  :",1x,'//RFMT//')') gInfo%Cosine_Sensor_Zenith
     ! ...Transmittance algorithm sensor angle information
-    WRITE(*, '(3x,"Trans zenith radian   :",1x,'//RFMT//')') gInfo%Trans_Zenith_Radian 
-    WRITE(*, '(3x,"Secant trans zenith   :",1x,'//RFMT//')') gInfo%Secant_Trans_Zenith
+    WRITE(fid, '(3x,"Trans zenith radian   :",1x,'//RFMT//')') gInfo%Trans_Zenith_Radian 
+    WRITE(fid, '(3x,"Secant trans zenith   :",1x,'//RFMT//')') gInfo%Secant_Trans_Zenith
     ! ...Source angle information
-    WRITE(*, '(3x,"Source zenith radian  :",1x,'//RFMT//')') gInfo%Source_Zenith_Radian 
-    WRITE(*, '(3x,"Source azimuth radian :",1x,'//RFMT//')') gInfo%Source_Azimuth_Radian
-    WRITE(*, '(3x,"Secant source zenith  :",1x,'//RFMT//')') gInfo%Secant_Source_Zenith 
+    WRITE(fid, '(3x,"Source zenith radian  :",1x,'//RFMT//')') gInfo%Source_Zenith_Radian 
+    WRITE(fid, '(3x,"Source azimuth radian :",1x,'//RFMT//')') gInfo%Source_Azimuth_Radian
+    WRITE(fid, '(3x,"Secant source zenith  :",1x,'//RFMT//')') gInfo%Secant_Source_Zenith 
     ! ...Flux angle information
-    WRITE(*, '(3x,"Flux zenith radian    :",1x,'//RFMT//')') gInfo%Flux_Zenith_Radian
-    WRITE(*, '(3x,"Secant flux zenith    :",1x,'//RFMT//')') gInfo%Secant_Flux_Zenith
+    WRITE(fid, '(3x,"Flux zenith radian    :",1x,'//RFMT//')') gInfo%Flux_Zenith_Radian
+    WRITE(fid, '(3x,"Secant flux zenith    :",1x,'//RFMT//')') gInfo%Secant_Flux_Zenith
     ! ...AU ratio information
-    WRITE(*, '(3x,"AU ratio^2            :",1x,'//RFMT//')') gInfo%AU_ratio2
+    WRITE(fid, '(3x,"AU ratio^2            :",1x,'//RFMT//')') gInfo%AU_ratio2
 
     ! The contained object
-    CALL CRTM_Geometry_Inspect(gInfo%user)
+    CALL CRTM_Geometry_Inspect(gInfo%user, Unit=Unit)
     
   END SUBROUTINE CRTM_GeometryInfo_Inspect
 

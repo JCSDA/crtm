@@ -16,6 +16,8 @@ MODULE CRTM_RTSolution_Define
   ! ------------------
   ! Environment set up
   ! ------------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use statements
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -325,56 +327,85 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM RTSolution object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_RTSolution_Inspect( RTSolution )
+!       CALL CRTM_RTSolution_Inspect( RTSolution, Unit=unit )
 !
 ! INPUTS:
-!       RTSolution:    CRTM RTSolution object to display.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_RTSolution_type
-!                      DIMENSION:  Scalar or Rank-2 (n_channels x n_profiles)
-!                      ATTRIBUTES: INTENT(IN)
+!       RTSolution:  CRTM RTSolution object to display.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_RTSolution_type
+!                    DIMENSION:  Scalar or Rank-2 (n_channels x n_profiles)
+!                    ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:        Unit number for an already open file to which the output
+!                    will be written.
+!                    If the argument is specified and the file unit is not
+!                    connected, the output goes to stdout.
+!                    UNITS:      N/A
+!                    TYPE:       INTEGER
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Scalar_Inspect( RTSolution )
+  SUBROUTINE Scalar_Inspect( RTSolution, Unit )
+    ! Arguments
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution
-    WRITE(*,'(1x,"RTSolution OBJECT")')
-    ! Display components
-    WRITE(*,'(3x,"Sensor Id                : ",a )') TRIM(RTSolution%Sensor_ID)
-    WRITE(*,'(3x,"WMO Satellite Id         : ",i0)') RTSolution%WMO_Satellite_ID
-    WRITE(*,'(3x,"WMO Sensor Id            : ",i0)') RTSolution%WMO_Sensor_ID
-    WRITE(*,'(3x,"Channel                  : ",i0)') RTSolution%Sensor_Channel
-    WRITE(*,'(3x,"RT Algorithm Name        : ",a )') RTSolution%RT_Algorithm_Name
-    WRITE(*,'(3x,"Scattering Optical Depth : ",es13.6)') RTSolution%SOD
-    WRITE(*,'(3x,"Surface Emissivity       : ",es13.6)') RTSolution%Surface_Emissivity
-    WRITE(*,'(3x,"Up Radiance              : ",es13.6)') RTSolution%Up_Radiance
-    WRITE(*,'(3x,"Down Radiance            : ",es13.6)') RTSolution%Down_Radiance
-    WRITE(*,'(3x,"Down Solar Radiance      : ",es13.6)') RTSolution%Down_Solar_Radiance
-    WRITE(*,'(3x,"Surface Planck Radiance  : ",es13.6)') RTSolution%Surface_Planck_Radiance
-    IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
-      WRITE(*,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
-      WRITE(*,'(3x,"Upwelling Radiance       :")')
-      WRITE(*,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
-      WRITE(*,'(3x,"Layer Optical Depth      :")')
-      WRITE(*,'(5(1x,es13.6,:))') RTSolution%Layer_Optical_Depth
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
+
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
     END IF
-    WRITE(*,'(3x,"Radiance                 : ",es13.6)') RTSolution%Radiance
-    WRITE(*,'(3x,"Brightness Temperature   : ",es13.6)') RTSolution%Brightness_Temperature
+
+
+    WRITE(fid,'(1x,"RTSolution OBJECT")')
+    ! Display components
+    WRITE(fid,'(3x,"Sensor Id                : ",a )') TRIM(RTSolution%Sensor_ID)
+    WRITE(fid,'(3x,"WMO Satellite Id         : ",i0)') RTSolution%WMO_Satellite_ID
+    WRITE(fid,'(3x,"WMO Sensor Id            : ",i0)') RTSolution%WMO_Sensor_ID
+    WRITE(fid,'(3x,"Channel                  : ",i0)') RTSolution%Sensor_Channel
+    WRITE(fid,'(3x,"RT Algorithm Name        : ",a )') RTSolution%RT_Algorithm_Name
+    WRITE(fid,'(3x,"Scattering Optical Depth : ",es13.6)') RTSolution%SOD
+    WRITE(fid,'(3x,"Surface Emissivity       : ",es13.6)') RTSolution%Surface_Emissivity
+    WRITE(fid,'(3x,"Up Radiance              : ",es13.6)') RTSolution%Up_Radiance
+    WRITE(fid,'(3x,"Down Radiance            : ",es13.6)') RTSolution%Down_Radiance
+    WRITE(fid,'(3x,"Down Solar Radiance      : ",es13.6)') RTSolution%Down_Solar_Radiance
+    WRITE(fid,'(3x,"Surface Planck Radiance  : ",es13.6)') RTSolution%Surface_Planck_Radiance
+    IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
+      WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
+      WRITE(fid,'(3x,"Upwelling Radiance       :")')
+      WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
+      WRITE(fid,'(3x,"Layer Optical Depth      :")')
+      WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Layer_Optical_Depth
+    END IF
+    WRITE(fid,'(3x,"Radiance                 : ",es13.6)') RTSolution%Radiance
+    WRITE(fid,'(3x,"Brightness Temperature   : ",es13.6)') RTSolution%Brightness_Temperature
   END SUBROUTINE Scalar_Inspect
 
 
-  SUBROUTINE Rank2_Inspect( RTSolution )
+  SUBROUTINE Rank2_Inspect( RTSolution, Unit )
     TYPE(CRTM_RTSolution_type), INTENT(IN) :: RTSolution(:,:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i, n_channels
     INTEGER :: j, n_profiles
+
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
 
     n_channels = SIZE(RTSolution,1)
     n_profiles = SIZE(RTSolution,2)
     DO j = 1, n_profiles
       DO i = 1, n_channels
-        WRITE(*, FMT='(1x,"PROFILE INDEX:",i0,", CHANNEL INDEX:",i0," - ")', ADVANCE='NO') j,i
-        CALL Scalar_Inspect(RTSolution(i,j))
+        WRITE(fid, FMT='(1x,"PROFILE INDEX:",i0,", CHANNEL INDEX:",i0," - ")', ADVANCE='NO') j,i
+        CALL Scalar_Inspect(RTSolution(i,j), Unit=Unit)
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect

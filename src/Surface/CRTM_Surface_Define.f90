@@ -17,6 +17,8 @@ MODULE CRTM_Surface_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env       , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds            , ONLY: fp
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -502,34 +504,56 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM Surface object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Surface_Inspect( Sfc )
+!       CALL CRTM_Surface_Inspect( Sfc, Unit=unit )
 !
 ! INPUTS:
-!       Sfc:  CRTM Surface object to display.
-!             UNITS:      N/A
-!             TYPE:       CRTM_Surface_type
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(IN)
+!       Sfc:   CRTM Surface object to display.
+!              UNITS:      N/A
+!              TYPE:       CRTM_Surface_type
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:  Unit number for an already open file to which the output
+!              will be written.
+!              If the argument is specified and the file unit is not
+!              connected, the output goes to stdout.
+!              UNITS:      N/A
+!              TYPE:       INTEGER
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Surface_Inspect( Sfc )
+  SUBROUTINE CRTM_Surface_Inspect( Sfc, Unit )
+    ! Arguments
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    WRITE(*, '(1x,"Surface OBJECT")')
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+    
+    WRITE(fid,'(1x,"Surface OBJECT")')
     ! Surface coverage
-    WRITE(*, '(3x,"Land Coverage :",1x,f6.3)') Sfc%Land_Coverage
-    WRITE(*, '(3x,"Water Coverage:",1x,f6.3)') Sfc%Water_Coverage
-    WRITE(*, '(3x,"Snow Coverage :",1x,f6.3)') Sfc%Snow_Coverage
-    WRITE(*, '(3x,"Ice Coverage  :",1x,f6.3)') Sfc%Ice_Coverage
+    WRITE(fid,'(3x,"Land Coverage :",1x,f6.3)') Sfc%Land_Coverage
+    WRITE(fid,'(3x,"Water Coverage:",1x,f6.3)') Sfc%Water_Coverage
+    WRITE(fid,'(3x,"Snow Coverage :",1x,f6.3)') Sfc%Snow_Coverage
+    WRITE(fid,'(3x,"Ice Coverage  :",1x,f6.3)') Sfc%Ice_Coverage
     ! The various surface types
-    IF ( sfc%Land_Coverage  > ZERO ) CALL CRTM_LandSurface_Inspect(sfc)
-    IF ( sfc%Water_Coverage > ZERO ) CALL CRTM_WaterSurface_Inspect(sfc)
-    IF ( sfc%Snow_Coverage  > ZERO ) CALL CRTM_SnowSurface_Inspect(sfc)
-    IF ( sfc%Ice_Coverage   > ZERO ) CALL CRTM_IceSurface_Inspect(sfc)
+    IF ( sfc%Land_Coverage  > ZERO ) CALL CRTM_LandSurface_Inspect(sfc, Unit=Unit)
+    IF ( sfc%Water_Coverage > ZERO ) CALL CRTM_WaterSurface_Inspect(sfc, Unit=Unit)
+    IF ( sfc%Snow_Coverage  > ZERO ) CALL CRTM_SnowSurface_Inspect(sfc, Unit=Unit)
+    IF ( sfc%Ice_Coverage   > ZERO ) CALL CRTM_IceSurface_Inspect(sfc, Unit=Unit)
     ! SensorData information
     IF ( CRTM_SensorData_Associated(Sfc%SensorData) ) &
-      CALL CRTM_SensorData_Inspect(Sfc%SensorData)
+      CALL CRTM_SensorData_Inspect(Sfc%SensorData, Unit=Unit)
 
   END SUBROUTINE CRTM_Surface_Inspect
 
@@ -925,13 +949,11 @@ CONTAINS
 !       Surface:      CRTM Surface object array containing the Surface
 !                     data. Note the following meanings attributed to the
 !                     dimensions of the object array:
-!                     Rank-1: M profiles.
-!                             Only profile data are to be read in. The file
+!                     Rank-1: Only profile data are to be read in. The file
 !                             does not contain channel information. The
 !                             dimension of the structure is understood to
 !                             be the PROFILE dimension.
-!                     Rank-2: L channels  x  M profiles
-!                             Channel and profile data are to be read in.
+!                     Rank-2: Channel and profile data are to be read in.
 !                             The file contains both channel and profile
 !                             information. The first dimension of the
 !                             structure is the CHANNEL dimension, the second
@@ -940,8 +962,8 @@ CONTAINS
 !                             same function.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Surface_type
-!                     DIMENSION:  Rank-1 (M) or Rank-2 (L x M)
-!                     ATTRIBUTES: INTENT(OUT)
+!                     DIMENSION:  Rank-1 or Rank-2
+!                     ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !       Quiet:        Set this logical argument to suppress INFORMATION
@@ -991,12 +1013,12 @@ CONTAINS
     Debug     ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),            INTENT(IN)  :: Filename
-    TYPE(CRTM_Surface_type), INTENT(OUT) :: Surface(:)  ! M
-    LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,       OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER,       OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,       OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                         INTENT(IN)  :: Filename
+    TYPE(CRTM_Surface_type), ALLOCATABLE, INTENT(OUT) :: Surface(:)  ! M
+    LOGICAL,       OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,       OPTIONAL,              INTENT(OUT) :: n_Channels
+    INTEGER,       OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,       OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1004,11 +1026,13 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
-    LOGICAL :: noisy
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
+    LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: n_File_Channels, n_File_Profiles
-    INTEGER :: m, n_Input_Profiles
+    INTEGER :: n_input_channels
+    INTEGER :: m, n_input_profiles
 
 
     ! Set up
@@ -1017,14 +1041,7 @@ CONTAINS
     noisy = .TRUE.
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) noisy = .TRUE.
-    END IF
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
-    END IF
+    IF ( PRESENT(Debug) ) noisy = Debug
 
 
     ! Open the file
@@ -1036,31 +1053,27 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_File_Channels, n_File_Profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_channels, n_input_profiles
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Check that n_Channels is zero
-    IF ( n_File_Channels /= 0 ) THEN
+    IF ( n_input_channels /= 0 ) THEN
       msg = 'n_Channels dimensions in '//TRIM(Filename)//' is not zero for a rank-1 '//&
             '(i.e. profiles only) Surface read.'
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if n_Profiles in file is > size of output array
-    n_Input_Profiles = SIZE(Surface)
-    IF ( n_File_Profiles > n_Input_Profiles ) THEN
-      WRITE( msg,'("Number of profiles, ",i0," > size of the output Surface", &
-                  &" array, ",i0,". Only the first ",i0, &
-                  &" profiles will be read.")' ) &
-                  n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(Surface(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Surface array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
     ! Loop over all the profiles
-    Profile_Loop: DO m = 1, n_Input_Profiles
+    Profile_Loop: DO m = 1, n_input_profiles
       err_stat = Read_Record( fid, Surface(m), &
                               Quiet = Quiet, &
                               Debug = Debug  )
@@ -1081,7 +1094,7 @@ CONTAINS
 
     ! Set the return values
     IF ( PRESENT(n_Channels) ) n_Channels = 0
-    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_profiles
 
 
     ! Output an info message
@@ -1098,7 +1111,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Surface_Destroy( Surface )
+      IF ( ALLOCATED(Surface) ) THEN 
+        DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Surface array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -1115,12 +1133,12 @@ CONTAINS
     Debug     ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),            INTENT(IN)  :: Filename
-    TYPE(CRTM_Surface_type), INTENT(OUT) :: Surface(:,:)  ! L x M
-    LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,       OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER,       OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,       OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                         INTENT(IN)  :: Filename
+    TYPE(CRTM_Surface_type), ALLOCATABLE, INTENT(OUT) :: Surface(:,:)  ! L x M
+    LOGICAL,       OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,       OPTIONAL,              INTENT(OUT) :: n_Channels
+    INTEGER,       OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,       OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1128,11 +1146,13 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
-    LOGICAL :: noisy
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
+    LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: l, n_File_Channels, n_Input_Channels
-    INTEGER :: m, n_File_Profiles, n_Input_Profiles
+    INTEGER :: l, n_input_channels
+    INTEGER :: m, n_input_profiles
 
 
     ! Set up
@@ -1141,14 +1161,7 @@ CONTAINS
     noisy = .TRUE.
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
-    IF ( PRESENT(Debug) ) THEN
-      IF ( Debug ) noisy = .TRUE.
-    END IF
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
-    END IF
+    IF ( PRESENT(Debug) ) noisy = Debug
 
 
     ! Open the file
@@ -1160,36 +1173,22 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_File_Channels, n_File_Profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_channels, n_input_profiles
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading n_Clouds data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if n_Channels in file is > size of output array
-    n_Input_Channels = SIZE(Surface,DIM=1)
-    IF ( n_File_Channels > n_Input_Channels ) THEN
-      WRITE( msg,'("Number of channels, ",i0," > size of the output Surface", &
-                  &" array dimension, ",i0,". Only the first ",i0, &
-                  &" channels will be read.")' ) &
-                  n_File_Channels, n_Input_Channels, n_Input_Channels
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(Surface(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Surface array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_Input_Channels = MIN(n_Input_Channels, n_File_Channels)
-    ! ...Check if n_Profiles in file is > size of output array
-    n_Input_Profiles = SIZE(Surface,DIM=2)
-    IF ( n_File_Profiles > n_Input_Profiles ) THEN
-      WRITE( msg, '( "Number of profiles, ",i0," > size of the output Surface", &
-                    &" array dimension, ",i0,". Only the first ",i0, &
-                    &" profiles will be read.")' ) &
-                    n_File_Profiles, n_Input_Profiles, n_Input_Profiles
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), WARNING )
-    END IF
-    n_Input_Profiles = MIN(n_Input_Profiles, n_File_Profiles)
 
 
     ! Loop over all the profiles and channels
-    Profile_Loop: DO m = 1, n_Input_Profiles
-      Channel_Loop: DO l = 1, n_Input_Channels
+    Profile_Loop: DO m = 1, n_input_profiles
+      Channel_Loop: DO l = 1, n_input_channels
         err_stat = Read_Record( fid, Surface(l,m), &
                                 Quiet = Quiet, &
                                 Debug = Debug )
@@ -1211,8 +1210,8 @@ CONTAINS
 
 
     ! Set the return values
-    IF ( PRESENT(n_Channels) ) n_Channels = n_Input_Channels
-    IF ( PRESENT(n_Profiles) ) n_Profiles = n_Input_Profiles
+    IF ( PRESENT(n_Channels) ) n_Channels = n_input_channels
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_profiles
 
 
     ! Output an info message
@@ -1230,7 +1229,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Surface_Destroy( Surface )
+      IF ( ALLOCATED(Surface) ) THEN 
+        DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Surface array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -1767,17 +1771,23 @@ CONTAINS
   END FUNCTION CRTM_LandSurface_IsValid
 
 
-  SUBROUTINE CRTM_LandSurface_Inspect( Sfc )
+  SUBROUTINE CRTM_LandSurface_Inspect( Sfc, Unit )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    WRITE(*, '(3x,"Land type index      :",1x,i0)') Sfc%Land_Type
-    WRITE(*, '(3x,"Land Temperature     :",1x,es13.6)') Sfc%Land_Temperature
-    WRITE(*, '(3x,"Soil Moisture Content:",1x,es13.6)') Sfc%Soil_Moisture_Content
-    WRITE(*, '(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content
-    WRITE(*, '(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction
-    WRITE(*, '(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature
-    WRITE(*, '(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%LAI
-    WRITE(*, '(3x,"Soil type index      :",1x,i0)') Sfc%Soil_Type
-    WRITE(*, '(3x,"Vegetation type index:",1x,i0)') Sfc%Vegetation_Type
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+    WRITE(fid,'(3x,"Land type index      :",1x,i0)') Sfc%Land_Type
+    WRITE(fid,'(3x,"Land Temperature     :",1x,es13.6)') Sfc%Land_Temperature
+    WRITE(fid,'(3x,"Soil Moisture Content:",1x,es13.6)') Sfc%Soil_Moisture_Content
+    WRITE(fid,'(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content
+    WRITE(fid,'(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction
+    WRITE(fid,'(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature
+    WRITE(fid,'(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%LAI
+    WRITE(fid,'(3x,"Soil type index      :",1x,i0)') Sfc%Soil_Type
+    WRITE(fid,'(3x,"Vegetation type index:",1x,i0)') Sfc%Vegetation_Type
   END SUBROUTINE CRTM_LandSurface_Inspect
 
 
@@ -1870,13 +1880,19 @@ CONTAINS
   END FUNCTION CRTM_WaterSurface_IsValid
 
 
-  SUBROUTINE CRTM_WaterSurface_Inspect( Sfc )
+  SUBROUTINE CRTM_WaterSurface_Inspect( Sfc, Unit )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    WRITE(*, '(3x,"Water Type index :",1x,i0)') Sfc%Water_Type
-    WRITE(*, '(3x,"Water Temperature:",1x,es13.6)') Sfc%Water_Temperature
-    WRITE(*, '(3x,"Wind Speed       :",1x,es13.6)') Sfc%Wind_Speed
-    WRITE(*, '(3x,"Wind Direction   :",1x,es13.6)') Sfc%Wind_Direction
-    WRITE(*, '(3x,"Salinity         :",1x,es13.6)') Sfc%Salinity
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+    WRITE(fid,'(3x,"Water Type index :",1x,i0)') Sfc%Water_Type
+    WRITE(fid,'(3x,"Water Temperature:",1x,es13.6)') Sfc%Water_Temperature
+    WRITE(fid,'(3x,"Wind Speed       :",1x,es13.6)') Sfc%Wind_Speed
+    WRITE(fid,'(3x,"Wind Direction   :",1x,es13.6)') Sfc%Wind_Direction
+    WRITE(fid,'(3x,"Salinity         :",1x,es13.6)') Sfc%Salinity
   END SUBROUTINE CRTM_WaterSurface_Inspect
 
 
@@ -1961,13 +1977,19 @@ CONTAINS
   END FUNCTION CRTM_SnowSurface_IsValid
 
 
-  SUBROUTINE CRTM_SnowSurface_Inspect( Sfc )
+  SUBROUTINE CRTM_SnowSurface_Inspect( Sfc, Unit )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    WRITE(*, '(3x,"Snow Type index :",1x,i0)') Sfc%Snow_Type
-    WRITE(*, '(3x,"Snow Temperature:",1x,es13.6)') Sfc%Snow_Temperature
-    WRITE(*, '(3x,"Snow Depth      :",1x,es13.6)') Sfc%Snow_Depth
-    WRITE(*, '(3x,"Snow Density    :",1x,es13.6)') Sfc%Snow_Density
-    WRITE(*, '(3x,"Snow Grain_Size :",1x,es13.6)') Sfc%Snow_Grain_Size
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+    WRITE(fid,'(3x,"Snow Type index :",1x,i0)') Sfc%Snow_Type
+    WRITE(fid,'(3x,"Snow Temperature:",1x,es13.6)') Sfc%Snow_Temperature
+    WRITE(fid,'(3x,"Snow Depth      :",1x,es13.6)') Sfc%Snow_Depth
+    WRITE(fid,'(3x,"Snow Density    :",1x,es13.6)') Sfc%Snow_Density
+    WRITE(fid,'(3x,"Snow Grain_Size :",1x,es13.6)') Sfc%Snow_Grain_Size
   END SUBROUTINE CRTM_SnowSurface_Inspect
 
 
@@ -2052,13 +2074,19 @@ CONTAINS
   END FUNCTION CRTM_IceSurface_IsValid
 
 
-  SUBROUTINE CRTM_IceSurface_Inspect( Sfc )
+  SUBROUTINE CRTM_IceSurface_Inspect( Sfc, Unit )
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
-    WRITE(*, '(3x,"Ice Type index :",1x,i0)') Sfc%Ice_Type
-    WRITE(*, '(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
-    WRITE(*, '(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness
-    WRITE(*, '(3x,"Ice Density    :",1x,es13.6)') Sfc%Ice_Density
-    WRITE(*, '(3x,"Ice Roughness  :",1x,es13.6)') Sfc%Ice_Roughness
+    INTEGER,       OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+    WRITE(fid,'(3x,"Ice Type index :",1x,i0)') Sfc%Ice_Type
+    WRITE(fid,'(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
+    WRITE(fid,'(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness
+    WRITE(fid,'(3x,"Ice Density    :",1x,es13.6)') Sfc%Ice_Density
+    WRITE(fid,'(3x,"Ice Roughness  :",1x,es13.6)') Sfc%Ice_Roughness
   END SUBROUTINE CRTM_IceSurface_Inspect
 
 

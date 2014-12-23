@@ -15,6 +15,8 @@ MODULE CRTM_Atmosphere_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -906,70 +908,104 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM Atmosphere object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Atmosphere_Inspect( Atm )
+!       CALL CRTM_Atmosphere_Inspect( Atm, Unit=unit )
 !
 ! INPUTS:
-!       Atm:  CRTM Atmosphere object to display.
-!             UNITS:      N/A
-!             TYPE:       CRTM_Atmosphere_type
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(IN)
+!       Atm:   CRTM Atmosphere object to display.
+!              UNITS:      N/A
+!              TYPE:       CRTM_Atmosphere_type
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:  Unit number for an already open file to which the output
+!              will be written.
+!              If the argument is specified and the file unit is not
+!              connected, the output goes to stdout.
+!              UNITS:      N/A
+!              TYPE:       INTEGER
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE Scalar_Inspect( Atm )
+  SUBROUTINE Scalar_Inspect( Atm, Unit )
+    ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atm
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
     INTEGER :: lClimatology
     INTEGER :: j, k
-    WRITE(*, '(1x,"ATMOSPHERE OBJECT")')
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+    
+    WRITE(fid, '(1x,"ATMOSPHERE OBJECT")')
     ! Dimensions
-    WRITE(*, '(3x,"n_Layers    :",1x,i0)') Atm%n_Layers
-    WRITE(*, '(3x,"n_Absorbers :",1x,i0)') Atm%n_Absorbers
-    WRITE(*, '(3x,"n_Clouds    :",1x,i0)') Atm%n_Clouds
-    WRITE(*, '(3x,"n_Aerosols  :",1x,i0)') Atm%n_Aerosols
+    WRITE(fid, '(3x,"n_Layers    :",1x,i0)') Atm%n_Layers
+    WRITE(fid, '(3x,"n_Absorbers :",1x,i0)') Atm%n_Absorbers
+    WRITE(fid, '(3x,"n_Clouds    :",1x,i0)') Atm%n_Clouds
+    WRITE(fid, '(3x,"n_Aerosols  :",1x,i0)') Atm%n_Aerosols
     ! Climatology
     lClimatology = Atm%Climatology
     IF ( lClimatology < 1 .OR. &
          lClimatology > N_VALID_CLIMATOLOGY_MODELS ) lClimatology = INVALID_MODEL
-    WRITE(*, '(3x,"Climatology :",1x,a)') CLIMATOLOGY_MODEL_NAME(lClimatology)
+    WRITE(fid, '(3x,"Climatology :",1x,a)') CLIMATOLOGY_MODEL_NAME(lClimatology)
     IF ( .NOT. CRTM_Atmosphere_Associated(Atm) ) RETURN
     ! Profile information
     k = Atm%n_Layers
-    WRITE(*, '(3x,"Level pressure:")')
-    WRITE(*, '(5(1x,es13.6,:))') Atm%Level_Pressure(0:k)
-    WRITE(*, '(3x,"Layer pressure:")')
-    WRITE(*, '(5(1x,es13.6,:))') Atm%Pressure(1:k)
-    WRITE(*, '(3x,"Layer temperature:")')
-    WRITE(*, '(5(1x,es13.6,:))') Atm%Temperature(1:k)
-    WRITE(*, '(3x,"Layer absorber:")')
+    WRITE(fid, '(3x,"Level pressure:")')
+    WRITE(fid, '(5(1x,es13.6,:))') Atm%Level_Pressure(0:k)
+    WRITE(fid, '(3x,"Layer pressure:")')
+    WRITE(fid, '(5(1x,es13.6,:))') Atm%Pressure(1:k)
+    WRITE(fid, '(3x,"Layer temperature:")')
+    WRITE(fid, '(5(1x,es13.6,:))') Atm%Temperature(1:k)
+    WRITE(fid, '(3x,"Layer absorber:")')
     DO j = 1, Atm%n_Absorbers
-      WRITE(*, '(5x,a,"(",a,")")') TRIM(ABSORBER_ID_NAME(Atm%Absorber_Id(j))), &
-                                   TRIM(ABSORBER_UNITS_NAME(Atm%Absorber_Units(j)))
-      WRITE(*, '(5(1x,es13.6,:))') Atm%Absorber(1:k,j)
+      WRITE(fid, '(5x,a,"(",a,")")') TRIM(ABSORBER_ID_NAME(Atm%Absorber_Id(j))), &
+                                     TRIM(ABSORBER_UNITS_NAME(Atm%Absorber_Units(j)))
+      WRITE(fid, '(5(1x,es13.6,:))') Atm%Absorber(1:k,j)
     END DO
     ! Cloud information
-    IF ( Atm%n_Clouds > 0 ) CALL CRTM_Cloud_Inspect(Atm%Cloud)
+    IF ( Atm%n_Clouds > 0 ) CALL CRTM_Cloud_Inspect(Atm%Cloud, Unit=Unit)
     ! Aerosol information
-    IF ( Atm%n_Aerosols > 0 ) CALL CRTM_Aerosol_Inspect(Atm%Aerosol)
+    IF ( Atm%n_Aerosols > 0 ) CALL CRTM_Aerosol_Inspect(Atm%Aerosol, Unit=Unit)
   END SUBROUTINE Scalar_Inspect
 
-  SUBROUTINE Rank1_Inspect( Atmosphere )
+  SUBROUTINE Rank1_Inspect( Atmosphere, Unit )
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atmosphere(:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO i = 1, SIZE(Atmosphere)
-      WRITE(*, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
-      CALL Scalar_Inspect(Atmosphere(i))
+      WRITE(fid, FMT='(1x,"RANK-1 INDEX:",i0," - ")', ADVANCE='NO') i
+      CALL Scalar_Inspect(Atmosphere(i), Unit=Unit)
     END DO
   END SUBROUTINE Rank1_Inspect
 
-  SUBROUTINE Rank2_Inspect( Atmosphere )
+  SUBROUTINE Rank2_Inspect( Atmosphere, Unit )
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: Atmosphere(:,:)
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    INTEGER :: fid
     INTEGER :: i, j
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
     DO j = 1, SIZE(Atmosphere,2)
       DO i = 1, SIZE(Atmosphere,1)
-        WRITE(*, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
-        CALL Scalar_Inspect(Atmosphere(i,j))
+        WRITE(fid, FMT='(1x,"RANK-2 INDEX:",i0,",",i0," - ")', ADVANCE='NO') i,j
+        CALL Scalar_Inspect(Atmosphere(i,j), Unit=Unit)
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect

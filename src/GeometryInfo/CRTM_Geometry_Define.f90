@@ -14,6 +14,8 @@ MODULE CRTM_Geometry_Define
   ! ------------------
   ! Environment set up
   ! ------------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -736,42 +738,64 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM Geometry object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Geometry_Inspect( geo )
+!       CALL CRTM_Geometry_Inspect( Geo, Unit=unit )
 !
 ! INPUTS:
-!       geo:  CRTM Geometry object to display.
-!             UNITS:      N/A
-!             TYPE:       CRTM_Geometry_type
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(IN)
+!       Geo:   CRTM Geometry object to display.
+!              UNITS:      N/A
+!              TYPE:       CRTM_Geometry_type
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:  Unit number for an already open file to which the output
+!              will be written.
+!              If the argument is specified and the file unit is not
+!              connected, the output goes to stdout.
+!              UNITS:      N/A
+!              TYPE:       INTEGER
+!              DIMENSION:  Scalar
+!              ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Geometry_Inspect( geo )
+  SUBROUTINE CRTM_Geometry_Inspect( geo, Unit )
+    ! Arguments
     TYPE(CRTM_Geometry_type), INTENT(IN) :: geo
+    INTEGER,        OPTIONAL, INTENT(IN) :: Unit
+    ! Local parameters
     CHARACTER(*), PARAMETER :: RFMT = 'es13.6'
+    ! Local variables
+    INTEGER :: fid
     
-    WRITE(*, '(1x,"Geometry OBJECT")')
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+    
+    WRITE(fid, '(1x,"Geometry OBJECT")')
     ! Field of view index
-    WRITE(*, '(3x,"FOV index           :",1x,i0)') geo%iFOV
+    WRITE(fid, '(3x,"FOV index           :",1x,i0)') geo%iFOV
     ! Earth location
-    WRITE(*, '(3x,"Longitude           :",1x,'//RFMT//')') geo%Longitude       
-    WRITE(*, '(3x,"Latitude            :",1x,'//RFMT//')') geo%Latitude        
-    WRITE(*, '(3x,"Surface altitude    :",1x,'//RFMT//')') geo%Surface_Altitude
+    WRITE(fid, '(3x,"Longitude           :",1x,'//RFMT//')') geo%Longitude       
+    WRITE(fid, '(3x,"Latitude            :",1x,'//RFMT//')') geo%Latitude        
+    WRITE(fid, '(3x,"Surface altitude    :",1x,'//RFMT//')') geo%Surface_Altitude
     ! Sensor angle information
-    WRITE(*, '(3x,"Sensor scan angle   :",1x,'//RFMT//')') geo%Sensor_Scan_Angle   
-    WRITE(*, '(3x,"Sensor zenith angle :",1x,'//RFMT//')') geo%Sensor_Zenith_Angle 
-    WRITE(*, '(3x,"Sensor azimuth angle:",1x,'//RFMT//')') geo%Sensor_Azimuth_Angle
+    WRITE(fid, '(3x,"Sensor scan angle   :",1x,'//RFMT//')') geo%Sensor_Scan_Angle   
+    WRITE(fid, '(3x,"Sensor zenith angle :",1x,'//RFMT//')') geo%Sensor_Zenith_Angle 
+    WRITE(fid, '(3x,"Sensor azimuth angle:",1x,'//RFMT//')') geo%Sensor_Azimuth_Angle
     ! Source angle information
-    WRITE(*, '(3x,"Source zenith angle :",1x,'//RFMT//')') geo%Source_Zenith_Angle 
-    WRITE(*, '(3x,"Source azimuth angle:",1x,'//RFMT//')') geo%Source_Azimuth_Angle
+    WRITE(fid, '(3x,"Source zenith angle :",1x,'//RFMT//')') geo%Source_Zenith_Angle 
+    WRITE(fid, '(3x,"Source azimuth angle:",1x,'//RFMT//')') geo%Source_Azimuth_Angle
     ! Flux angle information
-    WRITE(*, '(3x,"Flux zenith angle   :",1x,'//RFMT//')') geo%Flux_Zenith_Angle
+    WRITE(fid, '(3x,"Flux zenith angle   :",1x,'//RFMT//')') geo%Flux_Zenith_Angle
     ! Date information
-    WRITE(*, '(3x,"Year                :",1x,i4)') geo%Year 
-    WRITE(*, '(3x,"Month               :",1x,i4)') geo%Month
-    WRITE(*, '(3x,"Day                 :",1x,i4)') geo%Day  
+    WRITE(fid, '(3x,"Year                :",1x,i4)') geo%Year 
+    WRITE(fid, '(3x,"Month               :",1x,i4)') geo%Month
+    WRITE(fid, '(3x,"Day                 :",1x,i4)') geo%Day  
 
   END SUBROUTINE CRTM_Geometry_Inspect
 

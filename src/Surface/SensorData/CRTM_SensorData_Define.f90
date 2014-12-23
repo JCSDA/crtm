@@ -15,6 +15,8 @@ MODULE CRTM_SensorData_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Type_Kinds           , ONLY: fp
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, Display_Message
@@ -390,33 +392,55 @@ CONTAINS
 !       Subroutine to print the contents of a CRTM SensorData object to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_SensorData_Inspect( SensorData )
+!       CALL CRTM_SensorData_Inspect( SensorData, Unit=unit )
 !
 ! INPUTS:
-!       SensorData:    CRTM SensorData object to display.
-!                      UNITS:      N/A
-!                      TYPE:       CRTM_SensorData_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!       SensorData:  CRTM SensorData object to display.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_SensorData_type
+!                    DIMENSION:  Scalar
+!                    ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:        Unit number for an already open file to which the output  
+!                    will be written.                                          
+!                    If the argument is specified and the file unit is not     
+!                    connected, the output goes to stdout.                     
+!                    UNITS:      N/A                                           
+!                    TYPE:       INTEGER                                       
+!                    DIMENSION:  Scalar                                        
+!                    ATTRIBUTES: INTENT(IN), OPTIONAL                          
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_SensorData_Inspect( SensorData )
+  SUBROUTINE CRTM_SensorData_Inspect( SensorData, Unit )
+    ! Arguments
     TYPE(CRTM_SensorData_type), INTENT(IN) :: SensorData
-    WRITE(*, '(1x,"SENSORDATA OBJECT")')
+    INTEGER,          OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+    
+    WRITE(fid,'(1x,"SENSORDATA OBJECT")')
     ! Dimensions
-    WRITE(*, '(3x,"n_Channels:",1x,i0)') SensorData%n_Channels
+    WRITE(fid,'(3x,"n_Channels:",1x,i0)') SensorData%n_Channels
     ! Scalar components
-    WRITE(*, '(3x,"Sensor Id       :",1x,a)') SensorData%Sensor_Id
-    WRITE(*, '(3x,"WMO Satellite Id:",1x,i0)') SensorData%WMO_Satellite_Id
-    WRITE(*, '(3x,"WMO Sensor Id   :",1x,i0)') SensorData%WMO_Sensor_Id
+    WRITE(fid,'(3x,"Sensor Id       :",1x,a)') SensorData%Sensor_Id
+    WRITE(fid,'(3x,"WMO Satellite Id:",1x,i0)') SensorData%WMO_Satellite_Id
+    WRITE(fid,'(3x,"WMO Sensor Id   :",1x,i0)') SensorData%WMO_Sensor_Id
     IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) RETURN
     ! Array components
-    WRITE(*, '(3x,"Sensor channels:")')
-    WRITE(*, '(10(1x,i5))') SensorData%Sensor_Channel
-    WRITE(*, '(3x,"Brightness temperatures:")')
-    WRITE(*, '(10(1x,es13.6))') SensorData%Tb
+    WRITE(fid,'(3x,"Sensor channels:")')
+    WRITE(fid,'(10(1x,i5))') SensorData%Sensor_Channel
+    WRITE(fid,'(3x,"Brightness temperatures:")')
+    WRITE(fid,'(10(1x,es13.6))') SensorData%Tb
   END SUBROUTINE CRTM_SensorData_Inspect
 
 

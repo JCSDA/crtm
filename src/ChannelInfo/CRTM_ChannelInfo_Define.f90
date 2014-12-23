@@ -15,8 +15,11 @@ MODULE CRTM_ChannelInfo_Define
   ! -----------------
   ! Environment setup
   ! -----------------
+  ! Intrinsic modules
+  USE ISO_Fortran_Env      , ONLY: OUTPUT_UNIT
   ! Module use
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, Display_Message
+  USE File_Utility         , ONLY: File_Open
   USE CRTM_Parameters      , ONLY: STRLEN
   USE SensorInfo_Parameters, ONLY: INVALID_SENSOR, &
                                    INVALID_WMO_SATELLITE_ID, &
@@ -244,41 +247,61 @@ CONTAINS
 !       to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_ChannelInfo_Inspect( ChannelInfo )
+!       CALL CRTM_ChannelInfo_Inspect( chInfo, Unit=unit )
 !
 ! OBJECTS:
-!       ChannelInfo:   ChannelInfo object to display.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(CRTM_ChannelInfo_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!       chInfo:  ChannelInfo object to display.
+!                UNITS:      N/A
+!                TYPE:       TYPE(CRTM_ChannelInfo_type)
+!                DIMENSION:  Scalar
+!                ATTRIBUTES: INTENT(IN)
+!
+! OPTIONAL INPUTS:
+!       Unit:    Unit number for an already open file to which the output
+!                will be written.
+!                If the argument is specified and the file unit is not
+!                connected, the output goes to stdout.
+!                UNITS:      N/A
+!                TYPE:       INTEGER
+!                DIMENSION:  Scalar
+!                ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_ChannelInfo_Inspect( ChannelInfo )
-    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: ChannelInfo
+  SUBROUTINE CRTM_ChannelInfo_Inspect( chInfo, Unit )
+    ! Arguments
+    TYPE(CRTM_ChannelInfo_type), INTENT(IN) :: chInfo
+    INTEGER,           OPTIONAL, INTENT(IN) :: Unit
+    ! Local variables
+    INTEGER :: fid
     INTEGER :: i
     CHARACTER(3) :: process
-    WRITE(*,'(1x,"ChannelInfo OBJECT")')
-    WRITE(*,'(3x,"n_Channels       :",1x,i0)') ChannelInfo%n_Channels
-    WRITE(*,'(3x,"Sensor Id        :",1x,a )') TRIM(ChannelInfo%Sensor_ID)
-    WRITE(*,'(3x,"Sensor_Type      :",1x,i0)') ChannelInfo%Sensor_Type
-    WRITE(*,'(3x,"WMO_Satellite_ID :",1x,i0)') ChannelInfo%WMO_Satellite_ID
-    WRITE(*,'(3x,"WMO_Sensor_ID    :",1x,i0)') ChannelInfo%WMO_Sensor_ID   
-    WRITE(*,'(3x,"Sensor_Index     :",1x,i0)') ChannelInfo%Sensor_Index    
-    IF ( .NOT. CRTM_ChannelInfo_Associated(ChannelInfo) ) RETURN
-    WRITE(*,'(3x,"Channel#     Index     Process?")')
-    DO i = 1, ChannelInfo%n_Channels
-      IF ( ChannelInfo%Process_Channel(i) ) THEN
+    
+    ! Setup
+    fid = OUTPUT_UNIT
+    IF ( PRESENT(Unit) ) THEN
+      IF ( File_Open(Unit) ) fid = Unit
+    END IF
+
+
+    WRITE(fid,'(1x,"ChannelInfo OBJECT")')
+    WRITE(fid,'(3x,"n_Channels       :",1x,i0)') chInfo%n_Channels
+    WRITE(fid,'(3x,"Sensor Id        :",1x,a )') TRIM(chInfo%Sensor_ID)
+    WRITE(fid,'(3x,"Sensor_Type      :",1x,i0)') chInfo%Sensor_Type
+    WRITE(fid,'(3x,"WMO_Satellite_ID :",1x,i0)') chInfo%WMO_Satellite_ID
+    WRITE(fid,'(3x,"WMO_Sensor_ID    :",1x,i0)') chInfo%WMO_Sensor_ID   
+    WRITE(fid,'(3x,"Sensor_Index     :",1x,i0)') chInfo%Sensor_Index    
+    IF ( .NOT. CRTM_ChannelInfo_Associated(chInfo) ) RETURN
+    WRITE(fid,'(3x,"Channel#     Index     Process?")')
+    DO i = 1, chInfo%n_Channels
+      IF ( chInfo%Process_Channel(i) ) THEN
         process = 'yes'
       ELSE
         process = 'no'
       END IF
-      WRITE(*,'(4x,i5,7x,i5,8x,a)') &
-        ChannelInfo%Sensor_Channel(i), & 
-        ChannelInfo%Channel_Index(i), & 
-        process
+      WRITE(fid,'(4x,i5,7x,i5,8x,a)') &
+        chInfo%Sensor_Channel(i), chInfo%Channel_Index(i), process
     END DO
   END SUBROUTINE CRTM_ChannelInfo_Inspect
 
