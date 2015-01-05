@@ -57,6 +57,7 @@ PRO oSRF_Plotter, $
   @osrf_pro_err_handler
   ; ...Check simple keywords
   n_files = N_ELEMENTS(SRF_Files)
+  n_plots = n_files
   _path           = (N_ELEMENTS(path ) GT 0) ? path  : REPLICATE(".", n_files)
   _label          = (N_ELEMENTS(label) GT 0) ? label : SRF_Files
   plot_difference = KEYWORD_SET(difference)
@@ -73,14 +74,14 @@ PRO oSRF_Plotter, $
     use_frange = FALSE
   ENDELSE
   ; ...Set plotting parameters
-  font_size = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
-  thick     = 2
+  ; ...Font sizes for plots
+  font_size   = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
+  l_font_size = KEYWORD_SET(eps) ? font_size*0.6 : font_size*0.8
+  thick       = 1 ;KEYWORD_SET(eps) ? 1 : 2
   IF ( n_files LE 6 ) THEN $
     color = ['black', 'green', 'red', 'blue', 'magenta', 'cyan'] $
   ELSE $
     color = Get_Colours(n_files)
-  ; ...Set the number of plots
-  n_plots = KEYWORD_SET(difference) ? n_files-1 : n_files
 
 
   ; Check arguments
@@ -90,6 +91,14 @@ PRO oSRF_Plotter, $
              NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ; ...Remove any directory and extension specifiers from label array
   _label = FILE_BASENAME(_label,'.osrf.nc')
+  
+  
+  ; Reorder stuff for difference data
+  IF ( KEYWORD_SET(difference) ) THEN BEGIN
+    n_plots = n_files-1
+    color   = color[1:-1]
+    _label  = _label[1:-1]
+  ENDIF
   
   
   ; Read the SRF datafiles
@@ -121,45 +130,37 @@ PRO oSRF_Plotter, $
 
   ; Process the channel list keyword
   _channel_list = (N_ELEMENTS(channel_list) GT 0) ? channel_list  : sensor_channel
+  n_channels = N_ELEMENTS(_channel_list)
 
 
   ; Begin channel loop
   FOR l = 0, n_channels - 1 DO BEGIN
 
+    ; The channel number to obtain
+    channel = _channel_list[l]
 
+    
     ; Create hash for the channel SRFs from each file
     osrf = HASH()
     pref = OBJARR(n_plots) ; For legend
 
+
     ; Retrieve the channel data and subtract if necessary
     IF ( plot_difference ) THEN BEGIN
-      rsrf = osrf_file[0].Get(Position = l, Debug = debug)
+      rsrf = osrf_file[0].Get(Channel = _channel_list[l], Debug = debug)
       FOR n = 1, n_files-1 DO BEGIN
-        osrf[n-1] = osrf_file[n].Get(Position = l, Debug = debug)
+        osrf[n-1] = osrf_file[n].Get(Channel = _channel_list[l], Debug = debug)
         osrf[n-1] = oSRF_Subtract(osrf[n-1], rsrf, Debug = debug)
       ENDFOR
     ENDIF ELSE BEGIN
       FOR n = 0, n_files - 1 DO BEGIN
-        osrf[n] = osrf_file[n].Get(Position = l, Debug = debug)
-        osrf[n].Get_Property, $
-            Channel = channel, $
-            Debug = debug
+        osrf[n] = osrf_file[n].Get(Channel = _channel_list[l], Debug = debug)
       ENDFOR
     ENDELSE
 
 
-    ; Get the channel number
-    osrf[0].Get_Property, $
-      Channel = channel, $
-      Debug = debug
-    
-    
-    ; Skip this channel if not in the selected list
-    idx = WHERE(_channel_list EQ channel, n_match )
-    IF ( n_match EQ 0 ) THEN CONTINUE
-    
-    
     ; Begin the plotting loop
+    MESSAGE, "Plotting data for channel "+STRTRIM(channel,2), /INFORMATIONAL
     first_plot = TRUE
     FOR n = 0, n_plots - 1 DO BEGIN
     
@@ -207,13 +208,12 @@ PRO oSRF_Plotter, $
     IF ( n_plots GT 1 ) THEN BEGIN
       ; ...Determine legend position
       CASE n_bands OF
-        2: position = [0.325,0.3]
-        4: position = [0.25,0.3]
+        2: position = [0.6,0.3]
+        4: position = [0.5,0.4]
         ELSE: BEGIN
                 f0 = sensor_type EQ MICROWAVE_SENSOR ? Inverse_cm_to_GHz(f0) : f0
-                yrange   = pref[0].Yrange
-                y        = (yrange[1]-yrange[0])*0.3 + yrange[0]
-                position = pref[0].ConvertCoord(f0,y,/DATA,/TO_RELATIVE)
+                xf0 = pref[0].ConvertCoord(f0,0.3,/DATA,/TO_RELATIVE)
+                position = [xf0[0], 0.3]
               END
       ENDCASE
       ; ...Display it
@@ -221,21 +221,21 @@ PRO oSRF_Plotter, $
                       POSITION=position, $
                       /RELATIVE, $
                       HORIZONTAL_ALIGNMENT='CENTER', $
-                      VERTICAL_ALIGNMENT='TOP', $
-                      FONT_SIZE=font_size)
+                      VERTICAL_ALIGNMENT  ='TOP', $
+                      SAMPLE_WIDTH = 0.1, $
+                      FONT_SIZE=l_font_size)
     ENDIF
 
 
     ; Generate output plot files
     ; ...Generate a root filename
-    osrf[0].Get_Property, Channel = channel, Debug=debug
     fileroot = sensor_id+'-'+STRTRIM(channel,2)
     IF ( plot_difference ) THEN fileroot = fileroot + '.difference'
     ; ...Output the desired format
     IF ( KEYWORD_SET(eps) ) THEN BEGIN
       w.Save, fileroot+'.eps'
     ENDIF ELSE BEGIN
-      w.Save, fileroot+'.png', HEIGHT=500, BORDER=10
+      w.Save, fileroot+'.png', HEIGHT=600, BORDER=10
     ENDELSE
 
 
@@ -255,7 +255,7 @@ PRO oSRF_Plotter, $
             COLOR  = color[n], $
             THICK  = thick, $
             NAME   = _label[n], $
-            SYMBOL = 'diamond', $
+            SYMBOL = plot_symbol ? 'diamond' : 'none', $
             Owin   = tw, $
             /gTitle, $
             EPS    = eps, $
@@ -285,14 +285,13 @@ PRO oSRF_Plotter, $
                         /RELATIVE, $
                         HORIZONTAL_ALIGNMENT='CENTER', $
                         VERTICAL_ALIGNMENT='TOP', $
-                        FONT_SIZE=font_size, $
+                        FONT_SIZE=l_font_size, $
                         /NORMAL )
       ENDIF
 
 
       ; Generate output plot files
       ; ...Generate a root filename
-      osrf[0].Get_Property, Channel = channel, Debug=debug
       fileroot = sensor_id+'-'+STRTRIM(channel,2)+'.tfit'
       IF ( plot_difference ) THEN fileroot = fileroot + '.difference'
       ; ...Output the desired format
