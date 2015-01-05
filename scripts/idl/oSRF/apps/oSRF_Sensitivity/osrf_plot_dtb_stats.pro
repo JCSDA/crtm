@@ -9,7 +9,7 @@ PRO Read_All_Tb_Data, atmprofile_id, $  ; Input
   info = SIZE(tb,/STRUCT)
   ; Read the profile data results
   FOR m = 0, info.DIMENSIONS[0]-1 DO BEGIN
-    filename = path+"/"+atmprofile_id+'.profile'+STRING(m+1,FORMAT='(i4.4)')+'.Tb.dat'
+    filename = path+PATH_SEP()+atmprofile_id+'.profile'+STRING(m+1,FORMAT='(i4.4)')+'.Tb.dat'
     oSRF_Read_Tb, filename, x, Debug = debug
     tb[m,*] = x
   ENDFOR
@@ -27,7 +27,7 @@ PRO oSRF_Plot_dTb_Stats, $
   Exp_Id          = exp_id         , $  ; Input keyword. (Default is "experiment"). Can be an array.
   Legend_Name     = legend_name    , $  ; Input keyword. (Default is Exp_Id)
   n_Profiles      = n_profiles     , $  ; Input keyword. (Default is number of data files)
-  EPS             = eps            , $  ; Input keyword. Set to output EPS plot. (Default is PNG.)
+  EPS             = eps            , $  ; Input keyword. (Default is PNG output.)
   PlotRef         = plotref        , $  ; Output keyword. Object plot reference.
   Debug           = debug
 ;-
@@ -97,6 +97,24 @@ PRO oSRF_Plot_dTb_Stats, $
     font_size   = font_size   * 1.5
     l_font_size = l_font_size * 1.5
   ENDIF
+  ; ...Tick intervals and labeling
+  xtitle = 'Channel'
+  IF ( n_channels LE 20 ) THEN BEGIN
+    x             = LINDGEN(n_channels)
+    xtickinterval = 1 
+    xminor        = 0
+    xtickvalues   = LINDGEN(n_channels)
+    xtickname     = STRTRIM(sensor_channel,2)
+  ENDIF ELSE BEGIN
+    x             = LINDGEN(n_channels)+1
+    xtickinterval = !NULL 
+    xminor        = !NULL
+    xtickvalues   = !NULL
+    xtickname     = !NULL
+    ; ...Channels, or channel index?
+    dch = MEAN(sensor_channel[1:-1] - sensor_channel[0:-2],/DOUBLE)
+    IF ( dch GT 1.0d0 ) THEN xtitle = 'Channel index'
+  ENDELSE
 
 
   ; Read all LBL output
@@ -133,28 +151,28 @@ PRO oSRF_Plot_dTb_Stats, $
   FOR j = 0, n_stats-1 DO BEGIN
     index = 0
     FOR i = 0, n_exp_datasets-1 DO BEGIN
-      b = BARPLOT( INDGEN(n_channels), stats[*,i,j], $
-                   NBARS=n_exp_datasets, $
-                   INDEX=index++, $
-                   FILL_COLOR=bar_colour[i], $
-                   FONT_SIZE=font_size, $
-                   TITLE=stat_name[j], $
-                   XTITLE='Channel', $
-                   YTITLE=stat_name[j]+' !9D!XT!DB!N', $
-                   NAME = exp_dataset_name[i], $
-                   OVERPLOT=i, $
-                   LAYOUT = [nx,ny,j+1], $
-                   MARGIN = [0.20,0.16,0.05,0.1], $
-                   /CURRENT, $
-                   XTICKINTERVAL=1, $
-                   XMINOR=0, $
-                   XTICKVALUES=INDGEN(n_channels),$
-                   XTICKNAME=STRTRIM(sensor_channel,2) )
+      b = BARPLOT( x, stats[*,i,j], $
+                   NBARS         = n_exp_datasets              , $
+                   INDEX         = index++                     , $
+                   FILL_COLOR    = bar_colour[i]               , $
+                   FONT_SIZE     = font_size                   , $
+                   TITLE         = stat_name[j]                , $
+                   XTITLE        = xtitle                      , $
+                   YTITLE        = stat_name[j]+' $\Delta T_B$', $
+                   NAME          = exp_dataset_name[i]         , $
+                   OVERPLOT      = i                           , $
+                   LAYOUT        = [nx,ny,j+1]                 , $
+                   MARGIN        = [0.20,0.16,0.05,0.1]        , $
+                   XTICKINTERVAL = xtickinterval               , $ 
+                   XMINOR        = xminor                      , $ 
+                   XTICKVALUES   = xtickvalues                 , $ 
+                   XTICKNAME     = xtickname                   , $ 
+                   /CURRENT )
       IF ( j EQ 0 AND n_exp_datasets GT 1 ) THEN BEGIN
         IF ( i EQ 0 ) THEN $
-          l = LEGEND( TARGET=b, $
-                      POSITION=[0.8,0.925], $
-                      FONT_SIZE=l_font_size ) $
+          l = LEGEND( TARGET    = b           , $
+                      POSITION  = [0.8,0.925] , $
+                      FONT_SIZE = l_font_size ) $
         ELSE BEGIN
           l.Add, b
         ENDELSE
