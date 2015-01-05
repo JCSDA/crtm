@@ -43,8 +43,8 @@ module Svn_Util
     #          targets FILENAME
     #
     def add(list,options={})
-      svn_check_options(options, OPT_TABLE['add'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['add'])
+      option_list = process_options(options)
       cmd = "svn add #{option_list} #{list}"
       svn_run_command(cmd)
     end
@@ -67,8 +67,8 @@ module Svn_Util
     #          revision REV
     #
     def checkout(url,path,options={})
-      svn_check_options(options, OPT_TABLE['checkout'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['checkout'])
+      option_list = process_options(options)
       cmd = "svn checkout #{option_list} #{url} #{path}"
       svn_run_command(cmd)
     end
@@ -99,8 +99,8 @@ module Svn_Util
     #          with_revprop ARG
     #
     def commit(path,options={})
-      svn_check_options(options, OPT_TABLE['commit'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['commit'])
+      option_list = process_options(options)
       cmd = "svn commit #{option_list} #{path}"
       svn_run_command(cmd)
     end
@@ -132,8 +132,8 @@ module Svn_Util
     #          with_revprop ARG
     #
     def copy(source,destination,options={})
-      svn_check_options(options, OPT_TABLE['copy'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['copy'])
+      option_list = process_options(options)
       cmd = "svn copy #{option_list} #{source} #{destination}"
       svn_run_command(cmd)
     end
@@ -164,8 +164,8 @@ module Svn_Util
     #          with_revprop ARG
     #
     def delete(list,options={})
-      svn_check_options(options, OPT_TABLE['delete'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['delete'])
+      option_list = process_options(options)
       cmd = "svn delete #{option_list} #{list}"
       svn_run_command(cmd)
     end
@@ -184,7 +184,7 @@ module Svn_Util
     #
     # info: Display information about a local or remote item.
     #
-    # Calling sequence: info(list,options={})
+    # Calling sequence: info(list=".",options={})
     #
     # Options: changelist ARG
     #          depth ARG
@@ -194,9 +194,9 @@ module Svn_Util
     #          targets FILENAME
     #          xml
     #
-    def info(list,options={})
-      svn_check_options(options, OPT_TABLE['info'])
-      option_list = svn_process_options(options)
+    def info(list=".",options={})
+      check_options(options, OPT_TABLE['info'])
+      option_list = process_options(options)
       cmd = "svn info #{option_list} #{list}"
       svn_run_command(cmd)
     end
@@ -208,7 +208,7 @@ module Svn_Util
     #
     # log: Display commit log messages.
     #
-    # Calling sequence: log(path,options={})
+    # Calling sequence: log(path=".",options={})
     #
     # Options: change ARG
     #          incremental
@@ -224,9 +224,9 @@ module Svn_Util
     #          with_revprop ARG
     #          xml
     #
-    def log(path,options={})
-      svn_check_options(options, OPT_TABLE['log'])
-      option_list = svn_process_options(options)
+    def log(path=".",options={})
+      check_options(options, OPT_TABLE['log'])
+      option_list = process_options(options)
       cmd = "svn log #{option_list} #{path}"
       svn_run_command(cmd)
     end
@@ -248,8 +248,8 @@ module Svn_Util
     #          targets FILENAME
     #
     def revert(path,options={})
-      svn_check_options(options, OPT_TABLE['revert'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['revert'])
+      option_list = process_options(options)
       cmd = "svn revert #{option_list} #{path}"
       svn_run_command(cmd)
     end
@@ -272,8 +272,8 @@ module Svn_Util
     #          with_revprop ARG
     #
     def mkdir(new,options={})
-      svn_check_options(options, OPT_TABLE['mkdir'])
-      option_list = svn_process_options(options)
+      check_options(options, OPT_TABLE['mkdir'])
+      option_list = process_options(options)
       cmd = "svn mkdir #{option_list} #{new}"
       svn_run_command(cmd)
     end
@@ -285,7 +285,7 @@ module Svn_Util
     #
     # status: Print the status of working copy files and directories.
     #
-    # Calling sequence: status(path,options={})
+    # Calling sequence: status(path=".",options={})
     #
     # Aliases: stat, st
     #
@@ -299,9 +299,9 @@ module Svn_Util
     #          verbose
     #          xml
     #
-    def status(path,options={})
-      svn_check_options(options, OPT_TABLE['status'])
-      option_list = svn_process_options(options)
+    def status(path=".",options={})
+      check_options(options, OPT_TABLE['status'])
+      option_list = process_options(options)
       cmd = "svn status #{option_list} #{path}"
       svn_run_command(cmd)
     end
@@ -315,23 +315,109 @@ module Svn_Util
                            :quiet, :show_updates, :verbose, :xml]
   
 
+    #
+    # update: Update a working copy.
+    #
+    # Calling sequence: update(path,options={})
+    #
+    # Aliases: up
+    #
+    # Options: accept ACTION
+    #          changelist ARG
+    #          depth ARG
+    #          diff3_cmd CMD
+    #          editor_cmd CMD
+    #          force
+    #          ignore_externals
+    #          quiet
+    #          revision REV
+    #          set_depth ARG
+    #
+    def update(path,options={})
+      check_options(options, OPT_TABLE['update'])
+      option_list = process_options(options)
+      cmd = "svn update #{option_list} #{path}"
+      svn_run_command(cmd)
+    end
+  
+    alias up update
+
+    OPT_TABLE['update'] = 
+    OPT_TABLE['up']     = [:accept, :changelist, :depth, :diff3_cmd, :editor_cmd, :force,
+                           :ignore_externals, :quiet, :revision, :set_depth]
+
+
+  
     # -------------
     # Other methods
     # -------------
     
     #
-    # history: Print the history of subversion subcommands.
+    # initial_revision: Get the initial revision of a working copy path
     #
-    # Calling sequence: history(full = false)
+    # Calling sequence: initial_revision(path,options={})
     #
-    def history(full = false)
+    # Options: verbose
+    #
+    def initial_revision(path,options={})
+      check_options(options, OPT_TABLE['initial_revision'])
+      return -1 unless versioned?(path)
+      
+      # Run the log subcommand regardless of noop setting
+      noop_save = @noop
+      @noop = false
+      log(path, :xml => true, :stop_on_copy => true)
+      @noop = noop_save
+      
+      # XML-ise the log command output
+      xml = get_last_output(:xml => true, :pop => true)
+
+      # Extract the revision number
+      revision = xml.elements["*/logentry"].attributes["revision"].to_i
+      puts("  ...initial revision: #{revision}\n") if options[:verbose]
+      revision
+    end
+    
+    OPT_TABLE['initial_revision'] = [:verbose]
+    
+
+    #
+    # display_history: Print the history of subversion subcommands.
+    #
+    # Calling sequence: display_history(options={})
+    #
+    # Options: verbose
+    #
+    def display_history(options={})
       @history.each_with_index do |h, i|
         puts("#{i} command: #{h[:command]}")
-        puts("  + output:\n#{h[:output]}") if full
+        puts("  + output:\n#{h[:output]}") if options[:verbose]
         puts("  + result: #{h[:result]}")
       end
     end
 
+    OPT_TABLE['display_history'] = [:verbose]
+    
+
+    #
+    # get_last_output: Retrieve the output of the last command.
+    #
+    # Calling sequence: get_last_output(options={})
+    #
+    # Options: pop   : Remove the last command from the stack [Default is false]
+    #          xml   : Output in XML format [Default is false]
+    #
+    def get_last_output(options={})
+      if options[:pop]
+        history = @history.pop
+      else
+        history = @history[-1]
+      end
+      cmd_output = options[:xml] ? REXML::Document.new(history[:output]) : history[:output]
+    end
+
+    OPT_TABLE['get_last_output'] = [:pop, :xml]
+    
 
     #
     # versioned?: Determine if a path is versioned.
@@ -339,12 +425,17 @@ module Svn_Util
     # Calling sequence: versioned?(path)
     #
     def versioned?(path)
-      return false if @noop
-      return false unless File.exist?(path)
-      status(path, :verbose => true, :xml => true)
+      return false unless File.exist?("#{path}")
       
-      # XML-ise the status info
-      xml = REXML::Document.new((@history.pop)[:output])
+      # Run the status subcommand regardless of noop setting
+      noop_save = @noop
+      @noop = false
+      status(path, :verbose => true, :xml => true)
+      @noop = noop_save
+      
+
+      # XML-ise the status command output
+      xml = get_last_output(:xml => true, :pop => true)
 
       # Target and entry path should be the same
       # Only one entity at a time is tested
@@ -363,18 +454,19 @@ module Svn_Util
     def svn_run_command(command)  #:nodoc:
       if @noop
         puts(command)
+        output = ""
         result = 0
       else
         output = `#{command}`
         result = $?
-        @history.push({:command=>command, :output=>output, :result=>result})
         puts(output)
       end
+      @history.push({:command=>command, :output=>output, :result=>result, :noop=>@noop})
       result == 0
     end
   
   
-    def svn_check_options(options, optdecl)   #:nodoc:
+    def check_options(options, optdecl)   #:nodoc:
       h = options.dup
       optdecl.each do |opt|
         h.delete opt
@@ -382,15 +474,15 @@ module Svn_Util
       raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
     end
   
-  
-    def svn_process_options(options)   #:nodoc:
+
+    def process_options(options)   #:nodoc:
       option_list = ""
       options.each do |opt, value|
-        opt_name = opt.to_s
+        opt_name = opt.to_s.gsub(/_/,'-')
         case opt
           # Options with a value
-          when :auto_props, :change, :changelist, :depth, :editor_cmd, :encoding, :file, 
-               :limit, :no_auto_props, :revision, :targets, :with_revprop
+          when :accept, :auto_props, :change, :changelist, :depth, :diff3_cmd, :editor_cmd, :encoding,
+               :file, :limit, :no_auto_props, :revision, :set_depth, :targets, :with_revprop
             option_list << "--#{opt_name} #{value} "
           # Boolean options
           when :force, :force_log, :keep_changelists, :keep_local, :ignore_externals, :incremental,
@@ -409,4 +501,5 @@ module Svn_Util
 
   end  # Class Svn
   
-end  # Module Svu_Util
+end  # Module Svn_Util
+
