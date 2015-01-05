@@ -17,7 +17,7 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: link_coeffs.sh [-achlx] source-dir dest-dir [sensor_id1 sensor id2 ... sensor_idN]"
+  echo " Usage: link_coeffs.sh [-achx] [-t file-type] source-dir dest-dir [sensor_id1 sensor id2 ... sensor_idN]"
   echo
   echo "   Link in CRTM release fixfiles into a single directory."
   echo
@@ -32,17 +32,21 @@ usage()
   echo "         Perform additional special case linking for the AIRS 281 and"
   echo "         CrIS 399 channel subset datafiles for use with the GSI satinfo"
   echo "         file. The naming convention is:"
-  echo "           airs281SUBSET_aqua.[Spc|Tau]Coeff.bin -> airs281_aqua.[Spc|Tau]Coeff.bin"
-  echo "           cris_npp.[Spc|Tau]Coeff.bin           -> cris399_aqua.[Spc|Tau]Coeff.bin"
+  echo "           airs281SUBSET_aqua.[Spc|Tau]Coeff.* -> airs281_aqua.[Spc|Tau]Coeff.*"
+  echo "           cris_npp.[Spc|Tau]Coeff.*           -> cris399_aqua.[Spc|Tau]Coeff.*"
   echo
   echo "   -h"
   echo "         Print this message"
   echo
-  echo "   -l"
-  echo "         Link in little-endian files. BIG-ENDIAN is the default."
-  echo
   echo "   -x"
   echo "         Turn on execution tracing"
+  echo
+  echo "   -t file-type"
+  echo "         Use this option to specify the type of coefficient files to link."
+  echo "         Valid targets are:"
+  echo "           * big-endian [DEFAULT]"
+  echo "           * little-endian"
+  echo "           * netcdf"
   echo
   echo " Arguments:"
   echo "   source-dir"
@@ -81,7 +85,7 @@ SCRIPT_NAME=`basename $0`
 SUCCESS=0
 FAILURE=1
 # ..Define defaults
-ENDIAN_TYPE="Big_Endian"
+FILE_TYPE="big-endian"
 TAUCOEFF_TYPE="ODPS"
 ALL_SENSORS="yes"
 SPECIAL_CASE="no"
@@ -93,52 +97,29 @@ type ${LINK_SCRIPT} >/dev/null 2>&1 || {
   error_message "Cannot find ${LINK_SCRIPT} helper script. Exiting..."
   exit ${FAILURE}
 }
-# ...Define sensor independent coefficient files.
-COMMON_COEFF_FILES="AerosolCoeff.bin \
-CloudCoeff.bin \
-FASTEM4.MWwater.EmisCoeff.bin \
-FASTEM5.MWwater.EmisCoeff.bin \
-Nalli.IRwater.EmisCoeff.bin \
-WuSmith.IRwater.EmisCoeff.bin \
-NPOESS.IRice.EmisCoeff.bin \
-NPOESS.IRland.EmisCoeff.bin \
-NPOESS.IRsnow.EmisCoeff.bin \
-NPOESS.VISice.EmisCoeff.bin \
-NPOESS.VISland.EmisCoeff.bin \
-NPOESS.VISsnow.EmisCoeff.bin \
-NPOESS.VISwater.EmisCoeff.bin \
-IGBP.IRland.EmisCoeff.bin \
-IGBP.VISland.EmisCoeff.bin \
-USGS.IRland.EmisCoeff.bin \
-USGS.VISland.EmisCoeff.bin"
 
 
 
 # Parse command line options
-while getopts :xhlac OPTVAL; do
-
-  # If option argument looks like another option exit the loop
+while getopts :achxt: OPTVAL; do
+  # Exit if option argument looks like another option
   case ${OPTARG} in
     -*) break;;
   esac
-
-  # Parse the valid options here
+  # Parse the valid options
   case ${OPTVAL} in
-    l)  ENDIAN_TYPE="Little_Endian" ;;
     a)  TAUCOEFF_TYPE="ODAS" ;;
     c)  SPECIAL_CASE="yes";;
-    x)  script_id; set -x ;;
     h)  usage | more; exit ${SUCCESS} ;;
+    x)  script_id; set -x ;;
+    t)  FILE_TYPE="${OPTARG}" ;;
     \?) OPTVAL=${OPTARG}; break ;;
   esac
 done
-
 # ...Remove the options processed
 shift $((OPTIND - 1))
-
 # ...Output invalidities based on OPTVAL
 case ${OPTVAL} in
-
   # If OPTVAL contains nothing, then all options
   # have been successfully parsed.
   # So, check for presence of mandatory arguments.
@@ -147,13 +128,40 @@ case ${OPTVAL} in
         error_message "Missing source-dir and/or dest-dir arguments"
         exit ${FAILURE}
       fi;;
-
+  # Valid options, but missing arguments
+  t) usage; error_message "'-${OPTVAL}' option requires an argument"; exit ${FAILURE} ;;
   # Invalid option
-  ?) usage
-     error_message "Invalid option '-${OPTARG}'"
-     exit ${FAILURE};;
+  ?) usage; error_message "Invalid option '-${OPTARG}'"; exit ${FAILURE};;
 esac
 
+
+# Check the file type option
+case ${FILE_TYPE} in
+  "big-endian")    FILE_DIR="Big_Endian"   ; FILE_EXT="bin" ;;
+  "little-endian") FILE_DIR="Little_Endian"; FILE_EXT="bin" ;;
+  "netcdf")        FILE_DIR="netCDF"       ; FILE_EXT="nc"  ;;
+  *) usage; error_message "Invalid file type option argument"; exit ${FAILURE} ;;
+esac
+# ...Define the sensor independent coefficient files.
+COMMON_COEFF_FILES="AerosolCoeff.${FILE_EXT} \
+IR.CloudCoeff.${FILE_EXT} \
+MW.CloudCoeff.${FILE_EXT} \
+CloudCoeff.${FILE_EXT} \
+FASTEM4.MWwater.EmisCoeff.${FILE_EXT} \
+FASTEM5.MWwater.EmisCoeff.${FILE_EXT} \
+Nalli.IRwater.EmisCoeff.${FILE_EXT} \
+WuSmith.IRwater.EmisCoeff.${FILE_EXT} \
+NPOESS.IRice.EmisCoeff.${FILE_EXT} \
+NPOESS.IRland.EmisCoeff.${FILE_EXT} \
+NPOESS.IRsnow.EmisCoeff.${FILE_EXT} \
+NPOESS.VISice.EmisCoeff.${FILE_EXT} \
+NPOESS.VISland.EmisCoeff.${FILE_EXT} \
+NPOESS.VISsnow.EmisCoeff.${FILE_EXT} \
+NPOESS.VISwater.EmisCoeff.${FILE_EXT} \
+IGBP.IRland.EmisCoeff.${FILE_EXT} \
+IGBP.VISland.EmisCoeff.${FILE_EXT} \
+USGS.IRland.EmisCoeff.${FILE_EXT} \
+USGS.VISland.EmisCoeff.${FILE_EXT}"
 
 
 # Transfer, and remove, the arguments
@@ -209,40 +217,40 @@ fi
 
 
 # Link common files
-echo; echo "...linking sensor-independent coefficient files..."
-${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${COMMON_COEFF_FILES}
+echo; echo "...linking ${FILE_TYPE} sensor-independent coefficient files..."
+${LINK_SCRIPT} -s -d ${FILE_DIR} ${SOURCE_DIR} ${COMMON_COEFF_FILES}
 
 
 # Link the SpcCoeff files
-echo; echo "...linking SpcCoeff coefficient files..."
+echo; echo "...linking ${FILE_TYPE} SpcCoeff coefficient files..."
 if [ "${ALL_SENSORS}" = "yes" ]; then
-  SPCCOEFF_FILES=`ls ${SOURCE_DIR}/SpcCoeff/${ENDIAN_TYPE}`
+  SPCCOEFF_FILES=`ls ${SOURCE_DIR}/SpcCoeff/${FILE_DIR}`
 else
   for SENSOR_ID in ${SENSOR_ID_LIST}; do
-    SPCCOEFF_FILES="${SPCCOEFF_FILES} ${SENSOR_ID}.SpcCoeff.bin"
+    SPCCOEFF_FILES="${SPCCOEFF_FILES} ${SENSOR_ID}.SpcCoeff.${FILE_EXT}"
   done
 fi
-${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR} ${SPCCOEFF_FILES}
+${LINK_SCRIPT} -s -d ${FILE_DIR} ${SOURCE_DIR} ${SPCCOEFF_FILES}
 # ...Perform special case linking if required
 if [ "${SPECIAL_CASE}" = "yes" ]; then
-  ${LINK} airs281_aqua.SpcCoeff.bin airs281SUBSET_aqua.SpcCoeff.bin
-  ${LINK} cris399_npp.SpcCoeff.bin  cris_npp.SpcCoeff.bin
+  ${LINK} airs281_aqua.SpcCoeff.${FILE_EXT} airs281SUBSET_aqua.SpcCoeff.${FILE_EXT}
+  ${LINK} cris399_npp.SpcCoeff.${FILE_EXT}  cris_npp.SpcCoeff.${FILE_EXT}
 fi
 
 # Link the TauCoeff files
-echo; echo "...linking TauCoeff coefficient files..."
+echo; echo "...linking ${FILE_TYPE} TauCoeff coefficient files..."
 if [ "${ALL_SENSORS}" = "yes" ]; then
-  TAUCOEFF_FILES=`ls ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE}/${ENDIAN_TYPE}`
+  TAUCOEFF_FILES=`ls ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE}/${FILE_DIR}`
 else
   for SENSOR_ID in ${SENSOR_ID_LIST}; do
-    TAUCOEFF_FILES="${TAUCOEFF_FILES} ${SENSOR_ID}.TauCoeff.bin"
+    TAUCOEFF_FILES="${TAUCOEFF_FILES} ${SENSOR_ID}.TauCoeff.${FILE_EXT}"
   done
 fi
-${LINK_SCRIPT} -s -d ${ENDIAN_TYPE} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
+${LINK_SCRIPT} -s -d ${FILE_DIR} ${SOURCE_DIR}/TauCoeff/${TAUCOEFF_TYPE} ${TAUCOEFF_FILES}
 # ...Perform special case linking if required
 if [ "${SPECIAL_CASE}" = "yes" ]; then
-  ${LINK} airs281_aqua.TauCoeff.bin airs281SUBSET_aqua.TauCoeff.bin
-  ${LINK} cris399_npp.TauCoeff.bin  cris_npp.TauCoeff.bin
+  ${LINK} airs281_aqua.TauCoeff.${FILE_EXT} airs281SUBSET_aqua.TauCoeff.${FILE_EXT}
+  ${LINK} cris399_npp.TauCoeff.${FILE_EXT}  cris_npp.TauCoeff.${FILE_EXT}
 fi
 
 # Return to original directory
