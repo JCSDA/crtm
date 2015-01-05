@@ -778,7 +778,7 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Geometry_type
 !                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(OUT)
+!                     ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !       Quiet:        Set this logical argument to suppress INFORMATION
@@ -818,11 +818,11 @@ CONTAINS
     Debug       ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),                 INTENT(IN)  :: Filename
-    TYPE(CRTM_GeometryInfo_type), INTENT(OUT) :: GeometryInfo(:)
-    LOGICAL,            OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,            OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,            OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                              INTENT(IN)  :: Filename
+    TYPE(CRTM_GeometryInfo_type), ALLOCATABLE, INTENT(OUT) :: GeometryInfo(:)
+    LOGICAL,            OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,            OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,            OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -830,10 +830,12 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
-    LOGICAL :: noisy
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
+    LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: m, ng
+    INTEGER :: m, n_input_profiles
  
 
     ! Set up
@@ -843,11 +845,6 @@ CONTAINS
     IF ( PRESENT(Quiet) ) noisy = .NOT. Quiet
     ! ...Override Quiet settings if debug set.
     IF ( PRESENT(Debug) ) noisy = Debug
-    ! ...Check that the file exists
-    IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
-      msg = 'File '//TRIM(Filename)//' not found.'
-      CALL Read_Cleanup(); RETURN
-    END IF
 
 
     ! Open the file
@@ -859,21 +856,21 @@ CONTAINS
 
 
     ! Read the dimensions     
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) ng
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_profiles
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      msg = 'Error reading dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if output array large enough
-    IF ( ng > SIZE(GeometryInfo) ) THEN
-      WRITE( msg,'("Number of entries, ",i0," > size of the output ",&
-             &"GeometryInfo object array, ",i0,".")' ) ng, SIZE(GeometryInfo)
+    ! ...Allocate the return structure array
+    ALLOCATE(GeometryInfo(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating GeometryInfo array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
     END IF
 
 
     ! Loop over all the profiles
-    GeometryInfo_Loop: DO m = 1, ng
+    GeometryInfo_Loop: DO m = 1, n_input_profiles
       err_stat = Read_Record( fid, GeometryInfo(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading GeometryInfo element #",i0," from ",a)' ) m, TRIM(Filename)
@@ -891,12 +888,13 @@ CONTAINS
 
 
     ! Set the return values
-    IF ( PRESENT(n_Profiles) ) n_Profiles = ng
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_profiles
     
 
     ! Output an info message
     IF ( noisy ) THEN
-      WRITE( msg,'("Number of profiles read from ",a,": ",i0)' ) TRIM(Filename), ng
+      WRITE( msg,'("Number of profiles read from ",a,": ",i0)' ) &
+             TRIM(Filename), n_input_profiles
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
@@ -908,7 +906,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_GeometryInfo_Destroy( GeometryInfo )
+      IF ( ALLOCATED(GeometryInfo) ) THEN 
+        DEALLOCATE(GeometryInfo, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating GeometryInfo array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -995,7 +998,7 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    INTEGER :: m, ng
+    INTEGER :: m, n_profiles
  
     ! Set up
     err_stat = SUCCESS
@@ -1015,8 +1018,8 @@ CONTAINS
 
 
     ! Write the dimensions
-    ng = SIZE(GeometryInfo)
-    WRITE( fid, IOSTAT=io_stat ) ng
+    n_profiles = SIZE(GeometryInfo)
+    WRITE( fid, IOSTAT=io_stat ) n_profiles
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing data dimension to '//TRIM(Filename)//'- '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
@@ -1024,7 +1027,7 @@ CONTAINS
 
     
     ! Write the data
-    GeometryInfo_Loop: DO m = 1, ng
+    GeometryInfo_Loop: DO m = 1, n_profiles
       err_stat = Write_Record( fid, GeometryInfo(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error writing GeometryInfo element #",i0," to ",a)' ) m, TRIM(Filename)
@@ -1043,7 +1046,7 @@ CONTAINS
 
     ! Output an info message
     IF ( noisy ) THEN
-      WRITE( msg,'("Number of profiles written to ",a,": ",i0)' ) TRIM(Filename), ng
+      WRITE( msg,'("Number of profiles written to ",a,": ",i0)' ) TRIM(Filename), n_profiles
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 

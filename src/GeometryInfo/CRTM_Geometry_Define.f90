@@ -1050,7 +1050,7 @@ CONTAINS
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_Geometry_type
 !                     DIMENSION:  Rank-1
-!                     ATTRIBUTES: INTENT(OUT)
+!                     ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !       Quiet:        Set this logical argument to suppress INFORMATION
@@ -1100,12 +1100,12 @@ CONTAINS
     Debug     ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),             INTENT(IN)  :: Filename
-    TYPE(CRTM_Geometry_type), INTENT(OUT) :: Geometry(:)
-    LOGICAL,        OPTIONAL, INTENT(IN)  :: Quiet
-    LOGICAL,        OPTIONAL, INTENT(IN)  :: No_Close
-    INTEGER,        OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,        OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                          INTENT(IN)  :: Filename
+    TYPE(CRTM_Geometry_type), ALLOCATABLE, INTENT(OUT) :: Geometry(:)
+    LOGICAL,        OPTIONAL,              INTENT(IN)  :: Quiet
+    LOGICAL,        OPTIONAL,              INTENT(IN)  :: No_Close
+    INTEGER,        OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,        OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1113,11 +1113,13 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: alloc_msg
+    INTEGER :: io_stat
+    INTEGER :: alloc_stat
     LOGICAL :: noisy
     LOGICAL :: yes_close
-    INTEGER :: io_stat
     INTEGER :: fid
-    INTEGER :: m, n_file_geometries, n_input_geometries
+    INTEGER :: m, n_input_profiles
  
 
     ! Set up
@@ -1158,25 +1160,21 @@ CONTAINS
 
 
     ! Read the dimensions     
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_file_geometries
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_profiles
     IF ( io_stat /= 0 ) THEN
-      msg = 'Error reading data dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
+      msg = 'Error reading dimension from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if output array large enough
-    n_input_geometries = SIZE(Geometry)
-    IF ( n_file_geometries > n_input_geometries ) THEN
-      WRITE( msg,'("Number of geometry entries, ",i0," > size of the output ", &
-                  &"Geometry object array, ",i0,". Only the first ",i0, &
-                  &" entries will be read.")' ) &
-                  n_file_geometries, n_input_geometries, n_input_geometries
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(Geometry(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating Geometry array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_input_geometries = MIN(n_input_geometries, n_file_geometries)
 
 
     ! Read the geometry data
-    Geometry_Loop: DO m = 1, n_input_geometries
+    Geometry_Loop: DO m = 1, n_input_profiles
       err_stat = CRTM_Geometry_ReadRecord( fid, Geometry(m) )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading Geometry element #",i0," from ",a)' ) m, TRIM(Filename)
@@ -1196,13 +1194,13 @@ CONTAINS
 
 
     ! Set the return values
-    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_geometries
+    IF ( PRESENT(n_Profiles) ) n_Profiles = n_input_profiles
 
 
     ! Output an info message
     IF ( Noisy ) THEN
       WRITE( msg,'("Number of Geometry entries read from ",a,": ",i0)' ) &
-             TRIM(Filename), n_input_geometries
+             TRIM(Filename), n_input_profiles
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
     END IF
 
@@ -1214,7 +1212,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_Geometry_Destroy( Geometry )
+      IF ( ALLOCATED(Geometry) ) THEN 
+        DEALLOCATE(Geometry, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating Geometry array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
