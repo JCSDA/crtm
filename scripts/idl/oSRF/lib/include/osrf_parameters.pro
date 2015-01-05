@@ -89,6 +89,6 @@
 
   ; Some plotting parameters
   WIN_FONT_SIZE = 9
-  EPS_FONT_SIZE = 18
+  EPS_FONT_SIZE = WIN_FONT_SIZE * 1.25
   
 ;-

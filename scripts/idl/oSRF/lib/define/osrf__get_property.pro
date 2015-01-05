@@ -151,14 +151,14 @@
 ;
 ;       f1:                    The begin frequency of the SRF band.
 ;                              Used in conjunction with the Band argument.
-;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+;                              UNITS:      Inverse centimetres (cm^-1)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
 ;       f2:                    The vector of SRF band end frequencies.
 ;                              Used in conjunction with the Band argument.
-;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+;                              UNITS:      Inverse centimetres (cm^-1)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
@@ -172,7 +172,7 @@
 ;
 ;       Frequency:             The frequency grid for an SRF band.
 ;                              Used in conjunction with the Band argument.
-;                              UNITS:      Inverse centimetres (cm^-1) or gigahertz (GHz)
+;                              UNITS:      Inverse centimetres (cm^-1)
 ;                              TYPE:       REAL
 ;                              DIMENSION:  n_Points
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
