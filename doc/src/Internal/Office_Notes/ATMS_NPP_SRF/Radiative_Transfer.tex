@@ -2,9 +2,9 @@
 %========================================
 \label{sec:rt}
 
-Monochromatic radiative transfer (RT) calculations were done at the various tabulated ATMS SRF frequencies using MonoRTM \cite{Payne_2008,Clough_2005} and the ECMWF83 profile set \cite{Matricardi_ECMWF564,ECMWF_profile_set2}. The RT calculations were repeated for two generic surface emissivity conditions: $\epsilon_s=1.0$ $(r_s=0.0)$, and $\epsilon_s=0.6$ $(r_s=0.4)$. The subsequent spectra were then convolved with the digitized SRFs, as described in equation \ref{eqn:radiance_convolution}, using a numerical integration routine.
+Monochromatic radiative transfer (RT) calculations were done at the various tabulated ATMS SRF frequencies using MonoRTM \cite{Payne_2008,Clough_2005} and the ECMWF83 profile set \cite{Matricardi_ECMWF564,ECMWF_profile_set2}. The RT calculations were done for a simple surface emissivity and reflectivity of $\epsilon_s=0.6$ and $r_s=0.4$ respectively. The subsequent spectra were then convolved with the digitized SRFs using a numerical integration routine.
 
-The temperature and water vapour from the ECMWF83 set are shown in figure \ref{fig:ECMWF83.AtmProfile} to provide an indication of the range of inputs. It is acknowledged that 83 profiles is a small sample and further calculations using a larger (1000's of profiles) data set will be undertaken on an ongoing basis.
+The temperature and water vapour from the ECMWF83 set are shown in figure \ref{fig:ECMWF83.AtmProfile} to provide an indication of the range of inputs.
 
 \begin{figure}[htp]
   \centering
@@ -13,7 +13,7 @@ The temperature and water vapour from the ECMWF83 set are shown in figure \ref{f
   \label{fig:ECMWF83.AtmProfile}
 \end{figure}
 
-The results for the different digitised SRFs are presented here as brightness temperature differences from the boxcar, or reference, SRF result; that is,
+The results for the different SRFs are presented here as brightness temperature differences from the nominal SRF result; that is,
 \begin{equation}
   \Delta T_B = T_{B,Measured} - T_{B,ref} 
 \end{equation}
@@ -25,38 +25,14 @@ Since the reference for the brightness temperatures differences is the boxcar SR
 \subsection{$\Delta T_B$ for Variable Temperature SRFs}
 %------------------------------------------------------
 \label{sec:rt.Tset}
-This section discusses the $\Delta T_B$ residual results for the variable baseplate temperature SRF dataset, ``Tset''. Not all of the channel results will be covered here, just a selection of channels that highlights the SRF differences and explains the $\Delta T_B$ residuals. See appendix \ref{app:Tset} for plots of the Tset SRFs and $\Delta T_B$ residuals for all channels.
+This section discusses the $\Delta T_B$ residual results for the variable baseplate temperature SRF datasets. Not all of the channel results will be covered here, just a selection of channels that highlights the SRF differences and explains the $\Delta T_B$ residuals. See appendix \ref{app:Tset} for plots of all the temperature dataset SRFs and appendix \ref{app:Tset_dtb_data_plots} for $\Delta T_B$ residuals for all channels.
 
-\subsubsection{Comparison against the boxcar SRF reference}
-%..........................................................
-\begin{figure}[H]
-  \centering
-    \includegraphics[bb=0 0 416 333,clip,scale=0.9]{graphics/dtb/Tset/e1.0_r0.0/stats_ref-boxcar.png} 
-  \caption{Statistics of the MonoRTM-derived ATMS-NPP channel brightness temperatures residuals, using unity surface emissivity, for the Tset SRF dataset (nominal bias voltage, and three baseplate temperatures: -10, 20, and 50\textdegree{}C). The boxcar SRF is used as the reference.}
-  \label{fig:Tset_e1.0_r0.0_stats_ref-boxcar}
-\end{figure}
 
 \begin{figure}[H]
   \centering
-    \includegraphics[bb=0 0 416 333,clip,scale=0.9]{graphics/dtb/Tset/e0.6_r0.4/stats_ref-boxcar.png} 
-  \caption{Statistics of the MonoRTM-derived ATMS-NPP channel brightness temperatures residuals, using a surface emissivity and reflectivity of 0.6 and 0.4 respectively, for the Tset SRF datasets (nominal bias voltage, and three baseplate temperatures: -10, 20, and 50\textdegree{}C). The boxcar SRF is used as the reference.}
-  \label{fig:Tset_e0.6_r0.4_stats_ref-boxcar}
-\end{figure}
-
-\subsubsection{Comparison against the 20\textdegree{}C nominal baseplate temperature SRF reference}
-%..................................................................................................
-\begin{figure}[H]
-  \centering
-    \includegraphics[bb=0 0 416 333,clip,scale=0.9]{graphics/dtb/Tset/e1.0_r0.0/stats_ref-nominal.png} 
-  \caption{Statistics of the MonoRTM-derived ATMS-NPP channel brightness temperatures residuals, using unity surface emissivity, for the Tset SRF dataset (nominal bias voltage, and the two non-nominal baseplate temperatures: -10 and 50\textdegree{}C). The nominal baseplate temperature (20\textdegree{}C) SRF is used as the reference.}
-  \label{fig:Tset_e1.0_r0.0_stats_ref-nominal}
-\end{figure}
-
-\begin{figure}[H]
-  \centering
-    \includegraphics[bb=0 0 416 333,clip,scale=0.9]{graphics/dtb/Tset/e0.6_r0.4/stats_ref-nominal.png} 
-  \caption{Statistics of the MonoRTM-derived ATMS-NPP channel brightness temperatures residuals, using a surface emissivity and reflectivity of 0.6 and 0.4 respectively, for the Tset SRF dataset (nominal bias voltage, and the two non-nominal baseplate temperatures: -10 and 50\textdegree{}C). The nominal baseplate temperature (20\textdegree{}C) SRF is used as the reference.}
-  \label{fig:Tset_e0.6_r0.4_stats_ref-nominal}
+    \includegraphics[scale=0.7]{graphics/dtb/Tset/atms_npp.Tset.dTb_stats.eps} 
+  \caption{Statistics of the MonoRTM-derived ATMS channel brightness temperature residuals, using a surface emissivity and reflectivity of 0.6 and 0.4 respectively, for the low and high temperature SRF datasets compared to the nominal temperature SRF, for the nominal bias voltage.}
+  \label{fig:Tset_dTb_stats}
 \end{figure}
 
 
@@ -68,29 +44,11 @@ The Tset SRFs for channel 1 are shown in figure \ref{sec:rt.Tset_fig:atms_npp.Ts
 The effect of the SRF shape differences are somewhat evident in the $\Delta T_B$ residuals of figure \ref{sec:rt.Tset_fig:atms_npp.Tset.ch1}(b). Overall, the variation in residuals does not typically exceed $\pm$0.01K. The $\Delta T_B$ residuals for the similar 20\textdegree{}C and 50\textdegree{}C SRFs are themselves quite similar. The negative residuals are due to the SRFs being shifted slightly toward lower frequencies; and thus weight the cooler portion of the spectra in the band compared to the reference boxcar. The -10\textdegree{}C SRF $\Delta T_B$ residuals are about the same size of the other two but of opposite sign. This can be explained by the low frequency side of the -10\textdegree{}C SRF having a much lower magnitude, coupled with the shift of the low-frequency passband edge to a slightly higher frequency. The effect of these SRF differences would weight the right side of the SRF more, which corresponds to the warmer part of the spectrum.
 \begin{figure}[H]
   \centering
-  \begin{tabular}{c c c}
-    \textsf{\textbf{(a)} SRFs} &
-    \textsf{\textbf{(b)} $\Delta T_B$ $(\epsilon_s = 1.0)$} &
-    \textsf{\textbf{(c)} $\Delta T_B$ $(\epsilon_s = 0.6)$} \\
-    \includegraphics[bb=80 400 280 558,clip,scale=0.85]{graphics/srf/Tset/atms_npp.ch1.osrf.eps} &
-    \includegraphics[bb=85 400 260 558,clip,scale=0.85]{graphics/dtb/Tset/e1.0_r0.0/atms_npp.ch1.dTb.eps} & 
-    \includegraphics[bb=85 400 290 558,clip,scale=0.85]{graphics/dtb/Tset/e0.6_r0.4/atms_npp.ch1.dTb.eps} 
-  \end{tabular} \\
-  % the hand-crafted legend
-  \setlength{\unitlength}{1cm}
-  \begin{picture}(8.0,1.0)
-    \thicklines
-    \color{red}
-    \put(0.0,0.5){\line(1,0){1}}
-    \put(1.2,0.35){\sffamily \textbf{+}\quad -10\textdegree{}C}
-    \color{green}
-    \put(3.0,0.5){\line(1,0){1}}
-    \put(4.2,0.35){\sffamily {\Large$\diamond$}\quad 20\textdegree{}C}
-    \color{blue}
-    \put(6.0,0.5){\line(1,0){1}}
-    \put(7.2,0.35){\sffamily $\bigtriangleup$\quad 50\textdegree{}C}
-  \end{picture}
-  \caption{Channel 1 NPP ATMS \textbf{(a)} SRF data digitized from plots in the ATMS PFM Calibration Data Book\cite{ATMS_PFM_CalLog} with the corresponding boxcar response based on table \ref{tab:atms_fo_sb_and_df}. A representative brightness temperature spectrum is also shown. \textbf{(b)} Difference in the MonoRTM-derived brightness temperatures, using unity surface emissivity, as a function of the boxcar SRF $T_B$ for nominal bias voltage and three baseplate temperatures (-10, 20, and 50\textdegree{}C). \textbf{(c)} Same as (b), but for surface emissivity and reflectivity of 0.6 and 0.4 respectively. }
+  \hspace{-0.5cm}\textsf{\textbf{(a)} SRFs} \\
+  \includegraphics[trim={90 0 10 20},clip,scale=0.6]{graphics/srf/Tset/lin/atms_npp-1.eps} \\
+  \hspace{-0.5cm}\textsf{\textbf{(b)} $\Delta T_B$ $(\epsilon_s = 0.6)$} \\
+  \includegraphics[trim={10 0 40 0},clip,scale=0.45]{graphics/dtb/Tset/atms_npp.ch1.dTb_T_PW_stats.eps} 
+  \caption{ATMS channel 1 at nominal bias voltage. \textbf{(a)} SRF data for the three test temperatures (20\textdegree{}C is nominal). \textbf{(b)} Difference in the MonoRTM-derived brightness temperatures for -10 and 50\textdegree{}C compared to the nominal temperature, using a surface emissivity of 0.6 and the ECMWF83 profile set.}
   \label{sec:rt.Tset_fig:atms_npp.Tset.ch1}
 \end{figure}
 

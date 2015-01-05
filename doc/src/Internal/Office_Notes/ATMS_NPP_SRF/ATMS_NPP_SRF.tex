@@ -1,7 +1,8 @@
 % The generic preamble
 \input{preamble}
 
-\includeonly{Introduction,Response,Radiative_Transfer,Conclusions,srf.table12.app,Tset.app,Vset.app,Rset.app}
+%\includeonly{Introduction,Summary,Radiative_Transfer,Conclusions,Tset.app,Vset.app}
+\includeonly{Introduction,Summary,Radiative_Transfer,Tset.app,Vset.app,Tset_Tfit.app,Vset_Tfit.app,Tset_dTb.app,Vset_dTb.app}
 
 % Subversion keywords
 \SVN $Date$
@@ -17,15 +18,10 @@
 \newcommand{\up}[1]{\superscript{#1}}
 
 % Title info
-\title{ATMS NPP Spectral Response Function Analysis}
-\author{P. van Delst\email{paul.vandelst@noaa.gov},
-        D.N. Groff\email{david.groff@noaa.gov}\\JCSDA/EMC/SAIC\\[0.25in]
-        W.J. Blackwell\email{wjb@mit.edu}\\Massachusetts Institute of Technology\\[0.25in]
-        C.L. Chidester\email{Lynn.Chidester@sdl.usu.edu}\\Space Dynamics Laboratory, Utah State University\\[0.25in]
-        G. De Amici\email{giovanni.deamici@ngc.com}\\Northrop Grumman Aerospace Systems\\[0.25in]
-        S. Swadley\email{steve.swadley@nrlmry.navy.mil}\\Naval Research Laboratory}
+\title{ATMS NPP Spectral Response Function Processing}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\NCEP/EMC/IMSG}
 \date{\SVNDate ; rev\SVNRevision}
-\docnumber{ }
+\docnumber{4}
 \docseries{CRTM}
 
 
@@ -57,6 +53,8 @@
       \hline
       2010-10-26 & P. van Delst & Removed all but the nominal baseplate temperature and bias voltage plots from SRF resolution/wing inclusion appendix.\\
       \hline
+      2014-07-22 & P. van Delst & Rewrite for processing of the NASA-supplied SRF data.\\
+      \hline
     \end{tabular}
   \end{table}
 \end{center}
@@ -71,6 +69,7 @@
 % The main matter
 %================
 \include{Introduction}
+\include{Summary}
 \include{Response}
 \include{Radiative_Transfer}
 \include{Conclusions}
@@ -88,8 +87,10 @@
 \begin{appendix}
   \include{Tset.app}
   \include{Vset.app}
-  \include{Rset.app}
-  \include{srf.table12.app}
+  \include{Tset_Tfit.app}
+  \include{Vset_Tfit.app}
+  \include{Tset_dTb.app}
+  \include{Vset_dTb.app}
 \end{appendix}
 
 \end{document}
