@@ -130,6 +130,11 @@ MODULE RTV_Define
 
     REAL(fp) :: Secant_Down_Angle = 0
 
+    ! Overcast radiance for cloud detection
+    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Cloud_Radiance_UP= ZERO
+    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Source_UP        = ZERO
+    REAL(fp), DIMENSION( 0:MAX_N_LAYERS ) :: e_Level_Trans_UP   = ONE
+
     ! Emission model variables
     REAL(fp) :: Total_OD  = ZERO
     REAL(fp), DIMENSION(   MAX_N_LAYERS ) :: e_Layer_Trans_UP   = ZERO

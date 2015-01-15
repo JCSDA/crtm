@@ -125,6 +125,13 @@ CONTAINS
       ! Downward radiance  
       RTV%e_Level_Rad_DOWN(k) = (RTV%e_Level_Rad_DOWN(k-1)*RTV%e_Layer_Trans_DOWN(k)) + &
                                 (Planck_Atmosphere(k)*(ONE-RTV%e_Layer_Trans_DOWN(k)))
+
+      RTV%e_Layer_Trans_UP(k) = EXP(-T_OD(k)/u)
+
+      ! GSI cloud detection
+      RTV%e_Cloud_Radiance_UP(k) = RTV%e_Source_UP(k-1) + Planck_Atmosphere(k)*RTV%e_Level_Trans_UP(k-1)
+      RTV%e_Source_UP(k) = RTV%e_Source_UP(k-1)+RTV%e_Level_Trans_UP(k-1)*Planck_Atmosphere(k)*(ONE-RTV%e_Layer_Trans_UP(k))
+      RTV%e_Level_Trans_UP(k) = RTV%e_Level_Trans_UP(k-1)*RTV%e_Layer_Trans_UP(k)
     END DO
 
     ! ----------------
@@ -154,7 +161,7 @@ CONTAINS
     ! Loop from SFC->TOA
     DO k = n_Layers, 1, -1
       ! layer upwelling transmittance
-      RTV%e_Layer_Trans_UP(k) = EXP(-T_OD(k)/u)
+!!      RTV%e_Layer_Trans_UP(k) = EXP(-T_OD(k)/u)
       ! layer upwelling source function
       layer_source_up = Planck_Atmosphere(k) * ( ONE - RTV%e_Layer_Trans_UP(k) )
       ! upwelling radiance (including reflected downwelling and surface)

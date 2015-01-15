@@ -118,6 +118,7 @@ MODULE CRTM_RTSolution_Define
     REAL(fp) :: Down_Radiance           = ZERO
     REAL(fp) :: Down_Solar_Radiance     = ZERO
     REAL(fp) :: Surface_Planck_Radiance = ZERO
+    REAL(fp), ALLOCATABLE :: Upwelling_Overcast_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Upwelling_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Layer_Optical_Depth(:)  ! K
     ! Radiative transfer results for a single channel/node
@@ -249,6 +250,7 @@ CONTAINS
 
     ! Perform the allocation
     ALLOCATE( RTSolution%Upwelling_Radiance(n_Layers), &
+              RTSolution%Upwelling_Overcast_Radiance(n_Layers), &
               RTSolution%Layer_Optical_Depth(n_Layers), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -258,6 +260,7 @@ CONTAINS
     RTSolution%n_Layers = n_Layers
     ! ...Arrays
     RTSolution%Upwelling_Radiance  = ZERO
+    RTSolution%Upwelling_Overcast_Radiance  = ZERO
     RTSolution%Layer_Optical_Depth = ZERO
 
     ! Set allocation indicator
@@ -311,6 +314,7 @@ CONTAINS
     ! Zero out the array data components
     IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
       RTSolution%Upwelling_Radiance  = ZERO
+      RTSolution%Upwelling_Overcast_Radiance  = ZERO
       RTSolution%Layer_Optical_Depth = ZERO
     END IF
 

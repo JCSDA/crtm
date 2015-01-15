@@ -1146,6 +1146,7 @@ CONTAINS
         ! Assign only the upwelling radiance profile
         ! defined by the user input layering
         RTSolution%Upwelling_Radiance(1:no) = RTV%e_Level_Rad_UP(na+1:nt)
+        RTSolution%Upwelling_Overcast_Radiance(1:no) = RTV%e_Cloud_Radiance_UP(na+1:nt)
       END IF
     END IF
     
