@@ -53,7 +53,8 @@ COMMON_COEFF_FILES = AerosolCoeff.bin \
                      NPOESS.VISsnow.EmisCoeff.bin \
                      NPOESS.VISice.EmisCoeff.bin \
                      FASTEM4.MWwater.EmisCoeff.bin \
-                     FASTEM5.MWwater.EmisCoeff.bin
+                     FASTEM5.MWwater.EmisCoeff.bin \
+                     FASTEM6.MWwater.EmisCoeff.bin
 
 
 # File link creation and removal
