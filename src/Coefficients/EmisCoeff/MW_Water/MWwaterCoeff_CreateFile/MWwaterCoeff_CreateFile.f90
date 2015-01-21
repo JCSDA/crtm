@@ -21,6 +21,8 @@ PROGRAM MWwaterCoeff_CreateFile
                                   FASTEM4_LoadVersion => MWwaterCoeff_LoadVersion
   USE MWwaterCoeff_FASTEM5, ONLY: FASTEM5_LoadCoeffs  => MWwaterCoeff_LoadCoeffs, &
                                   FASTEM5_LoadVersion => MWwaterCoeff_LoadVersion
+  USE MWwaterCoeff_FASTEM6, ONLY: FASTEM6_LoadCoeffs  => MWwaterCoeff_LoadCoeffs, &
+                                  FASTEM6_LoadVersion => MWwaterCoeff_LoadVersion
   USE MWwaterCoeff_Define , ONLY: MWwaterCoeff_type, &
                                   MWwaterCoeff_Associated, &
                                   MWwaterCoeff_Destroy, &
@@ -37,8 +39,8 @@ PROGRAM MWwaterCoeff_CreateFile
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
-  INTEGER     , PARAMETER :: N_MODELS = 2
-  CHARACTER(*), PARAMETER :: MODEL_NAME(N_MODELS) = (/'FASTEM4','FASTEM5'/)
+  INTEGER     , PARAMETER :: N_MODELS = 3
+  CHARACTER(*), PARAMETER :: MODEL_NAME(N_MODELS) = ['FASTEM4','FASTEM5','FASTEM6']
   
   
   ! ---------
@@ -73,6 +75,9 @@ PROGRAM MWwaterCoeff_CreateFile
       CASE (2)
         CALL FASTEM5_LoadCoeffs(mwwatercoeff)
         CALL FASTEM5_LoadVersion(id)
+      CASE (3)
+        CALL FASTEM6_LoadCoeffs(mwwatercoeff)
+        CALL FASTEM6_LoadVersion(id)
       CASE DEFAULT
         msg = 'Invalid model selection! How did that happen?'
         CALL Display_Message( PROGRAM_NAME, msg, FAILURE )

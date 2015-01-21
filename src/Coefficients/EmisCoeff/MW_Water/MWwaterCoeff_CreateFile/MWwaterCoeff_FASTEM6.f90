@@ -124,38 +124,23 @@ MODULE MWwaterCoeff_FASTEM6
   (/N_ODCOEFFS, N_RCCOEFFS, N_2STOKES/) )
 
 
-  ! Fitting coefficients for the azimuth dependence of emissivity
-  INTEGER , PARAMETER :: N_AZCOEFFS = 10 ! No. of azimuth emissivity coefficients
-  INTEGER , PARAMETER :: N_HARMONICS = 3 ! No. of harmonics considered in the trignometric parameterisation
-  REAL(fp), PARAMETER :: AZCOEFF(N_AZCOEFFS, N_STOKES, N_HARMONICS) = RESHAPE( &
-       ! COS(phi) and SIN(phi) coefficients
-    (/ 1.318143E-02_fp,-1.660586E-04_fp,-7.102244E-03_fp, 8.771616E-05_fp,-3.418311E-03_fp, &
-       3.784895E-05_fp, 5.763184E-05_fp,-6.290578E-07_fp, 1.839451E-03_fp,-1.856317E-05_fp, &
-       6.459324E-03_fp,-7.570050E-05_fp,-3.777932E-03_fp, 4.270676E-05_fp,-1.247285E-03_fp, &
-       1.136239E-05_fp, 2.123934E-05_fp,-2.377368E-07_fp, 7.070105E-04_fp,-5.092876E-06_fp, &
-      -6.296038E-03_fp, 3.835747E-05_fp, 3.013694E-03_fp,-9.366178E-06_fp, 1.680703E-03_fp, &
-      -5.745778E-06_fp,-2.942056E-05_fp, 1.889216E-07_fp,-9.058433E-04_fp,-1.136992E-06_fp, &
-      -5.854263E-04_fp, 5.546263E-06_fp, 2.485058E-04_fp,-1.531698E-06_fp, 1.243394E-04_fp, &
-      -1.575561E-06_fp,-2.437488E-06_fp, 2.986237E-08_fp,-5.555700E-05_fp, 6.076001E-07_fp, &
-       ! COS(2*phi) and SIN(2*phi) coefficients
-       4.605486E-03_fp, 5.781246E-05_fp,-2.746737E-03_fp,-4.690045E-05_fp, 1.512049E-04_fp, &
-      -7.411844E-09_fp,-3.476559E-06_fp, 1.466902E-07_fp,-6.472364E-05_fp,-1.776898E-06_fp, &
-      -1.863094E-02_fp, 2.768660E-04_fp, 7.624930E-03_fp,-1.397481E-04_fp, 3.550912E-03_fp, &
-      -5.533696E-05_fp,-6.557083E-05_fp, 9.948138E-07_fp,-1.626538E-03_fp, 2.307157E-05_fp, &
-      -2.880306E-02_fp, 2.418851E-04_fp, 1.290535E-02_fp,-8.803702E-05_fp, 5.057109E-06_fp, &
-      -2.715428E-05_fp,-6.912266E-05_fp, 7.852767E-07_fp, 5.337096E-04_fp, 6.585635E-06_fp, &
-       6.042016E-03_fp,-1.135219E-04_fp,-2.231061E-03_fp, 5.729232E-05_fp,-1.543391E-03_fp, &
-       2.288614E-05_fp, 2.828443E-05_fp,-4.384802E-07_fp, 7.080137E-04_fp,-9.827192E-06_fp, &
-       ! COS(3*phi) and SIN(3*phi) coefficients
-       1.205735E-03_fp,-1.748276E-05_fp,-6.002919E-04_fp, 1.174144E-05_fp,-1.735732E-04_fp, &
-       2.148296E-06_fp, 2.955853E-06_fp,-3.609258E-08_fp, 9.669164E-05_fp,-1.282544E-06_fp, &
-      -7.610401E-04_fp, 1.293120E-05_fp, 3.796897E-04_fp,-5.562741E-06_fp, 8.865672E-05_fp, &
-      -1.313724E-06_fp, 7.009076E-08_fp, 2.426378E-08_fp,-8.192732E-05_fp, 5.333771E-07_fp, &
-      -1.834561E-03_fp, 2.896784E-05_fp, 7.613927E-04_fp,-1.367783E-05_fp, 4.887281E-04_fp, &
-      -5.810380E-06_fp,-9.568319E-06_fp, 1.207029E-07_fp,-2.210790E-04_fp, 2.159904E-06_fp, &
-      -2.054959E-04_fp, 1.806305E-07_fp, 1.144686E-04_fp, 4.638982E-07_fp, 3.581176E-05_fp, &
-      -3.870976E-07_fp,-6.861957E-07_fp, 6.989780E-09_fp,-1.526136E-05_fp, 1.887424E-07_fp /), &
-    (/N_AZCOEFFS, N_STOKES, N_HARMONICS/) )
+  ! Coefficients for M.Kazumori azimuth model function
+  INTEGER , PARAMETER :: N_AZCOEFFS      = 6 ! No. of azimuth emissivity coefficients
+  INTEGER , PARAMETER :: N_AZFREQUENCIES = 6 ! No. of harmonics considered in the trignometric parameterisation
+  REAL(fp), PARAMETER :: AZCOEFF(N_AZCOEFFS, N_AZFREQUENCIES, N_2STOKES) = RESHAPE( &
+  [ 4.401E-02_fp, -1.636E+01_fp,  1.478E+00_fp, -4.800E-02_fp,  3.202E-06_fp, -6.002E-05_fp, &     ! 06V OK
+    4.379E-02_fp, -1.633E+01_fp,  1.453E+00_fp, -4.176E-02_fp,  5.561E-06_fp, -4.644E-05_fp, &     ! 10V OK
+    5.009E-02_fp, -1.638E+01_fp,  1.520E+00_fp, -3.994E-02_fp,  1.330E-05_fp,  1.113E-05_fp, &     ! 19V OK
+    5.165E-02_fp, -1.638E+01_fp,  1.543E+00_fp, -4.066E-02_fp,  1.494E-05_fp,  1.010E-05_fp, &     ! 23V interpolated
+    5.553E-02_fp, -1.638E+01_fp,  1.602E+00_fp, -4.246E-02_fp,  1.903E-05_fp,  7.524E-06_fp, &     ! 37V OK
+   -9.131E-05_fp,  1.251E+00_fp,  6.769E-01_fp, -2.913E-02_fp,  1.092E+00_fp, -1.806E-04_fp, &     ! 89V OK revised
+   -1.234E-07_fp, -8.179E-03_fp, -1.040E+01_fp,  4.477E-01_fp,  0.000E+00_fp,  3.390E-05_fp, &     ! 06H OK
+   -1.938E-05_fp, -8.007E-03_fp, -1.039E+01_fp,  4.610E-01_fp,  0.000E+00_fp,  4.419E-05_fp, &     ! 10H OK
+    1.362E-04_fp, -1.013E-03_fp, -9.235E+00_fp,  3.844E-01_fp,  0.000E+00_fp,  2.891E-04_fp, &     ! 19H OK
+    1.519E-04_fp, -7.865E-04_fp, -9.234E+00_fp,  3.884E-01_fp,  0.000E+00_fp,  6.856E-04_fp, &     ! 23H Interpolated
+    1.910E-04_fp, -2.224E-04_fp, -9.232E+00_fp,  3.982E-01_fp,  0.000E+00_fp,  1.673E-03_fp, &     ! 37H OK
+    3.554E-04_fp,  5.226E-04_fp,  9.816E-01_fp, -7.783E-03_fp,  0.000E+00_fp,  2.437E+01_fp  ], &  ! 89H OK revised
+    [N_AZCOEFFS, N_AZFREQUENCIES, N_2STOKES] )
 
 
 CONTAINS

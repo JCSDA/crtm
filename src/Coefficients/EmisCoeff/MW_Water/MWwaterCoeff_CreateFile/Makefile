@@ -24,7 +24,8 @@ LINK_SRC_FILES = Type_Kinds.f90 \
                  FitCoeff_Define.f90 \
                  MWwaterLUT_Define.f90
 LOCAL_SRC_FILES = MWwaterCoeff_FASTEM4.f90 \
-                  MWwaterCoeff_FASTEM5.f90
+                  MWwaterCoeff_FASTEM5.f90 \
+                  MWwaterCoeff_FASTEM6.f90
 SRC_FILES = $(LINK_SRC_FILES) $(LOCAL_SRC_FILES)
 INC_FILES = FitCoeff_Destroy.inc \
             FitCoeff_SetValue.inc \
