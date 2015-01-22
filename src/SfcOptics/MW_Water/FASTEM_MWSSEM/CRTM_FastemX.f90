@@ -1,9 +1,9 @@
 !
 ! CRTM_FastemX
 !
-! Module containing the Fastem4/5 procedures. The difference between the Fastem4
+! Module containing the Fastem4/5/6 procedures. The difference between the Fastem4
 ! and Fastem5 models is realised purely through the coefficients read during CRTM
-! initialisation.
+! initialisation. For Fastem6, a different azimuth emissivity model is used.
 !
 ! CREATION HISTORY:
 !       Written by:     Quanhua (Mark) Liu, Quanhua.Liu@noaa.gov
@@ -25,6 +25,10 @@
 !                       single module named "FastemX"
 !                       Paul van Delst, paul.vandelst@noaa.gov
 !                       March, 2012
+!
+!       Added:          M. Kazumori's azimuthal emissivity model for FASTEM6.
+!                       Paul van Delst, paul.vandelst@noaa.gov
+!                       January, 2015
 !
 
 MODULE CRTM_FastemX
@@ -81,6 +85,11 @@ MODULE CRTM_FastemX
           Azimuth_Emissivity   , &
           Azimuth_Emissivity_TL, &
           Azimuth_Emissivity_AD
+  USE Azimuth_Emissivity_F6_Module, &
+    ONLY: aeF6Var_type => iVar_type, &
+          Azimuth_Emissivity_F6   , &
+          Azimuth_Emissivity_F6_TL, &
+          Azimuth_Emissivity_F6_AD
 
   ! Disable implicit typing
   IMPLICIT NONE
@@ -104,6 +113,9 @@ MODULE CRTM_FastemX
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
 
+  ! FASTEM6 version number for use with azimuth model
+  INTEGER, PARAMETER :: FASTEM6 = 6
+  
   ! Stokes component information
   ! ...The number of Stokes components
   INTEGER, PARAMETER :: N_STOKES = 4
@@ -112,9 +124,6 @@ MODULE CRTM_FastemX
   INTEGER, PARAMETER :: Ih_IDX = 2 ! Describes horizontal polarization
   INTEGER, PARAMETER :: U_IDX  = 3 ! Describes plane of polarization
   INTEGER, PARAMETER :: V_IDX  = 4 ! Describes ellipticity of polarization
-
-  ! Switch for using LUT for Fastem5 large scale correction
-!  LOGICAL, PUBLIC, PARAMETER :: FASTEM5_LUT = .FALSE.
 
   ! Invalid indicators
   REAL(fp), PARAMETER :: INVALID_AZIMUTH_ANGLE = -999.0_fp
@@ -167,12 +176,13 @@ MODULE CRTM_FastemX
     ! The final emissivity
     REAL(fp) :: e(N_STOKES) = ZERO
     ! Internal variables for subcomponents
-    TYPE(pVar_type)   :: pVar
-    TYPE(fVar_type)   :: fVar
-    TYPE(sscVar_type) :: sscVar
-    TYPE(lscVar_type) :: lscVar
-    TYPE(aeVar_type)  :: aeVar
-    TYPE(rcVar_type)  :: rcVar
+    TYPE(pVar_type)    :: pVar
+    TYPE(fVar_type)    :: fVar
+    TYPE(sscVar_type)  :: sscVar
+    TYPE(lscVar_type)  :: lscVar
+    TYPE(aeVar_type)   :: aeVar
+    TYPE(aeF6Var_type) :: aeF6Var
+    TYPE(rcVar_type)   :: rcVar
   END TYPE iVar_type
 
 
@@ -353,19 +363,14 @@ CONTAINS
 
 
     ! Large scale correction calculation
-!    IF( FASTEM5_LUT ) THEN
-!      CALL Large_Scale_Correction_LUT( Wind_Speed, Temperature, Zenith_Angle, Frequency, &
-!                                 iVar%Rv_Large, iVar%Rh_Large )
-!    ELSE
-      CALL Large_Scale_Correction( &
-             MWwaterCoeff%LSCCoeff, &
-             iVar%Frequency , &
-             iVar%cos_z     , &
-             iVar%Wind_Speed, &
-             iVar%Rv_Large  , &
-             iVar%Rh_Large  , &
-             iVar%lscVar      )
-!    END IF
+    CALL Large_Scale_Correction( &
+           MWwaterCoeff%LSCCoeff, &
+           iVar%Frequency , &
+           iVar%cos_z     , &
+           iVar%Wind_Speed, &
+           iVar%Rv_Large  , &
+           iVar%Rh_Large  , &
+           iVar%lscVar      )
 
     ! Small scale correction calculation, Var%small_corr
     CALL Small_Scale_Correction( &
@@ -387,14 +392,25 @@ CONTAINS
     iVar%e_Azimuth = ZERO
     IF ( PRESENT(Azimuth_Angle) ) THEN
       IF ( ABS(Azimuth_Angle) <= 360.0_fp ) THEN
-        CALL Azimuth_Emissivity( &
-               MWwaterCoeff%AZCoeff, &
-               iVar%Wind_Speed, &
-               Azimuth_Angle  , &
-               iVar%Frequency , &
-               iVar%cos_z     , &
-               iVar%e_Azimuth , &
-               iVar%aeVar       )
+        IF ( MWwaterCoeff%Version == FASTEM6 ) THEN
+          CALL Azimuth_Emissivity_F6( &
+                 MWwaterCoeff%AZCoeff, &
+                 iVar%Wind_Speed, &
+                 Azimuth_Angle  , &
+                 iVar%Frequency , &
+                 Zenith_Angle   , &
+                 iVar%e_Azimuth , &
+                 iVar%aeF6Var     )
+        ELSE
+          CALL Azimuth_Emissivity( &
+                 MWwaterCoeff%AZCoeff, &
+                 iVar%Wind_Speed, &
+                 Azimuth_Angle  , &
+                 iVar%Frequency , &
+                 iVar%cos_z     , &
+                 iVar%e_Azimuth , &
+                 iVar%aeVar       )
+        END IF
         iVar%Azimuth_Angle_Valid = .TRUE.
         iVar%Azimuth_Angle       = Azimuth_Angle
       END IF
@@ -601,16 +617,12 @@ CONTAINS
 
 
     ! Large Scale Correction Calculation
-!    IF( FASTEM5_LUT ) THEN
-!      CALL Large_Scale_Correction_LUT_TL( iVar%Wind_Speed, iVar%Temperature, iVar%Zenith_Angle,  &
-!           iVar%Frequency, Wind_Speed_TL, Temperature_TL, Rv_Large_TL, Rh_Large_TL   )
-!    ELSE
-      CALL Large_Scale_Correction_TL( &
-             Wind_Speed_TL, &
-             Rv_Large_TL  , &
-             Rh_Large_TL  , &
-             iVar%lscVar    )
-!    END IF
+    CALL Large_Scale_Correction_TL( &
+           Wind_Speed_TL, &
+           Rv_Large_TL  , &
+           Rh_Large_TL  , &
+           iVar%lscVar    )
+
 
     ! Small Scale Correction Calculation
     CALL Small_Scale_Correction_TL( &
@@ -888,16 +900,11 @@ CONTAINS
 
 
     ! Large Scale Correction Calculation
-!    IF( FASTEM5_LUT ) THEN
-!      CALL Large_Scale_Correction_LUT_AD( iVar%Wind_Speed, iVar%Temperature, iVar%Zenith_Angle,  &
-!           iVar%Frequency, Rv_Large_AD, Rh_Large_AD, Wind_Speed_AD, Temperature_AD )
-!    ELSE
-      CALL Large_Scale_Correction_AD( &
-             Rv_Large_AD  , &
-             Rh_Large_AD  , &
-             Wind_Speed_AD, &
-             iVar%lscVar    )
-!    END IF
+    CALL Large_Scale_Correction_AD( &
+           Rv_Large_AD  , &
+           Rh_Large_AD  , &
+           Wind_Speed_AD, &
+           iVar%lscVar    )
 
 
     ! Foam coverage calculation
@@ -937,387 +944,4 @@ CONTAINS
 
 
 
-!  ! ============================================
-!  ! Reflectivity large scale correction routines
-!  ! ============================================
-!  !
-!  SUBROUTINE Large_Scale_Correction_LUT( Wind_Speed, Temperature, Zenith_Angle, f, Rv, Rh )
-!    ! Arguments
-!    REAL(fp), INTENT(IN)  :: Wind_Speed   ! Wind speed
-!    REAL(fp), INTENT(IN)  :: Temperature  ! SST
-!    REAL(fp), INTENT(IN)  :: Zenith_Angle ! zenith angle
-!    REAL(fp), INTENT(IN)  :: f       ! Frequency
-!    REAL(fp), INTENT(OUT) :: Rv, Rh  ! Reflectivity correction
-!    ! Local variables
-!    REAL(fp) :: av1,av2,av3,av4,ah1,ah2,ah3,ah4,df,dw,dT,dz
-!
-!    INTEGER :: i, if1,if2,iw1,iw2,is1,is2,iz1,iz2
-!
-!!  print *,Wind_Speed, Temperature, Zenith_Angle, f
-!
-!  IF( f <= MW_W_LS%Fre(1) ) THEN
-!    if1 = 1
-!    if2 = 1
-!    df = ZERO
-!  ELSE IF( f >= MW_W_LS%Fre(MW_W_LS%N_Frequency) ) THEN
-!    if1 = MW_W_LS%N_Frequency
-!    if2 = MW_W_LS%N_Frequency
-!    df = ZERO
-!  ELSE
-!    DO i = 1, MW_W_LS%N_Frequency -1
-!      IF( f > MW_W_LS%Fre(i) .and. f <= MW_W_LS%Fre(i+1) ) THEN
-!        if1 = i
-!        if2 = if1 + 1
-!        df = (f - MW_W_LS%Fre(i))/(MW_W_LS%Fre(i+1)-MW_W_LS%Fre(i))
-!        GO TO 101
-!      END IF
-!    END DO
-!  END IF
-! 101 CONTINUE
-!
-!  IF( Wind_Speed < MW_W_LS%WindSp(1) ) THEN
-!    iw1 = 1
-!    iw2 = 1
-!    dw = ZERO
-!  ELSE IF( Wind_Speed >= MW_W_LS%WindSp(MW_W_LS%N_Wind_S) ) THEN
-!    iw1 = MW_W_LS%N_Wind_S
-!    iw2 = MW_W_LS%N_Wind_S
-!    dw = ZERO
-!  ELSE
-!    iw1 = INT( (Wind_Speed-MW_W_LS%WindSp(1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1)) ) + 1
-!    iw2 = iw1 + 1
-!    dw = (Wind_Speed-MW_W_LS%WindSp(iw1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1))
-!  END IF
-!
-!  IF( Temperature < MW_W_LS%SST(1) ) THEN
-!    is1 = 1
-!    is2 = 1
-!    dT = ZERO
-!  ELSE IF( Temperature >= MW_W_LS%SST(MW_W_LS%N_SST) ) THEN
-!    is1 = MW_W_LS%N_SST
-!    is2 = MW_W_LS%N_SST
-!    dT = ZERO
-!  ELSE
-!    is1 = INT( (Temperature - MW_W_LS%SST(1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1)) ) + 1
-!    is2 = is1 + 1
-!    dT = (Temperature - MW_W_LS%SST(is1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1))
-!  END IF
-!
-!  iz1 = INT( abs(Zenith_Angle)/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) ) ) + 1
-!  IF( iz1 >= MW_W_LS%N_Zenith ) THEN
-!    iz1 = MW_W_LS%N_Zenith
-!    iz2 = MW_W_LS%N_Zenith
-!    dz = ZERO
-!  ELSE
-!    iz2 = iz1 + 1
-!    dz = ( abs(Zenith_Angle)-MW_W_LS%Zangle(iz1) )/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) )
-!  END IF
-!
-!  av1 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is1,if2,iz2)
-!
-!  av2 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is2,if2,iz2)
-!
-!  av3 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is1,if2,iz2)
-!
-!  av4 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is2,if2,iz2)
-!
-!  Rv = (ONE-dw)*(ONE-dT)*av1 + (ONE-dw)*dT*av2 &
-!                + dw*(ONE-dT)*av3 + dw*dT*av4
-!
-!  ah1 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is1,if2,iz2)
-!
-!  ah2 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is2,if2,iz2)
-!
-!  ah3 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is1,if2,iz2)
-!
-!  ah4 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is2,if2,iz2)
-!
-!  Rh = (ONE-dw)*(ONE-dT)*ah1 + (ONE-dw)*dT*ah2 &
-!                + dw*(ONE-dT)*ah3 + dw*dT*ah4
-!
-!    RETURN
-!  END SUBROUTINE Large_Scale_Correction_LUT
-!!
-!  !
-!  SUBROUTINE Large_Scale_Correction_LUT_TL( Wind_Speed, Temperature, Zenith_Angle, f,  &
-!     Wind_Speed_TL, Temperature_TL, Rv_TL, Rh_TL   )
-!    ! Arguments
-!    REAL(fp), INTENT(IN)  :: Wind_Speed   ! Wind speed
-!    REAL(fp), INTENT(IN)  :: Temperature  ! SST
-!    REAL(fp), INTENT(IN)  :: Zenith_Angle ! zenith angle
-!    REAL(fp), INTENT(IN)  :: f       ! Frequency
-!    REAL(fp), INTENT(IN)  :: Wind_Speed_TL
-!    REAL(fp), INTENT(IN)  :: Temperature_TL
-!    REAL(fp), INTENT(OUT) :: Rv_TL, Rh_TL  ! Reflectivity correction
-!    ! Local variables
-!    REAL(fp) :: Rv, Rh,av1,av2,av3,av4,ah1,ah2,ah3,ah4,df,dw,dT,dz,dw_TL,dT_TL
-!
-!    INTEGER :: i, if1,if2,iw1,iw2,is1,is2,iz1,iz2
-!
-!!  print *,Wind_Speed, Temperature, Zenith_Angle, f
-!
-!  IF( f <= MW_W_LS%Fre(1) ) THEN
-!    if1 = 1
-!    if2 = 1
-!    df = ZERO
-!  ELSE IF( f >= MW_W_LS%Fre(MW_W_LS%N_Frequency) ) THEN
-!    if1 = MW_W_LS%N_Frequency
-!    if2 = MW_W_LS%N_Frequency
-!    df = ZERO
-!  ELSE
-!    DO i = 1, MW_W_LS%N_Frequency -1
-!      IF( f > MW_W_LS%Fre(i) .and. f <= MW_W_LS%Fre(i+1) ) THEN
-!        if1 = i
-!        if2 = if1 + 1
-!        df = (f - MW_W_LS%Fre(i))/(MW_W_LS%Fre(i+1)-MW_W_LS%Fre(i))
-!        GO TO 101
-!      END IF
-!    END DO
-!  END IF
-! 101 CONTINUE
-!
-!  IF( Wind_Speed < MW_W_LS%WindSp(1) ) THEN
-!    iw1 = 1
-!    iw2 = 1
-!    dw = ZERO
-!  ELSE IF( Wind_Speed >= MW_W_LS%WindSp(MW_W_LS%N_Wind_S) ) THEN
-!    iw1 = MW_W_LS%N_Wind_S
-!    iw2 = MW_W_LS%N_Wind_S
-!    dw = ZERO
-!  ELSE
-!    iw1 = INT( (Wind_Speed-MW_W_LS%WindSp(1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1)) ) + 1
-!    iw2 = iw1 + 1
-!    dw = (Wind_Speed-MW_W_LS%WindSp(iw1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1))
-!  END IF
-!
-!  IF( Temperature < MW_W_LS%SST(1) ) THEN
-!    is1 = 1
-!    is2 = 1
-!    dT = ZERO
-!  ELSE IF( Temperature >= MW_W_LS%SST(MW_W_LS%N_SST) ) THEN
-!    is1 = MW_W_LS%N_SST
-!    is2 = MW_W_LS%N_SST
-!    dT = ZERO
-!  ELSE
-!    is1 = INT( (Temperature - MW_W_LS%SST(1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1)) ) + 1
-!    is2 = is1 + 1
-!    dT = (Temperature - MW_W_LS%SST(is1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1))
-!  END IF
-!
-!  iz1 = INT( abs(Zenith_Angle)/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) ) ) + 1
-!  IF( iz1 >= MW_W_LS%N_Zenith ) THEN
-!    iz1 = MW_W_LS%N_Zenith
-!    iz2 = MW_W_LS%N_Zenith
-!    dz = ZERO
-!  ELSE
-!    iz2 = iz1 + 1
-!    dz = ( abs(Zenith_Angle)-MW_W_LS%Zangle(iz1) )/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) )
-!  END IF
-!
-!  av1 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is1,if2,iz2)
-!
-!  av2 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is2,if2,iz2)
-!
-!  av3 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is1,if2,iz2)
-!
-!  av4 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is2,if2,iz2)
-!
-!  Rv = (ONE-dw)*(ONE-dT)*av1 + (ONE-dw)*dT*av2 &
-!                + dw*(ONE-dT)*av3 + dw*dT*av4
-!
-!  ah1 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is1,if2,iz2)
-!
-!  ah2 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is2,if2,iz2)
-!
-!  ah3 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is1,if2,iz2)
-!
-!  ah4 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is2,if2,iz2)
-!
-!  Rh = (ONE-dw)*(ONE-dT)*ah1 + (ONE-dw)*dT*ah2 &
-!                + dw*(ONE-dT)*ah3 + dw*dT*ah4
-!
-!!  ================  TL  ===============================================
-!
-!
-!  IF( Wind_Speed < MW_W_LS%WindSp(1) ) THEN
-!    dw_TL = ZERO
-!  ELSE IF( Wind_Speed >= MW_W_LS%WindSp(MW_W_LS%N_Wind_S) ) THEN
-!    dw_TL = ZERO
-!  ELSE
-!    dw_TL = Wind_Speed_TL/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1))
-!  END IF
-!
-!  IF( Temperature < MW_W_LS%SST(1) ) THEN
-!    dT_TL = ZERO
-!  ELSE IF( Temperature >= MW_W_LS%SST(MW_W_LS%N_SST) ) THEN
-!    dT_TL = ZERO
-!  ELSE
-!    dT_TL = Temperature_TL/(MW_W_LS%SST(2)-MW_W_LS%SST(1))
-!  END IF
-!
-!  Rv_TL = ( -dw_TL*(ONE-dT) -(ONE-dw)*dT_TL )*av1 + ( -dw_TL*dT+(ONE-dw)*dT_TL )*av2 &
-!      + ( dw_TL*(ONE-dT) -dw*dT_TL )*av3 + ( dw_TL*dT+dw*dT_TL )*av4
-!
-!
-!  Rh_TL = ( -dw_TL*(ONE-dT) -(ONE-dw)*dT_TL )*ah1 + ( -dw_TL*dT+(ONE-dw)*dT_TL )*ah2 &
-!      + ( dw_TL*(ONE-dT) -dw*dT_TL )*ah3 + ( dw_TL*dT+dw*dT_TL )*ah4
-!
-!    RETURN
-!  END SUBROUTINE Large_Scale_Correction_LUT_TL
-!!
-!
-!  !
-!  SUBROUTINE Large_Scale_Correction_LUT_AD( Wind_Speed, Temperature, Zenith_Angle, f,  &
-!     Rv_AD, Rh_AD, Wind_Speed_AD, Temperature_AD   )
-!    ! Arguments
-!    REAL(fp), INTENT(IN)  :: Wind_Speed   ! Wind speed
-!    REAL(fp), INTENT(IN)  :: Temperature  ! SST
-!    REAL(fp), INTENT(IN)  :: Zenith_Angle ! zenith angle
-!    REAL(fp), INTENT(IN)  :: f       ! Frequency
-!    REAL(fp), INTENT(INOUT)  :: Wind_Speed_AD
-!    REAL(fp), INTENT(INOUT)  :: Temperature_AD
-!    REAL(fp), INTENT(INOUT) :: Rv_AD, Rh_AD  ! Reflectivity correction
-!    ! Local variables
-!    REAL(fp) :: Rv, Rh,av1,av2,av3,av4,ah1,ah2,ah3,ah4,df,dw,dT,dz,dw_AD,dT_AD
-!
-!    INTEGER :: i, if1,if2,iw1,iw2,is1,is2,iz1,iz2
-!
-!!  print *,Wind_Speed, Temperature, Zenith_Angle, f
-!
-!  IF( f <= MW_W_LS%Fre(1) ) THEN
-!    if1 = 1
-!    if2 = 1
-!    df = ZERO
-!  ELSE IF( f >= MW_W_LS%Fre(MW_W_LS%N_Frequency) ) THEN
-!    if1 = MW_W_LS%N_Frequency
-!    if2 = MW_W_LS%N_Frequency
-!    df = ZERO
-!  ELSE
-!    DO i = 1, MW_W_LS%N_Frequency -1
-!      IF( f > MW_W_LS%Fre(i) .and. f <= MW_W_LS%Fre(i+1) ) THEN
-!        if1 = i
-!        if2 = if1 + 1
-!        df = (f - MW_W_LS%Fre(i))/(MW_W_LS%Fre(i+1)-MW_W_LS%Fre(i))
-!        GO TO 101
-!      END IF
-!    END DO
-!  END IF
-! 101 CONTINUE
-!
-!  IF( Wind_Speed < MW_W_LS%WindSp(1) ) THEN
-!    iw1 = 1
-!    iw2 = 1
-!    dw = ZERO
-!  ELSE IF( Wind_Speed >= MW_W_LS%WindSp(MW_W_LS%N_Wind_S) ) THEN
-!    iw1 = MW_W_LS%N_Wind_S
-!    iw2 = MW_W_LS%N_Wind_S
-!    dw = ZERO
-!  ELSE
-!    iw1 = INT( (Wind_Speed-MW_W_LS%WindSp(1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1)) ) + 1
-!    iw2 = iw1 + 1
-!    dw = (Wind_Speed-MW_W_LS%WindSp(iw1))/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1))
-!  END IF
-!
-!  IF( Temperature < MW_W_LS%SST(1) ) THEN
-!    is1 = 1
-!    is2 = 1
-!    dT = ZERO
-!  ELSE IF( Temperature >= MW_W_LS%SST(MW_W_LS%N_SST) ) THEN
-!    is1 = MW_W_LS%N_SST
-!    is2 = MW_W_LS%N_SST
-!    dT = ZERO
-!  ELSE
-!    is1 = INT( (Temperature - MW_W_LS%SST(1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1)) ) + 1
-!    is2 = is1 + 1
-!    dT = (Temperature - MW_W_LS%SST(is1))/(MW_W_LS%SST(2)-MW_W_LS%SST(1))
-!  END IF
-!
-!  iz1 = INT( abs(Zenith_Angle)/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) ) ) + 1
-!  IF( iz1 >= MW_W_LS%N_Zenith ) THEN
-!    iz1 = MW_W_LS%N_Zenith
-!    iz2 = MW_W_LS%N_Zenith
-!    dz = ZERO
-!  ELSE
-!    iz2 = iz1 + 1
-!    dz = ( abs(Zenith_Angle)-MW_W_LS%Zangle(iz1) )/(MW_W_LS%Zangle(2)-MW_W_LS%Zangle(1) )
-!  END IF
-!
-!  av1 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is1,if2,iz2)
-!
-!  av2 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw1,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw1,is2,if2,iz2)
-!
-!  av3 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is1,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is1,if2,iz2)
-!
-!  av4 = (ONE-dz)*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%ev(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%ev(iw2,is2,if2,iz1) + dz*df*MW_W_LS%ev(iw2,is2,if2,iz2)
-!
-!  Rv = (ONE-dw)*(ONE-dT)*av1 + (ONE-dw)*dT*av2 &
-!                + dw*(ONE-dT)*av3 + dw*dT*av4
-!
-!  ah1 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is1,if2,iz2)
-!
-!  ah2 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw1,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw1,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw1,is2,if2,iz2)
-!
-!  ah3 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is1,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is1,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is1,if2,iz2)
-!
-!  ah4 = (ONE-dz)*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz1) + dz*(ONE-df)*MW_W_LS%eh(iw2,is2,if1,iz2) &
-!      + (ONE-dz)*df*MW_W_LS%eh(iw2,is2,if2,iz1) + dz*df*MW_W_LS%eh(iw2,is2,if2,iz2)
-!
-!  Rh = (ONE-dw)*(ONE-dT)*ah1 + (ONE-dw)*dT*ah2 &
-!                + dw*(ONE-dT)*ah3 + dw*dT*ah4
-!
-!!  ================  TL  ===============================================
-!
-!  dw_AD = ( -ah1*(ONE-dT) -ah2*dT +ah3*(ONE-dT) + ah4*dT ) * Rh_AD
-!  dT_AD = ( -(ONE-dw)*ah1 +(ONE-dw)*ah2 -dw*ah3 + dw*ah4 ) * Rh_AD
-!
-!  dw_AD = dw_AD + ( -av1*(ONE-dT) -av2*dT +av3*(ONE-dT) + av4*dT ) * Rv_AD
-!  dT_AD = dT_AD + ( -(ONE-dw)*av1 +(ONE-dw)*av2 -dw*av3 + dw*av4 ) * Rv_AD
-!
-!  IF( Temperature < MW_W_LS%SST(1) ) THEN
-!    dT_AD = ZERO
-!  ELSE IF( Temperature >= MW_W_LS%SST(MW_W_LS%N_SST) ) THEN
-!    dT_AD = ZERO
-!  ELSE
-!    Temperature_AD = Temperature_AD + dT_AD/(MW_W_LS%SST(2)-MW_W_LS%SST(1))
-!  END IF
-!
-!  IF( Wind_Speed < MW_W_LS%WindSp(1) ) THEN
-!    dw_AD = ZERO
-!  ELSE IF( Wind_Speed >= MW_W_LS%WindSp(MW_W_LS%N_Wind_S) ) THEN
-!    dw_AD = ZERO
-!  ELSE
-!    Wind_Speed_AD = Wind_Speed_AD + dw_AD/(MW_W_LS%WindSp(2)-MW_W_LS%WindSp(1))
-!  END IF
-!
-!
-!    RETURN
-!  END SUBROUTINE Large_Scale_Correction_LUT_AD
-!
-
-
-!
 END MODULE CRTM_FastemX
-!
