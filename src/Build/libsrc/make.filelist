@@ -86,7 +86,8 @@ FSRC_FILES = \
   CRTM_LowFrequency_MWSSEM.f90 \
   CRTM_Fastem1.f90 \
   CRTM_FastemX.f90 \
-    Reflection_Correction_Module.f90 Azimuth_Emissivity_Module.f90 \
+    Reflection_Correction_Module.f90 \
+    Azimuth_Emissivity_Module.f90 Azimuth_Emissivity_F6_Module.f90 \
     Small_Scale_Correction_Module.f90 Large_Scale_Correction_Module.f90 \
     Foam_Utility_Module.f90 Slope_Variance.f90 \
     Guillou.f90 Ellison.f90 Liu.f90 \
