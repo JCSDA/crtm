@@ -87,10 +87,12 @@ MODULE Azimuth_Emissivity_F6_Module
     REAL(fp) :: frequency    = ZERO
     REAL(fp) :: zenith_angle = ZERO
     ! Derived inputs
-    REAL(fp) :: phi = ZERO
-    REAL(fp) :: w18 = ZERO  ! Wind speed with 18m/s maximum
-    REAL(fp) :: w15 = ZERO  ! Wind speed with 15m/s maximum
-    REAL(fp) :: f37 = ZERO  ! Frequency with 37GHz maximum
+    REAL(fp) :: phi  = ZERO    ! Azimuth angle in radians
+    LOGICAL  :: lw18 = .FALSE. ! Logical to flag wind speed > 18m/s
+    REAL(fp) :: w18  = ZERO    ! Wind speed with 18m/s maximum
+    LOGICAL  :: lw15 = .FALSE. ! Logical to flag wind speed > 15m/s
+    REAL(fp) :: w15  = ZERO    ! Wind speed with 15m/s maximum
+    REAL(fp) :: f37  = ZERO    ! Frequency with 37GHz maximum
     ! Intermediate variables
     REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v , A2v , A1h , A2h
     REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1, A1s2, A2s1, A2s2
@@ -99,7 +101,9 @@ MODULE Azimuth_Emissivity_F6_Module
     REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_theta , A1h_theta , A2v_theta , A2h_theta
     REAL(fp) :: azimuth_component(N_FREQUENCIES, N_STOKES)
     ! Interpolation variables
-    
+    INTEGER :: i1 = 0
+    INTEGER :: i2 = 0
+    REAL(fp) :: lpoly = ZERO
    END TYPE iVar_type
 
   
@@ -128,8 +132,7 @@ CONTAINS
     REAL(fp)              , INTENT(OUT)    :: e_Azimuth(:)
     TYPE(iVar_type)       , INTENT(IN OUT) :: iVar
     ! Local variables
-    INTEGER  :: j, i1, i2
-    REAL(fp) :: lpoly
+    INTEGER :: j
     
     ! Initialise output
     e_Azimuth = ZERO
@@ -140,10 +143,12 @@ CONTAINS
     iVar%zenith_angle = Zenith_Angle
     
     ! Convert inputs
-    iVar%phi = Azimuth_Angle * DEGREES_TO_RADIANS
-    iVar%w18 = MIN(Wind_Speed, WIND_SPEED_MAX18)
-    iVar%w15 = MIN(Wind_Speed, WIND_SPEED_MAX15)
-    iVar%f37 = MIN(Frequency, FREQUENCY_MAX37)
+    iVar%phi  = Azimuth_Angle * DEGREES_TO_RADIANS
+    iVar%lw18 = Wind_Speed > WIND_SPEED_MAX18 
+    iVar%w18  = MIN(Wind_Speed, WIND_SPEED_MAX18)
+    iVar%lw15 = Wind_Speed > WIND_SPEED_MAX15 
+    iVar%w15  = MIN(Wind_Speed, WIND_SPEED_MAX15)
+    iVar%f37  = MIN(Frequency, FREQUENCY_MAX37)
     
 
     ! Loop over frequencies to compute the intermediate terms
@@ -156,7 +161,7 @@ CONTAINS
       iVar%A2v(j) = AZCoeff%C(6,j,IVPOL) * iVar%w18
 
       iVar%A1h(j) = AZCoeff%C(1,j,IHPOL) * iVar%w18
-      iVar%A2h(j) = AZCoeff%C(2,j,IHPOL) * ( exp(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) - ONE ) * &
+      iVar%A2h(j) = AZCoeff%C(2,j,IHPOL) * ( EXP(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) - ONE ) * &
                     ( AZCoeff%C(3,j,IHPOL) * iVar%w18    + &
                       AZCoeff%C(4,j,IHPOL) * iVar%w18**2 + &
                       AZCoeff%C(5,j,IHPOL) * iVar%w18**3   )
@@ -201,15 +206,15 @@ CONTAINS
       RETURN
     END IF
     ! ...In bounds, so interpolate
-    i1 = Bisection_Search(FIT_FREQUENCY, Frequency)
-    i2 = i1 + 1
-    lpoly = (Frequency - FIT_FREQUENCY(i1))/(FIT_FREQUENCY(i2)-FIT_FREQUENCY(i1))
+    iVar%i1 = Bisection_Search(FIT_FREQUENCY, Frequency)
+    iVar%i2 = iVar%i1 + 1
+    iVar%lpoly = (Frequency - FIT_FREQUENCY(iVar%i1))/(FIT_FREQUENCY(iVar%i2)-FIT_FREQUENCY(iVar%i1))
     
-    e_Azimuth(IVPOL) = (  lpoly     * iVar%azimuth_component(i2,IVPOL)) + &
-                       ((ONE-lpoly) * iVar%azimuth_component(i1,IVPOL))
-    e_Azimuth(IHPOL) = (  lpoly     * iVar%azimuth_component(i2,IHPOL)) + &
-                       ((ONE-lpoly) * iVar%azimuth_component(i1,IHPOL))
-    
+    e_Azimuth(IVPOL) = (   iVar%lpoly      * iVar%azimuth_component(iVar%i2,IVPOL)) + &
+                       ((ONE - iVar%lpoly) * iVar%azimuth_component(iVar%i1,IVPOL))
+    e_Azimuth(IHPOL) = (   iVar%lpoly      * iVar%azimuth_component(iVar%i2,IHPOL)) + &
+                       ((ONE - iVar%lpoly) * iVar%azimuth_component(iVar%i1,IHPOL))
+
   END SUBROUTINE Azimuth_Emissivity_F6
 
 
@@ -227,9 +232,117 @@ CONTAINS
     REAL(fp)              , INTENT(IN)  :: Azimuth_Angle_TL
     REAL(fp)              , INTENT(OUT) :: e_Azimuth_TL(:)
     TYPE(iVar_type)       , INTENT(IN)  :: iVar
+    ! Local variables
+    INTEGER  :: j
+    REAL(fp) :: phi_TL
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_TL , A2v_TL , A1h_TL , A2h_TL
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1_TL, A1s2_TL, A2s1_TL, A2s2_TL
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A2s2_theta0_TL
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1_theta_TL, A1s2_theta_TL, A2s1_theta_TL, A2s2_theta_TL
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_theta_TL , A1h_theta_TL , A2v_theta_TL , A2h_theta_TL
+    REAL(fp) :: azimuth_component_TL(N_FREQUENCIES, N_STOKES)
+   
+    ! Initialise output
+    e_Azimuth_TL = ZERO
+
+    ! Convert inputs
+    phi_TL = Azimuth_Angle_TL * DEGREES_TO_RADIANS
+    
+    ! Loop over frequencies to compute the intermediate terms
+    Frequency_Loop: DO j = 1, N_FREQUENCIES
+    
+      ! Only compute TL values if wind speed is not maxed out
+      IF ( iVar%lw18 ) THEN
+        A1v_TL(j) = ZERO
+        A2v_TL(j) = ZERO
+        A1h_TL(j) = ZERO
+        A2h_TL(j) = ZERO
+      ELSE
+        A1v_TL(j) = ( AZCoeff%C(1,j,IVPOL) * ( EXP(-AZCoeff%C(5,j,IVPOL) * iVar%w18**2 ) - ONE ) * &
+                      (         AZCoeff%C(2,j,IVPOL)               + &
+                        TWO   * AZCoeff%C(3,j,IVPOL) * iVar%w18    + &
+                        THREE * AZCoeff%C(4,j,IVPOL) * iVar%w18**2   ) - &
+                      TWO * AZCoeff%C(1,j,IVPOL) * AZCoeff%C(5,j,IVPOL) * iVar%w18 * &
+                      EXP(-AZCoeff%C(5,j,IVPOL) * iVar%w18**2 ) * &
+                      ( AZCoeff%C(2,j,IVPOL) * iVar%w18    + &
+                        AZCoeff%C(3,j,IVPOL) * iVar%w18**2 + &
+                        AZCoeff%C(4,j,IVPOL) * iVar%w18**3   ) ) * Wind_Speed_TL
+        A2v_TL(j) = AZCoeff%C(6,j,IVPOL) * Wind_Speed_TL
+
+        A1h_TL(j) = AZCoeff%C(1,j,IHPOL) * Wind_Speed_TL
+
+        A2h_TL(j) = ( AZCoeff%C(2,j,IHPOL) * ( EXP(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) - ONE ) * &
+                      (         AZCoeff%C(3,j,IHPOL)               + &
+                        TWO   * AZCoeff%C(4,j,IHPOL) * iVar%w18    + &
+                        THREE * AZCoeff%C(5,j,IHPOL) * iVar%w18**2   ) - &
+                      TWO * AZCoeff%C(2,j,IHPOL) * AZCoeff%C(6,j,IHPOL) * iVar%w18 * &
+                      EXP(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) * &
+                      ( AZCoeff%C(3,j,IHPOL) * iVar%w18    + &
+                        AZCoeff%C(4,j,IHPOL) * iVar%w18**2 + &
+                        AZCoeff%C(5,j,IHPOL) * iVar%w18**3   ) ) * Wind_Speed_TL
+
+      END IF
+
+      A1s1_TL(j) = (A1v_TL(j) + A1h_TL(j))/TWO
+      A1s2_TL(j) =  A1v_TL(j) - A1h_TL(j)
+      A2s1_TL(j) = (A2v_TL(j) + A2h_TL(j))/TWO
+      A2s2_TL(j) =  A2v_TL(j) - A2h_TL(j)
 
 
+      ! Only compute TL value if wind speed is not maxed out
+      IF ( iVar%lw15 ) THEN
+        A2s2_theta0_TL(j) = ZERO
+      ELSE
+        A2s2_theta0_TL(j) = (TWO*iVar%w15 - (THREE*iVar%w15**2)/22.5_fp)/55.5556_fp * &
+                            (TWO/290.0_fp) * &
+                            (ONE - LOG10(30.0_fp/iVar%f37) ) * Wind_Speed_TL
+      END IF
 
+
+      A1s1_theta_TL(j) = A1s1_TL(j)*((iVar%zenith_angle/THETA_REF)**XS11)
+      A2s1_theta_TL(j) = A2s1_TL(j)*((iVar%zenith_angle/THETA_REF)**XS12)
+      A1s2_theta_TL(j) = A1s2_TL(j)*((iVar%zenith_angle/THETA_REF)**XS21)
+      A2s2_theta_TL(j) = A2s2_theta0_TL(j) + &
+                         (A2s2_TL(j) - A2s2_theta0_TL(j))*((iVar%zenith_angle/THETA_REF)**XS22)
+
+
+      A1v_theta_TL(j) = POINT5*(TWO*A1s1_theta_TL(j) + A1s2_theta_TL(j))
+      A1h_theta_TL(j) = POINT5*(TWO*A1s1_theta_TL(j) - A1s2_theta_TL(j))
+      A2v_theta_TL(j) = POINT5*(TWO*A2s1_theta_TL(j) + A2s2_theta_TL(j))
+      A2h_theta_TL(j) = POINT5*(TWO*A2s1_theta_TL(j) - A2s2_theta_TL(j))
+
+
+      azimuth_component_TL(j,IVPOL) = (COS(  iVar%phi  ) * A1v_theta_TL(j)) + & 
+                                      (COS(TWO*iVar%phi) * A2v_theta_TL(j)) - &
+                                      ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + & 
+                                        (TWO * iVar%A2v_theta(j) * SIN(TWO*iVar%phi))   ) * phi_TL
+      azimuth_component_TL(j,IHPOL) = (COS(  iVar%phi  ) * A1h_theta_TL(j)) + & 
+                                      (COS(TWO*iVar%phi) * A2h_theta_TL(j)) - &
+                                      ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + & 
+                                        (TWO * iVar%A2h_theta(j) * SIN(TWO*iVar%phi))   ) * phi_TL
+
+    END DO Frequency_Loop
+
+
+    ! Interpolate to input frequency for result. Only V and H polarisation.
+    ! ...Check for lower out of bounds frequency
+    IF ( iVar%frequency < FIT_FREQUENCY(1) ) THEN
+      e_Azimuth_TL(IVPOL) = azimuth_component_TL(1,IVPOL)
+      e_Azimuth_TL(IHPOL) = azimuth_component_TL(1,IHPOL)
+      RETURN
+    END IF
+    ! ...Check for upper out of bounds frequency
+    IF ( iVar%frequency > FIT_FREQUENCY(N_FREQUENCIES) ) THEN
+      e_Azimuth_TL(IVPOL) = azimuth_component_TL(N_FREQUENCIES,IVPOL)
+      e_Azimuth_TL(IHPOL) = azimuth_component_TL(N_FREQUENCIES,IHPOL)
+      RETURN
+    END IF
+    ! ...In bounds, so interpolate
+    e_Azimuth_TL(IVPOL) = (   iVar%lpoly      * azimuth_component_TL(iVar%i2,IVPOL)) + &
+                          ((ONE - iVar%lpoly) * azimuth_component_TL(iVar%i1,IVPOL))
+    e_Azimuth_TL(IHPOL) = (   iVar%lpoly      * azimuth_component_TL(iVar%i2,IHPOL)) + &
+                          ((ONE - iVar%lpoly) * azimuth_component_TL(iVar%i1,IHPOL))
+    
   END SUBROUTINE Azimuth_Emissivity_F6_TL
 
 
