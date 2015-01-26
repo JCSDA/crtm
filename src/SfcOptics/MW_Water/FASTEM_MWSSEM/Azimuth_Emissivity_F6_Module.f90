@@ -4,7 +4,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Original FASTEM6 authors, Masahiro Kazumori
+!       Written by:     Original FASTEM1-5 authors, and Masahiro Kazumori
+!                       for the new azimuthal emissivity model.
 !
 !       Refactored by:  Paul van Delst, January 2015
 !                       paul.vandelst@noaa.gov
@@ -57,7 +58,7 @@ MODULE Azimuth_Emissivity_F6_Module
   INTEGER, PARAMETER :: IHPOL = 2  ! Index for horizontal polarisation
   ! ...The number of fitting frequencies
   INTEGER, PARAMETER :: N_FREQUENCIES = 6
-  
+
   ! Parameters used in the model
   ! ...The fitting frequencies
   REAL(fp), PARAMETER :: FIT_FREQUENCY(N_FREQUENCIES) = &
@@ -74,12 +75,12 @@ MODULE Azimuth_Emissivity_F6_Module
   REAL(fp), PARAMETER :: XS22 = FOUR
   ! ...Reference zenith angle
   REAL(fp), PARAMETER :: THETA_REF = 55.2_fp
-  
-  
+
+
   ! --------------------------------------
   ! Structure definition to hold internal
   ! variables across FWD, TL, and AD calls
-  ! --------------------------------------  
+  ! --------------------------------------
   TYPE :: iVar_type
     PRIVATE
     ! Direct inputs
@@ -106,14 +107,14 @@ MODULE Azimuth_Emissivity_F6_Module
     REAL(fp) :: lpoly = ZERO
    END TYPE iVar_type
 
-  
+
 CONTAINS
 
 
   ! ===========================================================
   ! Compute emissivity as a function of relative azimuth angle.
   ! ===========================================================
-  
+
   ! Forward model
   SUBROUTINE Azimuth_Emissivity_F6( &
     AZCoeff      , &  ! Input
@@ -125,15 +126,15 @@ CONTAINS
     iVar           )  ! Internal variable output
     ! Arguments
     TYPE(FitCoeff_3D_type), INTENT(IN)     :: AZCoeff
-    REAL(fp)              , INTENT(IN)     :: Wind_Speed   
+    REAL(fp)              , INTENT(IN)     :: Wind_Speed
     REAL(fp)              , INTENT(IN)     :: Azimuth_Angle
-    REAL(fp)              , INTENT(IN)     :: Frequency    
-    REAL(fp)              , INTENT(IN)     :: Zenith_Angle        
+    REAL(fp)              , INTENT(IN)     :: Frequency
+    REAL(fp)              , INTENT(IN)     :: Zenith_Angle
     REAL(fp)              , INTENT(OUT)    :: e_Azimuth(:)
     TYPE(iVar_type)       , INTENT(IN OUT) :: iVar
     ! Local variables
     INTEGER :: j
-    
+
     ! Initialise output
     e_Azimuth = ZERO
 
@@ -141,19 +142,19 @@ CONTAINS
     iVar%wind_speed   = Wind_Speed
     iVar%frequency    = Frequency
     iVar%zenith_angle = Zenith_Angle
-    
+
     ! Convert inputs
     iVar%phi  = Azimuth_Angle * DEGREES_TO_RADIANS
-    iVar%lw18 = Wind_Speed > WIND_SPEED_MAX18 
+    iVar%lw18 = Wind_Speed > WIND_SPEED_MAX18
     iVar%w18  = MIN(Wind_Speed, WIND_SPEED_MAX18)
-    iVar%lw15 = Wind_Speed > WIND_SPEED_MAX15 
+    iVar%lw15 = Wind_Speed > WIND_SPEED_MAX15
     iVar%w15  = MIN(Wind_Speed, WIND_SPEED_MAX15)
     iVar%f37  = MIN(Frequency, FREQUENCY_MAX37)
-    
+
 
     ! Loop over frequencies to compute the intermediate terms
     Frequency_Loop: DO j = 1, N_FREQUENCIES
-    
+
       iVar%A1v(j) = AZCoeff%C(1,j,IVPOL) * ( EXP(-AZCoeff%C(5,j,IVPOL) * iVar%w18**2 ) - ONE ) * &
                     ( AZCoeff%C(2,j,IVPOL) * iVar%w18    + &
                       AZCoeff%C(3,j,IVPOL) * iVar%w18**2 + &
@@ -209,7 +210,7 @@ CONTAINS
     iVar%i1 = Bisection_Search(FIT_FREQUENCY, Frequency)
     iVar%i2 = iVar%i1 + 1
     iVar%lpoly = (Frequency - FIT_FREQUENCY(iVar%i1))/(FIT_FREQUENCY(iVar%i2)-FIT_FREQUENCY(iVar%i1))
-    
+
     e_Azimuth(IVPOL) = (   iVar%lpoly      * iVar%azimuth_component(iVar%i2,IVPOL)) + &
                        ((ONE - iVar%lpoly) * iVar%azimuth_component(iVar%i1,IVPOL))
     e_Azimuth(IHPOL) = (   iVar%lpoly      * iVar%azimuth_component(iVar%i2,IHPOL)) + &
@@ -218,7 +219,7 @@ CONTAINS
   END SUBROUTINE Azimuth_Emissivity_F6
 
 
-  
+
   ! Tangent-linear model
   SUBROUTINE Azimuth_Emissivity_F6_TL( &
     AZCoeff         , &  ! Input
@@ -241,16 +242,16 @@ CONTAINS
     REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1_theta_TL, A1s2_theta_TL, A2s1_theta_TL, A2s2_theta_TL
     REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_theta_TL , A1h_theta_TL , A2v_theta_TL , A2h_theta_TL
     REAL(fp) :: azimuth_component_TL(N_FREQUENCIES, N_STOKES)
-   
+
     ! Initialise output
     e_Azimuth_TL = ZERO
 
     ! Convert inputs
     phi_TL = Azimuth_Angle_TL * DEGREES_TO_RADIANS
-    
+
     ! Loop over frequencies to compute the intermediate terms
     Frequency_Loop: DO j = 1, N_FREQUENCIES
-    
+
       ! Only compute TL values if wind speed is not maxed out
       IF ( iVar%lw18 ) THEN
         A1v_TL(j) = ZERO
@@ -312,13 +313,13 @@ CONTAINS
       A2h_theta_TL(j) = POINT5*(TWO*A2s1_theta_TL(j) - A2s2_theta_TL(j))
 
 
-      azimuth_component_TL(j,IVPOL) = (COS(  iVar%phi  ) * A1v_theta_TL(j)) + & 
+      azimuth_component_TL(j,IVPOL) = (COS(  iVar%phi  ) * A1v_theta_TL(j)) + &
                                       (COS(TWO*iVar%phi) * A2v_theta_TL(j)) - &
-                                      ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + & 
+                                      ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + &
                                         (TWO * iVar%A2v_theta(j) * SIN(TWO*iVar%phi))   ) * phi_TL
-      azimuth_component_TL(j,IHPOL) = (COS(  iVar%phi  ) * A1h_theta_TL(j)) + & 
+      azimuth_component_TL(j,IHPOL) = (COS(  iVar%phi  ) * A1h_theta_TL(j)) + &
                                       (COS(TWO*iVar%phi) * A2h_theta_TL(j)) - &
-                                      ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + & 
+                                      ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + &
                                         (TWO * iVar%A2h_theta(j) * SIN(TWO*iVar%phi))   ) * phi_TL
 
     END DO Frequency_Loop
@@ -342,7 +343,7 @@ CONTAINS
                           ((ONE - iVar%lpoly) * azimuth_component_TL(iVar%i1,IVPOL))
     e_Azimuth_TL(IHPOL) = (   iVar%lpoly      * azimuth_component_TL(iVar%i2,IHPOL)) + &
                           ((ONE - iVar%lpoly) * azimuth_component_TL(iVar%i1,IHPOL))
-    
+
   END SUBROUTINE Azimuth_Emissivity_F6_TL
 
 
@@ -359,7 +360,97 @@ CONTAINS
     REAL(fp)              , INTENT(IN OUT) :: Wind_Speed_AD
     REAL(fp)              , INTENT(IN OUT) :: Azimuth_Angle_AD
     TYPE(iVar_type)       , INTENT(IN)     :: iVar
-    
+    ! Local variables
+    INTEGER  :: j
+    REAL(fp) :: phi_AD
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_AD , A2v_AD , A1h_AD , A2h_AD
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1_AD, A1s2_AD, A2s1_AD, A2s2_AD
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A2s2_theta0_AD
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1s1_theta_AD, A1s2_theta_AD, A2s1_theta_AD, A2s2_theta_AD
+    REAL(fp), DIMENSION(N_FREQUENCIES) :: A1v_theta_AD , A1h_theta_AD , A2v_theta_AD , A2h_theta_AD
+    REAL(fp) :: azimuth_component_AD(N_FREQUENCIES, N_STOKES)
+
+    ! Initialise local adjoint variables
+    phi_AD = ZERO
+    A1v_theta_AD = ZERO; A1h_theta_AD = ZERO; A2v_theta_AD = ZERO; A2h_theta_AD = ZERO
+    azimuth_component_AD = ZERO
+
+    ! Adjoint of frequency interpolation. Only V and H polarisation.
+    IF ( iVar%frequency < FIT_FREQUENCY(1) ) THEN
+      ! ...Lower out of bounds frequency
+      azimuth_component_AD(1,IHPOL) = azimuth_component_AD(1,IHPOL) + e_Azimuth_AD(IHPOL)
+      azimuth_component_AD(1,IVPOL) = azimuth_component_AD(1,IVPOL) + e_Azimuth_AD(IVPOL)
+    ELSE IF ( iVar%frequency > FIT_FREQUENCY(N_FREQUENCIES) ) THEN
+      ! ...Upper out of bounds frequency
+      azimuth_component_AD(N_FREQUENCIES,IHPOL) = azimuth_component_AD(N_FREQUENCIES,IHPOL) + e_Azimuth_AD(IHPOL)
+      azimuth_component_AD(N_FREQUENCIES,IVPOL) = azimuth_component_AD(N_FREQUENCIES,IVPOL) + e_Azimuth_AD(IVPOL)
+    ELSE
+      ! ...In bounds, so interpolate
+      azimuth_component_AD(1,IHPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(1,IHPOL)
+      azimuth_component_AD(2,IHPOL) = (   iVar%lpoly      * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(2,IHPOL)
+      azimuth_component_AD(1,IVPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(1,IVPOL)
+      azimuth_component_AD(2,IVPOL) = (   iVar%lpoly      * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(2,IVPOL)
+    END IF
+    e_Azimuth_AD(IHPOL) = ZERO
+    e_Azimuth_AD(IVPOL) = ZERO
+
+
+    ! Loop over frequencies to compute the intermediate term adjoints
+    Frequency_Loop: DO j = 1, N_FREQUENCIES
+
+! ***** How to handle azimuth_angle_angle_ad?
+! ***** The degrees->radian conversion initialises phi in the other procedures.
+! ***** Just  phi_ad = azimuth_angle_ad?
+! ***** Or....??
+
+      phi_AD = ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + &
+                 (TWO * iVar%A2h_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IHPOL) + &
+               phi_AD
+      A2h_theta_AD(j) = (COS(TWO*iVar%phi) * azimuth_component_AD(j,IHPOL)) + A2h_theta_AD(j)
+      A1h_theta_AD(j) = (COS(  iVar%phi  ) * azimuth_component_AD(j,IHPOL)) + A1h_theta_AD(j)
+      azimuth_component_AD(j,IHPOL) = ZERO
+
+      phi_AD = ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + &
+                 (TWO * iVar%A2v_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IVPOL) + &
+               phi_AD
+      A2v_theta_AD(j) = (COS(TWO*iVar%phi) * azimuth_component_AD(j,IVPOL)) + A2v_theta_AD(j)
+      A1v_theta_AD(j) = (COS(  iVar%phi  ) * azimuth_component_AD(j,IVPOL)) + A1v_theta_AD(j)
+      azimuth_component_AD(j,IVPOL) = ZERO
+
+
+      A2s2_theta_AD(j) = A2s2_theta_AD(j) - POINT5*A2h_theta_AD(j)
+      A2s1_theta_AD(j) = A2s1_theta_AD(j) +        A2h_theta_AD(j)
+      A2h_theta_AD(j)  = ZERO
+
+      A2s2_theta_AD(j) = A2s2_theta_AD(j) + POINT5*A2v_theta_AD(j)
+      A2s1_theta_AD(j) = A2s1_theta_AD(j) +        A2v_theta_AD(j)
+      A2v_theta_AD(j)  = ZERO
+
+      A1s2_theta_AD(j) = A1s2_theta_AD(j) - POINT5*A1h_theta_AD(j)
+      A1s1_theta_AD(j) = A1s1_theta_AD(j) +        A1h_theta_AD(j)
+      A1h_theta_AD(j)  = ZERO
+
+      A1s2_theta_AD(j) = A1s2_theta_AD(j) + POINT5*A1v_theta_AD(j)
+      A1s1_theta_AD(j) = A1s1_theta_AD(j) +        A1v_theta_AD(j)
+      A1v_theta_AD(j)  = ZERO
+
+
+      A2s2_AD(j)        = A2s2_AD(j)        + A2s2_theta_AD(j)*((iVar%zenith_angle/THETA_REF)**XS22)
+      A2s2_theta0_AD(j) = A2s2_theta0_AD(j) + A2s2_theta_AD(j)*(ONE - (iVar%zenith_angle/THETA_REF)**XS22)
+      A2s2_theta_AD(j)  = ZERO
+
+      A1s2_AD(j)       = A1s2_AD(j) + A1s2_theta_AD(j)*((iVar%zenith_angle/THETA_REF)**XS21)
+      A1s2_theta_AD(j) = ZERO
+
+      A2s1_AD(j)       = A2s1_AD(j) + A2s1_theta_AD(j)*((iVar%zenith_angle/THETA_REF)**XS12)
+      A2s1_theta_AD(j) = ZERO
+
+      A1s1_AD(j)       = A1s1_AD(j) + A1s1_theta_AD(j)*((iVar%zenith_angle/THETA_REF)**XS11)
+      A1s1_theta_AD(j) = ZERO
+
+
+
+    END DO Frequency_Loop
   END SUBROUTINE Azimuth_Emissivity_F6_AD
 
 
