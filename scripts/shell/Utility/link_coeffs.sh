@@ -149,6 +149,7 @@ MW.CloudCoeff.${FILE_EXT} \
 CloudCoeff.${FILE_EXT} \
 FASTEM4.MWwater.EmisCoeff.${FILE_EXT} \
 FASTEM5.MWwater.EmisCoeff.${FILE_EXT} \
+FASTEM6.MWwater.EmisCoeff.${FILE_EXT} \
 Nalli.IRwater.EmisCoeff.${FILE_EXT} \
 WuSmith.IRwater.EmisCoeff.${FILE_EXT} \
 NPOESS.IRice.EmisCoeff.${FILE_EXT} \
