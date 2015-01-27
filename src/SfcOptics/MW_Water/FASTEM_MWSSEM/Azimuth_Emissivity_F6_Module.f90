@@ -372,8 +372,13 @@ CONTAINS
 
     ! Initialise local adjoint variables
     phi_AD = ZERO
-    A1v_theta_AD = ZERO; A1h_theta_AD = ZERO; A2v_theta_AD = ZERO; A2h_theta_AD = ZERO
+    A1v_AD  = ZERO;  A2v_AD  = ZERO;  A1h_AD  = ZERO;  A2h_AD  = ZERO
+    A1s1_AD = ZERO;  A1s2_AD = ZERO;  A2s1_AD = ZERO;  A2s2_AD = ZERO
+    A2s2_theta0_AD = ZERO
+    A1s1_theta_AD = ZERO; A1s2_theta_AD = ZERO; A2s1_theta_AD = ZERO; A2s2_theta_AD = ZERO
+    A1v_theta_AD  = ZERO; A1h_theta_AD  = ZERO; A2v_theta_AD  = ZERO; A2h_theta_AD  = ZERO
     azimuth_component_AD = ZERO
+
 
     ! Adjoint of frequency interpolation. Only V and H polarisation.
     IF ( iVar%frequency < FIT_FREQUENCY(1) ) THEN
@@ -386,10 +391,10 @@ CONTAINS
       azimuth_component_AD(N_FREQUENCIES,IVPOL) = azimuth_component_AD(N_FREQUENCIES,IVPOL) + e_Azimuth_AD(IVPOL)
     ELSE
       ! ...In bounds, so interpolate
-      azimuth_component_AD(1,IHPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(1,IHPOL)
-      azimuth_component_AD(2,IHPOL) = (   iVar%lpoly      * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(2,IHPOL)
-      azimuth_component_AD(1,IVPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(1,IVPOL)
-      azimuth_component_AD(2,IVPOL) = (   iVar%lpoly      * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(2,IVPOL)
+      azimuth_component_AD(iVar%i1,IHPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(iVar%i1,IHPOL)
+      azimuth_component_AD(iVar%i2,IHPOL) = (   iVar%lpoly      * e_Azimuth_AD(IHPOL)) + azimuth_component_AD(iVar%i2,IHPOL)
+      azimuth_component_AD(iVar%i1,IVPOL) = ((ONE - iVar%lpoly) * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(iVar%i1,IVPOL)
+      azimuth_component_AD(iVar%i2,IVPOL) = (   iVar%lpoly      * e_Azimuth_AD(IVPOL)) + azimuth_component_AD(iVar%i2,IVPOL)
     END IF
     e_Azimuth_AD(IHPOL) = ZERO
     e_Azimuth_AD(IVPOL) = ZERO
@@ -398,21 +403,16 @@ CONTAINS
     ! Loop over frequencies to compute the intermediate term adjoints
     Frequency_Loop: DO j = 1, N_FREQUENCIES
 
-! ***** How to handle azimuth_angle_angle_ad?
-! ***** The degrees->radian conversion initialises phi in the other procedures.
-! ***** Just  phi_ad = azimuth_angle_ad?
-! ***** Or....??
-
-      phi_AD = ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + &
-                 (TWO * iVar%A2h_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IHPOL) + &
-               phi_AD
+      phi_AD = phi_AD - &
+               ( (      iVar%A1h_theta(j) * SIN(  iVar%phi  )) + &
+                 (TWO * iVar%A2h_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IHPOL)
       A2h_theta_AD(j) = (COS(TWO*iVar%phi) * azimuth_component_AD(j,IHPOL)) + A2h_theta_AD(j)
       A1h_theta_AD(j) = (COS(  iVar%phi  ) * azimuth_component_AD(j,IHPOL)) + A1h_theta_AD(j)
       azimuth_component_AD(j,IHPOL) = ZERO
 
-      phi_AD = ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + &
-                 (TWO * iVar%A2v_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IVPOL) + &
-               phi_AD
+      phi_AD = phi_AD - &
+               ( (      iVar%A1v_theta(j) * SIN(  iVar%phi  )) + &
+                 (TWO * iVar%A2v_theta(j) * SIN(TWO*iVar%phi))   ) * azimuth_component_AD(j,IVPOL)
       A2v_theta_AD(j) = (COS(TWO*iVar%phi) * azimuth_component_AD(j,IVPOL)) + A2v_theta_AD(j)
       A1v_theta_AD(j) = (COS(  iVar%phi  ) * azimuth_component_AD(j,IVPOL)) + A1v_theta_AD(j)
       azimuth_component_AD(j,IVPOL) = ZERO
@@ -449,8 +449,79 @@ CONTAINS
       A1s1_theta_AD(j) = ZERO
 
 
+      ! Only compute AD value if wind speed is not maxed out
+      IF ( iVar%lw15 ) THEN
+        A2s2_theta0_AD(j) = ZERO
+      ELSE
+        Wind_Speed_AD = Wind_Speed_AD + &
+                        ((TWO*iVar%w15 - (THREE*iVar%w15**2)/22.5_fp)/55.5556_fp * &
+                         (TWO/290.0_fp) * &
+                         (ONE - LOG10(30.0_fp/iVar%f37)))*A2s2_theta0_AD(j)
+        A2s2_theta0_AD(j) = ZERO
+      END IF
+
+
+      A2h_AD(j)  = A2h_AD(j) - A2s2_AD(j)
+      A2v_AD(j)  = A2v_AD(j) + A2s2_AD(j)
+      A2s2_AD(j) = ZERO
+
+      A2h_AD(j)  = A2h_AD(j) + POINT5*A2s1_AD(j)
+      A2v_AD(j)  = A2v_AD(j) + POINT5*A2s1_AD(j)
+      A2s1_AD(j) = ZERO
+
+      A1h_AD(j)  = A1h_AD(j) - A1s2_AD(j)
+      A1v_AD(j)  = A1v_AD(j) + A1s2_AD(j)
+      A1s2_AD(j) = ZERO
+
+      A1h_AD(j)  = A1h_AD(j) + POINT5*A1s1_AD(j)
+      A1v_AD(j)  = A1v_AD(j) + POINT5*A1s1_AD(j)
+      A1s1_AD(j) = ZERO
+      
+      
+      ! Only compute AD values if wind speed is not maxed out
+      IF ( iVar%lw18 ) THEN
+        A1v_AD(j) = ZERO
+        A2v_AD(j) = ZERO
+        A1h_AD(j) = ZERO
+        A2h_AD(j) = ZERO
+      ELSE
+        Wind_Speed_AD = Wind_Speed_AD + &
+                        ( AZCoeff%C(2,j,IHPOL) * ( EXP(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) - ONE ) * &
+                          (         AZCoeff%C(3,j,IHPOL)               + &
+                            TWO   * AZCoeff%C(4,j,IHPOL) * iVar%w18    + &
+                            THREE * AZCoeff%C(5,j,IHPOL) * iVar%w18**2   ) - &
+                          TWO * AZCoeff%C(2,j,IHPOL) * AZCoeff%C(6,j,IHPOL) * iVar%w18 * &
+                          EXP(-AZCoeff%C(6,j,IHPOL) * iVar%w18**2 ) * &
+                          ( AZCoeff%C(3,j,IHPOL) * iVar%w18    + &
+                            AZCoeff%C(4,j,IHPOL) * iVar%w18**2 + &
+                            AZCoeff%C(5,j,IHPOL) * iVar%w18**3   ) ) * A2h_AD(j)
+        A2h_AD(j) = ZERO
+        
+        Wind_Speed_AD = Wind_Speed_AD + AZCoeff%C(1,j,IHPOL)*A1h_AD(j) 
+        A1h_AD(j) = ZERO
+      
+        Wind_Speed_AD = Wind_Speed_AD + AZCoeff%C(6,j,IVPOL)*A2v_AD(j) 
+        A2v_AD(j) = ZERO
+      
+        Wind_Speed_AD = Wind_Speed_AD + &
+                        ( AZCoeff%C(1,j,IVPOL) * ( EXP(-AZCoeff%C(5,j,IVPOL) * iVar%w18**2 ) - ONE ) * &
+                          (         AZCoeff%C(2,j,IVPOL)               + &
+                            TWO   * AZCoeff%C(3,j,IVPOL) * iVar%w18    + &
+                            THREE * AZCoeff%C(4,j,IVPOL) * iVar%w18**2   ) - &
+                          TWO * AZCoeff%C(1,j,IVPOL) * AZCoeff%C(5,j,IVPOL) * iVar%w18 * &
+                          EXP(-AZCoeff%C(5,j,IVPOL) * iVar%w18**2 ) * &
+                          ( AZCoeff%C(2,j,IVPOL) * iVar%w18    + &
+                            AZCoeff%C(3,j,IVPOL) * iVar%w18**2 + &
+                            AZCoeff%C(4,j,IVPOL) * iVar%w18**3   ) ) * A1v_AD(j)
+        A1v_AD(j) = ZERO
+      END IF
 
     END DO Frequency_Loop
+
+    
+    ! Adjoint of the angle perturbation in radians
+    Azimuth_Angle_AD = Azimuth_Angle_AD + DEGREES_TO_RADIANS*phi_AD
+    
   END SUBROUTINE Azimuth_Emissivity_F6_AD
 
 

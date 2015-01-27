@@ -871,12 +871,21 @@ CONTAINS
 
     ! Azimuthal component calculation
     IF ( PRESENT(Azimuth_Angle_AD) .AND. iVar%Azimuth_Angle_Valid ) THEN
-      CALL Azimuth_Emissivity_AD( &
-             MWwaterCoeff%AZCoeff, &
-             e_Azimuth_AD    , &
-             Wind_Speed_AD   , &
-             Azimuth_Angle_AD, &
-             iVar%aeVar        )
+      IF ( MWwaterCoeff%Version == FASTEM6 ) THEN
+        CALL Azimuth_Emissivity_F6_AD( &
+               MWwaterCoeff%AZCoeff, &
+               e_Azimuth_AD    , &
+               Wind_Speed_AD   , &
+               Azimuth_Angle_AD, &
+               iVar%aeF6Var      )
+      ELSE
+        CALL Azimuth_Emissivity_AD( &
+               MWwaterCoeff%AZCoeff, &
+               e_Azimuth_AD    , &
+               Wind_Speed_AD   , &
+               Azimuth_Angle_AD, &
+               iVar%aeVar        )
+      END IF
     ELSE
       e_Azimuth_AD = ZERO
     END IF
