@@ -177,7 +177,8 @@ CONTAINS
 !       MWwaterCoeff_File:  Name of the data file containing the coefficient
 !                           data for the microwave water emissivity model.
 !                           Available datafiles:
-!                           - FASTEM5.MWwater.EmisCoeff.bin  [DEFAULT]
+!                           - FASTEM6.MWwater.EmisCoeff.bin  [DEFAULT]
+!                           - FASTEM5.MWwater.EmisCoeff.bin
 !                           - FASTEM4.MWwater.EmisCoeff.bin
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
@@ -425,7 +426,14 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
-
+    ! ...Check for deprecated EmisCoeff_File argument
+    IF ( PRESENT(EmisCoeff_File) ) THEN
+      err_stat = FAILURE
+      msg = 'The EmisCoeff_File optional argument is deprecated. Use IRwaterCoeff_File instead'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg)//TRIM(pid_msg), err_stat )
+      RETURN
+    END IF
+      
 
     ! Specify sensor-independent coefficient filenames
     ! ...Default filenames
@@ -439,11 +447,10 @@ CONTAINS
     Default_VISlandCoeff_File  = 'NPOESS.VISland.EmisCoeff.bin'
     Default_VISsnowCoeff_File  = 'NPOESS.VISsnow.EmisCoeff.bin'
     Default_VISiceCoeff_File   = 'NPOESS.VISice.EmisCoeff.bin'
-    Default_MWwaterCoeff_File  = 'FASTEM5.MWwater.EmisCoeff.bin'
+    Default_MWwaterCoeff_File  = 'FASTEM6.MWwater.EmisCoeff.bin'
     ! ...Were other filenames specified?
     IF ( PRESENT(CloudCoeff_File   ) ) Default_CloudCoeff_File    = TRIM(ADJUSTL(CloudCoeff_File))
     IF ( PRESENT(AerosolCoeff_File ) ) Default_AerosolCoeff_File  = TRIM(ADJUSTL(AerosolCoeff_File))
-    IF ( PRESENT(EmisCoeff_File    ) ) Default_IRwaterCoeff_File  = TRIM(ADJUSTL(EmisCoeff_File))  ! *** DEPRECATED. Delete in next release
     IF ( PRESENT(IRwaterCoeff_File ) ) Default_IRwaterCoeff_File  = TRIM(ADJUSTL(IRwaterCoeff_File))
     IF ( PRESENT(IRlandCoeff_File  ) ) Default_IRlandCoeff_File   = TRIM(ADJUSTL(IRlandCoeff_File))
     IF ( PRESENT(IRsnowCoeff_File  ) ) Default_IRsnowCoeff_File   = TRIM(ADJUSTL(IRsnowCoeff_File))
