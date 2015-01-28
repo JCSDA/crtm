@@ -126,7 +126,7 @@ MODULE MWwaterCoeff_FASTEM6
 
   ! Coefficients for M.Kazumori azimuth model function
   INTEGER , PARAMETER :: N_AZCOEFFS      = 6 ! No. of azimuth emissivity coefficients
-  INTEGER , PARAMETER :: N_AZFREQUENCIES = 6 ! No. of harmonics considered in the trignometric parameterisation
+  INTEGER , PARAMETER :: N_AZFREQUENCIES = 6 ! No. of fitting frequencies
   REAL(fp), PARAMETER :: AZCOEFF(N_AZCOEFFS, N_AZFREQUENCIES, N_2STOKES) = RESHAPE( &
   [ 4.401E-02_fp, -1.636E+01_fp,  1.478E+00_fp, -4.800E-02_fp,  3.202E-06_fp, -6.002E-05_fp, &     ! 06V OK
     4.379E-02_fp, -1.633E+01_fp,  1.453E+00_fp, -4.176E-02_fp,  5.561E-06_fp, -4.644E-05_fp, &     ! 10V OK
