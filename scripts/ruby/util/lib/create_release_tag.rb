@@ -61,10 +61,8 @@ FIXFILE_DIRS = ["TauCoeff/ODAS"                 ,
                 "CloudCoeff"                    ,
                 "EmisCoeff/IR_Ice/SEcategory"   ,
                 "EmisCoeff/IR_Land/SEcategory"  ,
-                "EmisCoeff/IR_Land/UWIREMIS"    ,
                 "EmisCoeff/IR_Snow/SEcategory"  ,
                 "EmisCoeff/IR_Water"            ,
-                "EmisCoeff/MW_Land"             ,
                 "EmisCoeff/MW_Water"            ,
                 "EmisCoeff/VIS_Ice/SEcategory"  ,
                 "EmisCoeff/VIS_Land/SEcategory" ,
@@ -150,16 +148,18 @@ begin
     raise "#{tag_wcpath} is not a Subversion working copy!" unless File.directory?(".svn")
     raise "#{tag_wcpath} is not a CRTM root directory!" unless File.exist?("Set_CRTM_Environment.sh")
     set_crtm_environment()
-    # Move over the source tree from tag->release  
+    # Move over the source tree from tag->release
+    puts("Moving source tree from tag->release...")  
     FileUtils.cd("src") do
       system("make create_links")
       FileUtils.cd("Build") do
         inventory = Svn_Util::Inventory.new(INVENTORY_FILE)
-        inventory.files.each {|f| svn.copy(f,"#{dest}/#{f}",:parents => true)}
-        inventory.linkto.each {|k,v| svn.copy(v,"#{dest}/#{k}",:parents => true)}
+        inventory.files.each {|file| svn.copy(file,"#{dest}/#{file}",:parents => true)}
+        inventory.linkto.each {|link_name,target| svn.copy(target,"#{dest}/#{link_name}",:parents => true)}
       end
     end
     # Move over the fix tree from tag->release
+    puts("Moving fixfile tree from tag->release...")  
     FileUtils.cd("fix") do
       fixfile_dirs.each do |fdir|
         FIXFILE_FORMAT.each do |ffmt|
