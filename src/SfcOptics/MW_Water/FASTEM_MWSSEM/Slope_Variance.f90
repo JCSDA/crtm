@@ -54,7 +54,7 @@ MODULE Slope_Variance
   REAL(fp), PARAMETER :: F_COEFFS(3)   = (/1.0000_fp, 0.02000_fp, 0.30000_fp/)
 
   ! Scale factor for x-input to hyperbolic step function
-  REAL(fp), PARAMETER :: XSCALE = 10000.0_fp
+  REAL(fp), PARAMETER :: XSCALE = 1000000.0_fp
 
 
   ! --------------------------------------
