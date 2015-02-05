@@ -108,6 +108,7 @@ PRO RTSolution::WriteRecord, $
     Debug = debug, $
     SOD                     = sod                    , $
     Surface_Emissivity      = surface_emissivity     , $
+    Surface_Reflectivity    = surface_reflectivity   , $
     Up_Radiance             = up_radiance            , $
     Down_Radiance           = down_radiance          , $
     Down_Solar_Radiance     = down_solar_radiance    , $
@@ -115,6 +116,7 @@ PRO RTSolution::WriteRecord, $
   WRITEU, fid, $
     sod                    , $
     surface_emissivity     , $
+    surface_reflectivity   , $
     up_radiance            , $
     down_radiance          , $
     down_solar_radiance    , $

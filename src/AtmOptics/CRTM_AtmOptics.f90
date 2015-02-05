@@ -20,7 +20,8 @@ MODULE CRTM_AtmOptics
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE CRTM_Parameters      , ONLY: ZERO, ONE, POINT_5, &
                                    MAX_N_LAYERS, &
-                                   BS_THRESHOLD
+                                   BS_THRESHOLD, &
+                                   SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_AtmOptics_Define, ONLY: CRTM_AtmOptics_type
   ! Internal variable definition module
   USE AOvar_Define, ONLY: AOvar_type, &
@@ -40,6 +41,8 @@ MODULE CRTM_AtmOptics
   PUBLIC :: AOvar_type
   ! Procedures
   PUBLIC :: AOvar_Create
+  PUBLIC :: CRTM_No_Scattering
+  PUBLIC :: CRTM_Include_Scattering
   PUBLIC :: CRTM_Compute_Transmittance
   PUBLIC :: CRTM_Compute_Transmittance_TL
   PUBLIC :: CRTM_Compute_Transmittance_AD
@@ -81,6 +84,98 @@ CONTAINS
 !################################################################################
 !################################################################################
 
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_No_Scattering
+!
+! PURPOSE:
+!       Pure function to determine if scattering calculations will NOT be 
+!       performed.
+!
+! CALLING SEQUENCE:
+!       result = CRTM_No_Scattering( AtmOptics )
+!
+! INPUTS:
+!       AtmOptics: The atmospheric optical properties
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_AtmOptics_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:    Returns
+!                    TRUE -  if the maximum single scatter albedo profile
+!                            value is less than or equal to the scattering
+!                            albedo threshold, OR if the user explicitly
+!                            disbles scattering via the Include_Scattering
+!                            option.
+!                    FALSE - otherwise.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  PURE FUNCTION CRTM_No_Scattering(atmoptics) RESULT(no_scattering)
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: atmoptics
+    LOGICAL :: no_scattering
+    no_scattering = .NOT. CRTM_Include_Scattering(atmoptics)
+  END FUNCTION CRTM_No_Scattering
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Include_Scattering
+!
+! PURPOSE:
+!       Pure function to determine if scattering calculations will be 
+!       performed.
+!
+! CALLING SEQUENCE:
+!       result = CRTM_Include_Scattering( AtmOptics )
+!
+! INPUTS:
+!       AtmOptics: The atmospheric optical properties
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_AtmOptics_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!       result:    Returns
+!                    TRUE -  if the maximum single scatter albedo profile
+!                            value is greater than the scattering albedo
+!                            threshold, AND if the user has NOT explicitly
+!                            disbled scattering via the Include_Scattering
+!                            option.
+!                    FALSE - otherwise.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  PURE FUNCTION CRTM_Include_Scattering(atmoptics) RESULT(include_scattering)
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: atmoptics
+    LOGICAL :: include_scattering
+    ! This test is different from previous incarnations in that before the 
+    !   test turned OFF scattering if the AtmOptics single scatter albedo was
+    !   LESS THAN the threshold (i.e. greater than or equal to).
+    ! Now we include scattering if the AtmOptics single scatter albedo is
+    !   GREATER THAN (but NOT equal to) the threshold.
+    ! Confused? Sorry.
+    include_scattering = (MAXVAL(atmoptics%Single_Scatter_Albedo) > SCATTERING_ALBEDO_THRESHOLD) .AND. &
+                         atmoptics%Include_Scattering
+  END FUNCTION CRTM_Include_Scattering
+  
+  
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !

@@ -8,7 +8,7 @@
   ; The channel data that can be displayed
   CHANNEL_DATA_NAME = [ $
     'Surface_Emissivity'     , $
-    'SOD'                    , $
+    'Surface_Reflectivity'   , $
     'Up_Radiance'            , $
     'Down_Radiance'          , $
     'Down_Solar_Radiance'    , $

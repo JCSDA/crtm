@@ -9,6 +9,7 @@ PRO RTSolution::Get_Property, $
   Sensor_Channel          = sensor_channel         , $  ; Output keyword
   SOD                     = sod                    , $  ; Output keyword
   Surface_Emissivity      = surface_emissivity     , $  ; Output keyword
+  Surface_Reflectivity    = surface_reflectivity   , $  ; Output keyword
   Up_Radiance             = up_radiance            , $  ; Output keyword
   Down_Radiance           = down_radiance          , $  ; Output keyword
   Down_Solar_Radiance     = down_solar_radiance    , $  ; Output keyword
@@ -34,6 +35,7 @@ PRO RTSolution::Get_Property, $
   IF ( ARG_PRESENT(sensor_channel         ) ) THEN sensor_channel          = self.Sensor_Channel
   IF ( ARG_PRESENT(sod                    ) ) THEN sod                     = self.SOD
   IF ( ARG_PRESENT(surface_emissivity     ) ) THEN surface_emissivity      = self.Surface_Emissivity
+  IF ( ARG_PRESENT(surface_reflectivity   ) ) THEN surface_reflectivity    = self.Surface_Reflectivity
   IF ( ARG_PRESENT(up_radiance            ) ) THEN up_radiance             = self.Up_Radiance
   IF ( ARG_PRESENT(down_radiance          ) ) THEN down_radiance           = self.Down_Radiance
   IF ( ARG_PRESENT(down_solar_radiance    ) ) THEN down_solar_radiance     = self.Down_Solar_Radiance

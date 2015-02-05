@@ -80,7 +80,7 @@ CRTM_VISwaterCoeff.o : CRTM_VISwaterCoeff.f90 SEcategory_Define.o Message_Handle
 CSvar_Define.o : CSvar_Define.f90 CRTM_Interpolation.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CloudCoeff_Binary_IO.o : CloudCoeff_Binary_IO.f90 CloudCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
 CloudCoeff_Define.o : CloudCoeff_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-Common_RTSolution.o : Common_RTSolution.f90 CRTM_RTSolution_Define.o CRTM_Utility.o CRTM_SfcOptics_Define.o CRTM_SfcOptics.o RTV_Define.o CRTM_AtmOptics_Define.o CRTM_SpcCoeff.o CRTM_Planck_Functions.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o CRTM_Parameters.o Type_Kinds.o 
+Common_RTSolution.o : Common_RTSolution.f90 CRTM_RTSolution_Define.o CRTM_Utility.o CRTM_SfcOptics_Define.o CRTM_SfcOptics.o RTV_Define.o CRTM_AtmOptics.o CRTM_AtmOptics_Define.o CRTM_SpcCoeff.o CRTM_Planck_Functions.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o CRTM_Parameters.o Type_Kinds.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 DateTime_Utility.o : DateTime_Utility.f90 Date_Utility.o Type_Kinds.o 
 Date_Utility.o : Date_Utility.f90 

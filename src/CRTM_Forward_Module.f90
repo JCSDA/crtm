@@ -26,9 +26,11 @@ MODULE CRTM_Forward_Module
                                         MAX_N_AZIMUTH_FOURIER, &
                                         MAX_SOURCE_ZENITH_ANGLE, &
                                         MAX_N_STREAMS, &
-                                        AIRCRAFT_PRESSURE_THRESHOLD
+                                        AIRCRAFT_PRESSURE_THRESHOLD, &
+                                        SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
-                                        SpcCoeff_IsVisibleSensor
+                                        SpcCoeff_IsVisibleSensor, &
+                                        SpcCoeff_IsMicrowaveSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
                                         CRTM_Atmosphere_IsValid, &
@@ -63,6 +65,7 @@ MODULE CRTM_Forward_Module
   USE CRTM_CloudScatter,          ONLY: CRTM_Compute_CloudScatter
   USE CRTM_AtmOptics,             ONLY: AOvar_type  , &
                                         AOvar_Create, &
+                                        CRTM_Include_Scattering, &
                                         CRTM_Compute_Transmittance, &
                                         CRTM_Combine_AtmOptics
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type      , &
@@ -699,9 +702,8 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-            ! ...Switch off any reflection correction for multi-stream RT
-            SfcOptics%Transmittance = -ONE
           END IF
+
 
           ! Compute the aerosol absorption/scattering properties
           IF ( Atm%n_Aerosols > 0 ) THEN
@@ -717,18 +719,22 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-            ! ...Switch off any reflection correction for multi-stream RT
-            SfcOptics%Transmittance = -ONE
           END IF
 
 
           ! Compute the combined atmospheric optical properties
-
           IF( AtmOptics%Include_Scattering ) THEN
             CALL CRTM_Combine_AtmOptics( AtmOptics, AOvar )
           END IF
           ! ...Save vertically integrated scattering optical depth fro output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
+
+          
+          ! Turn off FASTEM reflection only for scattering conditions
+          IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
+            SfcOptics%Transmittance = -ONE
+          END IF
+      
 
 
           ! Fill the SfcOptics structure for the optional emissivity input case.

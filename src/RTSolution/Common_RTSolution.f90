@@ -32,6 +32,7 @@ MODULE Common_RTSolution
                                        CRTM_Planck_Radiance_AD
   USE CRTM_SpcCoeff
   USE CRTM_AtmOptics_Define,     ONLY: CRTM_AtmOptics_type
+  USE CRTM_AtmOptics,            ONLY: CRTM_Include_Scattering
   USE RTV_Define
   USE CRTM_SfcOptics
   USE CRTM_SfcOptics_Define
@@ -256,8 +257,7 @@ CONTAINS
     RTV%Scattering_RT = .FALSE.
 
     ! Check for scattering conditions
-    Determine_Stream_Angles: IF( RTSolution%Scattering_FLAG .AND. &
-                                 MAXVAL(AtmOptics%Single_Scatter_Albedo) >= SCATTERING_ALBEDO_THRESHOLD ) THEN 
+    Determine_Stream_Angles: IF( RTSolution%Scattering_FLAG .AND. CRTM_Include_Scattering(AtmOptics) ) THEN
 
       ! --------------------------
       ! Set the scattering RT flag
@@ -403,10 +403,11 @@ CONTAINS
 
     END IF
 
-    ! ------------------------------------------------------
-    ! Save the emissivity in the RTSolution output structure
-    ! ------------------------------------------------------
-    RTSolution%Surface_Emissivity = SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang, 1 )
+    ! ---------------------------
+    ! Save the surface properties
+    ! ---------------------------
+    RTSolution%Surface_Emissivity   = SfcOptics%Emissivity( SfcOptics%Index_Sat_Ang, 1 )
+    RTSolution%Surface_Reflectivity = SfcOptics%Reflectivity( SfcOptics%Index_Sat_Ang, 1, SfcOptics%Index_Sat_Ang, 1 )
 
     ! ------------------------
     ! Compute Planck radiances
@@ -765,10 +766,12 @@ CONTAINS
       END IF
     END IF
 
-    ! ------------------------------------------------------------
-    ! Save the TL emissivity in the RTSolution_TL output structure
-    ! ------------------------------------------------------------
-    RTSolution_TL%Surface_Emissivity = SfcOptics_TL%Emissivity( SfcOptics_TL%Index_Sat_Ang, 1 )
+    ! ------------------------------
+    ! Save the TL surface properties
+    ! ------------------------------
+    RTSolution_TL%Surface_Emissivity   = SfcOptics_TL%Emissivity( SfcOptics_TL%Index_Sat_Ang, 1 )
+    RTSolution_TL%Surface_Reflectivity = SfcOptics_TL%Reflectivity( SfcOptics_TL%Index_Sat_Ang, 1, &
+                                                                    SfcOptics_TL%Index_Sat_Ang, 1  )
 
     ! -------------------------------------------
     ! Compute the tangent-linear planck radiances

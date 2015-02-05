@@ -16,6 +16,7 @@ PRO RTSolution__Define
            Sensor_Channel          : 0L, $
            SOD                     : ZERO, $
            Surface_Emissivity      : ZERO, $
+           Surface_Reflectivity    : ZERO, $
            Up_Radiance             : ZERO, $
            Down_Radiance           : ZERO, $
            Down_Solar_Radiance     : ZERO, $

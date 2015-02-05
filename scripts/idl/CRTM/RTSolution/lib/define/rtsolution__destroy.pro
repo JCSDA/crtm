@@ -39,6 +39,7 @@ PRO RTSolution::Destroy, $
   self.Sensor_Channel          = 0L
   self.SOD                     = ZERO
   self.Surface_Emissivity      = ZERO
+  self.Surface_Reflectivity    = ZERO
   self.Up_Radiance             = ZERO
   self.Down_Radiance           = ZERO
   self.Down_Solar_Radiance     = ZERO

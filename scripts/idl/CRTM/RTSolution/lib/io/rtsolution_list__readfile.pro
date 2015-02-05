@@ -121,6 +121,7 @@ PRO RTSolution::ReadRecord, $
   ; ... Scalars
   sod                     = ZERO
   surface_emissivity      = ZERO
+  surface_reflectivity    = ZERO
   up_radiance             = ZERO
   down_radiance           = ZERO
   down_solar_radiance     = ZERO
@@ -128,6 +129,7 @@ PRO RTSolution::ReadRecord, $
   READU, fid, $
     sod                    , $
     surface_emissivity     , $
+    surface_reflectivity   , $
     up_radiance            , $
     down_radiance          , $
     down_solar_radiance    , $
@@ -136,6 +138,7 @@ PRO RTSolution::ReadRecord, $
     Debug = debug, $
     SOD                     = sod                    , $
     Surface_Emissivity      = surface_emissivity     , $
+    Surface_Reflectivity    = surface_reflectivity   , $
     Up_Radiance             = up_radiance            , $
     Down_Radiance           = down_radiance          , $
     Down_Solar_Radiance     = down_solar_radiance    , $

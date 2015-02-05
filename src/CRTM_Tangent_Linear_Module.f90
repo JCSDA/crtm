@@ -25,9 +25,11 @@ MODULE CRTM_Tangent_Linear_Module
                                         MAX_N_ANGLES        , &
                                         MAX_N_AZIMUTH_FOURIER, &
                                         MAX_SOURCE_ZENITH_ANGLE, &
-                                        MAX_N_STREAMS
+                                        MAX_N_STREAMS, &
+                                        SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
-                                        SpcCoeff_IsVisibleSensor
+                                        SpcCoeff_IsVisibleSensor, &
+                                        SpcCoeff_IsMicrowaveSensor
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
                                         CRTM_Atmosphere_Destroy, &
                                         CRTM_Atmosphere_IsValid, &
@@ -67,6 +69,7 @@ MODULE CRTM_Tangent_Linear_Module
                                         CRTM_Compute_CloudScatter_TL
   USE CRTM_AtmOptics,             ONLY: AOvar_type  , &
                                         AOvar_Create, &
+                                        CRTM_Include_Scattering, &
                                         CRTM_Compute_Transmittance   , &
                                         CRTM_Compute_Transmittance_TL, &
                                         CRTM_Combine_AtmOptics       , &
@@ -789,8 +792,6 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-            ! ...Switch off any reflection correction for multi-stream RT
-            SfcOptics%Transmittance = -ONE
           END IF
 
 
@@ -816,8 +817,6 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-            ! ...Switch off any reflection correction for multi-stream RT
-            SfcOptics%Transmittance = -ONE
           END IF
 
 
@@ -828,6 +827,12 @@ CONTAINS
           END IF
           ! ...Save vertically integrated scattering optical depth for output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
+
+          
+          ! Turn off FASTEM reflection correction for scattering conditions
+          IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
+            SfcOptics%Transmittance = -ONE
+          END IF
 
 
           ! Fill the SfcOptics structure for the optional emissivity input case.

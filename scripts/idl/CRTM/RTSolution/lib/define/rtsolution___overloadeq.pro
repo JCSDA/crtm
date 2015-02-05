@@ -19,6 +19,7 @@ FUNCTION RTSolution::_overloadEQ, left, right
     Sensor_Channel          = left_sensor_channel         , $
     SOD                     = left_sod                    , $
     Surface_Emissivity      = left_surface_emissivity     , $
+    Surface_Reflectivity    = left_surface_reflectivity   , $
     Up_Radiance             = left_up_radiance            , $
     Down_Radiance           = left_down_radiance          , $
     Down_Solar_Radiance     = left_down_solar_radiance    , $
@@ -34,6 +35,7 @@ FUNCTION RTSolution::_overloadEQ, left, right
     Sensor_Channel          = right_sensor_channel         , $
     SOD                     = right_sod                    , $
     Surface_Emissivity      = right_surface_emissivity     , $
+    Surface_Reflectivity    = right_surface_reflectivity   , $
     Up_Radiance             = right_up_radiance            , $
     Down_Radiance           = right_down_radiance          , $
     Down_Solar_Radiance     = right_down_solar_radiance    , $
@@ -50,6 +52,7 @@ FUNCTION RTSolution::_overloadEQ, left, right
              (left_sensor_channel          EQ right_sensor_channel         ) && $
              (left_sod                     EQ right_sod                    ) && $
              (left_surface_emissivity      EQ right_surface_emissivity     ) && $
+             (left_surface_reflectivity    EQ right_surface_reflectivity   ) && $
              (left_up_radiance             EQ right_up_radiance            ) && $
              (left_down_radiance           EQ right_down_radiance          ) && $
              (left_down_solar_radiance     EQ right_down_solar_radiance    ) && $

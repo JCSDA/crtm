@@ -114,6 +114,7 @@ MODULE CRTM_RTSolution_Define
     !    and K variables
     REAL(fp) :: SOD                     = ZERO  ! Scattering Optical Depth
     REAL(fp) :: Surface_Emissivity      = ZERO
+    REAL(fp) :: Surface_Reflectivity    = ZERO
     REAL(fp) :: Up_Radiance             = ZERO
     REAL(fp) :: Down_Radiance           = ZERO
     REAL(fp) :: Down_Solar_Radiance     = ZERO
@@ -304,6 +305,7 @@ CONTAINS
     ! Zero out the scalar data components
     RTSolution%SOD                     = ZERO
     RTSolution%Surface_Emissivity      = ZERO
+    RTSolution%Surface_Reflectivity    = ZERO
     RTSolution%Up_Radiance             = ZERO
     RTSolution%Down_Radiance           = ZERO
     RTSolution%Down_Solar_Radiance     = ZERO
@@ -376,6 +378,7 @@ CONTAINS
     WRITE(fid,'(3x,"RT Algorithm Name        : ",a )') RTSolution%RT_Algorithm_Name
     WRITE(fid,'(3x,"Scattering Optical Depth : ",es13.6)') RTSolution%SOD
     WRITE(fid,'(3x,"Surface Emissivity       : ",es13.6)') RTSolution%Surface_Emissivity
+    WRITE(fid,'(3x,"Surface Reflectivity     : ",es13.6)') RTSolution%Surface_Reflectivity
     WRITE(fid,'(3x,"Up Radiance              : ",es13.6)') RTSolution%Up_Radiance
     WRITE(fid,'(3x,"Down Radiance            : ",es13.6)') RTSolution%Down_Radiance
     WRITE(fid,'(3x,"Down Solar Radiance      : ",es13.6)') RTSolution%Down_Solar_Radiance
@@ -514,6 +517,7 @@ CONTAINS
     ! Check the scalar components
     IF ( .NOT. Compares_Within_Tolerance(x%SOD                    , y%SOD                    , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Surface_Emissivity     , y%Surface_Emissivity     , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Surface_Reflectivity   , y%Surface_Reflectivity   , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Up_Radiance            , y%Up_Radiance            , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Down_Radiance          , y%Down_Radiance          , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Down_Solar_Radiance    , y%Down_Solar_Radiance    , n) .OR. &
@@ -1058,6 +1062,7 @@ CONTAINS
          (x%RT_Algorithm_Name == y%RT_Algorithm_Name) .AND. &
          (x%SOD                     .EqualTo. y%SOD                    ) .AND. &
          (x%Surface_Emissivity      .EqualTo. y%Surface_Emissivity     ) .AND. &
+         (x%Surface_Reflectivity    .EqualTo. y%Surface_Reflectivity   ) .AND. &
          (x%Up_Radiance             .EqualTo. y%Up_Radiance            ) .AND. &
          (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
          (x%Down_Solar_Radiance     .EqualTo. y%Down_Solar_Radiance    ) .AND. &
@@ -1131,6 +1136,7 @@ CONTAINS
     ! ...The scalar values
     rtsdiff%SOD                     = rtsdiff%SOD                     - rts2%SOD
     rtsdiff%Surface_Emissivity      = rtsdiff%Surface_Emissivity      - rts2%Surface_Emissivity
+    rtsdiff%Surface_Reflectivity    = rtsdiff%Surface_Reflectivity    - rts2%Surface_Reflectivity
     rtsdiff%Up_Radiance             = rtsdiff%Up_Radiance             - rts2%Up_Radiance
     rtsdiff%Down_Radiance           = rtsdiff%Down_Radiance           - rts2%Down_Radiance
     rtsdiff%Down_Solar_Radiance     = rtsdiff%Down_Solar_Radiance     - rts2%Down_Solar_Radiance
@@ -1219,6 +1225,7 @@ CONTAINS
     READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
       rts%SOD                    , &
       rts%Surface_Emissivity     , &
+      rts%Surface_Reflectivity   , &
       rts%Up_Radiance            , &
       rts%Down_Radiance          , &
       rts%Down_Solar_Radiance    , &
@@ -1322,6 +1329,7 @@ CONTAINS
     WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
       rts%SOD                    , &
       rts%Surface_Emissivity     , &
+      rts%Surface_Reflectivity   , &
       rts%Up_Radiance            , &
       rts%Down_Radiance          , &
       rts%Down_Solar_Radiance    , &
