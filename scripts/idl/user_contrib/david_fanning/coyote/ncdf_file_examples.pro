@@ -4,10 +4,10 @@
 ;
 ; PURPOSE:
 ;
-;       This is a utility routine demonstrates the several ways it is possible
-;       to use the NCDF_FILE object to create netCDF files, copy information
-;       from one netCDF file to another, and to read information from a netCDF
-;       file.
+;       This is a utility routine that demonstrates how to use the NCDF_FILE object 
+;       to create a new netCDF file, copy information from one netCDF file to another, 
+;       read information out of a netCDF file, and add a new variable to an already 
+;       existing netCDF file.
 ;
 ; AUTHOR:
 ;
@@ -39,6 +39,7 @@
 ;
 ;       Written by:  David W. Fanning, 3 February 2010.
 ;       Updated to use a time variable for the frame number. 29 Oct 2011.
+;       Added example of adding a new variable to an already exisiting netCDF file. 9 Jan 2015. DWF.
 ;-
 ;******************************************************************************************;
 ;  Copyright (c) 2010, by Fanning Software Consulting, Inc.                                ;
@@ -236,4 +237,45 @@ PRO NCDF_File_Examples
     
     ; Destroy the file object.
     Obj_Destroy, sObj
+
+
+;**************************************************************************************
+;**************************************************************************************
+    
+    ; Open the original file in MODIFY mode so you can write the new variable into it.
+    sObj = Obj_New('NCDF_FILE', sourceFile, /MODIFY)
+    IF Obj_Valid(sObj) EQ 0 THEN Message, 'Source object cannot be created.'
+    
+    ; Create an image variable to add to the file.
+    image = Congrid(cgDemoData(18), 500, 250)
+    s = Size(image, /Dimensions)
+    img_xsize = s[0]
+    img_ysize = s[1]
+    
+    ; Add dimensions to the file.
+    sObj -> WriteDim, 'img_xsize', img_xsize, OBJECT=ximgdimObj
+    sObj -> WriteDim, 'img_ysize', img_ysize, OBJECT=yimgdimObj
+    
+    ; Get the dimension names.
+    dimNames = [ximgdimObj->GetName(), yimgdimObj->GetName()]
+    
+    ; Define a variable for the file.
+    sObj -> WriteVarDef, 'image', dimNames, DATATYPE='BYTE', OBJECT=imageObj
+    IF Obj_Valid(imageObj) EQ 0 THEN Message, 'Invalid data object returned.'
+    
+    ; Define variable attributes.
+    sObj -> WriteVarAttr, imageObj, 'comment', 'Image variable added later.'
+    
+    ; Write the data to the file.
+    sObj -> WriteVarData, 'image', image
+    
+    ; Sync the file by writing memory to disk.
+    sObj -> Sync
+    
+    ; Browse the file.
+    sObj -> Browse, XOFFSET=350, YOFFSET=350, TITLE='File with Variable Added'
+    
+    ; Destroy this file object.
+    Obj_Destroy, sObj
+    
     END

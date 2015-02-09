@@ -142,11 +142,20 @@
 ;    also create a PNG file named lineplot.png for display in a browser,
 ;    type these commands::
 ;
-;        cgPS_Open, FILENAME='lineplot.ps'
+;        cgPS_Open, 'lineplot.ps'
 ;        cgPlot, Findgen(11), COLOR='navy', /NODATA, XTITLE='Time', YTITLE='Signal'
 ;        cgPlot, Findgen(11), COLOR='indian red', /OVERPLOT
 ;        cgPlot, Findgen(11), COLOR='olive', PSYM=2, /OVERPLOT
 ;        cgPS_Close, /PNG
+;        
+;    Or, alternatively, without also creating a PostScript file, like this. Simply pass
+;    cgPS_Open the name of the raster file you want to create::
+;    
+;        cgPS_Open, 'lineplot.png'
+;        cgPlot, Findgen(11), COLOR='navy', /NODATA, XTITLE='Time', YTITLE='Signal'
+;        cgPlot, Findgen(11), COLOR='indian red', /OVERPLOT
+;        cgPlot, Findgen(11), COLOR='olive', PSYM=2, /OVERPLOT
+;        cgPS_Close
 ;       
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
@@ -186,9 +195,13 @@
 ;       Added ability to specify the name of the output raster file desired as the filename. If this is done,
 ;          and ImageMagick is installed, the PostScript intermediate file is deleted and the raster file is
 ;          created automatically without setting a raster output keyword on cgPS_Close. 29 Nov 2013. DWF.
+;       Moved the check for Charsize to after setting to the PostScript device. 14 Jan 2014. DWF.
+;       The program wasn't picking up default values from cgWindow_GetDefs. 22 Jan 2014. DWF.
+;       Modified the program so that the PostScript file location is printed only if the PostScript file 
+;          is being retrained. 17 March 2014. DWF.
 ;       
 ; :Copyright:
-;     Copyright (c) 2008-2013, Fanning Software Consulting, Inc.
+;     Copyright (c) 2008-2014, Fanning Software Consulting, Inc.
 ;-
 PRO cgPS_Open, filename, $
     CANCEL=cancelled, $
@@ -219,6 +232,7 @@ PRO cgPS_Open, filename, $
    
    ; Get the file extension. This will tell you what kind of raster file you need to make, if any.
    rootname = cgRootName(ps_filename, DIRECTORY=directory, EXTENSION=extension)
+   print_ps_location = 1
    CASE StrUpCase(extension) OF
        'PS': 
        'EPS':
@@ -230,7 +244,7 @@ PRO cgPS_Open, filename, $
           ; and we can delete the intermediate PostScript file.
           IF cgHasImageMagick() THEN BEGIN
              ps_struct.rasterFileType = extension
-             IF N_Elements(quiet) EQ 0 THEN quiet = 1
+             print_ps_location = 0
           END
           END
    ENDCASE
@@ -241,30 +255,48 @@ PRO cgPS_Open, filename, $
       font = 1
    ENDIF
    
+   ; I did a bad thing and made the keyword TT_FONT specify the name of a true-type font. This is
+   ; inconsistent with other software for setting up the PostScript device (e.g., FSC_PSConfig__Define
+   ; and cgPS_Config. Here I try to rectify the situation.
+   IF (N_Elements(tt_font) NE 0) && (Size(tt_font, /TNAME) EQ 'STRING') THEN BEGIN
+       setfont = tt_font
+       tt_font = 1
+   ENDIF
+   
    ; Save the current True-Type font before entering the PostScript device.
    ; Necessary for restoring it later.
    cgWindow_GetDefs, PS_TT_FONT=ps_tt_font
    ps_struct.tt_font_old = ps_tt_font
    
-   ; PostScript hardware fonts by default.
-   SetDefaultValue, font, 0
+   ; Get the default font for PostScript output.
+   IF N_Elements(font) EQ 0 THEN cgWindow_GetDefs, PS_FONT=font
    ps_struct.font = font
    
-   ; Store the current true-type font.
-   IF N_Elements(tt_font) NE 0 THEN BEGIN
-        ps_struct.tt_font = tt_font
+   ; Set up the true-type font for PostScript, if needed.
+   IF (N_Elements(setfont) EQ 0) AND (font EQ 1) THEN cgWindow_GetDefs, PS_TT_FONT=setfont
+   IF N_Elements(setfont) NE 0 THEN BEGIN
+        ps_struct.tt_font = setfont
         font = 1
    ENDIF
    
    gui = Keyword_Set(gui)
+   
+   ; Get the default QUIET flag, if not set here.
+   IF N_Elements(quiet) EQ 0 THEN cgWindow_GetDefs, PS_QUIET=quiet
    quiet = Keyword_Set(quiet)
+   
+   ; Get the default ENCAPSULATED flag, if not set here.
+   IF N_Elements(encapsulated) EQ 0 THEN cgWindow_GetDefs, PS_ENCAPSULATED=encapsulated
+   encapsulated = Keyword_Set(encapsulated)
    
    ; Handle keywords appropriately.
    SetDefaultValue, default_thickness, 3
-   encapsulated = Keyword_Set(encapsulated)
    landscape = Keyword_Set(landscape)
    IF encapsulated THEN landscape = 0
-   SetDefaultValue, scale_factor, 1
+   
+   ; Get the default scale_factor.
+   IF N_Elements(scale_factor) EQ 0 THEN cgWindow_GetDefs, PS_SCALE_FACTOR=scale_factor
+   SetDefaultValue, scale_factor, 1.0
 
    ; If the setup flag is on, then we have to close the previous
    ; start command before we can continue.
@@ -281,13 +313,6 @@ PRO cgPS_Open, filename, $
    ; Change any parameters you feel like changing.
    IF ps_struct.p.thick EQ 0 THEN !P.Thick = default_thickness
    IF ps_struct.p.charthick EQ 0 THEN !P.Charthick = default_thickness
-   IF ps_struct.p.charsize EQ 0 THEN BEGIN
-        IF N_Elements(charsize) EQ 0 THEN BEGIN
-            !P.Charsize = cgDefCharsize(FONT=font)
-        ENDIF ELSE !P.Charsize = charsize
-   ENDIF ELSE BEGIN
-        IF N_Elements(charsize) NE 0 THEN !P.Charsize = charsize
-   ENDELSE
    IF ps_struct.x.thick EQ 0 THEN !X.Thick = default_thickness
    IF ps_struct.y.thick EQ 0 THEN !Y.Thick = default_thickness
    IF ps_struct.z.thick EQ 0 THEN !Z.Thick = default_thickness
@@ -306,7 +331,7 @@ PRO cgPS_Open, filename, $
    IF ~Keyword_Set(nomatch) THEN BEGIN
       IF !D.X_Size GT !D.Y_Size THEN landscape = 1 ELSE landscape = 0
       IF Keyword_Set(encapsulated) THEN landscape = 0
-      sizes = PSWindow(_Extra=extra, LANDSCAPE=landscape)
+      sizes = cgPSWindow(_Extra=extra, LANDSCAPE=landscape, /SANE_OFFSETS)
       keywords = cgPS_Config(_Strict_Extra=extra, INCHES=sizes.inches, XSIZE=sizes.xsize, YSIZE=sizes.ysize, $
          XOFFSET=sizes.xoffset, YOFFSET=sizes.yoffset, Cancel=cancelled, NOGUI=(~gui), $
          LANDSCAPE=sizes.landscape, ENCAPSULATED=encapsulated, FILENAME=ps_filename[0])
@@ -320,12 +345,23 @@ PRO cgPS_Open, filename, $
    ENDIF
    
    ; Let them know where the output will be.
-   IF ~quiet THEN Print, 'PostScript output will be created here: ', keywords.filename
+   IF ~quiet THEN BEGIN
+      IF print_ps_location THEN Print, 'PostScript output will be created here: ', keywords.filename
+   ENDIF
    
    Set_Plot, 'PS'
    Device, _EXTRA=keywords, SCALE_FACTOR=scale_factor
-   IF N_Elements(tt_font) NE 0 THEN Device, Set_Font=tt_font, /TT_Font
+   IF N_Elements(setfont) NE 0 THEN Device, Set_Font=setfont, /TT_Font
    
+   ; Determine the character size.
+   IF ps_struct.p.charsize EQ 0 THEN BEGIN
+       IF N_Elements(charsize) EQ 0 THEN BEGIN
+           !P.Charsize = cgDefCharsize(FONT=font)
+       ENDIF ELSE !P.Charsize = charsize
+   ENDIF ELSE BEGIN
+       IF N_Elements(charsize) NE 0 THEN !P.Charsize = charsize
+   ENDELSE
+
    ; Store filename and other pertinent information.
    ps_struct.filename = keywords.filename
    ps_struct.encapsulated = keywords.encapsulated

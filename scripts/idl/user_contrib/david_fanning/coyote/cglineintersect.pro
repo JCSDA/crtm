@@ -1,16 +1,14 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   cgReverseIndices
+;   cgLineIntersect
 ;
 ; PURPOSE:
-;   Provides a simple way to obtain the data indices from a Histogram REVERSE_INDICES
-;   vector. Returns a -1 if no indices are available. Check the COUNT keyword for the
-;   number of indices returned.
+;   This function returns the intersection of two line segments, represented by four points.
 ;
 ;******************************************************************************************;
 ;                                                                                          ;
-;  Copyright (c) 2011, by Fanning Software Consulting, Inc. All rights reserved.           ;
+;  Copyright (c) 2014, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -37,46 +35,32 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
-;   Provides a simple way to obtain the data indices from a Histogram REVERSE_INDICES
-;   vector. Returns a -1 if no indices are available. Check the COUNT keyword for the
-;   number of indices returned.
+; This function returns the intersection of two line segments, represented by four points.
 ;
 ; :Categories:
 ;    Utilities
-;    
+;
 ; :Params:
-;    ri: in, required, type=integer
-;         The REVERSE_INDICES vector that is returned from the HISTOGRAM command.
-;    index: in, required, type=integer
-;         The zero-based index into the REVERSE_INDICES vector from which to obtain
-;         the indices. For example, an index value of 4 will return the indices in
-;         the 5th bin (zero based counting) of the histogram. 
-;       
-; :Keywords:
-;     count: out, optional, type=Long
-;         The number of indices returned by the function.
-;         
-; :Return Value:
-;      indices:
-;         The indices that were put into the indexth bin of the histogram. A -1
-;         is returned if no indices are in that particular bin.
-;          
-; :Examples:
-;    Used with the HISTOGRAM command::
-;       IDL> image = cgDemoData(7)
-;       IDL> h = Histogram(image, REVERSE_INDICES=ri)
-;       IDL> indices = cgReverseIndices(ri, 4, COUNT=cnt)
-;       IDL> Help, indices, cnt, h[4]
-;       INDICES         LONG      = Array[948]
-;       CNT             LONG      =          948
-;       <Expression>    LONG      =          948
-;       IDL> image[indices] = 0
-
-;       
+;    x0: in, required
+;         The x location of the one end of the first line segment.
+;    y0: in, required
+;         The y location of the one end of the first line segment.
+;    x1: in, required
+;         The x location of the other end of the first line segment.
+;    y1: in, required
+;         The y location of the other end of the first line segment.
+;    x2: in, required
+;         The x location of the one end of the second line segment.
+;    y2: in, required
+;         The y location of the one end of the second line segment.
+;    x3: in, required
+;         The x location of the other end of the second line segment.
+;    y3: in, required
+;         The y location of the other end of the second line segment.
+;
 ; :Author:
 ;       FANNING SOFTWARE CONSULTING::
-;           David W. Fanning 
+;           David W. Fanning
 ;           1645 Sheely Drive
 ;           Fort Collins, CO 80526 USA
 ;           Phone: 970-221-0438
@@ -84,36 +68,22 @@
 ;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
-;     Written by David W. Fanning at suggestion of Ben Tupper. 7 January 2011.
-;     
+;     Change History::
+;        Written, 10 September 2014 on suggestion of Wang Kang.
+;
 ; :Copyright:
-;     Copyright (c) 2011, Fanning Software Consulting, Inc.
+;     Copyright (c) 2014, Fanning Software Consulting, Inc.
 ;-
-FUNCTION cgReverseIndices, ri, index, COUNT=count
+FUNCTION cgLineIntersect, x0, y0, x1, y1, x2, y2, x3, y3
 
-   Compile_Opt idl2
-   
-   ; Error handling.
-   Catch, theError
-   IF theError NE 0 THEN BEGIN
-        Catch, /CANCEL
-        void = cgErrorMsg()
-        count = 0
-        RETURN, -1
-   ENDIF
-   
-   ; Need two parameters.
-   IF N_Params() NE 2 THEN Message, 'Two positional parameters, REVERSE_INDICES and INDEX, are required.'
-   
-   ; Return the indices, if there are any.
-   IF ri[index] NE ri[index+1] THEN BEGIN
-      indices = ri[ri[index]:ri[index+1]-1]
-      count = N_Elements(indices)
-   ENDIF ELSE BEGIN
-      indices = -1
-      count = 0
-   ENDELSE
-   
-   RETURN, indices
-   
+    param1 = LINFIT([x0, x1], [y0, y1])
+    param2 = LINFIT([x3, x2], [y3, y2])
+    
+    x = [[param1[1]*(-1.), 1.],[param2[1]*(-1.), 1.]]
+    b = [[param1[0]],[param2[0]]]
+    
+    intersection = b # Invert(x)
+    
+    RETURN, intersection
+    
 END

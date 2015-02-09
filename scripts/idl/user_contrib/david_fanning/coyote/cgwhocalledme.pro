@@ -1,12 +1,11 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   cgReverseIndices
+;   cgWhoCalledMe
 ;
 ; PURPOSE:
-;   Provides a simple way to obtain the data indices from a Histogram REVERSE_INDICES
-;   vector. Returns a -1 if no indices are available. Check the COUNT keyword for the
-;   number of indices returned.
+;   This is a function that will identify the caller of the program module
+;   that contains this funciton.
 ;
 ;******************************************************************************************;
 ;                                                                                          ;
@@ -37,83 +36,71 @@
 ;******************************************************************************************;
 ;
 ;+
-; :Description:
-;   Provides a simple way to obtain the data indices from a Histogram REVERSE_INDICES
-;   vector. Returns a -1 if no indices are available. Check the COUNT keyword for the
-;   number of indices returned.
+; This is a function that will identify the caller of the program module
+; that contains this funciton.
 ;
 ; :Categories:
 ;    Utilities
 ;    
-; :Params:
-;    ri: in, required, type=integer
-;         The REVERSE_INDICES vector that is returned from the HISTOGRAM command.
-;    index: in, required, type=integer
-;         The zero-based index into the REVERSE_INDICES vector from which to obtain
-;         the indices. For example, an index value of 4 will return the indices in
-;         the 5th bin (zero based counting) of the histogram. 
-;       
-; :Keywords:
-;     count: out, optional, type=Long
-;         The number of indices returned by the function.
+; :Returns:
+;     This function returns a string in uppercase letters identifying the caller 
+;     of the program module from which this program was called.
 ;         
-; :Return Value:
-;      indices:
-;         The indices that were put into the indexth bin of the histogram. A -1
-;         is returned if no indices are in that particular bin.
-;          
 ; :Examples:
-;    Used with the HISTOGRAM command::
-;       IDL> image = cgDemoData(7)
-;       IDL> h = Histogram(image, REVERSE_INDICES=ri)
-;       IDL> indices = cgReverseIndices(ri, 4, COUNT=cnt)
-;       IDL> Help, indices, cnt, h[4]
-;       INDICES         LONG      = Array[948]
-;       CNT             LONG      =          948
-;       <Expression>    LONG      =          948
-;       IDL> image[indices] = 0
+;    Used to determine which module called this module containing cgWhoCalledMe::
+;       IDL> Print, cgWhoCalledMe()
+;       
+;       ; Compile and run the following main level program.
+;       ;***************************
+;       PRO junker
+;          Print, cgWhoCalledMe()
+;       END
+;       
+;       PRO junk
+;          Print, cgWhoCalledMe()
+;       END
+;       
+;       junk
+;       END
+;       ;**************************
 
+;       IDL> .go
+;            $MAIN$
+;            JUNK
 ;       
 ; :Author:
-;       FANNING SOFTWARE CONSULTING::
-;           David W. Fanning 
-;           1645 Sheely Drive
-;           Fort Collins, CO 80526 USA
-;           Phone: 970-221-0438
-;           E-mail: david@idlcoyote.com
-;           Coyote's Guide to IDL Programming: http://www.idlcoyote.com
+;     FANNING SOFTWARE CONSULTING::
+;        David W. Fanning 
+;        1645 Sheely Drive
+;        Fort Collins, CO 80526 USA
+;        Phone: 970-221-0438
+;        E-mail: david@idlcoyote.com
+;        Coyote's Guide to IDL Programming: http://www.idlcoyote.com
 ;
 ; :History:
-;     Written by David W. Fanning at suggestion of Ben Tupper. 7 January 2011.
-;     
+;     Change History::
+;        Written, 16 January 2011. DWF. 
+;
 ; :Copyright:
 ;     Copyright (c) 2011, Fanning Software Consulting, Inc.
 ;-
-FUNCTION cgReverseIndices, ri, index, COUNT=count
+FUNCTION cgWhoCalledMe
 
    Compile_Opt idl2
+
+   ; Return to caller on error.
+   On_Error, 2
+
+   ; Get the call stack and the calling routine's name.
+   callStack = Scope_Traceback()
    
-   ; Error handling.
-   Catch, theError
-   IF theError NE 0 THEN BEGIN
-        Catch, /CANCEL
-        void = cgErrorMsg()
-        count = 0
-        RETURN, -1
-   ENDIF
+   ; Find where I am in the call stack. The calling program is up
+   ; two levels from there. Unless, of course, I am close to $MAIN$.
+   index = Where(StrMid(callstack, 0, 11) EQ 'WHOCALLEDME', count)
+   IF count GE 1 THEN index = (Reverse(index))[0] 
+   callingRoutine = (StrSplit(StrCompress(callStack[(index-2) > 0])," ", /Extract))[0]
    
-   ; Need two parameters.
-   IF N_Params() NE 2 THEN Message, 'Two positional parameters, REVERSE_INDICES and INDEX, are required.'
-   
-   ; Return the indices, if there are any.
-   IF ri[index] NE ri[index+1] THEN BEGIN
-      indices = ri[ri[index]:ri[index+1]-1]
-      count = N_Elements(indices)
-   ENDIF ELSE BEGIN
-      indices = -1
-      count = 0
-   ENDELSE
-   
-   RETURN, indices
+   ; Return the answer.
+   RETURN, callingRoutine
    
 END

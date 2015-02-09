@@ -47,36 +47,48 @@
 ;    
 ; :Params:
 ;     x: in, required, type=number
-;         A vector argument providing the X coordinates of the points to be connected. 
-;         The vector must contain at least three elements. If only one argument is 
-;         specified, X must be an array of either two or three vectors (i.e., (2,*) 
-;         or (3,*)). In this special case, the vector X[0,*] specifies the X values, 
-;         X[1,*] specifies Y, and X[2,*] contain the Z values.       
+;        A vector argument providing the X coordinates of the points to be connected. 
+;        The vector must contain at least three elements. If only one argument is 
+;        specified, X must be an array of either two or three vectors (i.e., (2,*) 
+;        or (3,*)). In this special case, the vector X[0,*] specifies the X values, 
+;        X[1,*] specifies Y, and X[2,*] contain the Z values.       
 ;     y: in, required, type=number
-;         A vector argument providing the Y coordinates of the points to be connected. 
-;         Y must contain at least three elements.
+;        A vector argument providing the Y coordinates of the points to be connected. 
+;        Y must contain at least three elements.
 ;     z: in, optional, type=number
-;         An optional vector argument providing the Z coordinates of the points to be 
-;         connected. Z must contain at least three elements.
+;        An optional vector argument providing the Z coordinates of the points to be 
+;        connected. Z must contain at least three elements.
 ;
 ; :Keywords:
+;     checkforfinite: in, optional, type=boolean, default=0
+;        If the input data is not finite (i.e., it contains NaNs), then the drawing of
+;        the polygons will be affected. This is particularly true if you are drawing polygons
+;        on map projections using the `Map_Object` keyword. The program could check all input for NaNs, but
+;        this would be quite slow when a great number of polygons are being drawn. For this reason,
+;        the program only checks polygon input when this keyword is set. Only polygons containing all
+;        finite values are drawn when this keyword is set.
 ;     color: in, optional, type=string/byte/integer/long, default='rose'
-;         The name of the fill color. Color names are those used with cgColor. 
-;         This value can also be a long integer or an index into the current color
-;         table.
+;        The name of the fill color. Color names are those used with cgColor. 
+;        This value can also be a long integer or an index into the current color
+;        table.
 ;     device: in, optional, type=boolean, default=0
-;         Set to indicate the polygon vertices are in device coordinates.
+;        Set to indicate the polygon vertices are in device coordinates.
+;     map_object: in, optional, type=object
+;        If you are drawing on a map projection set up with Map_Proj_Init
+;        and using projected meter space, rather than lat/lon space, then you can use this
+;        keyword to provide a cgMap object that will allow you to convert the `x` and `y`
+;        parameters from longitude and latitude, respectively, to projected meter space
+;        before drawing. X and Y must both be present.
 ;     normal: in, optional, type=boolean, default=0
-;         Set to indicate the polygon vertices are in normalized coordinates.
+;        Set to indicate the polygon vertices are in normalized coordinates.
 ;     position: in, optional, type=float
-;         Set to the normal four-element normalized position array for locating 
-;         a rectangular region in a graphics window. If this keyword is used, the
-;         x and y parameters are constructed from this position.
+;        Set to the normal four-element normalized position array for locating 
+;        a rectangular region in a graphics window. If this keyword is used, the
+;        x and y parameters are constructed from this position.
 ;     window: in, optional, type=boolean, default=0
-;         Set this keyword to add the command to the current cgWindow application.
+;        Set this keyword to add the command to the current cgWindow application.
 ;     _ref_extra: in, optional, type=appropriate
-;         Any other keywords to the IDL POLYFILL command may be used.
-;     
+;        Any other keywords to the IDL POLYFILL command may be used. 
 ;          
 ; :Examples:
 ;    Used like the IDL Polyfill command::
@@ -103,12 +115,17 @@
 ;        Modified error handler to restore the entry decomposition state if there is an error. 17 March 2011. DWF
 ;        Modified to use cgDefaultColor for default color selection. 24 Dec 2011. DWF.
 ;        Added a POSITION keyword to allow setting the color position in a graphics window. 24 Jan 2013. DWF.
+;        Added a MAP_OBJECT keyword to allow polygon filling on maps. 13 Dec 2013. DWF.
+;        Completely forgot to deconstruct a single parameter into component parts. 11 Jan 2014. DWF.
+;        Added CheckForFinite keyword to check output for NaN values before display. 22 Jan 2014. DWF.
 ;
 ; :Copyright:
-;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
+;     Copyright (c) 2010-2014, Fanning Software Consulting, Inc.
 ;-
 PRO cgColorFill, x, y, z, $
+    CHECKFORFINITE=checkForFinite, $
     COLOR=color, $
+    MAP_OBJECT=map_object, $
     NORMAL=normal, $
     DEVICE=device, $
     POSITION=position, $
@@ -135,7 +152,9 @@ PRO cgColorFill, x, y, z, $
     IF Keyword_Set(window) AND ((!D.Flags AND 256) NE 0) THEN BEGIN
     
         cgWindow, 'cgColorFill', x, y, z, $
+            CHECKFORFINITE=checkForFinite, $
             COLOR=color, $
+            MAP_OBJECT=map_object, $
             NORMAL=normal, $
             DEVICE=device, $
             POSITION=position, $
@@ -150,6 +169,29 @@ PRO cgColorFill, x, y, z, $
     
     ; We are going to draw in decomposed color, if possible.
     cgSetColorState, 1, Current=currentState
+    
+    ; Check for NaNs in the data?
+    SetDefaultValue, checkForFinite, 0
+    
+    ; If we only have a single parameter, see if it can be deconstructed.
+    IF N_Params() EQ 1 THEN BEGIN
+        dims = Size(x, /Dimensions)
+        ndims = Size(x, /N_Dimensions)
+        IF ndims EQ 1 THEN Message, 'If a single argument is supplied, it must be a 2D array.'
+        IF (dims[0] NE 2) && (dims[0] NE 3) THEN Message, 'Input argument is not dimensioned correctly.'
+        CASE dims[0] OF
+            2: BEGIN
+               y = Reform(x[1,*])
+               x = Reform(x[0,*])
+               END
+            3: BEGIN
+               z = Reform(x[2,*])
+               y = Reform(x[1,*])
+               x = Reform(x[0,*])
+               END
+        ENDCASE
+        
+    ENDIF
 
     ; Use position to set up vectors?
     IF N_Elements(position) NE 0 THEN BEGIN
@@ -170,12 +212,41 @@ PRO cgColorFill, x, y, z, $
     ; Get the current color vectors.
     TVLCT, rr, gg, bb, /Get
     
-    ; Fill the polygon.
+    ; Do you have a map object? If so, assume lon/lat conversion to projected XY space.
+    ; Check for NaNs, if requested, because some projections can contain a lot of them.
+    IF Obj_Valid(map_object) THEN BEGIN
+        xy = map_object -> Forward(x, y, /NoForwardFix)
+        xr = map_object.xrange
+        yr = map_object.yrange
+        _x = Reform(xy[0,*])
+        _y =  Reform(xy[1,*])
+        IF checkForFinite THEN BEGIN
+           void = Where(Finite(_x) EQ 0, lonNaNCnt)
+           void = Where(Finite(_y) EQ 0, latNaNCnt)
+        ENDIF ELSE BEGIN
+            lonNaNCnt = 0
+            latNaNCnt = 0
+        ENDELSE
+    ENDIF ELSE BEGIN
+        _x = x
+        _y = y
+        IF checkForFinite THEN BEGIN
+           void = Where(Finite(_x) EQ 0, lonNaNCnt)
+           void = Where(Finite(_y) EQ 0, latNaNCnt)
+        ENDIF ELSE BEGIN
+            lonNaNCnt = 0
+            latNaNCnt = 0
+        ENDELSE
+    ENDELSE
+    
+    ; Fill the polygon as long as you don't have any NaNs in the data.
     IF Size(thisColor, /TNAME) EQ 'STRING' THEN thisColor = cgColor(thisColor)
-    CASE N_Elements(z) OF
-        0: PolyFill, x, y, COLOR=thisColor, NORMAL=normal, DEVICE=device, _STRICT_EXTRA=extra
-        ELSE: PolyFill, x, y, z, COLOR=thisColor, NORMAL=normal, DEVICE=device, _STRICT_EXTRA=extra
-    ENDCASE
+    IF (lonNaNCnt EQ 0) && (latNaNCnt EQ 0) THEN BEGIN
+        CASE N_Elements(z) OF
+            0: PolyFill, _x, _y, COLOR=thisColor, NORMAL=normal, DEVICE=device, _STRICT_EXTRA=extra
+            ELSE: PolyFill, _x, _y, z, COLOR=thisColor, NORMAL=normal, DEVICE=device, _STRICT_EXTRA=extra
+        ENDCASE
+    ENDIF
     
     ; Clean up.
     cgSetColorState, currentState

@@ -169,9 +169,13 @@
 ;         Modified program to look for NSIDC Hughes ellipsoid specified as semi-major axis of 6378273.0 and 
 ;            semi-minor axis of 6356889.4 as specified by the GeoTiff tags GEOGSEMIMAJORAXISGEOKEY and
 ;            GEOGSEMIMINORAXISGEOKEY. I do this ONLY for Polar Stereographic map projections.
+;         True-color geoTiff files not being returned correctly because of a typo. Changed "GT" to "GE" on line 1380. 8 Dec 2013. DWF.
+;         Ran into GeoTiff file with a ModelTransformationTag field instead of the usual ModelPixelScaleTag
+;            and ModelTiePointTag fields. Modified the program to get needed information from the
+;            transformation matrix. This *assumes* no rotation, etc. 10 Oct 2014. DWF.
 ;         
 ; :Copyright:
-;     Copyright (c) 2011-2012, Fanning Software Consulting, Inc.
+;     Copyright (c) 2011-2014, Fanning Software Consulting, Inc.
 ;-
 Function cgGeoMap, image, $
     BOUNDARY=boundary, $
@@ -360,13 +364,32 @@ Function cgGeoMap, image, $
    ; Assume successful completion.
    success = 1
    
-   ; Get the pixel scale values.
-   xscale = (geotiff.ModelPixelScaleTag)[0]
-   yscale = (geotiff.ModelPixelScaleTag)[1]
-   
-   ; Get the tie points and calculate the map projection range.
-   x0 = (geotiff.ModelTiePointTag)[3]
-   y1 = (geotiff.ModelTiePointTag)[4]
+   ; Need to find the pixel scales and the location of the (0,0) point in the
+   ; image. Some images store this information is a MODELTRANSFORMATIONTAG field,
+   ; and others store it in ModelPixelScaleTag and ModelTiePointTag fields. These
+   ; two methods are mutually exclusive.
+   index = Where(fields EQ 'MODELTRANSFORMATIONTAG', modelCount)
+   IF modelCount GT 0 THEN BEGIN
+    
+        ; Get the pixel scale values.
+       xscale = (geotiff.MODELTRANSFORMATIONTAG)[0,0]
+       yscale = Abs((geotiff.MODELTRANSFORMATIONTAG)[1,1])
+       
+       ; Get the tie points and calculate the map projection range.
+       x0 = (geotiff.MODELTRANSFORMATIONTAG)[3,0]
+       y1 = (geotiff.MODELTRANSFORMATIONTAG)[3,1]
+
+   ENDIF ELSE BEGIN
+    
+       ; Get the pixel scale values.
+       xscale = (geotiff.ModelPixelScaleTag)[0]
+       yscale = (geotiff.ModelPixelScaleTag)[1]
+       
+       ; Get the tie points and calculate the map projection range.
+       x0 = (geotiff.ModelTiePointTag)[3]
+       y1 = (geotiff.ModelTiePointTag)[4]
+       
+   ENDELSE 
    x1 = x0 + (xscale * xsize)
    y0 = y1 - (yscale * ysize)
    xrange = [x0, x1]
@@ -1377,7 +1400,7 @@ Function cgGeoMap, image, $
              IF N_Elements(geofile) EQ 0 THEN BEGIN
                 geofile = image
                 void = Query_Tiff(geofile, info)
-                IF info.channels GT 3 THEN BEGIN
+                IF info.channels GE 3 THEN BEGIN
                    outimage = Read_Tiff(geofile, SUB_RECT=sub_rect)
                 ENDIF ELSE BEGIN
                    outimage = Read_Tiff(geofile, r, g, b, SUB_RECT=sub_rect)

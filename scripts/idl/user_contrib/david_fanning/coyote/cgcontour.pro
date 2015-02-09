@@ -358,9 +358,19 @@
 ;        Making more effort to set the CELL_FILL keyword instead of FILL if filling contours on maps. 7 Jan 2013. DWF.
 ;        Added C_ORIENTATION and C_SPACING keywords and modified the program to allow line filling. 28 Jan 2013. DWF.
 ;        Added ISOTROPIC keyword. 27 June 2013. DWF.
-;        
+;        Added sanity check for ISOTROPIC keyword. 6 Feb 2014. DWF.
+;        Fixed a bug with the ISOTROPIC keyword. 23 Feb 2014. DWF.
+;        Previously, I used the Aspect function to calculate a position of the plot in the window. This was causing
+;           problems when encapsulated PostScript files were created, because Aspect uses a landscape aspect ratio and EPS
+;           files can only be written in Portrait mode. I also modified the default position to be [0.15, 0.15, 0.915, 0.915],
+;           but I am doing this ONLY for graphics windows, not in PostScript output. This should accommodate a wider range
+;           of contour plot output. If you find axes cut off, use the POSITION keyword to position the plot correctly. 19 March 2014. DWF
+;        Previous fix caused other problems. Reverted to 23 Feb 2014 version of cgContour and have tried another way
+;           to solve encapsulated ASPECT problem. Now setting initial position in window with cgAspect. Appears to be
+;           working correctly. 25 Nov 2014. DWF.
+;           
 ; :Copyright:
-;     Copyright (c) 2010-2013, Fanning Software Consulting, Inc.
+;     Copyright (c) 2010-2014, Fanning Software Consulting, Inc.
 ;-
 PRO cgContour, data, x, y, $
     ADDCMD=addcmd, $
@@ -434,7 +444,7 @@ PRO cgContour, data, x, y, $
     IF N_Elements(data) EQ 0 THEN BEGIN
         Print, 'USE SYNTAX: cgContour, data, x, y, NLEVELS=10'
         RETURN
-    ENDIF
+    ENDIF 
     
     ; Set up PostScript device for working with colors.
     IF !D.Name EQ 'PS' THEN Device, COLOR=1, BITS_PER_PIXEL=8
@@ -681,21 +691,93 @@ PRO cgContour, data, x, y, $
         FOR j=0,N_Elements(c_annotation)-1 DO c_annotation[j] = cgCheckForSymbols(c_annotation[j])
     ENDIF
     
+    ; Handle data properly.
+    ndims = Size(data, /N_DIMENSIONS)
+    s = Size(data, /DIMENSIONS)
+    CASE ndims OF
+        1: BEGIN
+            IF N_Elements(x) EQ 0 THEN BEGIN
+                IF Keyword_Set(onImage) THEN BEGIN
+                    CASE !X.TYPE OF
+                        0: xgrid = cgScaleVector(Indgen(s[0]), !X.CRange[0], !X.CRange[1])
+                        1: xgrid = cgScaleVector(Indgen(s[0]), 10^!X.CRange[0], 10^!X.CRange[1])
+                        3: Message, 'Must supply LONGITUDE vector when overplotting on map projections'
+                    ENDCASE
+                ENDIF ELSE BEGIN
+                    xgrid = Indgen(s[0])
+                ENDELSE
+            ENDIF ELSE xgrid = x
+            IF N_Elements(y) EQ 0 THEN BEGIN
+                IF Keyword_Set(onImage) THEN BEGIN
+                    CASE !Y.TYPE OF
+                        0: ygrid = cgScaleVector(Indgen(s[1]), !Y.CRange[0], !Y.CRange[1])
+                        1: ygrid = cgScaleVector(Indgen(s[1]), 10^!Y.CRange[0], 10^!Y.CRange[1])
+                        3: Message, 'Must supply LATITUDE vector when overplotting on map projections'
+                    ENDCASE
+                ENDIF ELSE BEGIN
+                    ygrid = Indgen(s[1])
+                ENDELSE
+            ENDIF ELSE ygrid = y
+        END
+        2: BEGIN
+            IF N_Elements(x) EQ 0 THEN BEGIN
+                IF Keyword_Set(onImage) THEN BEGIN
+                    CASE !X.TYPE OF
+                        0: xgrid = cgScaleVector(Indgen(s[0]), !X.CRange[0], !X.CRange[1])
+                        1: xgrid = cgScaleVector(Indgen(s[0]), 10^!X.CRange[0], 10^!X.CRange[1])
+                        3: Message, 'Must supply LONGITUDE vector when overplotting on map projections'
+                    ENDCASE
+                ENDIF ELSE BEGIN
+                    xgrid = Indgen(s[0])
+                ENDELSE
+            ENDIF ELSE xgrid = x
+            IF N_Elements(y) EQ 0 THEN BEGIN
+                IF Keyword_Set(onImage) THEN BEGIN
+                    CASE !Y.TYPE OF
+                        0: ygrid = cgScaleVector(Indgen(s[1]), !Y.CRange[0], !Y.CRange[1])
+                        1: ygrid = cgScaleVector(Indgen(s[1]), 10^!Y.CRange[0], 10^!Y.CRange[1])
+                        3: Message, 'Must supply LATITUDE vector when overplotting on map projections'
+                    ENDCASE
+                ENDIF ELSE BEGIN
+                    ygrid = Indgen(s[1])
+                ENDELSE
+            ENDIF ELSE ygrid = y
+        END
+        ELSE: Message, 'Contour data must be 1D or 2D.'
+    ENDCASE
+
     ; Is the ISOTROPIC keyword set?
     IF Keyword_Set(isotropic) THEN BEGIN
-        IF N_Elements(x) NE 0 THEN xrange = Max(x, /NaN) - Min(x, /NaN)
-        IF N_Elements(y) NE 0 THEN yrange = Max(y, /NaN) - Min(y, /NaN)
+        yscaleTest = Max(ygrid, /NaN) - Min(ygrid, /NaN)
+        xscaleTest = Max(xgrid, /NaN) - Min(xgrid, /NaN)
+        aspect = Float(yscaleTest)/xscaleTest
+        
+        ; Do a sanity check.
+        IF (aspect LT 1e-2) || (aspect GT 100) THEN $
+            Message, 'Axes ranges are incompatible with the ISOTROPIC keyword. Try using ASPECT.'
+        xscale = xscaleTest
+        yscale = yscaleTest
+        xstyle=1
+        ystyle=1
+    ENDIF
+    IF Keyword_Set(isotropic) THEN BEGIN
+        IF N_Elements(xgrid) NE 0 THEN xrange = Max(xgrid, /NaN) - Min(xgrid, /NaN)
+        IF N_Elements(ygrid) NE 0 THEN yrange = Max(ygrid, /NaN) - Min(ygrid, /NaN)
         dims = Size(data, /Dimensions)
         IF N_Elements(x) EQ 0 THEN xrange = dims[0]
         IF N_Elements(y) EQ 0 THEN yrange = dims[1]
-        aspect = Float(yrange) / xrange
+        aspect = Double(yrange) / xrange
+
+        ; Do a sanity check.
+        IF (aspect LT 1e-2) || (aspect GT 100) THEN $
+            Message, 'Axes ranges are incompatible with the ISOTROPIC keyword. Try using ASPECT.'
     ENDIF
    
     IF (N_Elements(aspect) NE 0) && (Total(!P.MULTI) EQ 0) THEN BEGIN
     
         ; If position is set, then fit the plot into those bounds.
         IF (N_Elements(position) GT 0) THEN BEGIN
-          trial_position = Aspect(aspect, margin=0.)
+          trial_position = cgAspect(aspect, /Single_Plot)
           trial_width = trial_position[2]-trial_position[0]
           trial_height = trial_position[3]-trial_position[1]
           pos_width = position[2]-position[0]
@@ -716,7 +798,9 @@ PRO cgContour, data, x, y, $
           position[2] -= 0.5*(pos_width - trial_width)
           position[1] += 0.5*(pos_height - trial_height)
           position[3] -= 0.5*(pos_height - trial_height)
-        ENDIF ELSE position=Aspect(aspect)   ; if position isn't set, just use output of Aspect
+        ENDIF ELSE BEGIN
+            position=cgAspect(aspect, /Single_Plot)
+        ENDELSE
         
     ENDIF
     
@@ -760,61 +844,7 @@ PRO cgContour, data, x, y, $
     IF N_Elements(charsize) EQ 0 THEN charsize = cgDefCharSize(FONT=font)
     IF N_Elements(c_charsize) EQ 0 THEN c_charsize = charsize * 0.75
     
-    ; Handle data properly.
-    ndims = Size(data, /N_DIMENSIONS)
-    s = Size(data, /DIMENSIONS)
-    CASE ndims OF
-        1: BEGIN
-           IF N_Elements(x) EQ 0 THEN BEGIN
-               IF Keyword_Set(onImage) THEN BEGIN
-                   CASE !X.TYPE OF
-                      0: xgrid = cgScaleVector(Indgen(s[0]), !X.CRange[0], !X.CRange[1])
-                      1: xgrid = cgScaleVector(Indgen(s[0]), 10^!X.CRange[0], 10^!X.CRange[1])
-                      3: Message, 'Must supply LONGITUDE vector when overplotting on map projections'
-                   ENDCASE
-               ENDIF ELSE BEGIN
-                  xgrid = Indgen(s[0])
-               ENDELSE
-           ENDIF ELSE xgrid = x
-           IF N_Elements(y) EQ 0 THEN BEGIN
-               IF Keyword_Set(onImage) THEN BEGIN
-                   CASE !Y.TYPE OF
-                      0: ygrid = cgScaleVector(Indgen(s[1]), !Y.CRange[0], !Y.CRange[1])
-                      1: ygrid = cgScaleVector(Indgen(s[1]), 10^!Y.CRange[0], 10^!Y.CRange[1])
-                      3: Message, 'Must supply LATITUDE vector when overplotting on map projections'
-                   ENDCASE
-               ENDIF ELSE BEGIN
-                  ygrid = Indgen(s[1])
-               ENDELSE
-           ENDIF ELSE ygrid = y
-           END
-        2: BEGIN
-           IF N_Elements(x) EQ 0 THEN BEGIN
-               IF Keyword_Set(onImage) THEN BEGIN
-                   CASE !X.TYPE OF
-                      0: xgrid = cgScaleVector(Indgen(s[0]), !X.CRange[0], !X.CRange[1])
-                      1: xgrid = cgScaleVector(Indgen(s[0]), 10^!X.CRange[0], 10^!X.CRange[1])
-                      3: Message, 'Must supply LONGITUDE vector when overplotting on map projections'
-                   ENDCASE
-               ENDIF ELSE BEGIN
-                  xgrid = Indgen(s[0])
-               ENDELSE
-           ENDIF ELSE xgrid = x
-           IF N_Elements(y) EQ 0 THEN BEGIN
-               IF Keyword_Set(onImage) THEN BEGIN
-                   CASE !Y.TYPE OF
-                      0: ygrid = cgScaleVector(Indgen(s[1]), !Y.CRange[0], !Y.CRange[1])
-                      1: ygrid = cgScaleVector(Indgen(s[1]), 10^!Y.CRange[0], 10^!Y.CRange[1])
-                      3: Message, 'Must supply LATITUDE vector when overplotting on map projections'
-                   ENDCASE
-               ENDIF ELSE BEGIN
-                  ygrid = Indgen(s[1])
-               ENDELSE
-           ENDIF ELSE ygrid = y
-           END
-        ELSE: Message, 'Contour data must be 1D or 2D.'
-    ENDCASE
-    
+ 
     ; Get the current color table vectors. The NULL business was put here at
     ; the request of Wayne Landsman in support of NASA Astronomy Library. It
     ; is important for programs NASA runs.
@@ -1025,8 +1055,8 @@ PRO cgContour, data, x, y, $
  
                     ; Make sure axis are turned off. I don't really want to draw anything,
                     ; just advance !P.MULTI or "erase" the display for the next plot.
-                    IF BitGet(xstyle, 2) NE 1 THEN xxstyle = xstyle + 4 ELSE xxstyle = xstyle
-                    IF BitGet(ystyle, 2) NE 1 THEN yystyle = xstyle + 4 ELSE yystyle = ystyle
+                    IF cgBitGet(xstyle, 2) NE 1 THEN xxstyle = xstyle + 4 ELSE xxstyle = xstyle
+                    IF cgBitGet(ystyle, 2) NE 1 THEN yystyle = xstyle + 4 ELSE yystyle = ystyle
                     
                     ; Draw the plot that doesn't draw anything.
                      Contour, contourData, xgrid, ygrid, COLOR=axiscolor, CHARSIZE=charsize, $

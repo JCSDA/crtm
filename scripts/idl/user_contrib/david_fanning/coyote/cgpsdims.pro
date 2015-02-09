@@ -1,15 +1,15 @@
 ; docformat = 'rst'
 ;
 ; NAME:
-;   SetDefaultValue
+;   cgPSDims
 ;
 ; PURPOSE:
-;   This procedure sets default values for positional and keyword arguments to
-;   IDL procedures and functions.
+;   The purpose of this function is to return the dimensions of the bounding
+;   box of a PostScript file.
 ;
 ;******************************************************************************************;
 ;                                                                                          ;
-;  Copyright (c) 2008, by Fanning Software Consulting, Inc. All rights reserved.           ;
+;  Copyright (c) 2014, by Fanning Software Consulting, Inc. All rights reserved.           ;
 ;                                                                                          ;
 ;  Redistribution and use in source and binary forms, with or without                      ;
 ;  modification, are permitted provided that the following conditions are met:             ;
@@ -36,42 +36,24 @@
 ;******************************************************************************************;
 ;
 ;+
-; This procedure sets default values for positional and keyword arguments to
-; IDL procedures and functions.
+; The purpose of this function is to return the dimensions of the bounding
+; box of a PostScript file.
 ;
 ; :Categories:
-;    Utilities
+;    Utility
 ;
 ; :Params:
-;    argument: in, required
-;         The augument variable you are setting the default value of. If this variable
-;         is undefined, the `defaultValue` will be assigned to it. Otherwise, the argument
-;         variable will not change.
-;    defaultvalue: in, required
-;         The default value that will be assigned to the argument variable ONLY if the argument
-;         variable is undefined. If this variable is undefined, the argument variable will
-;         be treated as if the BOOLEAN keyword had been set.
+;    filename: in, required, type=string
+;         The name of a PostScript file from which the bounding box information will be 
+;         obtained.
 ;
 ; :Keywords:
-;    boolean: in, optional, type=integer
-;         If this keyword is set, the argument value will always be forced to return with a 
-;         value of 0 or 1.
-;    range: in, optional
-;         A two-element array that gives the accepted range of the variable. The output argument
-;         will be forced into this data range: range[0] > argument < range[1].
+;    success: out, optional, type=boolean
+;         This keyword will be set to 1 if the program is successful and to 0 otherwise.
 ;
 ; :Examples:
 ;    Here is how to use this program::
-;    
-;      FUNCTION Action, arg1, arg2, MULTIPLY=multiply
-;  
-;         SetDefaultValue, arg1, 1
-;         SetDefaultValue, arg2, 2
-;         SetDefaultValue, multiply, 1, /BOOLEAN 
-;     
-;         IF multiply THEN RETURN, arg1 * arg2 ELSE RETURN, arg1 + arg2
-;     
-;      END
+;       IDL> ps_dims = cgPSDims('myoutput.ps')
 ;
 ; :Author:
 ;    FANNING SOFTWARE CONSULTING::
@@ -84,39 +66,62 @@
 ;
 ; :History:
 ;     Change History::
-;        Written by: David W. Fanning, November 26, 2008, from suggestion by Carsten Lechte on
-;           IDL newsgroup on this date.
-;        Made a change to the way the BOOLEAN keyword works. Now argument is set to BOOLEAN before
-;           return, if required. 3 Dec 2008. DWF.
-;        Added RANGE keyword. 22 March 2014. DWF.
+;        Written, 15 January 2014 by David W. Fanning.
 ;
 ; :Copyright:
-;     Copyright (c) 2008-2014, Fanning Software Consulting, Inc.
+;     Copyright (c) 2014, Fanning Software Consulting, Inc.
 ;-
-PRO SetDefaultValue, argument, defaultValue, RANGE=range, BOOLEAN=boolean
+FUNCTION cgPSDims, filename, SUCCESS=success
 
-   ; Return to the caller if there is an error.
-   On_Error, 2
+    Compile_Opt idl2
+    
+    ; Error handling.
+    Catch, theError
+    IF theError NE 0 THEN BEGIN
+        Catch, /CANCEL
+        void = cgErrorMsg()
+        success = 0
+        IF N_Elements(lun) NE 0 THEN Free_Lun, lun
+        RETURN, [0,0]
+    ENDIF
+    
+    ; Must have a filename to proceed.
+    IF N_Elements(filename) EQ 0 THEN BEGIN
+      filename = Dialog_Pickfile(FILTER=['*.ps', '*.eps'], TITLE='Select a PostScript file to obtain its dimensions.')
+      IF filename EQ "" THEN Message, 'A PostScript file name is required to continue.'
+     ENDIF
+    
+    ; Assume success.
+    success = 1
 
-   ; We only need change if the argument is undefined.
-   IF N_Elements(argument) EQ 0 THEN BEGIN
-        
-      ; If the default value is undefined, treat as BOOLEAN.
-      ; Otherwise, assign default value to the argument.
-      IF N_Elements(defaultValue) EQ 0 THEN BEGIN
-         argument = Keyword_Set(argument)
-      ENDIF ELSE BEGIN
-         argument = defaultValue
-      ENDELSE
-            
-   ENDIF
-        
-   ; Require boolean.
-   IF Keyword_Set(boolean) THEN argument = Keyword_Set(argument)    
-        
-   ; Confine to a range?
-   IF N_Elements(range) NE 0 THEN BEGIN
-       argument = range[0] > argument < range[1]
-   ENDIF
-     
-END ;-----------------------------------------------------------------------------------------
+    ; Move along in the file until the end of the comment section.
+    line = ""
+    count = 0
+    target = "void"
+    buffer = StrArr(100)
+    
+    OpenR, lun, filename, /GET_LUN
+    WHILE target NE '%%EndComments' DO BEGIN
+        ReadF, lun, line
+        buffer[count] = line
+        target = StrMid(line, 0, 13)
+        count = count + 1
+        IF count MOD 100 EQ 0 THEN buffer = [buffer, StrArr(100)]
+    ENDWHILE
+    Free_Lun, lun
+    
+    ; Find the line containing the bounding box in the comment section and
+    ; extract the dimension of the PostScript file.
+    buffer = buffer[0:count-2]
+    FOR j=0,N_Elements(buffer)-1 DO BEGIN
+        test = StrMid(buffer[j], 0, 14)
+        IF test NE '%%BoundingBox:' THEN Continue
+        values = IntArr(4)
+        ReadS, StrMid(buffer[j], 15), values
+        dims = [values[2]-values[0], values[3]-values[1]]
+        Break
+    ENDFOR
+    
+    RETURN, dims
+    
+END

@@ -212,9 +212,14 @@
 ;           probably at the limit of what is possible now. :-) 30 April 2013. DWF.
 ;       The LAYOUT keyword went on walkabout after the last changes. Restored to operation. 12 July 2013. DWF.
 ;       The YTITLE keyword was missing when passed to cgWindow. Fixed now. 24 Oct 2013. DWF.
+;       Fixed a couple of places where I meant "missing_index" and used "missing_color". 26 Jan 2014. DWF.
+;       Added check for open graphics window when displaying alpha-channel image. 31 March 2014. DWF.
+;       Added XVECTOR and YVECTOR keywords. 1 April 2014. DWF.
+;       Fixed a problem in which the POSITION of the image was specified as an integer array when it 
+;            should have been a floating point array. 8 January 2015. DWF.
 ;       
 ; :Copyright:
-;     Copyright (c) 2011-2013, Fanning Software Consulting, Inc.
+;     Copyright (c) 2011-2015, Fanning Software Consulting, Inc.
 ;-
 ;
 ;+
@@ -1155,11 +1160,15 @@ END
 ;         [0, size of image in X].
 ;    xtitle: in, optional, type=string, default=""
 ;         The X title of the image plot. Used only if `AXES` is set.
+;    xvector: in, optional
+;         A vector of X values that can be used as an alternative mthod of specifying the `XRange` of the plot.
 ;    yrange: in, optional, type=fltarr(2)
 ;         A two element array giving the Y range of the image. By default set to
 ;         [0, size of image in Y].
 ;    ytitle: in, optional, type=string, default=""
 ;         The Y title of the image plot. Used only if `AXES` is set.
+;    yvector: in, optional
+;         A vector of Y values that can be used as an alternative mthod of specifying the `YRange` of the plot.
 ;    _ref_extra: in, optional, type=varies
 ;         Any keywords defined for the TV command can be used. This applies only
 ;         if the TV keyword is set.
@@ -1226,8 +1235,10 @@ PRO cgImage, image, x, y, $
    WINDOW=window, $
    XRANGE=plotxrange, $
    XTITLE=plotxtitle, $
+   XVECTOR=xvector, $
    YRANGE=plotyrange, $
    YTITLE=plotytitle, $
+   YVECTOR=yvector, $
    _REF_EXTRA=extra
 
     ; Error handling.
@@ -1362,8 +1373,10 @@ PRO cgImage, image, x, y, $
                TV=tv, $
                XRANGE=plotxrange, $
                XTITLE=plotxtitle, $
+               XVECTOR=xvector, $
                YRANGE=plotyrange, $
                YTITLE=plotytitle, $
+               YVECTOR=yvector, $
                ADDCMD=1, $
                _EXTRA=extra
             RETURN
@@ -1427,8 +1440,10 @@ PRO cgImage, image, x, y, $
                TV=tv, $
                XRANGE=plotxrange, $
                XTITLE=plotxtitle, $
+               XVECTOR=xvector, $
                YRANGE=plotyrange, $
                YTITLE=plotytitle, $
+               YVECTOR=yvector, $
                REPLACECMD=replacecmd, $
                _EXTRA=extra
              RETURN
@@ -1457,7 +1472,7 @@ PRO cgImage, image, x, y, $
         IF (N_Elements(alphafgpos) EQ 0) THEN BEGIN
              restorePosition = position
              alphafgpos = position
-             position = [0,0,1,1]
+             position = [0.0,0.0,1.0,1.0]
              Message, 'POSITION keyword value switched to ALPHAFGPOS because TRANSPARENT keyword is set.', /Informational
         ENDIF
     ENDIF
@@ -1512,12 +1527,12 @@ PRO cgImage, image, x, y, $
             image = transImage
             IF (N_Elements(alphabackgroundimage) EQ 0) THEN BEGIN
                 IF !D.Name NE "PS" THEN BEGIN
-                   alphabackgroundimage = cgSnapshot(POSITION=[0,0,1,1])
+                   alphabackgroundimage = cgSnapshot(POSITION=[0.0,0.0,1.0,1.0])
                 ENDIF ELSE Message, 'An AlphaBackgroundImage is required to create transparent images in PostScript.'
             ENDIF
-            IF ~multi THEN IF N_Elements(alphabgpos) EQ 0 THEN alphabgpos = [0,0,1,1]
-            IF ~multi THEN IF N_Elements(alphafgpos) EQ 0 THEN alphafgpos = [0,0,1,1]
-            IF ~multi THEN IF N_Elements(position) EQ 0 THEN position= [0,0,1,1]
+            IF ~multi THEN IF N_Elements(alphabgpos) EQ 0 THEN alphabgpos = [0.0,0.0,1.0,1.0]
+            IF ~multi THEN IF N_Elements(alphafgpos) EQ 0 THEN alphafgpos = [0.0,0.0,1.0,1.0]
+            IF ~multi THEN IF N_Elements(position) EQ 0 THEN position= [0.0,0.0,1.0,1.0]
             noerase = 1
         ENDIF ELSE BEGIN
             image = oldImage
@@ -1525,19 +1540,24 @@ PRO cgImage, image, x, y, $
         ENDELSE
     ENDIF
       
-    ; Need a data range? Set it up if you have a map coordinate object. Otherwise,
-    ; we will handle it later.
+    ; Need a data range? Set it up if you have a map coordinate object or a vector.
     IF N_Elements(plotxrange) EQ 0 THEN BEGIN
        IF Obj_Valid(mapCoord) THEN BEGIN
              mapCoord -> GetProperty, XRANGE=plotxrange 
              save = 1
        ENDIF 
+       IF N_Elements(xvector) NE 0 THEN BEGIN
+           plotxrange = [Min(xvector), Max(xvector)]
+       ENDIF
     ENDIF ELSE save = 1
     IF N_Elements(plotyrange) EQ 0 THEN BEGIN
        IF Obj_Valid(mapCoord) THEN BEGIN
             mapCoord -> GetProperty, YRANGE=plotyrange 
             save = 1
        ENDIF 
+       IF N_Elements(yvector) NE 0 THEN BEGIN
+           plotyrange = [Min(yvector), Max(yvector)]
+       ENDIF
     ENDIF ELSE save = 1
     
     ; Are we doing some kind of output?
@@ -1696,10 +1716,10 @@ PRO cgImage, image, x, y, $
     IF N_Elements(min) EQ 0 THEN min = Min(image, /NAN) ELSE scale = 1
     IF N_Elements(max) EQ 0 THEN max = Max(image, /NAN) ELSE scale = 1
     IF (min LT 0) OR (max GT 255) THEN scale = 1
-    IF N_Elements(top) EQ 0 THEN top = (N_Elements(missing_value) NE 0) ? !D.TABLE_SIZE - 2 : !D.TABLE_SIZE - 1
+    IF N_Elements(top) EQ 0 THEN top = (N_Elements(missing_index) NE 0) ? !D.TABLE_SIZE - 2 : !D.TABLE_SIZE - 1
     IF N_Elements(bottom) EQ 0 THEN bottom = 0B
     IF N_Elements(ncolors) NE 0 THEN BEGIN
-        top = (N_Elements(missing_value) NE 0) ? (ncolors - 2) < 255 : (ncolors - 1)
+        top = (N_Elements(missing_index) NE 0) ? (ncolors - 2) < 255 : (ncolors - 1)
         scale = 1
     ENDIF
     
@@ -1784,7 +1804,9 @@ PRO cgImage, image, x, y, $
        ; We can get the background image on devices that support windows.
        IF (!D.Flags AND 256) NE 0 THEN BEGIN
            IF N_Elements(alphabackgroundImage) EQ 0 THEN BEGIN
-               alphabackgroundImage = cgSnapshot()
+               IF !D.Window GE 0 THEN BEGIN
+                   alphabackgroundImage = cgSnapshot()
+               ENDIF ELSE Message, 'Open graphics window to display alpha channel image.'
            ENDIF
        ENDIF ELSE BEGIN
            IF N_Elements(alphabackgroundImage) EQ 0 THEN BEGIN
@@ -1984,7 +2006,7 @@ PRO cgImage, image, x, y, $
              IF N_Elements(transparent) NE 0 THEN BEGIN
                 restorePosition = position
                 alphafgpos = position
-                position = [0,0,1,1]
+                position = [0.0,0.0,1.0,1.0]
              ENDIF
           ENDIF
        ENDELSE
@@ -2191,7 +2213,7 @@ PRO cgImage, image, x, y, $
        trialX = xpixSize
        trialY = trialX * ratio
        IF trialY GT ypixSize THEN BEGIN
-          trialY = ypixSize
+          trialY = Float(ypixSize)
           trialX = trialY / ratio
        ENDIF
     
