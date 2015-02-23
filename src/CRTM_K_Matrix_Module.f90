@@ -834,7 +834,6 @@ CONTAINS
           ! Compute the total atmospheric transmittance
           ! for use in surface optics reflection corrections
           CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
-          SfcOptics%Transmittance = transmittance
           ! ...Turn off FASTEM-X reflection correction for scattering conditions
           IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
             SfcOptics%Transmittance = -ONE
