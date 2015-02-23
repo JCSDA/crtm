@@ -151,7 +151,8 @@ OBJ_FILES = ${FSRC_FILES:.f90=.o} \
             ${FPP_FILES:.fpp=.o}
 
 # The list of include files
-INC_FILES = FitCoeff_Destroy.inc \
+INC_FILES = CRTM_Version.inc \
+            FitCoeff_Destroy.inc \
             FitCoeff_SetValue.inc \
             FitCoeff_Info.inc \
             FitCoeff_ReadFile.inc \
