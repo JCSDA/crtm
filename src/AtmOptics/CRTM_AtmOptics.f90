@@ -58,21 +58,6 @@ MODULE CRTM_AtmOptics
   '$Id$'
 
 
-  ! ------------------------------------
-  ! Structure definition to hold forward
-  ! variables across FWD, TL, and AD calls
-  ! ------------------------------------
-!  TYPE :: AOvar_type
-!    PRIVATE
-!    ! Used in Compute_Transmittance procedures
-!    REAL(fp) :: transmittance
-!    ! Used in Combine_AtmOptics procedures
-!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: Optical_Depth
-!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: bs
-!    REAL(fp), DIMENSION(MAX_N_LAYERS) :: w
-!  END TYPE AOvar_type
-!
-
 CONTAINS
 
 

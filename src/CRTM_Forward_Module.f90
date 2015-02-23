@@ -645,12 +645,6 @@ CONTAINS
                                            AAvar           )  ! Internal variable output
           
 
-          ! Compute and save the total atmospheric transmittance
-          ! for use in surface optics reflection corrections
-          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
-          SfcOptics%Transmittance = transmittance
-
-
           ! Compute the molecular scattering properties
           ! ...Solar radiation
           IF( SC(SensorIndex)%Solar_Irradiance(ChannelIndex) > ZERO .AND. &
@@ -730,9 +724,14 @@ CONTAINS
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
 
           
-          ! Turn off FASTEM reflection only for scattering conditions
+          ! Compute the total atmospheric transmittance
+          ! for use in surface optics reflection corrections
+          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
+          ! ...Turn off FASTEM-X reflection correction for scattering conditions
           IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
             SfcOptics%Transmittance = -ONE
+          ELSE
+            SfcOptics%Transmittance = transmittance
           END IF
       
 
