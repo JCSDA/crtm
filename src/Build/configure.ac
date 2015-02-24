@@ -11,7 +11,7 @@ AC_MSG_NOTICE([AC_PACKAGE_NAME AC_PACKAGE_VERSION])
 
 
 # Check for existence of unique file before proceeding
-AC_CONFIG_SRCDIR([libsrc/CRTM_Module.f90])
+AC_CONFIG_SRCDIR([libsrc/CRTM_Module.fpp])
 
 
 # Define the configuration files

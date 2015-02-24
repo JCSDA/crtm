@@ -5,9 +5,7 @@
 #
 
 # The list of files that need preprocessing
-#FPP_FILES = \
-#  Type_Kinds.fpp
-FPP_FILES =
+FPP_FILES = CRTM_Module.fpp
 
 # The list of regular source files
 FSRC_FILES = \
@@ -112,7 +110,6 @@ FSRC_FILES = \
   CRTM_Tangent_Linear_Module.f90 \
   CRTM_Adjoint_Module.f90 \
   CRTM_K_Matrix_Module.f90 \
-  CRTM_Module.f90 \
   CRTM_AtmAbsorption.f90 \
   CRTM_Predictor.f90 \
   CRTM_Predictor_Define.f90 \

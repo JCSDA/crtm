@@ -49,7 +49,6 @@ CRTM_MW_Snow_SfcOptics.o : CRTM_MW_Snow_SfcOptics.f90 NESDIS_ATMS_SnowEM_Module.
 CRTM_MW_Water_SfcOptics.o : CRTM_MW_Water_SfcOptics.f90 CRTM_MWwaterCoeff.o CRTM_FastemX.o CRTM_Fastem1.o CRTM_LowFrequency_MWSSEM.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_MWwaterCoeff.o : CRTM_MWwaterCoeff.f90 MWwaterCoeff_Define.o Message_Handler.o 
 CRTM_Model_Profiles.o : CRTM_Model_Profiles.f90 CRTM_Atmosphere_Define.o Type_Kinds.o 
-CRTM_Module.o : CRTM_Module.f90 CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
 CRTM_MoleculeScatter.o : CRTM_MoleculeScatter.f90 CRTM_AtmOptics_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_NLTECorrection.o : CRTM_NLTECorrection.f90 NLTE_Predictor_Define.o NLTE_Parameters.o NLTECoeff_Define.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Type_Kinds.o 
 CRTM_Options_Define.o : CRTM_Options_Define.f90 Zeeman_Input_Define.o SSU_Input_Define.o CRTM_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
@@ -166,3 +165,4 @@ UnitTest_Define.o : UnitTest_Define.f90 Compare_Float_Numbers.o Type_Kinds.o
 Zeeman_Input_Define.o : Zeeman_Input_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Zeeman_Utility.o : Zeeman_Utility.f90 File_Utility.o Message_Handler.o Type_Kinds.o 
 iAtm_Define.o : iAtm_Define.f90 CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
+CRTM_Module.o : CRTM_Module.fpp CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
