@@ -601,7 +601,7 @@ PACKAGE_VERSION='v2.2.0-beta'
 PACKAGE_STRING='CRTM v2.2.0-beta'
 PACKAGE_BUGREPORT='ncep.list.emc.jcsda_crtm.support@noaa.gov'
 
-ac_unique_file="libsrc/CRTM_Module.f90"
+ac_unique_file="libsrc/CRTM_Module.fpp"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 FPPFLAGS
