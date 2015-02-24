@@ -12,7 +12,8 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 # Shell scripts to install
 SRC_DIR = $(CRTM_SCRIPTS_ROOT)/shell/Utility
 
-SRC_FILES = crtm_env.sh \
+SRC_FILES = crtm_regression_tests.sh \
+            crtm_env.sh \
             endian_wrapper.sh \
             linkfiles.sh \
             unlinkfiles.sh \
