@@ -190,18 +190,10 @@ CONTAINS
 
     ! Branch depending on type of file I/O
     IF ( file_input ) THEN
-      ! File is to be READ. If the file
-      ! does not exist, return an error
-      IF ( .NOT. File_Exists( Filename ) ) THEN
-        err_stat = FAILURE
-        msg = 'File '//TRIM(Filename)//' not found.'
-        CALL CleanUp(); RETURN
-      END IF
       ! Set OPEN keywords for READING
       file_status = 'OLD'
       file_action = 'READ'
     ELSE
-      ! File is to be WRITTEN.
       ! Set OPEN keywords for WRITING
       file_status = 'REPLACE'
       file_action = 'WRITE'
