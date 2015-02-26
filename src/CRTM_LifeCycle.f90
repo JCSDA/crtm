@@ -22,8 +22,12 @@ MODULE CRTM_LifeCycle
                                      CRTM_ChannelInfo_Create
   ! ...Spectral coefficients
   USE CRTM_SpcCoeff          , ONLY: SC, &
-                                     CRTM_SpcCoeff_Load, &
-                                     CRTM_SpcCoeff_Destroy
+                                     CRTM_SpcCoeff_Load   , &
+                                     CRTM_SpcCoeff_Destroy, &
+                                     SpcCoeff_IsMicrowaveSensor  , &
+                                     SpcCoeff_IsInfraredSensor   , &
+                                     SpcCoeff_IsVisibleSensor    , &
+                                     SpcCoeff_IsUltravioletSensor
   ! ...Transmittance model coefficients
   USE CRTM_TauCoeff
   ! ...Aerosol optical properties
@@ -533,108 +537,116 @@ CONTAINS
 
 
     ! Load the emissivity model coefficients
-    ! ...IR land
-    err_stat = CRTM_IRlandCoeff_Load( &
-                 Default_IRlandCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading IRlandCoeff data from '//TRIM(Default_IRlandCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...IR Water
-    err_stat = CRTM_IRwaterCoeff_Load( &
-                 Default_IRwaterCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading IRwaterCoeff data from '//TRIM(Default_IRwaterCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...IR snow
-    err_stat = CRTM_IRsnowCoeff_Load( &
-                 Default_IRsnowCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading IRsnowCoeff data from '//TRIM(Default_IRsnowCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...IR ice
-    err_stat = CRTM_IRiceCoeff_Load( &
-                 Default_IRiceCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading IRiceCoeff data from '//TRIM(Default_IRiceCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...VIS land
-    err_stat = CRTM_VISlandCoeff_Load( &
-                 Default_VISlandCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading VISlandCoeff data from '//TRIM(Default_VISlandCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...VIS water
-    err_stat = CRTM_VISwaterCoeff_Load( &
-                 Default_VISwaterCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading VISwaterCoeff data from '//TRIM(Default_VISwaterCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...VIS snow
-    err_stat = CRTM_VISsnowCoeff_Load( &
-                 Default_VISsnowCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading VISsnowCoeff data from '//TRIM(Default_VISsnowCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-    ! ...VIS ice
-    err_stat = CRTM_VISiceCoeff_Load( &
-                 Default_VISiceCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading VISiceCoeff data from '//TRIM(Default_VISiceCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
-
-
-    ! Load the emissivity model coefficients
-    ! ...MW water
-    err_stat = CRTM_MWwaterCoeff_Load( &
-                 Default_MWwaterCoeff_File, &
-                 Quiet             = Quiet            , &
-                 Process_ID        = Process_ID       , &
-                 Output_Process_ID = Output_Process_ID  )
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error loading MWwaterCoeff data from '//TRIM(Default_MWwaterCoeff_File)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-      RETURN
-    END IF
+    ! ...Infrared
+    Infrared_Sensor: IF ( ANY(SpcCoeff_IsInfraredSensor(SC)) ) THEN
+      ! ...IR land
+      err_stat = CRTM_IRlandCoeff_Load( &
+                   Default_IRlandCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading IRlandCoeff data from '//TRIM(Default_IRlandCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...IR Water
+      err_stat = CRTM_IRwaterCoeff_Load( &
+                   Default_IRwaterCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading IRwaterCoeff data from '//TRIM(Default_IRwaterCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...IR snow
+      err_stat = CRTM_IRsnowCoeff_Load( &
+                   Default_IRsnowCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading IRsnowCoeff data from '//TRIM(Default_IRsnowCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...IR ice
+      err_stat = CRTM_IRiceCoeff_Load( &
+                   Default_IRiceCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading IRiceCoeff data from '//TRIM(Default_IRiceCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+    END IF Infrared_Sensor
+    
+    ! ...Visible
+    Visible_Sensor: IF ( ANY(SpcCoeff_IsVisibleSensor(SC)) ) THEN
+      ! ...VIS land
+      err_stat = CRTM_VISlandCoeff_Load( &
+                   Default_VISlandCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading VISlandCoeff data from '//TRIM(Default_VISlandCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...VIS water
+      err_stat = CRTM_VISwaterCoeff_Load( &
+                   Default_VISwaterCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading VISwaterCoeff data from '//TRIM(Default_VISwaterCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...VIS snow
+      err_stat = CRTM_VISsnowCoeff_Load( &
+                   Default_VISsnowCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading VISsnowCoeff data from '//TRIM(Default_VISsnowCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+      ! ...VIS ice
+      err_stat = CRTM_VISiceCoeff_Load( &
+                   Default_VISiceCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading VISiceCoeff data from '//TRIM(Default_VISiceCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+    END IF Visible_Sensor
+    
+    ! ...Microwave
+    Microwave_Sensor: IF ( ANY(SpcCoeff_IsMicrowaveSensor(SC)) ) THEN
+      ! ...MW water
+      err_stat = CRTM_MWwaterCoeff_Load( &
+                   Default_MWwaterCoeff_File, &
+                   Quiet             = Quiet            , &
+                   Process_ID        = Process_ID       , &
+                   Output_Process_ID = Output_Process_ID  )
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error loading MWwaterCoeff data from '//TRIM(Default_MWwaterCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+      END IF
+    END IF Microwave_Sensor
 
 
     ! Load the ChannelInfo structure
