@@ -179,7 +179,7 @@ MODULE CRTM_Surface_Define
   INTEGER,  PARAMETER :: DEFAULT_WATER_TYPE        = 1          ! First item in list
   REAL(fp), PARAMETER :: DEFAULT_WATER_TEMPERATURE = 283.0_fp   ! K
   REAL(fp), PARAMETER :: DEFAULT_WIND_SPEED        = 5.0_fp     ! m/s
-  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! North
+  REAL(fp), PARAMETER :: DEFAULT_WIND_DIRECTION    = 0.0_fp     ! Southerly wind, i.e. FROM the south. Opposite from met. defn.
   REAL(fp), PARAMETER :: DEFAULT_SALINITY          = 33.0_fp    ! ppmv
   ! ...Snow surface type data
   INTEGER,  PARAMETER :: DEFAULT_SNOW_TYPE        = 1          ! First item in list
