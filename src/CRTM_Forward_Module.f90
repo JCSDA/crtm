@@ -643,7 +643,12 @@ CONTAINS
                                            Predictor     , &  ! Input
                                            AtmOptics     , &  ! Output
                                            AAvar           )  ! Internal variable output
-          
+
+
+          ! Compute the clear-sky atmospheric transmittance
+          ! for use in FASTEM-X reflection correction
+          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
+
 
           ! Compute the molecular scattering properties
           ! ...Solar radiation
@@ -723,17 +728,14 @@ CONTAINS
           ! ...Save vertically integrated scattering optical depth fro output
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
 
-          
-          ! Compute the total atmospheric transmittance
-          ! for use in surface optics reflection corrections
-          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
-          ! ...Turn off FASTEM-X reflection correction for scattering conditions
+
+          ! Turn off FASTEM-X reflection correction for scattering conditions
           IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
             SfcOptics%Transmittance = -ONE
           ELSE
             SfcOptics%Transmittance = transmittance
           END IF
-      
+
 
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
