@@ -134,7 +134,7 @@ MODULE MW_SensorData_Define
   !                              Sensor Id data
   !#----------------------------------------------------------------------------#
 
-  INTEGER, PARAMETER :: N_VALID_SENSORS = 66
+  INTEGER, PARAMETER :: N_VALID_SENSORS = 67
 
   CHARACTER(*), PARAMETER :: VALID_SENSOR_ID(N_VALID_SENSORS) = &
   [ 'msu_tirosn          ','msu_n06             ','msu_n07             ','msu_n08             ',&
@@ -153,7 +153,7 @@ MODULE MW_SensorData_Define
     'ssmis_f17           ','ssmis_f18           ','ssmis_f19           ','ssmis_f20           ',&
     'madras_meghat       ','saphir_meghat       ','amsr2_gcom-w1       ','hamsr_grip          ',&
     'micromas_cs00       ','micromas_cs01       ','micromas_cs02       ','micromas_cs03       ',&
-    'micromas_cs04       ','micromas_cs05       ','geostorm_proposed   ' ]
+    'micromas_cs04       ','micromas_cs05       ','geostorm_proposed   ','masc_cubesat        ' ]
   
   INTEGER, PARAMETER :: VALID_WMO_SATELLITE_ID(N_VALID_SENSORS) = &
   [  708, 706, 707, 200, 201, 202, 203, 204, 205, &         ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -175,7 +175,8 @@ MODULE MW_SensorData_Define
      122, &                                                 ! GCOM-W1 AMSR2
      XSAT, &                                                ! Hamsr-Grip, GRIP aircraft experiment
      XSAT, XSAT, XSAT, XSAT, XSAT, XSAT, &                  ! MicroMAS CubeSat-00 to -05
-     XSAT ]                                                 ! GeoStorm
+     XSAT, &                                                ! GeoStorm
+     XSAT ]                                                 ! MASC CubeSat (different from MicroMAS)
 
   INTEGER, PARAMETER :: VALID_WMO_SENSOR_ID(N_VALID_SENSORS) = &
   [  623, 623, 623, 623, 623, 623, 623, 623, 623, &  ! TIROS-N to NOAA-14 MSU (no NOAA-13)
@@ -197,7 +198,8 @@ MODULE MW_SensorData_Define
      478, &                                          ! GCOM-W1 AMSR2
      XSEN, &                                         ! Hamsr-Grip, GRIP aircraft experiment
      XSEN, XSEN, XSEN, XSEN, XSEN, XSEN, &           ! MicroMAS CubeSat-00 to -05
-     XSEN ]                                          ! GeoStorm
+     XSEN, &                                         ! GeoStorm
+     XSEN ]                                          ! MASC CubeSat (different from MicroMAS)
 
 
   !#----------------------------------------------------------------------------#
@@ -228,6 +230,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: N_HAMSR_CHANNELS   = 25
   INTEGER, PARAMETER :: N_MICROMAS_CHANNELS = 10
   INTEGER, PARAMETER :: N_GEOSTORM_CHANNELS = 10
+  INTEGER, PARAMETER :: N_MASC_CHANNELS     =  8
  
   ! The number of channels for the valid sensors
   INTEGER, PARAMETER :: VALID_N_CHANNELS(N_VALID_SENSORS) = &
@@ -258,7 +261,8 @@ MODULE MW_SensorData_Define
     N_AMSR2_CHANNELS, N_HAMSR_CHANNELS, &                             ! GCOM-W1 AMSR2, Hamsr-Grip
     N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-00 to -02 MicroMAS
     N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, N_MICROMAS_CHANNELS, &  ! CubeSat-03 to -05 MicroMAS
-    N_GEOSTORM_CHANNELS ]                                             ! Proposed GeoStorm
+    N_GEOSTORM_CHANNELS, &                                            ! Proposed GeoStorm
+    N_MASC_CHANNELS ]                                                 ! Proposed MASC
     
   ! The sensor channel numbers
   INTEGER, PARAMETER :: MSU_SENSOR_CHANNEL(N_MSU_CHANNELS)           =[(i,i=1,N_MSU_CHANNELS     )]
@@ -284,6 +288,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: HAMSR_SENSOR_CHANNEL(N_HAMSR_CHANNELS )      =[(i,i=1,N_HAMSR_CHANNELS   )]
   INTEGER, PARAMETER :: MICROMAS_SENSOR_CHANNEL(N_MICROMAS_CHANNELS) =[(i,i=1,N_MICROMAS_CHANNELS)]
   INTEGER, PARAMETER :: GEOSTORM_SENSOR_CHANNEL(N_GEOSTORM_CHANNELS) =[(i,i=1,N_GEOSTORM_CHANNELS)]
+  INTEGER, PARAMETER :: MASC_SENSOR_CHANNEL(N_MASC_CHANNELS)         =[(i,i=1,N_MASC_CHANNELS    )]
 
 
   !#----------------------------------------------------------------------------#
@@ -327,6 +332,7 @@ MODULE MW_SensorData_Define
   INTEGER, PARAMETER :: HAMSR_N_SIDEBANDS(N_HAMSR_CHANNELS)   = 1
   INTEGER, PARAMETER :: MICROMAS_N_SIDEBANDS(N_MICROMAS_CHANNELS) = 1
   INTEGER, PARAMETER :: GEOSTORM_N_SIDEBANDS(N_GEOSTORM_CHANNELS) = 1
+  INTEGER, PARAMETER :: MASC_N_SIDEBANDS(N_MASC_CHANNELS)         = 1
  
 
   !#----------------------------------------------------------------------------#
@@ -1579,6 +1585,15 @@ MODULE MW_SensorData_Define
   REAL(fp), PARAMETER :: GEOSTORM_IF_BAND( 2, MAX_N_SIDEBANDS, N_GEOSTORM_CHANNELS ) = ZERO
 
 
+  ! MASC dummy entry  
+  ! -------------------------------------------------------
+  ! Central frequency
+  REAL(fp), PARAMETER :: MASC_F0( N_MASC_CHANNELS ) = ZERO
+
+  ! I/F band limits in GHz.
+  REAL(fp), PARAMETER :: MASC_IF_BAND( 2, MAX_N_SIDEBANDS, N_MASC_CHANNELS ) = ZERO
+
+
   !#----------------------------------------------------------------------------#
   !                           Sensor polarization data
   !#----------------------------------------------------------------------------#
@@ -1926,6 +1941,10 @@ MODULE MW_SensorData_Define
   ! GeoStorm
   ! -------
   INTEGER, PARAMETER :: GEOSTORM_POLARIZATION( N_GEOSTORM_CHANNELS ) = HL_POLARIZATION
+
+  ! MASC
+  ! -------
+  INTEGER, PARAMETER :: MASC_POLARIZATION( N_MASC_CHANNELS )         = HL_POLARIZATION
 
 
 CONTAINS
@@ -2774,6 +2793,13 @@ CONTAINS
         MW_SensorData%Polarization      = GEOSTORM_POLARIZATION
         MW_SensorData%n_Sidebands       = GEOSTORM_N_SIDEBANDS
         MW_SensorData%IF_Band           = GEOSTORM_IF_BAND
+
+      CASE ('masc_cubesat')
+        MW_SensorData%Sensor_Channel    = MASC_SENSOR_CHANNEL
+        MW_SensorData%Central_Frequency = MASC_F0
+        MW_SensorData%Polarization      = MASC_POLARIZATION
+        MW_SensorData%n_Sidebands       = MASC_N_SIDEBANDS
+        MW_SensorData%IF_Band           = MASC_IF_BAND
 
 
       ! No match! Should never get here!
