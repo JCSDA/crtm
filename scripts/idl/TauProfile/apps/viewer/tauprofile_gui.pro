@@ -519,12 +519,6 @@ PRO TauProfile_GUI, $
       EVENT_PRO = 'tv_menu_open_event', $
       VALUE     = 'Open', $
       UVALUE    = 'FileOpen' )
-    ; ...File->Print
-    file_print_id = WIDGET_BUTTON( $
-      file_menu_id, $
-      EVENT_PRO = 'tv_menu_print_event', $
-      VALUE     = 'Print', $
-      UVALUE    = 'FilePrint' )
     ; ...File->Save-As
     tv_file_saveas_menu_id = WIDGET_BUTTON( $
       file_menu_id, $
