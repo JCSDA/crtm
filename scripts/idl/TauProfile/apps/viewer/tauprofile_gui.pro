@@ -76,7 +76,7 @@ END
 
 
 ;-------------------------------------------------
-PRO tv_menu_print_event, event
+PRO tv_menu_saveas_png_event, event
   COMPILE_OPT HIDDEN
   tv_getstate, event.Top, state
   IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
@@ -96,11 +96,37 @@ PRO tv_menu_print_event, event
   ; Save the plot to file
   state['tv_window_id'].SetCurrent
   MESSAGE, 'Creating output file ' + filename, /INFORMATIONAL
-  state['tv_window_id'].Save, filename, HEIGHT=850
+  state['tv_window_id'].Save, filename, HEIGHT=850, BORDER=10
 
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
 
+
+;-------------------------------------------------
+PRO tv_menu_saveas_pdf_event, event
+  COMPILE_OPT HIDDEN
+  tv_getstate, event.Top, state
+  IF ( state['debug'] ) THEN MESSAGE, 'Entered...', /INFORMATIONAL
+  
+  ; Get the current data position values
+  WIDGET_CONTROL, state['tv_slider_channel_id'], GET_VALUE=l
+  WIDGET_CONTROL, state['tv_slider_angle_id']  , GET_VALUE=i
+  WIDGET_CONTROL, state['tv_slider_profile_id'], GET_VALUE=m
+
+  ; Create the output filename
+  filename = FILE_BASENAME(state['filename'],'.nc') + $
+               '_channel'+STRTRIM((state['channel'])[l-1],2)  + $
+               '_angle'+STRING((state['angle'])[i-1],FORMAT='(f4.2)') + $
+               '_profile'+STRTRIM((state['profile'])[m-1],2) + $
+               '.pdf'
+
+  ; Save the plot to file
+  state['tv_window_id'].SetCurrent
+  MESSAGE, 'Creating output file ' + filename, /INFORMATIONAL
+  state['tv_window_id'].Save, filename, /LANDSCAPE
+
+  IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
+END
 
 
 ;-------------------------------------------------
@@ -113,7 +139,6 @@ PRO tv_slider_event, event
 
   IF ( state['debug'] ) THEN MESSAGE, '...Exiting', /INFORMATIONAL
 END
-
 
 
 ;-------------------------------------------------
@@ -433,6 +458,12 @@ PRO tv_load_file, file, id
   WIDGET_CONTROL, state['tv_button_wgtfn_id'] , /SENSITIVE
 
 
+  ; Sensitise the Save-As menu
+  WIDGET_CONTROL, $
+    state['tv_file_saveas_menu_id'], $
+    /SENSITIVE
+
+
   ; Save the state variable
   tv_setstate, id, state
 
@@ -494,6 +525,22 @@ PRO TauProfile_GUI, $
       EVENT_PRO = 'tv_menu_print_event', $
       VALUE     = 'Print', $
       UVALUE    = 'FilePrint' )
+    ; ...File->Save-As
+    tv_file_saveas_menu_id = WIDGET_BUTTON( $
+      file_menu_id, $
+      VALUE     = 'Save As', $
+      SENSITIVE = 0, $
+      /MENU )
+      ; ...File->Save-As->PNG
+      file_saveas_png_id = WIDGET_BUTTON( tv_file_saveas_menu_id, $
+        EVENT_PRO = 'tv_menu_saveas_png_event', $
+        VALUE     = 'PNG', $
+        UVALUE    = 'SaveAsPNG' )
+      ; ...File->Save-As->PDF
+      file_saveas_pdf_id = WIDGET_BUTTON( tv_file_saveas_menu_id, $
+        EVENT_PRO = 'tv_menu_saveas_pdf_event', $
+        VALUE     = 'PDF', $
+        UVALUE    = 'SaveAsPDF' )
     ; ...File->Exit
     file_exit_id = WIDGET_BUTTON( $
       file_menu_id, $
@@ -632,6 +679,7 @@ PRO TauProfile_GUI, $
   ; ...Boolean states
   state['debug'] = KEYWORD_SET(debug)
   ; ...Widget ids
+  state['tv_file_saveas_menu_id'] = tv_file_saveas_menu_id
   state['tv_slider_channel_id'] = tv_slider_channel_id
   state['tv_slider_angle_id'  ] = tv_slider_angle_id
   state['tv_slider_profile_id'] = tv_slider_profile_id
