@@ -1,0 +1,19 @@
+Release Notes: CRTM library v2.2.0
+
+$Revision$
+
+v2.2.0 - released April 13, 2015
+
+ * Made scientific changes to include
+     1. Overcast radiances
+     2. Reflection correction in microwave sea surface emissivity model for
+        non-precipitating clouds
+     3. ATMS snow emissivity model
+     4. Cloud optical property coefficient update for infrared ice clouds.
+     5. Software updates to address zeus meta-data server issues (file inquiries)
+     6. Implementation of the FASTEM-6 microwave sea surface emissivity model.
+
+ * Compute resource information
+ 
+     N/A. This is a library used in the GSI.
+
