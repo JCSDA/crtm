@@ -1,5 +1,5 @@
-JCSDA CRTM v2.2-alpha Build Instructions
-========================================
+JCSDA CRTM v2.2.x Build Instructions
+====================================
 
 $Revision$
 
@@ -161,7 +161,7 @@ test runs looks like:
         Check/example program for the CRTM Forward and K-Matrix 
         functions using big_endian coefficient datafiles
 
-        CRTM Version: REL-2.2_alpha
+        CRTM Version: REL-2.2.x
        **********************************************************
 
 
