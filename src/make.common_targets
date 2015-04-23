@@ -28,10 +28,6 @@
 all::
 	@echo "OS type detected: "`uname -s`
 	@case `uname -s` in \
-	  "SunOS")          make -f $(MAKE_FILE) build $(SUNOS_FLAGS) ;; \
-	  "AIX")            make -f $(MAKE_FILE) build $(AIX_FLAGS) ;; \
-	  "IRIX64")         make -f $(MAKE_FILE) build $(IRIX64_FLAGS) ;; \
-	  "HP-UX")          make -f $(MAKE_FILE) build $(HPUX_FLAGS) ;; \
 	  "Linux"|"Darwin") make -f $(MAKE_FILE) build $(LINUX_FLAGS) ;; \
 	  *) echo "This system is not supported" ;; \
        esac
@@ -89,47 +85,6 @@ timing::
 # ----------------------
 # Specific build targets
 # ----------------------
-# ...IBM AIX Compiler
-ibm_debug:
-	make -f $(MAKE_FILE) build $(AIX_FLAGS_DEBUG)
-
-ibm:
-	make -f $(MAKE_FILE) build $(AIX_FLAGS_PROD)
-
-ibm-debug: ibm_debug
-
-
-# ...HP-UX Compiler
-hp_debug:
-	make -f $(MAKE_FILE) build $(HPUX_FLAGS_DEBUG)
-
-hp:
-	make -f $(MAKE_FILE) build $(HPUX_FLAGS_PROD)
-
-hp-debug: hp_debug
-
-
-# ...SGI MIPSpro Compiler
-sgi_debug:
-	make -f $(MAKE_FILE) build $(IRIX64_FLAGS_DEBUG)
-
-sgi:
-	make -f $(MAKE_FILE) build $(IRIX64_FLAGS_PROD)
-
-sgi-debug: sgi_debug
-
-
-# ...SunOS Compiler
-sun_debug:
-	make -f $(MAKE_FILE) build $(SUNOS_FLAGS_DEBUG)
-
-sun:
-	make -f $(MAKE_FILE) build $(SUNOS_FLAGS_PROD)
-
-sun-debug: sun_debug
-
-
-# ...various linux compilers
 gfortran_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_DEBUG)
 
@@ -137,6 +92,7 @@ gfortran:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_GFORTRAN_PROD)
 
 gfortran-debug: gfortran_debug
+
 
 
 intel_debug:
@@ -154,14 +110,6 @@ ifort: intel
 ifort-debug: intel_debug
 
 
-lahey_debug:
-	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_DEBUG)
-
-lahey:
-	make -f $(MAKE_FILE) build $(LINUX_FLAGS_LAHEY_PROD)
-
-lahey-debug: lahey_debug
-
 
 pgi_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_PGI_DEBUG)
@@ -172,6 +120,7 @@ pgi:
 pgi-debug: pgi_debug
 
 
+
 g95_debug:
 	make -f $(MAKE_FILE) build $(LINUX_FLAGS_G95_DEBUG)
 
@@ -180,11 +129,3 @@ g95:
 
 g95-debug: g95_debug
 
-
-absoft_debug:
-	make -f $(MAKE_FILE) build $(LINUX_FLAGS_ABSOFT_DEBUG)
-
-absoft:
-	make -f $(MAKE_FILE) build $(LINUX_FLAGS_ABSOFT_PROD)
-
-absoft-debug: absoft_debug
