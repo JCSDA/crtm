@@ -90,177 +90,9 @@ COEFF_DIR = coefficients
 
 #################################################################################
 #                                                                               #
-#                      SPECIFIC PLATFORM FLAG SPECIFICATION                     #
+#                 SPECIFIC PLATFORM/COMPILER FLAG SPECIFICATION                 #
 #                                                                               #
 #################################################################################
-
-#-------------------------------------------------------------------------------#
-#                           -- IBM AIX xlf95 compiler --                        #
-#                                                                               #
-# NOTE: There are two sets of AIX flags.                                        #
-#       DEBUG and PRODUCTION.                                                   #
-#       See AIX_FLAGS definition for default.                                   #
-#-------------------------------------------------------------------------------#
-
-# The compiler and linker name
-NAME_AIX = xlf95
-
-# Compiler settings for DEBUG builds
-AIX_COMMON_FLAGS_DEBUG = -pg
-AIX_FLAGS_DEBUG = "FC=${NAME_AIX}" \
-	          "FL=${NAME_AIX}" \
-	          "FCFLAGS= -c \
-                            -qcheck \
-                            -qdbg \
-                            -qundef \
-                            -qextchk \
-                            -qflttrap=overflow:zerodivide:invalid:nanq:enable \
-                            -qinitauto=FF \
-                            -qfree=f90 \
-                            -qhalt=W \
-                            -qlanglvl=2003pure \
-                            -qxlf2003=nooldnaninf \
-                            -qmaxmem=-1 \
-                            -qsuffix=f=f90:cpp=F90 \
-		            -qsuppress=1518-319 \
-                            ${INCLUDES} \
-                            ${AIX_COMMON_FLAGS_DEBUG}" \
-	          "LDFLAGS= ${AIX_COMMON_FLAGS_DEBUG} \
-                            ${LIBRARIES} \
-                            -o" \
-                  "ENDIAN=Big_Endian"
-
-# Compiler settings for PRODUCTION builds
-AIX_COMMON_FLAGS_PROD = -O3
-AIX_FLAGS_PROD = "FC=${NAME_AIX}" \
-                 "FL=${NAME_AIX}" \
-                 "FCFLAGS= -c \
-                           -qdbg \
-                           -qundef \
-                           -qarch=auto \
-                           -qfree=f90 \
-                           -qhalt=W \
-                           -qlanglvl=2003pure \
-                           -qxlf2003=nooldnaninf \
-                           -qsuffix=f=f90:cpp=F90 \
-		           -qsuppress=1518-319 \
-                           -qstrict \
-                           -NS32768 \
-                           ${INCLUDES} \
-                           ${AIX_COMMON_FLAGS_PROD}" \
-                 "LDFLAGS= ${AIX_COMMON_FLAGS_PROD} \
-                           -lmass -lm \
-                           ${LIBRARIES} \
-                           -o" \
-                 "ENDIAN=Big_Endian"
-
-# Here set the DEFAULT AIX compiler flags
-AIX_FLAGS = $(AIX_FLAGS_DEBUG)
-
-
-
-#-------------------------------------------------------------------------------#
-#                              -- Sun Fortran 95 --                             #
-#-------------------------------------------------------------------------------#
-
-# The compiler and linker name
-NAME_SUNOS = f95
-
-# Only one set of compiler flags
-SUNOS_COMMON_FLAGS = 
-SUNOS_FLAGS = "FC=${NAME_SUNOS}" \
-	      "FL=${NAME_SUNOS}" \
-	      "FCFLAGS= -ansi \
-                        -c \
-                        -C \
-                        -fsimple=0 \
-                        -ftrap=overflow,division \
-                        -g \
-                        -w3 \
-                        ${INCLUDES} \
-                        ${SUNOS_COMMON_FLAGS}" \
-	      "LDFLAGS= ${SUNOS_COMMON_FLAGS} \
-                        ${LIBRARIES} \
-                        -o" \
-              "ENDIAN=Big_Endian"
-
-SUNOS_FLAGS_DEBUG = ${SUNOS_FLAGS)
-SUNOS_FLAGS_PROD  = ${SUNOS_FLAGS)
-
-
-
-#-------------------------------------------------------------------------------#
-#                    -- SGI IRIX64 MIPSpro f90 compiler --                      #
-#-------------------------------------------------------------------------------#
-
-# The compiler and linker name
-NAME_IRIX64 = f90
-
-# Only one set of compiler flags for 64-bit build
-IRIX64_COMMON_FLAGS = -64
-IRIX64_FLAGS = "FC=${NAME_IRIX64}" \
-	       "FL=${NAME_IRIX64}" \
-	       "FCFLAGS= -ansi \
-                         -c \
-                         -C \
-                         -DEBUG:suppress=399,878 \
-                         -fullwarn \
-                         -g \
-                         -bytereclen \
-                         -u \
-                         ${INCLUDES} \
-                         ${IRIX64_COMMON_FLAGS}" \
-	       "LDFLAGS= ${IRIX64_COMMON_FLAGS} \
-                         ${LIBRARIES} \
-                         -o" \
-               "ENDIAN=Big_Endian"
-
-IRIX64_FLAGS_DEBUG = ${IRIX64_FLAGS)
-IRIX64_FLAGS_PROD  = ${IRIX64_FLAGS)
-
-
-
-#-------------------------------------------------------------------------------#
-#                          -- HP-UX Fortran 90 (95) --                          #
-#-------------------------------------------------------------------------------#
-
-# The compiler and linker name
-NAME_HPUX = f90
-
-# Compiler settings for DEBUG builds
-HPUX_COMMON_FLAGS_DEBUG = 
-HPUX_FLAGS_DEBUG = "FC=${NAME_HPUX}" \
-                   "FL=${NAME_HPUX}" \
-                   "FCFLAGS= +ppu -c +fltconst_strict \
-                             ${INCLUDES} \
-                             ${HPUX_COMMON_FLAGS_DEBUG}" \
-                   "LDFLAGS= ${HPUX_COMMON_FLAGS_DEBUG} \
-                             ${LIBRARIES} \
-                             -o" \
-                   "ENDIAN=Big_Endian"
-
-
-# Compiler settings for PRODUCTION builds
-HPUX_COMMON_FLAGS_PROD = -O3
-HPUX_FLAGS_PROD = "FC=${NAME_HPUX}" \
-                  "FL=${NAME_HPUX}" \
-                  "FCFLAGS= +ppu -c +fltconst_strict \
-                            ${INCLUDES} \
-                            ${HPUX_COMMON_FLAGS_PROD}" \
-                  "LDFLAGS= ${HPUX_COMMON_FLAGS_PROD} \
-                            ${LIBRARIES} \
-                            -o" \
-                  "ENDIAN=Big_Endian"
-
-
-# Here set the DEFAULT HPUX compiler flags
-HPUX_FLAGS = $(HPUX_FLAGS_DEBUG)
-
-
-
-#-------------------------------------------------------------------------------#
-#                               -- Linux compilers --                           #
-#-------------------------------------------------------------------------------#
 
 # ---------------------------
 # gfortran compiler for linux
@@ -285,7 +117,7 @@ LINUX_FLAGS_GFORTRAN_DEBUG = "FC=${NAME_GFORTRAN}" \
                                        -ggdb \
 	                               -static \
                                        -Wall \
-                                       -std=f2003 \
+                                       -std=f2008 \
                                        ${INCLUDES} \
                                        ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG}" \
 	                     "LDFLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_DEBUG} \
@@ -309,7 +141,7 @@ LINUX_FLAGS_GFORTRAN_PROD = "FC=${NAME_GFORTRAN}" \
                                       -ggdb \
 	                              -static \
                                       -Wall \
-                                      -std=f2003 \
+                                      -std=f2008 \
                                       ${INCLUDES} \
                                       ${LINUX_COMMON_FLAGS_GFORTRAN_PROD}" \
 	                    "LDFLAGS= ${LINUX_COMMON_FLAGS_GFORTRAN_PROD} \
@@ -384,7 +216,7 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                                     -g \
                                     -check bounds \
                                     -convert big_endian \
-                                    -e03 \
+                                    -stand f08 \
                                     -traceback \
                                     -free \
                                     -assume byterecl \
@@ -404,6 +236,7 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 	                 "FCFLAGS= -c \
                                    -O2 \
                                    -convert big_endian \
+                                   -stand f08 \
                                    -free \
       	                           -assume byterecl \
                                    ${INCLUDES} \
@@ -415,53 +248,6 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
 
 # Here set the DEFAULT Intel compiler flags
 LINUX_FLAGS_INTEL = $(LINUX_FLAGS_INTEL_DEBUG)
-
-
-
-# ----------------------------
-# Lahey f95 compiler for linux
-# ----------------------------
-
-# The compiler and linker name
-NAME_LAHEY = lf95
-
-# Compiler settings for DEBUG builds
-LINUX_COMMON_FLAGS_LAHEY_DEBUG =
-LINUX_FLAGS_LAHEY_DEBUG = "FC=${NAME_LAHEY}" \
-	                  "FL=${NAME_LAHEY}" \
-	                  "FCFLAGS= -c \
-                                    -g \
-                                    --chk aesu \
-                                    --f95 \
-	                            --trace \
-                                    --trap \
-                                    --ninfo --warn \
-                                    ${INCLUDES} \
-                                    ${LINUX_COMMON_FLAGS_LAHEY_DEBUG}" \
-	                  "LDFLAGS= ${LINUX_COMMON_FLAGS_LAHEY_DEBUG} \
-                                    ${LIBRARIES} \
-                                    --staticlink \
-                                    -o" \
-                          "ENDIAN=Little_Endian"
-
-# Compiler settings for PRODUCTION builds
-LINUX_COMMON_FLAGS_LAHEY_PROD =
-LINUX_FLAGS_LAHEY_PROD = "FC=${NAME_LAHEY}" \
-	                 "FL=${NAME_LAHEY}" \
-	                 "FCFLAGS= -c \
-                                   --f95 \
-	                           --o1 \
-                                   --ninfo --warn \
-                                   ${INCLUDES} \
-                                   ${LINUX_COMMON_FLAGS_LAHEY_PROD}" \
-                         "LDFLAGS= ${LINUX_COMMON_FLAGS_LAHEY_PROD} \
-                                   ${LIBRARIES} \
-                                   --staticlink \
-                                   -o" \
-                         "ENDIAN=Little_Endian"
-
-# Here set the DEFAULT Lahey compiler flags
-LINUX_FLAGS_LAHEY = $(LINUX_FLAGS_LAHEY_DEBUG)
 
 
 # ----------------------
@@ -514,42 +300,13 @@ LINUX_FLAGS_G95_PROD = "FC=${NAME_G95}" \
 LINUX_FLAGS_G95 = $(LINUX_FLAGS_G95_DEBUG)
 
 
-# -----------------------------
-# Absoft f90 compiler for linux
-# -----------------------------
-
-# The compiler and linker name
-NAME_ABSOFT = f90
-
-# Only one set of compiler flags
-LINUX_COMMON_FLAGS_ABSOFT = 
-LINUX_FLAGS_ABSOFT = "FC=${NAME_ABSOFT}" \
-                     "FL=${NAME_ABSOFT}" \
-                     "FCFLAGS= -c \
-                               -B80 \
-                               -en \
-                               -g \
-                               -m0 \
-                               ${INCLUDES} \
-                               ${LINUX_COMMON_FLAGS_ABSOFT}" \
-                     "LDFLAGS= ${LINUX_COMMON_FLAGS_ABSOFT} \
-                               ${LIBRARIES} \
-                               -o" \
-                     "ENDIAN=Little_Endian"
-
-LINUX_FLAGS_ABSOFT_DEBUG = $(LINUX_FLAGS_ABSOFT)
-LINUX_FLAGS_ABSOFT_PROD  = $(LINUX_FLAGS_ABSOFT)
-
-
 # ---------------------------------------
 # Define the default Linux compiler flags
 # ---------------------------------------
 
 LINUX_FLAGS = $(LINUX_FLAGS_GFORTRAN)
 
-#LINUX_FLAGS = $(LINUX_FLAGS_LAHEY)
 #LINUX_FLAGS = $(LINUX_FLAGS_PGI)
 #LINUX_FLAGS = $(LINUX_FLAGS_INTEL)
 #LINUX_FLAGS = $(LINUX_FLAGS_G95)
-#LINUX_FLAGS = $(LINUX_FLAGS_ABSOFT)
 
