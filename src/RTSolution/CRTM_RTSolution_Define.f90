@@ -122,7 +122,7 @@ MODULE CRTM_RTSolution_Define
     INTEGER           :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     INTEGER           :: Sensor_Channel   = 0
     ! RT algorithm information
-    CHARACTER(STRLEN*5) :: RT_Algorithm_Name = ''
+    CHARACTER(STRLEN) :: RT_Algorithm_Name = ''
     ! Internal variables. Users do not need to worry about these.
     LOGICAL :: Scattering_Flag = .TRUE.
     INTEGER :: n_Full_Streams  = 0
@@ -405,9 +405,11 @@ CONTAINS
     WRITE(fid,'(3x,"Brightness Temperature   : ",es13.6)') RTSolution%Brightness_Temperature
     IF ( .NOT. CRTM_RTSolution_Associated(RTSolution) ) RETURN
     WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
-    WRITE(fid,'(3x,"Upwelling Radiance       :")')
+    WRITE(fid,'(3x,"Upwelling Overcast Radiance :")')
+    WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Upwelling_Overcast_Radiance
+    WRITE(fid,'(3x,"Upwelling Radiance :")')
     WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
-    WRITE(fid,'(3x,"Layer Optical Depth      :")')
+    WRITE(fid,'(3x,"Layer Optical Depth :")')
     WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Layer_Optical_Depth
   END SUBROUTINE Scalar_Inspect
 
@@ -1734,7 +1736,7 @@ CONTAINS
     END IF
 
 
-    ! Write the sensor info
+    ! Write the RT algorithm name
     WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
       rts%RT_Algorithm_Name
     IF ( io_stat /= 0 ) THEN
