@@ -2084,7 +2084,11 @@ CONTAINS
 
       ELSE IF ( SpcCoeff_IsInfraredSensor( SC(SensorIndex) ) ) THEN
 
-
+        Reflectivity_AD(1:nZ,1,1:nZ,1:nL) = SfcOptics_AD%Reflectivity(1:nZ,1,1:nZ,1:nL)
+        SfcOptics_AD%Reflectivity = ZERO        
+        Emissivity_AD(1:nZ,1:nL) = SfcOptics_AD%Emissivity(1:nZ,1:nL)
+        SfcOptics_AD%Emissivity = ZERO
+                
         ! ------------------------------------
         ! Infrared ICE emissivity/reflectivity
         ! ------------------------------------
