@@ -2088,7 +2088,9 @@ CONTAINS
         SfcOptics_AD%Reflectivity = ZERO        
         Emissivity_AD(1:nZ,1:nL) = SfcOptics_AD%Emissivity(1:nZ,1:nL)
         SfcOptics_AD%Emissivity = ZERO
-                
+        Direct_Reflectivity_AD(1:nZ,1) = SfcOptics_AD%Direct_Reflectivity(1:nZ,1)
+        SfcOptics_AD%Direct_Reflectivity(1:nZ,1) = ZERO
+                          
         ! ------------------------------------
         ! Infrared ICE emissivity/reflectivity
         ! ------------------------------------
@@ -2103,7 +2105,9 @@ CONTAINS
           SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) = &
             SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) + &
             (Reflectivity_AD(1:nZ,1:nL,1:nZ,1:nL)*Surface%Ice_Coverage)
-
+          SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) = &
+            SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) + &
+            (Direct_Reflectivity_AD(1:nZ,1:nL)*Surface%Ice_Coverage) 
           ! Compute the surface optics adjoints
           Error_Status = Compute_IR_Ice_SfcOptics_AD( SfcOptics_AD )
           IF ( Error_Status /= SUCCESS ) THEN
@@ -2130,7 +2134,9 @@ CONTAINS
           SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) = &
             SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) + &
             (Reflectivity_AD(1:nZ,1:nL,1:nZ,1:nL)*Surface%Snow_Coverage)
-
+          SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) = &
+            SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) + &
+            (Direct_Reflectivity_AD(1:nZ,1:nL)*Surface%Snow_Coverage) 
           ! Compute the surface optics adjoints
           Error_Status = Compute_IR_Snow_SfcOptics_AD( SfcOptics_AD )
           IF ( Error_Status /= SUCCESS ) THEN
@@ -2157,7 +2163,9 @@ CONTAINS
           SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) = &
             SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) + &
             (Reflectivity_AD(1:nZ,1:nL,1:nZ,1:nL)*Surface%Water_Coverage)
-
+          SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) = &
+            SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) + &
+            (Direct_Reflectivity_AD(1:nZ,1:nL)*Surface%Water_Coverage) 
           ! Compute the surface optics adjoints
           Error_Status = Compute_IR_Water_SfcOptics_AD( &
                            Surface     , &  ! Input
@@ -2192,7 +2200,9 @@ CONTAINS
           SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) = &
             SfcOptics_AD%Reflectivity(1:nZ,1:nL,1:nZ,1:nL) + &
             (Reflectivity_AD(1:nZ,1:nL,1:nZ,1:nL)*Surface%Land_Coverage)
-
+          SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) = &
+            SfcOptics_AD%Direct_Reflectivity(1:nZ,1:nL) + &
+            (Direct_Reflectivity_AD(1:nZ,1:nL)*Surface%Land_Coverage) 
           ! Compute the surface optics adjoints
           ! **STUB PROCEDURE**
           Error_Status = Compute_IR_Land_SfcOptics_AD( SfcOptics_AD )
