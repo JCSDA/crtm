@@ -32,3 +32,10 @@ alias crtmval="cd $CRTM_VALIDATION_ROOT"
 alias crtmconfig="cd $CRTM_CONFIG_ROOT"
 
 echo "All CRTM environment variables now rooted at ${CRTM_ROOT}"
+
+
+# Install scripts
+echo "Installing ${CRTM_ROOT} based scripts..."
+cd ${CRTM_SCRIPTS_ROOT}/shell
+crtm_install_scripts.sh
+cd ${CRTM_ROOT}
