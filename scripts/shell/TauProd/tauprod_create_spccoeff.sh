@@ -14,9 +14,20 @@
 #          [I]=sensorN_platformK:2 )
 #
 
+# Check for existence of SensorInfo
+if [ ! -f SensorInfo ]; then
+  echo "SensorInfo file not found"
+  exit 1
+fi
+
+
+# Link in the solar files
+link_solar.sh
+link_solar.sh dF_0.0025.Solar.nc
+
 
 # Define the sensors to be processed and their **NEW** data version number
-source ./create_spccoeff.config
+source ./tauprod_create_spccoeff.config
 
 
 # Loop over the sensors to convert
@@ -36,3 +47,7 @@ for (( element = 1 ; element <= ${#CONFIG[@]} ; element++ )) do
 	EOF
 
 done
+
+
+# Clean up
+rm -f *.Solar.nc *.signal

@@ -81,9 +81,9 @@ while getopts :hx OPTVAL; do
   esac
   # Parse the valid options
   case ${OPTVAL} in
-    h) usage | more; exit ${SUCCESS};;
-    x) script_id; set -x;;
-    \?) OPTVAL=${OPTARG}; break;;
+    h) usage | more; exit ${SUCCESS} ;;
+    x) script_id; set -x ;;
+    \?) OPTVAL=${OPTARG}; break ;;
   esac
 done
 # Remove the options processed
@@ -92,7 +92,7 @@ shift $(expr ${OPTIND} - 1)
 case ${OPTVAL} in
   # If OPTVAL contains nothing, then all options
   # have been successfully parsed
-  \?) break;;
+  \?) : ;;
   # Invalid option
   ?) usage; error_message " Invalid option '-${OPTARG}'"; exit ${FAILURE};;
 esac
@@ -137,9 +137,6 @@ if [ ! -f ${SOLAR_FILE} ]; then
     error_message "Error occuring linking ${SOLAR_FILE} to ${PWD}/${SOLAR_FILE}"
     exit ${FAILURE}
   fi
-else
-  error_message "${SOLAR_FILE} file already exists in this directory!"
-  exit ${FAILURE}
 fi
 
 
