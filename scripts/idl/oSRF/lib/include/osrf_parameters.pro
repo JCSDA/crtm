@@ -65,6 +65,11 @@
                                 on      : 1L, $  ; Is a difference
                                 status  : ['Not a difference', 'Difference'], $
                                 name    : 'Is_Difference_Flag' }
+  IS_HIRES_FLAG             = { position: 64L, $
+                                off     : 0L, $  ; Interpolation df is LORES
+                                on      : 1L, $  ; Interpolation df is HIRES
+                                status  : ['Low resolution', 'High resolution'], $
+                                name    : 'Is_HiRes_Flag' }
 
   ; Fixed dimensions
   N_PLANCK_COEFFS        = 2L
@@ -73,6 +78,11 @@
   ; Default infrared sensor interpolation frequencies
   DF_LORES = 0.1d0
   DF_HIRES = 0.0025d0
+
+  ; Cutoff response FRACTION for linear-only interpolation. All SRF data
+  ; *BELOW* this relative cutoff is *ALWAYS* linearly interpolated to
+  ;  minimise artifacts due to noise at these low levels
+  LINEAR_INTERPOLATION_CUTOFF_FRACTION = 0.01d0
 
   ; Data for polychromatic correction coefficient calculation.
   ; ...Limits for IR/MW sensors
