@@ -13,7 +13,8 @@
 ;         Is_Integrated        = Is_Integrated       , $  ; Input keyword
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
 ;         Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
-;         Is_Difference        = Is_Difference            ; Input keyword
+;         Is_Difference        = Is_Difference       , $  ; Input keyword
+;         Is_HiRes             = Is_HiRes                 ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
 ;       Debug:                 Set this keyword for debugging.
@@ -70,6 +71,15 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Is_HiRes:              Set this keyword to indicate the SRF data was interpolated
+;                              to a high resolution frequency grid.
+;                              If NOT SET => Interpolation frequency grid is LOW RESOLUTION. [DEFAULT]
+;                                 SET     => Interpolation frequency grid is HIGH RESOLUTION. 
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ; INCLUDE FILES:
 ;       osrf_parameters: Include file containing OSRF specific
 ;                        parameter value definitions.
@@ -97,7 +107,8 @@ PRO OSRF::Set_Flag, $
   Is_Integrated        = Is_Integrated       , $  ; Input keyword
   f0_Computed          = f0_Computed         , $  ; Input keyword
   Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
-  Is_Difference        = Is_Difference            ; Input keyword
+  Is_Difference        = Is_Difference       , $  ; Input keyword
+  Is_HiRes             = iS_HiRes                 ; Input keyword
 
 
   ; Set up
@@ -107,13 +118,15 @@ PRO OSRF::Set_Flag, $
   ; ...Set up error handler
   @osrf_pro_err_handler
  
-  
+
   ; Set flags
   IF ( KEYWORD_SET(Is_Interpolated     ) ) THEN self.Flags = self.Flags OR IS_INTERPOLATED_FLAG.position
   IF ( KEYWORD_SET(Is_Integrated       ) ) THEN self.Flags = self.Flags OR IS_INTEGRATED_FLAG.position          
   IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags OR F0_COMPUTED_FLAG.position          
   IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags OR LINEAR_INTERPOLATION_FLAG.position
   IF ( KEYWORD_SET(Is_Difference       ) ) THEN self.Flags = self.Flags OR IS_DIFFERENCE_FLAG.position          
+  IF ( KEYWORD_SET(Is_HiRes            ) ) THEN self.Flags = self.Flags OR IS_HIRES_FLAG.position          
+
 
 
   ; Output debug information

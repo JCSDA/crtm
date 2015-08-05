@@ -14,6 +14,7 @@
 ;         f0_Computed          = f0_Computed         , $  ; Input keyword
 ;         Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
 ;         Is_Difference        = Is_Difference       , $  ; Input keyword
+;         Is_HiRes             = Is_HiRes            , $  ; Input keyword
 ;         All                  = All                      ; Input keyword
 ;         
 ; INPUT KEYWORD PARAMETERS:
@@ -66,6 +67,14 @@
 ;                              DIMENSION:  Scalar
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       Is_HiRes:              Set this keyword to clear the corresponding flag.
+;                              Clearing this flag indicates the SRF data was
+;                              interpolated to a low resolution frequency grid.
+;                              UNITS:      N/A
+;                              TYPE:       INTEGER
+;                              DIMENSION:  Scalar
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       All:                   Set this keyword to clear ALL the OSRF bit flags.
 ;                              UNITS:      N/A
 ;                              TYPE:       INTEGER
@@ -104,6 +113,7 @@ PRO oSRF::Clear_Flag, $
   f0_Computed          = f0_Computed         , $  ; Input keyword
   Linear_Interpolation = Linear_Interpolation, $  ; Input keyword
   Is_Difference        = Is_Difference       , $  ; Input keyword
+  Is_HiRes             = Is_HiRes            , $  ; Input keyword
   All                  = All                      ; Input keyword
 
 
@@ -127,6 +137,7 @@ PRO oSRF::Clear_Flag, $
   IF ( KEYWORD_SET(f0_Computed         ) ) THEN self.Flags = self.Flags AND ( NOT F0_COMPUTED_FLAG.position          )
   IF ( KEYWORD_SET(Linear_Interpolation) ) THEN self.Flags = self.Flags AND ( NOT LINEAR_INTERPOLATION_FLAG.position )
   IF ( KEYWORD_SET(Is_Difference       ) ) THEN self.Flags = self.Flags AND ( NOT IS_DIFFERENCE_FLAG.position        )
+  IF ( KEYWORD_SET(Is_HiRes            ) ) THEN self.Flags = self.Flags AND ( NOT IS_HIRES_FLAG.position             )
   IF ( KEYWORD_SET(All                 ) ) THEN self.Flags = 0L
   
 END

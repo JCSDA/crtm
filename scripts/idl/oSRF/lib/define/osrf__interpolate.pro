@@ -94,18 +94,25 @@ PRO OSRF::Interpolate, $
 
 
   ; Perform the interpolation
-  FOR i = 0L, n_bands-1L DO BEGIN
+  FOR band = 1L, n_bands DO BEGIN
 
     ; Get band data
-    band = i+1
     self.Get_Property, band, Frequency=f, Response=r, Debug=Debug
     int_oSRF.Get_Property, band, Frequency=f_int, Debug=Debug
+
+    ; Perform linear interpolation everywhere first (it's cheap!)
+    r_int = INTERPOL( r, f, f_int )
     
-    ; Interpolate
-    IF ( self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG) ) THEN $
-      r_int = INTERPOL( r, f, f_int ) $
-    ELSE $
-      r_int = SPLINE( f, r, f_int, _sigma, /DOUBLE )
+    ; Now perform spline interpolation if necessary.
+    IF ( ~ self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG) ) THEN BEGIN
+      r_tmp = SPLINE( f, r, f_int, _sigma, /DOUBLE )
+      ; Only keep spline data above cutoff to minimise interpolation
+      ; artifacts due to noise at low levels in SRF responses
+      r_max = MAX(r_tmp)
+      r_cutoff = LINEAR_INTERPOLATION_CUTOFF_FRACTION * r_max
+      idx = WHERE( r_tmp GE r_cutoff, count )
+      IF ( count GT 0 ) THEN r_int[idx] = r_tmp[idx]
+    ENDIF
     
     ; Save the result
     int_oSRF.Set_Property, band, Response=r_int, Debug=Debug

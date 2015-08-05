@@ -61,5 +61,7 @@ PRO OSRF::Display_Flags, $
     LINEAR_INTERPOLATION_FLAG.status[self.Flag_Is_Set(LINEAR_INTERPOLATION_FLAG)]
   PRINT, IS_DIFFERENCE_FLAG.name, ' status: ', $
     IS_DIFFERENCE_FLAG.status[self.Flag_Is_Set(IS_DIFFERENCE_FLAG)]
+  PRINT, IS_HIRES_FLAG.name, ' status: ', $
+    IS_HIRES_FLAG.status[self.Flag_Is_Set(IS_HIRES_FLAG)]
 
 END

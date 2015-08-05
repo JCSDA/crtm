@@ -1,6 +1,8 @@
 ;+
 ; oSRF method to apply a response threshold to an SRF.
 ;
+; Note that the threshold is an ABSOLUTE, not relative value.
+;
 
 PRO oSRF::Apply_Response_Threshold, $
   Response_Threshold, $  ; Input

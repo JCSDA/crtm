@@ -5,6 +5,7 @@ FUNCTION f1_edge, f1, df
   f = HASH()
   FOR band = 1, n_bands DO BEGIN
     f[band] = DOUBLE(LONG(f1[band]*d))/d
+    WHILE (f[band] LT f1[band]) DO f[band] = f[band] + df
   ENDFOR
   RETURN, f
 END
@@ -16,9 +17,7 @@ FUNCTION f2_edge, f2, df
   f = HASH()
   FOR band = 1, n_bands DO BEGIN
     f[band] = DOUBLE(LONG(f2[band]*d)+1L)/d
-    remainder = f2[band] - LONG(f2[band]/df)*df  ; MOD doesn't always work.
-    IF ( (remainder EQ 0.0d0) AND (f[band] GT f2[band]) ) THEN $
-      f[band] = DOUBLE(LONG(f2[band]*d))/d
+    WHILE (f[band] GT f2[band]) DO  f[band] = f[band] - df
   ENDFOR
   RETURN, f
 END
@@ -48,8 +47,15 @@ PRO OSRF::Compute_Interpolation_Frequency, $
   @osrf_pro_err_handler
   ; ...Process keywords
   df = DF_LORES
-  IF ( KEYWORD_SET(HiRes)) THEN df = DF_HIRES
-  IF ( KEYWORD_SET(LoRes)) THEN df = DF_LORES
+  hires_flag = FALSE
+  IF ( KEYWORD_SET(HiRes)) THEN BEGIN
+    df = DF_HIRES
+    hires_flag = TRUE
+  ENDIF
+  IF ( KEYWORD_SET(LoRes)) THEN BEGIN
+    df = DF_LORES
+    hires_flag = FALSE
+  ENDIF
 
 
   ; Check if object has been allocated
@@ -95,6 +101,10 @@ PRO OSRF::Compute_Interpolation_Frequency, $
     Channel          = self.Channel              ; Input keyword
 
 
+  ; Set the interpolation resolution flag
+  new.Set_Flag, Is_HiRes = hires_flag
+  
+  
   ; Fill each band frequency array
   new.Get_Property, n_Bands=n_bands
   FOR i = 0L, n_bands-1L DO BEGIN
