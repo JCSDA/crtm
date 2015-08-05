@@ -7,13 +7,15 @@
 FUNCTION oSRF_Subtract, left, right, $
   Debug = debug
 
-
   ; Set up
   COMPILE_OPT HIDDEN
   ; ...OSRF parameters
   @osrf_parameters
   ; ...Set up error handler
   @osrf_func_err_handler
+  ; ...Define function parameters
+  FREQUENCY_COMPARISON_THRESHOLD = 1.0d-08
+  
 
   ; Exit if:
   ; ...Both arguments are not oSRF objects
@@ -84,55 +86,53 @@ FUNCTION oSRF_Subtract, left, right, $
       Debug      = debug
 
 
-    ; Get the encompassing frequency bounds
+    ; Get the min/max and encompassing frequency bounds
     f1 = MIN(left_f) > MIN(right_f)
     f2 = MAX(left_f) < MAX(right_f)
-    
-    idx = WHERE((left_f GE f1) AND (left_f LE f2), left_count)
+
+
+    ; Extract out the matching frequencies >= f1 and <= f2
+    ; ...Left side oSRF
+    left_idx[band] = WHERE((left_f GE f1-FREQUENCY_COMPARISON_THRESHOLD) AND $
+                           (left_f LE f2+FREQUENCY_COMPARISON_THRESHOLD), left_count)
     IF ( left_count EQ 0 ) THEN BEGIN
       MESSAGE, 'Left oSRF object' + cband + ' has no matching frequencies', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
-    left_avgdf = MEAN(left_f[idx[1:-1]] - left_f[idx[0:-2]], /DOUBLE)
-    
-    idx = WHERE((right_f GE f1) AND (right_f LE f2), right_count)
+    left_f = left_f[left_idx[band]]
+    ; ...Right side oSRF
+    right_idx[band] = WHERE((right_f GE f1-FREQUENCY_COMPARISON_THRESHOLD) AND $
+                            (right_f LE f2+FREQUENCY_COMPARISON_THRESHOLD), right_count)
     IF ( right_count EQ 0 ) THEN BEGIN
       MESSAGE, 'Right oSRF object' + cband + ' has no matching frequencies', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
-    right_avgdf = MEAN(right_f[idx[1:-1]] - right_f[idx[0:-2]], /DOUBLE)
+    right_f = right_f[right_idx[band]]
+
     
-    ; Check the count...
+    ; Determine if the two sets of frequencies match
+    ; ...The number of frequencies must be the same (duh)
     IF ( left_count NE right_count ) THEN BEGIN
-      MESSAGE, 'oSRF objects' + cband + ' frequency match failed', /INFORMATIONAL
+      MESSAGE, 'Frequency match for oSRF objects' + cband + ' yielded different sized arrays', /INFORMATIONAL
       RETURN, !NULL
     ENDIF
-    ; ...and average frequency interval (not sure if this will work for microwave)
-    IF ( ABS(left_avgdf-right_avgdf) GT (MACHAR(/DOUBLE)).EPS ) THEN BEGIN
-      MESSAGE, 'oSRF objects' + cband + ' frequency intervals are different', /INFORMATIONAL
+    ; ...The maximum difference between frequencies must be small
+    max_f_difference = MAX(ABS(left_f - right_f))
+    IF ( max_f_difference GT FREQUENCY_COMPARISON_THRESHOLD ) THEN BEGIN
+      MESSAGE, 'Frequency difference for oSRF objects' + cband + ' yielded maximum difference of ' + $
+               STRING(max_f_difference, FORMAT='(e13.6)'), /INFORMATIONAL
       RETURN, !NULL
     ENDIF
+
 
     ; Construct an array with ALL the frequencies
-    f = [left_f, right_f]
-    f = f[UNIQ(f,SORT(f))]
-    frequency[band] = f
-    
-    ; Save the band point count for allocation
-    n_points[band-1] = N_ELEMENTS(f)
+    ; If we get here, left_f == right_f
+    frequency[band] = left_f
 
-    ; Now get the indices to slot in SRF to ALL-frequency array
-    left_idx[band] = WHERE(f GE left_f[0]  AND f LE left_f[-1] , left_count)
-    IF ( left_count EQ 0 ) THEN BEGIN
-      MESSAGE, 'Left oSRF object' + cband + ' full index slot determination failed', /INFORMATIONAL
-      RETURN, !NULL
-    ENDIF
-    right_idx[band] = WHERE(f GE right_f[0] AND f LE right_f[-1], right_count)
-    IF ( left_count EQ 0 ) THEN BEGIN
-      MESSAGE, 'Right oSRF object' + cband + ' full index slot determination failed', /INFORMATIONAL
-      RETURN, !NULL
-    ENDIF
-    
+
+    ; Save the band point count for allocation
+    n_points[band-1] = left_count
+
   ENDFOR
     
 
@@ -165,10 +165,10 @@ FUNCTION oSRF_Subtract, left, right, $
 
     ; Slot the response spectra into the full frequency arrays
     left_response  = DBLARR(n_points[band-1])
-    left_response[left_idx[band]] = left_r
+    left_response = left_r[left_idx[band]]
     
     right_response = DBLARR(n_points[band-1])
-    right_response[right_idx[band]] = right_r
+    right_response = right_r[right_idx[band]]
     
 
     ; Difference them
