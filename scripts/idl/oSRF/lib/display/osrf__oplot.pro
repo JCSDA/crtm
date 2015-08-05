@@ -139,7 +139,7 @@ PRO OSRF::OPlot, $
                        _EXTRA   = extra, $
                        OVERPLOT = self.pRef[band] )
     ; ...Plot the central frequency position
-    !NULL = PLOT([f0,f0],[1.0d-09,10.0d0], $
+    !NULL = PLOT([f0,f0],(self.pRef[band]).YRANGE, $
                  LINESTYLE = 'dash', $
                  COLOR     = color, $
                  THICK     = thick, $

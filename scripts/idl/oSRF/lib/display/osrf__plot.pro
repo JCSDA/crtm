@@ -152,6 +152,7 @@ PRO OSRF::Plot, $
       df = 0.1*fdelta
       xrange = [f[0]-df,f[-1]+df]
     ENDIF
+    xstyle = 1
 
 
     ; Generate the yrange from 0->ymax+1%
@@ -165,6 +166,7 @@ PRO OSRF::Plot, $
       ytickformat = ''
     ENDELSE
     yrange = [ymin, ymax]
+    ystyle = 1
 
 
     ; Set the band-specific plotting parameters
@@ -183,8 +185,14 @@ PRO OSRF::Plot, $
     IF ( n_bands GT 1 ) THEN title = title +", band #" + STRTRIM(band,2)
     ; ...The yaxis title
     ytitle = "Relative response"
-    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN $
+    
+    
+    ; Modify stuff if it is a difference plot
+    IF ( self.Flag_Is_Set(IS_DIFFERENCE_FLAG, Debug=debug) ) THEN BEGIN
       ytitle = "$\Delta$(" + ytitle + ")"
+      yrange = !NULL
+      ystyle = 0
+    ENDIF
     
 
     ; Plot the band response
@@ -193,8 +201,10 @@ PRO OSRF::Plot, $
       TITLE          = title, $
       XTITLE         = xtitle, $
       YTITLE         = ytitle, $
-      XRANGE         = xrange, /XSTYLE, $
-      YRANGE         = yrange, /YSTYLE, $
+      XRANGE         = xrange, $
+      XSTYLE         = xstyle, $
+      YRANGE         = yrange, $
+      YSTYLE         = ystyle, $
       YLOG           = ylog, $
       YTICKFORMAT    = ytickformat, $
       XTICKLEN       = xticklen, $
