@@ -15,23 +15,37 @@ script_id()
 usage()
 {
   echo
-  echo "Usage: crtm_install_scripts.sh [-hux]"
+  echo "Usage: crtm_install_scripts.sh [-hux] [bindir]"
   echo
-  echo "  Utility script to link in the various CRTM shell scripts in ~/bin."
+  echo "  Utility script to link in the various CRTM shell scripts in a user directory"
+  echo "  to contain executable commands, bindir."
   echo
-  echo "  If ~/bin does not exist it is created and added to "'$PATH'" via export."
+  echo "  * If the optional bindir argument is not specified, the default is ~/bin."
+  echo
+  echo "  * If bindir does not exist it is created."
+  echo
+  echo '  * If bindir is not in $PATH a "crtmrc" file is created that can be sourced to'
+  echo '    add bindir to the $PATH in the current shell:'
+  echo "      $ . crtmrc"
   echo
   echo
   echo " Options:"
   echo
-  echo "  -h"
+  echo "   -h"
   echo "         Print this message."
   echo
-  echo "  -u"
-  echo "         Use this option to UNINSTALL (i.e. remove) the scripts in in ~/bin."
+  echo "   -u"
+  echo "         Use this option to UNINSTALL (i.e. remove) the CRTM scripts in bindir."
   echo
-  echo "  -x"
+  echo "   -x"
   echo "         Turn on execution tracing"
+  echo
+  echo
+  echo " Optional arguments:"
+  echo
+  echo "   bindir"
+  echo "         A specified directory in which to (un)install the scripts. If it is"
+  echo "         specified and does not exist it is created for installation."
   echo; echo
 }
 
@@ -66,8 +80,9 @@ REMOVE="rm -f"
 # ...Definitions
 SUCCESS=0; TRUE=0
 FAILURE=1; FALSE=1
-BINDIR="${HOME}/bin"
+BINDIR_DEFAULT="${HOME}/bin"
 INSTALL=${TRUE}
+SOURCEFILE="crtmrc"
 
 
 # Parse the command line options
@@ -96,6 +111,13 @@ case ${OPTVAL} in
 esac
 
 
+# Check if bindir has been specified
+BINDIR=${BINDIR_DEFAULT}
+if [ $# -ne 0 ]; then
+  BINDIR=$1
+fi
+
+
 # If no BINDIR for uninstallation, do nothing...
 if [ ! -d ${BINDIR} -a ${INSTALL} -eq ${FALSE} ]; then
   info_message "${BINDIR} does not exist. Cannot uninstall from a non-existant directory"
@@ -122,15 +144,19 @@ fi
 if [[ ":$PATH:" != *":$BINDIR:"* ]]; then
   info_message 'Your $PATH does NOT contain '"$BINDIR..."
   if [ ${INSTALL} -eq ${TRUE} ]; then
-    info_message "It is being added now, but for a permanent change modify your .bash_profile (or similar) file."
-    export PATH=${PATH}:${BINDIR}
-    echo $PATH
+    info_message 'Creating a crtmrc file with $PATH modification. For a permanent change modify your .bash_profile (or similar) file.'
+    echo "export PATH="'${PATH}'":${BINDIR}" > ${SOURCEFILE}
+    cat ${SOURCEFILE}
   fi
 fi
 
 
 # (Un)install all the scripts in BINDIR
-for SCRIPTDIR in `ls -d */`; do
+# ...Get the script directory list
+SCRIPTDIR_LIST=`ls -d`                          # current directory
+SCRIPTDIR_LIST="${SCRIPTDIR_LIST} `ls -d */`"   # subdirectories
+# ...Install from each directory.
+for SCRIPTDIR in ${SCRIPTDIR_LIST}; do
   (
     cd $SCRIPTDIR
     MSG_ROOT="`basename ${PWD}` scripts in ${BINDIR}"
