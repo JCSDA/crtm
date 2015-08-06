@@ -118,6 +118,14 @@ if [ $# -ne 0 ]; then
 fi
 
 
+# Check that the mandatory envars are defined
+if [ -z "${CRTM_ROOT}" -o -z "${CRTM_SCRIPTS_ROOT}" ]; then
+  error_message "CRTM_ROOT and CRTM_SCRIPTS_ROOT envars are not defined."
+  exit ${FAILURE}
+fi
+info_message "CRTM root directory is `basename ${CRTM_ROOT}`"
+
+
 # If no BINDIR for uninstallation, do nothing...
 if [ ! -d ${BINDIR} -a ${INSTALL} -eq ${FALSE} ]; then
   info_message "${BINDIR} does not exist. Cannot uninstall from a non-existant directory"
@@ -152,32 +160,35 @@ fi
 
 
 # (Un)install all the scripts in BINDIR
-# ...Get the script directory list
-SCRIPTDIR_LIST=`ls -d`                          # current directory
-SCRIPTDIR_LIST="${SCRIPTDIR_LIST} `ls -d */`"   # subdirectories
-# ...Install from each directory.
-for SCRIPTDIR in ${SCRIPTDIR_LIST}; do
-  (
-    cd $SCRIPTDIR
-    MSG_ROOT="`basename ${PWD}` scripts in ${BINDIR}"
-    
-    # Define the install type specifics
-    if [ ${INSTALL} -eq ${TRUE} ]; then
-      MSG_TYPE="Installing"
-      COMMAND='${LINK} ${PWD}/${SCRIPT} ${BINDIR}'
-    else
-      MSG_TYPE="Uninstalling"
-      COMMAND='${REMOVE} ${BINDIR}/${SCRIPT}'
-    fi
-    
-    # Perform the (un)installation
-    info_message "${MSG_TYPE} ${MSG_ROOT}..."
-    for SCRIPT in `ls *.sh`; do
-      eval "${COMMAND}"
-      if [ $? -ne 0 ]; then
-        error_message "${MSG_TYPE} ${MSG_ROOT} failed"
-        exit ${FAILURE}
+(
+  cd ${CRTM_SCRIPTS_ROOT}/shell
+  # ...Get the script directory list
+  SCRIPTDIR_LIST=`ls -d`                          # current directory
+  SCRIPTDIR_LIST="${SCRIPTDIR_LIST} `ls -d */`"   # subdirectories
+  # ...Install from each directory.
+  for SCRIPTDIR in ${SCRIPTDIR_LIST}; do
+    (
+      cd $SCRIPTDIR
+      MSG_ROOT="`basename ${PWD}` scripts in ${BINDIR}"
+      
+      # Define the install type specifics
+      if [ ${INSTALL} -eq ${TRUE} ]; then
+        MSG_TYPE="Installing"
+        COMMAND='${LINK} ${PWD}/${SCRIPT} ${BINDIR}'
+      else
+        MSG_TYPE="Uninstalling"
+        COMMAND='${REMOVE} ${BINDIR}/${SCRIPT}'
       fi
-    done
-  )
-done
+      
+      # Perform the (un)installation
+      info_message "${MSG_TYPE} ${MSG_ROOT}..."
+      for SCRIPT in `ls *.sh`; do
+        eval "${COMMAND}"
+        if [ $? -ne 0 ]; then
+          error_message "${MSG_TYPE} ${MSG_ROOT} failed"
+          exit ${FAILURE}
+        fi
+      done
+    )
+  done
+)
