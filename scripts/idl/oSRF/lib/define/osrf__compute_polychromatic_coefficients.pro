@@ -91,7 +91,7 @@ PRO OSRF::Compute_Polychromatic_Coefficients, $
   ENDFOR
   FREE_LUN, lun
   ; ...Check result
-  IF ( terror GT dT_threshold ) THEN BEGIN
+  IF ( (terror GT dT_threshold) AND KEYWORD_SET(debug) ) THEN BEGIN
     MESSAGE, 'Fit of effective temperatures yielded (Teff-Tfit) differences > ' + $
              STRING(dT_threshold,FORMAT='(e13.6)') + ". See " + STRTRIM(filename,2), $
              /INFORMATIONAL

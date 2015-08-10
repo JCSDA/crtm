@@ -63,18 +63,16 @@ PRO OSRF__Define
            Frequency           : HASH(),                         $  ; SRF band frequencies (nP x nB)
            Response            : HASH(),                         $  ; SRF band response    (nP x nB)
            Bandwidth           : HASH(),                         $  ; Passband width (nB)
-           ; Variables for plotting. Not copied if Assign() method is used.
-           wRef                : OBJ_NEW(),                      $  ; SRF Graphics window
-           pRef                : HASH(),                         $  ; SRF Passband plots
-           twRef               : OBJ_NEW(),                      $  ; Tfit Graphics window
-           tpRef               : OBJ_NEW(),                      $  ; Tfit plot
-
-           ; The following components are PRIVATE to the class
            ; ...Variables for radiometric calculations
            Radiance            : HASH(),                         $  ; Array of radiances (nP x nB)
            ; ...Variables for polychromatic correction calculations
            T                   : PTR_NEW(/ALLOCATE_HEAP),        $  ; Array of true temperatures
            Teff                : PTR_NEW(/ALLOCATE_HEAP),        $  ; Array of effective temperatures
-           Tfit                : PTR_NEW(/ALLOCATE_HEAP)         }  ; Array of fitted temperatures
+           Tfit                : PTR_NEW(/ALLOCATE_HEAP),        $  ; Array of fitted temperatures
+           ; ...Variables for plotting. Not copied if Assign() method is used.
+           wRef                : OBJ_NEW(),                      $  ; SRF Graphics window
+           pRef                : HASH(),                         $  ; SRF Passband plots
+           twRef               : OBJ_NEW(),                      $  ; Tfit Graphics window
+           tpRef               : OBJ_NEW()                       }  ; Tfit plot
 
 END

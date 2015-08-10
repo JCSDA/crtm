@@ -84,6 +84,16 @@
   ;  minimise artifacts due to noise at these low levels
   LINEAR_INTERPOLATION_CUTOFF_FRACTION = 0.01d0
 
+  ; Cutoff central frequency percentage difference parameters.
+  ; ...When a response threshold is applied to an SRF, if the percentage
+  ;    difference in the SRF central frequencies pre- and post-threshold
+  ;    differ by larger than this, a warning is issued.
+  FO_DIFFERENCE_PERCENTAGE_CUTOFF = 0.15d0
+  ; ...When the above cutoff is not satisfied, the user-supplied threshold
+  ;    is halved and applied again. If the cutoff is not satisfied after
+  ;    this number of attempts, the applied threshold is set to zero.
+  F0_DIFFERENCE_MAXIMUM_ITERATION = 5
+  
   ; Data for polychromatic correction coefficient calculation.
   ; ...Limits for IR/MW sensors
   BC_MIN_T = 150.0d0
