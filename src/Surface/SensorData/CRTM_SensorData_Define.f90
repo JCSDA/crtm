@@ -357,14 +357,12 @@ CONTAINS
       IsValid = .FALSE.
     ENDIF
     IF ( SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID ) THEN
-      msg = 'Invalid WMO Satellite Id found'
-      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
-      IsValid = .FALSE.
+      msg = 'Invalid WMO Satellite Id found. Continuing...'
+      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
     ENDIF
     IF ( SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
-      msg = 'Invalid WMO Sensor Id'
-      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
-      IsValid = .FALSE.
+      msg = 'Invalid WMO Sensor Id Continuing...'
+      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
     ENDIF
     ! ...Listed sensor channels
     IF ( ANY(SensorData%Sensor_Channel < 1) ) THEN
