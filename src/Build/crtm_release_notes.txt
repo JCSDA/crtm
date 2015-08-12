@@ -1,6 +1,19 @@
-Release Notes: CRTM library v2.2.1
+Release Notes: CRTM library v2.2.2
 
 $Revision$
+
+-----------------------------------------------------------
+v2.2.2 - released August 12, 2015
+
+ * Made minor code changes to include
+     1. Report invalid WMO Sensor and Satellite identifiers as a WARNING rather than ERROR.
+
+ * Made minor build changes to include
+     1. Modification of Intel ifort compiler flags as requested by GSI developers.
+
+ * Compute resource information
+     N/A. This is a library used in the GSI.
+
 
 -----------------------------------------------------------
 v2.2.1 - released April 20, 2015
