@@ -1,6 +1,16 @@
-Release Notes: CRTM library v2.2.2
+Release Notes: CRTM library v2.2.3
 
 $Revision$
+
+-----------------------------------------------------------
+v2.2.3 - released August 13, 2015
+
+ * Made minor fixfile changes to include
+     1. Corrected the WMO satellite id for DMSP-19 SSMIS in the CRTM fixfiles.
+
+ * Compute resource information
+     N/A. This is a library used in the GSI.
+
 
 -----------------------------------------------------------
 v2.2.2 - released August 12, 2015
