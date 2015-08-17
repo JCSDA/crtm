@@ -739,11 +739,6 @@ CONTAINS
                                            AAVar           )  ! Internal variable output
 
 
-          ! Compute the clear-sky atmospheric transmittance
-          ! for use in FASTEM-X reflection correction
-          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
-
-
           ! Compute the molecular scattering properties
           ! ...Solar radiation
           IF( SC(SensorIndex)%Solar_Irradiance(ChannelIndex) > ZERO .AND. &
@@ -824,12 +819,10 @@ CONTAINS
           RTSolution(ln,m)%SOD = AtmOptics%Scattering_Optical_Depth
 
 
-          ! Turn off FASTEM-X reflection correction for scattering conditions
-          IF ( CRTM_Include_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor( SC(SensorIndex) ) ) THEN
-            SfcOptics%Transmittance = -ONE
-          ELSE
-            SfcOptics%Transmittance = transmittance
-          END IF
+          ! Compute the all-sky atmospheric transmittance
+          ! for use in FASTEM-X reflection correction
+          CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
+          SfcOptics%Transmittance = transmittance
 
 
           ! Fill the SfcOptics structure for the optional emissivity input case.
@@ -1029,6 +1022,13 @@ CONTAINS
           ! ###################################################
 
 
+          ! Compute the adjoint of the all-sky atmospheric transmittance
+          ! for use in FASTEM-X reflection correction
+          transmittance_AD = SfcOptics_AD%transmittance
+          SfcOptics_AD%transmittance = ZERO
+          CALL CRTM_Compute_Transmittance_AD(AtmOptics,transmittance_AD,AtmOptics_AD)
+
+
           ! Compute the adjoint of the combined atmospheric optical properties
           IF( AtmOptics%Include_Scattering ) THEN
             CALL CRTM_Combine_AtmOptics_AD( AtmOptics, AtmOptics_AD, AOvar )
@@ -1089,14 +1089,6 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-          END IF
-
-
-          ! Compute the adjoint of the total atmospheric transmittance
-          IF ( CRTM_No_Scattering(AtmOptics) .AND. SpcCoeff_IsMicrowaveSensor(SC(SensorIndex)) ) THEN
-            transmittance_AD = SfcOptics_AD%transmittance
-            SfcOptics_AD%transmittance = ZERO
-            CALL CRTM_Compute_Transmittance_AD(AtmOptics,transmittance_AD,AtmOptics_AD)
           END IF
 
 
