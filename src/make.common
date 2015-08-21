@@ -1,0 +1,32 @@
+REMOVE = rm -f
+
+DVI_FILE = ${DOC_FILE:.tex=.dvi}
+PS_FILE  = ${DOC_FILE:.tex=.ps}
+PDF_FILE = ${DOC_FILE:.tex=.pdf}
+
+BIB_FILE = bibliography.bib
+
+all: tex
+
+tex: $(DOC_FILE)
+	@latex $(DOC_FILE); \
+	if [ -f ${BIB_FILE} ]; then \
+	  bibtex ${DOC_FILE:.tex=}; \
+	  latex $(DOC_FILE); \
+	fi; \
+	latex $(DOC_FILE)
+
+noref: $(DOC_FILE)
+	latex $(DOC_FILE)
+
+ps:
+	dvips -o ${PS_FILE} ${DVI_FILE}
+
+pdf:
+	dvipdfm $(DVI_FILE)
+
+clean:
+	$(REMOVE) *.aux *.dvi *.log *.out *.bbl *.blg *.toc *.lof *.lot
+
+realclean: clean
+	$(REMOVE) ${PS_FILE} ${PDF_FILE}

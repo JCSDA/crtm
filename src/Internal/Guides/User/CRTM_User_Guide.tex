@@ -1,0 +1,126 @@
+% The generic preamble
+\input{preamble}
+
+% Define included documents
+\includeonly{New,Introduction,Get,Build,Use,Interface,StructDef.appendix,SensorId.appendix,Migration.appendix,Utility.appendix}
+
+% Define fixed font for the various component names
+\newcommand{\Atmosphere}{\texttt{Atmosphere}}
+\newcommand{\Cloud}{\texttt{Cloud}}
+\newcommand{\Aerosol}{\texttt{Aerosol}}
+\newcommand{\Surface}{\texttt{Surface}}
+\newcommand{\Geometry}{\texttt{Geometry}}
+\newcommand{\GeometryInfo}{\texttt{GeometryInfo}}
+\newcommand{\ChannelInfo}{\texttt{ChannelInfo}}
+\newcommand{\Options}{\texttt{Options}}
+\newcommand{\SSUInput}{\texttt{SSU\_Input}}
+\newcommand{\ZeemanInput}{\texttt{Zeeman\_Input}}
+\newcommand{\AtmOptics}{\texttt{AtmOptics}}
+\newcommand{\SfcOptics}{\texttt{SfcOptics}}
+\newcommand{\RTSolution}{\texttt{RTSolution}}
+\newcommand{\SensorData}{\texttt{SensorData}}
+\newcommand{\AtmAbsorption}{\texttt{AtmAbsorption}}
+\newcommand{\AtmScatter}{\texttt{AtmScatter}}
+\newcommand{\CloudScatter}{\texttt{CloudScatter}}
+\newcommand{\AerosolScatter}{\texttt{AerosolScatter}}
+\newcommand{\SpcCoeff}{\texttt{SpcCoeff}}
+% Generic fixed font command for Fortran95 syntax
+\newcommand{\f}[1]{\texttt{#1}}
+% Table heading format
+\newcommand{\tblhd}[1]{\sffamily\textbf{#1}}
+
+%Argument formatting
+\newcommand{\inarg}[1]{\f{\textcolor{green}{#1}}}
+\newcommand{\outarg}[1]{\f{\textcolor{red}{#1}}}
+\newcommand{\optarg}[1]{\f{\textit{#1}}}
+
+% Define the adjoint operator with correct spacing
+\newcommand{\dstar}{\ensuremath{\delta^{*}\!}}
+%Define macro for radiance units
+\newcommand{\radunit}{mW/(m\ensuremath{^2}.sr.\invcm)}
+%Define command to hyperlink to CRTM Trac Tickets
+\newcommand{\ticket}[1]{\href{https://svnemc.ncep.noaa.gov/trac/crtm/ticket/#1}{{#1}}}
+
+\SVN $Date$
+\SVN $Revision$
+
+% Title info
+\title{v2.1 User Guide}
+\date{\SVNDate ; rev\SVNRevision}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%\draftwatermark
+
+% The front matter
+%=================
+\thispagestyle{empty}
+\vspace*{10cm}
+\begin{center}
+  {\sffamily\Large\bfseries Change History}
+  \begin{table}[htp]
+    \centering
+    \begin{tabular}{ p{2cm} p{3cm} p{8cm} }
+      \hline\\[-0.1cm]
+      \tblhd{Date} & \tblhd{Author} & \tblhd{Change}\\
+      \hline\hline\\[-0.2cm]
+      2012-06-11 & P.van Delst & Draft release.\\
+      \hline
+      2012-06-14 & P.van Delst & Draft \#2 and \#3 release.\\
+      \hline
+      2012-06-27 & P.van Delst & Draft \#4 and \#5 release.\\
+      \hline
+      2012-07-11 & P.van Delst & Initial release.\\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+\clearpage
+
+% The frontmatter
+%================
+\setcounter{page}{1}
+\pagenumbering{roman}
+  \tableofcontents\newpage
+  \listoffigures\newpage
+  \listoftables\newpage
+  \include{New}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+% Include all the sections
+%=========================
+\include{Introduction}
+
+\include{Get}
+\include{Build}
+\include{Use}
+\include{Interface}
+
+
+% The references section
+%=======================
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+
+% The appendices
+%===============
+\begin{appendix}
+  \include{StructDef.appendix}
+  \include{SensorId.appendix}
+  \include{Migration.appendix}
+%  \include{Utility.appendix}
+\end{appendix}
+
+\end{document}
+

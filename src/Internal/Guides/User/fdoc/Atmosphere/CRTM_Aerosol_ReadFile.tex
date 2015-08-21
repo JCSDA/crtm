@@ -1,0 +1,69 @@
+\subsection{\texttt{CRTM\_Aerosol\_ReadFile} interface}
+  \label{sec:CRTM_Aerosol_ReadFile_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Aerosol_ReadFile
+ 
+  PURPOSE:
+        Function to read CRTM Aerosol object files.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Aerosol_ReadFile( Filename               , &
+                                              Aerosol                , &
+                                              Quiet      = Quiet     , &
+                                              No_Close   = No_Close  , &
+                                              n_Aerosols = n_Aerosols  )
+ 
+  INPUTS:
+        Filename:       Character string specifying the name of a
+                        Aerosol format data file to read.
+                        UNITS:      N/A
+                        TYPE:       CHARACTER(*)
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUTS:
+        Aerosol:        CRTM Aerosol object array containing the Aerosol data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Aerosol_type
+                        DIMENSION:  Rank-1
+                        ATTRIBUTES: INTENT(OUT)
+ 
+  OPTIONAL INPUTS:
+        Quiet:          Set this logical argument to suppress INFORMATION
+                        messages being printed to stdout
+                        If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+                           == .TRUE.,  INFORMATION messages are SUPPRESSED.
+                        If not specified, default is .FALSE.
+                        UNITS:      N/A
+                        TYPE:       LOGICAL
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        No_Close:       Set this logical argument to NOT close the file upon exit.
+                        If == .FALSE., the input file is closed upon exit [DEFAULT]
+                           == .TRUE.,  the input file is NOT closed upon exit.
+                        If not specified, default is .FALSE.
+                        UNITS:      N/A
+                        TYPE:       LOGICAL
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  OPTIONAL OUTPUTS:
+        n_Aerosols:     The actual number of aerosol profiles read in.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS, the file read was successful
+                           == FAILURE, an unrecoverable error occurred.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  \end{alltt}
