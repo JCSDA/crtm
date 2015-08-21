@@ -37,5 +37,5 @@ echo "All CRTM environment variables now rooted at ${CRTM_ROOT}"
 # Install scripts
 echo "Installing ${CRTM_ROOT} based scripts..."
 cd ${CRTM_SCRIPTS_ROOT}/shell
-crtm_install_scripts.sh
+./crtm_install_scripts.sh
 cd ${CRTM_ROOT}
