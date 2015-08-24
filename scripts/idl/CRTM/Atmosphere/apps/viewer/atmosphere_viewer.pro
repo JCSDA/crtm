@@ -931,6 +931,9 @@ PRO av_load_file, file, id
   WIDGET_CONTROL, $
     state['av_button_channel_id'], $
     SENSITIVE = (data['n_channels'] GT 1)
+  WIDGET_CONTROL, $
+    state['av_button_tartan_id'], $
+    SENSITIVE = (data['n_channels'] GT 1)
 
 
   ; Set/Sensitise the remaining slider widgets
@@ -1233,6 +1236,7 @@ PRO Atmosphere_Viewer, $
   state['av_displaytype_button_base_id'] = av_displaytype_button_base_id
   state['av_button_layer_id'           ] = av_button_layer_id
   state['av_button_channel_id'         ] = av_button_channel_id
+  state['av_button_tartan_id'          ] = av_button_tartan_id
   state['av_slider_profile_id'] = av_slider_profile_id
   state['av_slider_cloud_id'  ] = av_slider_cloud_id
   state['av_slider_aerosol_id'] = av_slider_aerosol_id
