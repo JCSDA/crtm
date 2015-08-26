@@ -1,22 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 
-# --------------------------
-# Usage description function
-# --------------------------
+# Script to display the values of the CRTM environment variables
+# in the current session.
+#
+# $Id$
+
+script_id()
+{
+  REVISION='$Revision$'
+  LAST_CHANGED_DATE='$LastChangedDate: $'
+  echo
+  echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
+  echo " "`date`
+  echo " Support email: NCEP.List.EMC.JCSDA_CRTM.Support@noaa.gov"
+}
+
 usage()
 {
   echo
-  echo $1
+  echo " Usage: crtm_env.sh [-hx] [-o [file]]"
   echo
-  echo "   Shell script to display the values of the CRTM environment variables"
-  echo "   as they relate to a particular working copy:"
+  echo "   Script to display the values of the CRTM environment variables"
+  echo "   in the current session."
+  echo
+  echo "   The CRTM envars displayed are:"
   echo "     CRTM_ROOT           : The CRTM working copy root directory"
   echo "     CRTM_SOURCE_ROOT    : The CRTM source code subdirectory"
   echo "     CRTM_FIXFILE_ROOT   : The CRTM fixed file subdirectory"
   echo "     CRTM_TEST_ROOT      : The CRTM test code subdirectory"
   echo "     CRTM_EXTERNALS_ROOT : The CRTM externals subdirectory"
   echo "     CRTM_SCRIPTS_ROOT   : The CRTM scripts subdirectory"
-  echo "     CRTM_DOC_ROOT       : The CRTM documents subdirectory"
   echo "     CRTM_VALIDATION_ROOT: The CRTM validation subdirectory"
   echo "     CRTM_CONFIG_ROOT    : The CRTM configuration subdirectory"
   echo
@@ -25,23 +38,34 @@ usage()
   echo "         them, make sure you know what you are doing!"
   echo
   echo
-  echo "   Usage: crtm_env [-h] [-o [file]]"
+  echo " Options:"
+  echo "   -h"
+  echo "         Print this message and exit"
   echo
-  echo "   -o    Output envar settings to file for export. If no file is"
+  echo "   -x"
+  echo "         Turn on execution tracing"
+  echo
+  echo "   -o [file]"
+  echo "         Output envar settings to file for export. If no file is"
   echo '         specified, the default is $HOME/.crtm_env'
-  echo
-  echo "   -h    Print this message and exit"
   echo
 }
 
 
-# -----------------------------
-# Error message output function
-# -----------------------------
 error_message()
 {
   MESSAGE=$1
-  echo; echo "${SCRIPT_NAME}(ERROR): ${MESSAGE}"
+  echo >&2
+  echo "  *********************" >&2
+  echo "  ${SCRIPT_NAME}(ERROR): ${MESSAGE}" >&2
+  echo "  *********************" >&2
+}
+
+
+info_message()
+{
+  MESSAGE=$1
+  echo "  ${SCRIPT_NAME}(INFORMATION): ${MESSAGE}"
 }
 
 
@@ -49,103 +73,76 @@ error_message()
 #                           MAIN SCRIPT BEGINS                         #
 ########################################################################
 
-# ---------------------
-# Setup and definitions
-# ---------------------
-# Version control info
-VERSION_ID='$Id$'
+# Set up
+# ...Script name for error messages
+SCRIPT_NAME=$(basename $BASH_SOURCE)
+# ...Version number for output file
+VERSION_ID='$Revision$'
+# ...Definitions
+SUCCESS=0; TRUE=0
+FAILURE=1; FALSE=1
+# ...Defaults
+OUTPUT=${FALSE}
+OUTPUT_FILE_DEFAULT="${HOME}/.crtm_env"
 
-# The name of the script for message output
-SCRIPT_NAME="`basename $0`"
 
-# No output by default
-OUTPUT="NO"
-OUTPUT_DEFAULT="${HOME}/.crtm_env"
-
-
-# ------------------------------
 # Parse the command line options
-# ------------------------------
 while getopts :hxo: OPTVAL; do
-
-  # If option argument looks like
-  # another option exit the loop
+  # Exit if option argument looks like another option
   case ${OPTARG} in
-    -*) break;;
+    -*) break ;;
   esac
-
-  # Parse the valid options here
+  # Parse the valid options
   case ${OPTVAL} in
-    x)  set -x;;
-    o)  OUTPUT="YES"; OUTPUT_FILE=${OPTARG};;
-    h)  usage "${VERSION_ID}"; exit 0;;
-    :|\?) OPTVAL=${OPTARG}; break;;
+    h)  usage | more; exit ${SUCCESS} ;;
+    x)  script_id; set -x ;;
+    o)  OUTPUT=${TRUE}; OUTPUT_FILE=${OPTARG} ;;
+    \?) OPTVAL=${OPTARG}; break ;;
   esac
 done
-
-# Remove the options processed
-# ----------------------------
+# ...Remove the options processed
 shift $((OPTIND - 1))
-
-# Now output invalidities based on OPTVAL
-# Need to do this as getopts does not handle
-# the situations where an option is passed
-# as an argument to another option.
-# ------------------------------------------
+# ...Output invalidities based on OPTVAL
 case ${OPTVAL} in
-
-  # If OPTVAL contains nothing, then all
-  # options have been successfully parsed
-  \?) :;;
-
+  # If OPTVAL contains nothing, then all options
+  # have been successfully parsed
+  \?) : ;;
   # Valid option, but missing argument
-  o) OUTPUT="YES"
-     OUTPUT_FILE=${OUTPUT_DEFAULT};;
-                 
+  o) OUTPUT=${TRUE}
+     OUTPUT_FILE=${OUTPUT_FILE_DEFAULT} ;;
   # Invalid option
-  ?) usage "${VERSION_ID}"
+  ?) usage
      error_message "Invalid option '-${OPTARG}'"
-     exit 1;;
+     exit ${FAILURE} ;;
 esac
 
 
-# ----------------------
 # Create the output file
-# ----------------------
-if [ "${OUTPUT}" = "YES" ]; then
+if [ ${OUTPUT} -eq ${TRUE} ]; then
   echo "Creating output file ${OUTPUT_FILE}..."; echo
   echo "#" > ${OUTPUT_FILE}
-  echo "# ${VERSION_ID}" >> ${OUTPUT_FILE}
-  echo "# CRTM environment variables. This file created by ${SCRIPT_NAME}" >> ${OUTPUT_FILE}
+  echo "# This file created by ${SCRIPT_NAME} ${VERSION_ID}" >> ${OUTPUT_FILE}
+  echo "#" >> ${OUTPUT_FILE}
+  echo "# CRTM environment variables" >> ${OUTPUT_FILE}
   echo "#" >> ${OUTPUT_FILE}
 fi
   
   
-# ------------------
 # Display the envars
-# ------------------
 ENVAR_LIST="CRTM_ROOT \
             CRTM_SOURCE_ROOT \
             CRTM_FIXFILE_ROOT \
             CRTM_TEST_ROOT \
             CRTM_EXTERNALS_ROOT \
             CRTM_SCRIPTS_ROOT \
-            CRTM_DOC_ROOT \
             CRTM_VALIDATION_ROOT \
             CRTM_CONFIG_ROOT"
 for ENVAR in ${ENVAR_LIST}; do
   SETTING=`env | grep $ENVAR=`
   if [ -n "${SETTING}" ]; then
     echo ${SETTING}
-    if [ "${OUTPUT}" = "YES" ]; then
+    if [ ${OUTPUT} -eq ${TRUE} ]; then
       echo "export ${SETTING}" >> ${OUTPUT_FILE}
     fi
   fi
 done
-
-
-# ----
-# Done
-# ----
-set +x
-exit 0

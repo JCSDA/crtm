@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Script to perform a clean rebuild of the CRTM library
 #
@@ -90,7 +90,7 @@ shift $((OPTIND - 1))
 case ${OPTVAL} in
   # If OPTVAL contains nothing, then all options
   # have been successfully parsed.
-  \?) break ;;
+  \?) : ;;
   # Valid options, but missing arguments
   c) usage
      error_message "'-${OPTVAL}' option requires an argument"
@@ -98,7 +98,7 @@ case ${OPTVAL} in
   # Invalid option
   ?) usage
      error_message "Invalid option '-${OPTARG}'"
-     exit ${FAILURE};;
+     exit ${FAILURE} ;;
 esac
 
 

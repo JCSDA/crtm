@@ -18,16 +18,16 @@ script_id()
 usage()
 {
   echo
-  echo " Usage: crtm_cleanup.sh [--help|-h] [--exec-trace|-x]"
+  echo " Usage: crtm_cleanup.sh [-hx]"
   echo
   echo "   Script to clean up a CRTM working copy, removing the library build"
   echo "   products as well as the regression builds and results."
   echo
   echo " Options:"
-  echo "   --help"
+  echo "   -h"
   echo "         Print this message and exit"
   echo
-  echo "   --exec-trace"
+  echo "   -x"
   echo "         Turn on execution tracing"
   echo
   echo
@@ -58,30 +58,36 @@ info_message()
 # Setup
 SCRIPT_NAME=`basename $0`
 # ...Definitions
-SUCCESS=0
-FAILURE=1
-FALSE=0
-TRUE=1
+SUCCESS=0; TRUE=0
+FAILURE=1; FALSE=1
 REMOVE="rm -fr"
-# ...Parse command line options
-while [[ $# > 0 ]]; do
-  KEY="$1"
-  case ${KEY} in
-    -x|--exec-trace)
-      script_id
-      set -x
-      shift ;;
 
-    -h|--help) 
-      usage | more
-      exit ${SUCCESS} ;;
 
-    *)
-      usage
-      error_message "Invalid option ${KEY}"
-      exit ${FAILURE} ;;
+# Parse the command line options
+while getopts :hx OPTVAL; do
+  # Exit if option argument looks like another option
+  case ${OPTARG} in
+    -*) break ;;
+  esac
+  # Parse the valid options
+  case ${OPTVAL} in
+    h)  usage | more; exit ${SUCCESS} ;;
+    x)  script_id; set -x ;;
+    \?) OPTVAL=${OPTARG}; break ;;
   esac
 done
+# ...Remove the options processed
+shift $((OPTIND - 1))
+# ...Output invalidities based on OPTVAL
+case ${OPTVAL} in
+  # If OPTVAL contains nothing, then all options
+  # have been successfully parsed
+  \?) : ;;
+  # Invalid option
+  ?) usage
+     error_message "Invalid option '-${OPTARG}'"
+     exit ${FAILURE} ;;
+esac
 
 
 # =================
