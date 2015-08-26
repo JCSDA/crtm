@@ -43,6 +43,14 @@ error_message()
 }
 
 
+info_message()
+{
+  MESSAGE=$1
+  echo "  ${SCRIPT_NAME}(INFORMATION): ${MESSAGE}"
+}
+
+
+
 ########################################################################
 #                           MAIN SCRIPT BEGINS                         #
 ########################################################################
@@ -115,6 +123,8 @@ elif [ -d ${CRTM_LIB_DIR} ]; then
     error_message "Error deleting the CRTM library directory, ${CRTM_LIB_DIR}"
     cd ${CURRENT_DIR}; exit ${FAILURE}
   fi
+else
+  info_message "No library build makefile or ${CRTM_LIB_DIR} directory. Nothing to cleanup!"
 fi
 
 
@@ -133,6 +143,8 @@ if [ -f Makefile ]; then
     error_message "Error cleaning up CRTM regression test build products"
     cd ${CURRENT_DIR}; exit ${FAILURE}
   fi
+else
+  info_message "No regression test makefile. Nothing to cleanup!"
 fi
 
 
