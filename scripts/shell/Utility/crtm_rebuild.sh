@@ -7,7 +7,7 @@
 script_id()
 {
   REVISION='$Revision$'
-  LAST_CHANGED_DATE='$LastChangedDate: $'
+  LAST_CHANGED_DATE='$LastChangedDate$'
   echo
   echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
   echo " "`date`
