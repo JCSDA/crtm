@@ -104,10 +104,9 @@ CRTM_LIB_DIR="crtm_${CRTM_VERSION}"
 # Clean up the library
 cd ${CRTM_SOURCE_ROOT}/Build
 if [ $? -ne 0 ]; then
-  error_message "Error changing to CRTM build directory, ${CRTM_SOURCE_ROOT}"
+  error_message "Error changing to CRTM build directory, ${CRTM_SOURCE_ROOT}/Build"
   cd ${CURRENT_DIR}; exit ${FAILURE}
 fi
-
 # ...Use makefile if it exists
 if [ -f Makefile ]; then
   # Uninstall library
@@ -122,6 +121,7 @@ if [ -f Makefile ]; then
     error_message "Error cleaning up CRTM library build products"
     cd ${CURRENT_DIR}; exit ${FAILURE}
   fi
+# ...Otherwise just delete the directory
 elif [ -d ${CRTM_LIB_DIR} ]; then
   # Explicitly delete the library directory
   ${REMOVE} ${CRTM_LIB_DIR}
@@ -131,6 +131,19 @@ elif [ -d ${CRTM_LIB_DIR} ]; then
   fi
 else
   info_message "No library build makefile or ${CRTM_LIB_DIR} directory. Nothing to cleanup!"
+fi
+
+
+# Clean up the source links
+cd ${CRTM_SOURCE_ROOT}
+if [ $? -ne 0 ]; then
+  error_message "Error changing to CRTM source directory, ${CRTM_SOURCE_ROOT}"
+  cd ${CURRENT_DIR}; exit ${FAILURE}
+fi
+make realclean
+if [ $? -ne 0 ]; then
+  error_message "Error cleaning up CRTM library source links"
+  cd ${CURRENT_DIR}; exit ${FAILURE}
 fi
 
 
