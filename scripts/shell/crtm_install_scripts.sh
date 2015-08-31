@@ -83,6 +83,7 @@ FAILURE=1; FALSE=1
 BINDIR_DEFAULT="${HOME}/bin"
 INSTALL=${TRUE}
 SOURCEFILE="crtmrc"
+SCRIPTFILE_GLOB="*.sh"  # Only files matching this glob are installed
 
 
 # Parse the command line options
@@ -168,7 +169,13 @@ fi
   # ...Install from each directory.
   for SCRIPTDIR in ${SCRIPTDIR_LIST}; do
     (
+      # Enter directory, but skip if no scripts
       cd $SCRIPTDIR
+      if [ -z "$(find . -maxdepth 1 -name "${SCRIPTFILE_GLOB}" -print -quit)" ]; then
+        continue
+      fi
+      
+      # Define the info message root to output
       MSG_ROOT="`basename ${PWD}` scripts in ${BINDIR}"
       
       # Define the install type specifics
@@ -182,7 +189,7 @@ fi
       
       # Perform the (un)installation
       info_message "${MSG_TYPE} ${MSG_ROOT}..."
-      for SCRIPT in `ls *.sh`; do
+      for SCRIPT in `ls ${SCRIPTFILE_GLOB}`; do
         eval "${COMMAND}"
         if [ $? -ne 0 ]; then
           error_message "${MSG_TYPE} ${MSG_ROOT} failed"
