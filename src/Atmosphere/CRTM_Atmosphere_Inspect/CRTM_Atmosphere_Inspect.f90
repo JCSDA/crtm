@@ -31,11 +31,13 @@ PROGRAM CRTM_Atmosphere_Inspect
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
+
   ! ---------
   ! Variables
   ! ---------
-  INTEGER :: err_stat, alloc_stat
   CHARACTER(256) :: filename, msg
+  INTEGER :: n_args
+  INTEGER :: err_stat, alloc_stat
   INTEGER :: n_channels, n_profiles, l, m
   TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: r1_atm(:), r2_atm(:,:)
 
@@ -46,8 +48,13 @@ PROGRAM CRTM_Atmosphere_Inspect
                         '$Revision$' )
 
   ! Get the filename
-  WRITE( *,FMT='(/5x,"Enter the CRTM Atmosphere filename: ")',ADVANCE='NO' )
-  READ( *,'(a)' ) filename
+  n_args = COMMAND_ARGUMENT_COUNT()
+  IF ( n_args > 0 ) THEN
+    CALL GET_COMMAND_ARGUMENT(1, filename)
+  ELSE
+    WRITE( *,FMT='(/5x,"Enter the CRTM Atmosphere filename: ")',ADVANCE='NO' )
+    READ( *,'(a)' ) filename
+  END IF
   filename = ADJUSTL(filename)
   IF ( .NOT. File_Exists( TRIM(filename) ) ) THEN
     msg = 'File '//TRIM(filename)//' not found.'
