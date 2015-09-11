@@ -942,7 +942,7 @@ CONTAINS
 
 
     ! Calculate initial level total number density
-    CALL PP_to_ND( Sublevel_Pressure(1), Sublevel_Temperature(1), Sublevel_RHOair_nm1 )
+    CALL PP_to_ND( Sublevel_Temperature(1), Sublevel_Pressure(1), Sublevel_RHOair_nm1 )
 
 
     ! Begin layer loop
@@ -965,7 +965,7 @@ CONTAINS
 
 
         ! Calculate current top of sublayer total number density
-        CALL PP_to_ND( Sublevel_Pressure(n+1), Sublevel_Temperature(n+1), Sublevel_RHOair )
+        CALL PP_to_ND( Sublevel_Temperature(n+1), Sublevel_Pressure(n+1), Sublevel_RHOair )
 
 
         ! Perform the summation for the density weighted layer temperature
