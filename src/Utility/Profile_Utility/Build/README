@@ -142,7 +142,7 @@ output from the (successful) test runs looks like:
  test_level_layer_conversion(INFORMATION) : Layer nitrogen        consistent. ULP =  3, %MAX(|Diff|) =  1.383177E-14
        Testing EFFECTIVE_LAYER_TP routine test....
  test_level_layer_conversion(INFORMATION) : Effective layer pressure    consistent. ULP =  5, %MAX(|Diff|) =  3.796310E-14
- test_level_layer_conversion(INFORMATION) : Effective layer temperature consistent. ULP =  3, %MAX(|Diff|) =  1.994595E-14
+ test_level_layer_conversion(INFORMATION) : Effective layer temperature consistent. ULP =  5, %MAX(|Diff|) =  4.878419E-14
      SUCCESS!
 
 ----------------------------------------
@@ -165,14 +165,14 @@ directory follows the convention:
 
   <library name>_<version>
 
-So, if the a library version (say, v1.0.0) build was configured with --prefix=$PWD,
+So, if the a library version (say, v1.0.1) build was configured with --prefix=$PWD,
 then the installation directory will be
 
-  ${PWD}/profile_utility_v1.0.0
+  ${PWD}/profile_utility_v1.0.1
 
 The directory structure is shown below:
 
-  profile_utility_v1.0.0/
+  profile_utility_v1.0.1/
     |--config.log
     |--include/
     |    |--atmospheric_properties.mod
@@ -190,8 +190,8 @@ in this structure in your own application, the usual environment variables
 would be modified something like:
 
   libroot="$HOME/local"
-  FCFLAGS="-I${libroot}/profile_utility_v1.0.0/include ${FCFLAGS}"
-  LDFLAGS="-L${libroot}/profile_utility_v1.0.0/lib ${LDFLAGS}"
+  FCFLAGS="-I${libroot}/profile_utility_v1.0.1/include ${FCFLAGS}"
+  LDFLAGS="-L${libroot}/profile_utility_v1.0.1/lib ${LDFLAGS}"
   LIBS="-lprofile_utility"
 
 
@@ -206,12 +206,12 @@ contents somewhere else) you can type:
   $ make uninstall
 
 This will delete the created installation directory. So, for a library version
-(say, v1.0.0), if your configure script invocation
+(say, v1.0.1), if your configure script invocation
 was something like
 
   $ ./configure --prefix=${PWD} ...other command line arguments...
 
-then the "uninstall" target will delete the "${PWD}/profile_utility_v1.0.0" directory.
+then the "uninstall" target will delete the "${PWD}/profile_utility_v1.0.1" directory.
 
 
 
