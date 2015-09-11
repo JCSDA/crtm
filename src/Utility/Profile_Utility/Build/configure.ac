@@ -3,7 +3,7 @@ AC_REVISION($Id: $)
 
 
 ## Initialise autoconf
-AC_INIT([Profile Utility], [v1.0.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [profile_utility])
+AC_INIT([Profile Utility], m4_esyscmd([tr -d "\n'" < libsrc/Profile_Utility_Version.inc]), [ncep.list.emc.jcsda_crtm.support@noaa.gov], [profile_utility])
 
 
 # Output info for user
@@ -11,7 +11,7 @@ AC_MSG_NOTICE([AC_PACKAGE_NAME AC_PACKAGE_VERSION])
 
 
 # Check for existence of unique file before proceeding
-AC_CONFIG_SRCDIR([libsrc/Profile_Utility.f90])
+AC_CONFIG_SRCDIR([libsrc/Profile_Utility.fpp])
 
 
 # Define the configuration files
@@ -32,6 +32,19 @@ AC_SUBST(ARFLAGS)
 AC_LANG(Fortran)
 AC_FC_FREEFORM
 AC_FC_SRCEXT(f90)
+
+
+# Section for special cases for supported compilers
+# ...Special case the xlf2003 compiler to:
+#      a) recognise the .fpp (Fortran PreProcessor) suffix
+#      b) not insert "#line" directives when it encounters multiple empty lines
+if test "${FC}" = xlf2003; then
+  FPPFLAGS="-qsuffix=cpp=fpp -WF,-P $FPPFLAGS"
+fi
+
+
+# Generate variable substitutions
+AC_SUBST(FPPFLAGS)
 
 
 # Create the configure script
