@@ -36,7 +36,7 @@ distcheck:  $(distdir).tar.gz
 	echo
 
 $(distdir).tar.gz: $(distdir)
-	tar -chof - $(distdir) --exclude .svn | gzip -9 -c > $@
+	tar -chof - --exclude .svn $(distdir) | gzip -9 -c > $@
 	rm -rf $(distdir)
 
 $(distdir): FORCE
@@ -45,8 +45,10 @@ $(distdir): FORCE
 	cp configure $(distdir)
 	cp Makefile.in $(distdir)
 	cp install-sh $(distdir)
-	cp -rL libsrc $(distdir)/libsrc
-	cp -rL config-setup $(distdir)/config-setup
+	cp README $(distdir)
+	cp make_profile_utility_lib.sh $(distdir)
+	cp -RL libsrc $(distdir)/libsrc
+	cp -RL config-setup $(distdir)/config-setup
 
 Makefile: Makefile.in config.status
 	./config.status $@

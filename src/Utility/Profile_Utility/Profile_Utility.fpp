@@ -38,7 +38,7 @@ MODULE Profile_Utility
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   CHARACTER(*), PARAMETER :: LIBRARY_VERSION_ID = &
-  'v1.0.0'
+#include "Profile_Utility_Version.inc"
 
 
 CONTAINS

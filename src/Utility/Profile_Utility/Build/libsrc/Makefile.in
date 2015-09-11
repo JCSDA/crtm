@@ -35,16 +35,16 @@ all: library
 $(LIBRARY): $(OBJ_FILES)
 	$(AR) $(ARFLAGS) $@ $(OBJ_FILES)
 	$(RANLIB) $@
-        
+
 library: $(LIBRARY)
 
 clean:
 	cd test && $(MAKE) $@
-	-rm *.o *.mod *.a >/dev/null 2>&1
+	-rm -f *.o *.mod *.a >/dev/null 2>&1
 
 distclean:
 	cd test && $(MAKE) $@
-	-rm Makefile >/dev/null 2>&1
+	-rm -f Makefile >/dev/null 2>&1
 
 check: library
 	cd test && $(MAKE) $@
@@ -68,11 +68,6 @@ Makefile: Makefile.in ../config.status
 # Specify targets that do not generate filesystem objects
 .PHONY: all clean distclean check install uninstall
 
-# Dependency include files
+# File dependency and compilation rule include files
 include make.dependencies
-
-# Suffix rules
-.SUFFIXES:
-.SUFFIXES: .f90 .o
-.f90.o:
-	$(FC) $(EXTRA_FCFLAGS) $(FCFLAGS) $<
+include make.rules
