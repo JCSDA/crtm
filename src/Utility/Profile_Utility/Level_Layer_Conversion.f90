@@ -1056,31 +1056,29 @@ CONTAINS
         !
         ! This corresponds to ASUM (and eventually ALAY) in the
         ! UMBC KLAYERS code.
+        
+        ! ...First do water vapour (mandatory)
+        Sublayer_Absorber = 0.5_fp * ( Sublevel_Absorber(n+1,H2O_J_Index) + &
+                                       Sublevel_Absorber(n  ,H2O_J_Index) )
+        CALL PPMV_to_CD( Sublayer_Pressure   , &
+                         Sublayer_Temperature, &
+                         Sublayer_Absorber   , &
+                         Sublayer_dZ         , &
+                         Sublayer_Absorber_k   )
+        Water_Vapor = Sublayer_Absorber_k
+        Layer_Absorber_sum(H2O_J_Index) = Layer_Absorber_sum(H2O_J_Index) + Sublayer_Absorber_k
+        
+        ! ...Now do all the other gaseous absorbers
         Absorber_Sum_Loop: DO j = 1, n_Absorbers
-
-          ! Calculate simple average sublayer absorber in ppmv
+          IF ( j == H2O_J_Index ) CYCLE Absorber_Sum_Loop
           Sublayer_Absorber = 0.5_fp * ( Sublevel_Absorber(n+1,j) + Sublevel_Absorber(n,j) )
-
-          ! Convert to kmol.cm^-2
-          IF ( j == H2O_J_Index ) THEN
-            CALL PPMV_to_CD( Sublayer_Pressure   , &
-                             Sublayer_Temperature, &
-                             Sublayer_Absorber   , &
-                             Sublayer_dZ         , &
-                             Sublayer_Absorber_k   )
-            Water_Vapor = Sublayer_Absorber_k
-          ELSE
-            CALL PPMV_to_CD( Sublayer_Pressure        , &
-                             Sublayer_Temperature     , &
-                             Sublayer_Absorber        , &
-                             Sublayer_dZ              , &
-                             SubLayer_Absorber_K      , &
-                             Water_Vapor = Water_Vapor  )
-          END IF
-
-          ! Sum the column density
+          CALL PPMV_to_CD( Sublayer_Pressure        , &
+                           Sublayer_Temperature     , &
+                           Sublayer_Absorber        , &
+                           Sublayer_dZ              , &
+                           SubLayer_Absorber_k      , &
+                           Water_Vapor = Water_Vapor  )
           Layer_Absorber_sum(j) = Layer_Absorber_sum(j) + Sublayer_Absorber_k
-
         END DO Absorber_Sum_Loop
 
 
