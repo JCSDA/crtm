@@ -35,9 +35,9 @@ MODULE Profile_Utility
 
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
-  CHARACTER(*), PARAMETER :: LIBRARY_VERSION_ID = &
+  CHARACTER(*), PRIVATE, PARAMETER :: LIBRARY_VERSION_ID = &
 #include "Profile_Utility_Version.inc"
 
 
