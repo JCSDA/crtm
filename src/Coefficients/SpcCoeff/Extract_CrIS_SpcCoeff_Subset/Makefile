@@ -23,11 +23,13 @@ SRC_FILES = Type_Kinds.f90 \
             Fundamental_Constants.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
-            List_File_Utility.f90 \
+            ListFile_Utility.f90 \
             Sort_Utility.f90 \
             String_Utility.f90 \
             Subset_Define.f90 \
             CrIS_Define.f90 \
+              Apodisation_Utility.f90 \
+              SPC_IFG_Utility.f90 \
             CrIS_Subset.f90 \
             SensorInfo_Parameters.f90 \
             SpcCoeff_Define.f90 \

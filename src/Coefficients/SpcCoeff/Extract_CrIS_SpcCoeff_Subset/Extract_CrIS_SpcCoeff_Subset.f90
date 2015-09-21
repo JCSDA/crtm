@@ -27,10 +27,10 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
   USE Type_Kinds        , ONLY: fp
   USE Message_Handler   , ONLY: SUCCESS, FAILURE, WARNING, INFORMATION, &
                                 Display_Message, Program_Message
-  USE List_File_Utility , ONLY: Integer_List_File_type, &
-                                Read_List_File, &
-                                Get_List_Size, &
-                                Get_List_Entry
+  USE ListFile_Utility  , ONLY: Integer_ListFile_type, &
+                                ListFile_ReadFile, &
+                                ListFile_GetSize, &
+                                ListFile_GetEntry
   USE SpcCoeff_Define   , ONLY: SpcCoeff_type, &
                                 SpcCoeff_Associated, &
                                 SpcCoeff_Create, &
@@ -74,8 +74,8 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
   INTEGER :: i, set
   INTEGER :: n_subset_channels
   INTEGER, ALLOCATABLE :: subset_list(:)
-  TYPE(Integer_List_File_type) :: user_subset_list
-  TYPE(SpcCoeff_type)          :: in_spccoeff, sc_subset(N_CRIS_BANDS),  out_spccoeff
+  TYPE(Integer_ListFile_type) :: user_subset_list
+  TYPE(SpcCoeff_type)         :: in_spccoeff, sc_subset(N_CRIS_BANDS),  out_spccoeff
 
 
   ! Program header
@@ -118,9 +118,9 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
     CASE (1)
       ! ...Allocate list array
       n_subset_channels = N_CRIS_SUBSET_374
-      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat )!, ERRMSG=alloc_msg )
+      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat, ERRMSG=alloc_msg )
       IF ( alloc_stat /= 0 ) THEN
-        err_msg = 'Error allocating Subset_List array - '!//TRIM(alloc_msg)
+        err_msg = 'Error allocating Subset_List array - '//TRIM(alloc_msg)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...Fill values
@@ -132,9 +132,9 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
     CASE (2)
       ! ...Allocate list array
       n_subset_channels = N_CRIS_SUBSET_399
-      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat )!, ERRMSG=alloc_msg )
+      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat, ERRMSG=alloc_msg )
       IF ( alloc_stat /= 0 ) THEN
-        err_msg = 'Error allocating Subset_List array - '!//TRIM(alloc_msg)
+        err_msg = 'Error allocating Subset_List array - '//TRIM(alloc_msg)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...Fill values
@@ -146,13 +146,13 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
     CASE(3)
       ! ...Allocate list array
       n_subset_channels = N_CRIS_CHANNELS
-      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat)!, ERRMSG=alloc_msg )
+      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat, ERRMSG=alloc_msg )
       IF ( alloc_stat /= 0 ) THEN
-        err_msg = 'Error allocating Subset_List array - '!//TRIM(alloc_msg)
+        err_msg = 'Error allocating Subset_List array - '//TRIM(alloc_msg)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...Fill values
-      Subset_List = (/(i,i=1,N_CRIS_CHANNELS)/)
+      Subset_List = (/(i,i=1,n_subset_channels)/)
       WRITE( sensor_id,'("cris",i0,"_npp")' ) n_subset_channels
 
 
@@ -163,13 +163,13 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
       READ( *,FMT='(a)' ) list_filename
       list_filename = ADJUSTL(list_filename)
       ! ...
-      err_stat = Read_List_File( list_filename, user_subset_list )
+      err_stat = ListFile_ReadFile( user_subset_list, list_filename )
       IF ( err_stat /= SUCCESS ) THEN
         err_msg = 'Error reading channel subset list file '//TRIM(list_filename)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...
-      n_subset_channels = Get_List_Size( user_subset_list )
+      n_subset_channels = ListFile_GetSize( user_subset_list )
       IF ( n_subset_channels < 1 ) THEN
         err_msg = 'No channels listed in '//TRIM(list_filename)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
@@ -180,18 +180,14 @@ PROGRAM Extract_CrIS_SpcCoeff_Subset
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...Allocate list array
-      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat )!, ERRMSG=alloc_msg )
+      ALLOCATE( subset_list(n_subset_channels), STAT=alloc_stat, ERRMSG=alloc_msg )
       IF ( alloc_stat /= 0 ) THEN
-        err_msg = 'Error allocating Subset_List array - '!//TRIM(alloc_msg)
+        err_msg = 'Error allocating Subset_List array - '//TRIM(alloc_msg)
         CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
       END IF
       ! ...Fill values
       DO i = 1, n_subset_channels
-        err_stat = Get_List_Entry( user_subset_list, i, subset_list(i) )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( err_msg,'("Error retrieving user subset channel list entry ",i0)' ) i
-          CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
-        END IF
+        subset_list(i) = ListFile_GetEntry( user_subset_list, i )
       END DO
       WRITE( sensor_id,'("cris",i0,"_npp")' ) n_subset_channels
 
