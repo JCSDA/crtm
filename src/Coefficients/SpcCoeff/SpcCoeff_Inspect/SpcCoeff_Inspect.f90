@@ -35,17 +35,28 @@ PROGRAM SpcCoeff_Inspect
   ! ---------
   INTEGER :: err_stat
   CHARACTER(256) :: filename, msg
+  INTEGER :: n_args
   TYPE(SpcCoeff_type) :: sc
 
+  ! Generate a string containing the SpcCoeff release for info
+  WRITE(msg,'(i10)') sc%Release
+  
+  
   ! Output program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to display the contents of a CRTM '//&
-                        'Binary format SpcCoeff file to stdout.', &
+                        'Binary format R'//TRIM(ADJUSTL(msg))//' SpcCoeff '//&
+                        'file to stdout.', &
                         '$Revision$' )
 
   ! Get the filename
-  WRITE( *,FMT='(/5x,"Enter the Binary SpcCoeff filename: ")',ADVANCE='NO' )
-  READ( *,'(a)' ) filename
+  n_args = COMMAND_ARGUMENT_COUNT() 
+  IF ( n_args > 0 ) THEN 
+    CALL GET_COMMAND_ARGUMENT(1, filename) 
+  ELSE 
+    WRITE( *,FMT='(/5x,"Enter the Binary SpcCoeff filename: ")',ADVANCE='NO' ) 
+    READ( *,'(a)' ) filename 
+  END IF
   filename = ADJUSTL(filename)
   IF ( .NOT. File_Exists( TRIM(filename) ) ) THEN
     msg = 'File '//TRIM(filename)//' not found.'
