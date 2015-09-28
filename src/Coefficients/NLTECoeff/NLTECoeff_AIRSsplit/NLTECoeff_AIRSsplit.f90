@@ -33,7 +33,7 @@ PROGRAM NLTECoeff_AIRSsplit
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'NLTECoeff_AIRSsplit'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
   '$Id$'
 
   ! Module channel ranges
@@ -53,6 +53,7 @@ PROGRAM NLTECoeff_AIRSsplit
   ! ---------
   ! Variables
   ! ---------
+  CHARACTER(5000) :: history
   CHARACTER(256) :: msg, output_filename
   CHARACTER(20) :: sid
   INTEGER :: err_stat
@@ -69,7 +70,10 @@ PROGRAM NLTECoeff_AIRSsplit
                         '$Revision$' )
 
   ! Read the input file
-  err_stat = NLTECoeff_netCDF_ReadFile( INPUT_FILENAME, sensor_nltecoeff )
+  err_stat = NLTECoeff_netCDF_ReadFile( &
+    INPUT_FILENAME   , &
+    sensor_nltecoeff , &
+    History = history  )
   IF ( err_stat /= SUCCESS ) THEN
     msg = 'Error reading NLTECoeff file '//INPUT_FILENAME
     CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
@@ -158,7 +162,13 @@ PROGRAM NLTECoeff_AIRSsplit
 
 
     ! Write the output datafile
-    err_stat = NLTECoeff_netCDF_WriteFile( output_filename, module_nltecoeff )
+    err_stat = NLTECoeff_netCDF_WriteFile( &
+      output_filename, &
+      module_nltecoeff, &
+      Title   = 'non-LTE correction coefficients for '//TRIM(sid), &
+      History = PROGRAM_VERSION_ID//'; '//TRIM(history), &
+      Comment = 'Individual AIRS module data extracted from the all-channel file '//&
+                INPUT_FILENAME )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing NLTECoeff file '//TRIM(output_filename)
       CALL Display_Message( PROGRAM_NAME, msg, FAILURE ); STOP
