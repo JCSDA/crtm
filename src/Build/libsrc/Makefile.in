@@ -61,8 +61,8 @@ install:
 nco_install: FORCE
 	$(INSTALL) -d $(DESTDIR)$(installdir)
 	$(INSTALL_DATA) $(LIBRARY) $(DESTDIR)$(installdir)/lib$(distdir).a
-	$(INSTALL) -d $(DESTDIR)$(installdir)/incmod/$(distdir)
-	$(INSTALL_DATA) *.mod $(DESTDIR)$(installdir)/incmod/$(distdir)
+	$(INSTALL) -d $(DESTDIR)$(installdir)/include
+	$(INSTALL_DATA) *.mod $(DESTDIR)$(installdir)/include
 	$(INSTALL_DATA) ../config.log $(DESTDIR)$(installdir)/config.log.$(distdir)
 
 FORCE:

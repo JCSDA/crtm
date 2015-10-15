@@ -261,15 +261,13 @@ on WCOSS in /nwprod/lib, as shown below:
     |
     |--libcrtm_v2.2.4.a
     |
-    `--incmod/
+    `--include/
          |
-         `--crtm_v2.2.4/
-              |
-              |--accoeff_binary_io.mod
-              |--accoeff_define.mod
-              ...etc..
-              |--zeeman_input_define.mod
-              `--zeeman_utility.mod
+         |--accoeff_binary_io.mod
+         |--accoeff_define.mod
+         ...etc..
+         |--zeeman_input_define.mod
+         `--zeeman_utility.mod
 
 The contents of the "crtm_v2.2.4" directory can then be moved into the official
 /nwprod/lib location as needed.
@@ -290,7 +288,7 @@ library in this structure in your own application, the usual environment variabl
 would be modified something like:
 
   libroot="/usrx/local/nceplibs"
-  FCFLAGS="-I${libroot}/incmod/crtm_v2.2.4 ${FCFLAGS}"
+  FCFLAGS="-I${libroot}/include ${FCFLAGS}"
   LDFLAGS="-L${libroot} ${LDFLAGS}"
   LIBS="-lcrtm_v2.2.4"
   
@@ -376,8 +374,10 @@ For a GNU install, the result will be a CRTM installation that now looks like:
     |
     `--fix/
       |
+      |-- AerosolCoeff.bin
       |-- ClouCoeff.bin
       ...etc..
+      |-- zssmis_f18.TauCoeff.bin
       `-- zssmis_f19.TauCoeff.bin
 
 and for an NCO install the result will look like:
@@ -386,12 +386,14 @@ and for an NCO install the result will look like:
     |
     |--libcrtm_v2.2.4.a
     |
-    |--incmod/
+    |--include/
     |
     `--fix/
       |
+      |-- AerosolCoeff.bin
       |-- ClouCoeff.bin
       ...etc..
+      |-- zssmis_f18.TauCoeff.bin
       `-- zssmis_f19.TauCoeff.bin
 
 The destination directory can be tailored as required.
