@@ -25,7 +25,8 @@ generated "config.log" file in your email correspondence.
          - Linking to the library
     c. Uninstalling the library
   5. Cleaning up
-  6. Feedback and contact info
+  6. Linking the coefficient files
+  7. Feedback and contact info
 
 
 
@@ -40,7 +41,8 @@ The CRTM tarball directory structure looks like:
   |-Makefile.in  ............. makefile template
   |-config-setup/  ........... "courtesy" configuration definition scripts 
   |-fix/  .................... coefficient datafiles
-  `-libsrc/  ................. library source files
+  |-libsrc/  ................. library source files
+  `-scripts/  ................ bash scripts for coefficient file linking
 
 
 The build system for the CRTM uses an autoconf-generated configure script.
@@ -329,7 +331,78 @@ To also remove all the configuration products (i.e. the makefiles) type
 
 
 
-6. FEEDBACK AND CONTACT INFO
+6. LINKING THE COEFFICIENT FILES USING link_coeffs.sh
+=====================================================
+
+In the "scripts/" subdirectory, a bash shell script "link_coeffs.sh" and a
+helper script "linkfiles.sh" are provided to generate *softlinks* of all
+the various coefficient files into a single directory.
+
+Currently, all of the CRTM coefficient data files need to be in the same 
+directory location for the CRTM initialisation to complete successfully.
+
+The delivered cofficient files in the "fix/" directory, however, are organised
+into subdirectories by their data type (SpcCoeff, CloudCoeff, etc), spectral
+and surface type (for the various EmisCoeff files), and their byte sex (big- or
+little-endian).
+
+The help information for the script can be obtained like so:
+
+  $ link_coeffs.sh -h
+
+but the general usage is:
+
+  $  link_coeffs.sh  <source-directory> <destination-directory>
+
+For a typical CRTM installation, to link all of the required coefficient files
+into a subdirectory called "crtm_v2.2.4/fix" the following command should be
+issued:
+
+  $ link_coeffs.sh fix crtm_v2.2.4/fix
+
+This will link in all of the big-endian (default) files. If you selected a
+little-endian build of the CRTM, the same byte-sex coefficient files can be
+linked using:
+
+  $ link_coeffs.sh -t little-endian fix crtm_v2.2.4/fix
+
+For a GNU install, the result will be a CRTM installation that now looks like:
+
+  crtm_v2.2.4/
+    |
+    |--include/
+    |   
+    |--lib/
+    |
+    `--fix/
+      |
+      |-- ClouCoeff.bin
+      ...etc..
+      `-- zssmis_f19.TauCoeff.bin
+
+and for an NCO install the result will look like:
+
+  crtm_v2.2.4/
+    |
+    |--libcrtm_v2.2.4.a
+    |
+    |--incmod/
+    |
+    `--fix/
+      |
+      |-- ClouCoeff.bin
+      ...etc..
+      `-- zssmis_f19.TauCoeff.bin
+
+The destination directory can be tailored as required.
+ 
+NOTE: The helper script, "linkfiles.sh" must be in the executable path for
+      the "link_coeffs.sh" script to run correctly.
+
+
+
+
+7. FEEDBACK AND CONTACT INFO
 ============================
 
 That's pretty much it. Any questions or bug reports can be sent to CRTM Support.
