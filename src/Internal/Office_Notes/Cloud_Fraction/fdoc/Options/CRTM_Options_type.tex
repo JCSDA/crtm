@@ -1,0 +1,64 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_Options_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+
+    ! Input checking on by default
+    LOGICAL :: Check_Input = .TRUE.
+
+    ! User defined MW water emissivity algorithm
+    LOGICAL :: Use_Old_MWSSEM = .FALSE.
+
+    ! Antenna correction application
+    LOGICAL :: Use_Antenna_Correction = .FALSE.
+
+    ! NLTE radiance correction is ON by default
+    LOGICAL :: Apply_NLTE_Correction = .TRUE.
+
+    ! RT Algorithm is set to ADA by default
+    INTEGER(Long) :: RT_Algorithm_Id = RT_ADA
+
+    ! Aircraft flight level pressure
+    ! Value > 0 turns "on" the aircraft option
+    REAL(Double) :: Aircraft_Pressure = -ONE
+
+    ! User defined number of RT solver streams (streams up + streams down)
+    LOGICAL       :: Use_n_Streams = .FALSE.
+    INTEGER(Long) :: n_Streams = 0
+
+    ! Scattering switch. Default is for
+    ! Cloud/Aerosol scattering to be included.
+    LOGICAL :: Include_Scattering = .TRUE.
+
+    ! Cloud cover overlap id is set to averaging type by default
+    INTEGER(Long) :: Overlap_Id = DEFAULT_OVERLAP_ID
+
+    ! User defined emissivity/reflectivity
+    ! ...Dimensions
+    INTEGER(Long) :: n_Channels = 0  ! L dimension
+    ! ...Index into channel-specific components
+    INTEGER(Long) :: Channel = 0
+    ! ...Emissivity optional arguments
+    LOGICAL :: Use_Emissivity = .FALSE.
+    REAL(Double), ALLOCATABLE :: Emissivity(:)  ! L
+    ! ...Direct reflectivity optional arguments
+    LOGICAL :: Use_Direct_Reflectivity = .FALSE.
+    REAL(Double), ALLOCATABLE :: Direct_Reflectivity(:) ! L
+
+    ! SSU instrument input
+    TYPE(SSU_Input_type) :: SSU
+
+    ! Zeeman-splitting input
+    TYPE(Zeeman_Input_type) :: Zeeman
+
+  END TYPE CRTM_Options_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_Options\_type structure definition.}
+  \label{fig:CRTM_Options_type_structure}
+\end{figure}

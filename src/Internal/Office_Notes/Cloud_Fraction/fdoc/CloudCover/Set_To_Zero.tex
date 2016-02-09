@@ -1,0 +1,26 @@
+\subsection{\texttt{Set\_To\_Zero} interface}
+  \label{sec:Set_To_Zero_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Set_To_Zero
+ 
+  PURPOSE:
+    Elemental subroutine method to zero out the data arrays in a
+    CloudCover object.
+ 
+  CALLING SEQUENCE:
+    CALL cc_obj%Set_To_Zero()
+ 
+  OBJECTS:
+    cc_obj:  Cloud cover object
+             UNITS:      N/A
+             CLASS:      CRTM_CloudCover_type
+             DIMENSION:  Scalar or any rank
+             ATTRIBUTES: INTENT(IN OUT)
+ 
+  COMMENTS:
+    - The dimension components of the object are *NOT* set to zero.
+    - The overlap methodology identifier component is *NOT* reset.
+ 
+  \end{alltt}

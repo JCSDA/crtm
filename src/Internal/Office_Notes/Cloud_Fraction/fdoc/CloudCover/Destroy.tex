@@ -1,0 +1,21 @@
+\subsection{\texttt{Destroy} interface}
+  \label{sec:Destroy_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Destroy
+ 
+  PURPOSE:
+    Elemental subroutine method to re-initialize CloudCover objects.
+ 
+  CALLING SEQUENCE:
+    CALL cc_obj%Destroy()
+ 
+  OBJECTS:
+    cc_obj:  Re-initialized cloud cover object(s).
+             UNITS:      N/A
+             CLASS:      CRTM_CloudCover_type
+             DIMENSION:  Scalar or any rank
+             ATTRIBUTES: INTENT(OUT)
+ 
+  \end{alltt}

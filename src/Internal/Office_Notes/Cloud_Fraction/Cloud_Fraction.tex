@@ -2,7 +2,7 @@
 \input{preamble}
 
 
-%\includeonly{}
+\includeonly{Code_Description.section,Code_Test.section,ObjDef.appendix}
 
 % Subversion keywords
 \SVN $Date$
@@ -12,7 +12,7 @@
 \title{Cloud fraction in the CRTM}
 \author{Paul van Delst\email{paul.vandelst@noaa.gov}\\NCEP/EMC/IMSG}
 \date{\SVNDate ; rev\SVNRevision}
-\docnumber{(unassigned)}
+\docnumber{4}
 \docseries{CRTM}
 
 
@@ -24,8 +24,11 @@
 
 \draftwatermark
 
+
 % The front matter
 %=================
+
+% Change history table
 \thispagestyle{empty}
 \vspace*{10cm}
 \begin{center}
@@ -36,35 +39,50 @@
       \hline
       \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
       \hline\hline
-      2015-09-08 & AUTHOR & Initial release.\\
+      2016-02-XX & P. van Delst & Initial draft release.\\
+      \hline
+       &  &  \\
+       &  &  \\
+      \hline
       \hline
     \end{tabular}
   \end{table}
 \end{center}
 \clearpage
+
+% Fancy pagestyle
 \pagestyle{fancy}
 \fancyhead[LE,RO]{\sffamily \rightmark}
 \fancyhead[LO,RE]{\sffamily \leftmark}
+
+% Set up a table of contents
+\setcounter{page}{1}
+\pagenumbering{roman}
+  \tableofcontents\newpage
+  \listoffigures\newpage
+%  \listoftables\newpage
+  \include{New}
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
 
 % The main matter
 %================
-%\include{}
+\include{Code_Description.section}
+\include{Code_Test.section}
+
 
 % The references section
 %=======================
 \clearpage
-\bibliographystyle{plainnat}
-\bibliography{bibliography}
+\bibliography{bibliography,cloud_overlap}
 
 
-% The appendices section
-%=======================
-%\begin{appendix}
-%
-%\end{appendix}
+% The appendices
+%===============
+\begin{appendix}
+  \include{ObjDef.appendix}
+\end{appendix}
 
 \end{document}
 

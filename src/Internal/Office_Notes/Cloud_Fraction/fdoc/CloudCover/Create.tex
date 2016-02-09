@@ -1,0 +1,49 @@
+\subsection{\texttt{Create} interface}
+  \label{sec:Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Create
+ 
+  PURPOSE:
+    Elemental subroutine method to create instances of CloudCover objects.
+ 
+  CALLING SEQUENCE:
+    CALL cc_obj%Create( n_Layers, &
+                        Forward       = Forward, &
+                        Error_Message = Error_Message )
+ 
+  OBJECTS:
+    cc_obj:         Cloud cover object
+                    UNITS:      N/A
+                    CLASS:      CRTM_CloudCover_type
+                    DIMENSION:  Scalar or any rank
+                    ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+    n_Layers:       Number of layers for which there is cloud data.
+                    Must be > 0.
+                    UNITS:      N/A
+                    TYPE:       INTEGER
+                    DIMENSION:  Conformable with object.
+                    ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUTS:
+    Forward:        Set this optional logical flag to allocate the sub-object to
+                    hold the intermediate forward model results.
+                    IF .FALSE. - the subobject is NOT allocated [DEFAULT]
+                       .TRUE.  - the subobject is allocated
+                    UNITS:      N/A
+                    TYPE:       CHARACTER(*)
+                    DIMENSION:  Conformable with object.
+                    ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  OPTIONAL OUTPUTS:
+    Error_Message:  If an error occurred creating the object, this
+                    argument will contain error information.
+                    UNITS:      N/A
+                    TYPE:       CHARACTER(*)
+                    DIMENSION:  Conformable with object.
+                    ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+  \end{alltt}

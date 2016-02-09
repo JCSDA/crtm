@@ -1,0 +1,41 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_CloudCover_type
+    ! Housekeeping
+    LOGICAL :: Is_Allocated = .FALSE.                   ! Allocation indicator
+    INTEGER :: n_Layers = 0                             ! K dimension.
+    ! Data
+    INTEGER  :: Overlap           = DEFAULT_OVERLAP_ID  ! Overlap type identifier
+    REAL(fp) :: Total_Cloud_Cover = ZERO                ! Cloud cover used in RT
+    REAL(fp), ALLOCATABLE :: Cloud_Fraction(:)          ! K. The physical cloud fraction
+    REAL(fp), ALLOCATABLE :: Cloud_Cover(:)             ! K. The overlap cloud cover
+    ! Intermediate results
+    TYPE(iVar_type) :: iVar                             ! Contains FWD results for TL/AD
+  CONTAINS
+    PRIVATE
+    PROCEDURE, PUBLIC, PASS(self)    :: Overlap_Id
+    PROCEDURE, PUBLIC, PASS(self)    :: Overlap_Name
+    PROCEDURE, PUBLIC, PASS(self)    :: Compute_CloudCover
+    PROCEDURE, PUBLIC, PASS(self_TL) :: Compute_CloudCover_TL
+    PROCEDURE, PUBLIC, PASS(self_AD) :: Compute_CloudCover_AD
+    PROCEDURE, PUBLIC, PASS(self)    :: Is_Usable
+    PROCEDURE, PUBLIC, PASS(self)    :: Destroy
+    PROCEDURE, PUBLIC, PASS(self)    :: Create
+    PROCEDURE, PUBLIC, PASS(self)    :: Inspect
+    PROCEDURE, PUBLIC, PASS(self)    :: Set_To_Zero
+    PROCEDURE :: Equal
+    PROCEDURE :: NotEqual
+    PROCEDURE :: Compare_
+    GENERIC, PUBLIC :: OPERATOR(==) => Equal
+    GENERIC, PUBLIC :: OPERATOR(/=) => NotEqual
+    GENERIC, PUBLIC :: OPERATOR(.Compare.) => Compare_
+  END TYPE CRTM_CloudCover_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_CloudCover\_type structure definition.}
+  \label{fig:CRTM_CloudCover_type_structure}
+\end{figure}

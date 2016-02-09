@@ -1,0 +1,31 @@
+\subsection{\texttt{Overlap\_Id} interface}
+  \label{sec:Overlap_Id_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Overlap_Id
+ 
+  PURPOSE:
+    Function method to return the overlap methodology identifier of a
+    CloudCover object.
+ 
+  CALLING SEQUENCE:
+    id = cc_obj%Overlap_Id()
+ 
+  OBJECTS:
+    cc_obj:  Cloud cover object for which the overlap methodology identifier
+             is required.
+             UNITS:      N/A
+             CLASS:      CRTM_CloudCover_type
+             DIMENSION:  Scalar
+             ATTRIBUTES: INTENT(OUT)
+ 
+  FUNCTION RESULT:
+    id:      The return value is an integer defining the overlap methodology.
+             The actual number value of these integers in a CRTM release can
+             change at any time based upon code updates.
+             UNITS:      N/A
+             TYPE:       INTEGER
+             DIMENSION:  Scalar
+ 
+  \end{alltt}

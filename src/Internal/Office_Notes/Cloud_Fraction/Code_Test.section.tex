@@ -1,0 +1,153 @@
+\section{Code Testing}
+%=====================
+\label{sec:code_testing}
+
+
+\subsection{Simple test}
+%-----------------------
+
+To verify the implementation of the various overlap assumptions, the simple example shown in figure 1 of \citet{HoganIllingworth_2000}, here shown in figure \ref{fig:cloud_overlap_example}, was used. The result of the computation is shown in figure \ref{fig:cloud_overlap_comparison}.
+
+\begin{figure}[H]
+  \caption{Simple example from figure 1 of Hogan and Illingworth [2000].}
+  \label{fig:cloud_overlap_example}
+  \centering
+  \includegraphics[trim={20 20 10 20},clip,scale=0.4]{graphics/hogan_and_illingworth_fig1.eps}
+\end{figure}
+
+\begin{figure}[H]
+  \caption{Result of the cloud overlap assumptions for comparison with the figure 1 schematic in Hogan and Illingworth [2000].}
+  \label{fig:cloud_overlap_comparison}
+  \centering
+  \includegraphics[trim={40 30 10 50},clip,scale=0.7]{graphics/cloud_overlap_comparison.eps}
+\end{figure}
+
+The final, near-surface cloud cover value is equivalent to the total cloud cover (TCC). As expected, the maximum overlap assumption results in a minimum cloud cover, the random overlap assumption maximises the cloud cover, and the maximum-random assumption falls between those two extremes. 
+
+
+\subsection{Testing using ECMWF5K profile set}
+%---------------------------------------------
+
+To more fully exercise test the cloud fraction capability, the ECMWF 5K profile set \citep{ECMWF5K_profile_set} was used. The dataset individual cloud water content spans are shown in figure \ref{fig:ECMWF5K.wcspan}.
+
+\begin{figure}[htp]
+  \caption{The cloud water content span of the ECMWF 5K profile set. The dashed line is the average. Minimum value is zero.}
+  \label{fig:ECMWF5K.wcspan}
+  \centering
+  \includegraphics[trim={20 0 20 20},clip,scale=0.8]{graphics/wcspan.eps}
+\end{figure}
+
+The ECMWF5K dataset does not contain cloud fraction or a variable cloud particle effective radius for the various cloud types.
+
+A cloud fraction profile was generated for each cloud type by scaling a random number, $A \in [0,1)$, by the fractional cloud water content, $q$. So, for the $n^{th}$ cloud in the $k^{th}$ atmospheric layer,
+\begin{equation}
+  f_{n,k} = \left\{
+  \begin{array}{cl}
+    \frac{\displaystyle{A}}{\displaystyle{c}}\frac{\displaystyle{q_{n,k}}}{\displaystyle{\max(\mathbf{q}_n)}} & \text{if } q_{n,k} > 10^{-6}\\\\
+    0 & \text{otherwise}
+  \end{array} \right.
+  \label{eqn:f_individual}
+\end{equation}
+where $c$ is an additional variable used to control the maximum cloud fraction in any profile. Values of 2 and 5 were used in testing.
+
+The total cloud fraction in the $k^{th}$ layer, $f_k$, was then simply set to the maximum value of the individual cloud fractions in that layer,
+\begin{equation}
+  f_k = \max_{n=1,N}f_{n,k}
+  \label{eqn:f_total}
+\end{equation}
+
+Figure \ref{fig:ECMWF5K.cfspan} shows the resulting span of generating cloud fraction profiles for the set.
+
+\begin{figure}[htp]
+  \caption{The cloud fraction span generated for the ECMWF 5K profile set. The dashed line is the average. Minimum value is zero.}
+  \label{fig:ECMWF5K.cfspan}
+  \centering
+  \includegraphics[trim={20 0 20 50},clip,scale=0.8]{graphics/cfspan.eps}
+\end{figure}
+
+Similarly for the cloud effective radius. A fixed ``reference'' value, $R_{\mathit{eff}}$, was assigned for each cloud type, $n$. To generate a variable effective radius for each layer, this reference value was scaled by the individual cloud water contents, $q_n$, at each layer, $k$,
+\begin{equation}
+  r_{n,k} = \left\{
+  \begin{array}{cl}
+    R_{\mathit{eff},n} \frac{\displaystyle{q_{n,k}}}{\displaystyle{\max(\mathbf{q_n})}} & \text{if } q_{n,k} > 10^{-6}\\\\
+    0 & \text{otherwise}
+  \end{array} \right.
+  \label{eqn:r_individual}
+\end{equation}
+
+This gave the spread of effective radii for the dataset cloud types shown in figure \ref{fig:ECMWF5K.effrspan}.
+
+\begin{figure}[htp]
+  \caption{The effective radius span generated for the ECMWF 5K profile set. The dashed line is the average. Minimum value is zero.}
+  \label{fig:ECMWF5K.effrspan}
+  \centering
+  \includegraphics[trim={20 0 20 20},clip,scale=0.8]{graphics/effrspan.eps}
+\end{figure}
+
+The fractional cloudy atmosphere data was then fed into the CRTM, once for each overlap/cloud cover  methodology implemented. A selection of some generated cloud cover profiles for maximum cloud fractions of 0.5 and 0.2 (for $c = 2$ and $c = 5$ respectively per equation \ref{eqn:f_individual}) is shown in figure \ref{fig:cc_profile_selection}.
+
+\begin{figure}[H]
+  \caption{Selection of computed cloud cover profiles from the ECMWF5K profile set for two different maximum cloud fractions. \textbf{(Left)} Maximum cloud fraction of 0.5. \textbf{(Right)} Maximum cloud fraction of 0.2. }
+  \label{fig:cc_profile_selection}
+  \centering
+  \begin{tabular}{c c}
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-2.cc_profile-0001.eps} &
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-5.cc_profile-0001.eps}\\
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-2.cc_profile-2001.eps} &
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-5.cc_profile-2001.eps}\\
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-2.cc_profile-4501.eps} &
+    \includegraphics[scale=0.3]{graphics/profiles/c-eq-5.cc_profile-4501.eps}
+  \end{tabular}
+\end{figure}
+
+The frequency distributions of the computed cloud cover for the different methodologies are shown in figure \ref{fig:cloud_cover_frequency} for the maximum cloud fractions of 0.5 (cloudier) and 0.2 (less cloudy). The random overlap assumption consistently yields a much higher total cloud cover, in most cases producing the equivalent of an overcast profile.
+
+\begin{figure}[H]
+  \caption{Frequency distribution of total cloud cover for the different overlap/cloud cover assumptions using the ECMWF5K set. \textbf{(Top)} Maximum cloud fraction of 0.5. \textbf{(Bottom)} Maximum cloud fraction of 0.2. }
+  \label{fig:cloud_cover_frequency}
+  \centering
+  \begin{tabular}{c}
+    \sffamily\textbf{Maximum cloud fraction of 0.5} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/cc_stats/c-eq-2.cc_stats.eps} \\\\
+    \sffamily\textbf{Maximum cloud fraction of 0.2} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/cc_stats/c-eq-5.cc_stats.eps}
+  \end{tabular}
+\end{figure}
+
+To get an idea of the relative impacts of the various cloud cover methodologies, the ECMWF5K profile set was used to compute brightness temperatures for the NPP ATMS and CrIS(399) sensors for each method, and the results for the overlap assumption methods (maximum, random, maximum-random) differenced from the averaging approach of \citet{Geer_2009}. Two runs were made, using maximum cloud fractions of 0.5 and 0.2.
+
+The brightness temperature residuals for the ATMS and CrIS are shown in figures \ref{fig:atms_npp.tb_stats} and \ref{fig:cris399_npp.tb_stats} respectively. The most evident result is that the random overlap assumption produces brightness temperatures quite different from the other methods, as well as being relatively insensitive to the maximum cloud fraction in a profile (due to the cloud cover quickly ``saturating''). The other methods behave as expected with the residuals decreasing roughly similar with the maximum cloud fraction.
+
+\begin{figure}[H]
+  \caption{NPP ATMS average brightness temperature differences for cloud cover methods compared to the averaging approach using the ECMWF5K profile set. The error bars represent $\pm$ one standard deviation. \textbf{(Top)} Maximum cloud fraction of 0.5. \textbf{(Bottom)} Maximum cloud fraction of 0.2. }
+  \label{fig:atms_npp.tb_stats}
+  \centering
+  \begin{tabular}{c}
+    \\
+    \sffamily\textbf{Maximum cloud fraction of 0.5} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/tb_stats/c-eq-2.atms_npp.tb_stats.eps} \\\\
+    \sffamily\textbf{Maximum cloud fraction of 0.2} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/tb_stats/c-eq-5.atms_npp.tb_stats.eps}
+  \end{tabular}
+\end{figure}
+
+\begin{figure}[H]
+  \caption{NPP CrIS average brightness temperature differences (399 channel subset) for cloud cover methods compared to the averaging approach using the ECMWF5K profile set. The thick line is the mean, the thin lines represent $\pm$ one standard deviation. \textbf{(Top)} Maximum cloud fraction of 0.5. \textbf{(Bottom)} Maximum cloud fraction of 0.2. }
+  \label{fig:cris399_npp.tb_stats}
+  \centering
+  \begin{tabular}{c}
+    \\
+    \sffamily\textbf{Maximum cloud fraction of 0.5} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/tb_stats/c-eq-2.cris399_npp.tb_stats.eps} \\\\
+    \sffamily\textbf{Maximum cloud fraction of 0.2} \\
+    \includegraphics[trim={110 30 60 59},clip,scale=0.5]{graphics/tb_stats/c-eq-5.cris399_npp.tb_stats.eps}
+  \end{tabular}
+\end{figure}
+
+
+\subsection{Testing in the GSI}
+%------------------------------
+
+TBD
+
+
