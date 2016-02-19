@@ -1,8 +1,9 @@
 \begin{figure}[htp]
+  \caption{CRTM\_Options\_type structure definition.}
+  \label{fig:CRTM_Options_type_structure}
   \centering
-  \doublebox{
-  \begin{minipage}[b]{6.5in}
-    \begin{alltt}
+  \noindent\rule[0.5ex]{\linewidth}{1pt}
+  \begin{alltt}
   TYPE :: CRTM_Options_type
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
@@ -55,10 +56,6 @@
     ! Zeeman-splitting input
     TYPE(Zeeman_Input_type) :: Zeeman
 
-  END TYPE CRTM_Options_type
-    \end{alltt}
-  \end{minipage}
-  }
-  \caption{CRTM\_Options\_type structure definition.}
-  \label{fig:CRTM_Options_type_structure}
+  END TYPE CRTM_Options_type\end{alltt}
+  \noindent\rule[0.5ex]{\linewidth}{1pt}
 \end{figure}
