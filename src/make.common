@@ -4,16 +4,12 @@ DVI_FILE = ${DOC_FILE:.tex=.dvi}
 PS_FILE  = ${DOC_FILE:.tex=.ps}
 PDF_FILE = ${DOC_FILE:.tex=.pdf}
 
-BIB_FILE = bibliography.bib
-
-all: tex
+all: tex pdf
 
 tex: $(DOC_FILE)
 	@latex $(DOC_FILE); \
-	if [ -f ${BIB_FILE} ]; then \
-	  bibtex ${DOC_FILE:.tex=}; \
-	  latex $(DOC_FILE); \
-	fi; \
+	bibtex ${DOC_FILE:.tex=}; \
+	latex $(DOC_FILE); \
 	latex $(DOC_FILE)
 
 noref: $(DOC_FILE)
