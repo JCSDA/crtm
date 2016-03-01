@@ -130,6 +130,7 @@ PRO osrf_sensitivity, $
       MESSAGE, "Invalid channel for "+STRTRIM(Sensor_Id,2)+" specified in channel list", $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
   ENDFOR
+  n_channels = N_ELEMENTS(_channel_list)
 
 
   ; Loop over profiles
@@ -167,17 +168,17 @@ PRO osrf_sensitivity, $
         oSRF_Read_Tb, tb_outfile, xtb, Channel_List = xcl
         FOR l = 0, n_channels - 1 DO BEGIN
           ; ...Does the current channel data already exist?
-          loc = WHERE( sensor_channel[l] EQ xcl, count )
+          loc = WHERE( _channel_list[l] EQ xcl, count )
           IF ( count GT 0 ) THEN BEGIN
             xtb[loc[0]] = tb[l]    ; Yes. Replace it
           ENDIF ELSE BEGIN
             xtb = [xtb, tb[l] ]    ; No.  Add it.
-            xcl = [xcl, sensor_channel[l]]
+            xcl = [xcl, _channel_list[l]]
           ENDELSE
         ENDFOR
       ENDIF ELSE BEGIN
         xtb = tb
-        xcl = sensor_channel
+        xcl = _channel_list
       ENDELSE
       ; ...Write data
       oSRF_Write_Tb, tb_outfile, xtb, Channel_List = xcl
