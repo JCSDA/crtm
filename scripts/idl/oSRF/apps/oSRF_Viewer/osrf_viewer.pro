@@ -393,7 +393,7 @@ PRO OSRF_Viewer, $
         EVENT_PRO = 'ov_menu_saveas_eps_event', $
         VALUE     = 'EPS', $
         UVALUE    = 'SaveAsEPS' )
-    ; ...File->Print
+    ; ...File->Exit
     file_exit_id = WIDGET_BUTTON( file_menu_id, $
       EVENT_PRO = 'ov_menu_exit_event', $
       VALUE     = 'Exit', $
