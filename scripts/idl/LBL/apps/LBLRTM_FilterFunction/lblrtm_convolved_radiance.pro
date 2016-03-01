@@ -109,7 +109,7 @@ FUNCTION LBLRTM_Convolved_Radiance, $
     ; ...Spawn the executable
     SPAWN, 'lblrtm', stdout, stderr, EXIT_STATUS = exit_stat
     ; ...Check the result
-    run_error = ( exit_stat NE 0 OR N_ELEMENTS(stderr) GT 1 )
+    run_error = ( exit_stat NE 0 )
     IF ( run_error ) THEN BEGIN
       FOREACH s, stderr DO MESSAGE, s, /CONTINUE
       MESSAGE, 'Error running LBLRTM for '+FILE_BASENAME(GT5_file) + '. Trying again...', $
