@@ -76,10 +76,10 @@ PRO oSRF_Plotter, $
   ; ...Set plotting parameters
   ; ...Font sizes for plots
   font_size   = KEYWORD_SET(eps) ? EPS_FONT_SIZE : WIN_FONT_SIZE
-  l_font_size = KEYWORD_SET(eps) ? font_size*0.6 : font_size*0.8
-  thick       = 1 ;KEYWORD_SET(eps) ? 1 : 2
+  l_font_size = font_size ;*0.8 ;KEYWORD_SET(eps) ? font_size*0.6 : font_size*0.8
+  thick       = 2 ;KEYWORD_SET(eps) ? 1 : 2
   IF ( n_files LE 6 ) THEN $
-    color = ['black', 'green', 'red', 'blue', 'magenta', 'cyan'] $
+    color = ['red', 'blue', 'green','magenta', 'cyan', 'black'] $
   ELSE $
     color = Get_Colours(n_files)
 
