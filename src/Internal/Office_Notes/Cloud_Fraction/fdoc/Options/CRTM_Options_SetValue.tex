@@ -16,6 +16,7 @@
            Use_Old_MWSSEM          = Use_Old_MWSSEM         , &
            Use_Antenna_Correction  = Use_Antenna_Correction , &
            Apply_NLTE_Correction   = Apply_NLTE_Correction  , &
+           Set_ADA_RT              = Set_ADA_RT             , &
            Set_SOI_RT              = Set_SOI_RT             , &
            Include_Scattering      = Include_Scattering     , &
            Set_Maximum_Overlap     = Set_Maximum_Overlap    , &
@@ -74,10 +75,13 @@
                               DIMENSION:  Conformable with Options object
                               ATTRIBUTES: INTENT(IN), OPTIONAL
                   
-    Set_SOI_RT:               Set this logical argument to use the Successive-Order-of-
-                              Interaction algorithm for scattering radiative transfer.
-                              If == .TRUE. , the SOI algorithm is used
-                                 == .FALSE., the ADA algorithm is used [DEFAULT]
+    Set_ADA_RT:
+    Set_SOI_RT:               Set this logical argument to use the specified algorithm
+                              for scattering radiative transfer.
+                              If == .TRUE. , the corresponding RT algorithm is used.
+                              Note: - By default, the ADA algorithm is used.
+                                    - If MORE THAN ONE argument is specified, the
+                                      the default ADA algorithm is used.
                               UNITS:      N/A
                               TYPE:       LOGICAL
                               DIMENSION:  Conformable with Options object

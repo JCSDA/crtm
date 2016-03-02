@@ -1,5 +1,5 @@
 \begin{figure}[htp]
-  \caption{\f{CRTM\_CloudCover\_type} object definition.}
+  \caption{CRTM\_CloudCover\_type object definition.}
   \label{fig:CRTM_CloudCover_object}
   \noindent\rule[0.5ex]{\linewidth}{1pt}
   \centering
@@ -13,28 +13,29 @@
     REAL(fp) :: Total_Cloud_Cover = ZERO                ! Cloud cover used in RT
     REAL(fp), ALLOCATABLE :: Cloud_Fraction(:)          ! K. The physical cloud fraction
     REAL(fp), ALLOCATABLE :: Cloud_Cover(:)             ! K. The overlap cloud cover
+    ! Copy of the individual cloud type data
+    TYPE(CRTM_Cloud_type), ALLOCATABLE :: Cloud(:)      ! Cloud information
     ! Intermediate results
-    \textcolor{red}{TYPE(iVar_type) :: iVar}                             ! Contains FWD results for TL/AD
-  END TYPE CRTM_CloudCover_type\end{alltt}
-  \noindent\rule[0.5ex]{\linewidth}{1pt}
-\end{figure}
-
-\begin{figure}[htp]
-  \caption{\f{CRTM\_CloudCover\_type} internal variable object definition. Used to hold the forward model intermediate results for use in the tangent-linear and adjoint models.}
-  \label{fig:iVar_object}
-  \noindent\rule[0.5ex]{\linewidth}{1pt}
-  \centering
-  \begin{alltt}
-  TYPE, PRIVATE :: iVar_type
-    ! Housekeeping
-    LOGICAL :: Is_Allocated = .FALSE.    ! Allocation indicator
-    INTEGER :: n_Layers = 0              ! K dimension.
-    ! Data
-    REAL(fp), ALLOCATABLE :: prod(:)     ! 0:K. The product across layers
-    REAL(fp), ALLOCATABLE :: lwc(:)      ! 1:K. The total layer water content for ALL clouds
-    REAL(fp), ALLOCATABLE :: wc_sum(:)   ! 0:K. The cumulative sum of lwc at each layer
-    REAL(fp), ALLOCATABLE :: cwc_sum(:)  ! 0:K. The cumulative sum of the cloud fraction
-    !                                           weighted lwc at each layer
-  END TYPE iVar_type\end{alltt}
+    TYPE(iVar_type) :: iVar                             ! FWD results for TL/AD
+  CONTAINS
+    PRIVATE
+    PROCEDURE, PUBLIC, PASS(self)    :: Overlap_Id
+    PROCEDURE, PUBLIC, PASS(self)    :: Overlap_Name
+    PROCEDURE, PUBLIC, PASS(self)    :: Compute_CloudCover
+    PROCEDURE, PUBLIC, PASS(self_TL) :: Compute_CloudCover_TL
+    PROCEDURE, PUBLIC, PASS(self_AD) :: Compute_CloudCover_AD
+    PROCEDURE, PUBLIC, PASS(self)    :: Is_Usable
+    PROCEDURE, PUBLIC, PASS(self)    :: Destroy
+    PROCEDURE, PUBLIC, PASS(self)    :: Create
+    PROCEDURE, PUBLIC, PASS(self)    :: Inspect
+    PROCEDURE, PUBLIC, PASS(self)    :: Set_To_Zero
+    PROCEDURE :: Equal
+    PROCEDURE :: NotEqual
+    PROCEDURE :: Compare_
+    GENERIC, PUBLIC :: OPERATOR(==) => Equal
+    GENERIC, PUBLIC :: OPERATOR(/=) => NotEqual
+    GENERIC, PUBLIC :: OPERATOR(.Compare.) => Compare_
+  END TYPE CRTM_CloudCover_type
+  \end{alltt}
   \noindent\rule[0.5ex]{\linewidth}{1pt}
 \end{figure}
