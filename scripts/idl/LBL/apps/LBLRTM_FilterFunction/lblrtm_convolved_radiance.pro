@@ -96,6 +96,8 @@ FUNCTION LBLRTM_Convolved_Radiance, $
     cf1 = f1 - delta_f
     cf2 = f2 + delta_f
     t5_input[2] = STRING(cf1,cf2,FORMAT='(2f10.3)')
+    MESSAGE, 'Running LBLRTM for '+FILE_BASENAME(GT5_file) + ' with frequency range: ' + $
+             STRTRIM(t5_input[2],2), /INFORMATIONAL
 
 
     ; Write the TAPE5 file
@@ -109,7 +111,7 @@ FUNCTION LBLRTM_Convolved_Radiance, $
     ; ...Spawn the executable
     SPAWN, 'lblrtm', stdout, stderr, EXIT_STATUS = exit_stat
     ; ...Check the result
-    run_error = ( exit_stat NE 0 )
+    run_error = ( (exit_stat NE 0) AND (Check_Potential_SPAWN_Error(stderr) NE 0) )
     IF ( run_error ) THEN BEGIN
       FOREACH s, stderr DO MESSAGE, s, /CONTINUE
       MESSAGE, 'Error running LBLRTM for '+FILE_BASENAME(GT5_file) + '. Trying again...', $
