@@ -59,7 +59,7 @@ FUNCTION oSRF_Compute_Tb, $
     Sensor_Id = osrf_sensor_id
   IF ( STRTRIM(osrf_sensor_id,2) NE STRTRIM(sensor_id,2) ) THEN $
       MESSAGE, "oSRF Sensor_Id is different from SensorInfo Sensor_Id!", $
-               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+               /INFORMATIONAL
 
   
   ; Begin channel computations
