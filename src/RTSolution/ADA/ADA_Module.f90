@@ -388,7 +388,7 @@ CONTAINS
    END IF
 
    !  compute visible part for visible channels during daytime
-   IF( RTV%Visible_Flag_true ) THEN
+   IF( RTV%Solar_Flag_true ) THEN
      N2 = 2 * nZ
      N2_1 = N2 - 1
      source_up = ZERO
@@ -822,7 +822,7 @@ CONTAINS
      
      !
      ! for visible channels at daytime
-     IF( RTV%Visible_Flag_true ) THEN 
+     IF( RTV%Solar_Flag_true ) THEN 
        N2 = 2 * nZ
        N2_1 = N2 - 1
        V0 = ZERO
@@ -1252,7 +1252,7 @@ CONTAINS
      thermal_up_AD(:) = source_up_AD(:)
      thermal_down_AD(:) = source_down_AD(:)
 
-     IF( RTV%Visible_Flag_true ) THEN 
+     IF( RTV%Solar_Flag_true ) THEN 
        N2 = 2 * nZ
        N2_1 = N2 - 1
 
