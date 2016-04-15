@@ -1,0 +1,33 @@
+---
+- :desc: Number atmospheric layers
+  :var: n_Layers
+  :name: LAYER
+  :value: ""
+- :desc: Number of atmospheric levels
+  :var: n_Levels
+  :name: LEVEL
+  :value: ""
+- :desc: Number of components
+  :var: n_Components
+  :name: COMPONENT
+  :value: ""
+- :desc: Number of absorbers
+  :var: n_Absorbers
+  :name: ABSORBER
+  :value: ""
+- :desc: Number of channels
+  :var: n_Channels
+  :name: CHANNEL
+  :value: ""
+- :desc: Number of ODPS coefficients
+  :var: n_Coeffs
+  :name: COEFF
+  :value: ""
+- :desc: Number of ODAS predictors
+  :var: n_OPIndex
+  :name: ODASPRED
+  :value: ""
+- :desc: Number of ODAS coefficients
+  :var: n_OCoeffs
+  :name: ODASCOEFF
+  :value: ""
