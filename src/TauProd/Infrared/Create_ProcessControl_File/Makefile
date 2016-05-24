@@ -57,14 +57,14 @@ LIBRARIES = -L$(HOME)/local/netcdf/lib -lnetcdf
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Squeaky clean target
-realclean: clean remove_links
+realclean:: clean remove_links
 
 # Source dependency lists
 include make.dependencies
