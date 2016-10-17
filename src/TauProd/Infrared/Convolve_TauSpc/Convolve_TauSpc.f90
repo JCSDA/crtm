@@ -1225,14 +1225,14 @@ PROGRAM Convolve_TauSpc
              ANY( TauProfile( n )%Tau(:,l,1,1,1) < ( ZERO - TAU_TOLERANCE ) )      ) THEN
 
           WRITE( Message, '( "Non-physical transmittances found for ", a, &
-                            &" channel ", i4, ", angle secant ", f4.2, "." )' ) &
+                             " channel ", i4, ", angle secant ", f5.2, "." )' ) &
                           TRIM( ProcessControl%File_Prefix( n ) ), &
                           ProcessControl%List( Process_Index( lch ) )%Channel, &
                           ZENITH_ANGLE_SECANT( Angle_Number )
           CALL Display_Message( PROGRAM_NAME, &
                                 TRIM( Message ), &
                                 WARNING )
-          WRITE( *, '( "Transmittance precision tolerance: ", f22.20, &
+          WRITE( *, '( "Transmittance precision tolerance: ", f23.20, &
                      &/"transmittances:" )' ) TAU_TOLERANCE
           WRITE( *, '( 4( 1x, f21.18, : ) )' ) TauProfile( n )%Tau(:,l,1,1,1)
         END IF
