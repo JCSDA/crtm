@@ -48,6 +48,7 @@ MODULE CRTM_Options_Define
                                     CloudCover_Random_Overlap , &
                                     CloudCover_MaxRan_Overlap , &
                                     CloudCover_Average_Overlap, &
+                                    CloudCover_Overcast_Overlap, &
                                     CloudCover_Overlap_IsValid, &
                                     CloudCover_Overlap_Name
   ! Disable implicit typing
@@ -211,7 +212,7 @@ CONTAINS
 !          Set_Random_Overlap      = Set_Random_Overlap     , &
 !          Set_MaxRan_Overlap      = Set_MaxRan_Overlap     , &
 !          Set_Average_Overlap     = Set_Average_Overlap    , &
-!          Set_Average_Overlap     = Set_Average_Overlap    , &
+!          Set_Overcast_Overlap    = Set_Overcast_Overlap   , &
 !          Use_Emissivity          = Use_Emissivity         , &
 !          Use_Direct_Reflectivity = Use_Direct_Reflectivity, &
 !          n_Streams               = n_Streams              , &
@@ -358,6 +359,7 @@ CONTAINS
     Set_Random_Overlap     , &
     Set_MaxRan_Overlap     , &
     Set_Average_Overlap    , &
+    Set_Overcast_Overlap   , &
     Use_Emissivity         , &
     Use_Direct_Reflectivity, &
     n_Streams              , &
@@ -375,6 +377,7 @@ CONTAINS
     LOGICAL ,      OPTIONAL, INTENT(IN)     :: Set_Random_Overlap
     LOGICAL ,      OPTIONAL, INTENT(IN)     :: Set_MaxRan_Overlap
     LOGICAL ,      OPTIONAL, INTENT(IN)     :: Set_Average_Overlap
+    LOGICAL ,      OPTIONAL, INTENT(IN)     :: Set_Overcast_Overlap
     LOGICAL ,      OPTIONAL, INTENT(IN)     :: Use_Emissivity         
     LOGICAL ,      OPTIONAL, INTENT(IN)     :: Use_Direct_Reflectivity
     INTEGER ,      OPTIONAL, INTENT(IN)     :: n_Streams
@@ -404,13 +407,15 @@ CONTAINS
 
     ! Only one overlap option allowed!
     IF ( COUNT([PRESENT(Set_Maximum_Overlap), PRESENT(Set_Random_Overlap ), &
-                PRESENT(Set_MaxRan_Overlap ), PRESENT(Set_Average_Overlap)  ]) > 1 ) THEN
+                PRESENT(Set_MaxRan_Overlap ), PRESENT(Set_Average_Overlap), &
+                PRESENT(Set_Overcast_Overlap) ]) > 1 ) THEN
       self%Overlap_Id = DEFAULT_OVERLAP_ID
     ELSE
       IF ( PRESENT(Set_Maximum_Overlap) ) self%Overlap_Id = CloudCover_Maximum_Overlap()
       IF ( PRESENT(Set_Random_Overlap ) ) self%Overlap_Id = CloudCover_Random_Overlap() 
       IF ( PRESENT(Set_MaxRan_Overlap ) ) self%Overlap_Id = CloudCover_MaxRan_Overlap() 
       IF ( PRESENT(Set_Average_Overlap) ) self%Overlap_Id = CloudCover_Average_Overlap()
+      IF ( PRESENT(Set_Overcast_Overlap)) self%Overlap_Id = CloudCover_Overcast_Overlap()
     END IF
 
     ! The emissivity and reflectivity spectra

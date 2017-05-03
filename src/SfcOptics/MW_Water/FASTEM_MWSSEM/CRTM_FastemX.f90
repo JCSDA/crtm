@@ -144,6 +144,7 @@ MODULE CRTM_FastemX
     REAL(fp) :: Temperature  = ZERO
     REAL(fp) :: Salinity     = ZERO
     REAL(fp) :: Wind_Speed   = ZERO
+    INTEGER  :: n_Angles     = ZERO 
     ! ...Optional
     LOGICAL  :: Azimuth_Angle_Valid = .FALSE.
     REAL(fp) :: Azimuth_Angle       = ZERO
@@ -151,6 +152,7 @@ MODULE CRTM_FastemX
     REAL(fp) :: Transmittance       = ZERO
     ! The zenith angle term
     REAL(fp) :: cos_z = ONE
+    REAL(fp) :: cos_z_mod = ONE  
     ! The permittivity term
     COMPLEX(fp) :: Permittivity = ZERO
     ! The Fresnel reflectivity terms
@@ -302,6 +304,7 @@ CONTAINS
   SUBROUTINE Compute_FastemX( &
     MWwaterCoeff , &  ! Input
     Frequency    , &  ! Input
+    n_Angles     , &  ! Input  
     Zenith_Angle , &  ! Input
     Temperature  , &  ! Input
     Salinity     , &  ! Input
@@ -314,6 +317,7 @@ CONTAINS
     ! Arguments
     TYPE(MWwaterCoeff_type), INTENT(IN)  :: MWwaterCoeff
     REAL(fp),                INTENT(IN)  :: Frequency
+    INTEGER,                 INTENT(IN)  :: n_Angles       
     REAL(fp),                INTENT(IN)  :: Zenith_Angle
     REAL(fp),                INTENT(IN)  :: Temperature
     REAL(fp),                INTENT(IN)  :: Salinity
@@ -331,8 +335,13 @@ CONTAINS
     iVar%Temperature  = Temperature
     iVar%Salinity     = Salinity
     iVar%Wind_Speed   = Wind_Speed
+    iVar%n_Angles     = n_Angles   
     ! ...Save derived variables
     iVar%cos_z = COS(Zenith_Angle*DEGREES_TO_RADIANS)
+    iVar%cos_z_mod = COS(Zenith_Angle*DEGREES_TO_RADIANS)
+    if (n_Angles > 1 .and. Zenith_Angle > 60.0_fp) &     
+       iVar%cos_z_mod = COS(60.0_fp*DEGREES_TO_RADIANS)   
+
 
     ! Permittivity calculation
     CALL Ocean_Permittivity( Temperature, Salinity, Frequency, &
@@ -425,7 +434,7 @@ CONTAINS
         CALL Reflection_Correction( &
                MWwaterCoeff%RCCoeff, &
                iVar%Frequency , &
-               iVar%cos_z     , &
+               iVar%cos_z_mod , &   
                iVar%Wind_Speed, &
                Transmittance  , &
                iVar%Rv_Mod    , &

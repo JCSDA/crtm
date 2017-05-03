@@ -148,8 +148,7 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-
-  FUNCTION CRTM_Atmosphere_Coverage(atm) RESULT(coverage_flag)
+   FUNCTION CRTM_Atmosphere_Coverage(atm) RESULT(coverage_flag)
     ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: atm
     ! Function result
@@ -165,7 +164,7 @@ CONTAINS
     ! Default clear
     coverage_flag = CLEAR
     IF ( atm%n_Clouds == 0 ) RETURN
-  
+ 
     ! Check each cloud separately
     Cloud_Loop: DO n = 1, atm%n_Clouds
     
@@ -180,17 +179,18 @@ CONTAINS
       ! Check for ANY fractional coverage
       ! ??? How to do this without the loop ???
       DO k = 1, nc
-        IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) .AND. &
-             (atm%Cloud_Fraction(idx(k)) < MAX_COVERAGE_THRESHOLD) ) THEN
+!       IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) .AND. &
+!            (atm%Cloud_Fraction(idx(k)) < MAX_COVERAGE_THRESHOLD) ) THEN
+        IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) ) THEN       
           coverage_flag = FRACTIONAL
           RETURN
         END IF
       END DO
 
-      ! Check for ALL totally clear or totally cloudy
-      IF ( ALL(atm%Cloud_Fraction(idx(1:nc)) < MIN_COVERAGE_THRESHOLD) .OR. &
-           ALL(atm%Cloud_Fraction(idx(1:nc)) > MAX_COVERAGE_THRESHOLD) ) coverage_flag = OVERCAST
-      
+!     ! Check for ALL totally clear or totally cloudy
+!     IF ( ALL(atm%Cloud_Fraction(idx(1:nc)) < MIN_COVERAGE_THRESHOLD) .OR. &
+!          ALL(atm%Cloud_Fraction(idx(1:nc)) > MAX_COVERAGE_THRESHOLD) ) coverage_flag = OVERCAST                  
+
     END DO Cloud_Loop
     
   END FUNCTION CRTM_Atmosphere_Coverage
@@ -614,7 +614,7 @@ CONTAINS
         Atm_In_AD%Cloud(i)%Effective_Variance(1:no) = Atm_In_AD%Cloud(i)%Effective_Variance(1:no) + &
                                                       Atm_Out_AD%Cloud(i)%Effective_Variance(n+1:nt)
         Atm_In_AD%Cloud(i)%Effective_Radius(1:no) = Atm_In_AD%Cloud(i)%Effective_Radius(1:no) + &
-                                                    Atm_Out_AD%Cloud(i)%Effective_Radius(n+1:nt)                                                    
+                                                    Atm_Out_AD%Cloud(i)%Effective_Radius(n+1:nt)
         Atm_In_AD%Cloud(i)%Type = Atm_Out_AD%Cloud(i)%Type
       END DO
     END IF

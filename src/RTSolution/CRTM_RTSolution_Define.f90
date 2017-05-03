@@ -131,6 +131,7 @@ MODULE CRTM_RTSolution_Define
     ! Forward radiative transfer intermediate results for a single channel
     !    These components are not defined when they are used as TL, AD
     !    and K variables
+    REAL(fp) :: SSA_Max                 = ZERO  ! Max Single Scattering Albedo in the profile                      
     REAL(fp) :: SOD                     = ZERO  ! Scattering Optical Depth
     REAL(fp) :: Surface_Emissivity      = ZERO
     REAL(fp) :: Surface_Reflectivity    = ZERO
@@ -144,6 +145,7 @@ MODULE CRTM_RTSolution_Define
     REAL(fp), ALLOCATABLE :: Upwelling_Overcast_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Upwelling_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Layer_Optical_Depth(:)  ! K
+    REAL(fp), ALLOCATABLE :: Single_Scatter_Albedo(:)  ! K  
     ! Radiative transfer results for a single channel
     REAL(fp) :: Radiance               = ZERO
     REAL(fp) :: Brightness_Temperature = ZERO
@@ -275,6 +277,7 @@ CONTAINS
     ALLOCATE( RTSolution%Upwelling_Radiance(n_Layers), &
               RTSolution%Upwelling_Overcast_Radiance(n_Layers), &
               RTSolution%Layer_Optical_Depth(n_Layers), &
+              RTSolution%Single_Scatter_Albedo(n_Layers), & 
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
@@ -285,6 +288,7 @@ CONTAINS
     RTSolution%Upwelling_Radiance  = ZERO
     RTSolution%Upwelling_Overcast_Radiance  = ZERO
     RTSolution%Layer_Optical_Depth = ZERO
+    RTSolution%Single_Scatter_Albedo = ZERO 
 
     ! Set allocation indicator
     RTSolution%Is_Allocated = .TRUE.
@@ -325,6 +329,7 @@ CONTAINS
     TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: RTSolution
 
     ! Zero out the scalar data components
+    RTSolution%SSA_Max                 = ZERO 
     RTSolution%SOD                     = ZERO
     RTSolution%Surface_Emissivity      = ZERO
     RTSolution%Surface_Reflectivity    = ZERO
@@ -343,6 +348,7 @@ CONTAINS
       RTSolution%Upwelling_Radiance  = ZERO
       RTSolution%Upwelling_Overcast_Radiance  = ZERO
       RTSolution%Layer_Optical_Depth = ZERO
+      RTSolution%Single_Scatter_Albedo = ZERO  
     END IF
 
   END SUBROUTINE CRTM_RTSolution_Zero

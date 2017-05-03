@@ -225,6 +225,7 @@ CONTAINS
         CALL Compute_FastemX( &
                MWwaterC                               , &  ! Input model coefficients
                Frequency                              , &  ! Input
+               SfcOptics%n_Angles                     , &  ! Input 
                SfcOptics%Angle(i)                     , &  ! Input
                Surface%Water_Temperature              , &  ! Input
                Surface%Salinity                       , &  ! Input
