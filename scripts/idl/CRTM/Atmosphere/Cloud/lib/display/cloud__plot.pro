@@ -2,6 +2,7 @@ PRO Cloud::Plot, $
   Pressure   = pressure  , $  ; Input keyword
   Diff_Input = diff_input, $  ; Input keyword
   Title      = title     , $  ; Input keyword
+  Color      = color     , $  ; Input keyword
   YNoLog     = ynolog    , $  ; Input keyword
   Owin       = owin      , $  ; Input keyword
   Png        = png       , $  ; Input keyword
@@ -33,8 +34,23 @@ PRO Cloud::Plot, $
     ylog        = 0
     ytickformat = ''
   ENDELSE
-  yrange = [MAX(y), MIN(y)]
+  
+  IF ( N_ELEMENTS(color) GT 0 ) THEN $
+    plot_colour = color $
+  ELSE $
+    plot_colour = 'red'
+    
   create_window = KEYWORD_SET(owin) ? ~ ISA(owin,'GraphicsWin') : 1
+
+  ; Setup for graphics
+  yrange = [MAX(y), MIN(y)]
+  thick  = 2
+  margin = [0.225, 0.15, 0.075, 0.1] ; l, b, r, t
+  xticklen = 0.03
+  xsubticklen = 0.5
+  ygridstyle = 'dot'
+  yticklen = 1.0
+  ysubticklen = 0.02
   ; ...The graphic layout, col x row.
   n_col = 2
   n_row = 1
@@ -89,11 +105,18 @@ PRO Cloud::Plot, $
     x, y, $
     TITLE  = cloud_name + '!C' + delta + ' Effective radius', $
     XTITLE = delta+xtitle, $
+    XTICKLEN = xticklen, $
+    XSUBTICKLEN = xsubticklen, $
     YTITLE = ytitle, $
     YRANGE = yrange, $
     YLOG = ylog, $
     YTICKFORMAT = ytickformat, $
-    COLOR = 'red', $
+    YGRIDSTYLE = ygridstyle, $
+    YTICKLEN = yticklen, $
+    YSUBTICKLEN = ysubticklen, $
+    COLOR = plot_colour, $
+    THICK = thick, $
+    MARGIN = margin, $
     LAYOUT = [ n_col, n_row, index ], $
     CURRENT = owin )
     
@@ -116,11 +139,18 @@ PRO Cloud::Plot, $
     x, y, $
     TITLE  = cloud_name + '!C' + delta + ' Water content', $
     XTITLE = delta+xtitle, $
+    XTICKLEN = xticklen, $
+    XSUBTICKLEN = xsubticklen, $
     YTITLE = ytitle, $
     YRANGE = yrange, $
     YLOG = ylog, $
     YTICKFORMAT = ytickformat, $
-    COLOR = 'red', $
+    YGRIDSTYLE = ygridstyle, $
+    YTICKLEN = yticklen, $
+    YSUBTICKLEN = ysubticklen, $
+    COLOR = plot_colour, $
+    THICK = thick, $
+    MARGIN = margin, $
     LAYOUT = [ n_col, n_row, index ], $
     CURRENT = owin )
     

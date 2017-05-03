@@ -8,10 +8,10 @@ export FC="ifort"
 export FCFLAGS="\
 -g \
 -check bounds \
--e03 \
+-e08 \
 -traceback \
 -free \
--assume byterecl \
+-assume byterecl,realloc_lhs \
 -fp-stack-check \
 -mieee-fp"
 

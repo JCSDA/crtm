@@ -43,6 +43,7 @@ PRO Atmosphere::Destroy, $
   IF ( OBJ_VALID(self.Pressure      ) ) THEN self.Pressure       -> REMOVE, /ALL
   IF ( OBJ_VALID(self.Temperature   ) ) THEN self.Temperature    -> REMOVE, /ALL
   IF ( OBJ_VALID(self.Absorber      ) ) THEN self.Absorber       -> REMOVE, /ALL
+  IF ( OBJ_VALID(self.CFraction     ) ) THEN self.CFraction      -> REMOVE, /ALL
   IF ( OBJ_VALID(self.Cloud         ) ) THEN self.Cloud          -> REMOVE, /ALL
   IF ( OBJ_VALID(self.Aerosol       ) ) THEN self.Aerosol        -> REMOVE, /ALL
 

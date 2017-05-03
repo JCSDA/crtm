@@ -19,7 +19,8 @@ MODULE CRTM_Atmosphere
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters       , ONLY: ZERO, ONE, POINT_5, SET, &
                                     TOA_PRESSURE           , &
-                                    MINIMUM_ABSORBER_AMOUNT
+                                    MINIMUM_ABSORBER_AMOUNT, &
+                                    WATER_CONTENT_THRESHOLD
   USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type    , &
                                     OPERATOR(==), &
                                     OPERATOR(+), &
@@ -45,9 +46,18 @@ MODULE CRTM_Atmosphere
   ! Everything private by default
   PRIVATE
   ! Module procedures
+  PUBLIC :: CRTM_Atmosphere_Coverage
+  PUBLIC :: CRTM_Atmosphere_IsClear
+  PUBLIC :: CRTM_Atmosphere_IsFractional
+  PUBLIC :: CRTM_Atmosphere_IsOvercast
+  
   PUBLIC :: CRTM_Atmosphere_AddLayers
   PUBLIC :: CRTM_Atmosphere_AddLayers_TL
   PUBLIC :: CRTM_Atmosphere_AddLayers_AD
+  
+  PUBLIC :: CRTM_Atmosphere_ClearSkyCopy
+  PUBLIC :: CRTM_Atmosphere_ClearSkyCopy_TL
+  PUBLIC :: CRTM_Atmosphere_ClearSkyCopy_AD
   ! iAtm entities
   ! ...Structure
   PUBLIC :: iAtm_type      
@@ -60,12 +70,20 @@ MODULE CRTM_Atmosphere
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
+  ! The cloud coverage type
+  INTEGER, PARAMETER :: CLEAR      = -1
+  INTEGER, PARAMETER :: FRACTIONAL =  0
+  INTEGER, PARAMETER :: OVERCAST   =  1
+!  CHARACTER(*), PARAMETER, DIMENSION( -1:1 ) :: &
+!    CLOUD_COVERAGE_NAME = [ 'Clear sky          ', &
+!                            'Fractional coverage', &
+!                            'Overcast           '  ]
+  
 
 CONTAINS
 
@@ -77,6 +95,106 @@ CONTAINS
 !##                                                                            ##
 !################################################################################
 !################################################################################
+
+  FUNCTION CRTM_Atmosphere_IsClear(coverage_flag) RESULT(is_clear)
+    INTEGER, INTENT(IN) :: coverage_flag
+    LOGICAL :: is_clear
+    is_clear = coverage_flag == CLEAR
+  END FUNCTION CRTM_Atmosphere_IsClear
+  
+  FUNCTION CRTM_Atmosphere_IsFractional(coverage_flag) RESULT(is_fractional)
+    INTEGER, INTENT(IN) :: coverage_flag
+    LOGICAL :: is_fractional
+    is_fractional = coverage_flag == FRACTIONAL
+  END FUNCTION CRTM_Atmosphere_IsFractional
+
+  FUNCTION CRTM_Atmosphere_IsOvercast(coverage_flag) RESULT(is_overcast)
+    INTEGER, INTENT(IN) :: coverage_flag
+    LOGICAL :: is_overcast
+    is_overcast = coverage_flag == OVERCAST
+  END FUNCTION CRTM_Atmosphere_IsOvercast
+  
+  
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   CRTM_Atmosphere_Coverage
+!
+! PURPOSE:
+!   Function to determine the cloud coverage type for an input
+!   atmosphere.
+!
+! CALLING SEQUENCE:
+!   coverage_flag = CRTM_Atmosphere_Coverage( atm )  ! Input
+!
+! INPUTS:
+!   atm:            Atmosphere structure for which the coverage type is
+!                   to be determined.
+!                   UNITS:      N/A
+!                   TYPE:       CRTM_Atmosphere_type
+!                   DIMENSION:  Scalar
+!                   ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!   coverage_flag:  An integer defining the coverage type. Valid
+!                   parameterised values are:
+!                     CLEAR     
+!                     FRACTIONAL
+!                     OVERCAST  
+!                   UNITS:      N/A
+!                   TYPE:       INTEGER
+!                   DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Atmosphere_Coverage(atm) RESULT(coverage_flag)
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: atm
+    ! Function result
+    INTEGER :: coverage_flag
+    ! Local parameters
+    REAL(fp), PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp
+    REAL(fp), PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD
+    ! Local variables
+    LOGICAL :: cloudy_layer_mask(atm%n_Layers)
+    INTEGER :: idx(atm%n_Layers)
+    INTEGER :: n, nc, k
+    
+    ! Default clear
+    coverage_flag = CLEAR
+    IF ( atm%n_Clouds == 0 ) RETURN
+  
+    ! Check each cloud separately
+    Cloud_Loop: DO n = 1, atm%n_Clouds
+    
+      ! Determine if there are ANY cloudy layers
+      cloudy_layer_mask = atm%Cloud(n)%Water_Content > WATER_CONTENT_THRESHOLD
+      nc = COUNT(cloudy_layer_mask)
+      IF ( nc == 0 ) CYCLE Cloud_Loop
+
+      ! Get the indices of those cloudy layers
+      idx(1:nc) = PACK([(k, k=1,atm%Cloud(n)%n_Layers)], cloudy_layer_mask)
+
+      ! Check for ANY fractional coverage
+      ! ??? How to do this without the loop ???
+      DO k = 1, nc
+        IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) .AND. &
+             (atm%Cloud_Fraction(idx(k)) < MAX_COVERAGE_THRESHOLD) ) THEN
+          coverage_flag = FRACTIONAL
+          RETURN
+        END IF
+      END DO
+
+      ! Check for ALL totally clear or totally cloudy
+      IF ( ALL(atm%Cloud_Fraction(idx(1:nc)) < MIN_COVERAGE_THRESHOLD) .OR. &
+           ALL(atm%Cloud_Fraction(idx(1:nc)) > MAX_COVERAGE_THRESHOLD) ) coverage_flag = OVERCAST
+      
+    END DO Cloud_Loop
+    
+  END FUNCTION CRTM_Atmosphere_Coverage
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -241,6 +359,7 @@ CONTAINS
     Atm_Out%Level_Pressure(0:n) = iAtm%pl
     Atm_Out%Pressure(1:n)       = iAtm%p
     Atm_Out%Temperature(1:n)    = iAtm%t
+    Atm_Out%Cloud_Fraction(1:n) = ZERO
     DO j = 1, Atm_Out%n_Absorbers
       Atm_Out%Absorber(1:n,j)   = iAtm%a(:,j)
     END DO
@@ -495,7 +614,7 @@ CONTAINS
         Atm_In_AD%Cloud(i)%Effective_Variance(1:no) = Atm_In_AD%Cloud(i)%Effective_Variance(1:no) + &
                                                       Atm_Out_AD%Cloud(i)%Effective_Variance(n+1:nt)
         Atm_In_AD%Cloud(i)%Effective_Radius(1:no) = Atm_In_AD%Cloud(i)%Effective_Radius(1:no) + &
-                                                    Atm_Out_AD%Cloud(i)%Effective_Radius(n+1:nt)
+                                                    Atm_Out_AD%Cloud(i)%Effective_Radius(n+1:nt)                                                    
         Atm_In_AD%Cloud(i)%Type = Atm_Out_AD%Cloud(i)%Type
       END DO
     END IF
@@ -508,12 +627,388 @@ CONTAINS
     ! ...Pressure data
     Atm_In_AD%Pressure(1:no)       = Atm_In_AD%Pressure(1:no) + Atm_Out_AD%Pressure(n+1:nt)
     Atm_In_AD%Level_Pressure(0:no) = Atm_In_AD%Level_Pressure(0:no) + Atm_Out_AD%Level_Pressure(n:nt)
+    ! ...Cloud fraction data
+    Atm_In_AD%Cloud_Fraction(1:no) = Atm_In_AD%Cloud_Fraction(1:no) + &
+                                     Atm_Out_AD%Cloud_Fraction(n+1:nt)    
 
 
     ! Zero the output atmosphere structure
     CALL CRTM_Atmosphere_Zero( Atm_Out_AD )
 
   END FUNCTION CRTM_Atmosphere_AddLayers_AD
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Atmosphere_ClearSkyCopy
+!
+! PURPOSE:
+!       Function to copy an instance of the CRTM Atmosphere object
+!       but without the clouds included.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Atmosphere_ClearSkyCopy( Atm, Atm_Clear )
+!
+! INPUTS:
+!       Atm:             Atmosphere structure to copy
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Atm_Clear:       Copy of the input atmosphere but withut cloud information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Atmosphere_ClearSkyCopy( atm, atm_clear ) RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: atm
+    TYPE(CRTM_Atmosphere_type), INTENT(OUT) :: atm_clear
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_ClearSkyCopy'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+    INTEGER :: i, k
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input
+    IF ( .NOT. CRTM_Atmosphere_Associated(atm) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atmosphere structure not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Create the output structure
+    CALL CRTM_Atmosphere_Create( atm_clear      , &
+                                 atm%n_Layers   , &
+                                 atm%n_Absorbers, &
+                                 0              , &  ! NO CLOUDS !
+                                 atm%n_Aerosols   )
+    IF ( .NOT. CRTM_Atmosphere_Associated(atm_clear) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Error allocating output Clear-Sky Atmosphere structure'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Copy over data
+    ! ...Extra dimensions
+    atm_clear%n_Added_Layers = atm%n_Added_Layers
+    ! ...Layer independent data
+    atm_clear%Climatology    = atm%Climatology
+    atm_clear%Absorber_ID    = atm%Absorber_ID
+    atm_clear%Absorber_Units = atm%Absorber_Units
+    ! ...Layer dependent data
+    k = atm%n_Layers
+    atm_clear%Level_Pressure = atm%Level_Pressure(0:k)
+    atm_clear%Pressure       = atm%Pressure(1:k)
+    atm_clear%Temperature    = atm%Temperature(1:k)
+    atm_clear%Absorber       = atm%Absorber(1:k,:)
+    atm_clear%Cloud_Fraction = atm%Cloud_Fraction(1:k)
+    ! ...Aerosol components
+    IF ( atm%n_Aerosols > 0 ) THEN
+      DO i = 1, atm%n_Aerosols
+        atm_clear%Aerosol(i) = atm%Aerosol(i)
+      END DO
+    END IF
+
+  END FUNCTION CRTM_Atmosphere_ClearSkyCopy
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Atmosphere_ClearSkyCopy_TL
+!
+! PURPOSE:
+!       Function to copy an instance of a tangent-linear CRTM Atmosphere object
+!       but without the clouds included.
+!!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Atmosphere_ClearSkyCopy_TL( Atm, Atm_TL, Atm_Clear_TL )
+!
+! INPUTS:
+!       Atm:             Atmosphere object for consistency checking
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Atm_TL:          Tangent-linear Atmosphere object to copy. This object
+!                        must be the tangent-linear equivalent of the input
+!                        forward Atm object.
+!                        This
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Atm_Clear_TL:    Copy of the input atmosphere but withut cloud information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Atmosphere_ClearSkyCopy_TL( &
+    atm         , &  ! FWD input
+    atm_TL      , &  ! TL  input
+    atm_clear_TL) &  ! TL  output
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: atm
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)  :: atm_TL
+    TYPE(CRTM_Atmosphere_type), INTENT(OUT) :: atm_clear_TL
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_ClearSkyCopy_TL'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+    INTEGER :: i, k
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input allocation
+    IF ( .NOT. CRTM_Atmosphere_Associated(atm   ) .OR. &
+         .NOT. CRTM_Atmosphere_Associated(atm_TL) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atmosphere structures not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Dimension consistency
+    IF ( (atm%n_Layers       /= atm_TL%n_Layers      ) .OR. &
+         (atm%n_Absorbers    /= atm_TL%n_Absorbers   ) .OR. &
+         (atm%n_Clouds       /= atm_TL%n_Clouds      ) .OR. &
+         (atm%n_Aerosols     /= atm_TL%n_Aerosols    ) .OR. &
+         (atm%n_Added_Layers /= atm_TL%n_Added_Layers) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atmosphere structures have incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Non-layer dependent data consistency
+    IF (    (atm%Climatology    /= atm_TL%Climatology   ) .OR. &
+         ANY(atm%Absorber_ID    /= atm_TL%Absorber_ID   ) .OR. &
+         ANY(atm%Absorber_Units /= atm_TL%Absorber_Units) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atmosphere structures have incongruent layer independent data'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Create the output structure
+    CALL CRTM_Atmosphere_Create( atm_clear_TL      , &
+                                 atm_TL%n_Layers   , &
+                                 atm_TL%n_Absorbers, &
+                                 0                 , &  ! NO CLOUDS !
+                                 atm_TL%n_Aerosols   )
+    IF ( .NOT. CRTM_Atmosphere_Associated(atm_clear_TL) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Error allocating output Clear-Sky Atmosphere structure'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Copy over data
+    ! ...Extra dimensions
+    atm_clear_TL%n_Added_Layers = atm_TL%n_Added_Layers
+    ! ...Layer independent data
+    atm_clear_TL%Climatology    = atm_TL%Climatology
+    atm_clear_TL%Absorber_ID    = atm_TL%Absorber_ID
+    atm_clear_TL%Absorber_Units = atm_TL%Absorber_Units
+    ! ...Layer dependent data
+    k = atm%n_Layers
+    atm_clear_TL%Level_Pressure = atm_TL%Level_Pressure(0:k)
+    atm_clear_TL%Pressure       = atm_TL%Pressure(1:k)
+    atm_clear_TL%Temperature    = atm_TL%Temperature(1:k)
+    atm_clear_TL%Absorber       = atm_TL%Absorber(1:k,:)
+    atm_clear_TL%Cloud_Fraction = atm_TL%Cloud_Fraction(1:k)
+    ! ...Aerosol components
+    IF ( atm_TL%n_Aerosols > 0 ) THEN
+      DO i = 1, atm_TL%n_Aerosols
+        atm_clear_TL%Aerosol(i) = atm_TL%Aerosol(i)
+      END DO
+    END IF
+
+  END FUNCTION CRTM_Atmosphere_ClearSkyCopy_TL
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Atmosphere_ClearSkyCopy_AD
+!
+! PURPOSE:
+!       Function to perform the adjoint copy of an instance of the CRTM
+!       Atmosphere object without the clouds included.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_Atmosphere_ClearSkyCopy_AD( Atm, Atm_Clear_AD, Atm_AD )
+!
+! INPUTS:
+!       Atm:             Atmosphere object for consistency checking
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Atm_Clear_AD:    Adjoint Clear-Sky Atmosphere structure to copy
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       Atm_AD:          Adjoint copy of the input atmosphere. This object
+!                        must be the adjoint equivalent of the input
+!                        forward Atm object.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_Atmosphere_ClearSkyCopy_AD( &
+    atm         , &  ! FWD input
+    atm_clear_AD, &  ! AD  input
+    atm_AD      ) &  ! AD  output
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: atm
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: atm_clear_AD
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: atm_AD
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Atmosphere_ClearSkyCopy_AD'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+    INTEGER :: i, k
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input allocation
+    IF ( .NOT. CRTM_Atmosphere_Associated(atm         ) .OR. &
+         .NOT. CRTM_Atmosphere_Associated(atm_clear_AD) .OR. &
+         .NOT. CRTM_Atmosphere_Associated(atm_AD      ) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atmosphere structures not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Dimensional consistency
+    IF ( (atm%n_Layers       /= atm_AD%n_Layers      ) .OR. &
+         (atm%n_Absorbers    /= atm_AD%n_Absorbers   ) .OR. &
+         (atm%n_Clouds       /= atm_AD%n_Clouds      ) .OR. &
+         (atm%n_Aerosols     /= atm_AD%n_Aerosols    ) .OR. &
+         (atm%n_Added_Layers /= atm_AD%n_Added_Layers) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atm and Atm_AD structures have incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    IF ( (atm_clear_AD%n_Layers       /= atm_AD%n_Layers      ) .OR. &
+         (atm_clear_AD%n_Absorbers    /= atm_AD%n_Absorbers   ) .OR. &
+         (atm_clear_AD%n_Aerosols     /= atm_AD%n_Aerosols    ) .OR. &
+         (atm_clear_AD%n_Clouds       /= 0                    ) .OR. &  ! NO CLOUDS !
+         (atm_clear_AD%n_Added_Layers /= atm_AD%n_Added_Layers) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input Atm_Clear_AD structures has incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Non-layer dependent data consistency
+    IF (    (atm%Climatology    /= atm_AD%Climatology   ) .OR. &
+         ANY(atm%Absorber_ID    /= atm_AD%Absorber_ID   ) .OR. &
+         ANY(atm%Absorber_Units /= atm_AD%Absorber_Units) .OR. &
+            (atm%Climatology    /= atm_clear_AD%Climatology   ) .OR. &
+         ANY(atm%Absorber_ID    /= atm_clear_AD%Absorber_ID   ) .OR. &
+         ANY(atm%Absorber_Units /= atm_clear_AD%Absorber_Units) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Atmosphere structures have incongruent layer independent data'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Adjoint copy of data
+    ! ...Aerosol components
+    IF ( atm%n_Aerosols > 0 ) THEN
+      DO i = 1, atm%n_Aerosols
+        atm_AD%Aerosol(i) = atm_AD%Aerosol(i) + atm_clear_AD%Aerosol(i)
+      END DO
+    END IF
+    ! ...Layer dependent data
+    k = atm%n_Layers
+    atm_AD%Level_Pressure(0:k) = atm_AD%Level_Pressure(0:k) + atm_clear_AD%Level_Pressure(0:k)
+    atm_AD%Pressure(1:k)       = atm_AD%Pressure(1:k)       + atm_clear_AD%Pressure(1:k)      
+    atm_AD%Temperature(1:k)    = atm_AD%Temperature(1:k)    + atm_clear_AD%Temperature(1:k)   
+    atm_AD%Absorber(1:k,:)     = atm_AD%Absorber(1:k,:)     + atm_clear_AD%Absorber(1:k,:)      
+    atm_AD%Cloud_Fraction(1:k) = atm_AD%Cloud_Fraction(1:k) + atm_clear_AD%Cloud_Fraction(1:k)
+
+
+    ! Zero the clear result, as it has no more impact
+    CALL CRTM_Atmosphere_Zero( atm_clear_AD )
+
+  END FUNCTION CRTM_Atmosphere_ClearSkyCopy_AD
+
+
+
 
 !##################################################################################
 !##################################################################################

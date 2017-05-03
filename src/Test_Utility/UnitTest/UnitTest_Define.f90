@@ -5,8 +5,8 @@
 !
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, 05-Feb-2007
-!                       paul.vandelst@noaa.gov
+!   Written by:     Paul van Delst, 05-Feb-2007
+!                   paul.vandelst@noaa.gov
 !
 
 MODULE UnitTest_Define
@@ -16,9 +16,11 @@ MODULE UnitTest_Define
   ! -----------------
   ! Module usage
   USE Type_Kinds           , ONLY: Byte, Short, Long, Single, Double
-  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.)
+  USE Compare_Float_Numbers, ONLY: OPERATOR(.EqualTo.), &
+                                   Compares_Within_Tolerance
   ! Disable implicit typing
   IMPLICIT NONE
+
 
   ! ------------
   ! Visibilities
@@ -28,6 +30,8 @@ MODULE UnitTest_Define
   ! Datatypes
   PUBLIC :: UnitTest_type
   ! Procedures
+  ! **** These procedure interfaces are kept for legacy
+  ! **** purposes, but deprecated for new code
   PUBLIC :: UnitTest_Init
   PUBLIC :: UnitTest_Setup
   PUBLIC :: UnitTest_Report
@@ -39,73 +43,123 @@ MODULE UnitTest_Define
   PUBLIC :: UnitTest_Assert
   PUBLIC :: UnitTest_IsEqual
   PUBLIC :: UnitTest_IsEqualWithin
-  PUBLIC :: UnitTest_DefineVersion
+  PUBLIC :: UnitTest_IsWithinSigFig
 
 
   ! ---------------------
   ! Procedure overloading
   ! ---------------------
-  ! PUBLIC procedures
+
+  ! **** Pre-type-bound procedure interface definitions
+  ! **** Kept for legacy purposes, but deprecated for new code
+  INTERFACE UnitTest_Init
+    MODULE PROCEDURE Init
+  END INTERFACE UnitTest_Init
+
+  INTERFACE UnitTest_Setup
+    MODULE PROCEDURE Setup
+  END INTERFACE UnitTest_Setup
+
+  INTERFACE UnitTest_Report
+    MODULE PROCEDURE Report
+  END INTERFACE UnitTest_Report
+
+  INTERFACE UnitTest_Summary
+    MODULE PROCEDURE Summary
+  END INTERFACE UnitTest_Summary
+
+  INTERFACE UnitTest_n_Passed
+    MODULE PROCEDURE n_Passed
+  END INTERFACE UnitTest_n_Passed
+
+  INTERFACE UnitTest_n_Failed
+    MODULE PROCEDURE n_Failed
+  END INTERFACE UnitTest_n_Failed
+
+  INTERFACE UnitTest_Passed
+    MODULE PROCEDURE Passed
+  END INTERFACE UnitTest_Passed
+
+  INTERFACE UnitTest_Failed
+    MODULE PROCEDURE Failed
+  END INTERFACE UnitTest_Failed
+
+  INTERFACE UnitTest_Assert
+    MODULE PROCEDURE Assert
+  END INTERFACE UnitTest_Assert
+
   INTERFACE UnitTest_IsEqual
     ! INTEGER(Byte) procedures
-    MODULE PROCEDURE intbyte_isequal_scalar
-    MODULE PROCEDURE intbyte_isequal_rank1
-    MODULE PROCEDURE intbyte_isequal_rank2
+    MODULE PROCEDURE intbyte_assert_equal_s
+    MODULE PROCEDURE intbyte_assert_equal_r1
+    MODULE PROCEDURE intbyte_assert_equal_r2
     ! INTEGER(Short) procedures
-    MODULE PROCEDURE intshort_isequal_scalar
-    MODULE PROCEDURE intshort_isequal_rank1
-    MODULE PROCEDURE intshort_isequal_rank2
+    MODULE PROCEDURE intshort_assert_equal_s
+    MODULE PROCEDURE intshort_assert_equal_r1
+    MODULE PROCEDURE intshort_assert_equal_r2
     ! INTEGER(Long) procedures
-    MODULE PROCEDURE intlong_isequal_scalar
-    MODULE PROCEDURE intlong_isequal_rank1
-    MODULE PROCEDURE intlong_isequal_rank2
+    MODULE PROCEDURE intlong_assert_equal_s
+    MODULE PROCEDURE intlong_assert_equal_r1
+    MODULE PROCEDURE intlong_assert_equal_r2
     ! REAL(Single) procedures
-    MODULE PROCEDURE realsp_isequal_scalar
-    MODULE PROCEDURE realsp_isequal_rank1
-    MODULE PROCEDURE realsp_isequal_rank2
+    MODULE PROCEDURE realsp_assert_equal_s
+    MODULE PROCEDURE realsp_assert_equal_r1
+    MODULE PROCEDURE realsp_assert_equal_r2
     ! REAL(Double) procedures
-    MODULE PROCEDURE realdp_isequal_scalar
-    MODULE PROCEDURE realdp_isequal_rank1
-    MODULE PROCEDURE realdp_isequal_rank2
+    MODULE PROCEDURE realdp_assert_equal_s
+    MODULE PROCEDURE realdp_assert_equal_r1
+    MODULE PROCEDURE realdp_assert_equal_r2
     ! COMPLEX(Single) procedures
-    MODULE PROCEDURE complexsp_isequal_scalar
-    MODULE PROCEDURE complexsp_isequal_rank1
-    MODULE PROCEDURE complexsp_isequal_rank2
+    MODULE PROCEDURE complexsp_assert_equal_s
+    MODULE PROCEDURE complexsp_assert_equal_r1
+    MODULE PROCEDURE complexsp_assert_equal_r2
     ! COMPLEX(Double) procedures
-    MODULE PROCEDURE complexdp_isequal_scalar
-    MODULE PROCEDURE complexdp_isequal_rank1
-    MODULE PROCEDURE complexdp_isequal_rank2
+    MODULE PROCEDURE complexdp_assert_equal_s
+    MODULE PROCEDURE complexdp_assert_equal_r1
+    MODULE PROCEDURE complexdp_assert_equal_r2
     ! CHARACTER(*) procedures
-    MODULE PROCEDURE char_isequal_scalar
-    MODULE PROCEDURE char_isequal_rank1
-    MODULE PROCEDURE char_isequal_rank2
+    MODULE PROCEDURE char_assert_equal_s
+    MODULE PROCEDURE char_assert_equal_r1
+    MODULE PROCEDURE char_assert_equal_r2
   END INTERFACE UnitTest_IsEqual
 
   INTERFACE UnitTest_IsEqualWithin
     ! REAL(Single) procedures
-    MODULE PROCEDURE realsp_isequalwithin_scalar
-    MODULE PROCEDURE realsp_isequalwithin_rank1
-    MODULE PROCEDURE realsp_isequalwithin_rank2
+    MODULE PROCEDURE realsp_assert_equalwithin_s
+    MODULE PROCEDURE realsp_assert_equalwithin_r1
+    MODULE PROCEDURE realsp_assert_equalwithin_r2
     ! REAL(Double) procedures
-    MODULE PROCEDURE realdp_isequalwithin_scalar
-    MODULE PROCEDURE realdp_isequalwithin_rank1
-    MODULE PROCEDURE realdp_isequalwithin_rank2
+    MODULE PROCEDURE realdp_assert_equalwithin_s
+    MODULE PROCEDURE realdp_assert_equalwithin_r1
+    MODULE PROCEDURE realdp_assert_equalwithin_r2
     ! COMPLEX(Single) procedures
-    MODULE PROCEDURE complexsp_isequalwithin_scalar
-    MODULE PROCEDURE complexsp_isequalwithin_rank1
-    MODULE PROCEDURE complexsp_isequalwithin_rank2
+    MODULE PROCEDURE complexsp_assert_equalwithin_s
+    MODULE PROCEDURE complexsp_assert_equalwithin_r1
+    MODULE PROCEDURE complexsp_assert_equalwithin_r2
     ! COMPLEX(Double) procedures
-    MODULE PROCEDURE complexdp_isequalwithin_scalar
-    MODULE PROCEDURE complexdp_isequalwithin_rank1
-    MODULE PROCEDURE complexdp_isequalwithin_rank2
+    MODULE PROCEDURE complexdp_assert_equalwithin_s
+    MODULE PROCEDURE complexdp_assert_equalwithin_r1
+    MODULE PROCEDURE complexdp_assert_equalwithin_r2
   END INTERFACE UnitTest_IsEqualWithin
 
-
-  ! PRIVATE procedures
-  INTERFACE Get_Multiplier
-    MODULE PROCEDURE realsp_get_multiplier
-    MODULE PROCEDURE realdp_get_multiplier
-  END INTERFACE Get_Multiplier
+  INTERFACE UnitTest_IsWithinSigFig
+    ! REAL(Single) procedures
+    MODULE PROCEDURE realsp_assert_withinsigfig_s
+    MODULE PROCEDURE realsp_assert_withinsigfig_r1
+    MODULE PROCEDURE realsp_assert_withinsigfig_r2
+    ! REAL(Double) procedures
+    MODULE PROCEDURE realdp_assert_withinsigfig_s
+    MODULE PROCEDURE realdp_assert_withinsigfig_r1
+    MODULE PROCEDURE realdp_assert_withinsigfig_r2
+    ! COMPLEX(Single) procedures
+    MODULE PROCEDURE complexsp_assert_withinsigfig_s
+    MODULE PROCEDURE complexsp_assert_withinsigfig_r1
+    MODULE PROCEDURE complexsp_assert_withinsigfig_r2
+    ! COMPLEX(Double) procedures
+    MODULE PROCEDURE complexdp_assert_withinsigfig_s
+    MODULE PROCEDURE complexdp_assert_withinsigfig_r1
+    MODULE PROCEDURE complexdp_assert_withinsigfig_r2
+  END INTERFACE UnitTest_IsWithinSigFig
 
 
   ! -----------------
@@ -117,15 +171,11 @@ MODULE UnitTest_Define
   INTEGER,      PARAMETER :: CR = 13
   INTEGER,      PARAMETER :: LF = 10
   CHARACTER(2), PARAMETER :: CRLF = ACHAR(CR)//ACHAR(LF)
-  CHARACTER(*), PARAMETER :: RFMT = 'es25.18'
-  CHARACTER(*), PARAMETER :: ZFMT = '"(",'//RFMT//',",",'//RFMT//',")"'
   LOGICAL,      PARAMETER :: DEFAULT_VERBOSE = .FALSE.
-
   ! Message colours
   CHARACTER(*), PARAMETER :: GREEN_COLOUR = ACHAR(27)//'[1;32m'
   CHARACTER(*), PARAMETER :: RED_COLOUR   = ACHAR(27)//'[1;31m'
   CHARACTER(*), PARAMETER :: NO_COLOUR    = ACHAR(27)//'[0m'
-
   ! Message levels
   INTEGER, PARAMETER :: N_MESSAGE_LEVELS = 6
   INTEGER, PARAMETER :: INIT_LEVEL          = 1
@@ -141,6 +191,7 @@ MODULE UnitTest_Define
       'REPORT          ', &
       'SUMMARY         ', &
       'INTERNAL FAILURE' ]
+
 
   ! ------------------------
   ! Derived type definitions
@@ -167,8 +218,164 @@ MODULE UnitTest_Define
     INTEGER :: n_AllTests        = 0
     INTEGER :: n_Passed_AllTests = 0
     INTEGER :: n_Failed_AllTests = 0
+  CONTAINS
+    PRIVATE
+    ! Public methods
+    PROCEDURE, PUBLIC, PASS(self) :: Init
+    PROCEDURE, PUBLIC, PASS(self) :: Setup
+    PROCEDURE, PUBLIC, PASS(self) :: Report
+    PROCEDURE, PUBLIC, PASS(self) :: Summary
+    PROCEDURE, PUBLIC, PASS(self) :: n_Passed
+    PROCEDURE, PUBLIC, PASS(self) :: n_Failed
+    PROCEDURE, PUBLIC, PASS(self) :: Passed
+    PROCEDURE, PUBLIC, PASS(self) :: Failed
+    PROCEDURE, PUBLIC, PASS(self) :: Assert
+    PROCEDURE, PUBLIC, PASS(self) :: Refute
+    GENERIC, PUBLIC :: Assert_Equal => &
+      intbyte_assert_equal_s, intbyte_assert_equal_r1, intbyte_assert_equal_r2, &
+      intshort_assert_equal_s, intshort_assert_equal_r1, intshort_assert_equal_r2, &
+      intlong_assert_equal_s, intlong_assert_equal_r1, intlong_assert_equal_r2, &
+      realsp_assert_equal_s, realsp_assert_equal_r1, realsp_assert_equal_r2, &
+      realdp_assert_equal_s, realdp_assert_equal_r1, realdp_assert_equal_r2, &
+      complexsp_assert_equal_s, complexsp_assert_equal_r1, complexsp_assert_equal_r2, &
+      complexdp_assert_equal_s, complexdp_assert_equal_r1, complexdp_assert_equal_r2, &
+      char_assert_equal_s, char_assert_equal_r1, char_assert_equal_r2
+    PROCEDURE, PASS(self) :: intbyte_assert_equal_s
+    PROCEDURE, PASS(self) :: intbyte_assert_equal_r1
+    PROCEDURE, PASS(self) :: intbyte_assert_equal_r2
+    PROCEDURE, PASS(self) :: intshort_assert_equal_s
+    PROCEDURE, PASS(self) :: intshort_assert_equal_r1
+    PROCEDURE, PASS(self) :: intshort_assert_equal_r2
+    PROCEDURE, PASS(self) :: intlong_assert_equal_s
+    PROCEDURE, PASS(self) :: intlong_assert_equal_r1
+    PROCEDURE, PASS(self) :: intlong_assert_equal_r2
+    PROCEDURE, PASS(self) :: realsp_assert_equal_s
+    PROCEDURE, PASS(self) :: realsp_assert_equal_r1
+    PROCEDURE, PASS(self) :: realsp_assert_equal_r2
+    PROCEDURE, PASS(self) :: realdp_assert_equal_s
+    PROCEDURE, PASS(self) :: realdp_assert_equal_r1
+    PROCEDURE, PASS(self) :: realdp_assert_equal_r2
+    PROCEDURE, PASS(self) :: complexsp_assert_equal_s
+    PROCEDURE, PASS(self) :: complexsp_assert_equal_r1
+    PROCEDURE, PASS(self) :: complexsp_assert_equal_r2
+    PROCEDURE, PASS(self) :: complexdp_assert_equal_s
+    PROCEDURE, PASS(self) :: complexdp_assert_equal_r1
+    PROCEDURE, PASS(self) :: complexdp_assert_equal_r2
+    PROCEDURE, PASS(self) :: char_assert_equal_s
+    PROCEDURE, PASS(self) :: char_assert_equal_r1
+    PROCEDURE, PASS(self) :: char_assert_equal_r2
+    GENERIC, PUBLIC :: Refute_Equal => &
+      intbyte_refute_equal_s, intbyte_refute_equal_r1, intbyte_refute_equal_r2, &
+      intshort_refute_equal_s, intshort_refute_equal_r1, intshort_refute_equal_r2, &
+      intlong_refute_equal_s, intlong_refute_equal_r1, intlong_refute_equal_r2, &
+      realsp_refute_equal_s, realsp_refute_equal_r1, realsp_refute_equal_r2, &
+      realdp_refute_equal_s, realdp_refute_equal_r1, realdp_refute_equal_r2, &
+      complexsp_refute_equal_s, complexsp_refute_equal_r1, complexsp_refute_equal_r2, &
+      complexdp_refute_equal_s, complexdp_refute_equal_r1, complexdp_refute_equal_r2, &
+      char_refute_equal_s, char_refute_equal_r1, char_refute_equal_r2
+    PROCEDURE, PASS(self) :: intbyte_refute_equal_s
+    PROCEDURE, PASS(self) :: intbyte_refute_equal_r1
+    PROCEDURE, PASS(self) :: intbyte_refute_equal_r2
+    PROCEDURE, PASS(self) :: intshort_refute_equal_s
+    PROCEDURE, PASS(self) :: intshort_refute_equal_r1
+    PROCEDURE, PASS(self) :: intshort_refute_equal_r2
+    PROCEDURE, PASS(self) :: intlong_refute_equal_s
+    PROCEDURE, PASS(self) :: intlong_refute_equal_r1
+    PROCEDURE, PASS(self) :: intlong_refute_equal_r2
+    PROCEDURE, PASS(self) :: realsp_refute_equal_s
+    PROCEDURE, PASS(self) :: realsp_refute_equal_r1
+    PROCEDURE, PASS(self) :: realsp_refute_equal_r2
+    PROCEDURE, PASS(self) :: realdp_refute_equal_s
+    PROCEDURE, PASS(self) :: realdp_refute_equal_r1
+    PROCEDURE, PASS(self) :: realdp_refute_equal_r2
+    PROCEDURE, PASS(self) :: complexsp_refute_equal_s
+    PROCEDURE, PASS(self) :: complexsp_refute_equal_r1
+    PROCEDURE, PASS(self) :: complexsp_refute_equal_r2
+    PROCEDURE, PASS(self) :: complexdp_refute_equal_s
+    PROCEDURE, PASS(self) :: complexdp_refute_equal_r1
+    PROCEDURE, PASS(self) :: complexdp_refute_equal_r2
+    PROCEDURE, PASS(self) :: char_refute_equal_s
+    PROCEDURE, PASS(self) :: char_refute_equal_r1
+    PROCEDURE, PASS(self) :: char_refute_equal_r2
+    GENERIC, PUBLIC :: Assert_EqualWithin => &
+      realsp_assert_equalwithin_s, realsp_assert_equalwithin_r1, realsp_assert_equalwithin_r2, &
+      realdp_assert_equalwithin_s, realdp_assert_equalwithin_r1, realdp_assert_equalwithin_r2, &
+      complexsp_assert_equalwithin_s, complexsp_assert_equalwithin_r1, complexsp_assert_equalwithin_r2, &
+      complexdp_assert_equalwithin_s, complexdp_assert_equalwithin_r1, complexdp_assert_equalwithin_r2
+    PROCEDURE, PASS(self) :: realsp_assert_equalwithin_s
+    PROCEDURE, PASS(self) :: realsp_assert_equalwithin_r1
+    PROCEDURE, PASS(self) :: realsp_assert_equalwithin_r2
+    PROCEDURE, PASS(self) :: realdp_assert_equalwithin_s
+    PROCEDURE, PASS(self) :: realdp_assert_equalwithin_r1
+    PROCEDURE, PASS(self) :: realdp_assert_equalwithin_r2
+    PROCEDURE, PASS(self) :: complexsp_assert_equalwithin_s
+    PROCEDURE, PASS(self) :: complexsp_assert_equalwithin_r1
+    PROCEDURE, PASS(self) :: complexsp_assert_equalwithin_r2
+    PROCEDURE, PASS(self) :: complexdp_assert_equalwithin_s
+    PROCEDURE, PASS(self) :: complexdp_assert_equalwithin_r1
+    PROCEDURE, PASS(self) :: complexdp_assert_equalwithin_r2
+    GENERIC, PUBLIC :: Refute_EqualWithin => &
+      realsp_refute_equalwithin_s, realsp_refute_equalwithin_r1, realsp_refute_equalwithin_r2, &
+      realdp_refute_equalwithin_s, realdp_refute_equalwithin_r1, realdp_refute_equalwithin_r2, &
+      complexsp_refute_equalwithin_s, complexsp_refute_equalwithin_r1, complexsp_refute_equalwithin_r2, &
+      complexdp_refute_equalwithin_s, complexdp_refute_equalwithin_r1, complexdp_refute_equalwithin_r2
+    PROCEDURE, PASS(self) :: realsp_refute_equalwithin_s
+    PROCEDURE, PASS(self) :: realsp_refute_equalwithin_r1
+    PROCEDURE, PASS(self) :: realsp_refute_equalwithin_r2
+    PROCEDURE, PASS(self) :: realdp_refute_equalwithin_s
+    PROCEDURE, PASS(self) :: realdp_refute_equalwithin_r1
+    PROCEDURE, PASS(self) :: realdp_refute_equalwithin_r2
+    PROCEDURE, PASS(self) :: complexsp_refute_equalwithin_s
+    PROCEDURE, PASS(self) :: complexsp_refute_equalwithin_r1
+    PROCEDURE, PASS(self) :: complexsp_refute_equalwithin_r2
+    PROCEDURE, PASS(self) :: complexdp_refute_equalwithin_s
+    PROCEDURE, PASS(self) :: complexdp_refute_equalwithin_r1
+    PROCEDURE, PASS(self) :: complexdp_refute_equalwithin_r2
+    GENERIC, PUBLIC :: Assert_WithinSigfig => &
+      realsp_assert_withinsigfig_s, realsp_assert_withinsigfig_r1, realsp_assert_withinsigfig_r2, &
+      realdp_assert_withinsigfig_s, realdp_assert_withinsigfig_r1, realdp_assert_withinsigfig_r2, &
+      complexsp_assert_withinsigfig_s, complexsp_assert_withinsigfig_r1, complexsp_assert_withinsigfig_r2, &
+      complexdp_assert_withinsigfig_s, complexdp_assert_withinsigfig_r1, complexdp_assert_withinsigfig_r2
+    PROCEDURE, PASS(self) :: realsp_assert_withinsigfig_s
+    PROCEDURE, PASS(self) :: realsp_assert_withinsigfig_r1
+    PROCEDURE, PASS(self) :: realsp_assert_withinsigfig_r2
+    PROCEDURE, PASS(self) :: realdp_assert_withinsigfig_s
+    PROCEDURE, PASS(self) :: realdp_assert_withinsigfig_r1
+    PROCEDURE, PASS(self) :: realdp_assert_withinsigfig_r2
+    PROCEDURE, PASS(self) :: complexsp_assert_withinsigfig_s
+    PROCEDURE, PASS(self) :: complexsp_assert_withinsigfig_r1
+    PROCEDURE, PASS(self) :: complexsp_assert_withinsigfig_r2
+    PROCEDURE, PASS(self) :: complexdp_assert_withinsigfig_s
+    PROCEDURE, PASS(self) :: complexdp_assert_withinsigfig_r1
+    PROCEDURE, PASS(self) :: complexdp_assert_withinsigfig_r2
+    GENERIC, PUBLIC :: Refute_WithinSigfig => &
+      realsp_refute_withinsigfig_s, realsp_refute_withinsigfig_r1, realsp_refute_withinsigfig_r2, &
+      realdp_refute_withinsigfig_s, realdp_refute_withinsigfig_r1, realdp_refute_withinsigfig_r2, &
+      complexsp_refute_withinsigfig_s, complexsp_refute_withinsigfig_r1, complexsp_refute_withinsigfig_r2, &
+      complexdp_refute_withinsigfig_s, complexdp_refute_withinsigfig_r1, complexdp_refute_withinsigfig_r2
+    PROCEDURE, PASS(self) :: realsp_refute_withinsigfig_s
+    PROCEDURE, PASS(self) :: realsp_refute_withinsigfig_r1
+    PROCEDURE, PASS(self) :: realsp_refute_withinsigfig_r2
+    PROCEDURE, PASS(self) :: realdp_refute_withinsigfig_s
+    PROCEDURE, PASS(self) :: realdp_refute_withinsigfig_r1
+    PROCEDURE, PASS(self) :: realdp_refute_withinsigfig_r2
+    PROCEDURE, PASS(self) :: complexsp_refute_withinsigfig_s
+    PROCEDURE, PASS(self) :: complexsp_refute_withinsigfig_r1
+    PROCEDURE, PASS(self) :: complexsp_refute_withinsigfig_r2
+    PROCEDURE, PASS(self) :: complexdp_refute_withinsigfig_s
+    PROCEDURE, PASS(self) :: complexdp_refute_withinsigfig_r1
+    PROCEDURE, PASS(self) :: complexdp_refute_withinsigfig_r2
+    ! Private methods
+    PROCEDURE, PASS(self) :: Set_Property
+    PROCEDURE, PASS(self) :: Get_Property
+    PROCEDURE, PASS(self) :: Test_Passed
+    PROCEDURE, PASS(self) :: Test_Failed
+    PROCEDURE, PASS(self) :: Test_Increment
+    PROCEDURE, PASS(self) :: Display_Message
+    PROCEDURE, PASS(self) :: Test_Info_String
   END TYPE UnitTest_type
   !:tdoc-:
+
 
 CONTAINS
 
@@ -181,2172 +388,4404 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Init
+!   UnitTest::Init
 !
 ! PURPOSE:
-!       UnitTest initialisation subroutine.
+!   UnitTest initialisation method.
 !
-!       This subroutine should be called ONCE, BEFORE ANY tests are performed.
+!   This method should be called ONCE, BEFORE ANY tests are performed.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_Init( UnitTest, Verbose=Verbose )
+!   CALL utest%Init( Verbose=Verbose )
 !
 ! OBJECTS:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
+!   utest:    UnitTest object.
+!             UNITS:      N/A
+!             CLASS:      UnitTest_type
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUTS:
-!       Verbose:       Logical argument to control length of reporting output.
-!                      If == .FALSE., Only failed tests are reported [DEFAULT].
-!                         == .TRUE.,  Both failed and passed tests are reported.
-!                      If not specified, default is .TRUE.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Verbose:  Logical argument to control length of reporting output.
+!             If == .FALSE., Only failed tests are reported [DEFAULT].
+!                == .TRUE.,  Both failed and passed tests are reported.
+!             If not specified, default is .TRUE.
+!             UNITS:      N/A
+!             TYPE:       LOGICAL
+!             DIMENSION:  Scalar
+!             ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_Init( UnitTest, Verbose )
+  SUBROUTINE Init( self, Verbose )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(OUT) :: UnitTest
-    LOGICAL,   OPTIONAL, INTENT(IN)  :: Verbose
+    CLASS(UnitTest_type), INTENT(OUT) :: self
+    LOGICAL,    OPTIONAL, INTENT(IN)  :: Verbose
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Init'
-    ! Variables
-    LOGICAL :: local_Verbose
-
-    ! Check optional arguments
-    local_Verbose = DEFAULT_VERBOSE
-    IF ( PRESENT(Verbose) ) local_Verbose = Verbose
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Init'
 
     ! Perform initialisation
     CALL Set_Property( &
-      UnitTest, &
-      Verbose = local_Verbose, &
-      Level     = INIT_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      n_Tests        = 0, &
-      n_Passed_Tests = 0, &
-      n_Failed_Tests = 0, &
+      self, &
+      Verbose           = Verbose , &
+      Level             = INIT_LEVEL    , &
+      Procedure         = PROCEDURE_NAME, &
+      n_Tests           = 0, &
+      n_Passed_Tests    = 0, &
+      n_Failed_Tests    = 0, &
       n_AllTests        = 0, &
       n_Passed_AllTests = 0, &
       n_Failed_AllTests = 0  )
-    CALL Display_Message( UnitTest )
-  END SUBROUTINE UnitTest_Init
+
+    CALL Display_Message( self )
+
+  END SUBROUTINE Init
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Setup
+!   UnitTest::Setup
 !
 ! PURPOSE:
-!       UnitTest individual test setup subroutine.
+!   Individual test setup method.
 !
-!       This subroutine should be called BEFORE each set of tests performed.
+!   This method should be called BEFORE each set of tests performed.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_Setup( UnitTest         , &
-!                            Title            , &
-!                            Caller  = Caller , &
-!                            Verbose = Verbose  )
+!   CALL utest_obj&Setup( Title            , &
+!                         Caller  = Caller , &
+!                         Verbose = Verbose  )
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN OUT)
 !
 ! INPUTS:
-!       Title:         Character string containing the title of the test
-!                      to be performed.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   Title:      Character string containing the title of the test
+!               to be performed.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL INPUTS:
-!       Caller:        Character string containing the name of the calling
-!                      subprogram. If not specified, default is an empty string.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Caller:     Character string containing the name of the calling
+!               subprogram. If not specified, default is an empty string.
+!               UNITS:      N/A
+!               TYPE:       CHARACTER(*)
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Verbose:       Logical argument to control length of reporting output.
-!                      If == .FALSE., Only failed tests are reported [DEFAULT].
-!                         == .TRUE.,  Both failed and passed tests are reported.
-!                      If not specified, default is .TRUE.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Verbose:    Logical argument to control length of reporting output.
+!               If == .FALSE., Only failed tests are reported [DEFAULT].
+!                  == .TRUE.,  Both failed and passed tests are reported.
+!               If not specified, default is .TRUE.
+!               UNITS:      N/A
+!               TYPE:       LOGICAL
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_Setup( UnitTest, Title, Caller, Verbose )
+  SUBROUTINE Setup( self, Title, Caller, Verbose )
     ! Arguments
-    TYPE(UnitTest_type)   , INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type)  , INTENT(IN OUT) :: self
     CHARACTER(*)          , INTENT(IN)     :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
     LOGICAL,      OPTIONAL, INTENT(IN)     :: Verbose
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Setup'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Setup'
     ! Variables
-    CHARACTER(SL) :: local_Caller
-    LOGICAL       :: local_Verbose
-    CHARACTER(SL) :: Message
+    CHARACTER(SL) :: the_caller
+    CHARACTER(SL) :: message
 
-    ! Check arguments
-    local_Caller = ''
-    IF ( PRESENT(Caller) ) local_Caller = '; CALLER: '//TRIM(ADJUSTL(Caller))
-    local_Verbose = DEFAULT_VERBOSE
-    IF ( PRESENT(Verbose) ) local_Verbose = Verbose
+    ! Check optional arguments
+    the_caller = ''
+    IF ( PRESENT(Caller) ) the_caller = '; CALLER: '//TRIM(ADJUSTL(Caller))
 
-    ! Create init message
-    Message = TRIM(Title)//TRIM(local_Caller)
+    ! Create setup message
+    message = TRIM(ADJUSTL(Title))//TRIM(the_caller)
 
     ! Perform initialistion
     CALL Set_Property( &
-      UnitTest, &
-      Title   = ADJUSTL(Title), &
-      Caller  = local_Caller  , &
-      Verbose = local_Verbose , &
-      Level     = SETUP_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message, &
-      n_Tests        = 0, &
-      n_Passed_Tests = 0, &
-      n_Failed_Tests = 0  )
-    CALL Display_Message( UnitTest )
+      self, &
+      Title          = Title         , &
+      Caller         = Caller        , &
+      Verbose        = Verbose       , &
+      Level          = SETUP_LEVEL   , &
+      Procedure      = PROCEDURE_NAME, &
+      Message        = message       , &
+      n_Tests        = 0             , &
+      n_Passed_Tests = 0             , &
+      n_Failed_Tests = 0               )
 
-  END SUBROUTINE UnitTest_Setup
+    CALL Display_Message( self )
+
+  END SUBROUTINE Setup
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Report
+!   UnitTest::Report
 !
 ! PURPOSE:
-!       UnitTest individual test report subroutine
+!   Individual test report method.
 !
-!       This subroutine should be called AFTER each set of tests performed.
+!   This method should be called AFTER each set of tests performed.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_Report( UnitTest )
+!   CALL utest_obj%Report()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_Report( UnitTest )
+  SUBROUTINE Report( self )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Report'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Report'
     ! Variables
-    INTEGER :: n_Tests
-    INTEGER :: n_Passed_Tests
-    INTEGER :: n_Failed_Tests
-    CHARACTER(SL) :: Message
-    CHARACTER(SL) :: Attention
+    INTEGER :: n_tests
+    INTEGER :: n_passed_tests
+    INTEGER :: n_failed_tests
+    CHARACTER(SL) :: message
+    CHARACTER(SL) :: attention
     CHARACTER(SL) :: colour
+
     ! Retrieve required properties
     CALL Get_Property( &
-      UnitTest, &
-      n_Tests        = n_Tests       , &
-      n_Passed_Tests = n_Passed_Tests, &
-      n_Failed_Tests = n_Failed_Tests  )
+      self, &
+      n_Tests        = n_tests       , &
+      n_Passed_Tests = n_passed_tests, &
+      n_Failed_Tests = n_failed_tests  )
 
     ! Test fail attention-grabber
     colour    = GREEN_COLOUR
-    Attention = ''
-    IF ( n_Failed_Tests /= 0 ) THEN
+    attention = ''
+    IF ( n_failed_tests /= 0 ) THEN
       colour    = RED_COLOUR
-      Attention = '  <----<<<  **WARNING**'
+      attention = '  <----<<<  **WARNING**'
     END IF
 
-    ! Output results
-    WRITE( Message, &
+    ! Generate report message
+    WRITE( message, &
       '(a,a,3x,"Passed ",i0," of ",i0," tests", &
          &a,3x,"Failed ",i0," of ",i0," tests",a,a)') &
       TRIM(colour), CRLF, &
-      n_Passed_Tests, n_Tests, &
+      n_passed_tests, n_tests, &
       CRLF, &
-      n_Failed_Tests, n_Tests, &
-      TRIM(Attention), NO_COLOUR
+      n_failed_tests, n_tests, &
+      TRIM(attention), NO_COLOUR
+
+    ! Load object with report message
     CALL Set_Property( &
-      UnitTest, &
-      Level = REPORT_LEVEL, &
+      self, &
+      Level     = REPORT_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    CALL Display_Message( UnitTest )
+      Message   = Message )
 
-  END SUBROUTINE UnitTest_Report
+    ! Report!
+    CALL Display_Message( self )
+
+  END SUBROUTINE Report
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Summary
+!   UnitTest::Summary
 !
 ! PURPOSE:
-!       UnitTest test suite report summary subroutine
+!   Test suite report summary method.
 !
-!       This subroutine should be called ONCE, AFTER ALL tests are performed.
+!   This method should be called ONCE, AFTER ALL tests are performed.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_Summary( UnitTest )
+!   CALL utest_obj%Summary()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_Summary( UnitTest )
+  SUBROUTINE Summary( self )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Summary'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Summary'
     ! Variables
-    INTEGER :: n_AllTests
-    INTEGER :: n_Passed_AllTests
-    INTEGER :: n_Failed_AllTests
-    CHARACTER(SL) :: Message
-    CHARACTER(SL) :: Attention
+    INTEGER :: n_alltests
+    INTEGER :: n_passed_alltests
+    INTEGER :: n_failed_alltests
+    CHARACTER(SL) :: message
+    CHARACTER(SL) :: attention
     CHARACTER(SL) :: colour
 
     ! Retrieve required properties
     CALL Get_Property( &
-      UnitTest, &
-      n_AllTests        = n_AllTests       , &
-      n_Passed_AllTests = n_Passed_AllTests, &
-      n_Failed_AllTests = n_Failed_AllTests  )
+      self, &
+      n_AllTests        = n_alltests       , &
+      n_Passed_AllTests = n_passed_alltests, &
+      n_Failed_AllTests = n_failed_alltests  )
 
     ! Test fail attention-grabber
     colour    = GREEN_COLOUR
-    Attention = ''
-    IF ( n_Failed_AllTests /= 0 ) THEN
+    attention = ''
+    IF ( n_failed_alltests /= 0 ) THEN
       colour    = RED_COLOUR
-      Attention = '  <----<<<  **WARNING**'
+      attention = '  <----<<<  **WARNING**'
     END IF
 
-    ! Output results
-    WRITE( Message, &
+    ! Generate summary
+    WRITE( message, &
       '(a,a,1x,"Passed ",i0," of ",i0," total tests",&
          &a,1x,"Failed ",i0," of ",i0," total tests",a,a)') &
       TRIM(colour), CRLF, &
-      n_Passed_AllTests, n_AllTests, &
+      n_passed_alltests, n_alltests, &
       CRLF, &
-      n_Failed_AllTests, n_AllTests, &
-      TRIM(Attention), NO_COLOUR
+      n_failed_alltests, n_alltests, &
+      TRIM(attention), NO_COLOUR
+
+    ! Load object with summary message
     CALL Set_Property( &
-      UnitTest, &
-      Level = SUMMARY_LEVEL, &
+      self, &
+      Level     = SUMMARY_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    CALL Display_Message( UnitTest )
-  END SUBROUTINE UnitTest_Summary
+      Message   = message )
+
+    ! Summarise!
+    CALL Display_Message( self )
+
+  END SUBROUTINE Summary
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_n_Passed
+!   UnitTest::n_Passed
 !
 ! PURPOSE:
-!       Utility function to return the number of tests passed.
+!   Method to return the number of tests passed.
 !
 ! CALLING SEQUENCE:
-!       n = UnitTest_n_Passed( UnitTest )
+!   n = utest_obj%n_Passed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n:             The number of unit tests that have currently passed.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
+!   n:          The number of exercised unit tests that have passed.
+!               UNITS:      N/A
+!               TYPE:       INTEGER
+!               DIMENSION:  Scalar
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  PURE FUNCTION UnitTest_n_Passed( UnitTest ) RESULT( n )
-    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
-    INTEGER :: n
-    CALL Get_Property( UnitTest, n_Passed_Tests = n )
-  END FUNCTION UnitTest_n_Passed
+  PURE INTEGER FUNCTION n_Passed( self )
+    CLASS(UnitTest_type), INTENT(IN) :: self
+    CALL Get_Property( self, n_Passed_Tests = n_Passed )
+  END FUNCTION n_Passed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_n_Failed
+!   UnitTest::n_Failed
 !
 ! PURPOSE:
-!       Utility function to return the number of tests failed.
+!   Method to return the number of tests failed.
 !
 ! CALLING SEQUENCE:
-!       n = UnitTest_n_Failed( UnitTest )
+!   n = utest_obj%n_Failed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       n:             The number of unit tests that have currently failed.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
+!   n:          The number of exercised unit tests that have failed.
+!               UNITS:      N/A
+!               TYPE:       INTEGER
+!               DIMENSION:  Scalar
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  PURE FUNCTION UnitTest_n_Failed( UnitTest ) RESULT( n )
-    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
-    INTEGER :: n
-    CALL Get_Property( UnitTest, n_Failed_Tests = n )
-  END FUNCTION UnitTest_n_Failed
+  PURE INTEGER FUNCTION n_Failed( self )
+    CLASS(UnitTest_type), INTENT(IN) :: self
+    CALL Get_Property( self, n_Failed_Tests = n_Failed )
+  END FUNCTION n_Failed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Passed
+!   UnitTest::Passed
 !
 ! PURPOSE:
-!       Function to inform if the last test performed passed.
+!   Method to inform if the last test performed passed.
 !
 ! CALLING SEQUENCE:
-!       result = UnitTest_Passed( UnitTest )
+!   result = utest_obj%Passed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       result:        Logical to indicate if the last test performed passed.
-!                      If == .TRUE.,  the last test passed,
-!                         == .FALSE., the last test failed.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
+!   result:     Logical to indicate if the last test performed passed.
+!               If == .TRUE.,  the last test passed,
+!                  == .FALSE., the last test failed.
+!               UNITS:      N/A
+!               TYPE:       LOGICAL
+!               DIMENSION:  Scalar
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  PURE FUNCTION UnitTest_Passed( UnitTest ) RESULT( Passed )
-    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
-    LOGICAL :: Passed
-    CALL Get_Property( UnitTest, Test_Result = Passed )
-  END FUNCTION UnitTest_Passed
+  PURE LOGICAL FUNCTION Passed( self )
+    CLASS(UnitTest_type), INTENT(IN) :: self
+    CALL Get_Property( self, Test_Result = Passed )
+  END FUNCTION Passed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Failed
+!   UnitTest::Failed
 !
 ! PURPOSE:
-!       Function to inform if the last test performed failed.
+!   Method to inform if the last test performed failed.
 !
-!       Syntactic sugar procedure.
+!   Syntactic sugar procedure.
 !
 ! CALLING SEQUENCE:
-!       result = UnitTest_Failed( UnitTest )
+!   result = utest_obj%Failed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       result:        Logical to indicate if the last test performed failed.
-!                      If == .TRUE.,  the last test failed,
-!                         == .FALSE., the last test passed.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
+!   result:     Logical to indicate if the last test performed failed.
+!               If == .TRUE.,  the last test failed,
+!                  == .FALSE., the last test passed.
+!               UNITS:      N/A
+!               TYPE:       LOGICAL
+!               DIMENSION:  Scalar
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  PURE FUNCTION UnitTest_Failed( UnitTest ) RESULT( Failed )
-    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
-    LOGICAL :: Failed
-    Failed = .NOT. UnitTest_Passed( UnitTest )
-  END FUNCTION UnitTest_Failed
+  PURE LOGICAL FUNCTION Failed( self )
+    CLASS(UnitTest_type), INTENT(IN) :: self
+    Failed = .NOT. self%Passed()
+  END FUNCTION Failed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_Assert
+!   UnitTest::Assert
 !
 ! PURPOSE:
-!       Subroutine to assert its test argument
+!   Method to assert its logical argument as true.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_Assert(UnitTest, Test)
+!   CALL utest_obj%Assert( boolean )
 !
 ! OBJECTS:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN OUT)
 !
 ! INPUTS:
-!       Test:          The logical expression to assert.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   boolean:    The logical expression to assert. The test passes if the
+!               expression is .TRUE.
+!               UNITS:      N/A
+!               TYPE:       LOGICAL
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_Assert(UnitTest, Test)
+  SUBROUTINE Assert(self, boolean)
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    LOGICAL,             INTENT(IN)     :: Test
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    LOGICAL,              INTENT(IN)     :: boolean
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_Assert'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert'
     ! Variables
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
 
     ! Setup
-    Message = ''
+    message = ''
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. boolean)  ! Always output test failure
 
     ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    IF ( boolean ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
 
-    ! Output message
-    CALL Test_Info_String( UnitTest, Message )
+    ! Generate the assertion message
+    CALL Test_Info_String( self, message )
+    
+    ! Load the object with message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL    , &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
+      Message   = message         )
+      
+    ! Output the assertion result
+    IF ( verbose ) CALL Display_Message( self )
 
-  END SUBROUTINE UnitTest_Assert
+  END SUBROUTINE Assert
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_IsEqual
+!   UnitTest::Refute
 !
 ! PURPOSE:
-!       Subroutine to assert that two arguments are equal.
+!   Method to refute its logical argument as false
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_IsEqual( UnitTest, Expected, Actual )
+!   CALL utest_obj%Assert( boolean )
 !
 ! OBJECTS:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:  UnitTest object.
+!               UNITS:      N/A
+!               CLASS:      UnitTest_type
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN OUT)
 !
 ! INPUTS:
-!       Expected:      The expected value of the variable being tested.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER(Byte)  , or
-!                                  INTEGER(Short) , or
-!                                  INTEGER(Long)  , or
-!                                  REAL(Single)   , or
-!                                  REAL(Double)   , or
-!                                  COMPLEX(Single), or
-!                                  COMPLEX(Double), or
-!                                  CHARACTER(*)
-!                      DIMENSION:  Scalar, or
-!                                  Rank-1, or
-!                                  Rank-2
-!                      ATTRIBUTES: INTENT(IN)
-!
-!       Actual:        The actual value of the variable being tested.
-!                      UNITS:      N/A
-!                      TYPE:       Same as Expected input
-!                      DIMENSION:  Same as Expected input
-!                      ATTRIBUTES: INTENT(IN)
+!   boolean:    The logical expression to refute. The test passes if the
+!               expression is .FALSE.
+!               UNITS:      N/A
+!               TYPE:       LOGICAL
+!               DIMENSION:  Scalar
+!               ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE intbyte_isequal_scalar( UnitTest, Expected, Actual )
+  SUBROUTINE Refute(self, boolean)
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Byte),       INTENT(IN)     :: Expected, Actual
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    LOGICAL,              INTENT(IN)     :: boolean
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Byte)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute'
     ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
 
     ! Setup
-    ! ...Assign the test
-    Test = (Expected == Actual)
+    message = ''
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. boolean  ! Always output test failure
 
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    ! Refute the test
+    IF ( .NOT. boolean ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
 
-    ! Output message
-    WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
+    ! Generate the refutation message
+    CALL Test_Info_String( self, message )
+    
+    ! Load the object with message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL    , &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE intbyte_isequal_scalar
+      Message   = message         )
+      
+    ! Output the refuation result
+    IF ( verbose ) CALL Display_Message( self )
 
+  END SUBROUTINE Refute
 
-  SUBROUTINE intbyte_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Byte),       INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Byte)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
 
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL intbyte_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE intbyte_isequal_rank1
-
-
-  SUBROUTINE intbyte_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Byte),       INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Byte)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL intbyte_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE intbyte_isequal_rank2
-
-
-  SUBROUTINE intshort_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Short),      INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Short)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected == Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE intshort_isequal_scalar
-
-
-  SUBROUTINE intshort_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Short),      INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Short)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL intshort_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE intshort_isequal_rank1
-
-
-  SUBROUTINE intshort_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Short),      INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Short)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL intshort_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE intshort_isequal_rank2
-
-
-  SUBROUTINE intlong_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Long),       INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Long)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected == Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message,'("Expected ",i0," and got ",i0)') Expected, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE intlong_isequal_scalar
-
-
-  SUBROUTINE intlong_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Long),       INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Long)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL intlong_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE intlong_isequal_rank1
-
-
-  SUBROUTINE intlong_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    INTEGER(Long),       INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[INTEGER(Long)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL intlong_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE intlong_isequal_rank2
-
-
-  SUBROUTINE realsp_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Single)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected .EqualTo. Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected: ",'//RFMT//',a,&
-         &7x,"And got:  ",'//RFMT//')') &
-      CRLF, Expected, CRLF, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE realsp_isequal_scalar
-
-
-  SUBROUTINE realsp_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Single)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL realsp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE realsp_isequal_rank1
-
-
-  SUBROUTINE realsp_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Single)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL realsp_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE realsp_isequal_rank2
-
-
-  SUBROUTINE realdp_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Double)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected .EqualTo. Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected: ",'//RFMT//',a,&
-         &7x,"And got:  ",'//RFMT//')') &
-      CRLF, Expected, CRLF, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE realdp_isequal_scalar
-
-
-  SUBROUTINE realdp_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Double)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL realdp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE realdp_isequal_rank1
-
-
-  SUBROUTINE realdp_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[REAL(Double)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL realdp_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE realdp_isequal_rank2
-
-
-  SUBROUTINE complexsp_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Single)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected .EqualTo. Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected: ",'//ZFMT//',a,&
-         &7x,"And got:  ",'//ZFMT//')') &
-      CRLF, Expected, CRLF, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE complexsp_isequal_scalar
-
-
-  SUBROUTINE complexsp_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Single)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL complexsp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE complexsp_isequal_rank1
-
-
-  SUBROUTINE complexsp_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Single)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL complexsp_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE complexsp_isequal_rank2
-
-
-  SUBROUTINE complexdp_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Double)]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected .EqualTo. Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected: ",'//ZFMT//',a,&
-         &7x,"And got:  ",'//ZFMT//')') &
-      CRLF, Expected, CRLF, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE complexdp_isequal_scalar
-
-
-  SUBROUTINE complexdp_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Double)]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL complexdp_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE complexdp_isequal_rank1
-
-
-  SUBROUTINE complexdp_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[COMPLEX(Double)]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL complexdp_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE complexdp_isequal_rank2
-
-
-  SUBROUTINE char_isequal_scalar( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    CHARACTER(*),        INTENT(IN)     :: Expected, Actual
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
-    ! Variables
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
-    ! Setup
-    ! ...Assign the test
-    Test = (Expected == Actual)
-    ! ...Locally modify properties for this test
-    CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
-    ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
-    ELSE
-      CALL Test_Failed( UnitTest )
-    END IF
-
-    ! Output message
-    WRITE( Message,'("Expected >",a,"< and got >",a,"<")') Expected, Actual
-    CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
-      Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE char_isequal_scalar
-
-
-  SUBROUTINE char_isequal_rank1( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    CHARACTER(*),        INTENT(IN)     :: Expected(:), Actual(:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
-    ! Variables
-    INTEGER :: i, isize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected)
-    IF ( SIZE(Actual) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
-        isize, SIZE(Actual)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO i = 1, isize
-      CALL char_isequal_scalar( UnitTest, Expected(i), Actual(i) )
-    END DO
-  END SUBROUTINE char_isequal_rank1
-
-
-  SUBROUTINE char_isequal_rank2( UnitTest, Expected, Actual )
-    ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    CHARACTER(*),        INTENT(IN)     :: Expected(:,:), Actual(:,:)
-    ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqual[CHARACTER]'
-    ! Variables
-    INTEGER :: i, j, isize, jsize
-    CHARACTER(SL) :: Message
-
-    ! Check array sizes
-    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
-    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
-        isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
-      CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
-        Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
-      RETURN
-    ENDIF
-
-    ! Loop over elements
-    DO j = 1, jsize
-      DO i = 1, isize
-        CALL char_isequal_scalar( UnitTest, Expected(i,j), Actual(i,j) )
-      END DO
-    END DO
-  END SUBROUTINE char_isequal_rank2
-
-
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_IsEqualWithin
+!   UnitTest::Assert_Equal
 !
 ! PURPOSE:
-!       Subroutine to assert that two floating point arguments are equal to
-!       within the specified tolerance.
+!   Method to assert that two arguments are equal.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_IsEqualWithin( UnitTest , &
-!                                    Expected , &
-!                                    Actual   , &
-!                                    Tolerance, &
-!                                    Epsilon_Scale = Epsilon_Scale )
+!   CALL utest_obj%Assert_Equal( Expected, Actual )
 !
 ! OBJECTS:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
 !
 ! INPUTS:
-!       Expected:      The expected value of the variable being tested.
-!                      UNITS:      N/A
-!                      TYPE:       REAL(Single)   , or
-!                                  REAL(Double)   , or
-!                                  COMPLEX(Single), or
-!                                  COMPLEX(Double)
-!                      DIMENSION:  Scalar, or
-!                                  Rank-1, or
-!                                  Rank-2
-!                      ATTRIBUTES: INTENT(IN)
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER(Byte)  , or
+!                              INTEGER(Short) , or
+!                              INTEGER(Long)  , or
+!                              REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double), or
+!                              CHARACTER(*)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
 !
-!       Actual:        The actual value of the variable being tested.
-!                      UNITS:      N/A
-!                      TYPE:       Same as Expected input
-!                      DIMENSION:  Same as Expected input
-!                      ATTRIBUTES: INTENT(IN)
-!
-!       Tolerance:     The tolerance to within which the Expected and Actual
-!                      values must agree. If negative, the value of
-!                        EPSILON(Expected)
-!                      is used.
-!                      This argument is ignored if the EPSILON_SCALE optional
-!                      argument is specified
-!                      UNITS:      N/A
-!                      TYPE:       Same as Expected input
-!                      DIMENSION:  Same as Expected input
-!                      ATTRIBUTES: INTENT(IN)
-!
-! OPTIONAL INPUTS:
-!       Epsilon_Scale: Set this logical flag to compute and use the tolerance
-!                      value:
-!                        EPSILON(Expected) * Scale_Factor
-!                      where the scaling factor is the exponent value of the
-!                      input argument Expected.
-!                      UNITS:      N/A
-!                      TYPE:       LOGICAL.
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE realsp_isequalwithin_scalar( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  SUBROUTINE intbyte_assert_equal_s( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected, Actual, Tolerance
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected, Actual
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Byte)]'
     ! Variables
-    REAL(Single) :: tol
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
     ! Setup
-    ! ...Default tolerance
-    tol = Tolerance
-    ! ...Check optional arguments
-    IF ( PRESENT(Epsilon_Scale) ) THEN
-      IF ( Epsilon_Scale ) tol = EPSILON(Expected) * Get_Multiplier( Expected )
-    END IF
     ! ...Assign the test
-    Test = (ABS(Expected-Actual) < tol)
+    test = (Expected == Actual)
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
     ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    IF ( test ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected:     ",'//RFMT//',a,&
-         &7x,"To within:    ",'//RFMT//',a,&
-         &7x,"And got:      ",'//RFMT//',a,&
-         &7x,"|Difference|: ",'//RFMT//')') &
-      CRLF, Expected, CRLF, tol, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE realsp_isequalwithin_scalar
-
-
-  SUBROUTINE realsp_isequalwithin_rank1(  &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intbyte_assert_equal_s
+  
+  
+  SUBROUTINE intbyte_assert_equal_r1( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected(:), Actual(:), Tolerance(:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected(:), Actual(:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Byte)]'
     ! Variables
     INTEGER :: i, isize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected)
-    IF ( SIZE(Actual)    /= isize .OR. &
-         SIZE(Tolerance) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0,"; Tolerance:",i0)') &
-        isize, SIZE(Actual), SIZE(Tolerance)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO i = 1, isize
-      CALL realsp_isequalwithin_scalar( &
-        UnitTest    , &
-        Expected(i) , &
-        Actual(i)   , &
-        Tolerance(i), &
-        Epsilon_Scale = Epsilon_Scale )
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
     END DO
-  END SUBROUTINE realsp_isequalwithin_rank1
-
-
-  SUBROUTINE realsp_isequalwithin_rank2( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE intbyte_assert_equal_r1
+  
+  
+  SUBROUTINE intbyte_assert_equal_r2( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Single),        INTENT(IN)     :: Expected(:,:), Actual(:,:), Tolerance(:,:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected(:,:), Actual(:,:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Byte)]'
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize .OR. &
-         SIZE(Tolerance,DIM=1) /= isize .OR. &
-         SIZE(Tolerance,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
       WRITE( Message, &
-        '("Array sizes are diffferent -- ",&
-        &"Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,"); Tolerance:(",i0,",",i0,")")') &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
         isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2), &
-        SIZE(Tolerance,DIM=1), SIZE(Tolerance,DIM=2)
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = Message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
-        CALL realsp_isequalwithin_scalar( &
-          UnitTest      , &
-          Expected(i,j) , &
-          Actual(i,j)   , &
-          Tolerance(i,j), &
-          Epsilon_Scale = Epsilon_Scale )
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
       END DO
     END DO
-  END SUBROUTINE realsp_isequalwithin_rank2
-
-
-  SUBROUTINE realdp_isequalwithin_scalar( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE intbyte_assert_equal_r2
+  
+  
+  SUBROUTINE intshort_assert_equal_s( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected, Actual, Tolerance
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected, Actual
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Short)]'
     ! Variables
-    REAL(Double) :: tol
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
     ! Setup
-    ! ...Default tolerance
-    tol = Tolerance
-    ! ...Check optional arguments
-    IF ( PRESENT(Epsilon_Scale) ) THEN
-      IF ( Epsilon_Scale ) tol = EPSILON(Expected) * Get_Multiplier( Expected )
-    END IF
     ! ...Assign the test
-    Test = (ABS(Expected-Actual) < tol)
+    test = (Expected == Actual)
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
     ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    IF ( test ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
-
-    ! Output message
-    WRITE( Message, &
-      '(a,7x,"Expected:     ",'//RFMT//',a,&
-         &7x,"To within:    ",'//RFMT//',a,&
-         &7x,"And got:      ",'//RFMT//',a,&
-         &7x,"|Difference|: ",'//RFMT//')') &
-      CRLF, Expected, CRLF, tol, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE realdp_isequalwithin_scalar
-
-
-  SUBROUTINE realdp_isequalwithin_rank1(  &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intshort_assert_equal_s
+  
+  
+  SUBROUTINE intshort_assert_equal_r1( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected(:), Actual(:), Tolerance(:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected(:), Actual(:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Short)]'
     ! Variables
     INTEGER :: i, isize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected)
-    IF ( SIZE(Actual)    /= isize .OR. &
-         SIZE(Tolerance) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0,"; Tolerance:",i0)') &
-        isize, SIZE(Actual), SIZE(Tolerance)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO i = 1, isize
-      CALL realdp_isequalwithin_scalar( &
-        UnitTest    , &
-        Expected(i) , &
-        Actual(i)   , &
-        Tolerance(i), &
-        Epsilon_Scale = Epsilon_Scale )
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
     END DO
-  END SUBROUTINE realdp_isequalwithin_rank1
-
-
-  SUBROUTINE realdp_isequalwithin_rank2( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE intshort_assert_equal_r1
+  
+  
+  SUBROUTINE intshort_assert_equal_r2( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    REAL(Double),        INTENT(IN)     :: Expected(:,:), Actual(:,:), Tolerance(:,:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected(:,:), Actual(:,:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[REAL(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Short)]'
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize .OR. &
-         SIZE(Tolerance,DIM=1) /= isize .OR. &
-         SIZE(Tolerance,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
       WRITE( Message, &
-        '("Array sizes are diffferent -- ",&
-        &"Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,"); Tolerance:(",i0,",",i0,")")') &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
         isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2), &
-        SIZE(Tolerance,DIM=1), SIZE(Tolerance,DIM=2)
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = Message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
-        CALL realdp_isequalwithin_scalar( &
-          UnitTest      , &
-          Expected(i,j) , &
-          Actual(i,j)   , &
-          Tolerance(i,j), &
-          Epsilon_Scale = Epsilon_Scale )
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
       END DO
     END DO
-  END SUBROUTINE realdp_isequalwithin_rank2
-
-
-  SUBROUTINE complexsp_isequalwithin_scalar( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE intshort_assert_equal_r2
+  
+  
+  SUBROUTINE intlong_assert_equal_s( self, Expected, Actual )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected, Actual, Tolerance
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected, Actual
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Long)]'
     ! Variables
-    REAL(Single) :: tolr, toli
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intlong_assert_equal_s
+  
+  
+  SUBROUTINE intlong_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Long)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE intlong_assert_equal_r1
+  
+  
+  SUBROUTINE intlong_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[INTEGER(Long)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE intlong_assert_equal_r2
+  
+  
+  SUBROUTINE realsp_assert_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Single)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",es25.18,a,&
+                       &7x,"And got:  ",es25.18)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_assert_equal_s
+  
+  
+  SUBROUTINE realsp_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE realsp_assert_equal_r1
+  
+  
+  SUBROUTINE realsp_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realsp_assert_equal_r2
+  
+  
+  SUBROUTINE realdp_assert_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Double)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",es25.18,a,&
+                       &7x,"And got:  ",es25.18)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_assert_equal_s
+  
+  
+  SUBROUTINE realdp_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE realdp_assert_equal_r1
+  
+  
+  SUBROUTINE realdp_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realdp_assert_equal_r2
+  
+  
+  SUBROUTINE complexsp_assert_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Single)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ","(",es25.18,",",es25.18,")",a,&
+                       &7x,"And got:  ","(",es25.18,",",es25.18,")")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_assert_equal_s
+  
+  
+  SUBROUTINE complexsp_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE complexsp_assert_equal_r1
+  
+  
+  SUBROUTINE complexsp_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexsp_assert_equal_r2
+  
+  
+  SUBROUTINE complexdp_assert_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Double)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ","(",es25.18,",",es25.18,")",a,&
+                       &7x,"And got:  ","(",es25.18,",",es25.18,")")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_assert_equal_s
+  
+  
+  SUBROUTINE complexdp_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE complexdp_assert_equal_r1
+  
+  
+  SUBROUTINE complexdp_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexdp_assert_equal_r2
+  
+  
+  SUBROUTINE char_assert_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[CHARACTER(*)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = (Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",">",a,"<",a,&
+                       &7x,"And got:  ",">",a,"<")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE char_assert_equal_s
+  
+  
+  SUBROUTINE char_assert_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[CHARACTER(*)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE char_assert_equal_r1
+  
+  
+  SUBROUTINE char_assert_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_Equal[CHARACTER(*)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE char_assert_equal_r2
+  
+  
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   UnitTest::Refute_Equal
+!
+! PURPOSE:
+!   Method to refute that two arguments are equal.
+!
+! CALLING SEQUENCE:
+!   CALL utest_obj%Refute_Equal( Expected, Actual )
+!
+! OBJECTS:
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER(Byte)  , or
+!                              INTEGER(Short) , or
+!                              INTEGER(Long)  , or
+!                              REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double), or
+!                              CHARACTER(*)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE intbyte_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Byte)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intbyte_refute_equal_s
+  
+  
+  SUBROUTINE intbyte_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Byte)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE intbyte_refute_equal_r1
+  
+  
+  SUBROUTINE intbyte_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Byte), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Byte)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE intbyte_refute_equal_r2
+  
+  
+  SUBROUTINE intshort_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Short)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intshort_refute_equal_s
+  
+  
+  SUBROUTINE intshort_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Short)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE intshort_refute_equal_r1
+  
+  
+  SUBROUTINE intshort_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Short), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Short)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE intshort_refute_equal_r2
+  
+  
+  SUBROUTINE intlong_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Long)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",i0,a,&
+                       &7x,"And got:  ",i0)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE intlong_refute_equal_s
+  
+  
+  SUBROUTINE intlong_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Long)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE intlong_refute_equal_r1
+  
+  
+  SUBROUTINE intlong_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    INTEGER(Long), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[INTEGER(Long)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE intlong_refute_equal_r2
+  
+  
+  SUBROUTINE realsp_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Single)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",es25.18,a,&
+                       &7x,"And got:  ",es25.18)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_refute_equal_s
+  
+  
+  SUBROUTINE realsp_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE realsp_refute_equal_r1
+  
+  
+  SUBROUTINE realsp_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realsp_refute_equal_r2
+  
+  
+  SUBROUTINE realdp_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Double)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",es25.18,a,&
+                       &7x,"And got:  ",es25.18)') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_refute_equal_s
+  
+  
+  SUBROUTINE realdp_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE realdp_refute_equal_r1
+  
+  
+  SUBROUTINE realdp_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realdp_refute_equal_r2
+  
+  
+  SUBROUTINE complexsp_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Single)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ","(",es25.18,",",es25.18,")",a,&
+                       &7x,"And got:  ","(",es25.18,",",es25.18,")")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_refute_equal_s
+  
+  
+  SUBROUTINE complexsp_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE complexsp_refute_equal_r1
+  
+  
+  SUBROUTINE complexsp_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexsp_refute_equal_r2
+  
+  
+  SUBROUTINE complexdp_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Double)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected .EqualTo. Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ","(",es25.18,",",es25.18,")",a,&
+                       &7x,"And got:  ","(",es25.18,",",es25.18,")")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_refute_equal_s
+  
+  
+  SUBROUTINE complexdp_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE complexdp_refute_equal_r1
+  
+  
+  SUBROUTINE complexdp_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexdp_refute_equal_r2
+  
+  
+  SUBROUTINE char_refute_equal_s( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected, Actual
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[CHARACTER(*)]'
+    ! Variables
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Assign the test
+    test = .NOT.(Expected == Actual)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( message, '(a,7x,"Expected: ",">",a,"<",a,&
+                       &7x,"And got:  ",">",a,"<")') &
+                    CRLF, Expected, CRLF, Actual
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE char_refute_equal_s
+  
+  
+  SUBROUTINE char_refute_equal_r1( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected(:), Actual(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[CHARACTER(*)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_Equal( Expected(i), Actual(i) )
+    END DO
+  END SUBROUTINE char_refute_equal_r1
+  
+  
+  SUBROUTINE char_refute_equal_r2( self, Expected, Actual )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    CHARACTER(*), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_Equal[CHARACTER(*)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_Equal( Expected(i,j), Actual(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE char_refute_equal_r2
+  
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   UnitTest::Assert_EqualWithin
+!
+! PURPOSE:
+!   Method to assert that two floating point arguments are equal to
+!   within the specified tolerance.
+!
+! CALLING SEQUENCE:
+!   CALL utest_obj%Assert_EqualWithin( Expected, Actual, Tolerance )
+!
+! OBJECTS:
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Tolerance:     The tolerance to within which the Expected and Actual
+!                  values must agree. If negative, the value of
+!                    EPSILON(Expected)
+!                  is used.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE realsp_assert_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Single)]'
+    ! Variables
+    REAL(Single) :: delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Local delta for test
+    delta = Tolerance
+    IF ( delta < 0.0_Single ) delta = EPSILON(Expected)
+    ! ...Assign the test
+    test = (ABS(Expected-Actual) < delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"To within    : ",es25.18,a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, delta, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_assert_equalwithin_s
+  
+  
+  SUBROUTINE realsp_assert_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE realsp_assert_equalwithin_r1
+  
+  
+  SUBROUTINE realsp_assert_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realsp_assert_equalwithin_r2
+  
+  
+  SUBROUTINE realdp_assert_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Double)]'
+    ! Variables
+    REAL(Double) :: delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Local delta for test
+    delta = Tolerance
+    IF ( delta < 0.0_Double ) delta = EPSILON(Expected)
+    ! ...Assign the test
+    test = (ABS(Expected-Actual) < delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"To within    : ",es25.18,a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, delta, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_assert_equalwithin_s
+  
+  
+  SUBROUTINE realdp_assert_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE realdp_assert_equalwithin_r1
+  
+  
+  SUBROUTINE realdp_assert_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realdp_assert_equalwithin_r2
+  
+  
+  SUBROUTINE complexsp_assert_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Single)]'
+    ! Variables
+    REAL(Single) :: deltar, deltai
     REAL(Single) :: zr, zi
     REAL(Single) :: dzr, dzi
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
     ! Setup
     ! ...Split expected into real and imag
     zr = REAL(Expected,Single)
     zi = AIMAG(Expected)
-    ! ...Default tolerance
-    tolr = REAL(Tolerance,Single)
-    toli = AIMAG(Tolerance)
-    ! ...Check optional arguments
-    IF ( PRESENT(Epsilon_Scale) ) THEN
-      IF ( Epsilon_Scale ) THEN
-        tolr = EPSILON(zr) * Get_Multiplier(zr)
-        toli = EPSILON(zi) * Get_Multiplier(zi)
-      END IF
-    END IF
+    ! ...Local delta for test
+    deltar = REAL(Tolerance,Single)
+    IF ( deltar < 0.0_Single ) deltar = EPSILON(zr)
+    deltai = AIMAG(Tolerance)
+    IF ( deltai < 0.0_Single ) deltai = EPSILON(zi)
     ! ...Assign the test
     dzr = ABS(zr - REAL(Actual,Single))
     dzi = ABS(zi - AIMAG(Actual))
-    Test = (dzr < tolr) .AND. (dzi < toli)
+    test = ((dzr < deltar) .AND. (dzi < deltai))
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
     ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    IF ( test ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
-
-    ! Output message
+    ! Generate the test message
     WRITE( Message, &
-      '(a,7x,"Expected:     ",'//ZFMT//',a,&
-         &7x,"To within:    ",'//ZFMT//',a,&
-         &7x,"And got:      ",'//ZFMT//',a,&
-         &7x,"|Difference|: ",'//ZFMT//')') &
-      CRLF, Expected, CRLF, CMPLX(tolr,toli,Single), CRLF, Actual, CRLF, dzr, dzi
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"To within    : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, CMPLX(deltar,deltai,Single), CRLF, Actual, CRLF, dzr, dzi
+    ! Load the object with the message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE complexsp_isequalwithin_scalar
-
-
-  SUBROUTINE complexsp_isequalwithin_rank1( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_assert_equalwithin_s
+  
+  
+  SUBROUTINE complexsp_assert_equalwithin_r1( self, Expected, Actual, Tolerance )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected(:), Actual(:), Tolerance(:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Single)]'
     ! Variables
     INTEGER :: i, isize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected)
-    IF ( SIZE(Actual)    /= isize .OR. &
-         SIZE(Tolerance) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0,"; Tolerance:",i0)') &
-        isize, SIZE(Actual), SIZE(Tolerance)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO i = 1, isize
-      CALL complexsp_isequalwithin_scalar( &
-        UnitTest    , &
-        Expected(i) , &
-        Actual(i)   , &
-        Tolerance(i), &
-        Epsilon_Scale = Epsilon_Scale )
+      CALL self%Assert_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
     END DO
-  END SUBROUTINE complexsp_isequalwithin_rank1
-
-
-  SUBROUTINE complexsp_isequalwithin_rank2( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE complexsp_assert_equalwithin_r1
+  
+  
+  SUBROUTINE complexsp_assert_equalwithin_r2( self, Expected, Actual, Tolerance )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Single),     INTENT(IN)     :: Expected(:,:), Actual(:,:), Tolerance(:,:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Single)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Single)]'
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize .OR. &
-         SIZE(Tolerance,DIM=1) /= isize .OR. &
-         SIZE(Tolerance,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
       WRITE( Message, &
-        '("Array sizes are diffferent -- ",&
-        &"Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,"); Tolerance:(",i0,",",i0,")")') &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
         isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2), &
-        SIZE(Tolerance,DIM=1), SIZE(Tolerance,DIM=2)
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = Message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
-        CALL complexsp_isequalwithin_scalar( &
-          UnitTest      , &
-          Expected(i,j) , &
-          Actual(i,j)   , &
-          Tolerance(i,j), &
-          Epsilon_Scale = Epsilon_Scale )
+        CALL self%Assert_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
       END DO
     END DO
-  END SUBROUTINE complexsp_isequalwithin_rank2
-
-
-  SUBROUTINE complexdp_isequalwithin_scalar( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE complexsp_assert_equalwithin_r2
+  
+  
+  SUBROUTINE complexdp_assert_equalwithin_s( self, Expected, Actual, Tolerance )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected, Actual, Tolerance
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual, Tolerance
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Double)]'
     ! Variables
-    REAL(Double) :: tolr, toli
+    REAL(Double) :: deltar, deltai
     REAL(Double) :: zr, zi
     REAL(Double) :: dzr, dzi
-    LOGICAL :: Test
-    LOGICAL :: Verbose
-    CHARACTER(SL) :: Message
-
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
     ! Setup
     ! ...Split expected into real and imag
     zr = REAL(Expected,Double)
     zi = AIMAG(Expected)
-    ! ...Default tolerance
-    tolr = REAL(Tolerance,Double)
-    toli = AIMAG(Tolerance)
-    ! ...Check optional arguments
-    IF ( PRESENT(Epsilon_Scale) ) THEN
-      IF ( Epsilon_Scale ) THEN
-        tolr = EPSILON(zr) * Get_Multiplier(zr)
-        toli = EPSILON(zi) * Get_Multiplier(zi)
-      END IF
-    END IF
+    ! ...Local delta for test
+    deltar = REAL(Tolerance,Double)
+    IF ( deltar < 0.0_Double ) deltar = EPSILON(zr)
+    deltai = AIMAG(Tolerance)
+    IF ( deltai < 0.0_Double ) deltai = EPSILON(zi)
     ! ...Assign the test
     dzr = ABS(zr - REAL(Actual,Double))
     dzi = ABS(zi - AIMAG(Actual))
-    Test = (dzr < tolr) .AND. (dzi < toli)
+    test = ((dzr < deltar) .AND. (dzi < deltai))
     ! ...Locally modify properties for this test
     CALL Get_Property( &
-      UnitTest, &
-      Verbose = Verbose )
-    Verbose = Verbose .OR. (.NOT. Test)  ! Always output test failure
-
-
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
     ! Assert the test
-    IF ( Test ) THEN
-      CALL Test_Passed( UnitTest )
+    IF ( test ) THEN
+      CALL Test_Passed( self )
     ELSE
-      CALL Test_Failed( UnitTest )
+      CALL Test_Failed( self )
     END IF
-
-    ! Output message
+    ! Generate the test message
     WRITE( Message, &
-      '(a,7x,"Expected:     ",'//ZFMT//',a,&
-         &7x,"To within:    ",'//ZFMT//',a,&
-         &7x,"And got:      ",'//ZFMT//',a,&
-         &7x,"|Difference|: ",'//ZFMT//')') &
-      CRLF, Expected, CRLF, CMPLX(tolr,toli,Double), CRLF, Actual, CRLF, dzr, dzi
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"To within    : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, CMPLX(deltar,deltai,Double), CRLF, Actual, CRLF, dzr, dzi
+    ! Load the object with the message
     CALL Set_Property( &
-      UnitTest, &
-      Level = TEST_LEVEL, &
+      self, &
+      Level     = TEST_LEVEL, &
       Procedure = PROCEDURE_NAME, &
-      Message = Message )
-    IF ( Verbose ) CALL Display_Message( UnitTest )
-  END SUBROUTINE complexdp_isequalwithin_scalar
-
-
-  SUBROUTINE complexdp_isequalwithin_rank1( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_assert_equalwithin_s
+  
+  
+  SUBROUTINE complexdp_assert_equalwithin_r1( self, Expected, Actual, Tolerance )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected(:), Actual(:), Tolerance(:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Double)]'
     ! Variables
     INTEGER :: i, isize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected)
-    IF ( SIZE(Actual)    /= isize .OR. &
-         SIZE(Tolerance) /= isize ) THEN
-      CALL Test_Failed( UnitTest )
-      WRITE( Message, &
-        '("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0,"; Tolerance:",i0)') &
-        isize, SIZE(Actual), SIZE(Tolerance)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO i = 1, isize
-      CALL complexdp_isequalwithin_scalar( &
-        UnitTest    , &
-        Expected(i) , &
-        Actual(i)   , &
-        Tolerance(i), &
-        Epsilon_Scale = Epsilon_Scale )
+      CALL self%Assert_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
     END DO
-  END SUBROUTINE complexdp_isequalwithin_rank1
-
-
-  SUBROUTINE complexdp_isequalwithin_rank2( &
-    UnitTest     , &
-    Expected     , &
-    Actual       , &
-    Tolerance    , &
-    Epsilon_Scale  )
+  END SUBROUTINE complexdp_assert_equalwithin_r1
+  
+  
+  SUBROUTINE complexdp_assert_equalwithin_r2( self, Expected, Actual, Tolerance )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
-    COMPLEX(Double),     INTENT(IN)     :: Expected(:,:), Actual(:,:), Tolerance(:,:)
-    LOGICAL,   OPTIONAL, INTENT(IN)     :: Epsilon_Scale
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
     ! Parameters
-    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest_IsEqualWithin[COMPLEX(Double)]'
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_EqualWithin[COMPLEX(Double)]'
     ! Variables
     INTEGER :: i, j, isize, jsize
     CHARACTER(SL) :: Message
-
     ! Check array sizes
     isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
     IF ( SIZE(Actual,DIM=1) /= isize .OR. &
-         SIZE(Actual,DIM=2) /= jsize .OR. &
-         SIZE(Tolerance,DIM=1) /= isize .OR. &
-         SIZE(Tolerance,DIM=2) /= jsize ) THEN
-      CALL Test_Failed( UnitTest )
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
       WRITE( Message, &
-        '("Array sizes are diffferent -- ",&
-        &"Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,"); Tolerance:(",i0,",",i0,")")') &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
         isize, jsize, &
-        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2), &
-        SIZE(Tolerance,DIM=1), SIZE(Tolerance,DIM=2)
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
       CALL Set_Property( &
-        UnitTest, &
-        Level = TEST_LEVEL, &
+        self, &
+        Level     = TEST_LEVEL, &
         Procedure = PROCEDURE_NAME, &
-        Message = Message )
-      CALL Display_Message( UnitTest )
+        Message   = Message )
+      CALL Display_Message( self )
       RETURN
     ENDIF
-
     ! Loop over elements
     DO j = 1, jsize
       DO i = 1, isize
-        CALL complexdp_isequalwithin_scalar( &
-          UnitTest      , &
-          Expected(i,j) , &
-          Actual(i,j)   , &
-          Tolerance(i,j), &
-          Epsilon_Scale = Epsilon_Scale )
+        CALL self%Assert_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
       END DO
     END DO
-  END SUBROUTINE complexdp_isequalwithin_rank2
+  END SUBROUTINE complexdp_assert_equalwithin_r2
+  
+  
+  
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   UnitTest::Refute_EqualWithin
+!
+! PURPOSE:
+!   Method to refute that two floating point arguments are equal to
+!   within the specified tolerance.
+!
+! CALLING SEQUENCE:
+!   CALL utest_obj%Refute_EqualWithin( Expected, Actual, Tolerance )
+!
+! OBJECTS:
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Tolerance:     The tolerance to within which the Expected and Actual
+!                  values must agree. If negative, the value of
+!                    EPSILON(Expected)
+!                  is used.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE realsp_refute_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Single)]'
+    ! Variables
+    REAL(Single) :: delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Local delta for test
+    delta = Tolerance
+    IF ( delta < 0.0_Single ) delta = EPSILON(Expected)
+    ! ...Assign the test
+    test = .NOT.(ABS(Expected-Actual) < delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"Outside of   : ",es25.18,a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, delta, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_refute_equalwithin_s
+  
+  
+  SUBROUTINE realsp_refute_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE realsp_refute_equalwithin_r1
+  
+  
+  SUBROUTINE realsp_refute_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realsp_refute_equalwithin_r2
+  
+  
+  SUBROUTINE realdp_refute_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Double)]'
+    ! Variables
+    REAL(Double) :: delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Local delta for test
+    delta = Tolerance
+    IF ( delta < 0.0_Double ) delta = EPSILON(Expected)
+    ! ...Assign the test
+    test = .NOT.(ABS(Expected-Actual) < delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"Outside of   : ",es25.18,a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, delta, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_refute_equalwithin_s
+  
+  
+  SUBROUTINE realdp_refute_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE realdp_refute_equalwithin_r1
+  
+  
+  SUBROUTINE realdp_refute_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE realdp_refute_equalwithin_r2
+  
+  
+  SUBROUTINE complexsp_refute_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Single)]'
+    ! Variables
+    REAL(Single) :: deltar, deltai
+    REAL(Single) :: zr, zi
+    REAL(Single) :: dzr, dzi
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    zr = REAL(Expected,Single)
+    zi = AIMAG(Expected)
+    ! ...Local delta for test
+    deltar = REAL(Tolerance,Single)
+    IF ( deltar < 0.0_Single ) deltar = EPSILON(zr)
+    deltai = AIMAG(Tolerance)
+    IF ( deltai < 0.0_Single ) deltai = EPSILON(zi)
+    ! ...Assign the test
+    dzr = ABS(zr - REAL(Actual,Single))
+    dzi = ABS(zi - AIMAG(Actual))
+    test = .NOT.((dzr < deltar) .AND. (dzi < deltai))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"Outside of   : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, CMPLX(deltar,deltai,Single), CRLF, Actual, CRLF, dzr, dzi
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_refute_equalwithin_s
+  
+  
+  SUBROUTINE complexsp_refute_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE complexsp_refute_equalwithin_r1
+  
+  
+  SUBROUTINE complexsp_refute_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexsp_refute_equalwithin_r2
+  
+  
+  SUBROUTINE complexdp_refute_equalwithin_s( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual, Tolerance
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Double)]'
+    ! Variables
+    REAL(Double) :: deltar, deltai
+    REAL(Double) :: zr, zi
+    REAL(Double) :: dzr, dzi
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    zr = REAL(Expected,Double)
+    zi = AIMAG(Expected)
+    ! ...Local delta for test
+    deltar = REAL(Tolerance,Double)
+    IF ( deltar < 0.0_Double ) deltar = EPSILON(zr)
+    deltai = AIMAG(Tolerance)
+    IF ( deltai < 0.0_Double ) deltai = EPSILON(zi)
+    ! ...Assign the test
+    dzr = ABS(zr - REAL(Actual,Double))
+    dzi = ABS(zi - AIMAG(Actual))
+    test = .NOT.((dzr < deltar) .AND. (dzi < deltai))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"Outside of   : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, CMPLX(deltar,deltai,Double), CRLF, Actual, CRLF, dzr, dzi
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_refute_equalwithin_s
+  
+  
+  SUBROUTINE complexdp_refute_equalwithin_r1( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:), Tolerance(:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_EqualWithin( Expected(i), Actual(i), Tolerance(i) )
+    END DO
+  END SUBROUTINE complexdp_refute_equalwithin_r1
+  
+  
+  SUBROUTINE complexdp_refute_equalwithin_r2( self, Expected, Actual, Tolerance )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:), Tolerance(:,:)
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_EqualWithin[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_EqualWithin( Expected(i,j), Actual(i,j), Tolerance(i,j) )
+      END DO
+    END DO
+  END SUBROUTINE complexdp_refute_equalwithin_r2
+  
 
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
 ! NAME:
-!       UnitTest_DefineVersion
+!   UnitTest::Assert_WithinSigFig
 !
 ! PURPOSE:
-!       Subroutine to return the module version information.
+!   Method to assert that two floating point arguments are equal to
+!   within the specified number of significant figures.
 !
 ! CALLING SEQUENCE:
-!       CALL UnitTest_DefineVersion( Id )
+!   CALL utest_obj%Assert_WithinSigFig( Expected, Actual, n_SigFig )
 !
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
+! OBJECTS:
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   n_SigFig:      The number of sgnificant figures within which the
+!                  expected and actual numbers are to be compared.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE UnitTest_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE UnitTest_DefineVersion
+  SUBROUTINE realsp_assert_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Single)]'
+    ! Variables
+    REAL(Single) :: epsilon_delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Compute the test cutoff
+    epsilon_delta = EPSILON(Expected) * REAL(RADIX(Expected),Single)**(EXPONENT(Expected)-1)
+    ! ...Assign the test
+    test = Compares_Within_Tolerance(Expected, Actual, n_SigFig, cutoff=epsilon_delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"To within    : ",i0," significant figures",a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_assert_withinsigfig_s
+  
+  
+  SUBROUTINE realsp_assert_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE realsp_assert_withinsigfig_r1
+  
+  
+  SUBROUTINE realsp_assert_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE realsp_assert_withinsigfig_r2
+  
+  
+  SUBROUTINE realdp_assert_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Double)]'
+    ! Variables
+    REAL(Double) :: epsilon_delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Compute the test cutoff
+    epsilon_delta = EPSILON(Expected) * REAL(RADIX(Expected),Double)**(EXPONENT(Expected)-1)
+    ! ...Assign the test
+    test = Compares_Within_Tolerance(Expected, Actual, n_SigFig, cutoff=epsilon_delta)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"To within    : ",i0," significant figures",a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_assert_withinsigfig_s
+  
+  
+  SUBROUTINE realdp_assert_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE realdp_assert_withinsigfig_r1
+  
+  
+  SUBROUTINE realdp_assert_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE realdp_assert_withinsigfig_r2
+  
+  
+  SUBROUTINE complexsp_assert_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    REAL(Single) :: ezr, ezi
+    REAL(Single) :: azr, azi
+    REAL(Single) :: epsilon_delta_r, epsilon_delta_i
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    ezr = REAL(Expected,Single)
+    ezi = AIMAG(Expected)
+    azr = REAL(Actual,Single)
+    azi = AIMAG(Actual)
+    ! ...Compute the test cutoffs
+    epsilon_delta_r = EPSILON(ezr) * REAL(RADIX(ezr),Single)**(EXPONENT(ezr)-1)
+    epsilon_delta_i = EPSILON(ezi) * REAL(RADIX(ezi),Single)**(EXPONENT(ezi)-1)
+    ! ...Assign the test
+    test = Compares_Within_Tolerance(ezr, azr, n_SigFig, cutoff=epsilon_delta_r) .AND. &
+           Compares_Within_Tolerance(ezi, azi, n_SigFig, cutoff=epsilon_delta_i)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"To within    : ",i0," significant figures",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, CMPLX(ezr-azr,ezi-azi,Single)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_assert_withinsigfig_s
+  
+  
+  SUBROUTINE complexsp_assert_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE complexsp_assert_withinsigfig_r1
+  
+  
+  SUBROUTINE complexsp_assert_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE complexsp_assert_withinsigfig_r2
+  
+  
+  SUBROUTINE complexdp_assert_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    REAL(Double) :: ezr, ezi
+    REAL(Double) :: azr, azi
+    REAL(Double) :: epsilon_delta_r, epsilon_delta_i
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    ezr = REAL(Expected,Double)
+    ezi = AIMAG(Expected)
+    azr = REAL(Actual,Double)
+    azi = AIMAG(Actual)
+    ! ...Compute the test cutoffs
+    epsilon_delta_r = EPSILON(ezr) * REAL(RADIX(ezr),Double)**(EXPONENT(ezr)-1)
+    epsilon_delta_i = EPSILON(ezi) * REAL(RADIX(ezi),Double)**(EXPONENT(ezi)-1)
+    ! ...Assign the test
+    test = Compares_Within_Tolerance(ezr, azr, n_SigFig, cutoff=epsilon_delta_r) .AND. &
+           Compares_Within_Tolerance(ezi, azi, n_SigFig, cutoff=epsilon_delta_i)
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"To within    : ",i0," significant figures",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, CMPLX(ezr-azr,ezi-azi,Single)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_assert_withinsigfig_s
+  
+  
+  SUBROUTINE complexdp_assert_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Assert_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE complexdp_assert_withinsigfig_r1
+  
+  
+  SUBROUTINE complexdp_assert_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Assert_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Assert_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE complexdp_assert_withinsigfig_r2
+  
+  
+  
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!   UnitTest::Refute_WithinSigFig
+!
+! PURPOSE:
+!   Method to refute that two floating point arguments are equal to
+!   within the specified number of significant figures.
+!
+! CALLING SEQUENCE:
+!   CALL utest_obj%Refute_WithinSigFig( Expected, Actual, n_SigFig )
+!
+! OBJECTS:
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
+!
+! INPUTS:
+!   Expected:      The expected value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       REAL(Single)   , or
+!                              REAL(Double)   , or
+!                              COMPLEX(Single), or
+!                              COMPLEX(Double)
+!                  DIMENSION:  Scalar, or
+!                              Rank-1, or
+!                              Rank-2
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   Actual:        The actual value of the variable being tested.
+!                  UNITS:      N/A
+!                  TYPE:       Same as Expected input
+!                  DIMENSION:  Same as Expected input
+!                  ATTRIBUTES: INTENT(IN)
+!
+!   n_SigFig:      The number of sgnificant figures within which the
+!                  expected and actual numbers are to be compared.
+!                  UNITS:      N/A
+!                  TYPE:       INTEGER
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE realsp_refute_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Single)]'
+    ! Variables
+    REAL(Single) :: epsilon_delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Compute the test cutoff
+    epsilon_delta = EPSILON(Expected) * REAL(RADIX(Expected),Single)**(EXPONENT(Expected)-1)
+    ! ...Assign the test
+    test = .NOT.(Compares_Within_Tolerance(Expected, Actual, n_SigFig, cutoff=epsilon_delta))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"Outside of   : ",i0," significant figures",a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realsp_refute_withinsigfig_s
+  
+  
+  SUBROUTINE realsp_refute_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE realsp_refute_withinsigfig_r1
+  
+  
+  SUBROUTINE realsp_refute_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE realsp_refute_withinsigfig_r2
+  
+  
+  SUBROUTINE realdp_refute_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Double)]'
+    ! Variables
+    REAL(Double) :: epsilon_delta
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Compute the test cutoff
+    epsilon_delta = EPSILON(Expected) * REAL(RADIX(Expected),Double)**(EXPONENT(Expected)-1)
+    ! ...Assign the test
+    test = .NOT.(Compares_Within_Tolerance(Expected, Actual, n_SigFig, cutoff=epsilon_delta))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ",es25.18,a,&
+         &7x,"Outside of   : ",i0," significant figures",a,&
+         &7x,"And got      : ",es25.18,a,&
+         &7x,"|Difference| : ",es25.18)') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, ABS(Expected-Actual)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE realdp_refute_withinsigfig_s
+  
+  
+  SUBROUTINE realdp_refute_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE realdp_refute_withinsigfig_r1
+  
+  
+  SUBROUTINE realdp_refute_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    REAL(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[REAL(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE realdp_refute_withinsigfig_r2
+  
+  
+  SUBROUTINE complexsp_refute_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    REAL(Single) :: ezr, ezi
+    REAL(Single) :: azr, azi
+    REAL(Single) :: epsilon_delta_r, epsilon_delta_i
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    ezr = REAL(Expected,Single)
+    ezi = AIMAG(Expected)
+    azr = REAL(Actual,Single)
+    azi = AIMAG(Actual)
+    ! ...Compute the test cutoffs
+    epsilon_delta_r = EPSILON(ezr) * REAL(RADIX(ezr),Single)**(EXPONENT(ezr)-1)
+    epsilon_delta_i = EPSILON(ezi) * REAL(RADIX(ezi),Single)**(EXPONENT(ezi)-1)
+    ! ...Assign the test
+    test = .NOT.(Compares_Within_Tolerance(ezr, azr, n_SigFig, cutoff=epsilon_delta_r) .AND. &
+           Compares_Within_Tolerance(ezi, azi, n_SigFig, cutoff=epsilon_delta_i))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"Outside of   : ",i0," significant figures",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, CMPLX(ezr-azr,ezi-azi,Single)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexsp_refute_withinsigfig_s
+  
+  
+  SUBROUTINE complexsp_refute_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE complexsp_refute_withinsigfig_r1
+  
+  
+  SUBROUTINE complexsp_refute_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Single), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Single)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE complexsp_refute_withinsigfig_r2
+  
+  
+  SUBROUTINE complexdp_refute_withinsigfig_s( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected, Actual
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    REAL(Double) :: ezr, ezi
+    REAL(Double) :: azr, azi
+    REAL(Double) :: epsilon_delta_r, epsilon_delta_i
+    LOGICAL :: test
+    LOGICAL :: verbose
+    CHARACTER(SL) :: message
+    ! Setup
+    ! ...Split expected into real and imag
+    ezr = REAL(Expected,Double)
+    ezi = AIMAG(Expected)
+    azr = REAL(Actual,Double)
+    azi = AIMAG(Actual)
+    ! ...Compute the test cutoffs
+    epsilon_delta_r = EPSILON(ezr) * REAL(RADIX(ezr),Double)**(EXPONENT(ezr)-1)
+    epsilon_delta_i = EPSILON(ezi) * REAL(RADIX(ezi),Double)**(EXPONENT(ezi)-1)
+    ! ...Assign the test
+    test = .NOT.(Compares_Within_Tolerance(ezr, azr, n_SigFig, cutoff=epsilon_delta_r) .AND. &
+           Compares_Within_Tolerance(ezi, azi, n_SigFig, cutoff=epsilon_delta_i))
+    ! ...Locally modify properties for this test
+    CALL Get_Property( &
+      self, &
+      Verbose = verbose )
+    verbose = verbose .OR. (.NOT. test)  ! Always output test failure
+    ! Assert the test
+    IF ( test ) THEN
+      CALL Test_Passed( self )
+    ELSE
+      CALL Test_Failed( self )
+    END IF
+    ! Generate the test message
+    WRITE( Message, &
+      '(a,7x,"Expected     : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"Outside of   : ",i0," significant figures",a,&
+         &7x,"And got      : ","(",es25.18,",",es25.18,")",a,&
+         &7x,"|Difference| : ","(",es25.18,",",es25.18,")")') &
+      CRLF, Expected, CRLF, n_SigFig, CRLF, Actual, CRLF, CMPLX(ezr-azr,ezi-azi,Single)
+    ! Load the object with the message
+    CALL Set_Property( &
+      self, &
+      Level     = TEST_LEVEL, &
+      Procedure = PROCEDURE_NAME, &
+      Message   = message )
+    ! Output the result
+    IF ( verbose ) CALL Display_Message( self )
+  END SUBROUTINE complexdp_refute_withinsigfig_s
+  
+  
+  SUBROUTINE complexdp_refute_withinsigfig_r1( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:), Actual(:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, isize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected)
+    IF ( SIZE(Actual) /= isize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message,'("Array sizes are diffferent -- Expected:",i0,"; Actual:",i0)') &
+                     isize, SIZE(Actual)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO i = 1, isize
+      CALL self%Refute_WithinSigfig( Expected(i), Actual(i), n_SigFig )
+    END DO
+  END SUBROUTINE complexdp_refute_withinsigfig_r1
+  
+  
+  SUBROUTINE complexdp_refute_withinsigfig_r2( self, Expected, Actual, n_SigFig )
+    ! Arguments
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
+    COMPLEX(Double), INTENT(IN) :: Expected(:,:), Actual(:,:)
+    INTEGER, INTENT(IN) :: n_SigFig
+    ! Parameters
+    CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'UnitTest::Refute_WithinSigfig[COMPLEX(Double)]'
+    ! Variables
+    INTEGER :: i, j, isize, jsize
+    CHARACTER(SL) :: Message
+    ! Check array sizes
+    isize = SIZE(Expected,DIM=1); jsize = SIZE(Expected,DIM=2)
+    IF ( SIZE(Actual,DIM=1) /= isize .OR. &
+         SIZE(Actual,DIM=2) /= jsize ) THEN
+      CALL Test_Failed( self )
+      WRITE( Message, &
+        '("Array sizes are diffferent -- Expected:(",i0,",",i0,"); Actual:(",i0,",",i0,")")') &
+        isize, jsize, &
+        SIZE(Actual,DIM=1), SIZE(Actual,DIM=2)
+      CALL Set_Property( &
+        self, &
+        Level     = TEST_LEVEL, &
+        Procedure = PROCEDURE_NAME, &
+        Message   = Message )
+      CALL Display_Message( self )
+      RETURN
+    ENDIF
+    ! Loop over elements
+    DO j = 1, jsize
+      DO i = 1, isize
+        CALL self%Refute_WithinSigfig( Expected(i,j), Actual(i,j), n_SigFig )
+      END DO
+    END DO
+  END SUBROUTINE complexdp_refute_withinsigfig_r2
+  
+
 
 
 !################################################################################
@@ -2357,145 +4796,139 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-!===================
-! METHOD PROCEDURES
-!===================
-
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Set_Property
+!   UnitTest::Set_Property
 !
 ! PURPOSE:
-!       Private subroutine to set the properties of a UnitTest object.
+!   Private method to set the properties of a UnitTest object.
 !
-!       All WRITE access to the UnitTest object properties should be
-!       done using this subroutine.
+!   All WRITE access to the UnitTest object properties should be
+!   done using this method.
 !
 ! CALLING SEQUENCE:
-!       CALL Set_Property( &
-!         UnitTest, &
-!         Verbose           = Verbose          , &
-!         Title             = Title            , &
-!         Caller            = Caller           , &
-!         Level             = Level            , &
-!         Procedure         = Procedure        , &
-!         Message           = Message          , &
-!         Test_Result       = Test_Result      , &
-!         n_Tests           = n_Tests          , &
-!         n_Passed_Tests    = n_Passed_Tests   , &
-!         n_Failed_Tests    = n_Failed_Tests   , &
-!         n_AllTests        = n_AllTests       , &
-!         n_Passed_AllTests = n_Passed_AllTests, &
-!         n_Failed_AllTests = n_Failed_AllTests  )
+!   CALL utest_obj%Set_Property( Verbose           = Verbose          , &
+!                                Title             = Title            , &
+!                                Caller            = Caller           , &
+!                                Level             = Level            , &
+!                                Procedure         = Procedure        , &
+!                                Message           = Message          , &
+!                                Test_Result       = Test_Result      , &
+!                                n_Tests           = n_Tests          , &
+!                                n_Passed_Tests    = n_Passed_Tests   , &
+!                                n_Failed_Tests    = n_Failed_Tests   , &
+!                                n_AllTests        = n_AllTests       , &
+!                                n_Passed_AllTests = n_Passed_AllTests, &
+!                                n_Failed_AllTests = n_Failed_AllTests  )
 !
 ! OBJECT:
-!       UnitTest:           UnitTest object.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(UnitTest_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:          UnitTest object.
+!                       UNITS:      N/A
+!                       CLASS:      UnitTest_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN OUT)
 !
 ! OPTIONAL INPUTS:
-!       Verbose:            Logical to control length of reporting output.
-!                           If == .FALSE., Only failed tests are reported.
-!                              == .TRUE.,  Both failed and passed tests are reported.
-!                           UNITS:      N/A
-!                           TYPE:       LOGICAL
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Verbose:            Logical to control length of reporting output.
+!                       If == .FALSE., Only failed tests are reported.
+!                          == .TRUE.,  Both failed and passed tests are reported.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Title:              Character string containing the title of the
-!                           test to be performed.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Title:              Character string containing the title of the
+!                       test to be performed.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Caller:             Character string containing the name of the
-!                           calling subprogram.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Caller:             Character string containing the name of the
+!                       calling subprogram.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Level:              Integer flag specifying the output message level.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Level:              Integer flag specifying the output message level.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Procedure:          The name of the UnitTest procedure.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Procedure:          The name of the UnitTest procedure.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message:            Character string containing an informational
-!                           message about the unit test performed.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Message:            Character string containing an informational
+!                       message about the unit test performed.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Test_Result:        Logical to contain the result of unit tests
-!                           performed
-!                           If == .TRUE.,  Test passed.
-!                              == .FALSE., Test failed.
-!                           UNITS:      N/A
-!                           TYPE:       LOGICAL
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Test_Result:        Logical to contain the result of unit tests
+!                       performed
+!                       If == .TRUE.,  Test passed.
+!                          == .FALSE., Test failed.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_Tests:            The number of tests performed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_Tests:            The number of tests performed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_Passed_Tests:     The number of tests passed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_Passed_Tests:     The number of tests passed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_Failed_Tests:     The number of tests failed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_Failed_Tests:     The number of tests failed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_AllTests:         The total number of tests performed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_AllTests:         The total number of tests performed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_Passed_AllTests:  The total number of tests passed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_Passed_AllTests:  The total number of tests passed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       n_Failed_AllTests:  The total number of tests failed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   n_Failed_AllTests:  The total number of tests failed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
   PURE SUBROUTINE Set_Property( &
-    UnitTest         , & ! Object
+    self             , & ! Object
     Verbose          , & ! Optional input
     Title            , & ! Optional input
     Caller           , & ! Optional input
@@ -2510,7 +4943,7 @@ CONTAINS
     n_Passed_AllTests, & ! Optional input
     n_Failed_AllTests  ) ! Optional input
     ! Arguments
-    TYPE(UnitTest_type)   , INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type)  , INTENT(IN OUT) :: self
     LOGICAL     , OPTIONAL, INTENT(IN)     :: Verbose
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)     :: Caller
@@ -2525,157 +4958,155 @@ CONTAINS
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Passed_AllTests
     INTEGER     , OPTIONAL, INTENT(IN)     :: n_Failed_AllTests
     ! Set the object properties
-    IF ( PRESENT(Verbose          ) ) UnitTest%Verbose           = Verbose
-    IF ( PRESENT(Title            ) ) UnitTest%Title             = Title
-    IF ( PRESENT(Caller           ) ) UnitTest%Caller            = Caller
-    IF ( PRESENT(Level            ) ) UnitTest%Level             = Level
-    IF ( PRESENT(Procedure        ) ) UnitTest%Procedure         = Procedure
-    IF ( PRESENT(Message          ) ) UnitTest%Message           = Message
-    IF ( PRESENT(Test_Result      ) ) UnitTest%Test_Result       = Test_Result
-    IF ( PRESENT(n_Tests          ) ) UnitTest%n_Tests           = n_Tests
-    IF ( PRESENT(n_Passed_Tests   ) ) UnitTest%n_Passed_Tests    = n_Passed_Tests
-    IF ( PRESENT(n_Failed_Tests   ) ) UnitTest%n_Failed_Tests    = n_Failed_Tests
-    IF ( PRESENT(n_AllTests       ) ) UnitTest%n_AllTests        = n_AllTests
-    IF ( PRESENT(n_Passed_AllTests) ) UnitTest%n_Passed_AllTests = n_Passed_AllTests
-    IF ( PRESENT(n_Failed_AllTests) ) UnitTest%n_Failed_AllTests = n_Failed_AllTests
+    IF ( PRESENT(Verbose          ) ) self%Verbose           = Verbose
+    IF ( PRESENT(Title            ) ) self%Title             = Title
+    IF ( PRESENT(Caller           ) ) self%Caller            = Caller
+    IF ( PRESENT(Level            ) ) self%Level             = Level
+    IF ( PRESENT(Procedure        ) ) self%Procedure         = Procedure
+    IF ( PRESENT(Message          ) ) self%Message           = Message
+    IF ( PRESENT(Test_Result      ) ) self%Test_Result       = Test_Result
+    IF ( PRESENT(n_Tests          ) ) self%n_Tests           = n_Tests
+    IF ( PRESENT(n_Passed_Tests   ) ) self%n_Passed_Tests    = n_Passed_Tests
+    IF ( PRESENT(n_Failed_Tests   ) ) self%n_Failed_Tests    = n_Failed_Tests
+    IF ( PRESENT(n_AllTests       ) ) self%n_AllTests        = n_AllTests
+    IF ( PRESENT(n_Passed_AllTests) ) self%n_Passed_AllTests = n_Passed_AllTests
+    IF ( PRESENT(n_Failed_AllTests) ) self%n_Failed_AllTests = n_Failed_AllTests
   END SUBROUTINE Set_Property
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Get_Property
+!   UnitTest::Get_Property
 !
 ! PURPOSE:
-!       Private subroutine to get the properties of a UnitTest object.
+!   Private method to get the properties of a UnitTest object.
 !
-!       All READ access to the UnitTest object properties should be
-!       done using this subroutine.
+!   All READ access to the UnitTest object properties should be
+!   done using this method.
 !
 ! CALLING SEQUENCE:
-!       CALL Get_Property( &
-!         UnitTest, &
-!         Verbose           = Verbose          , &
-!         Title             = Title            , &
-!         Caller            = Caller           , &
-!         Level             = Level            , &
-!         Procedure         = Procedure        , &
-!         Message           = Message          , &
-!         Test_Result       = Test_Result      , &
-!         n_Tests           = n_Tests          , &
-!         n_Passed_Tests    = n_Passed_Tests   , &
-!         n_Failed_Tests    = n_Failed_Tests   , &
-!         n_AllTests        = n_AllTests       , &
-!         n_Passed_AllTests = n_Passed_AllTests, &
-!         n_Failed_AllTests = n_Failed_AllTests  )
+!   CALL utest_obj%Get_Property( Verbose           = Verbose          , &
+!                                Title             = Title            , &
+!                                Caller            = Caller           , &
+!                                Level             = Level            , &
+!                                Procedure         = Procedure        , &
+!                                Message           = Message          , &
+!                                Test_Result       = Test_Result      , &
+!                                n_Tests           = n_Tests          , &
+!                                n_Passed_Tests    = n_Passed_Tests   , &
+!                                n_Failed_Tests    = n_Failed_Tests   , &
+!                                n_AllTests        = n_AllTests       , &
+!                                n_Passed_AllTests = n_Passed_AllTests, &
+!                                n_Failed_AllTests = n_Failed_AllTests  )
 !
 ! OBJECT:
-!       UnitTest:           UnitTest object.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(UnitTest_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!   utest_obj:          UnitTest object.
+!                       UNITS:      N/A
+!                       CLASS:      UnitTest_type
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
 !
 ! OPTIONAL OUTPUTS:
-!       Verbose:            Logical to control length of reporting output.
-!                           If == .FALSE., Only failed tests are reported.
-!                              == .TRUE.,  Both failed and passed tests are reported.
-!                           UNITS:      N/A
-!                           TYPE:       LOGICAL
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Verbose:            Logical to control length of reporting output.
+!                       If == .FALSE., Only failed tests are reported.
+!                          == .TRUE.,  Both failed and passed tests are reported.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Title:              Character string containing the title of the
-!                           test to be performed.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Title:              Character string containing the title of the
+!                       test to be performed.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Caller:             Character string containing the name of the
-!                           calling subprogram.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Caller:             Character string containing the name of the
+!                       calling subprogram.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Level:              Integer flag specifying the output message level.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Level:              Integer flag specifying the output message level.
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Procedure:          The name of the last UnitTest Procedure called.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!   Procedure:          The name of the last UnitTest Procedure called.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       Message:            Character string containing an informational
-!                           message about the last unit test performed.
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER(*)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Message:            Character string containing an informational
+!                       message about the last unit test performed.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       Test_Result:        Logical containing the result of the last
-!                           unit test performed
-!                           If == .TRUE.,  Test passed.
-!                              == .FALSE., Test failed.
-!                           UNITS:      N/A
-!                           TYPE:       LOGICAL
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   Test_Result:        Logical containing the result of the last
+!                       unit test performed
+!                       If == .TRUE.,  Test passed.
+!                          == .FALSE., Test failed.
+!                       UNITS:      N/A
+!                       TYPE:       LOGICAL
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Tests:            The number of tests performed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_Tests:            The number of tests performed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Passed_Tests:     The number of tests passed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_Passed_Tests:     The number of tests passed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Failed_Tests:     The number of tests failed for the current
-!                           unit test type, i.e. since the last call to
-!                           UnitTest_Setup().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_Failed_Tests:     The number of tests failed for the current
+!                       unit test type, i.e. since the last call to
+!                       UnitTest_Setup().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_AllTests:         The total number of tests performed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_AllTests:         The total number of tests performed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Passed_AllTests:  The total number of tests passed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_Passed_AllTests:  The total number of tests passed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
-!       n_Failed_AllTests:  The total number of tests failed, i.e. since
-!                           the last call to UnitTest_Init().
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT), OPTIONAL
+!   n_Failed_AllTests:  The total number of tests failed, i.e. since
+!                       the last call to UnitTest_Init().
+!                       UNITS:      N/A
+!                       TYPE:       INTEGER
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(OUT), OPTIONAL
 !
 !------------------------------------------------------------------------------
 
   PURE SUBROUTINE Get_Property( &
-    UnitTest         , & ! Object
+    self             , & ! Object
     Verbose          , & ! Optional output
     Title            , & ! Optional output
     Caller           , & ! Optional output
@@ -2690,7 +5121,7 @@ CONTAINS
     n_Passed_AllTests, & ! Optional output
     n_Failed_AllTests  ) ! Optional output
     ! Arguments
-    TYPE(UnitTest_type)   , INTENT(IN)  :: UnitTest
+    CLASS(UnitTest_type)  , INTENT(IN)  :: self
     LOGICAL     , OPTIONAL, INTENT(OUT) :: Verbose
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Caller
@@ -2705,317 +5136,257 @@ CONTAINS
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Passed_AllTests
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Failed_AllTests
     ! Get the object properties
-    IF ( PRESENT(Verbose          ) ) Verbose           = UnitTest%Verbose
-    IF ( PRESENT(Title            ) ) Title             = UnitTest%Title
-    IF ( PRESENT(Caller           ) ) Caller            = UnitTest%Caller
-    IF ( PRESENT(Level            ) ) Level             = UnitTest%Level
-    IF ( PRESENT(Procedure        ) ) Procedure         = UnitTest%Procedure
-    IF ( PRESENT(Message          ) ) Message           = UnitTest%Message
-    IF ( PRESENT(Test_Result      ) ) Test_Result       = UnitTest%Test_Result
-    IF ( PRESENT(n_Tests          ) ) n_Tests           = UnitTest%n_Tests
-    IF ( PRESENT(n_Passed_Tests   ) ) n_Passed_Tests    = UnitTest%n_Passed_Tests
-    IF ( PRESENT(n_Failed_Tests   ) ) n_Failed_Tests    = UnitTest%n_Failed_Tests
-    IF ( PRESENT(n_AllTests       ) ) n_AllTests        = UnitTest%n_AllTests
-    IF ( PRESENT(n_Passed_AllTests) ) n_Passed_AllTests = UnitTest%n_Passed_AllTests
-    IF ( PRESENT(n_Failed_AllTests) ) n_Failed_AllTests = UnitTest%n_Failed_AllTests
+    IF ( PRESENT(Verbose          ) ) Verbose           = self%Verbose
+    IF ( PRESENT(Title            ) ) Title             = self%Title
+    IF ( PRESENT(Caller           ) ) Caller            = self%Caller
+    IF ( PRESENT(Level            ) ) Level             = self%Level
+    IF ( PRESENT(Procedure        ) ) Procedure         = self%Procedure
+    IF ( PRESENT(Message          ) ) Message           = self%Message
+    IF ( PRESENT(Test_Result      ) ) Test_Result       = self%Test_Result
+    IF ( PRESENT(n_Tests          ) ) n_Tests           = self%n_Tests
+    IF ( PRESENT(n_Passed_Tests   ) ) n_Passed_Tests    = self%n_Passed_Tests
+    IF ( PRESENT(n_Failed_Tests   ) ) n_Failed_Tests    = self%n_Failed_Tests
+    IF ( PRESENT(n_AllTests       ) ) n_AllTests        = self%n_AllTests
+    IF ( PRESENT(n_Passed_AllTests) ) n_Passed_AllTests = self%n_Passed_AllTests
+    IF ( PRESENT(n_Failed_AllTests) ) n_Failed_AllTests = self%n_Failed_AllTests
   END SUBROUTINE Get_Property
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Test_Passed
+!   UnitTest::Test_Passed
 !
 ! PURPOSE:
-!       Subroutine to increment passed test counters.
+!   Private method to increment passed test counters.
 !
 ! CALLING SEQUENCE:
-!       CALL Test_Passed( UnitTest )
+!   CALL utest_obj%Test_Passed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE Test_Passed( UnitTest )
+  SUBROUTINE Test_Passed( self )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
     ! Variables
     INTEGER :: n_Passed_Tests, n_Passed_AllTests
 
     ! Increment total test counters
-    CALL Test_Increment( UnitTest )
+    CALL self%Test_Increment()
 
     ! Increment the passed test counters
     ! ...Get 'em
-    CALL Get_Property( &
-      UnitTest, &
-      n_Passed_Tests = n_Passed_Tests, &
+    CALL self%Get_Property( &
+      n_Passed_Tests    = n_Passed_Tests, &
       n_Passed_AllTests = n_Passed_AllTests )
     ! ...Increment
     n_Passed_Tests    = n_Passed_Tests    + 1
     n_Passed_AllTests = n_Passed_AllTests + 1
     ! ...Save 'em and set successful test result
-    CALL Set_Property( &
-      UnitTest, &
-      Test_Result = .TRUE., &
-      n_Passed_Tests = n_Passed_Tests, &
+    CALL self%Set_Property( &
+      Test_Result       = .TRUE., &
+      n_Passed_Tests    = n_Passed_Tests, &
       n_Passed_AllTests = n_Passed_AllTests )
   END SUBROUTINE Test_Passed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Test_Failed
+!   UnitTest::Test_Failed
 !
 ! PURPOSE:
-!       Subroutine to increment failed test counters.
+!   Private method to increment failed test counters.
 !
 ! CALLING SEQUENCE:
-!       CALL Test_Failed( UnitTest )
+!   CALL utest_obj%Test_Failed()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE Test_Failed( UnitTest )
+  SUBROUTINE Test_Failed( self )
     ! Arguments
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
     ! Variables
     INTEGER :: n_Failed_Tests, n_Failed_AllTests
 
     ! Increment total test counters
-    CALL Test_Increment( UnitTest )
+    CALL self%Test_Increment()
 
     ! Increment the failed test counters
     ! ...Get 'em
-    CALL Get_Property( &
-      UnitTest, &
-      n_Failed_Tests = n_Failed_Tests, &
+    CALL self%Get_Property( &
+      n_Failed_Tests    = n_Failed_Tests, &
       n_Failed_AllTests = n_Failed_AllTests )
     ! ...Increment
     n_Failed_Tests    = n_Failed_Tests    + 1
     n_Failed_AllTests = n_Failed_AllTests + 1
     ! ...Save 'em and set unsuccessful test result
-    CALL Set_Property( &
-      UnitTest, &
-      Test_Result = .FALSE., &
-      n_Failed_Tests = n_Failed_Tests, &
+    CALL self%Set_Property( &
+      Test_Result       = .FALSE., &
+      n_Failed_Tests    = n_Failed_Tests, &
       n_Failed_AllTests = n_Failed_AllTests )
   END SUBROUTINE Test_Failed
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Test_Increment
+!   UnitTest::Test_Increment
 !
 ! PURPOSE:
-!       Subroutine to increment the test total counters.
+!   Private method to increment the test total counters.
 !
 ! CALLING SEQUENCE:
-!       CALL Test_Increment( UnitTest )
+!   CALL utest_obj%Test_Increment()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE Test_Increment( UnitTest )
-    TYPE(UnitTest_type), INTENT(IN OUT) :: UnitTest
+  SUBROUTINE Test_Increment( self )
+    CLASS(UnitTest_type), INTENT(IN OUT) :: self
     INTEGER :: n_Tests, n_AllTests
 
-    CALL Get_Property( &
-      UnitTest, &
+    CALL self%Get_Property( &
       n_Tests    = n_Tests, &
       n_AllTests = n_AllTests )
 
     n_Tests    = n_Tests    + 1
     n_AllTests = n_AllTests + 1
 
-    CALL Set_Property( &
-      UnitTest, &
+    CALL self%Set_Property( &
       n_Tests    = n_Tests, &
       n_AllTests = n_AllTests )
   END SUBROUTINE Test_Increment
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Display_Message
+!   UnitTest::Display_Message
 !
 ! PURPOSE:
-!       Subroutine to display the unit test messages to stdout.
+!   Private method to display the unit test messages to stdout.
 !
 ! CALLING SEQUENCE:
-!       CALL Display_Message( UnitTest )
+!   CALL utest_obj%Display_Message()
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN OUT)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN OUT)
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE Display_Message( UnitTest )
-    TYPE(UnitTest_type), INTENT(IN) :: UnitTest
+  SUBROUTINE Display_Message( self )
+    CLASS(UnitTest_type), INTENT(IN) :: self
     ! Variables
-    INTEGER :: Level
-    CHARACTER(SL) :: Procedure
-    CHARACTER(SL) :: Message
-    CHARACTER(SL) :: Fmt
-    CHARACTER(SL) :: Prefix
-    CHARACTER(SL) :: Test_Info
-    INTEGER :: n_Spaces
+    INTEGER :: level
+    CHARACTER(SL) :: procedure
+    CHARACTER(SL) :: message
+    CHARACTER(SL) :: fmt
+    CHARACTER(SL) :: prefix
+    CHARACTER(SL) :: test_info
+    INTEGER :: n_spaces
 
-    CALL Get_Property( &
-      UnitTest, &
-      Level = Level, &
-      Procedure = Procedure, &
-      Message = Message )
+    CALL self%Get_Property( &
+      Level     = level, &
+      Procedure = procedure, &
+      Message   = message )
 
     ! Set output bits manually
-    Test_Info = ''
-    SELECT CASE(Level)
+    test_info = ''
+    SELECT CASE(level)
       CASE(INIT_LEVEL)
-        Prefix = '/'
-        n_Spaces = 1
+        prefix = '/'
+        n_spaces = 1
       CASE(SETUP_LEVEL)
-        Prefix = '/,3x,14("-"),/'
-        n_Spaces = 3
+        prefix = '/,3x,14("-"),/'
+        n_spaces = 3
       CASE(TEST_LEVEL)
-        Prefix = ''
-        n_Spaces = 5
-        CALL Test_Info_String( UnitTest, Test_Info )
+        prefix = ''
+        n_spaces = 5
+        CALL self%Test_Info_String( test_info )
       CASE(REPORT_LEVEL)
-        Prefix = ''
-        n_Spaces = 3
+        prefix = ''
+        n_spaces = 3
       CASE(SUMMARY_LEVEL)
-        Prefix = '/,1x,16("="),/'
-        n_Spaces = 1
+        prefix = '/,1x,16("="),/'
+        n_spaces = 1
       CASE DEFAULT
-        Level = INTERNAL_FAIL_LEVEL
-        Prefix = '/,"INVALID MESSAGE LEVEL!!",/'
-        n_Spaces = 15
+        level = INTERNAL_FAIL_LEVEL
+        prefix = '/,"INVALID MESSAGE LEVEL!!",/'
+        n_spaces = 15
     END SELECT
 
     ! Write the message to stdout
-    WRITE(Fmt, '("(",a,i0,"x,""("",a,"") "",a,"": "",a,1x,a)")') TRIM(Prefix), n_Spaces
-    WRITE( *,FMT=Fmt ) TRIM(MESSAGE_LEVEL(Level)), TRIM(Procedure), TRIM(Test_Info), TRIM(Message)
+    WRITE(fmt, '("(",a,i0,"x,""("",a,"") "",a,"": "",a,1x,a)")') TRIM(prefix), n_spaces
+    WRITE( *,FMT=fmt ) TRIM(MESSAGE_LEVEL(level)), TRIM(procedure), TRIM(test_info), TRIM(message)
 
   END SUBROUTINE Display_Message
 
 
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 !
 ! NAME:
-!       Test_Info_String
+!   UnitTest::Test_Info_String
 !
 ! PURPOSE:
-!       Subroutine to construct an info string for message output.
+!   Private method to construct an info string for message output.
 !
 ! CALLING SEQUENCE:
-!       CALL Test_Info_String( UnitTest, info )
+!   CALL utest_obj%Test_Info_String( info )
 !
 ! OBJECT:
-!       UnitTest:      UnitTest object.
-!                      UNITS:      N/A
-!                      TYPE:       TYPE(UnitTest_type)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(IN)
+!   utest_obj:     UnitTest object.
+!                  UNITS:      N/A
+!                  CLASS:      UnitTest_type
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       info:          Character string containing the test number and
-!                      whether the test passed or failed.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
+!   info:          Character string containing the test number and
+!                  whether the test passed or failed.
+!                  UNITS:      N/A
+!                  TYPE:       CHARACTER(*)
+!                  DIMENSION:  Scalar
+!                  ATTRIBUTES: INTENT(OUT)
 !
-!------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 
-  SUBROUTINE Test_Info_String( UnitTest, info )
-    TYPE(UnitTest_Type), INTENT(IN) :: UnitTest
-    CHARACTER(*), INTENT(OUT) :: info
-    INTEGER :: n_Tests
-    CHARACTER(6) :: PassFail
-    CALL Get_Property( UnitTest, n_Tests = n_Tests )
-    IF ( UnitTest_Passed( UnitTest ) ) THEN
-      PassFail = 'PASSED'
+  SUBROUTINE Test_Info_String( self, info )
+    CLASS(UnitTest_Type), INTENT(IN)  :: self
+    CHARACTER(*),         INTENT(OUT) :: info
+    INTEGER :: n_tests
+    CHARACTER(6) :: passfail
+    CALL self%Get_Property( n_Tests = n_Tests )
+    IF ( self%Passed() ) THEN
+      passfail = 'PASSED'
     ELSE
-      PassFail = 'FAILED'
+      passfail = 'FAILED'
     END IF
-    WRITE( info,'("Test#",i0,1x,a,".")') n_Tests, PassFail
+    WRITE( info,'("Test#",i0,1x,a,".")') n_tests, passfail
   END SUBROUTINE Test_Info_String
-
-
-!====================
-! UTILITY PROCEDURES
-!====================
-
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Get_Multiplier
-!
-! PURPOSE:
-!       Elemental function to compute the exponent multiplier of an input
-!       for use in scaling tolerance values for floating point comparisons.
-!
-! CALLING SEQUENCE:
-!       e = Get_Multiplier(x)
-!
-! INPUTS:
-!       x:             Number for which the exponent multiplier is required.
-!                      UNITS:      N/A
-!                      TYPE:       REAL(Single)   , or
-!                                  REAL(Double)
-!                      DIMENSION:  Scalar or any rank
-!                      ATTRIBUTES: INTENT(IN)
-!
-! FUNCTION RESULT:
-!       e:             Exponent multiplier to use in scaling tolerance values.
-!                      UNITS:      N/A
-!                      TYPE:       Same as input x.
-!                      DIMENSION:  Same as input x.
-!
-!------------------------------------------------------------------------------
-
-  ELEMENTAL FUNCTION realsp_get_multiplier(x) RESULT(e)
-    REAL(Single), INTENT(IN) :: x
-    REAL(Single) :: e
-    IF (x > 0.0_Single) THEN
-      e = 10.0_Single**FLOOR(LOG10(x))
-    ELSE
-      e = 1.0_Single
-    END IF
-  END FUNCTION realsp_get_multiplier
-
-  ELEMENTAL FUNCTION realdp_get_multiplier(x) RESULT(e)
-    REAL(Double), INTENT(IN) :: x
-    REAL(Double) :: e
-    IF (x > 0.0_Double) THEN
-      e = 10.0_Double**FLOOR(LOG10(x))
-    ELSE
-      e = 1.0_Double
-    END IF
-  END FUNCTION realdp_get_multiplier
 
 END MODULE UnitTest_Define

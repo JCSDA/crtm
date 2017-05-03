@@ -23,6 +23,7 @@ MODULE Timing_Utility
   PUBLIC :: Timing_End
   PUBLIC :: Timing_Display
   PUBLIC :: Timing_Inspect
+  PUBLIC :: Timing_ToString
   PUBLIC :: Timing_Set
   PUBLIC :: Timing_Get
   PUBLIC :: Timing_WriteFile
@@ -369,6 +370,7 @@ CONTAINS
     IF ( PRESENT(End_Clock  ) ) End_Clock   = self%End_Clock
     IF ( PRESENT(Is_Valid   ) ) Is_Valid    = self%Is_Valid
   END SUBROUTINE Timing_Get
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:

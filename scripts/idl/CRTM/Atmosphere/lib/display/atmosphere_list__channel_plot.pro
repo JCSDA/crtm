@@ -128,6 +128,42 @@ PRO Atmosphere_List::Channel_Plot, $
       OVERPLOT = pt )
 
 
+  ; Display the cloud fraction data
+  ; ...Extract the data
+  y = self->Get_Channel_Data('cfraction', Layer = layer, Debug = debug)
+  ; ...Process the difference list
+  IF ( plot_difference ) THEN BEGIN
+    ; Extract and difference the data
+    y2 = diff_input->Get_Channel_Data('cfraction', Layer = layer, Debug = debug)
+    y  = y - y2
+  ENDIF
+  ; ...Create scaled y-data for pretty plotting
+  axis_scale, [MIN(y),MAX(y)], 'Cloud fraction', yscale, ytitle
+  y = y * yscale
+  ; ...Plot the data
+  index++
+  pcf = PLOT( $
+    channel_number, y, $
+    TITLE  = delta + 'Cloud fraction spectrum at layer ' + STRTRIM(layer,2), $
+    XTITLE = xtitle, $
+    YTITLE = ytitle, $
+    LAYOUT = [ n_col, n_row, index ], $
+    COLOR = 'red', $
+    SYMBOL = symbol, $
+    CURRENT = owin )
+  IF ( plot_difference ) THEN $
+    !NULL = PLOT( $
+      pcf.Xrange, [0,0], $
+      LINESTYLE = 'dash', $
+      OVERPLOT = pcf )
+  ; ...Overplot the current channel indicator if supplied
+  IF ( display_current_channel ) THEN $
+    !NULL = PLOT( $
+      _channel, pcf.Yrange, $
+      COLOR = 'green', $
+      OVERPLOT = pcf )
+
+
   ; Display the absorber data
   FOR j = 0, n_absorbers-1 DO BEGIN
     ; ...Extract the data

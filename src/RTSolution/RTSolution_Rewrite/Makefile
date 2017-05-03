@@ -1,6 +1,6 @@
 #==============================================================================
 #
-# Makefile for Atmosphere_Rewrite program
+# Makefile for RTSolution_Rewrite program
 #
 #==============================================================================
 
@@ -11,7 +11,7 @@ include $(CRTM_SOURCE_ROOT)/make.macros
 MAKE_FILE = Makefile
 
 # Executable file
-EXE_FILE = Atmosphere_Rewrite
+EXE_FILE = RTSolution_Rewrite
 
 # Source files to link
 SRC_FILES = Type_Kinds.f90 \
@@ -20,10 +20,9 @@ SRC_FILES = Type_Kinds.f90 \
             Compare_Float_Numbers.f90 \
             Endian_Utility.f90 \
             Binary_File_Utility.f90 \
+            SensorInfo_Parameters.f90 \
             CRTM_Parameters.f90 \
-            CRTM_Atmosphere_Define.f90 \
-            CRTM_Cloud_Define.f90 \
-            CRTM_Aerosol_Define.f90
+            CRTM_RTSolution_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -44,3 +43,4 @@ include make.dependencies
 
 # Define default rules
 include $(CRTM_SOURCE_ROOT)/make.rules
+

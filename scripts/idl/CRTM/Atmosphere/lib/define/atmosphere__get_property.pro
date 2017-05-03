@@ -20,6 +20,7 @@
 ;         Pressure        = Pressure       , $
 ;         Temperature     = Temperature    , $
 ;         Absorber_Amount = Absorber_Amount, $
+;         CFraction       = CFraction      , $
 ;         Cloud           = Cloud          , $
 ;         Aerosol         = Aerosol           
 ;
@@ -111,6 +112,12 @@
 ;                              DIMENSION:  Rank-2 (n_Layers x n_Absorbers)
 ;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
 ;
+;       CFraction:             The cloud fraction profile for the atmosphere.
+;                              UNITS:      Variable
+;                              TYPE:       REAL
+;                              DIMENSION:  Rank-1 (n_Layers)
+;                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+;
 ;       Cloud:                 The list of cloud objects.
 ;                              UNITS:      Variable
 ;                              TYPE:       Cloud_List
@@ -137,6 +144,7 @@ PRO Atmosphere::Get_Property, $
    Pressure        = Pressure       , $  ; Output keyword
    Temperature     = Temperature    , $  ; Output keyword
    Absorber_Amount = Absorber_Amount, $  ; Output keyword
+   CFraction       = CFraction      , $  ; Output keyword
    Cloud           = Cloud          , $  ; Output keyword
    Aerosol         = Aerosol             ; Output keyword
   
@@ -164,6 +172,7 @@ PRO Atmosphere::Get_Property, $
   IF ( ARG_PRESENT(Pressure       ) ) THEN Pressure        = (self.Pressure      )[0]  
   IF ( ARG_PRESENT(Temperature    ) ) THEN Temperature     = (self.Temperature   )[0]  
   IF ( ARG_PRESENT(Absorber_Amount) ) THEN Absorber_Amount = (self.Absorber      )[0]
+  IF ( ARG_PRESENT(CFraction      ) ) THEN CFraction       = (self.CFraction     )[0]
   ; ...Objects  
   IF ( ARG_PRESENT(Cloud) ) THEN BEGIN
     IF ( self.n_Clouds GT 0 ) THEN Cloud = (self.Cloud)[*]

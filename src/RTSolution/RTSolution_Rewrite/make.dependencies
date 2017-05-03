@@ -1,11 +1,10 @@
 Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
 CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
 CRTM_RTSolution_Define.o : CRTM_RTSolution_Define.f90 CRTM_Parameters.o SensorInfo_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-CRTM_RTSolution_Define_old.o : CRTM_RTSolution_Define_old.f90 CRTM_Parameters.o SensorInfo_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
 File_Utility.o : File_Utility.f90 
 Message_Handler.o : Message_Handler.f90 File_Utility.o 
-RTSolution_OLD2NEW.o : RTSolution_OLD2NEW.f90 CRTM_RTSolution_Define_old.o CRTM_RTSolution_Define.o File_Utility.o Message_Handler.o Type_Kinds.o 
+RTSolution_Rewrite.o : RTSolution_Rewrite.f90 CRTM_RTSolution_Define.o File_Utility.o Message_Handler.o Type_Kinds.o 
 SensorInfo_Parameters.o : SensorInfo_Parameters.f90 
 Type_Kinds.o : Type_Kinds.f90 

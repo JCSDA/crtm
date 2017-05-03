@@ -22,6 +22,7 @@ FUNCTION Atmosphere::_overloadEQ, left, right
     Pressure        = left_pressure      , $
     Temperature     = left_temperature   , $
     Absorber_Amount = left_absorber      , $
+    CFraction       = left_cfraction     , $
     Cloud           = left_cloud         , $
     Aerosol         = left_aerosol       
   right.Get_Property, $
@@ -36,6 +37,7 @@ FUNCTION Atmosphere::_overloadEQ, left, right
     Pressure        = right_pressure      , $
     Temperature     = right_temperature   , $
     Absorber_Amount = right_absorber      , $
+    CFraction       = right_cfraction     , $
     Cloud           = right_cloud         , $
     Aerosol         = right_aerosol       
 
@@ -50,7 +52,8 @@ FUNCTION Atmosphere::_overloadEQ, left, right
              ARRAY_EQUAL(left_level_pressure, right_level_pressure) && $
              ARRAY_EQUAL(left_pressure      , right_pressure      ) && $
              ARRAY_EQUAL(left_temperature   , right_temperature   ) && $
-             ARRAY_EQUAL(left_absorber      , right_absorber      )
+             ARRAY_EQUAL(left_absorber      , right_absorber      ) && $
+             ARRAY_EQUAL(left_cfraction     , right_cfraction     )
   IF ( left_n_clouds GT 0 ) THEN $
     FOR i = 0, left_cloud.Count() - 1 DO $
       is_equal = is_equal AND (left_cloud[i] EQ right_cloud[i])

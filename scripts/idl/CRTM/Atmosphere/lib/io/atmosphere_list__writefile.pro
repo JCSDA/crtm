@@ -93,18 +93,20 @@ PRO Atmosphere::WriteRecord, $
     absorber_units
 
 
-  ; Read the atmospheric profile data
+  ; Write the atmospheric profile data
   self->Atmosphere::Get_Property, $
     Debug           = debug         , $
     Level_Pressure  = level_pressure, $
     Pressure        = pressure      , $
     Temperature     = temperature   , $
-    Absorber_Amount = absorber
+    Absorber_Amount = absorber      , $
+    CFraction       = cloud_fraction
   WRITEU, fid, $
     level_pressure, $
     pressure      , $
     temperature   , $
-    absorber
+    absorber      , $
+    cloud_fraction
 
 
   ; Write the cloud data

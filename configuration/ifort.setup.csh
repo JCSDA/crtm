@@ -4,6 +4,6 @@
 #-------------------------------------------------------------------------------#
 
 setenv FC "ifort"
-setenv FCFLAGS "-O2 -free -assume byterecl"
+setenv FCFLAGS "-O2 -fp-model source -free -e08 -assume byterecl,realloc_lhs"
 setenv LDFLAGS ""
 setenv LIBS ""

@@ -4,6 +4,6 @@
 #-------------------------------------------------------------------------------#
 
 setenv FC "gfortran"
-setenv FCFLAGS "-O3 -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4 -funroll-loops -ggdb -Wall -Wconversion -std=f2003"
+setenv FCFLAGS "-O3 -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4 -funroll-loops -ggdb -Wall -Wconversion -std=f2008"
 setenv LDFLAGS ""
 setenv LIBS ""

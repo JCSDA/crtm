@@ -83,6 +83,7 @@ MODULE CRTM_Surface_Define
   PUBLIC :: CRTM_Surface_Associated
   PUBLIC :: CRTM_Surface_Destroy
   PUBLIC :: CRTM_Surface_Create
+  PUBLIC :: CRTM_Surface_NonVariableCopy
   PUBLIC :: CRTM_Surface_Zero
   PUBLIC :: CRTM_Surface_IsValid
   PUBLIC :: CRTM_Surface_Inspect
@@ -376,6 +377,56 @@ CONTAINS
     Sfc%Is_Allocated = .TRUE.
 
   END SUBROUTINE CRTM_Surface_Create
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Surface_NonVariableCopy
+!
+! PURPOSE:
+!       Elemental utility subroutine to copy the "non-variable" data (coverages
+!       and surface types) from one instance of a CRTM Surface object to another
+!       (usually a TL or AD one).
+!
+!       NOTE: No error checking is performed in this procedure.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Surface_NonVariableCopy( sfc, modified_sfc )
+!
+! OBJECTS:
+!       sfc:             Surface object from which to copy.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Surface_type
+!                        DIMENSION:  Scalar or any rank
+!                        ATTRIBUTES: INTENT(IN)
+!
+! IN/OUTPUTS:
+!       modified_sfc:    Existing Surface object to be modified.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Surface_type
+!                        DIMENSION:  Conformable with sfc input
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_Surface_NonVariableCopy( sfc, modified_sfc )
+    TYPE(CRTM_Surface_type), INTENT(IN)     :: sfc
+    TYPE(CRTM_Surface_type), INTENT(IN OUT) :: modified_sfc
+
+    modified_sfc%Land_Coverage  = sfc%Land_Coverage
+    modified_sfc%Water_Coverage = sfc%Water_Coverage
+    modified_sfc%Snow_Coverage  = sfc%Snow_Coverage
+    modified_sfc%Ice_Coverage   = sfc%Ice_Coverage
+    
+    modified_sfc%Land_Type  = sfc%Land_Type
+    modified_sfc%Water_Type = sfc%Water_Type
+    modified_sfc%Snow_Type  = sfc%Snow_Type
+    modified_sfc%Ice_Type   = sfc%Ice_Type
+    
+  END SUBROUTINE CRTM_Surface_NonVariableCopy
 
 
 !--------------------------------------------------------------------------------

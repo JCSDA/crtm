@@ -27,6 +27,8 @@ MODULE Compare_Float_Numbers
   ! ------------
   PRIVATE
   ! Parameters
+  PUBLIC :: SP_N_SIGFIG
+  PUBLIC :: DP_N_SIGFIG
   PUBLIC :: DEFAULT_N_SIGFIG
   ! Operators
   PUBLIC :: OPERATOR (.EqualTo.)
@@ -95,10 +97,16 @@ MODULE Compare_Float_Numbers
   REAL(Double), PARAMETER :: DP_TEN = 10.0_Double
   REAL(Single), PARAMETER :: SP_HUNDRED = 100.0_Single
   REAL(Double), PARAMETER :: DP_HUNDRED = 100.0_Double
-  REAL(Single), PARAMETER :: SP_COMPARE_CUTOFF = 1.0e-15_Single
-  REAL(Double), PARAMETER :: DP_COMPARE_CUTOFF = 1.0e-15_Double
+  ! Default cutoff value for comparisons
+  REAL(Single), PARAMETER :: SP_COMPARE_CUTOFF = TINY(1.0_Single)
+  REAL(Double), PARAMETER :: DP_COMPARE_CUTOFF = TINY(1.0_Double)
+  ! Minimum exponents for precisions
+  INTEGER, PARAMETER :: SP_MIN_EXPONENT = -RANGE(1.0_Single)
+  INTEGER, PARAMETER :: DP_MIN_EXPONENT = -RANGE(1.0_Double)
   ! Default number of significant figures
-  INTEGER, PARAMETER :: DEFAULT_N_SIGFIG = 6
+  INTEGER, PARAMETER :: SP_N_SIGFIG =  7
+  INTEGER, PARAMETER :: DP_N_SIGFIG = 15
+  INTEGER, PARAMETER :: DEFAULT_N_SIGFIG = SP_N_SIGFIG
 
 
 CONTAINS
@@ -527,7 +535,7 @@ CONTAINS
 !       specified number of significant figures.
 !
 ! CALLING SEQUENCE:
-!       Result = Tolerance( x, n )
+!       tol = Tolerance( x, n )
 !
 ! INPUT ARGUMENTS:
 !       x:           Floating point value for which a tolerance value is required.
@@ -546,15 +554,15 @@ CONTAINS
 !                    tolerance is required.
 !                    UNITS:      N/A
 !                    TYPE:       INTEGER
-!                    DIMENSION:  Scalar or same as input x.
+!                    DIMENSION:  Conformable with input x.
 !                    ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       Result:      The return value is a tolerance value that can be used to
+!       tol:         The return value is a tolerance value that can be used to
 !                    compare two numbers.
 !                    UNITS:      N/A
 !                    TYPE:       Same as input x.
-!                    DIMENSION:  Same as input x.
+!                    DIMENSION:  Conformable with input x.
 !:sdoc-:
 !----------------------------------------------------------------------------------
 
@@ -565,10 +573,11 @@ CONTAINS
     INTEGER :: e
     IF (ABS(x) > SP_ZERO) THEN
       e = FLOOR(LOG10(ABS(x))) - n
-      Tolerance = SP_TEN**e
     ELSE
-      Tolerance = SP_ONE
+      e = -n
     END IF
+    e = MAX(e,SP_MIN_EXPONENT)
+    Tolerance = SP_TEN**e
   END FUNCTION Tolerance_Real_Single
   
   ELEMENTAL FUNCTION Tolerance_Real_Double(x,n) RESULT( Tolerance )
@@ -578,10 +587,11 @@ CONTAINS
     INTEGER :: e
     IF (ABS(x) > DP_ZERO) THEN
       e = FLOOR(LOG10(ABS(x))) - n
-      Tolerance = DP_TEN**e
     ELSE
-      Tolerance = DP_ONE
+      e = -n
     END IF
+    e = MAX(e,DP_MIN_EXPONENT)
+    Tolerance = DP_TEN**e
   END FUNCTION Tolerance_Real_Double
   
   ELEMENTAL FUNCTION Tolerance_Complex_Single(x,n) RESULT( Tolerance )
@@ -641,8 +651,7 @@ CONTAINS
 ! OPTIONAL INPUTS:
 !       cutoff:      Floating point value below which the comparison is not
 !                    performed. In this case, the function result will be .TRUE.
-!                    If not specified, the default value is 1.0e-15 for real
-!                    input, or (1.0e-15,1.0e-15) for complex input.
+!                    If not specified, the default value is TINY().
 !                    UNITS:      N/A
 !                    TYPE:       Same as input x
 !                    DIMENSION:  Scalar or same as input x, y.

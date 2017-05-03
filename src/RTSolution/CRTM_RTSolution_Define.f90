@@ -101,6 +101,7 @@ MODULE CRTM_RTSolution_Define
   '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
+  REAL(fp), PARAMETER :: ONE  = 1.0_fp
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! File status on close after write error
@@ -137,10 +138,13 @@ MODULE CRTM_RTSolution_Define
     REAL(fp) :: Down_Radiance           = ZERO
     REAL(fp) :: Down_Solar_Radiance     = ZERO
     REAL(fp) :: Surface_Planck_Radiance = ZERO
+    REAL(fp) :: Total_Cloud_Cover       = ZERO  ! Only used for fractional clear/cloudy calculation
+    REAL(fp) :: R_clear                 = ZERO  ! Only used for fractional clear/cloudy calculation
+    REAL(fp) :: Tb_clear                = ZERO  ! Only used for fractional clear/cloudy calculation
     REAL(fp), ALLOCATABLE :: Upwelling_Overcast_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Upwelling_Radiance(:)   ! K
     REAL(fp), ALLOCATABLE :: Layer_Optical_Depth(:)  ! K
-    ! Radiative transfer results for a single channel/node
+    ! Radiative transfer results for a single channel
     REAL(fp) :: Radiance               = ZERO
     REAL(fp) :: Brightness_Temperature = ZERO
   END TYPE CRTM_RTSolution_type
@@ -328,6 +332,9 @@ CONTAINS
     RTSolution%Down_Radiance           = ZERO
     RTSolution%Down_Solar_Radiance     = ZERO
     RTSolution%Surface_Planck_Radiance = ZERO
+    RTSolution%Total_Cloud_Cover       = ZERO
+    RTSolution%R_clear                 = ZERO
+    RTSolution%Tb_clear                = ZERO
     RTSolution%Radiance                = ZERO
     RTSolution%Brightness_Temperature  = ZERO
 
@@ -389,20 +396,23 @@ CONTAINS
 
     WRITE(fid,'(1x,"RTSolution OBJECT")')
     ! Display components
-    WRITE(fid,'(3x,"Sensor Id                : ",a )') TRIM(RTSolution%Sensor_ID)
-    WRITE(fid,'(3x,"WMO Satellite Id         : ",i0)') RTSolution%WMO_Satellite_ID
-    WRITE(fid,'(3x,"WMO Sensor Id            : ",i0)') RTSolution%WMO_Sensor_ID
-    WRITE(fid,'(3x,"Channel                  : ",i0)') RTSolution%Sensor_Channel
-    WRITE(fid,'(3x,"RT Algorithm Name        : ",a )') RTSolution%RT_Algorithm_Name
-    WRITE(fid,'(3x,"Scattering Optical Depth : ",es13.6)') RTSolution%SOD
-    WRITE(fid,'(3x,"Surface Emissivity       : ",es13.6)') RTSolution%Surface_Emissivity
-    WRITE(fid,'(3x,"Surface Reflectivity     : ",es13.6)') RTSolution%Surface_Reflectivity
-    WRITE(fid,'(3x,"Up Radiance              : ",es13.6)') RTSolution%Up_Radiance
-    WRITE(fid,'(3x,"Down Radiance            : ",es13.6)') RTSolution%Down_Radiance
-    WRITE(fid,'(3x,"Down Solar Radiance      : ",es13.6)') RTSolution%Down_Solar_Radiance
-    WRITE(fid,'(3x,"Surface Planck Radiance  : ",es13.6)') RTSolution%Surface_Planck_Radiance
-    WRITE(fid,'(3x,"Radiance                 : ",es13.6)') RTSolution%Radiance
-    WRITE(fid,'(3x,"Brightness Temperature   : ",es13.6)') RTSolution%Brightness_Temperature
+    WRITE(fid,'(3x,"Sensor Id                     : ",a )') TRIM(RTSolution%Sensor_ID)
+    WRITE(fid,'(3x,"WMO Satellite Id              : ",i0)') RTSolution%WMO_Satellite_ID
+    WRITE(fid,'(3x,"WMO Sensor Id                 : ",i0)') RTSolution%WMO_Sensor_ID
+    WRITE(fid,'(3x,"Channel                       : ",i0)') RTSolution%Sensor_Channel
+    WRITE(fid,'(3x,"RT Algorithm Name             : ",a )') RTSolution%RT_Algorithm_Name
+    WRITE(fid,'(3x,"Scattering Optical Depth      : ",es13.6)') RTSolution%SOD
+    WRITE(fid,'(3x,"Surface Emissivity            : ",es13.6)') RTSolution%Surface_Emissivity
+    WRITE(fid,'(3x,"Surface Reflectivity          : ",es13.6)') RTSolution%Surface_Reflectivity
+    WRITE(fid,'(3x,"Up Radiance                   : ",es13.6)') RTSolution%Up_Radiance
+    WRITE(fid,'(3x,"Down Radiance                 : ",es13.6)') RTSolution%Down_Radiance
+    WRITE(fid,'(3x,"Down Solar Radiance           : ",es13.6)') RTSolution%Down_Solar_Radiance
+    WRITE(fid,'(3x,"Surface Planck Radiance       : ",es13.6)') RTSolution%Surface_Planck_Radiance
+    WRITE(fid,'(3x,"Total cloud cover             : ",es13.6)') RTSolution%Total_Cloud_Cover
+    WRITE(fid,'(3x,"Radiance (clear)              : ",es13.6)') RTSolution%R_clear
+    WRITE(fid,'(3x,"Brightness Temperature (clear): ",es13.6)') RTSolution%Tb_clear
+    WRITE(fid,'(3x,"Radiance                      : ",es13.6)') RTSolution%Radiance
+    WRITE(fid,'(3x,"Brightness Temperature        : ",es13.6)') RTSolution%Brightness_Temperature
     IF ( .NOT. CRTM_RTSolution_Associated(RTSolution) ) RETURN
     WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
     WRITE(fid,'(3x,"Upwelling Overcast Radiance :")')
@@ -542,6 +552,9 @@ CONTAINS
          .NOT. Compares_Within_Tolerance(x%Down_Radiance          , y%Down_Radiance          , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Down_Solar_Radiance    , y%Down_Solar_Radiance    , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Surface_Planck_Radiance, y%Surface_Planck_Radiance, n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Total_Cloud_Cover      , y%Total_Cloud_Cover      , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%R_clear                , y%R_clear                , n) .OR. &
+         .NOT. Compares_Within_Tolerance(x%Tb_clear               , y%Tb_clear               , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Radiance               , y%Radiance               , n) .OR. &
          .NOT. Compares_Within_Tolerance(x%Brightness_Temperature , y%Brightness_Temperature , n) ) RETURN
 
@@ -619,8 +632,8 @@ CONTAINS
     n_channels = SIZE(rts, DIM=1)
     n_profiles = SIZE(rts, DIM=2)
     factor = REAL(n_profiles,fp)
-    
-    
+
+
     ! Allocate the output stats object array
     ALLOCATE( rts_stats(n_channels, 2), &
               STAT = alloc_stat, ERRMSG = alloc_msg )
@@ -653,9 +666,9 @@ CONTAINS
 
 
     ! Replace the algorithm identifier
-    rts_stats(:,1)%RT_Algorithm_Name = 'Object average'
-    rts_stats(:,2)%RT_Algorithm_Name = 'Object standard deviation'
-    
+    rts_stats(:,1)%RT_Algorithm_Name = 'Average'
+    rts_stats(:,2)%RT_Algorithm_Name = 'Standard deviation'
+
   END FUNCTION CRTM_RTSolution_Statistics
 
 
@@ -805,7 +818,7 @@ CONTAINS
 !                 UNITS:      N/A
 !                 TYPE:       CRTM_RTSolution_type
 !                 DIMENSION:  Rank-2 (n_Channels x n_Profiles)
-!                 ATTRIBUTES: INTENT(OUT)
+!                 ATTRIBUTES: INTENT(OUT), ALLOCATABLE
 !
 ! OPTIONAL INPUTS:
 !   Quiet:        Set this logical argument to suppress INFORMATION
@@ -850,17 +863,15 @@ CONTAINS
     Quiet      , &  ! Optional input
     n_Channels , &  ! Optional output
     n_Profiles , &  ! Optional output
-    Old_Version, &  ! Optional input (Allow reading of previous version files)
     Debug      ) &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
-    CHARACTER(*),               INTENT(IN)  :: Filename
-    TYPE(CRTM_RTSolution_type), INTENT(OUT) :: RTSolution(:,:)
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Quiet
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Channels
-    INTEGER,          OPTIONAL, INTENT(OUT) :: n_Profiles
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Old_Version
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: Debug
+    CHARACTER(*),                            INTENT(IN)  :: Filename
+    TYPE(CRTM_RTSolution_type), ALLOCATABLE, INTENT(OUT) :: RTSolution(:,:)  ! L x M
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Quiet
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Channels
+    INTEGER,          OPTIONAL,              INTENT(OUT) :: n_Profiles
+    LOGICAL,          OPTIONAL,              INTENT(IN)  :: Debug
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -868,11 +879,13 @@ CONTAINS
     ! Function variables
     CHARACTER(ML) :: msg
     CHARACTER(ML) :: io_msg
+    CHARACTER(ML) :: alloc_msg
     INTEGER :: io_stat
+    INTEGER :: alloc_stat
     LOGICAL :: noisy
     INTEGER :: fid
-    INTEGER :: l, n_file_channels, n_input_channels
-    INTEGER :: m, n_file_profiles, n_input_profiles
+    INTEGER :: l, n_input_channels
+    INTEGER :: m, n_input_profiles
 
 
     ! Set up
@@ -893,37 +906,23 @@ CONTAINS
 
 
     ! Read the dimensions
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_file_channels, n_file_profiles
+    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_input_channels, n_input_profiles
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimensions from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Check if n_Channels in file is > size of output array
-    n_input_channels = SIZE(RTSolution,DIM=1)
-    IF ( n_file_channels > n_input_channels ) THEN
-      WRITE( msg,'("Number of channels, ",i0," > size of the output RTSolution", &
-                  &" array dimension, ",i0,". Only the first ",i0, &
-                  &" channels will be read.")' ) &
-                  n_file_channels, n_input_channels, n_input_channels
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
+    ! ...Allocate the return structure array
+    ALLOCATE(RTSolution(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    IF ( alloc_stat /= 0 ) THEN
+      msg = 'Error allocating RTSolution array - '//TRIM(alloc_msg)
+      CALL Read_Cleanup(); RETURN
     END IF
-    n_input_channels = MIN(n_input_channels, n_file_channels)
-    ! ...Check if n_Profiles in file is > size of output array
-    n_input_profiles = SIZE(RTSolution,DIM=2)
-    IF ( n_file_profiles > n_input_profiles ) THEN
-      WRITE( msg,'( "Number of profiles, ",i0," > size of the output RTSolution", &
-                   &" array dimension, ",i0,". Only the first ",i0, &
-                   &" profiles will be read.")' ) &
-                   n_file_profiles, n_input_profiles, n_input_profiles
-      CALL Display_Message( ROUTINE_NAME, msg, WARNING )
-    END IF
-    n_input_profiles = MIN(n_input_profiles, n_file_profiles)
 
 
     ! Loop over all the profiles and channels
     Profile_Loop: DO m = 1, n_input_profiles
       Channel_Loop: DO l = 1, n_input_channels
-        err_stat = Read_Record( fid, RTSolution(l,m), Old_Version=Old_Version )
+        err_stat = Read_Record( fid, RTSolution(l,m) )
         IF ( err_stat /= SUCCESS ) THEN
           WRITE( msg,'("Error reading RTSolution element (",i0,",",i0,") from ",a)' ) &
                  l, m, TRIM(Filename)
@@ -961,7 +960,12 @@ CONTAINS
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
-      CALL CRTM_RTSolution_Destroy( RTSolution )
+      IF ( ALLOCATED(RTSolution) ) THEN
+        DEALLOCATE(RTSolution, STAT=alloc_stat, ERRMSG=alloc_msg)
+        IF ( alloc_stat /= 0 ) &
+          msg = TRIM(msg)//'; Error deallocating RTSolution array during error cleanup - '//&
+                TRIM(alloc_msg)
+      END IF
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
@@ -1186,6 +1190,9 @@ CONTAINS
          (x%Down_Radiance           .EqualTo. y%Down_Radiance          ) .AND. &
          (x%Down_Solar_Radiance     .EqualTo. y%Down_Solar_Radiance    ) .AND. &
          (x%Surface_Planck_Radiance .EqualTo. y%Surface_Planck_Radiance) .AND. &
+         (x%Total_Cloud_Cover       .EqualTo. y%Total_Cloud_Cover      ) .AND. &
+         (x%R_clear                 .EqualTo. y%R_clear                ) .AND. &
+         (x%Tb_clear                .EqualTo. y%Tb_clear               ) .AND. &
          (x%Radiance                .EqualTo. y%Radiance               ) .AND. &
          (x%Brightness_Temperature  .EqualTo. y%Brightness_Temperature ) ) &
       is_equal = .TRUE.
@@ -1252,7 +1259,7 @@ CONTAINS
 
     ! And add the second one's components to it
     ! ...Handle RT_Algorithm_Name
-    rtssum%RT_Algorithm_Name = 'Object add'
+    rtssum%RT_Algorithm_Name = 'Addition'
     ! ...The scalar values
     rtssum%SOD                     = rtssum%SOD                     + rts2%SOD
     rtssum%Surface_Emissivity      = rtssum%Surface_Emissivity      + rts2%Surface_Emissivity
@@ -1261,6 +1268,9 @@ CONTAINS
     rtssum%Down_Radiance           = rtssum%Down_Radiance           + rts2%Down_Radiance
     rtssum%Down_Solar_Radiance     = rtssum%Down_Solar_Radiance     + rts2%Down_Solar_Radiance
     rtssum%Surface_Planck_Radiance = rtssum%Surface_Planck_Radiance + rts2%Surface_Planck_Radiance
+    rtssum%Total_Cloud_Cover       = rtssum%Total_Cloud_Cover       + rts2%Total_Cloud_Cover
+    rtssum%R_clear                 = rtssum%R_clear                 + rts2%R_clear
+    rtssum%Tb_clear                = rtssum%Tb_clear                + rts2%Tb_clear
     rtssum%Radiance                = rtssum%Radiance                + rts2%Radiance
     rtssum%Brightness_Temperature  = rtssum%Brightness_Temperature  + rts2%Brightness_Temperature
     ! ...The arrays (which may or may not be allocated)
@@ -1330,7 +1340,7 @@ CONTAINS
 
     ! And subtract the second one's components from it
     ! ...Handle RT_Algorithm_Name
-    rtsdiff%RT_Algorithm_Name = 'Object subtract'
+    rtsdiff%RT_Algorithm_Name = 'Subtraction'
     ! ...The scalar values
     rtsdiff%SOD                     = rtsdiff%SOD                     - rts2%SOD
     rtsdiff%Surface_Emissivity      = rtsdiff%Surface_Emissivity      - rts2%Surface_Emissivity
@@ -1339,6 +1349,9 @@ CONTAINS
     rtsdiff%Down_Radiance           = rtsdiff%Down_Radiance           - rts2%Down_Radiance
     rtsdiff%Down_Solar_Radiance     = rtsdiff%Down_Solar_Radiance     - rts2%Down_Solar_Radiance
     rtsdiff%Surface_Planck_Radiance = rtsdiff%Surface_Planck_Radiance - rts2%Surface_Planck_Radiance
+    rtsdiff%Total_Cloud_Cover       = rtsdiff%Total_Cloud_Cover       - rts2%Total_Cloud_Cover
+    rtsdiff%R_clear                 = rtsdiff%R_clear                 - rts2%R_clear
+    rtsdiff%Tb_clear                = rtsdiff%Tb_clear                - rts2%Tb_clear
     rtsdiff%Radiance                = rtsdiff%Radiance                - rts2%Radiance
     rtsdiff%Brightness_Temperature  = rtsdiff%Brightness_Temperature  - rts2%Brightness_Temperature
     ! ...The arrays (which may or may not be allocated)
@@ -1405,23 +1418,26 @@ CONTAINS
 
     ! Raise the components to the supplied power
     ! ...Handle RT_Algorithm_Name
-    rts_power%RT_Algorithm_Name = 'Object exponent'
+    rts_power%RT_Algorithm_Name = 'Exponent'
     ! ...The scalar values
-    rts_power%SOD                     = (rts_power%SOD)**power
-    rts_power%Surface_Emissivity      = (rts_power%Surface_Emissivity)**power
-    rts_power%Surface_Reflectivity    = (rts_power%Surface_Reflectivity)**power
-    rts_power%Up_Radiance             = (rts_power%Up_Radiance)**power
-    rts_power%Down_Radiance           = (rts_power%Down_Radiance)**power
-    rts_power%Down_Solar_Radiance     = (rts_power%Down_Solar_Radiance)**power
+    rts_power%SOD                     = (rts_power%SOD                    )**power
+    rts_power%Surface_Emissivity      = (rts_power%Surface_Emissivity     )**power
+    rts_power%Surface_Reflectivity    = (rts_power%Surface_Reflectivity   )**power
+    rts_power%Up_Radiance             = (rts_power%Up_Radiance            )**power
+    rts_power%Down_Radiance           = (rts_power%Down_Radiance          )**power
+    rts_power%Down_Solar_Radiance     = (rts_power%Down_Solar_Radiance    )**power
     rts_power%Surface_Planck_Radiance = (rts_power%Surface_Planck_Radiance)**power
-    rts_power%Radiance                = (rts_power%Radiance)**power
-    rts_power%Brightness_Temperature  = (rts_power%Brightness_Temperature)**power
+    rts_power%Total_Cloud_Cover       = (rts_power%Total_Cloud_Cover      )**power
+    rts_power%R_clear                 = (rts_power%R_clear                )**power
+    rts_power%Tb_clear                = (rts_power%Tb_clear               )**power
+    rts_power%Radiance                = (rts_power%Radiance               )**power
+    rts_power%Brightness_Temperature  = (rts_power%Brightness_Temperature )**power
     ! ...The arrays (which may or may not be allocated)
     IF ( CRTM_RTSolution_Associated(rts) ) THEN
       k = rts%n_Layers
       rts_power%Upwelling_Overcast_Radiance(1:k) = (rts_power%Upwelling_Overcast_Radiance(1:k))**power
-      rts_power%Upwelling_Radiance(1:k)          = (rts_power%Upwelling_Radiance(1:k))**power
-      rts_power%Layer_Optical_Depth(1:k)         = (rts_power%Layer_Optical_Depth(1:k))**power
+      rts_power%Upwelling_Radiance(1:k)          = (rts_power%Upwelling_Radiance(1:k)         )**power
+      rts_power%Layer_Optical_Depth(1:k)         = (rts_power%Layer_Optical_Depth(1:k)        )**power
     END IF
 
   END FUNCTION CRTM_RTSolution_Exponent
@@ -1476,23 +1492,26 @@ CONTAINS
 
     ! Raise the components to the supplied normal
     ! ...Handle RT_Algorithm_Name
-    rts_normal%RT_Algorithm_Name = 'Object normalise'
+    rts_normal%RT_Algorithm_Name = 'Normalise'
     ! ...The scalar values
-    rts_normal%SOD                     = rts_normal%SOD/factor
-    rts_normal%Surface_Emissivity      = rts_normal%Surface_Emissivity/factor
-    rts_normal%Surface_Reflectivity    = rts_normal%Surface_Reflectivity/factor
-    rts_normal%Up_Radiance             = rts_normal%Up_Radiance/factor
-    rts_normal%Down_Radiance           = rts_normal%Down_Radiance/factor
-    rts_normal%Down_Solar_Radiance     = rts_normal%Down_Solar_Radiance/factor
+    rts_normal%SOD                     = rts_normal%SOD                    /factor
+    rts_normal%Surface_Emissivity      = rts_normal%Surface_Emissivity     /factor
+    rts_normal%Surface_Reflectivity    = rts_normal%Surface_Reflectivity   /factor
+    rts_normal%Up_Radiance             = rts_normal%Up_Radiance            /factor
+    rts_normal%Down_Radiance           = rts_normal%Down_Radiance          /factor
+    rts_normal%Down_Solar_Radiance     = rts_normal%Down_Solar_Radiance    /factor
     rts_normal%Surface_Planck_Radiance = rts_normal%Surface_Planck_Radiance/factor
-    rts_normal%Radiance                = rts_normal%Radiance/factor
-    rts_normal%Brightness_Temperature  = rts_normal%Brightness_Temperature/factor
+    rts_normal%Total_Cloud_Cover       = rts_normal%Total_Cloud_Cover      /factor
+    rts_normal%R_clear                 = rts_normal%R_clear                /factor
+    rts_normal%Tb_clear                = rts_normal%Tb_clear               /factor
+    rts_normal%Radiance                = rts_normal%Radiance               /factor
+    rts_normal%Brightness_Temperature  = rts_normal%Brightness_Temperature /factor
     ! ...The arrays (which may or may not be allocated)
     IF ( CRTM_RTSolution_Associated(rts) ) THEN
       k = rts%n_Layers
       rts_normal%Upwelling_Overcast_Radiance(1:k) = rts_normal%Upwelling_Overcast_Radiance(1:k)/factor
-      rts_normal%Upwelling_Radiance(1:k)          = rts_normal%Upwelling_Radiance(1:k)/factor
-      rts_normal%Layer_Optical_Depth(1:k)         = rts_normal%Layer_Optical_Depth(1:k)/factor
+      rts_normal%Upwelling_Radiance(1:k)          = rts_normal%Upwelling_Radiance(1:k)         /factor
+      rts_normal%Layer_Optical_Depth(1:k)         = rts_normal%Layer_Optical_Depth(1:k)        /factor
     END IF
 
   END FUNCTION CRTM_RTSolution_Normalise
@@ -1539,23 +1558,26 @@ CONTAINS
 
     ! Raise the components to the supplied normal
     ! ...Handle RT_Algorithm_Name
-    rts_sqrt%RT_Algorithm_Name = 'Object SQRT()'
+    rts_sqrt%RT_Algorithm_Name = 'Square root'
     ! ...The scalar values
-    rts_sqrt%SOD                     = SQRT(rts_sqrt%SOD)
-    rts_sqrt%Surface_Emissivity      = SQRT(rts_sqrt%Surface_Emissivity)
-    rts_sqrt%Surface_Reflectivity    = SQRT(rts_sqrt%Surface_Reflectivity)
-    rts_sqrt%Up_Radiance             = SQRT(rts_sqrt%Up_Radiance)
-    rts_sqrt%Down_Radiance           = SQRT(rts_sqrt%Down_Radiance)
-    rts_sqrt%Down_Solar_Radiance     = SQRT(rts_sqrt%Down_Solar_Radiance)
+    rts_sqrt%SOD                     = SQRT(rts_sqrt%SOD                    )
+    rts_sqrt%Surface_Emissivity      = SQRT(rts_sqrt%Surface_Emissivity     )
+    rts_sqrt%Surface_Reflectivity    = SQRT(rts_sqrt%Surface_Reflectivity   )
+    rts_sqrt%Up_Radiance             = SQRT(rts_sqrt%Up_Radiance            )
+    rts_sqrt%Down_Radiance           = SQRT(rts_sqrt%Down_Radiance          )
+    rts_sqrt%Down_Solar_Radiance     = SQRT(rts_sqrt%Down_Solar_Radiance    )
     rts_sqrt%Surface_Planck_Radiance = SQRT(rts_sqrt%Surface_Planck_Radiance)
-    rts_sqrt%Radiance                = SQRT(rts_sqrt%Radiance)
-    rts_sqrt%Brightness_Temperature  = SQRT(rts_sqrt%Brightness_Temperature)
+    rts_sqrt%Total_Cloud_Cover       = SQRT(rts_sqrt%Total_Cloud_Cover      )
+    rts_sqrt%R_clear                 = SQRT(rts_sqrt%R_clear                )
+    rts_sqrt%Tb_clear                = SQRT(rts_sqrt%Tb_clear               )
+    rts_sqrt%Radiance                = SQRT(rts_sqrt%Radiance               )
+    rts_sqrt%Brightness_Temperature  = SQRT(rts_sqrt%Brightness_Temperature )
     ! ...The arrays (which may or may not be allocated)
     IF ( CRTM_RTSolution_Associated(rts) ) THEN
       k = rts%n_Layers
       rts_sqrt%Upwelling_Overcast_Radiance(1:k) = SQRT(rts_sqrt%Upwelling_Overcast_Radiance(1:k))
-      rts_sqrt%Upwelling_Radiance(1:k)          = SQRT(rts_sqrt%Upwelling_Radiance(1:k))
-      rts_sqrt%Layer_Optical_Depth(1:k)         = SQRT(rts_sqrt%Layer_Optical_Depth(1:k))
+      rts_sqrt%Upwelling_Radiance(1:k)          = SQRT(rts_sqrt%Upwelling_Radiance(1:k)         )
+      rts_sqrt%Layer_Optical_Depth(1:k)         = SQRT(rts_sqrt%Layer_Optical_Depth(1:k)        )
     END IF
 
   END FUNCTION CRTM_RTSolution_Sqrt
@@ -1571,13 +1593,11 @@ CONTAINS
 
   FUNCTION Read_Record( &
     fid, &  ! Input
-    rts, &  ! Output
-    old_version) &  ! Optional input
+    rts) &  ! Output
   RESULT( err_stat )
     ! Arguments
     INTEGER,                    INTENT(IN)  :: fid
     TYPE(CRTM_RTSolution_type), INTENT(OUT) :: rts
-    LOGICAL,          OPTIONAL, INTENT(IN)  :: old_version
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -1587,13 +1607,10 @@ CONTAINS
     CHARACTER(ML) :: io_msg
     INTEGER :: io_stat
     INTEGER :: n_layers
-    LOGICAL :: current_version
 
     ! Set up
     err_stat = SUCCESS
-    ! ...PRocess optional arguments
-    current_version = .TRUE.
-    IF ( PRESENT(old_version) ) current_version = .NOT. old_version
+
 
     ! Read the dimensions
     READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) n_layers
@@ -1642,22 +1659,19 @@ CONTAINS
       rts%Up_Radiance            , &
       rts%Down_Radiance          , &
       rts%Down_Solar_Radiance    , &
-      rts%Surface_Planck_Radiance
+      rts%Surface_Planck_Radiance, &
+      rts%Total_Cloud_Cover      , &
+      rts%R_clear                , &
+      rts%Tb_clear
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading scalar intermediate results - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
     IF ( n_Layers > 0 ) THEN
-      IF ( current_version ) THEN
-        READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
-          rts%Upwelling_Overcast_Radiance , &
-          rts%Upwelling_Radiance, &
-          rts%Layer_Optical_Depth
-      ELSE
-        READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
-          rts%Upwelling_Radiance , &
-          rts%Layer_Optical_Depth
-      END IF
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+        rts%Upwelling_Overcast_Radiance , &
+        rts%Upwelling_Radiance, &
+        rts%Layer_Optical_Depth
       IF ( io_stat /= 0 ) THEN
         msg = 'Error reading array intermediate results - '//TRIM(io_msg)
         CALL Read_Record_Cleanup(); RETURN
@@ -1753,7 +1767,10 @@ CONTAINS
       rts%Up_Radiance            , &
       rts%Down_Radiance          , &
       rts%Down_Solar_Radiance    , &
-      rts%Surface_Planck_Radiance
+      rts%Surface_Planck_Radiance, &
+      rts%Total_Cloud_Cover      , &
+      rts%R_clear                , &
+      rts%Tb_clear
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing scalar intermediate results - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN

@@ -4,6 +4,6 @@
 #-------------------------------------------------------------------------------#
 
 setenv FC "ifort"
-setenv FCFLAGS "-g -check bounds -e03 -traceback -free -assume byterecl -fp-stack-check -mieee-fp"
+setenv FCFLAGS "-g -check bounds -e08 -traceback -free -assume byterecl,realloc_lhs -fp-stack-check -mieee-fp"
 setenv LDFLAGS ""
 setenv LIBS ""
