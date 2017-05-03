@@ -76,9 +76,9 @@ MODULE CRTM_MW_Water_SfcOptics
   TYPE :: iVar_type
     PRIVATE
     ! FastemX model internal variable structure
-    TYPE(FastemX_type) :: FastemX_Var
+    TYPE(FastemX_type), DIMENSION(MAX_N_ANGLES)   :: FastemX_Var
     ! Low frequency model internal variable structure
-    TYPE(LF_MWSSEM_type) :: LF_MWSSEM_Var
+    TYPE(LF_MWSSEM_type), DIMENSION(MAX_N_ANGLES) :: LF_MWSSEM_Var
     ! Fastem outputs
     REAL(fp), DIMENSION(MAX_N_ANGLES) :: dEH_dTs        = ZERO
     REAL(fp), DIMENSION(MAX_N_ANGLES) :: dEH_dWindSpeed = ZERO
@@ -193,7 +193,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
-    TYPE(iVar_type),              INTENT(IN OUT) :: iVar
+    TYPE(iVar_type),              INTENT(OUT)    :: iVar
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -225,12 +225,12 @@ CONTAINS
         CALL Compute_FastemX( &
                MWwaterC                               , &  ! Input model coefficients
                Frequency                              , &  ! Input
-               SfcOptics%n_Angles                     , &  ! Input 
+               SfcOptics%n_Angles                     , &  ! Input
                SfcOptics%Angle(i)                     , &  ! Input
                Surface%Water_Temperature              , &  ! Input
                Surface%Salinity                       , &  ! Input
                Surface%Wind_Speed                     , &  ! Input
-               iVar%FastemX_Var                       , &  ! Internal variable output
+               iVar%FastemX_Var(i)                    , &  ! Internal variable output
                SfcOptics%Emissivity(i,:)              , &  ! Output
                Reflectivity                           , &  ! Output
                Azimuth_Angle = SfcOptics%Azimuth_Angle, &  ! Optional input
@@ -253,7 +253,7 @@ CONTAINS
                  Surface%Salinity         , &  ! Input
                  Surface%Wind_Speed       , &  ! Input
                  SfcOptics%Emissivity(i,:), &  ! Output
-                 iVar%LF_MWSSEM_Var         )  ! Internal variable output
+                 iVar%LF_MWSSEM_Var(i)      )  ! Internal variable output
           SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
           SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
         END DO
@@ -432,12 +432,14 @@ CONTAINS
                Surface_TL%Water_Temperature                , &  ! TL Input
                Surface_TL%Salinity                         , &  ! TL Input
                Surface_TL%Wind_Speed                       , &  ! TL Input
-               iVar%FastemX_Var                            , &  ! Internal variable input
+               iVar%FastemX_Var(i)                         , &  ! Internal variable input
                SfcOptics_TL%Emissivity(i,:)                , &  ! TL Output
                Reflectivity_TL                             , &  ! TL Output
                Azimuth_Angle_TL = Surface_TL%Wind_Direction, &  ! Optional TL input
                Transmittance_TL = SfcOptics_TL%Transmittance )  ! Optional TL input
         DO j = 1, N_STOKES
+          !we probably need further low-level check and modifications
+          !SfcOptics_TL%Reflectivity(i,j,i,j) = -Reflectivity_TL(j)
           SfcOptics_TL%Reflectivity(i,j,i,j) = Reflectivity_TL(j)
         END DO
       END DO
@@ -453,7 +455,7 @@ CONTAINS
                  Surface_TL%Salinity         , &  ! TL  Input
                  Surface_TL%Wind_Speed       , &  ! TL  Input
                  SfcOptics_TL%Emissivity(i,:), &  ! TL  Output
-                 iVar%LF_MWSSEM_Var            )  ! Internal variable input
+                 iVar%LF_MWSSEM_Var(i)         )  ! Internal variable input
           SfcOptics_TL%Reflectivity(i,1,i,1) = -SfcOptics_TL%Emissivity(i,1)
           SfcOptics_TL%Reflectivity(i,2,i,2) = -SfcOptics_TL%Emissivity(i,2)
         END DO
@@ -633,7 +635,7 @@ CONTAINS
                MWwaterC                                     , &  ! Input model coefficients
                SfcOptics_AD%Emissivity(i,:)                 , &  ! AD Input
                Reflectivity_ad                              , &  ! AD Input
-               iVar%FastemX_Var                             , &  ! Internal variable input
+               iVar%FastemX_Var(i)                          , &  ! Internal variable input
                Surface_AD%Water_Temperature                 , &  ! AD Output
                Surface_AD%Salinity                          , &  ! AD Output
                Surface_AD%Wind_Speed                        , &  ! AD Output
@@ -655,7 +657,7 @@ CONTAINS
                  Surface_AD%Water_Temperature, &  ! AD  Output
                  Surface_AD%Salinity         , &  ! AD  Output
                  Surface_AD%Wind_Speed       , &  ! AD  Output
-                 iVar%LF_MWSSEM_Var            )  ! Internal variable input
+                 iVar%LF_MWSSEM_Var(i)         )  ! Internal variable input
         END DO
       ELSE
         ! Call Fastem1
