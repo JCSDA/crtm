@@ -55,6 +55,8 @@ FSRC_FILES = \
   NESDIS_SSMIS_SnowEM_Module.f90 \
   NESDIS_SnowEM_ATMS_Parameters.f90 \
   NESDIS_ATMS_SnowEM_Module.f90 \
+  NESDIS_ATMS_SeaICE_LIB.f90 \
+  NESDIS_ATMS_SeaICE_Module.f90 \
   CRTM_Utility.f90 \
   CRTM_Interpolation.f90 \
   CRTM_SpcCoeff.f90 \
