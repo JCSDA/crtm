@@ -80,7 +80,6 @@ MODULE NESDIS_ATMS_SeaIce_LIB
         'RS_ICE_E_EMISS      ',&                    !11
         'RS_ICE_F_EMISS      ',&                    !12
         'GREASE_ICE_EMISS    '/)                    !13
-	                 
 
    REAL(fp),PUBLIC,PARAMETER, DIMENSION(N_FREQ_ATMS) :: FREQUENCY_ATMS = &
        (/23.80_fp,31.40_fp,50.30_fp,51.76_fp,52.80_fp,53.60_fp,54.40_fp, &
