@@ -1,4 +1,4 @@
-JCSDA CRTM v2.2.x Build Instructions
+JCSDA CRTM v2.3.x Build Instructions
 ====================================
 
 $Revision$
@@ -161,7 +161,7 @@ test runs looks like:
         Check/example program for the CRTM Forward and K-Matrix 
         functions using big_endian coefficient datafiles
 
-        CRTM Version: REL-2.2.x
+        CRTM Version: REL-2.3.x
        **********************************************************
 
 
@@ -192,10 +192,10 @@ directory follows the convention:
 
   <library name>_<version>
 
-So, if a library version (say, v2.2.0) build was configured with --prefix=$PWD
+So, if a library version (say, v2.3.0) build was configured with --prefix=$PWD
 then the installation directory will be
 
-  ${PWD}/crtm_v2.2.0
+  ${PWD}/crtm_v2.3.0
 
 
 
@@ -206,10 +206,10 @@ To perform a GNU-type install, type:
 
   $ make install
 
-For a library version, say, v2.2.0, this will create a directory called
-"crtm_v2.2.0". That directory structure is shown below:
+For a library version, say, v2.3.0, this will create a directory called
+"crtm_v2.3.0". That directory structure is shown below:
 
-  crtm_v2.2.0/
+  crtm_v2.3.0/
     |
     |--include/
     |    |
@@ -234,7 +234,7 @@ Let's assume the above install was moved into "/usrx/local/nceplibs", to use the
 library in this structure in your own application, the usual environment variables
 would be modified something like:
 
-  libroot="/usrx/local/nceplibs/crtm_v2.2.0"
+  libroot="/usrx/local/nceplibs/crtm_v2.3.0"
   FCFLAGS="-I${libroot}/include ${FCFLAGS}"
   LDFLAGS="-L${libroot}/lib ${LDFLAGS}"
   LIBS="-lcrtm"
@@ -251,17 +251,17 @@ conventions, type:
 
   $ make nco_install
 
-For a library version, say, v2.2.0, this will create a directory called
-"crtm_v2.2.0". That directory is organised according to the current NCO structure
+For a library version, say, v2.3.0, this will create a directory called
+"crtm_v2.3.0". That directory is organised according to the current NCO structure
 on WCOSS in /nwprod/lib, as shown below:
 
-  crtm_v2.2.0/
+  crtm_v2.3.0/
     |
-    |--libcrtm_v2.2.0.a
+    |--libcrtm_v2.3.0.a
     |
     `--incmod/
          |
-         `--crtm_v2.2.0/
+         `--crtm_v2.3.0/
               |
               |--accoeff_binary_io.mod
               |--accoeff_define.mod
@@ -269,7 +269,7 @@ on WCOSS in /nwprod/lib, as shown below:
               |--zeeman_input_define.mod
               `--zeeman_utility.mod
 
-The contents of the "crtm_v2.2.0" directory can then be moved into the official
+The contents of the "crtm_v2.3.0" directory can then be moved into the official
 /nwprod/lib location as needed.
 
 NOTE: ********** IMPORTANT - READ THIS **********
@@ -288,9 +288,9 @@ library in this structure in your own application, the usual environment variabl
 would be modified something like:
 
   libroot="/usrx/local/nceplibs"
-  FCFLAGS="-I${libroot}/incmod/crtm_v2.2.0 ${FCFLAGS}"
+  FCFLAGS="-I${libroot}/incmod/crtm_v2.3.0 ${FCFLAGS}"
   LDFLAGS="-L${libroot} ${LDFLAGS}"
-  LIBS="-lcrtm_v2.2.0"
+  LIBS="-lcrtm_v2.3.0"
   
 (with appropriate syntax changes for csh)
 
@@ -305,11 +305,11 @@ contents somewhere else) you can type:
   $ make uninstall
  
 This will DELETE the created installation directory. So, for a library version,
-say, v2.2.0, if your configure script invocation was something like
+say, v2.3.0, if your configure script invocation was something like
 
   $ ./configure --prefix=${PWD} ...other command line arguments...
 
-then the "uninstall" target will delete the "${PWD}/crtm_v2.2.0" directory.
+then the "uninstall" target will delete the "${PWD}/crtm_v2.3.0" directory.
 
 
 

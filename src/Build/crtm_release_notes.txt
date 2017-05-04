@@ -1,17 +1,18 @@
-Release Notes: CRTM library v2.2.0
+Release Notes: CRTM library v2.3.0
 
 $Revision$
 
-v2.2.0 - released April 13, 2015
+v2.3.0 - released April 21, 2017
 
  * Made scientific changes to include
-     1. Overcast radiances
-     2. Reflection correction in microwave sea surface emissivity model for
-        non-precipitating clouds
-     3. ATMS snow emissivity model
-     4. Cloud optical property coefficient update for infrared ice clouds.
-     5. Software updates to address zeus meta-data server issues (file inquiries)
-     6. Implementation of the FASTEM-6 microwave sea surface emissivity model.
+     1. Radiance simulation with cloud_fraction condition.
+     2. Use of all-sky transmittances in FASTEM-X reflection correction.
+     3. Improve surface reflectance in radiative transfer calculation for Microwave under scattering condition.
+     4. Add ATMS SeaIce emissivity model.
+     5. Fix 3.9 mscron simulation by changing "Visible_Flag" to "Solar_Flag" in ADA_Module.
+     6. Updates of CRTM Coefficients for Himawari-8.
+     7. Updates of CRTM antenna correction coefficients for MHS_N19/Metop-a.
+     8. Add new CRTM coefficients for ...
 
  * Compute resource information
  
