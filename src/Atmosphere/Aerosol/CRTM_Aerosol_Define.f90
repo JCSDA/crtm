@@ -201,7 +201,8 @@ CONTAINS
     CHARACTER(ML) :: alloc_msg, msg
     INTEGER :: alloc_stat
     err_stat = SUCCESS
-    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+   !ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
       msg = 'Aerosol category list result not allocated -'//TRIM(alloc_msg)

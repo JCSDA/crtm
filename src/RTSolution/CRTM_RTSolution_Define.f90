@@ -642,7 +642,8 @@ CONTAINS
 
     ! Allocate the output stats object array
     ALLOCATE( rts_stats(n_channels, 2), &
-              STAT = alloc_stat, ERRMSG = alloc_msg )
+              STAT = alloc_stat )
+             !STAT = alloc_stat, ERRMSG = alloc_msg )
     IF ( alloc_stat /= 0 ) THEN
       err_msg = 'Error allocating output RTSolution structure - '//TRIM(alloc_msg)
       err_stat = FAILURE
@@ -918,7 +919,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(RTSolution(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(RTSolution(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(RTSolution(n_input_channels, n_input_profiles), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating RTSolution array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -967,7 +969,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(RTSolution) ) THEN
-        DEALLOCATE(RTSolution, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(RTSolution, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(RTSolution, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating RTSolution array during error cleanup - '//&
                 TRIM(alloc_msg)

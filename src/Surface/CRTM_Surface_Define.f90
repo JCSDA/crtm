@@ -1116,7 +1116,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Surface(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Surface(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Surface(n_input_profiles), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Surface array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1163,7 +1164,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Surface) ) THEN 
-        DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Surface, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Surface array during error cleanup - '//&
                 TRIM(alloc_msg)
@@ -1230,7 +1232,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Surface(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Surface(n_input_channels, n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Surface(n_input_channels, n_input_profiles), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Surface array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1281,7 +1284,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Surface) ) THEN 
-        DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Surface, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Surface, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Surface array during error cleanup - '//&
                 TRIM(alloc_msg)

@@ -1657,7 +1657,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1704,7 +1705,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Atmosphere) ) THEN 
-        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Atmosphere, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
                 TRIM(alloc_msg)
@@ -1772,7 +1774,8 @@ CONTAINS
     END IF
     ! ...Allocate the return structure array
     ALLOCATE(Atmosphere(n_input_channels, n_input_profiles), &
-             STAT=alloc_stat, ERRMSG=alloc_msg)
+             STAT=alloc_stat)
+            !STAT=alloc_stat, ERRMSG=alloc_msg)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1822,7 +1825,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Atmosphere) ) THEN 
-        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Atmosphere, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
                 TRIM(alloc_msg)

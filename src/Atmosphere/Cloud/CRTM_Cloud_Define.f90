@@ -195,7 +195,8 @@ CONTAINS
     CHARACTER(ML) :: alloc_msg, msg
     INTEGER :: alloc_stat
     err_stat = SUCCESS
-    ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+   !ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
       msg = 'Cloud category list result not allocated -'//TRIM(alloc_msg)
@@ -1024,7 +1025,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Cloud(nc), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Cloud(nc), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Cloud(nc), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Cloud array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1070,7 +1072,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Cloud) ) THEN 
-        DEALLOCATE(Cloud, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Cloud, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Cloud, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Cloud array during error cleanup - '//&
                 TRIM(alloc_msg)

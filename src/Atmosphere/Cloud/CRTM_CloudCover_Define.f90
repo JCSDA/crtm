@@ -1458,7 +1458,8 @@ CONTAINS
     ! ...Perform the allocations
     ALLOCATE( self%Cloud_Fraction( n_Layers ), &
               self%Cloud_Cover( n_Layers ), &
-              STAT = alloc_stat, ERRMSG = alloc_msg )
+              STAT = alloc_stat )
+             !STAT = alloc_stat, ERRMSG = alloc_msg )
     IF ( alloc_stat /= 0 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = alloc_msg
       RETURN
@@ -1500,7 +1501,8 @@ CONTAINS
               self%wc( 1:n_Clouds, 1:n_Layers ), & 
               self%maxcov( 1:n_Layers ), & 
               self%cwc_sum( 0:n_Layers ), &
-              STAT = alloc_stat, ERRMSG = alloc_msg )
+              STAT = alloc_stat )
+             !STAT = alloc_stat, ERRMSG = alloc_msg )
     IF ( alloc_stat /= 0 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = 'iVar: '//TRIM(alloc_msg)
       RETURN
