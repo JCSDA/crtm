@@ -785,157 +785,157 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   data  nmodel/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/
 
 ! Fitting coefficients for five discriminators
-  data (DI_coe(1,k),k=0,ncoe-1)/ &
+  DI_coe(1,0:ncoe-1) = (/ &
        3.285557e-002_fp,  2.677179e-005_fp,  &
        4.553101e-003_fp,  5.639352e-005_fp,  &
        -1.825188e-004_fp,  1.636145e-004_fp,  &
-       1.680881e-005_fp, -1.708405e-004_fp/
-  data (DI_coe(2,k),k=0,ncoe-1)/ &
+       1.680881e-005_fp, -1.708405e-004_fp/)
+  DI_coe(2,0:ncoe-1) = (/ &
        -4.275539e-002_fp, -2.541453e-005_fp,  &
        4.154796e-004_fp,  1.703443e-004_fp,  &
        4.350142e-003_fp,  2.452873e-004_fp,  &
-       -4.748506e-003_fp,  2.293836e-004_fp/
-  data (DI_coe(3,k),k=0,ncoe-1)/ &
+       -4.748506e-003_fp,  2.293836e-004_fp/)
+  DI_coe(3,0:ncoe-1) = (/ &
        -1.870173e-001_fp, -1.061678e-004_fp,  &
       2.364055e-004_fp, -2.834876e-005_fp,  &
       4.899651e-003_fp, -3.418847e-004_fp,  &
-      -2.312224e-004_fp,  9.498600e-004_fp/
-  data (DI_coe(4,k),k=0,ncoe-1)/ &
+      -2.312224e-004_fp,  9.498600e-004_fp/)
+  DI_coe(4,0:ncoe-1) = (/ &
        -2.076519e-001_fp,  8.475901e-004_fp,  &
        -2.072679e-003_fp, -2.064717e-003_fp,  &
        2.600452e-003_fp,  2.503923e-003_fp,  &
-       5.179711e-004_fp,  4.667157e-005_fp/
-  data (DI_coe(5,k),k=0,ncoe-1)/ &
+       5.179711e-004_fp,  4.667157e-005_fp/)
+  DI_coe(5,0:ncoe-1) = (/ &
        -1.442609e-001_fp, -8.075003e-005_fp,  &
        -1.790933e-004_fp, -1.986887e-004_fp,  &
        5.495115e-004_fp, -5.871732e-004_fp,  &
-       4.517280e-003_fp,  7.204695e-004_fp/
+       4.517280e-003_fp,  7.204695e-004_fp/)
 
 ! Fitting coefficients for emissivity index at 31.4 GHz
-  data  LI_coe/ &
+  LI_coe = (/ &
        7.963632e-001_fp,  7.215580e-003_fp,  &
        -2.015921e-005_fp, -1.508286e-003_fp,  &
-       1.731405e-005_fp, -4.105358e-003_fp/
+       1.731405e-005_fp, -4.105358e-003_fp/)
 
 ! Fitting coefficients for emissivity index at 150 GHz
-  data  HI_coe/ &
+  HI_coe = (/ &
        1.012160e+000_fp,  6.100397e-003_fp, &
        -1.774347e-005_fp, -4.028211e-003_fp, &
        1.224470e-005_fp,  2.345612e-003_fp, &
        -5.376814e-006_fp, -2.795332e-003_fp, &
        8.072756e-006_fp,  3.529615e-003_fp, &
-       1.955293e-006_fp, -4.942230e-003_fp/
+       1.955293e-006_fp, -4.942230e-003_fp/)
 
 ! Six thresholds for sixteen candidate snow types
 ! Note: some snow type contains several possible
 !      selections for six thresholds
 
 !1 Wet Snow
-  data (threshold(1,k),k=1,6)/0.88_fp,0.86_fp,-999.9_fp,&
-       0.01_fp,0.01_fp,200._fp/
-  data (threshold(2,k),k=1,6)/0.88_fp,0.85_fp,-999.9_fp,&
-       0.06_fp,0.10_fp,200._fp/
-  data (threshold(3,k),k=1,6)/0.88_fp,0.83_fp,-0.02_fp,&
-       0.12_fp,0.16_fp,204._fp/
-  data (threshold(4,k),k=1,6)/0.90_fp,0.89_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
-  data (threshold(5,k),k=1,6)/0.92_fp,0.85_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(1,1:6) = (/0.88_fp,0.86_fp,-999.9_fp,&
+       0.01_fp,0.01_fp,200._fp/)
+  threshold(2,1:6) = (/0.88_fp,0.85_fp,-999.9_fp,&
+       0.06_fp,0.10_fp,200._fp/)
+  threshold(3,1:6) = (/0.88_fp,0.83_fp,-0.02_fp,&
+       0.12_fp,0.16_fp,204._fp/)
+  threshold(4,1:6) = (/0.90_fp,0.89_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
+  threshold(5,1:6) = (/0.92_fp,0.85_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !2 Grass_after_Snow
-  data (threshold(6,k),k=1,6)/0.84_fp,0.83_fp,-999.9_fp,&
-       0.08_fp,0.10_fp,195._fp/
-  data (threshold(7,k),k=1,6)/0.85_fp,0.85_fp,-999.9_fp,&
-       0.10_fp,-999.9_fp,190._fp/
-  data (threshold(8,k),k=1,6)/0.86_fp,0.81_fp,-999.9_fp,&
-       0.12_fp,-999.9_fp,200._fp/
-  data (threshold(9,k),k=1,6)/0.86_fp,0.81_fp,0.0_fp,&
-       0.12_fp,-999.9_fp,189._fp/
-  data (threshold(10,k),k=1,6)/0.90_fp,0.81_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,195._fp/
+  threshold(6,1:6) = (/0.84_fp,0.83_fp,-999.9_fp,&
+       0.08_fp,0.10_fp,195._fp/)
+  threshold(7,1:6) = (/0.85_fp,0.85_fp,-999.9_fp,&
+       0.10_fp,-999.9_fp,190._fp/)
+  threshold(8,1:6) = (/0.86_fp,0.81_fp,-999.9_fp,&
+       0.12_fp,-999.9_fp,200._fp/)
+  threshold(9,1:6) = (/0.86_fp,0.81_fp,0.0_fp,&
+       0.12_fp,-999.9_fp,189._fp/)
+  threshold(10,1:6) = (/0.90_fp,0.81_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,195._fp/)
 
 !3 RS_Snow (A)
-  data (threshold(11,k),k=1,6)/0.80_fp,0.76_fp,-999.9_fp,&
-       0.05_fp,-999.9_fp,185._fp/
-  data (threshold(12,k),k=1,6)/0.82_fp,0.78_fp,-999.9_fp,&
-       -999.9_fp,0.25_fp,180._fp/
-  data (threshold(13,k),k=1,6)/0.90_fp,0.76_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,180._fp/
+  threshold(11,1:6) = (/0.80_fp,0.76_fp,-999.9_fp,&
+       0.05_fp,-999.9_fp,185._fp/)
+  threshold(12,1:6) = (/0.82_fp,0.78_fp,-999.9_fp,&
+       -999.9_fp,0.25_fp,180._fp/)
+  threshold(13,1:6) = (/0.90_fp,0.76_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,180._fp/)
 
 !4 Powder  Snow
-  data (threshold(14,k),k=1,6)/0.89_fp,0.73_fp,-999.9_fp,&
-       0.20_fp,-999.9_fp,-999.9_fp/
-  data (threshold(15,k),k=1,6)/0.89_fp,0.75_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
-  data (threshold(16,k),k=1,6)/0.93_fp,0.72_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(14,1:6) = (/0.89_fp,0.73_fp,-999.9_fp,&
+       0.20_fp,-999.9_fp,-999.9_fp/)
+  threshold(15,1:6) = (/0.89_fp,0.75_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
+  threshold(16,1:6) = (/0.93_fp,0.72_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !5 RS_Snow (B)
-  data (threshold(17,k),k=1,6)/0.82_fp,0.70_fp,-999.9_fp,&
-       0.20_fp,-999.9_fp,160._fp/
-  data (threshold(18,k),k=1,6)/0.83_fp,0.70_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,160._fp/
+  threshold(17,1:6) = (/0.82_fp,0.70_fp,-999.9_fp,&
+       0.20_fp,-999.9_fp,160._fp/)
+  threshold(18,1:6) = (/0.83_fp,0.70_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,160._fp/)
 
 !6 RS_Snow (C)
-  data (threshold(19,k),k=1,6)/0.75_fp,0.76_fp,-999.9_fp,&
-       0.08_fp,-999.9_fp,172._fp/
-  data (threshold(20,k),k=1,6)/0.77_fp,0.72_fp,-999.9_fp,&
-       0.12_fp,0.15_fp,175._fp/
-  data (threshold(21,k),k=1,6)/0.78_fp,0.74_fp,-999.9_fp,&
-       -999.9_fp,0.20_fp,172._fp/
-  data (threshold(22,k),k=1,6)/0.80_fp,0.77_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,170._fp/
-  data (threshold(23,k),k=1,6)/0.82_fp,-999.9_fp,-999.9_fp,&
-       0.15_fp,0.22_fp,170._fp/
-  data (threshold(24,k),k=1,6)/0.82_fp,0.73_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,170._fp/
+  threshold(19,1:6) = (/0.75_fp,0.76_fp,-999.9_fp,&
+       0.08_fp,-999.9_fp,172._fp/)
+  threshold(20,1:6) = (/0.77_fp,0.72_fp,-999.9_fp,&
+       0.12_fp,0.15_fp,175._fp/)
+  threshold(21,1:6) = (/0.78_fp,0.74_fp,-999.9_fp,&
+       -999.9_fp,0.20_fp,172._fp/)
+  threshold(22,1:6) = (/0.80_fp,0.77_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,170._fp/)
+  threshold(23,1:6) = (/0.82_fp,-999.9_fp,-999.9_fp,&
+       0.15_fp,0.22_fp,170._fp/)
+  threshold(24,1:6) = (/0.82_fp,0.73_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,170._fp/)
 
 !7 RS_Snow (D)
-  data (threshold(25,k),k=1,6)/0.75_fp,0.70_fp,-999.9_fp,&
-       0.15_fp,0.25_fp,167._fp/
-  data (threshold(26,k),k=1,6)/0.77_fp,0.76_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
-  data (threshold(27,k),k=1,6)/0.80_fp,0.72_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
-  data (threshold(28,k),k=1,6)/0.77_fp,0.73_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(25,1:6) = (/0.75_fp,0.70_fp,-999.9_fp,&
+       0.15_fp,0.25_fp,167._fp/)
+  threshold(26,1:6) = (/0.77_fp,0.76_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
+  threshold(27,1:6) = (/0.80_fp,0.72_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
+  threshold(28,1:6) = (/0.77_fp,0.73_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
-  data (threshold(29,k),k=1,6)/0.81_fp,0.71_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
-  data (threshold(30,k),k=1,6)/0.82_fp,0.69_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(29,1:6) = (/0.81_fp,0.71_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
+  threshold(30,1:6) = (/0.82_fp,0.69_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !8 Thin Crust Snow
-  data (threshold(31,k),k=1,6)/0.88_fp,0.58_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(31,1:6) = (/0.88_fp,0.58_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !9 RS_Snow (E)
-  data (threshold(32,k),k=1,6)/0.73_fp,0.67_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(32,1:6) = (/0.73_fp,0.67_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !10 Bottom Crust Snow (A)
-  data (threshold(33,k),k=1,6)/0.83_fp,0.66_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(33,1:6) = (/0.83_fp,0.66_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !11 Shallow Snow
-  data (threshold(34,k),k=1,6)/0.82_fp,0.60_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(34,1:6) = (/0.82_fp,0.60_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !12 Deep Snow
-  data (threshold(35,k),k=1,6)/0.77_fp,0.60_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(35,1:6) = (/0.77_fp,0.60_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !13 Crust Snow
-  data (threshold(36,k),k=1,6)/0.77_fp,0.7_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(36,1:6) = (/0.77_fp,0.7_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !14 Medium Snow
-  data (threshold(37,k),k=1,6)/-999.9_fp,0.55_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(37,1:6) = (/-999.9_fp,0.55_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !15 Bottom Crust Snow(B)
-  data (threshold(38,k),k=1,6)/0.74_fp,-999.9_fp,-999.9_fp,&
-       -999.9_fp,-999.9_fp,-999.9_fp/
+  threshold(38,1:6) = (/0.74_fp,-999.9_fp,-999.9_fp,&
+       -999.9_fp,-999.9_fp,-999.9_fp/)
 
 !16 Thick Crust Snow
 ! lowest priority: No constraints
@@ -1168,46 +1168,47 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
   integer :: i,snow_type,k,ich,nvalid_ch
   real(fp)  :: coe(nwch*(ncoe+1))
 
+  save coe
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=1,7)/&
+  coe(1:7) = (/&
        -1.326040e+000_fp,  2.475904e-002_fp, &
        -5.741361e-005_fp, -1.889650e-002_fp, &
        6.177911e-005_fp,  1.451121e-002_fp, &
-       -4.925512e-005_fp/
+       -4.925512e-005_fp/)
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=12,18)/ &
+  coe(12:18) = (/ &
        -1.250541e+000_fp,  1.911161e-002_fp, &
        -5.460238e-005_fp, -1.266388e-002_fp, &
        5.745064e-005_fp,  1.313985e-002_fp, &
-       -4.574811e-005_fp/
+       -4.574811e-005_fp/)
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=23,29)/  &
+  coe(23:29) = (/  &
        -1.246754e+000_fp,  2.368658e-002_fp, &
        -8.061774e-005_fp, -3.206323e-002_fp, &
        1.148107e-004_fp,  2.688353e-002_fp, &
-       -7.358356e-005_fp/
+       -7.358356e-005_fp/)
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
-  data (coe(k),k=34,42)/ &
+  coe(34:42) = (/ &
        -1.278780e+000_fp,  1.625141e-002_fp, &
        -4.764536e-005_fp, -1.475181e-002_fp, &
        5.107766e-005_fp,  1.083021e-002_fp, &
        -4.154825e-005_fp,  7.703879e-003_fp, &
-       -6.351148e-006_fp/
+       -6.351148e-006_fp/)
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb5
-  data (coe(k),k=45,55)/&
+  coe(45:55) = (/&
      -1.691077e+000_fp,  3.352403e-002_fp, &
      -7.310338e-005_fp, -4.396138e-002_fp, &
      1.028994e-004_fp,  2.301014e-002_fp, &
      -7.070810e-005_fp,  1.270231e-002_fp, &
      -2.139023e-005_fp, -2.257991e-003_fp, &
-     1.269419e-005_fp/
+     1.269419e-005_fp/)
 
-  save coe
+! save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
@@ -1280,43 +1281,44 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
   integer :: snow_type,i,k,ich,nvalid_ch
   real(fp)  :: coe(nch*(ncoe+1))
 
+  save coe
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1, Tb2 and Ts
-  data (coe(k),k=1,6)/ &
+  coe(1:6) = (/ &
        8.210105e-001_fp,  1.216432e-002_fp,  &
-       -2.113875e-005_fp, -6.416648e-003_fp,  &
-       1.809047e-005_fp, -4.206605e-003_fp/
+       -2.113875e-005_fp, -6.416648e-003_fp, &
+       1.809047e-005_fp, -4.206605e-003_fp /)
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1, Tb2 and Ts
-  data (coe(k),k=11,16)/ &
+  coe(11:16) = (/ &
        7.963632e-001_fp,  7.215580e-003_fp,  &
        -2.015921e-005_fp, -1.508286e-003_fp,  &
-       1.731405e-005_fp, -4.105358e-003_fp/
+       1.731405e-005_fp, -4.105358e-003_fp /)
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1, Tb2, Tb3 and Ts
-  data (coe(k),k=21,28)/ &
+  coe(21:28) = (/ &
        1.724160e+000_fp,  5.556665e-003_fp, &
        -2.915872e-005_fp, -1.146713e-002_fp, &
        4.724243e-005_fp,  3.851791e-003_fp, &
-       -5.581535e-008_fp, -5.413451e-003_fp/
+       -5.581535e-008_fp, -5.413451e-003_fp /)
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4 and Ts
-  data (coe(k),k=31,40)/ &
+  coe(31:40) = (/ &
        9.962065e-001_fp,  1.584161e-004_fp, &
        -3.988934e-006_fp,  3.427638e-003_fp, &
        -5.084836e-006_fp, -6.178904e-004_fp, &
        1.115315e-006_fp,  9.440962e-004_fp, &
-       9.711384e-006_fp, -4.259102e-003_fp/
+       9.711384e-006_fp, -4.259102e-003_fp /)
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4 and Ts
-  data (coe(k),k=41,50)/ &
+  coe(41:50) = (/ &
        -5.244422e-002_fp,  2.025879e-002_fp,  &
        -3.739231e-005_fp, -2.922355e-002_fp, &
        5.810726e-005_fp,  1.376275e-002_fp, &
        -3.757061e-005_fp,  6.434187e-003_fp, &
-       6.190403e-007_fp, -2.944785e-003_fp/
+       6.190403e-007_fp, -2.944785e-003_fp/)
 
-  save coe
+! save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
   DO ich = 1, nwch
@@ -1388,39 +1390,39 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
   real(fp)    :: em_vector(*),emissivity,frequency,discriminator(nwch)
   integer :: snow_type,i,k,ich,nvalid_ch
   real(fp)  :: coe(50)
-
+  save coe
 
 ! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=1,7)/ &
+  coe(1:7) = (/ &
        -1.326040e+000_fp,  2.475904e-002_fp, -5.741361e-005_fp, &
        -1.889650e-002_fp,  6.177911e-005_fp,  1.451121e-002_fp, &
-       -4.925512e-005_fp/
+       -4.925512e-005_fp/)
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=11,17)/ &
+  coe(11:17) = (/ &
        -1.250541e+000_fp,  1.911161e-002_fp, -5.460238e-005_fp, &
        -1.266388e-002_fp,  5.745064e-005_fp,  1.313985e-002_fp, &
-       -4.574811e-005_fp/
+       -4.574811e-005_fp/)
 
 ! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
-  data (coe(k),k=21,27)/ &
+  coe(21:27) = (/ &
        -1.246754e+000_fp,  2.368658e-002_fp, -8.061774e-005_fp, &
        -3.206323e-002_fp,  1.148107e-004_fp,  2.688353e-002_fp, &
-       -7.358356e-005_fp/
+       -7.358356e-005_fp/)
 
 ! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
-  data (coe(k),k=31,39)/ &
+  coe(31:39) = (/ &
        -1.278780e+000_fp, 1.625141e-002_fp, -4.764536e-005_fp, &
        -1.475181e-002_fp, 5.107766e-005_fp,  1.083021e-002_fp, &
-       -4.154825e-005_fp,  7.703879e-003_fp, -6.351148e-006_fp/
+       -4.154825e-005_fp,  7.703879e-003_fp, -6.351148e-006_fp/)
 
 ! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4
-  data (coe(k),k=41,49)/ &
+  coe(41:49) = (/ &
        -1.624857e+000_fp, 3.138243e-002_fp, -6.757028e-005_fp, &
        -4.178496e-002_fp, 9.691893e-005_fp,  2.165964e-002_fp, &
-       -6.702349e-005_fp, 1.111658e-002_fp, -1.050708e-005_fp/
+       -6.702349e-005_fp, 1.111658e-002_fp, -1.050708e-005_fp/)
 
-  save coe
+! save coe
 
 
 ! Calculate emissivity discriminators at five AMSU window channels
@@ -1502,18 +1504,18 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
   real(fp)    :: em_vector(*),emissivity,ts,frequency,ed0(nwch),discriminator(5)
   integer :: snow_type,i,k,ich,nvalid_ch
   real(fp)  :: coe(nch*(ncoe+1))
-
+  save coe
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=1,6)/ 3.110967e-001_fp,  1.100175e-002_fp, -1.677626e-005_fp,    &
-       -4.020427e-003_fp,  9.242240e-006_fp, -2.363207e-003_fp/
+  coe(1:6) = (/ 3.110967e-001_fp,  1.100175e-002_fp, -1.677626e-005_fp,    &
+       -4.020427e-003_fp,  9.242240e-006_fp, -2.363207e-003_fp/)
 ! Fitting Coefficients at 89 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=11,16)/  1.148098e+000_fp,  1.452926e-003_fp,  1.037081e-005_fp, &
-       1.340696e-003_fp, -5.185640e-006_fp, -4.546382e-003_fp /
+  coe(11:16) = (/  1.148098e+000_fp,  1.452926e-003_fp,  1.037081e-005_fp, &
+       1.340696e-003_fp, -5.185640e-006_fp, -4.546382e-003_fp /)
 ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5 and Ts
-  data (coe(k),k=21,26)/ 1.165323e+000_fp, -1.030435e-003_fp,  4.828009e-006_fp,  &
-       4.851731e-003_fp, -2.588049e-006_fp, -4.990193e-003_fp/
-  save coe
+  coe(21:26) = (/ 1.165323e+000_fp, -1.030435e-003_fp,  4.828009e-006_fp,  &
+       4.851731e-003_fp, -2.588049e-006_fp, -4.990193e-003_fp/)
+! save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
@@ -1592,18 +1594,18 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
   real(fp)    :: em_vector(*),emissivity,frequency,ed0(nwch),discriminator(5)
   integer :: snow_type,i,k,ich,nvalid_ch
   real(fp)  :: coe(50)
-
+  save coe
 
 ! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5
-  data (coe(k),k=1,5)/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
-       3.717131e-004_fp, -4.364877e-006_fp/
+  coe(1:5) = (/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
+       3.717131e-004_fp, -4.364877e-006_fp/)
 ! Fitting Coefficients at 89 GHz: Using Tb4, Tb5
-  data (coe(k),k=11,15)/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
-       9.793681e-003_fp, -3.137189e-005_fp/
+  coe(11:15) = (/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
+       9.793681e-003_fp, -3.137189e-005_fp/)
 ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
-  data (coe(k),k=21,25)/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
-       1.413038e-002_fp,-3.133239e-005_fp/
-  save coe
+  coe(21:25) = (/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
+       1.413038e-002_fp,-3.133239e-005_fp/)
+! save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
@@ -1688,7 +1690,9 @@ subroutine AMSU_ALandEM_Snow(theta,frequency,snow_depth,ts,snow_type,em_vector)
   integer snow_type,ich
   real(fp)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
   complex(fp)  eair
-  data   freq_3w/31.4_fp,89.0_fp,150.0_fp/
+  save freq_3w
+
+  freq_3w = (/31.4_fp,89.0_fp,150.0_fp/)
 
   eair = cmplx(one,-zero,fp)
 
@@ -1776,23 +1780,23 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 
   save  dem_coe
 
-  data (dem_coe(1,k),k=0,ncoe-1)/ 2.306844e+000_Double, -7.287718e-003_Double, &
+  dem_coe(1,0:ncoe-1) = (/ 2.306844e+000_Double, -7.287718e-003_Double, &
 
        -6.433248e-004_Double,  1.664216e-005_Double,  &
 
-       4.766508e-007_Double, -1.754184e+000_Double/
+       4.766508e-007_Double, -1.754184e+000_Double/)
 
-  data (dem_coe(2,k),k=0,ncoe-1)/ 3.152527e+000_Double, -1.823670e-002_Double, &
+  dem_coe(2,0:ncoe-1) = (/ 3.152527e+000_Double, -1.823670e-002_Double, &
 
        -9.535361e-004_Double,  3.675516e-005_Double,  &
 
-       9.609477e-007_Double, -1.113725e+000_Double/
+       9.609477e-007_Double, -1.113725e+000_Double/)
 
-  data (dem_coe(3,k),k=0,ncoe-1)/ 3.492495e+000_Double, -2.184545e-002_Double,  &
+  dem_coe(3,0:ncoe-1) = (/ 3.492495e+000_Double, -2.184545e-002_Double,  &
 
        6.536696e-005_Double,  4.464352e-005_Double, &
 
-       -6.305717e-008_Double, -1.221087e+000_Double/
+       -6.305717e-008_Double, -1.221087e+000_Double/)
 
 
 !
