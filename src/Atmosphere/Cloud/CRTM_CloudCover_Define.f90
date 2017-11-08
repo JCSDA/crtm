@@ -550,7 +550,7 @@ CONTAINS
 !   END SUBROUTINE Compute_Random_Overlap
     SUBROUTINE Compute_Random_Overlap()
       INTEGER  :: k
-      REAL(fp) :: prod(n_layers)
+      REAL(fp) :: prod(0:n_layers)
       prod(0)           = ONE
       self%iVar%prod(0) = prod(0)
       DO k = 1, n_layers
@@ -723,7 +723,7 @@ CONTAINS
     CHARACTER(ML) :: err_msg
     INTEGER :: n_layers
     INTEGER :: n_clouds 
-    INTEGER :: n,ii  
+    INTEGER :: n
     ! Check inputs
     err_stat = SUCCESS
     IF ( .NOT. cc_FWD%Is_Usable( Include_iVar=.TRUE. ) ) THEN
@@ -806,7 +806,7 @@ CONTAINS
 !   END SUBROUTINE Compute_Random_Overlap_TL
     SUBROUTINE Compute_Random_Overlap_TL()
       INTEGER  :: k
-      REAL(fp) :: prod_TL(n_layers)
+      REAL(fp) :: prod_TL(0:n_layers)
       prod_TL    = ZERO
       prod_TL(0) = ZERO
       DO k = 1, n_layers
@@ -1128,7 +1128,7 @@ CONTAINS
 !   END SUBROUTINE Compute_Random_Overlap_AD
     SUBROUTINE Compute_Random_Overlap_AD()
       INTEGER  :: k
-      REAL(fp) :: prod_AD(n_layers)
+      REAL(fp) :: prod_AD(0:n_layers)
       prod_AD           = ZERO
       prod_AD(n_layers) = ZERO
       self_AD%Cloud_Cover(n_layers) = self_AD%Cloud_Cover(n_layers) + self_AD%Total_Cloud_Cover
