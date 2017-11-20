@@ -64,6 +64,7 @@ The current list of test compiler environments in the config-setup/ directory
 are:
 
   $ ls  config-setup/
+  ftn.setup                 ftn.setup.csh
   g95-debug.setup           gfortran.setup.csh     pgf95.setup
   g95-debug.setup.csh       ifort-debug.setup      pgf95.setup.csh
   g95.setup                 ifort-debug.setup.csh  xlf2003-debug.setup
