@@ -56,6 +56,7 @@ FUNCTION Atmosphere::Init, Debug=Debug  ; Input keyword
   self.Pressure        = LIST()      
   self.Temperature     = LIST()     
   self.Absorber        = LIST()    
+  self.CFraction       = LIST()    
   self.Cloud           = Cloud_List()    
   self.Aerosol         = Aerosol_List()   
   

@@ -23,16 +23,7 @@ SRC_FILES = Type_Kinds.f90 \
             CRTM_Parameters.f90 \
             CRTM_Atmosphere_Define.f90 \
             CRTM_Cloud_Define.f90 \
-            CRTM_Aerosol_Define.f90 \
-            CRTM_Atmosphere_Binary_IO.f90 \
-            CRTM_Cloud_Binary_IO.f90 \
-            CRTM_Aerosol_Binary_IO.f90 \
-            CRTM_Atmosphere_Define_old.f90 \
-            CRTM_Cloud_Define_old.f90 \
-            CRTM_Aerosol_Define_old.f90 \
-            CRTM_Atmosphere_Binary_IO_old.f90 \
-            CRTM_Cloud_Binary_IO_old.f90 \
-            CRTM_Aerosol_Binary_IO_old.f90
+            CRTM_Aerosol_Define.f90
 
 # Obj files used in link phase
 OBJ_FILES = ${SRC_FILES:.f90=.o} \
@@ -42,18 +33,14 @@ OBJ_FILES = ${SRC_FILES:.f90=.o} \
 include $(CRTM_SOURCE_ROOT)/make.common_targets
 
 # Source link creation and removal
-create_links:
-	@linkfiles $(CRTM_SOURCE_ROOT) $(SRC_FILES)
+create_links::
+	@$(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES)
 
-remove_links:
-	@unlinkfiles $(SRC_FILES)
-
-# Squeaky clean target
-realclean: clean remove_links
+remove_links::
+	@$(UNLINK_SCRIPT) $(SRC_FILES)
 
 # Source dependency lists
 include make.dependencies
 
 # Define default rules
 include $(CRTM_SOURCE_ROOT)/make.rules
-

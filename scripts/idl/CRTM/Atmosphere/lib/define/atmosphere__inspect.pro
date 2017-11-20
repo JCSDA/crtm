@@ -47,7 +47,8 @@ PRO Atmosphere::Inspect, $
           (self.Level_Pressure)[0], $
           (self.Pressure      )[0], $
           (self.Temperature   )[0], $
-          (self.Absorber      )[0]
+          (self.Absorber      )[0], $
+          (self.CFraction     )[0]
     HELP, self.Cloud  , $
           self.Aerosol
     FOR n = 0, self.n_Clouds-1   DO HELP, (self.Cloud)[n]

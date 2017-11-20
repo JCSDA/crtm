@@ -97,6 +97,7 @@ MODULE CRTM_Atmosphere_Define
   PRIVATE
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(/=)
   PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Cloud entities
@@ -192,6 +193,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Atmosphere_Destroy
   PUBLIC :: CRTM_Atmosphere_Create
   PUBLIC :: CRTM_Atmosphere_AddLayerCopy
+  PUBLIC :: CRTM_Atmosphere_NonVariableCopy
   PUBLIC :: CRTM_Atmosphere_Zero
   PUBLIC :: CRTM_Atmosphere_IsValid
   PUBLIC :: CRTM_Atmosphere_Inspect
@@ -204,7 +206,7 @@ MODULE CRTM_Atmosphere_Define
   ! ...Utilities
   PUBLIC :: CRTM_Get_AbsorberIdx
   PUBLIC :: CRTM_Get_PressureLevelIdx
-
+  PUBLIC :: CRTM_Atmosphere_Add
 
   ! -------------------
   ! Procedure overloads
@@ -212,6 +214,10 @@ MODULE CRTM_Atmosphere_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE CRTM_Atmosphere_Equal
   END INTERFACE OPERATOR(==)
+
+  INTERFACE OPERATOR(/=)
+    MODULE PROCEDURE CRTM_Atmosphere_NotEqual
+  END INTERFACE OPERATOR(/=)
 
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Atmosphere_Add
@@ -345,6 +351,7 @@ MODULE CRTM_Atmosphere_Define
                                 'Subarctic summer        ', &
                                 'Subarctic winter        ', &
                                 'U.S. Standard Atmosphere' /)
+
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -381,6 +388,7 @@ MODULE CRTM_Atmosphere_Define
     REAL(fp), ALLOCATABLE :: Pressure(:)        ! K
     REAL(fp), ALLOCATABLE :: Temperature(:)     ! K
     REAL(fp), ALLOCATABLE :: Absorber(:,:)      ! K x J
+    REAL(fp), ALLOCATABLE :: Cloud_Fraction(:)  ! K
     ! Clouds associated with each profile
     TYPE(CRTM_Cloud_type),   ALLOCATABLE :: Cloud(:)    ! Nc
     ! Aerosols associated with each profile
@@ -559,6 +567,7 @@ CONTAINS
               Atm%Pressure( n_Layers ), &
               Atm%Temperature( n_Layers ), &
               Atm%Absorber( n_Layers, n_Absorbers ), &
+              Atm%Cloud_Fraction( n_Layers ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
@@ -603,6 +612,7 @@ CONTAINS
     Atm%Pressure       = ZERO
     Atm%Temperature    = ZERO
     Atm%Absorber       = ZERO
+    Atm%Cloud_Fraction = ZERO
 
     ! Set allocation indicator
     Atm%Is_Allocated = .TRUE.
@@ -676,16 +686,17 @@ CONTAINS
     ! Assign data
     atm_out%n_Added_Layers = atm%n_Added_Layers+na
     ! ...Layer independent data
-    atm_out%Climatology    = atm%Climatology
-    atm_out%Absorber_ID    = atm%Absorber_ID
-    atm_out%Absorber_Units = atm%Absorber_Units
+    atm_out%Climatology              = atm%Climatology
+    atm_out%Absorber_ID              = atm%Absorber_ID
+    atm_out%Absorber_Units           = atm%Absorber_Units
     ! ...Layer dependent data
     no = atm%n_Layers
     nt = atm_out%n_Layers
-    atm_out%Level_Pressure(na:nt) = atm%Level_Pressure(0:no)
-    atm_out%Pressure(na+1:nt)     = atm%Pressure(1:no)
-    atm_out%Temperature(na+1:nt)  = atm%Temperature(1:no)
-    atm_out%Absorber(na+1:nt,:)   = atm%Absorber(1:no,:)
+    atm_out%Level_Pressure(na:nt)   = atm%Level_Pressure(0:no)
+    atm_out%Pressure(na+1:nt)       = atm%Pressure(1:no)
+    atm_out%Temperature(na+1:nt)    = atm%Temperature(1:no)
+    atm_out%Absorber(na+1:nt,:)     = atm%Absorber(1:no,:)
+    atm_out%Cloud_Fraction(na+1:nt) = atm%Cloud_Fraction(1:no)
     ! ...Cloud components
     IF ( atm%n_Clouds > 0 ) THEN
       DO i = 1, atm%n_Clouds
@@ -700,6 +711,65 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_Atmosphere_AddLayerCopy
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Atmosphere_NonVariableCopy
+!
+! PURPOSE:
+!       Elemental utility subroutine to copy the "non-variable" data (climatology
+!       flag, absorber id/units, cloud type, aerosol type) from one instance of
+!       a CRTM Atmosphere object to another (usually a TL or AD one).
+!
+!       NOTE: No error checking is performed in this procedure. It is assumed the
+!             two arguments are congruent in terms of absorber, cloud, and
+!             aerosol count.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Atmosphere_NonVariableCopy( atm, modified_atm )
+!
+! OBJECTS:
+!       atm:             Atmosphere object from which to copy.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Scalar or any rank
+!                        ATTRIBUTES: INTENT(IN)
+!
+! IN/OUTPUTS:
+!       modified_atm:    Existing Atmosphere object to be modified.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Atmosphere_type
+!                        DIMENSION:  Conformable with atm input
+!                        ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_Atmosphere_NonVariableCopy( atm, modified_atm )
+    ! Arguments
+    TYPE(CRTM_Atmosphere_type), INTENT(IN)     :: atm
+    TYPE(CRTM_Atmosphere_type), INTENT(IN OUT) :: modified_atm
+    ! Local variables
+    INTEGER :: j, n
+
+    modified_atm%Climatology = atm%Climatology
+    DO j = 1, atm%n_Absorbers
+      modified_atm%Absorber_ID(j)    = atm%Absorber_ID(j)
+      modified_atm%Absorber_Units(j) = atm%Absorber_Units(j)
+    END DO
+    ! Loop over and assign cloud types
+    DO n = 1, atm%n_Clouds
+      modified_atm%Cloud(n)%Type = atm%Cloud(n)%Type
+    END DO
+    ! Loop over and assign aerosol types
+    DO n = 1, atm%n_Aerosols
+      modified_atm%Aerosol(n)%Type = atm%Aerosol(n)%Type
+    END DO
+    
+  END SUBROUTINE CRTM_Atmosphere_NonVariableCopy
 
 
 !--------------------------------------------------------------------------------
@@ -737,14 +807,12 @@ CONTAINS
     ! Do nothing if structure is unused
     IF ( .NOT. CRTM_Atmosphere_Associated(Atmosphere) ) RETURN
 
-    ! Reset the added layer count
-    Atmosphere%n_Added_Layers = 0
-
-    ! Only zero out the data arrays
-    Atmosphere%Level_Pressure    = ZERO
-    Atmosphere%Pressure          = ZERO
-    Atmosphere%Temperature       = ZERO
-    Atmosphere%Absorber          = ZERO
+    ! Zero out the data
+    Atmosphere%Level_Pressure = ZERO
+    Atmosphere%Pressure       = ZERO
+    Atmosphere%Temperature    = ZERO
+    Atmosphere%Absorber       = ZERO
+    Atmosphere%Cloud_Fraction = ZERO
 
     ! Reset the structure components
     IF ( Atmosphere%n_Clouds   > 0 ) CALL CRTM_Cloud_Zero( Atmosphere%Cloud )
@@ -871,10 +939,15 @@ CONTAINS
       IsValid = .FALSE.
     ENDIF
     IF ( ANY(Atm%Absorber < ZERO ) ) THEN
-      msg = 'Negative level absorber found'
+      msg = 'Negative layer absorber found'
       CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
+    IF ( ANY(Atm%Cloud_Fraction < ZERO) .OR. ANY(Atm%Cloud_Fraction > ONE) ) THEN
+      msg = 'Invalid layer cloud fraction found'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
+      IsValid = .FALSE.
+    ENDIF    
     ! ...Structure components
     IF ( Atm%n_Clouds > 0 ) THEN
       DO nc = 1, Atm%n_Clouds
@@ -972,6 +1045,8 @@ CONTAINS
                                      TRIM(ABSORBER_UNITS_NAME(Atm%Absorber_Units(j)))
       WRITE(fid, '(5(1x,es13.6,:))') Atm%Absorber(1:k,j)
     END DO
+    WRITE(fid, '(3x,"Layer cloud fraction:")')    
+    WRITE(fid, '(5(1x,es13.6,:))') Atm%Cloud_Fraction(1:k)
     ! Cloud information
     IF ( Atm%n_Clouds > 0 ) CALL CRTM_Cloud_Inspect(Atm%Cloud, Unit=Unit)
     ! Aerosol information
@@ -1080,6 +1155,7 @@ CONTAINS
     y, &
     n_SigFig ) &
   RESULT( is_comparable )
+    ! Arguments
     TYPE(CRTM_Atmosphere_type), INTENT(IN) :: x, y
     INTEGER,          OPTIONAL, INTENT(IN) :: n_SigFig
     LOGICAL :: is_comparable
@@ -1095,39 +1171,40 @@ CONTAINS
       n = DEFAULT_N_SIGFIG
     END IF
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Atmosphere_Associated(x)) .OR. &
-         (.NOT. CRTM_Atmosphere_Associated(y))      ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Atmosphere_Associated(x) .NEQV. CRTM_Atmosphere_Associated(y) ) RETURN
 
-    ! Check scalars
+    ! Check contents
+    ! ...Dimensions
     IF ( (x%n_Layers    /= y%n_Layers   ) .OR. &
          (x%n_Absorbers /= y%n_Absorbers) .OR. &
          (x%n_Clouds    /= y%n_Clouds   ) .OR. &
-         (x%n_Aerosols  /= y%n_Aerosols ) .OR. &
-         (x%Climatology /= y%Climatology) ) RETURN
-
-    ! Check integer arrays
-    j = x%n_Absorbers
-    IF ( ANY(x%Absorber_ID(1:j)    /= y%Absorber_ID(1:j)   ) .OR. &
-         ANY(x%Absorber_Units(1:j) /= y%Absorber_Units(1:j)) ) RETURN
-
-    ! Check floating point arrays
-    IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Level_Pressure,y%Level_Pressure,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Pressure      ,y%Pressure      ,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Temperature   ,y%Temperature   ,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Absorber      ,y%Absorber      ,n))) ) RETURN
-
-    ! Check clouds
-    IF ( x%n_Clouds > 0 ) THEN
-      IF ( .NOT. ALL(CRTM_Cloud_Compare(x%Cloud,y%Cloud,n_SigFig=n)) ) RETURN
+         (x%n_Aerosols  /= y%n_Aerosols ) ) RETURN
+    ! ...Scalars
+    IF ( (x%Climatology /= y%Climatology) ) RETURN
+    ! ...Arrays
+    IF ( CRTM_Atmosphere_Associated(x) .AND. CRTM_Atmosphere_Associated(y) ) THEN
+      ! ...Integer arrays
+      j = x%n_Absorbers
+      IF ( ANY(x%Absorber_ID(1:j)    /= y%Absorber_ID(1:j)   ) .OR. &
+           ANY(x%Absorber_Units(1:j) /= y%Absorber_Units(1:j)) ) RETURN
+      ! ...Floating point arrays
+      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Level_Pressure,y%Level_Pressure,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Pressure      ,y%Pressure      ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Temperature   ,y%Temperature   ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Absorber      ,y%Absorber      ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Cloud_Fraction,y%Cloud_Fraction,n)))) RETURN
+      ! ...Clouds
+      IF ( x%n_Clouds > 0 ) THEN
+        IF ( .NOT. ALL(CRTM_Cloud_Compare(x%Cloud,y%Cloud,n_SigFig=n)) ) RETURN
+      END IF
+      ! ...Aerosols
+      IF ( x%n_Aerosols > 0 ) THEN
+        IF ( .NOT. ALL(CRTM_Aerosol_Compare(x%Aerosol,y%Aerosol,n_SigFig=n)) ) RETURN
+      END IF
     END IF
 
-    ! Check aerosols
-    IF ( x%n_Aerosols > 0 ) THEN
-      IF ( .NOT. ALL(CRTM_Aerosol_Compare(x%Aerosol,y%Aerosol,n_SigFig=n)) ) RETURN
-    END IF
-
-    ! If we get here, the structures are comparable
+    ! If we get here, the objects are comparable
     is_comparable = .TRUE.
 
   END FUNCTION CRTM_Atmosphere_Compare
@@ -1580,7 +1657,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Atmosphere(n_input_profiles), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1627,7 +1705,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Atmosphere) ) THEN 
-        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Atmosphere, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
                 TRIM(alloc_msg)
@@ -1695,7 +1774,8 @@ CONTAINS
     END IF
     ! ...Allocate the return structure array
     ALLOCATE(Atmosphere(n_input_channels, n_input_profiles), &
-             STAT=alloc_stat, ERRMSG=alloc_msg)
+             STAT=alloc_stat)
+            !STAT=alloc_stat, ERRMSG=alloc_msg)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Atmosphere array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1745,7 +1825,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Atmosphere) ) THEN 
-        DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Atmosphere, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Atmosphere, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Atmosphere array during error cleanup - '//&
                 TRIM(alloc_msg)
@@ -2080,38 +2161,85 @@ CONTAINS
     ! Set up
     is_equal = .FALSE.
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Atmosphere_Associated(x)) .OR. &
-         (.NOT. CRTM_Atmosphere_Associated(y))      ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Atmosphere_Associated(x) .NEQV. CRTM_Atmosphere_Associated(y) ) RETURN
 
     ! Check contents
-    ! ...Scalars
+    ! ...Dimensions
     IF ( (x%n_Layers    /= y%n_Layers   ) .OR. &
          (x%n_Absorbers /= y%n_Absorbers) .OR. &
          (x%n_Clouds    /= y%n_Clouds   ) .OR. &
-         (x%n_Aerosols  /= y%n_Aerosols ) .OR. &
-         (x%Climatology /= y%Climatology) ) RETURN
+         (x%n_Aerosols  /= y%n_Aerosols ) ) RETURN
+    ! ...Scalars
+    IF ( (x%Climatology /= y%Climatology) ) RETURN
     ! ...Arrays
-    k = x%n_Layers
-    j = x%n_Absorbers
-    IF ( ALL(x%Absorber_ID(1:j)    == y%Absorber_ID(1:j)   ) .AND. &
-         ALL(x%Absorber_Units(1:j) == y%Absorber_Units(1:j)) .AND. &
-         ALL(x%Level_Pressure(0:) .EqualTo. y%Level_Pressure(0:)) .AND. &
-         ALL(x%Pressure(1:k)      .EqualTo. y%Pressure(1:k)     ) .AND. &
-         ALL(x%Temperature(1:k)   .EqualTo. y%Temperature(1:k)  ) .AND. &
-         ALL(x%Absorber(1:k,1:j)  .EqualTo. y%Absorber(1:k,1:j) ) ) is_equal = .TRUE.
-    ! ...Clouds
-    IF ( x%n_Clouds > 0 ) THEN
-      IF ( ALL(CRTM_Cloud_Associated(x%Cloud)) .AND. ALL(CRTM_Cloud_Associated(y%Cloud)) ) &
-        is_equal = is_equal .AND. ALL(x%Cloud == y%Cloud)
+    IF ( CRTM_Atmosphere_Associated(x) .AND. CRTM_Atmosphere_Associated(y) ) THEN
+      k = x%n_Layers
+      j = x%n_Absorbers
+      IF ( .NOT. (ALL(x%Absorber_ID(1:j)       ==     y%Absorber_ID(1:j)   ) .AND. &
+                  ALL(x%Absorber_Units(1:j)    ==     y%Absorber_Units(1:j)) .AND. &
+                  ALL(x%Level_Pressure(0:k) .EqualTo. y%Level_Pressure(0:k)) .AND. &
+                  ALL(x%Pressure(1:k)       .EqualTo. y%Pressure(1:k)      ) .AND. &
+                  ALL(x%Temperature(1:k)    .EqualTo. y%Temperature(1:k)   ) .AND. &
+                  ALL(x%Absorber(1:k,1:j)   .EqualTo. y%Absorber(1:k,1:j)  ) .AND. &
+                  ALL(x%Cloud_Fraction(1:k) .EqualTo. y%Cloud_Fraction(1:k))) ) RETURN
+      ! ...Clouds
+      IF ( x%n_Clouds > 0 ) THEN
+        IF ( .NOT. ALL(x%Cloud == y%Cloud) ) RETURN
+      END IF
+      ! ...Aerosols
+      IF ( x%n_Aerosols > 0 ) THEN
+        IF ( .NOT. ALL(x%Aerosol == y%Aerosol) ) RETURN
+      END IF
     END IF
-    ! ...Aerosols
-    IF ( x%n_Aerosols > 0 ) THEN
-      IF ( ALL(CRTM_Aerosol_Associated(x%Aerosol)) .AND. ALL(CRTM_Aerosol_Associated(y%Aerosol)) ) &
-        is_equal = is_equal .AND. ALL(x%Aerosol == y%Aerosol)
-    END IF
+    
+
+    ! If we get here, then...
+    is_equal = .TRUE.
 
   END FUNCTION CRTM_Atmosphere_Equal
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!   CRTM_Atmosphere_NotEqual
+!
+! PURPOSE:
+!   Elemental function to test the inequality of two CRTM Atmosphere objects.
+!   Used in OPERATOR(/=) interface block.
+!
+!   This function is syntactic sugar.
+!
+! CALLING SEQUENCE:
+!   not_equal = CRTM_Atmosphere_NotEqual( x, y )
+!
+!     or
+!
+!   IF ( x /= y ) THEN
+!     ...
+!   END IF
+!
+! OBJECTS:
+!   x, y:          Two CRTM Atmosphere objects to be compared.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Atmosphere_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!   not_equal:     Logical value indicating whether the inputs are not equal.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Atmosphere_NotEqual( x, y ) RESULT( not_equal )
+    TYPE(CRTM_Atmosphere_type), INTENT(IN) :: x, y
+    LOGICAL :: not_equal
+    not_equal = .NOT. (x == y)
+  END FUNCTION CRTM_Atmosphere_NotEqual
 
 
 !--------------------------------------------------------------------------------
@@ -2163,7 +2291,7 @@ CONTAINS
          atm1%n_Clouds       /= atm2%n_Clouds       .OR. &
          atm1%n_Aerosols     /= atm2%n_Aerosols     .OR. &
          atm1%n_Added_Layers /= atm2%n_Added_Layers ) RETURN
-    ! ...Dimenions the same, check absorber info
+    ! ...Dimensions the same, check absorber info
     IF ( ANY(atm1%Absorber_ID    /= atm2%Absorber_ID   ) .OR. &
          ANY(atm1%Absorber_Units /= atm2%Absorber_Units) ) RETURN
 
@@ -2177,6 +2305,7 @@ CONTAINS
     atmsum%Pressure(1:k)       = atmsum%Pressure(1:k)       + atm2%Pressure(1:k)
     atmsum%Temperature(1:k)    = atmsum%Temperature(1:k)    + atm2%Temperature(1:k)
     atmsum%Absorber(1:k,1:j)   = atmsum%Absorber(1:k,1:j)   + atm2%Absorber(1:k,1:j)
+    atmsum%Cloud_Fraction(1:k) = atmsum%Cloud_Fraction(1:k) + atm2%Cloud_Fraction(1:k)
     ! ...Cloud component
     IF ( atm1%n_Clouds > 0 ) THEN
       DO i = 1, atm1%n_Clouds
@@ -2243,7 +2372,7 @@ CONTAINS
          atm1%n_Clouds       /= atm2%n_Clouds       .OR. &
          atm1%n_Aerosols     /= atm2%n_Aerosols     .OR. &
          atm1%n_Added_Layers /= atm2%n_Added_Layers ) RETURN
-    ! ...Dimenions the same, check absorber info
+    ! ...Dimensions the same, check absorber info
     IF ( ANY(atm1%Absorber_ID    /= atm2%Absorber_ID   ) .OR. &
          ANY(atm1%Absorber_Units /= atm2%Absorber_Units) ) RETURN
 
@@ -2257,6 +2386,7 @@ CONTAINS
     atmdiff%Pressure(1:k)       = atmdiff%Pressure(1:k)       - atm2%Pressure(1:k)
     atmdiff%Temperature(1:k)    = atmdiff%Temperature(1:k)    - atm2%Temperature(1:k)
     atmdiff%Absorber(1:k,1:j)   = atmdiff%Absorber(1:k,1:j)   - atm2%Absorber(1:k,1:j)
+    atmdiff%Cloud_Fraction(1:k) = atmdiff%Cloud_Fraction(1:k) - atm2%Cloud_Fraction(1:k)
     ! ...Cloud component
     IF ( atm1%n_Clouds > 0 ) THEN
       DO i = 1, atm1%n_Clouds
@@ -2350,7 +2480,8 @@ CONTAINS
       atm%Level_Pressure, &
       atm%Pressure, &
       atm%Temperature, &
-      atm%Absorber
+      atm%Absorber, &
+      atm%Cloud_Fraction
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading atmospheric profile data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
@@ -2465,7 +2596,8 @@ CONTAINS
       atm%Level_Pressure(0:atm%n_Layers), &
       atm%Pressure(1:atm%n_Layers), &
       atm%Temperature(1:atm%n_Layers), &
-      atm%Absorber(1:atm%n_Layers,:)
+      atm%Absorber(1:atm%n_Layers,:), &
+      atm%Cloud_Fraction(1:atm%n_Layers)
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing atmospheric profile data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN

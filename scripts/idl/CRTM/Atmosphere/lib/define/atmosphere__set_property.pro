@@ -15,6 +15,7 @@
 ;         Pressure        = Pressure       , $
 ;         Temperature     = Temperature    , $
 ;         Absorber_Amount = Absorber_Amount, $
+;         CFraction       = CFraction      , $
 ;         Cloud           = Cloud          , $
 ;         Aerosol         = Aerosol        , $
 ;         Debug           = Debug             
@@ -71,6 +72,12 @@
 ;                              DIMENSION:  Rank-2 (n_Layers x n_Absorbers)
 ;                              ATTRIBUTES: INTENT(IN), OPTIONAL
 ;
+;       CFraction:             The cloud fraction profile for the atmosphere.
+;                              UNITS:      Variable
+;                              TYPE:       REAL
+;                              DIMENSION:  Rank-1 (n_Layers)
+;                              ATTRIBUTES: INTENT(IN), OPTIONAL
+;
 ;       Cloud:                 A list of cloud objects.
 ;                              UNITS:      Variable
 ;                              TYPE:       LIST
@@ -111,6 +118,7 @@ PRO Atmosphere::Set_Property, $
   Pressure        = Pressure       , $  ; Input keyword
   Temperature     = Temperature    , $  ; Input keyword
   Absorber_Amount = Absorber_Amount, $  ; Input keyword
+  CFraction       = CFraction      , $  ; Input keyword
   Cloud           = Cloud          , $  ; Input keyword
   Aerosol         = Aerosol        , $  ; Input keyword
   Debug           = Debug               ; Input keyword
@@ -178,6 +186,13 @@ PRO Atmosphere::Set_Property, $
       MESSAGE, 'Size of input Absorber different from Atmosphere allocation.', $
                NONAME=MsgSwitch, NOPRINT=MsgSwitch
     (self.Absorber).Add, Absorber_Amount
+  ENDIF
+  n = N_ELEMENTS(CFraction)
+  IF ( n GT 0 ) THEN BEGIN
+    IF ( n NE n_layers ) THEN $
+      MESSAGE, 'Size of input CFraction different from Atmosphere allocation.', $
+               NONAME=MsgSwitch, NOPRINT=MsgSwitch
+    (self.CFraction).Add, CFraction
   ENDIF
   
   

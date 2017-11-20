@@ -15,7 +15,7 @@ export FCFLAGS="\
 -ggdb \
 -Wall \
 -Wconversion \
--std=f2003"
+-std=f2008"
 
 export LDFLAGS=""
 

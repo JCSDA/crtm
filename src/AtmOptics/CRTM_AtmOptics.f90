@@ -22,7 +22,10 @@ MODULE CRTM_AtmOptics
                                    MAX_N_LAYERS, &
                                    BS_THRESHOLD, &
                                    SCATTERING_ALBEDO_THRESHOLD
-  USE CRTM_AtmOptics_Define, ONLY: CRTM_AtmOptics_type
+  USE CRTM_AtmOptics_Define, ONLY: CRTM_AtmOptics_type      , &
+                                   CRTM_AtmOptics_Associated, &
+                                   CRTM_AtmOptics_Create    , &
+                                   CRTM_AtmOptics_Zero
   ! Internal variable definition module
   USE AOvar_Define, ONLY: AOvar_type, &
                           AOvar_Associated, &
@@ -41,14 +44,21 @@ MODULE CRTM_AtmOptics
   PUBLIC :: AOvar_type
   ! Procedures
   PUBLIC :: AOvar_Create
+
   PUBLIC :: CRTM_No_Scattering
   PUBLIC :: CRTM_Include_Scattering
+
   PUBLIC :: CRTM_Compute_Transmittance
   PUBLIC :: CRTM_Compute_Transmittance_TL
   PUBLIC :: CRTM_Compute_Transmittance_AD
-  PUBLIC :: CRTM_Combine_AtmOptics
-  PUBLIC :: CRTM_Combine_AtmOptics_TL
-  PUBLIC :: CRTM_Combine_AtmOptics_AD
+
+  PUBLIC :: CRTM_AtmOptics_Combine
+  PUBLIC :: CRTM_AtmOptics_Combine_TL
+  PUBLIC :: CRTM_AtmOptics_Combine_AD
+
+  PUBLIC :: CRTM_AtmOptics_NoScatterCopy
+  PUBLIC :: CRTM_AtmOptics_NoScatterCopy_TL
+  PUBLIC :: CRTM_AtmOptics_NoScatterCopy_AD
 
 
   ! ---------------
@@ -56,6 +66,8 @@ MODULE CRTM_AtmOptics
   ! ---------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   '$Id$'
+  ! Message string length
+  INTEGER, PARAMETER :: ML = 256
 
 
 CONTAINS
@@ -322,14 +334,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Combine_AtmOptics
+!       CRTM_AtmOptics_Combine
 !
 ! PURPOSE:
 !       Subroutine to combine the optical properties from AtmAbsorption,
 !       CloudScatter, and AerosolScatter calculations.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics( AtmOptics, &
+!       CALL CRTM_AtmOptics_Combine( AtmOptics, &
 !                                    AOvar      )
 !
 ! OUTPUTS:
@@ -351,14 +363,14 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics( &
+  SUBROUTINE CRTM_AtmOptics_Combine( &
     AtmOptics, &  ! Output
     AOvar      )  ! Internal variable output
     ! Arguments
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics
     TYPE(AOvar_type)         , INTENT(IN OUT) :: AOvar
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_Combine'
     ! Local variables
     INTEGER :: i, k, l
 
@@ -414,7 +426,7 @@ CONTAINS
     END DO Layer_Loop
 
 
-  END SUBROUTINE CRTM_Combine_AtmOptics
+  END SUBROUTINE CRTM_AtmOptics_Combine
 
 
 
@@ -422,14 +434,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Combine_AtmOptics_TL
+!       CRTM_AtmOptics_Combine_TL
 !
 ! PURPOSE:
 !       Subroutine to combine the tangent-linear optical properties from
 !       AtmAbsorption, CloudScatter, and AerosolScatter calculations.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics_TL( AtmOptics   , &
+!       CALL CRTM_AtmOptics_Combine_TL( AtmOptics   , &
 !                                       AtmOptics_TL, &
 !                                       AOvar         )
 ! INPUTS:
@@ -458,7 +470,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics_TL( &
+  SUBROUTINE CRTM_AtmOptics_Combine_TL( &
     AtmOptics   , &  ! FWD Input
     AtmOptics_TL, &  ! TL Output
     AOvar         )  ! Internal variable input
@@ -467,7 +479,7 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_TL
     TYPE(AOvar_type)         , INTENT(IN)     :: AOvar
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_TL'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_Combine_TL'
     ! Local variables
     INTEGER :: i, k, l
     REAL(fp) :: optical_depth_TL
@@ -562,7 +574,7 @@ CONTAINS
 
     END DO Layer_Loop
 
-  END SUBROUTINE CRTM_Combine_AtmOptics_TL
+  END SUBROUTINE CRTM_AtmOptics_Combine_TL
 
 
 
@@ -570,14 +582,14 @@ CONTAINS
 !:sdoc+:
 !
 ! NAME:
-!       CRTM_Combine_AtmOptics_AD
+!       CRTM_AtmOptics_Combine_AD
 !
 ! PURPOSE:
 !       Subroutine to compute the adjoint form of the optical properties
 !       from AtmAbsorption, CloudScatter, and AerosolScatter calculations.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_Combine_AtmOptics_AD( AtmOptics,    &
+!       CALL CRTM_AtmOptics_Combine_AD( AtmOptics,    &
 !                                       AtmOptics_AD, &
 !                                       AOvar   )
 !
@@ -610,7 +622,7 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_Combine_AtmOptics_AD( &
+  SUBROUTINE CRTM_AtmOptics_Combine_AD( &
     AtmOptics   , &  ! FWD Input
     AtmOptics_AD, &  ! AD  Input
     AOvar         )  ! Internal variable input
@@ -619,7 +631,7 @@ CONTAINS
     TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: AtmOptics_AD
     TYPE(AOvar_type)         , INTENT(IN)     :: AOvar
     ! Local parameters
-    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Combine_AtmOptics_AD'
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_Combine_AD'
     ! Local variables
     INTEGER :: i, k, l
     REAL(fp) :: w_AD
@@ -724,6 +736,308 @@ CONTAINS
 
     END DO Layer_Loop
 
-  END SUBROUTINE CRTM_Combine_AtmOptics_AD
+  END SUBROUTINE CRTM_AtmOptics_Combine_AD
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_AtmOptics_NoScatterCopy
+!
+! PURPOSE:
+!       Function to copy an instance of a CRTM AtmOptics object
+!       but without the scattering information included.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_AtmOptics_NoScatterCopy( AtmOptics, AtmOptics_Clear )
+!
+! INPUTS:
+!       AtmOptics:       AtmOptics object to copy
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       AtmOptics_Clear: Copy of the input AtmOptics object but without the
+!                        scattering information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_AtmOptics_NoScatterCopy( ao, ao_clear ) RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: ao
+    TYPE(CRTM_AtmOptics_type), INTENT(OUT) :: ao_clear
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_NoScatterCopy'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input
+    IF ( .NOT. CRTM_AtmOptics_Associated(ao) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics structure not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Create the output structure
+    CALL CRTM_AtmOptics_Create( ao_clear   , &
+                                ao%n_Layers, &
+                                0          , &  ! No Legendre terms
+                                0            )  ! No phase element terms
+    IF ( .NOT. CRTM_AtmOptics_Associated(ao_clear) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Error allocating output Clear-Sky AtmOptics structure'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Set/Copy over the clear-sky data
+    ao_clear%Include_Scattering = .FALSE.
+    ao_clear%Optical_Depth      = ao%Optical_Depth(1:ao%n_Layers)
+
+  END FUNCTION CRTM_AtmOptics_NoScatterCopy
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_AtmOptics_NoScatterCopy_TL
+!
+! PURPOSE:
+!       Function to copy an instance of a tangent-linear CRTM AtmOptics object
+!       but without the scattering information included.
+!!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_AtmOptics_NoScatterCopy_TL( ao, ao_TL, ao_clear_TL )
+!
+! INPUTS:
+!       ao:              Forward AtmOptics object for consistency checking
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ao_TL:           Tangent-linear AtmOptics object to copy. This object
+!                        must be the tangent-linear equivalent of the input
+!                        forward AtmOptics object.
+!                        This
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       ao_clear_TL:     Copy of the input AtmOptics tangent-linear object but
+!                        without scattering information.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_AtmOptics_NoScatterCopy_TL( &
+    ao         , &  ! FWD input
+    ao_TL      , &  ! TL  input
+    ao_clear_TL) &  ! TL  output
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: ao
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)  :: ao_TL
+    TYPE(CRTM_AtmOptics_type), INTENT(OUT) :: ao_clear_TL
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_NoScatterCopy_TL'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input allocation
+    IF ( .NOT. CRTM_AtmOptics_Associated(ao   ) .OR. &
+         .NOT. CRTM_AtmOptics_Associated(ao_TL) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics structures not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Dimension consistency
+    IF ( (ao%n_Layers         /= ao_TL%n_Layers        ) .OR. &
+         (ao%n_Legendre_Terms /= ao_TL%n_Legendre_Terms) .OR. &
+         (ao%n_Phase_Elements /= ao_TL%n_Phase_Elements) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics structures have incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Create the output structure
+    CALL CRTM_AtmOptics_Create( ao_clear_TL   , &
+                                ao_TL%n_Layers, &
+                                0             , &  ! No Legendre terms
+                                0               )  ! No phase element terms
+    IF ( .NOT. CRTM_AtmOptics_Associated(ao_clear_TL) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Error allocating output Clear-Sky AtmOptics structure'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Set/Copy over the clear-sky data
+    ao_clear_TL%Include_Scattering = .FALSE.
+    ao_clear_TL%Optical_Depth      = ao_TL%Optical_Depth(1:ao_TL%n_Layers)
+
+  END FUNCTION CRTM_AtmOptics_NoScatterCopy_TL
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_AtmOptics_NoScatterCopy_AD
+!
+! PURPOSE:
+!       Function to perform the adjoint copy of an instance of the CRTM
+!       AtmOptics object without the scattering information included.
+!
+! CALLING SEQUENCE:
+!       Error_Status = CRTM_AtmOptics_NoScatterCopy_AD( ao, ao_clear_AD, ao_AD )
+!
+! INPUTS:
+!       ao:              AtmOptics object for consistency checking
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       ao_clear_AD:     Adjoint Clear-Sky AtmOptics structure to copy
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+! OUTPUTS:
+!       ao_AD:           Adjoint copy of the input AtmOptics. This object
+!                        must be the adjoint equivalent of the input
+!                        forward AtmOptics object.
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_AtmOptics_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(OUT)
+!
+! FUNCTION RESULT:
+!       Error_Status:    The return value is an integer defining the error status.
+!                        The error codes are defined in the Message_Handler module.
+!                        If == SUCCESS the operation was successful
+!                           == FAILURE an error occurred
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  FUNCTION CRTM_AtmOptics_NoScatterCopy_AD( &
+    ao         , &  ! FWD input
+    ao_clear_AD, &  ! AD  input
+    ao_AD      ) &  ! AD  output
+  RESULT( err_stat )
+    ! Arguments
+    TYPE(CRTM_AtmOptics_type), INTENT(IN)     :: ao
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: ao_clear_AD
+    TYPE(CRTM_AtmOptics_type), INTENT(IN OUT) :: ao_AD
+    ! Function result
+    INTEGER :: err_stat
+    ! Local parameters
+    CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_AtmOptics_NoScatterCopy_AD'
+    ! Local variables
+    CHARACTER(ML) :: err_msg
+    INTEGER :: k
+
+
+    ! Set up
+    err_stat = SUCCESS
+    ! ...Check input allocation
+    IF ( .NOT. CRTM_AtmOptics_Associated(ao         ) .OR. &
+         .NOT. CRTM_AtmOptics_Associated(ao_clear_AD) .OR. &
+         .NOT. CRTM_AtmOptics_Associated(ao_AD      ) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics structures not allocated'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Dimensional consistency
+    IF ( (ao%n_Layers         /= ao_AD%n_Layers        ) .OR. &
+         (ao%n_Legendre_Terms /= ao_AD%n_Legendre_Terms) .OR. &
+         (ao%n_Phase_Elements /= ao_AD%n_Phase_Elements) ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics and AtmOptics_AD structures have incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    IF ( ao_clear_AD%n_Layers /= ao_AD%n_Layers ) THEN
+      err_stat = FAILURE
+      err_msg = 'Input AtmOptics_Clear_AD structure has incongruent dimensions'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+    ! ...Non-layer dependent data consistency
+    IF ( (ao%Include_Scattering .NEQV. ao_AD%Include_Scattering) .OR. &
+         ao_clear_AD%Include_Scattering ) THEN
+      err_stat = FAILURE
+      err_msg = 'AtmOptics structures have incongruent Scattering flags'
+      CALL Display_Message( ROUTINE_NAME, err_msg, err_stat )
+      RETURN
+    END IF
+
+
+    ! Adjoint copy of data
+    k = ao%n_Layers
+    ao_AD%Optical_Depth(1:k) = ao_AD%Optical_Depth(1:k) + ao_clear_AD%Optical_Depth(1:k)      
+
+
+    ! Zero the clear result, as it has no more impact
+    CALL CRTM_AtmOptics_Zero( ao_clear_AD )
+
+  END FUNCTION CRTM_AtmOptics_NoScatterCopy_AD
 
 END MODULE CRTM_AtmOptics

@@ -1,0 +1,3 @@
+CRTM_CloudCover_Define.o : CRTM_CloudCover_Define.f90 
+Cloud_Fraction.o : Cloud_Fraction.f90 CRTM_CloudCover_Define.o 
+Timing_Utility.o : Timing_Utility.f90 

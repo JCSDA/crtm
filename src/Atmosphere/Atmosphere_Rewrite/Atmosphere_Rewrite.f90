@@ -3,10 +3,18 @@
 !
 ! Program to convert old Atmosphere data file formats to the latest one.
 !
+! This program RELIES upon:
+!   1. The WRITE procedures being up to date with the latest format
+!   2. The READ procedures still being set for the old format.
+! Once this program has been run on existing OLD FORMAT datafiles,
+! the read procedures can be updated.
+!
+! NOTE: This application OVERWRITES existing files.
+!
 !
 ! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Apr-2005
-!                       paul.vandelst@ssec.wisc.edu
+!       Written by:     Paul van Delst, 08-Apr-2005
+!                       paul.vandelst@noaa.gov
 !
 
 PROGRAM Atmosphere_Rewrite
@@ -20,15 +28,6 @@ PROGRAM Atmosphere_Rewrite
   USE File_Utility
 
   USE CRTM_Atmosphere_Define
-  USE CRTM_Atmosphere_Binary_IO
-
-  USE CRTM_Atmosphere_Define_old, ONLY: Atm_type     => CRTM_Atmosphere_type, &
-                                        Destroy_Atm  => CRTM_Destroy_Atmosphere, &
-                                        Allocate_Atm => CRTM_Allocate_Atmosphere, &
-                                        Assign_Atm   => CRTM_Assign_Atmosphere
-  USE CRTM_Atmosphere_Binary_IO_old, ONLY: Inquire_Atm => CRTM_Inquire_Atmosphere_Binary, &
-                                           Read_Atm    => CRTM_Read_Atmosphere_Binary, &
-                                           Write_Atm   => CRTM_Write_Atmosphere_Binary
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -37,141 +36,109 @@ PROGRAM Atmosphere_Rewrite
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Atmosphere_Rewrite'
-  CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
+  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
     '$Id$'
-  INTEGER,      PARAMETER :: SET = 1
-  CHARACTER(*), PARAMETER :: OLD_ATM_FILE = 'Old_Data/ECMWF-Atmosphere.Cloud.Aerosol.bin.old'
-  CHARACTER(*), PARAMETER :: NEW_ATM_FILE = 'ECMWF-Atmosphere.Cloud.Aerosol.bin'
-
-
+  INTEGER, PARAMETER :: ML = 256
+  LOGICAL, PARAMETER :: QUIET = .TRUE.
+  
+  
   ! ---------
   ! Variables
   ! ---------
-  CHARACTER( 256 ) :: Message
-  CHARACTER( 256 ) :: Filename_old
-  CHARACTER( 256 ) :: Filename
-  INTEGER :: Error_Status
-  INTEGER :: Allocate_Status
-  INTEGER :: m, nc, na, nna, nam
-  INTEGER :: n_Profiles
-  INTEGER :: n_Aerosols
-  TYPE(Atm_type)            , ALLOCATABLE :: Atm_old(:)
-  TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: Atm(:)
+  CHARACTER(ML) :: err_msg
+  CHARACTER(ML) :: filename
+  INTEGER :: n_args
+  INTEGER :: err_stat, alloc_stat
+  INTEGER :: n_channels, n_profiles
+  TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: atm(:), atm_K(:)
 
 
   ! Output program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to read old format Atmosphere datafiles and '//&
-                        'write new format files.', &
+                        'write new format files. NOTE: This application OVERWRITES '//&
+                        'existing files.', &
                         '$Revision$' )
 
 
-  ! Inquire the old file
-  Error_Status = Inquire_Atm( OLD_ATM_FILE, n_Profiles=n_Profiles)
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error inquiring old format Atmosphere file.', &
-                          FAILURE )
-    STOP
+  ! Get the filename
+  n_args = COMMAND_ARGUMENT_COUNT() 
+  IF ( n_args > 0 ) THEN 
+    CALL GET_COMMAND_ARGUMENT(1, filename) 
+  ELSE 
+    WRITE( *,FMT='(/5x,"Enter the Binary Atmosphere filename: ")',ADVANCE='NO' ) 
+    READ( *,'(a)' ) filename 
   END IF
-
-  ! Allocate the structure arrays
-  ALLOCATE( Atm_old(n_Profiles), Atm(n_Profiles), &
-            STAT = Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE(Message,'("Error allocating Atmosphere structure arrays. STAT = ",i0)') Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          FAILURE )
-    STOP
+  filename = ADJUSTL(filename)
+  IF ( .NOT. File_Exists( TRIM(filename) ) ) THEN
+    err_msg = 'File '//TRIM(filename)//' not found.'
+    CALL Display_Message( PROGRAM_NAME, err_msg, FAILURE ); STOP
   END IF
   
-  ! Read the old format file
-  Error_Status = Read_Atm( OLD_ATM_FILE, Atm_old )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error reading old format Atmosphere file.', &
-                          FAILURE )
-    STOP
+  WRITE(*,'(/5x,"Reformatting ",a,"...")') TRIM(filename)
+
+
+  ! Inquire the old format file
+  err_stat = CRTM_Atmosphere_InquireFile( &
+    filename, &
+    n_Channels = n_channels, &
+    n_Profiles = n_profiles  )
+  IF ( err_stat /= SUCCESS ) THEN
+    err_msg = 'Error inquiring the old format Atmosphere file.'
+    CALL Display_Message( PROGRAM_NAME, err_msg, err_stat ); STOP
   END IF
 
 
-  ! Transfer over the data
-  DO m = 1, n_Profiles
+  ! Branch on the number of channels
+  IF ( n_channels > 0 ) THEN
+  
+    ! We have a K-matrix file
+    ! ...Read the old format file
+    err_stat = CRTM_Atmosphere_ReadFile( &
+      filename, &
+      atm_K   , &
+      Quiet = QUIET )
+    IF ( err_stat /= SUCCESS ) THEN
+      err_msg = 'Error reading the old format Atmosphere K-matrix file.'
+      CALL Display_Message( PROGRAM_NAME, err_msg, err_stat ); STOP
+    END IF
+    ! ...Write the new format file
+    err_stat = CRTM_Atmosphere_WriteFile( &
+      filename, &
+      atm_K   , &
+      Quiet = QUIET )
+    IF ( err_stat /= SUCCESS ) THEN
+      err_msg = 'Error writing the new format Atmosphere K-matrix file.'
+      CALL Display_Message( PROGRAM_NAME, err_msg, err_stat ); STOP
+    END IF
+    ! ...Cleanup
+    DEALLOCATE( atm_K, STAT=alloc_stat )
 
-    ! Allocate the new structure
-    Error_Status = CRTM_Allocate_Atmosphere( Atm_old(m)%n_Layers   , &  ! Input
-                                             Atm_old(m)%n_Absorbers, &  ! Input
-                                             Atm_old(m)%n_Clouds   , &  ! Input
-                                             Atm_old(m)%n_Aerosols , &  ! Input
-                                             Atm(m)                  )
-    IF ( Error_Status /= SUCCESS ) THEN
-      WRITE(Message,'("Error allocating new Atmosphere structure for profile #",i0)') m
-      CALL Display_Message( PROGRAM_NAME, &
-                            TRIM(Message), &
-                            FAILURE )
-      STOP
+  ELSE
+  
+    ! We have a "regular" file file
+    ! ...Read the old format file
+    err_stat = CRTM_Atmosphere_ReadFile( &
+      filename, &
+      atm     , &
+      Quiet = QUIET )
+    IF ( err_stat /= SUCCESS ) THEN
+      err_msg = 'Error reading the old format Atmosphere file.'
+      CALL Display_Message( PROGRAM_NAME, err_msg, err_stat ); STOP
     END IF
 
-    ! Copy over the atmosphere bits
-    Atm(m)%Climatology    = Atm_old(m)%Climatology   
-    Atm(m)%Absorber_ID    = Atm_old(m)%Absorber_ID   
-    Atm(m)%Absorber_Units = Atm_old(m)%Absorber_Units
-    Atm(m)%Level_Pressure = Atm_old(m)%Level_Pressure
-    Atm(m)%Pressure       = Atm_old(m)%Pressure      
-    Atm(m)%Temperature    = Atm_old(m)%Temperature   
-    Atm(m)%Absorber       = Atm_old(m)%Absorber      
-
-    ! Copy over the cloud bits
-    DO nc = 1, Atm_old(m)%n_Clouds
-      Atm(m)%Cloud(nc)%Type               = Atm_old(m)%Cloud(nc)%Type              
-      Atm(m)%Cloud(nc)%Effective_Radius   = Atm_old(m)%Cloud(nc)%Effective_Radius  
-      Atm(m)%Cloud(nc)%Effective_Variance = Atm_old(m)%Cloud(nc)%Effective_Variance
-      Atm(m)%Cloud(nc)%Water_Content      = Atm_old(m)%Cloud(nc)%Water_Content     
-    END DO
+    ! ...Write the new format file
+    err_stat = CRTM_Atmosphere_WriteFile( &
+      filename, &
+      atm     , &
+      Quiet = QUIET )
+    IF ( err_stat /= SUCCESS ) THEN
+      err_msg = 'Error writing the new format Atmosphere file.'
+      CALL Display_Message( PROGRAM_NAME, err_msg, err_stat ); STOP
+    END IF
+    ! ...Cleanup
+    DEALLOCATE( atm, STAT=alloc_stat )
     
-    ! Copy over the aerosol bits
-    DO na = 1, Atm_old(m)%n_Aerosols
-      Atm(m)%Aerosol(na)%Type             = Atm_old(m)%Aerosol(na)%Type
-      Atm(m)%Aerosol(na)%Effective_Radius = Atm_old(m)%Aerosol(na)%Effective_Radius
-      Atm(m)%Aerosol(na)%Concentration    = Atm_old(m)%Aerosol(na)%Concentration
-    END DO
-
-  END DO
-
-
-  ! Write the new format file
-  Error_Status = CRTM_Write_Atmosphere_Binary( NEW_ATM_FILE, Atm )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error writing new format Atmosphere file.', &
-                          FAILURE )
-    STOP
-  END IF
-
-
-  ! Destroy the structure arrays
-  Error_Status = CRTM_Destroy_Atmosphere( Atm )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying new Atmosphere structure array.', &
-                          Error_Status )
-  END IF
-
-  Error_Status = Destroy_Atm( Atm_old )
-  IF ( Error_Status /= SUCCESS ) THEN
-    CALL Display_Message( PROGRAM_NAME, &
-                          'Error destroying old Atmosphere structure array.', &
-                          Error_Status )
-  END IF
-
-  DEALLOCATE( Atm_old, Atm, &
-              STAT = Allocate_Status )
-  IF ( Allocate_Status /= 0 ) THEN
-    WRITE(Message,'("Error deallocating Atmosphere structure arrays. STAT = ",i0)') Allocate_Status
-    CALL Display_Message( PROGRAM_NAME, &
-                          TRIM(Message), &
-                          FAILURE )
   END IF
 
 END PROGRAM Atmosphere_Rewrite

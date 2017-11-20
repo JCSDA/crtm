@@ -1,17 +1,17 @@
 #!/bin/sh
 #-------------------------------------------------------------------------------#
-# PRODUCTION build settings for Linux g95 compiler
+# PRODUCTION build settings for ftn compiler on EMC Linux Cray machine
 #-------------------------------------------------------------------------------#
 
-export FC="g95"
+export FC="ftn"
 
 export FCFLAGS="\
--O2 \
--ffast-math \
--ffree-form \
--fno-second-underscore \
--funroll-loops \
--malign-double"
+-O3 \
+-axCore-AVX2 \
+-fp-model source \
+-convert big_endian \
+-free \
+-assume byterecl"
 
 export LDFLAGS=""
 

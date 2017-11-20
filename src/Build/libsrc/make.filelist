@@ -55,6 +55,8 @@ FSRC_FILES = \
   NESDIS_SSMIS_SnowEM_Module.f90 \
   NESDIS_SnowEM_ATMS_Parameters.f90 \
   NESDIS_ATMS_SnowEM_Module.f90 \
+  NESDIS_ATMS_SeaICE_LIB.f90 \
+  NESDIS_ATMS_SeaICE_Module.f90 \
   CRTM_Utility.f90 \
   CRTM_Interpolation.f90 \
   CRTM_SpcCoeff.f90 \
@@ -71,6 +73,7 @@ FSRC_FILES = \
   CRTM_Geometry_Define.f90 \
   CRTM_GeometryInfo_Define.f90 CRTM_GeometryInfo.f90 \
   CRTM_Atmosphere.f90 iAtm_Define.f90 \
+  CRTM_CloudCover_Define.f90 \
   CRTM_Model_Profiles.f90 \
   CRTM_AerosolScatter.f90 ASvar_Define.f90 \
   CRTM_CloudScatter.f90 CSvar_Define.f90 \

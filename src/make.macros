@@ -219,7 +219,7 @@ LINUX_FLAGS_INTEL_DEBUG = "FC=${NAME_INTEL}" \
                                     -stand f08 \
                                     -traceback \
                                     -free \
-                                    -assume byterecl \
+                                    -assume byterecl,realloc_lhs \
                                     -fp-stack-check \
                                     -mieee-fp \
                                     ${INCLUDES} \
@@ -238,7 +238,7 @@ LINUX_FLAGS_INTEL_PROD = "FC=${NAME_INTEL}" \
                                    -convert big_endian \
                                    -stand f08 \
                                    -free \
-      	                           -assume byterecl \
+      	                           -assume byterecl,realloc_lhs \
                                    ${INCLUDES} \
                                    ${LINUX_COMMON_FLAGS_PROD}" \
                          "LDFLAGS= ${LINUX_COMMON_FLAGS_PROD} \

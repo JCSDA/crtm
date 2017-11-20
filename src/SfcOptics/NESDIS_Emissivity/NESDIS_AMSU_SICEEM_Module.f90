@@ -340,19 +340,20 @@ subroutine AMSU_IATs(frequency,tba,ts,em_vector)
   integer :: k,ich
   real(fp)    :: coe(100)
 
+  save coe
 
 ! Fitting Coefficients Using Tb1, Tb2, Tb4 and Ts
-  data (coe(k),k=1,5)/ 9.815214e-001_fp,  3.783815e-003_fp,  &
-       6.391155e-004_fp, -9.106375e-005_fp, -4.263206e-003_fp/
-  data (coe(k),k=21,25)/ 9.047181e-001_fp, -2.782826e-004_fp,  &
-       4.664207e-003_fp, -3.121744e-005_fp, -3.976189e-003_fp/
-  data (coe(k),k=41,45)/ 1.163853e+000_fp, -1.419205e-003_fp,  &
-       5.505238e-003_fp,  1.506867e-003_fp, -6.157735e-003_fp/
-  data (coe(k),k=61,65)/  1.020753e+000_fp, -8.666064e-004_fp,  &
-       9.624331e-004_fp,  4.878773e-003_fp, -5.055044e-003_fp/
-  data (coe(k),k=81,85)/ 1.438246e+000_fp,  5.667756e-004_fp, &
-       -2.621972e-003_fp,  5.928146e-003_fp, -5.856687e-003_fp/
-  save coe
+  coe(1:5) = (/ 9.815214e-001_fp,  3.783815e-003_fp,  &
+       6.391155e-004_fp, -9.106375e-005_fp, -4.263206e-003_fp/)
+  coe(21:25) = (/ 9.047181e-001_fp, -2.782826e-004_fp,  &
+       4.664207e-003_fp, -3.121744e-005_fp, -3.976189e-003_fp/)
+  coe(41:45) = (/ 1.163853e+000_fp, -1.419205e-003_fp,  &
+       5.505238e-003_fp,  1.506867e-003_fp, -6.157735e-003_fp/)
+  coe(61:65) = (/  1.020753e+000_fp, -8.666064e-004_fp,  &
+       9.624331e-004_fp,  4.878773e-003_fp, -5.055044e-003_fp/)
+  coe(81:85) = (/ 1.438246e+000_fp,  5.667756e-004_fp, &
+       -2.621972e-003_fp,  5.928146e-003_fp, -5.856687e-003_fp/)
+! save coe
 
 
 ! Calculate emissivity discriminators at five AMSU window channels
@@ -421,18 +422,19 @@ subroutine AMSU_IBTs(theta,frequency,tbb,ts,em_vector)
   integer :: i,k,ich,nvalid_ch
   real(fp)    :: coe(nch*(ncoe+1))
 
+  save coe
 
 ! Fitting Coefficients at 31.4 GHz
-  data (coe(k),k=1,7)/ 2.239429e+000_fp, -2.153967e-002_fp,  &
+  coe(1:7) = (/ 2.239429e+000_fp, -2.153967e-002_fp,  &
        5.785736e-005_fp,  1.366728e-002_fp,    &
-       -3.749251e-005_fp, -5.128486e-002_fp, -2.184161e-003_fp/
-  data (coe(k),k=11,17)/ 1.768085e+000_fp, -1.643430e-002_fp,  &
+       -3.749251e-005_fp, -5.128486e-002_fp, -2.184161e-003_fp/)
+  coe(11:17) = (/ 1.768085e+000_fp, -1.643430e-002_fp,  &
        4.850989e-005_fp,  1.288753e-002_fp,   &
-       -3.628051e-005_fp, -4.751277e-002_fp, -2.580649e-003_fp/
-  data (coe(k),k=21,27)/ 8.910227e-001_fp,  6.170706e-003_fp, &
+       -3.628051e-005_fp, -4.751277e-002_fp, -2.580649e-003_fp/)
+  coe(21:27) = (/ 8.910227e-001_fp,  6.170706e-003_fp, &
        -3.772921e-006_fp, -4.146567e-004_fp,   &
-       -2.208121e-006_fp, -3.163193e-002_fp, -3.863217e-003_fp/
-  save coe
+       -2.208121e-006_fp, -3.163193e-002_fp, -3.863217e-003_fp/)
+! save coe
 
 ! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch-2
@@ -502,7 +504,7 @@ subroutine  siem_interpolate(frequency,discriminator,emissivity)
   integer,parameter:: ncand = 16,nch =5
   integer:: i
   real(fp)   :: frequency,freq(nch),emissivity,discriminator(*)
-  data  freq/23.8_fp, 31.4_fp, 50.3_fp,89.0_fp, 150.0_fp/
+  freq = (/23.8_fp, 31.4_fp, 50.3_fp,89.0_fp, 150.0_fp/)
 
 ! Estimate sea ice emissivity at a required frequency
 

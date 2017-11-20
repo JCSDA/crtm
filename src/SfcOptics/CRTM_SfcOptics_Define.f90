@@ -37,10 +37,13 @@ MODULE CRTM_SfcOptics_Define
   PUBLIC :: CRTM_SfcOptics_type
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(+)
+  PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_SfcOptics_Associated
   PUBLIC :: CRTM_SfcOptics_Destroy
   PUBLIC :: CRTM_SfcOptics_Create
+  PUBLIC :: CRTM_SfcOptics_Zero
   PUBLIC :: CRTM_SfcOptics_Inspect
   PUBLIC :: CRTM_SfcOptics_DefineVersion
   PUBLIC :: CRTM_SfcOptics_Compare
@@ -52,6 +55,14 @@ MODULE CRTM_SfcOptics_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE CRTM_SfcOptics_Equal
   END INTERFACE OPERATOR(==)
+  
+  INTERFACE OPERATOR(+)
+    MODULE PROCEDURE CRTM_SfcOptics_Add
+  END INTERFACE OPERATOR(+)  
+  
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE CRTM_SfcOptics_Subtract
+  END INTERFACE OPERATOR(-)  
 
 
   ! -----------------
@@ -184,10 +195,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL FUNCTION CRTM_SfcOptics_Associated( SfcOptics ) RESULT( Status )
-    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: SfcOptics
+  ELEMENTAL FUNCTION CRTM_SfcOptics_Associated( self ) RESULT( Status )
+    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: self
     LOGICAL :: Status
-    Status = SfcOptics%Is_Allocated
+    Status = self%Is_Allocated
   END FUNCTION CRTM_SfcOptics_Associated
 
 
@@ -213,9 +224,9 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  ELEMENTAL SUBROUTINE CRTM_SfcOptics_Destroy( SfcOptics )
-    TYPE(CRTM_SfcOptics_type), INTENT(OUT) :: SfcOptics
-    SfcOptics%Is_Allocated = .FALSE.
+  ELEMENTAL SUBROUTINE CRTM_SfcOptics_Destroy( self )
+    TYPE(CRTM_SfcOptics_type), INTENT(OUT) :: self
+    self%Is_Allocated = .FALSE.
   END SUBROUTINE CRTM_SfcOptics_Destroy
 
 
@@ -229,32 +240,40 @@ CONTAINS
 !       Elemental subroutine to create an instance of the CRTM SfcOptics object.
 !
 ! CALLING SEQUENCE:
-!       CALL CRTM_SfcOptics_Create( SfcOptics, n_Layers )
+!       CALL CRTM_SfcOptics_Create( SfcOptics, n_Angles, n_Stokes )
 !
 ! OBJECTS:
-!       SfcOptics:        SfcOptics structure.
+!       SfcOptics:    SfcOptics structure.
 !                     UNITS:      N/A
 !                     TYPE:       CRTM_SfcOptics_type
 !                     DIMENSION:  Scalar or any rank
 !                     ATTRIBUTES: INTENT(OUT)
 !
 ! INPUTS:
-!       n_Layers:     Number of layers for which there is SfcOptics data.
+!       n_Angles:     Number of angles for which there is SfcOptics data.
 !                     Must be > 0.
 !                     UNITS:      N/A
 !                     TYPE:       INTEGER
-!                     DIMENSION:  Same as SfcOptics object
+!                     DIMENSION:  Conformable with SfcOptics object
+!                     ATTRIBUTES: INTENT(IN)
+!
+!       n_Stokes:     Number of Stokes components for which there is SfcOptics
+!                     data.
+!                     Must be > 0.
+!                     UNITS:      N/A
+!                     TYPE:       INTEGER
+!                     DIMENSION:  Conformable with SfcOptics object
 !                     ATTRIBUTES: INTENT(IN)
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
   ELEMENTAL SUBROUTINE CRTM_SfcOptics_Create( &
-    SfcOptics, &
+    self, &
     n_Angles , &
     n_Stokes   )
     ! Arguments
-    TYPE(CRTM_SfcOptics_type), INTENT(OUT) :: SfcOptics
+    TYPE(CRTM_SfcOptics_type), INTENT(OUT) :: self
     INTEGER,                   INTENT(IN)  :: n_Angles
     INTEGER,                   INTENT(IN)  :: n_Stokes
     ! Local variables
@@ -264,29 +283,65 @@ CONTAINS
     IF ( n_Angles < 1 .OR. n_Stokes < 1 ) RETURN
 
     ! Perform the allocation
-    ALLOCATE( SfcOptics%Angle( n_Angles ), &
-              SfcOptics%Weight( n_Angles ), &
-              SfcOptics%Emissivity( n_Angles, n_Stokes ), &
-              SfcOptics%Reflectivity( n_Angles, n_Stokes, n_Angles, n_Stokes), &
-              SfcOptics%Direct_Reflectivity( n_Angles, n_Stokes ), &
+    ALLOCATE( self%Angle( n_Angles ), &
+              self%Weight( n_Angles ), &
+              self%Emissivity( n_Angles, n_Stokes ), &
+              self%Reflectivity( n_Angles, n_Stokes, n_Angles, n_Stokes), &
+              self%Direct_Reflectivity( n_Angles, n_Stokes ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
 
     ! Initialise
     ! ...Dimensions
-    SfcOptics%n_Angles = n_Angles
-    SfcOptics%n_Stokes = n_Stokes
+    self%n_Angles = n_Angles
+    self%n_Stokes = n_Stokes
     ! ...Arrays
-    SfcOptics%Angle               = ZERO
-    SfcOptics%Weight              = ZERO
-    SfcOptics%Emissivity          = ZERO
-    SfcOptics%Reflectivity        = ZERO
-    SfcOptics%Direct_Reflectivity = ZERO
+    self%Angle               = ZERO
+    self%Weight              = ZERO
+    self%Emissivity          = ZERO
+    self%Reflectivity        = ZERO
+    self%Direct_Reflectivity = ZERO
 
     ! Set allocation indicator
-    SfcOptics%Is_Allocated = .TRUE.
+    self%Is_Allocated = .TRUE.
 
   END SUBROUTINE CRTM_SfcOptics_Create
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_SfcOptics_Zero
+!
+! PURPOSE:
+!       Elemental subroutine to initialise the components of an SfcOptics
+!       object to a value of zero.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_SfcOptics_Zero( SfcOptics )
+!
+! OBJECTS:
+!       SfcOptics:   SfcOptics object which is to have its components
+!                    set to a zero value.
+!                    UNITS:      N/A
+!                    TYPE:       CRTM_SfcOptics_type
+!                    DIMENSION:  Scalar or any rank
+!                    ATTRIBUTES: INTENT(IN OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL SUBROUTINE CRTM_SfcOptics_Zero( self )
+    TYPE(CRTM_SfcOptics_type), INTENT(IN OUT) :: self
+    self%Azimuth_Angle       = 999.9_fp
+    self%Transmittance       = ZERO
+    self%Surface_Temperature = ZERO
+    IF ( .NOT. CRTM_SfcOptics_Associated( self ) ) RETURN
+    self%Emissivity          = ZERO
+    self%Reflectivity        = ZERO
+    self%Direct_Reflectivity = ZERO
+  END SUBROUTINE CRTM_SfcOptics_Zero
 
 
 !--------------------------------------------------------------------------------
@@ -311,32 +366,32 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CRTM_SfcOptics_Inspect( SfcOptics )
-    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: SfcOptics
+  SUBROUTINE CRTM_SfcOptics_Inspect( self )
+    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: self
 
     WRITE(*, '(1x,"SfcOptics OBJECT")')
     ! Dimensions
-    WRITE(*, '(3x,"n_Angles   :",1x,i0)') SfcOptics%n_Angles
-    WRITE(*, '(3x,"n_Stokes   :",1x,i0)') SfcOptics%n_Stokes
+    WRITE(*, '(3x,"n_Angles   :",1x,i0)') self%n_Angles
+    WRITE(*, '(3x,"n_Stokes   :",1x,i0)') self%n_Stokes
     ! Display components
-    WRITE(*, '(3x,"Compute flag              :",1x,l1)') SfcOptics%Compute
-    WRITE(*, '(3x,"Use_New_MWSSEM flag       :",1x,l1)') SfcOptics%Use_New_MWSSEM
-    WRITE(*, '(3x,"  MWSSEM- azimuth angle   :",1x,es13.6)') SfcOptics%Azimuth_Angle
-    WRITE(*, '(3x,"  MWSSEM- transmittance   :",1x,es13.6)') SfcOptics%Transmittance
-    WRITE(*, '(3x,"Satellite view angle index:",1x,i0)') SfcOptics%Index_Sat_Ang
-    WRITE(*, '(3x,"Azimuth Fourier component :",1x,i0)') SfcOptics%mth_Azi
-    WRITE(*, '(3x,"Weighted mean Tsfc        :",1x,es13.6)') SfcOptics%Surface_Temperature
-    IF ( .NOT. CRTM_SfcOptics_Associated(SfcOptics) ) RETURN
+    WRITE(*, '(3x,"Compute flag              :",1x,l1)') self%Compute
+    WRITE(*, '(3x,"Use_New_MWSSEM flag       :",1x,l1)') self%Use_New_MWSSEM
+    WRITE(*, '(3x,"  MWSSEM- azimuth angle   :",1x,es13.6)') self%Azimuth_Angle
+    WRITE(*, '(3x,"  MWSSEM- transmittance   :",1x,es13.6)') self%Transmittance
+    WRITE(*, '(3x,"Satellite view angle index:",1x,i0)') self%Index_Sat_Ang
+    WRITE(*, '(3x,"Azimuth Fourier component :",1x,i0)') self%mth_Azi
+    WRITE(*, '(3x,"Weighted mean Tsfc        :",1x,es13.6)') self%Surface_Temperature
+    IF ( .NOT. CRTM_SfcOptics_Associated(self) ) RETURN
     WRITE(*, '(3x,"Angle :")')
-    WRITE(*, '(5(1x,es13.6,:))') SfcOptics%Angle
+    WRITE(*, '(5(1x,es13.6,:))') self%Angle
     WRITE(*, '(3x,"Weight :")')
-    WRITE(*, '(5(1x,es13.6,:))') SfcOptics%Weight
+    WRITE(*, '(5(1x,es13.6,:))') self%Weight
     WRITE(*, '(3x,"Emissivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') SfcOptics%Emissivity
+    WRITE(*, '(5(1x,es13.6,:))') self%Emissivity
     WRITE(*, '(3x,"Reflectivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') SfcOptics%Reflectivity
+    WRITE(*, '(5(1x,es13.6,:))') self%Reflectivity
     WRITE(*, '(3x,"Direct_Reflectivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') SfcOptics%Direct_Reflectivity
+    WRITE(*, '(5(1x,es13.6,:))') self%Direct_Reflectivity
   END SUBROUTINE CRTM_SfcOptics_Inspect
 
 
@@ -504,28 +559,152 @@ CONTAINS
     is_equal = .FALSE.
 
     ! Check the structure association status
-    IF ( (.NOT. CRTM_SfcOptics_Associated(x)) .OR. &
-         (.NOT. CRTM_SfcOptics_Associated(y))      ) RETURN
+    IF ( CRTM_SfcOptics_Associated(x) .NEQV. CRTM_SfcOptics_Associated(y) ) RETURN
 
     ! Check contents
     ! ...Dimensions
     IF ( (x%n_Angles /= y%n_Angles) .OR. &
          (x%n_Stokes /= y%n_Stokes) ) RETURN
-    ! ...Everything else
-    IF ( (x%Compute                  .EQV.   y%Compute            ) .AND. &
-         (x%Use_New_MWSSEM           .EQV.   y%Use_New_MWSSEM     ) .AND. &
-         (x%Azimuth_Angle          .EqualTo. y%Azimuth_Angle      ) .AND. &
-         (x%Transmittance          .EqualTo. y%Transmittance      ) .AND. &
-         (x%Index_Sat_Ang             ==     y%Index_Sat_Ang      ) .AND. &
-         (x%mth_Azi                   ==     y%mth_Azi            ) .AND. &
-         (x%Surface_Temperature    .EqualTo. y%Surface_Temperature) .AND. &
-         ALL(x%Angle               .EqualTo. y%Angle              ) .AND. &
-         ALL(x%Weight              .EqualTo. y%Weight             ) .AND. &
-         ALL(x%Emissivity          .EqualTo. y%Emissivity         ) .AND. &
-         ALL(x%Reflectivity        .EqualTo. y%Reflectivity       ) .AND. &
-         ALL(x%Direct_Reflectivity .EqualTo. y%Direct_Reflectivity)       ) &
-      is_equal = .TRUE.
+    ! ...Scalars
+    IF ( .NOT. ((x%Compute               .EQV.   y%Compute            ) .AND. &
+                (x%Use_New_MWSSEM        .EQV.   y%Use_New_MWSSEM     ) .AND. &
+                (x%Azimuth_Angle       .EqualTo. y%Azimuth_Angle      ) .AND. &
+                (x%Transmittance       .EqualTo. y%Transmittance      ) .AND. &
+                (x%Index_Sat_Ang          ==     y%Index_Sat_Ang      ) .AND. &
+                (x%mth_Azi                ==     y%mth_Azi            ) .AND. &
+                (x%Surface_Temperature .EqualTo. y%Surface_Temperature)) ) RETURN
+    ! ...Arrays
+    IF ( CRTM_SfcOptics_Associated(x) .AND. CRTM_SfcOptics_Associated(y) ) THEN
+      IF ( .NOT. (ALL(x%Angle               .EqualTo. y%Angle              ) .AND. &
+                  ALL(x%Weight              .EqualTo. y%Weight             ) .AND. &
+                  ALL(x%Emissivity          .EqualTo. y%Emissivity         ) .AND. &
+                  ALL(x%Reflectivity        .EqualTo. y%Reflectivity       ) .AND. &
+                  ALL(x%Direct_Reflectivity .EqualTo. y%Direct_Reflectivity)) ) RETURN
+    END IF
+
+
+    ! If we get here, then...
+    is_equal = .TRUE.
 
   END FUNCTION CRTM_SfcOptics_Equal
+
+  
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SfcOptics_Add
+!
+! PURPOSE:
+!       Pure function to add two CRTM_SfcOptics objects.
+!       Used in OPERATOR(+) interface block.
+!
+! CALLING SEQUENCE:
+!       sosum = CRTM_SfcOptics_Add( so1, so2 )
+!
+!         or
+!
+!       sosum = so1 + so2
+!
+! INPUTS:
+!       so1, so2:      Two CRTM SfcOptics objects to be added.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SfcOptics_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sosum:         SfcOptics object containing the added components.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SfcOptics_type
+!                      DIMENSION:  Scalar
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SfcOptics_Add( so1, so2 ) RESULT( sosum )
+    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: so1, so2
+    TYPE(CRTM_SfcOptics_type) :: sosum
+
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_SfcOptics_Associated(so1)) .OR. &
+         (.NOT. CRTM_SfcOptics_Associated(so2))      ) RETURN
+
+    ! Check contents
+    ! ...Dimensions
+    IF ( (so1%n_Angles /= so2%n_Angles) .OR. &
+         (so1%n_Stokes /= so2%n_Stokes) ) RETURN
+
+    ! Copy the first structure
+    sosum = so1
+    
+    ! And add its components to the second one
+    ! ...The scalar values
+    sosum%Transmittance       = sosum%Transmittance       + so2%Transmittance
+    sosum%Surface_Temperature = sosum%Surface_Temperature + so2%Surface_Temperature
+    ! ...The arrays
+    sosum%Reflectivity        = sosum%Reflectivity        + so2%Reflectivity
+    sosum%Direct_Reflectivity = sosum%Direct_Reflectivity + so2%Direct_Reflectivity
+    sosum%Emissivity          = sosum%Emissivity          + so2%Emissivity    
+
+  END FUNCTION CRTM_SfcOptics_Add
+
+
+  
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_SfcOptics_Subtract
+!
+! PURPOSE:
+!       Pure function to subtract two CRTM_SfcOptics objects.
+!       Used in OPERATOR(-) interface block.
+!
+! CALLING SEQUENCE:
+!       sodiff = CRTM_SfcOptics_Subtract( so1, so2 )
+!
+!         or
+!
+!       sodiff = so1 - so2
+!
+! INPUTS:
+!       so1, so2:      Two CRTM SfcOptics objects to be subtracted.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SfcOptics_type
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       sodiff:        SfcOptics object containing the differenced components.
+!                      UNITS:      N/A
+!                      TYPE:       CRTM_SfcOptics_type
+!                      DIMENSION:  Scalar
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_SfcOptics_Subtract( so1, so2 ) RESULT( sodiff )
+    TYPE(CRTM_SfcOptics_type), INTENT(IN) :: so1, so2
+    TYPE(CRTM_SfcOptics_type) :: sodiff
+
+    ! Check the structure association status
+    IF ( (.NOT. CRTM_SfcOptics_Associated(so1)) .OR. &
+         (.NOT. CRTM_SfcOptics_Associated(so2))      ) RETURN
+
+    ! Check contents
+    ! ...Dimensions
+    IF ( (so1%n_Angles /= so2%n_Angles) .OR. &
+         (so1%n_Stokes /= so2%n_Stokes) ) RETURN
+
+    ! Copy the first structure
+    sodiff = so1
+    
+    ! And subtract the second one from it
+    ! ...The scalar values
+    sodiff%Transmittance       = sodiff%Transmittance       - so2%Transmittance
+    sodiff%Surface_Temperature = sodiff%Surface_Temperature - so2%Surface_Temperature
+    ! ...The arrays
+    sodiff%Reflectivity        = sodiff%Reflectivity        - so2%Reflectivity
+    sodiff%Direct_Reflectivity = sodiff%Direct_Reflectivity - so2%Direct_Reflectivity
+    sodiff%Emissivity          = sodiff%Emissivity          - so2%Emissivity    
+
+  END FUNCTION CRTM_SfcOptics_Subtract
 
 END MODULE CRTM_SfcOptics_Define

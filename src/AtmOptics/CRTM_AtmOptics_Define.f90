@@ -37,6 +37,7 @@ MODULE CRTM_AtmOptics_Define
   PUBLIC :: CRTM_AtmOptics_type
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Procedures
   PUBLIC :: CRTM_AtmOptics_Associated
@@ -59,6 +60,10 @@ MODULE CRTM_AtmOptics_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE CRTM_AtmOptics_Equal
   END INTERFACE OPERATOR(==)
+  
+  INTERFACE OPERATOR(+)
+    MODULE PROCEDURE CRTM_AtmOptics_Add
+  END INTERFACE OPERATOR(+)
 
   INTERFACE OPERATOR(-)
     MODULE PROCEDURE CRTM_AtmOptics_Subtract
@@ -83,7 +88,6 @@ MODULE CRTM_AtmOptics_Define
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
-  INTEGER,  PARAMETER :: SL =  80 ! String length
 
 
   ! ------------------------------
@@ -151,11 +155,9 @@ CONTAINS
 !
 ! FUNCTION RESULT:
 !       Status:     The return value is a logical value indicating the
-!                   status of the NLTE members.
-!                    .TRUE.  - if ANY of the AtmOptics allocatable members
-!                              are in use.
-!                    .FALSE. - if ALL of the AtmOptics allocatable members
-!                              are not in use.
+!                   status of the object components.
+!                     .TRUE.  - if the array components are allocated.
+!                     .FALSE. - if the array components are not allocated.
 !                   UNITS:      N/A
 !                   TYPE:       LOGICAL
 !                   DIMENSION:  Same as input
@@ -195,12 +197,6 @@ CONTAINS
   ELEMENTAL SUBROUTINE CRTM_AtmOptics_Destroy( self )
     TYPE(CRTM_AtmOptics_type), INTENT(OUT) :: self
     self%Is_Allocated = .FALSE.
-    self%n_Layers           = 0
-    self%n_Legendre_Terms   = 0
-    self%n_Phase_Elements   = 0
-    self%Max_Layers         = 0
-    self%Max_Legendre_Terms = 0
-    self%Max_Phase_Elements = 0
   END SUBROUTINE CRTM_AtmOptics_Destroy
 
 
@@ -236,14 +232,12 @@ CONTAINS
 !
 !       n_Legendre_Terms:   The number of Legendre polynomial terms for the
 !                           phase matrix.
-!                           Must be > 0
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Same as n_Layers input.
 !                           ATTRIBUTES: INTENT(IN)
 !
 !       n_Phase_Elements:   The number of phase elements for the phase matrix.
-!                           Must be > 0
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
 !                           DIMENSION:  Same as n_Layers input.
@@ -272,9 +266,7 @@ CONTAINS
     INTEGER :: alloc_stat
 
     ! Check input
-    IF ( n_Layers         < 1 .OR. &
-         n_Legendre_Terms < 1 .OR. &
-         n_Phase_Elements < 1 ) THEN
+    IF ( n_Layers < 1 ) THEN
       CALL CRTM_AtmOptics_Destroy( self )
       RETURN
     END IF
@@ -1410,13 +1402,13 @@ CONTAINS
   ELEMENTAL FUNCTION CRTM_AtmOptics_Equal( x, y ) RESULT( is_equal )
     TYPE(CRTM_AtmOptics_type), INTENT(IN) :: x, y
     LOGICAL :: is_equal
+    INTEGER :: k, ip, ic
 
     ! Set up
     is_equal = .FALSE.
 
     ! Check the object association status
-    IF ( (.NOT. CRTM_AtmOptics_Associated(x)) .OR. &
-         (.NOT. CRTM_AtmOptics_Associated(y))      ) RETURN
+    IF ( CRTM_AtmOptics_Associated(x) .NEQV. CRTM_AtmOptics_Associated(y) ) RETURN
 
     ! Check contents
     ! ...Release/version info
@@ -1425,19 +1417,94 @@ CONTAINS
     IF ( (x%n_Layers         /= y%n_Layers        ) .OR. &
          (x%n_Legendre_Terms /= y%n_Legendre_Terms) .OR. &
          (x%n_Phase_Elements /= y%n_Phase_Elements) ) RETURN
-    ! ...Scalar data
-    IF ( x%Scattering_Optical_Depth .EqualTo. y%Scattering_Optical_Depth ) &
+    ! ...Scalars
+    IF ( .NOT. (x%Scattering_Optical_Depth .EqualTo. y%Scattering_Optical_Depth) ) RETURN
+    ! ...Arrays
       is_equal = .TRUE.
     ! ...Array data
-    is_equal = is_equal .AND. &
-               ALL(x%Optical_Depth(1:x%n_Layers)         .EqualTo. y%Optical_Depth(1:y%n_Layers)        ) .AND. &
-               ALL(x%Single_Scatter_Albedo(1:x%n_Layers) .EqualTo. y%Single_Scatter_Albedo(1:y%n_Layers)) .AND. &
-               ALL(x%Asymmetry_Factor(1:x%n_Layers)      .EqualTo. y%Asymmetry_Factor(1:y%n_Layers)     ) .AND. &
-               ALL(x%Delta_Truncation(1:x%n_Layers)      .EqualTo. y%Delta_Truncation(1:y%n_Layers)     ) .AND. &
-               ALL(x%Phase_Coefficient(0:x%n_Legendre_Terms, 1:x%n_Phase_Elements, 1:x%n_Layers) .EqualTo. &
-                   y%Phase_Coefficient(0:y%n_Legendre_Terms, 1:y%n_Phase_Elements, 1:y%n_Layers) )
+    IF ( CRTM_AtmOptics_Associated(x) .AND. CRTM_AtmOptics_Associated(y) ) THEN
+      k  = x%n_Layers
+      ip = x%n_Phase_Elements
+      ic = x%n_Legendre_Terms
+      k = x%n_Layers
+      IF ( .NOT. (ALL(x%Optical_Depth(1:k)         .EqualTo. y%Optical_Depth(1:k)        ) .AND. &
+                  ALL(x%Single_Scatter_Albedo(1:k) .EqualTo. y%Single_Scatter_Albedo(1:k)) .AND. &
+                  ALL(x%Asymmetry_Factor(1:k)      .EqualTo. y%Asymmetry_Factor(1:k)     ) .AND. &
+                  ALL(x%Delta_Truncation(1:k)      .EqualTo. y%Delta_Truncation(1:k)     ) .AND. &
+                  ALL(x%Phase_Coefficient(0:ic, 1:ip, 1:k) .EqualTo. &
+                      y%Phase_Coefficient(0:ic, 1:ip, 1:k))) ) RETURN
+    END IF
+
+
+    ! If we get here, then...
+    is_equal = .TRUE.
 
   END FUNCTION CRTM_AtmOptics_Equal
+
+
+!--------------------------------------------------------------------------------
+!
+! NAME:
+!       CRTM_AtmOptics_Add
+!
+! PURPOSE:
+!       Pure function to add two CRTM AtmOptics objects.
+!       Used in OPERATOR(+) interface block.
+!
+! CALLING SEQUENCE:
+!       aosum = CRTM_AtmOptics_Add( ao1, ao2 )
+!
+!         or
+!
+!       aosum = ao1 + ao2
+!
+!
+! INPUTS:
+!       ao1, ao2: The AtmOptics objects to add.
+!                 UNITS:      N/A
+!                 TYPE:       CRTM_AtmOptics_type
+!                 DIMENSION:  Scalar
+!                 ATTRIBUTES: INTENT(IN OUT)
+!
+! RESULT:
+!       aosum:    AtmOptics object containing the added components.
+!                 UNITS:      N/A
+!                 TYPE:       CRTM_AtmOptics_type
+!                 DIMENSION:  Scalar
+!
+!--------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_AtmOptics_Add( ao1, ao2 ) RESULT( aosum )
+    TYPE(CRTM_AtmOptics_type), INTENT(IN) :: ao1, ao2
+    TYPE(CRTM_AtmOptics_type) :: aosum
+    INTEGER :: ic, ip, k
+
+    ! Check input
+    ! ...If input structures not allocated, do nothing
+    IF ( (.NOT. CRTM_AtmOptics_Associated(ao1)) .OR. &
+         (.NOT. CRTM_AtmOptics_Associated(ao2))      ) RETURN
+    ! ...If input structure for different sizes, do nothing
+    IF ( ao1%n_Layers         /= ao2%n_Layers         .OR. &
+         ao1%n_Legendre_Terms /= ao2%n_Legendre_Terms .OR. &
+         ao1%n_Phase_Elements /= ao2%n_Phase_Elements ) RETURN
+
+    ! Copy the first structure
+    aosum = ao1
+
+    ! And add its components to the second one
+    ! ...The scalar values
+    aosum%Scattering_Optical_Depth = aosum%Scattering_Optical_Depth + ao2%Scattering_Optical_Depth
+    ! ...The arrays
+    k  = aosum%n_Layers
+    ip = aosum%n_Phase_Elements
+    ic = aosum%n_Legendre_Terms
+    aosum%Optical_Depth(1:k)               = aosum%Optical_Depth(1:k)               + ao2%Optical_Depth(1:k)
+    aosum%Single_Scatter_Albedo(1:k)       = aosum%Single_Scatter_Albedo(1:k)       + ao2%Single_Scatter_Albedo(1:k)
+    aosum%Asymmetry_Factor(1:k)            = aosum%Asymmetry_Factor(1:k)            + ao2%Asymmetry_Factor(1:k)
+    aosum%Delta_Truncation(1:k)            = aosum%Delta_Truncation(1:k)            + ao2%Delta_Truncation(1:k)
+    aosum%Phase_Coefficient(0:ic,1:ip,1:k) = aosum%Phase_Coefficient(0:ic,1:ip,1:k) + ao2%Phase_Coefficient(0:ic,1:ip,1:k)
+
+  END FUNCTION CRTM_AtmOptics_Add
 
 
 !--------------------------------------------------------------------------------
@@ -1485,9 +1552,6 @@ CONTAINS
     IF ( ao1%n_Layers         /= ao2%n_Layers         .OR. &
          ao1%n_Legendre_Terms /= ao2%n_Legendre_Terms .OR. &
          ao1%n_Phase_Elements /= ao2%n_Phase_Elements ) RETURN
-    ! ...If input structure for different scattering setup, do nothing
-    IF ( (ao1%Include_Scattering .NEQV. ao2%Include_Scattering ) .AND. &
-         (ao1%lOffset             /=    ao2%lOffset            ) ) RETURN
 
     ! Copy the first structure
     aodiff = ao1

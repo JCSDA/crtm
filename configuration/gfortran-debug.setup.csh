@@ -4,6 +4,6 @@
 #-------------------------------------------------------------------------------#
 
 setenv FC "gfortran"
-setenv FCFLAGS "-fbounds-check -fimplicit-none -ffpe-trap=overflow,zero,invalid -ffree-form -fno-second-underscore -frecord-marker=4 -ggdb -Wall -Wconversion -std=f2003"
+setenv FCFLAGS "-fbounds-check -fimplicit-none -ffpe-trap=overflow,zero,invalid -ffree-form -fno-second-underscore -frecord-marker=4 -ggdb -Wall -Wconversion -std=f2008"
 setenv LDFLAGS ""
 setenv LIBS ""

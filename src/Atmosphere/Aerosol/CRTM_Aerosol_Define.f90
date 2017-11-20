@@ -54,6 +54,7 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: CRTM_Aerosol_type
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(/=)
   PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Procedures
@@ -81,6 +82,10 @@ MODULE CRTM_Aerosol_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE CRTM_Aerosol_Equal
   END INTERFACE OPERATOR(==)
+
+  INTERFACE OPERATOR(/=)
+    MODULE PROCEDURE CRTM_Aerosol_NotEqual
+  END INTERFACE OPERATOR(/=)
 
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Aerosol_Add
@@ -196,7 +201,8 @@ CONTAINS
     CHARACTER(ML) :: alloc_msg, msg
     INTEGER :: alloc_stat
     err_stat = SUCCESS
-    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+   !ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
       msg = 'Aerosol category list result not allocated -'//TRIM(alloc_msg)
@@ -700,19 +706,20 @@ CONTAINS
       n = DEFAULT_N_SIGFIG
     END IF
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Aerosol_Associated(x)) .OR. &
-         (.NOT. CRTM_Aerosol_Associated(y)) ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Aerosol_Associated(x) .NEQV. CRTM_Aerosol_Associated(y) ) RETURN
 
-    ! Check scalars
+    ! Check contents
+    ! ...Dimensions and scalars
     IF ( (x%n_Layers /= y%n_Layers) .OR. &
          (x%Type     /= y%Type    ) ) RETURN
-
-    ! Check arrays
-    IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius,y%Effective_Radius,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Concentration   ,y%Concentration   ,n))) ) RETURN
-
-    ! If we get here, the structures are comparable
+    ! ...Arrays
+    IF ( CRTM_Aerosol_Associated(x) .AND. CRTM_Aerosol_Associated(y) ) THEN
+      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius,y%Effective_Radius,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Concentration   ,y%Concentration   ,n))) ) RETURN
+    END IF
+    
+    ! If we get here, the objects are comparable
     is_comparable = .TRUE.
 
   END FUNCTION CRTM_Aerosol_Compare
@@ -1295,20 +1302,65 @@ CONTAINS
     ! Set up
     is_equal = .FALSE.
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Aerosol_Associated(x)) .OR. &
-         (.NOT. CRTM_Aerosol_Associated(y))      ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Aerosol_Associated(x) .NEQV. CRTM_Aerosol_Associated(y) ) RETURN
 
     ! Check contents
     ! ...Scalars
     IF ( (x%n_Layers /= y%n_Layers) .OR. (x%Type /= y%Type) ) RETURN
     ! ...Arrays
-    n = x%n_Layers
-    IF ( ALL(x%Effective_Radius(1:n) .EqualTo. y%Effective_Radius(1:n) ) .AND. &
-         ALL(x%Concentration(1:n)    .EqualTo. y%Concentration(1:n)    )       ) &
-      is_equal = .TRUE.
+    IF ( CRTM_Aerosol_Associated(x) .AND. CRTM_Aerosol_Associated(y) ) THEN
+      n = x%n_Layers
+      IF ( .NOT. (ALL(x%Effective_Radius(1:n) .EqualTo. y%Effective_Radius(1:n) ) .AND. &
+                  ALL(x%Concentration(1:n)    .EqualTo. y%Concentration(1:n)    )) ) RETURN
+    END IF
+
+    ! If we get here, then...
+    is_equal = .TRUE.
 
   END FUNCTION CRTM_Aerosol_Equal
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!   CRTM_Aerosol_NotEqual
+!
+! PURPOSE:
+!   Elemental function to test the inequality of two CRTM Aerosol objects.
+!   Used in OPERATOR(/=) interface block.
+!
+!   This function is syntactic sugar.
+!
+! CALLING SEQUENCE:
+!   not_equal = CRTM_Aerosol_NotEqual( x, y )
+!
+!     or
+!
+!   IF ( x /= y ) THEN
+!     ...
+!   END IF
+!
+! OBJECTS:
+!   x, y:          Two CRTM Aerosol objects to be compared.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Aerosol_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!   not_equal:     Logical value indicating whether the inputs are not equal.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Aerosol_NotEqual( x, y ) RESULT( not_equal )
+    TYPE(CRTM_Aerosol_type), INTENT(IN) :: x, y
+    LOGICAL :: not_equal
+    not_equal = .NOT. (x == y)
+  END FUNCTION CRTM_Aerosol_NotEqual
 
 
 !--------------------------------------------------------------------------------

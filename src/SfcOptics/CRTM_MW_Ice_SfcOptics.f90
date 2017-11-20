@@ -39,7 +39,7 @@ MODULE CRTM_MW_Ice_SfcOptics
                                           WMO_MSU  , &
                                           WMO_MHS  , &
                                           WMO_SSMIS, &
-					  WMO_ATMS					
+                                          WMO_ATMS
   USE NESDIS_AMSU_SICEEM_Module,    ONLY: NESDIS_ICEEM_AMSU
   USE NESDIS_AMSRE_SICEEM_Module,   ONLY: NESDIS_AMSRE_SSICEEM
   USE NESDIS_SSMI_SICEEM_Module,    ONLY: NESDIS_SSMI_SIceEM

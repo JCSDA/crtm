@@ -103,17 +103,20 @@ PRO Atmosphere::ReadRecord, $
   pressure       = DBLARR(n_layers)
   temperature    = DBLARR(n_layers)
   absorber       = DBLARR(n_layers, n_absorbers)
+  cloud_fraction = DBLARR(n_layers)
   READU, fid, $
     level_pressure, $
     pressure      , $
     temperature   , $
-    absorber
+    absorber      , $
+    cloud_fraction
   self->Atmosphere::Set_Property, $
     Debug           = debug         , $
     Level_Pressure  = level_pressure, $
     Pressure        = pressure      , $
     Temperature     = temperature   , $
-    Absorber_Amount = absorber
+    Absorber_Amount = absorber      , $
+    CFraction       = cloud_fraction
 
 
   ; Read the cloud data

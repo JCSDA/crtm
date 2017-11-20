@@ -18,6 +18,7 @@ PRO Atmosphere__Define
            Pressure       : OBJ_NEW(), $
            Temperature    : OBJ_NEW(), $
            Absorber       : OBJ_NEW(), $
+           CFraction      : OBJ_NEW(), $
            Cloud          : OBJ_NEW(), $
            Aerosol        : OBJ_NEW(), $
            INHERITS IDL_Object  }

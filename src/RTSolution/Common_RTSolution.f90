@@ -238,6 +238,8 @@ CONTAINS
       ! Assign only the optical depth profile
       ! defined by the user input layering
       RTSolution%Layer_Optical_Depth(1:no) = AtmOptics%Optical_Depth(na+1:nt)
+      RTSolution%Single_Scatter_Albedo(1:no) = AtmOptics%Single_Scatter_Albedo(na+1:nt)
+      RTSolution%SSA_Max = MAXVAL(AtmOptics%Single_Scatter_Albedo)      
     END IF
     ! Required SpcCoeff components
     RTV%Cosmic_Background_Radiance = SC(SensorIndex)%Cosmic_Background_Radiance(ChannelIndex)

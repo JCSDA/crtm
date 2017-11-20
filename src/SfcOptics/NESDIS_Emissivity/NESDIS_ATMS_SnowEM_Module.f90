@@ -881,18 +881,18 @@ CONTAINS
      REAL(fp)    :: em_vector(:),emissivity,frequency,ed0(nwch),discriminator(5)
      INTEGER :: snow_type,i,k,ich,nvalid_ch
      REAL(fp)  :: coe(50)
-
+     SAVE coe
 
    ! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5
-     DATA (coe(k),k=1,5)/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
-          3.717131e-004_fp, -4.364877e-006_fp/
+     coe(1:5) = (/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
+          3.717131e-004_fp, -4.364877e-006_fp/)
    ! Fitting Coefficients at 89 GHz: Using Tb4, Tb5
-     DATA (coe(k),k=11,15)/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
-          9.793681e-003_fp, -3.137189e-005_fp/
+     coe(11:15) = (/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
+          9.793681e-003_fp, -3.137189e-005_fp/)
    ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
-     DATA (coe(k),k=21,25)/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
-          1.413038e-002_fp,-3.133239e-005_fp/
-     SAVE coe
+     coe(21:25) = (/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
+          1.413038e-002_fp,-3.133239e-005_fp/)
+!    SAVE coe
 
    ! Calculate emissivity discriminators at five ATMS window channels
      DO ich = 1, nwch
@@ -991,22 +991,22 @@ CONTAINS
      LOGICAL:: pick_status,tindex(nind)
      SAVE      threshold,DI_coe,LI_coe, HI_coe,nmodel
 
-     DATA  nmodel/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/
+     nmodel = (/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/)
 
    ! Fitting coefficients for emissivity index at 31.4 GHz
-     DATA  LI_coe/ &
+     LI_coe = (/ &
           7.963632e-001_fp,  7.215580e-003_fp,  &
          -2.015921e-005_fp, -1.508286e-003_fp,  &
-          1.731405e-005_fp, -4.105358e-003_fp/
+          1.731405e-005_fp, -4.105358e-003_fp/)
 
    ! Fitting coefficients for emissivity index at 150 GHz
-     DATA  HI_coe/ &
+     HI_coe = (/ &
           1.012160e+000_fp,  6.100397e-003_fp, &
          -1.774347e-005_fp, -4.028211e-003_fp, &
           1.224470e-005_fp,  2.345612e-003_fp, &
          -5.376814e-006_fp, -2.795332e-003_fp, &
           8.072756e-006_fp,  3.529615e-003_fp, &
-          1.955293e-006_fp, -4.942230e-003_fp/
+          1.955293e-006_fp, -4.942230e-003_fp/)
 
    ! Fitting coefficients for five discriminators
      DI_coe(1,0:ncoe-1)=(/  3.285557e-002_fp, 2.677179e-005_fp,  &
@@ -1462,7 +1462,7 @@ CONTAINS
      INTEGER snow_type,ich
      REAL(fp)   freq_3w(nw_ind),esh_3w(nw_ind),esv_3w(nw_ind)
      COMPLEX(fp)  eair
-     DATA   freq_3w/31.4_fp,89.0_fp,150.0_fp/
+     freq_3w = (/31.4_fp,89.0_fp,150.0_fp/)
 
      eair = cmplx(one,-zero,fp)
 

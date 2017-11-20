@@ -38,7 +38,7 @@ PRO Atmosphere::Plot, $
   create_window = KEYWORD_SET(owin) ? ~ ISA(owin,'GraphicsWin') : 1
   ; ...The graphic layout, col x row.
   n_col = 2
-  n_row = CEIL(DOUBLE(n_absorbers+1)/n_col)
+  n_row = CEIL(DOUBLE(n_absorbers+2)/n_col)
   
 
   ; Check difference input keyword separately (coz it's unwieldy)
@@ -105,6 +105,33 @@ PRO Atmosphere::Plot, $
     CURRENT = owin )
     
   
+  ; Display the cloud fraction data
+  ; ...Extract the data
+  self->Get_Property, CFraction = x, Debug = debug
+  ; ...Process the difference data
+  IF ( plot_difference ) THEN BEGIN
+    ; Extract and difference the data
+    diff_input->Get_Property, CFraction = x2, Debug = debug
+    x  = x - x2
+  ENDIF
+  ; ...Create scaled x-data for pretty plotting
+  axis_scale, [MIN(x),MAX(x)], 'Cloud fraction', xscale, xtitle
+  x = x * xscale
+  ; ...Plot the cloud fraction
+  index++
+  pcf = PLOT( $
+    x, y, $
+    TITLE  = 'Cloud fraction profile', $
+    XTITLE = xtitle, $
+    YTITLE = 'Pressure (hPa)', $
+    YRANGE = yrange, $
+    YLOG = ylog, $
+    YTICKFORMAT = 'logticks', $
+    COLOR = 'red', $
+    LAYOUT = [ n_col, n_row, index ], $
+    CURRENT = owin )
+
+    
   ; Display the absorber data
   ; ...Extract the data
   self->Get_Property, Absorber_Amount = x, Debug = debug

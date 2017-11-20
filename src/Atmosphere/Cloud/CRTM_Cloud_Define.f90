@@ -53,6 +53,7 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: CRTM_Cloud_type
   ! Operators
   PUBLIC :: OPERATOR(==)
+  PUBLIC :: OPERATOR(/=)
   PUBLIC :: OPERATOR(+)
   PUBLIC :: OPERATOR(-)
   ! Procedures
@@ -80,6 +81,10 @@ MODULE CRTM_Cloud_Define
   INTERFACE OPERATOR(==)
     MODULE PROCEDURE CRTM_Cloud_Equal
   END INTERFACE OPERATOR(==)
+
+  INTERFACE OPERATOR(/=)
+    MODULE PROCEDURE CRTM_Cloud_NotEqual
+  END INTERFACE OPERATOR(/=)
 
   INTERFACE OPERATOR(+)
     MODULE PROCEDURE CRTM_Cloud_Add
@@ -190,7 +195,8 @@ CONTAINS
     CHARACTER(ML) :: alloc_msg, msg
     INTEGER :: alloc_stat
     err_stat = SUCCESS
-    ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+   !ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
+    ALLOCATE( list(0:N_VALID_CLOUD_CATEGORIES), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
       msg = 'Cloud category list result not allocated -'//TRIM(alloc_msg)
@@ -702,20 +708,21 @@ CONTAINS
       n = DEFAULT_N_SIGFIG
     END IF
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Cloud_Associated(x)) .OR. &
-         (.NOT. CRTM_Cloud_Associated(y)) ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Cloud_Associated(x) .NEQV. CRTM_Cloud_Associated(y) ) RETURN
 
-    ! Check scalars
+    ! Check contents
+    ! ...Scalars
     IF ( (x%n_Layers /= y%n_Layers) .OR. &
          (x%Type     /= y%Type    ) ) RETURN
+    ! ...Arrays
+    IF ( CRTM_Cloud_Associated(x) .AND. CRTM_Cloud_Associated(y) ) THEN
+      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius  ,y%Effective_Radius  ,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n))) ) RETURN
+    END IF
 
-    ! Check arrays
-    IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius  ,y%Effective_Radius  ,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
-         (.NOT. ALL(Compares_Within_Tolerance(x%Water_Content     ,y%Water_Content     ,n))) ) RETURN
-
-    ! If we get here, the structures are comparable
+    ! If we get here, the objects are comparable
     is_comparable = .TRUE.
 
   END FUNCTION CRTM_Cloud_Compare
@@ -1018,7 +1025,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Allocate the return structure array
-    ALLOCATE(Cloud(nc), STAT=alloc_stat, ERRMSG=alloc_msg)
+   !ALLOCATE(Cloud(nc), STAT=alloc_stat, ERRMSG=alloc_msg)
+    ALLOCATE(Cloud(nc), STAT=alloc_stat)
     IF ( alloc_stat /= 0 ) THEN
       msg = 'Error allocating Cloud array - '//TRIM(alloc_msg)
       CALL Read_Cleanup(); RETURN
@@ -1064,7 +1072,8 @@ CONTAINS
           msg = TRIM(msg)//'; Error closing input file during error cleanup - '//TRIM(io_msg)
       END IF
       IF ( ALLOCATED(Cloud) ) THEN 
-        DEALLOCATE(Cloud, STAT=alloc_stat, ERRMSG=alloc_msg)
+       !DEALLOCATE(Cloud, STAT=alloc_stat, ERRMSG=alloc_msg)
+        DEALLOCATE(Cloud, STAT=alloc_stat)
         IF ( alloc_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deallocating Cloud array during error cleanup - '//&
                 TRIM(alloc_msg)
@@ -1306,21 +1315,66 @@ CONTAINS
     ! Set up
     is_equal = .FALSE.
 
-    ! Check the structure association status
-    IF ( (.NOT. CRTM_Cloud_Associated(x)) .OR. &
-         (.NOT. CRTM_Cloud_Associated(y))      ) RETURN
+    ! Check the object association status
+    IF ( CRTM_Cloud_Associated(x) .NEQV. CRTM_Cloud_Associated(y) ) RETURN
 
     ! Check contents
     ! ...Scalars
     IF ( (x%n_Layers /= y%n_Layers) .OR. (x%Type /= y%Type) ) RETURN
     ! ...Arrays
-    n = x%n_Layers
-    IF ( ALL(x%Effective_Radius(1:n)   .EqualTo. y%Effective_Radius(1:n)  ) .AND. &
-         ALL(x%Effective_Variance(1:n) .EqualTo. y%Effective_Variance(1:n)) .AND. &
-         ALL(x%Water_Content(1:n)      .EqualTo. y%Water_Content(1:n)     )       ) &
-      is_equal = .TRUE.
+    IF ( CRTM_Cloud_Associated(x) .AND. CRTM_Cloud_Associated(y) ) THEN
+      n = x%n_Layers
+      IF ( .NOT. (ALL(x%Effective_Radius(1:n)   .EqualTo. y%Effective_Radius(1:n)  ) .AND. &
+                  ALL(x%Effective_Variance(1:n) .EqualTo. y%Effective_Variance(1:n)) .AND. &
+                  ALL(x%Water_Content(1:n)      .EqualTo. y%Water_Content(1:n)     )) ) RETURN
+    END IF
+    
+    ! If we get here, then...
+    is_equal = .TRUE.
 
   END FUNCTION CRTM_Cloud_Equal
+
+
+!------------------------------------------------------------------------------
+!
+! NAME:
+!   CRTM_Cloud_NotEqual
+!
+! PURPOSE:
+!   Elemental function to test the inequality of two CRTM Cloud objects.
+!   Used in OPERATOR(/=) interface block.
+!
+!   This function is syntactic sugar.
+!
+! CALLING SEQUENCE:
+!   not_equal = CRTM_Cloud_NotEqual( x, y )
+!
+!     or
+!
+!   IF ( x /= y ) THEN
+!     ...
+!   END IF
+!
+! OBJECTS:
+!   x, y:          Two CRTM Cloud objects to be compared.
+!                  UNITS:      N/A
+!                  TYPE:       CRTM_Cloud_type
+!                  DIMENSION:  Scalar or any rank
+!                  ATTRIBUTES: INTENT(IN)
+!
+! FUNCTION RESULT:
+!   not_equal:     Logical value indicating whether the inputs are not equal.
+!                  UNITS:      N/A
+!                  TYPE:       LOGICAL
+!                  DIMENSION:  Same as inputs.
+!
+!------------------------------------------------------------------------------
+
+  ELEMENTAL FUNCTION CRTM_Cloud_NotEqual( x, y ) RESULT( not_equal )
+    TYPE(CRTM_Cloud_type), INTENT(IN) :: x, y
+    LOGICAL :: not_equal
+    not_equal = .NOT. (x == y)
+  END FUNCTION CRTM_Cloud_NotEqual
 
 
 !--------------------------------------------------------------------------------
