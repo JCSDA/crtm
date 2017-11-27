@@ -15,22 +15,22 @@ v2.3.0 - released November 21, 2017
      7. Updates of CRTM antenna correction coefficients for MHS_N19/Metop-a.
      8. Update AIRS coefficients for including NLTE correction.
      9. Add new coefficients for: CrIS-fsrB1/B2/B3_NPP, CrIS*_N20, CrIS-fsr431_npp/n20,
-        AHI_Himawari-9, ABI_G16, VIIRS-JPSS1, ATMS_N20, ATMS_N20-SRF, COWVR. 
+        AHI_Himawari-9, ABI_G16, VIIRS-JPSS1, ATMS_N20, ATMS_N20-SRF, COWVR, tropics_designed_v1. 
 
  * Made structure change and bug fix:
      1. Bug fix for the function CRTM_Compute_SfcOptics_AD in CRTM_SfcOptics.f90
      2. Change CRTM_MW_Water_SfcOptics.f90  interface variable dimension.
      3. Remove the channel number in the “all channels” included CRTM coefficient files, 
         e.g. “cris1305_npp” would become simple “cris_npp”.
-     4. Remove “ERRMSG” option in the [DE]ALLOCATE functions to fix an error when using 
+     4. Remove “ERRMSG” option in the [DE]ALLOCATE functions to fix an error when using
         gfortran compiler.
      5. Change “Data Statement” to “Array Assignment” in 6 Surface Emissivity modules 
         to fix a compile failure when using -e08 in ifort/16.0.+.
      6. Add CloudFraction test in check_crtm.fpp.
 
- * In this release, there is a new feature for the simulation of all-sky (cloudy) 
+ * In this release, there is a new feature for the simulation of all-sky (cloudy)
    radiance, which utilizes Fortran class function, and now CRTM will support the
-   new compiler with class function, like ifort version (14.0+, 15.0+, 16.0+),
+   new compiler with class function, such as ifort version (14.0+, 15.0+, 16.0+),
    gfortran version (gcc 4.8.5, 4.9, 5.4, 6.4, 7.2), pgi/17.3, ftn/2.3.0.
 
  * Compute resource information
