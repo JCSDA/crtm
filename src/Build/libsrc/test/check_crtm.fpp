@@ -208,8 +208,10 @@ PROGRAM check_crtm
     END DO
 
     ! The true fractional cloud fraction cases
-    atm(3:4) = atm(1:2)
-    sfc(3:4) = sfc(1:2)
+    atm(3) = atm(1)
+    atm(4) = atm(2)
+    sfc(3) = sfc(1)
+    sfc(4) = sfc(2)
     DO m = 3, 4
       DO nc = 1, atm(m)%n_Clouds
         WHERE(atm(m)%Cloud(nc)%Water_Content > ZERO) atm(m)%Cloud_Fraction = 0.1426_fp
