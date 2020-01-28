@@ -1,7 +1,7 @@
 LBLRTM I/O library v0.1.0 Build Instructions
 ============================================
 
-$Revision$
+$Revision: 35194 $
 
 
 CRTM SUPPORT EMAIL: ncep.list.emc.jcsda_crtm.support@noaa.gov
@@ -41,6 +41,9 @@ configure script.
 You run the configuration script like so:
 
   $ ./configure --prefix=<install directory>
+
+This command ASSUMES that the env. var. $NETCDF_DIR has been set to the location where 
+netcdf-fortran and netcdf-c libraries are installed.
 
 The --prefix switch sets the installation directory and defaults to /usr/local so
 make sure you set it to a directory in which you have write access.
