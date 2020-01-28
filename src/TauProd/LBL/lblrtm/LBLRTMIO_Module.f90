@@ -42,7 +42,7 @@ MODULE LBLRTMIO_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: LBLRTMIO_Module.f90 42407 2014-07-01 18:42:53Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PRIVATE, PARAMETER :: LBLRTMIO_VERSION_ID = &
   'v1.0.0'
 

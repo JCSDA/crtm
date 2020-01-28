@@ -59,7 +59,7 @@ MODULE LBLRTM_Fhdr_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: LBLRTM_Fhdr_Define.f90 37070 2014-02-21 14:23:37Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

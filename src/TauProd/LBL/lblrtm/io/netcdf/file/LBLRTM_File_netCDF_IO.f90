@@ -48,7 +48,7 @@ MODULE LBLRTM_File_netCDF_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: LBLRTM_File_netCDF_IO.f90 42420 2014-07-01 20:12:31Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
