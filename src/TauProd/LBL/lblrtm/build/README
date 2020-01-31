@@ -42,8 +42,18 @@ You run the configuration script like so:
 
   $ ./configure --prefix=<install directory>
 
+JR start
 This command ASSUMES that the env. var. $NETCDF_DIR has been set to the location where 
 netcdf-fortran and netcdf-c libraries are installed.
+
+Also IMPORTANT: The default build is configured assuming the calling application uses
+8-byte reals and 4-byte integers. That is the current status of apps under CRTM_coef.
+BUT, "make check" will fail here after a successful library build, presumably due to
+an input dataset built with 8-byte reals and 8-byte integers. If you want "make check"
+to succeed, just change configure.ac appropriately for 8-byte reals and 8-byte integers.
+Settings for both -DINT_SIZE and compiler flags (e.g. -fdefault-integer-8) will need to
+be set before running "autoreconf -i".
+JR end
 
 The --prefix switch sets the installation directory and defaults to /usr/local so
 make sure you set it to a directory in which you have write access.
