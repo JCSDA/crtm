@@ -16,8 +16,8 @@ installdir = $(prefix)/$(distdir)
 
 # Tool-specific substitution variables
 FC       = gfortran
-FCFLAGS  = -fdefault-real-8 -fdefault-integer-8 -g -O2 -ffree-form -I/usr/include -c
-FPPFLAGS = -DREAL_SIZE=8 -DINT_SIZE=8
+FCFLAGS  = -fdefault-real-8 -g -O2 -ffree-form -I/usr/include -c
+FPPFLAGS = -DREAL_SIZE=8 -DINT_SIZE=4
 LDFLAGS  =  -L/usr/lib
 LIBS     =  -lnetcdff
 AR       = ar

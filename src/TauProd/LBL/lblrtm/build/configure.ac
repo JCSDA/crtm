@@ -44,11 +44,14 @@ AC_ARG_ENABLE([single],
 # Set the default type promotion compiler flags for the double case
 if test "x$enable_single" = "xno"; then
   file_type="double"
-  FPPFLAGS="-DREAL_SIZE=8 -DINT_SIZE=8"
+#JR REAL_SIZE=8, INT_SIZE=4 required in order for apps under CRTM_coef to build w/o error
+#JR REAL_SIZE=8, INT_SIZE=8 required in order for "make check" to succeed
+#JR Mods to FCFLAGS below MUST match FPPFLAGS settings
+  FPPFLAGS="-DREAL_SIZE=8 -DINT_SIZE=4"
   case $FC in
-    gfortran)    FCFLAGS="-fdefault-real-8 -fdefault-integer-8 $FCFLAGS";;
-    ifort|pgf95) FCFLAGS="-r8 -i8 $FCFLAGS";;
-    xlf2003)     FCFLAGS="-qrealsize=8 -qintsize=8 $FCFLAGS";;
+    gfortran)    FCFLAGS="-fdefault-real-8 $FCFLAGS";;
+    ifort|pgf95) FCFLAGS="-r8 -i4 $FCFLAGS";;
+    xlf2003)     FCFLAGS="-qrealsize=8 -qintsize=4 $FCFLAGS";;
     *) AC_MSG_ERROR([float and integer promotion flags for $FC unknown and not set]);;
   esac
 else
