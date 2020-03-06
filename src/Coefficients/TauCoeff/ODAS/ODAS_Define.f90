@@ -67,9 +67,6 @@ MODULE ODAS_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! ODAS invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(Double), PARAMETER :: FP_INVALID = -1.0_Double
@@ -354,7 +351,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Reinitialise the dimensions
     ODAS%n_Predictors = 0
@@ -545,7 +542,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check dimension input
     IF ( n_Predictors < 1 .OR. &
@@ -710,7 +707,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. Associated_ODAS( ODAS_In ) ) THEN
@@ -889,7 +886,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Default precision is a single unit in last place
     ULP = 1
@@ -1075,8 +1072,8 @@ CONTAINS
                                     ODAS_RHS%Alpha(i,j), &
                                     ULP = ULP                  ) ) ) THEN
           Error_Status = FAILURE
-          WRITE( Message,'("Alpha values are different, ",es13.6,&
-                          &" vs. ",es13.6,", for alpha index # ",i0,&
+          WRITE( Message,'("Alpha values are different, ",es22.15,&
+                          &" vs. ",es22.15,", for alpha index # ",i0,&
                           &" and absorber index #",i0 )' ) &
                           ODAS_LHS%Alpha(i,j), &
                           ODAS_RHS%Alpha(i,j), &
@@ -1237,7 +1234,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
 
     ! Check the release
@@ -1338,7 +1335,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = "unknown"
 
 
     ! Check the algorithm ID
@@ -1407,7 +1404,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Write the required data to the local string
     ! -------------------------------------------

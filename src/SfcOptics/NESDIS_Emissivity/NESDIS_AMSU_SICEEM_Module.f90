@@ -37,9 +37,6 @@ MODULE NESDIS_AMSU_SICEEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS
@@ -337,7 +334,7 @@ subroutine AMSU_IATs(frequency,tba,ts,em_vector)
   integer,parameter:: nch =10,nwch = 5,ncoe = 4
   real(fp)    :: tba(*)
   real(fp)    :: em_vector(*),emissivity,ts,frequency,discriminator(nwch)
-  integer :: k,ich
+  integer     :: ich
   real(fp)    :: coe(100)
 
   save coe
@@ -419,7 +416,7 @@ subroutine AMSU_IBTs(theta,frequency,tbb,ts,em_vector)
   integer,parameter:: nch =10,nwch = 5,ncoe = 6
   real(fp)    :: tbb(*),theta
   real(fp)    :: em_vector(*),emissivity,ts,frequency,discriminator(nwch)
-  integer :: i,k,ich,nvalid_ch
+  integer     :: i,ich,nvalid_ch
   real(fp)    :: coe(nch*(ncoe+1))
 
   save coe

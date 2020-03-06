@@ -41,9 +41,6 @@ MODULE NESDIS_SSMI_SnowEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS
@@ -320,7 +317,7 @@ subroutine SSMI_SnowEM_CORE(frequency,Ts,tv,th,em_vector)
 
   integer,parameter :: ntype = 3, nv=4, nh=3,ncoev=5,ncoeh=4
 
-  integer :: ich,k,lp,nch
+  integer :: ich,lp,nch
 
   real(fp), parameter, dimension(nv) ::   &
 

@@ -44,7 +44,6 @@ MODULE MWwaterLUT_Define
   PUBLIC :: MWwaterLUT_Inspect
   PUBLIC :: MWwaterLUT_ValidRelease
   PUBLIC :: MWwaterLUT_Info
-  PUBLIC :: MWwaterLUT_DefineVersion
   PUBLIC :: MWwaterLUT_InquireFile
   PUBLIC :: MWwaterLUT_ReadFile
   PUBLIC :: MWwaterLUT_WriteFile
@@ -61,8 +60,6 @@ MODULE MWwaterLUT_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: MWWATERLUT_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: MWWATERLUT_VERSION = 1  ! This is just the default data version.
@@ -341,13 +338,13 @@ CONTAINS
     IF ( .NOT. MWwaterLUT_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Angle :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Angle
+    WRITE(*,'(5(1x,es22.15,:))') self%Angle
     WRITE(*,'(3x,"Frequency :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Frequency
+    WRITE(*,'(5(1x,es22.15,:))') self%Frequency
     WRITE(*,'(3x,"Temperature :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Temperature
+    WRITE(*,'(5(1x,es22.15,:))') self%Temperature
     WRITE(*,'(3x,"Wind_Speed :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Wind_Speed
+    WRITE(*,'(5(1x,es22.15,:))') self%Wind_Speed
 
     ! Emissivity arrays
     WRITE(*,'(/3x,"Emissivity(vertical polarisation) :")')
@@ -357,12 +354,12 @@ CONTAINS
     END IF
 
     DO i4 = 1, self%n_Wind_Speeds
-      WRITE(*,'(5x,"WIND_SPEED  :",es13.6)') self%Wind_Speed(i4)
+      WRITE(*,'(5x,"WIND_SPEED  :",es22.15)') self%Wind_Speed(i4)
       DO i3 = 1, self%n_Temperatures
-        WRITE(*,'(5x,"TEMPERATURE :",es13.6)') self%Temperature(i3)
+        WRITE(*,'(5x,"TEMPERATURE :",es22.15)') self%Temperature(i3)
         DO i2 = 1, self%n_Frequencies
-          WRITE(*,'(5x,"FREQUENCY   :",es13.6)') self%Frequency(i2)
-          WRITE(*,'(5(1x,es13.6,:))') self%ev(:,i2,i3,i4)
+          WRITE(*,'(5x,"FREQUENCY   :",es22.15)') self%Frequency(i2)
+          WRITE(*,'(5(1x,es22.15,:))') self%ev(:,i2,i3,i4)
         END DO
       END DO
     END DO
@@ -374,12 +371,12 @@ CONTAINS
     END IF
 
     DO i4 = 1, self%n_Wind_Speeds
-      WRITE(*,'(5x,"WIND_SPEED  :",es13.6)') self%Wind_Speed(i4)
+      WRITE(*,'(5x,"WIND_SPEED  :",es22.15)') self%Wind_Speed(i4)
       DO i3 = 1, self%n_Temperatures
-        WRITE(*,'(5x,"TEMPERATURE :",es13.6)') self%Temperature(i3)
+        WRITE(*,'(5x,"TEMPERATURE :",es22.15)') self%Temperature(i3)
         DO i2 = 1, self%n_Frequencies
-          WRITE(*,'(5x,"FREQUENCY   :",es13.6)') self%Frequency(i2)
-          WRITE(*,'(5(1x,es13.6,:))') self%eh(:,i2,i3,i4)
+          WRITE(*,'(5x,"FREQUENCY   :",es22.15)') self%Frequency(i2)
+          WRITE(*,'(5(1x,es22.15,:))') self%eh(:,i2,i3,i4)
         END DO
       END DO
     END DO
@@ -513,35 +510,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE MWwaterLUT_Info
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       MWwaterLUT_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL MWwaterLUT_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE MWwaterLUT_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE MWwaterLUT_DefineVersion
 
 
 !------------------------------------------------------------------------------
@@ -1219,7 +1187,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

@@ -38,9 +38,6 @@ MODULE NESDIS_AMSU_SnowEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS
@@ -477,6 +474,8 @@ subroutine em_initialization(frequency,em_vector)
   real(fp)    :: kratio, bconst,emissivity
   integer :: ich
 
+  ! Silence gfortran complaints about maybe-used-uninit by init to huge()
+  emissivity = huge(emissivity)
 ! Sixteen candidate snow emissivity spectra
 
   em(1, 1: N_FREQUENCY) = WET_SNOW_EMISS(1:N_FREQUENCY)
@@ -1165,7 +1164,7 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
   integer,parameter:: nch =10,nwch = 5,ncoe = 10
   real(fp)    :: tb(*),frequency
   real(fp)    :: em_vector(*),emissivity,discriminator(nwch)
-  integer :: i,snow_type,k,ich,nvalid_ch
+  integer :: i,snow_type,ich,nvalid_ch
   real(fp)  :: coe(nwch*(ncoe+1))
 
   save coe
@@ -1278,7 +1277,7 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
   integer,parameter:: nch =10,nwch = 5,ncoe = 9
   real(fp)    :: tba(*)
   real(fp)    :: em_vector(*),emissivity,ts,frequency,discriminator(nwch)
-  integer :: snow_type,i,k,ich,nvalid_ch
+  integer :: snow_type,i,ich,nvalid_ch
   real(fp)  :: coe(nch*(ncoe+1))
 
   save coe
@@ -1388,7 +1387,7 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
   integer,parameter:: nch =10,nwch = 5,ncoe = 8
   real(fp)    :: tba(*)
   real(fp)    :: em_vector(*),emissivity,frequency,discriminator(nwch)
-  integer :: snow_type,i,k,ich,nvalid_ch
+  integer :: snow_type,i,ich,nvalid_ch
   real(fp)  :: coe(50)
   save coe
 
@@ -1502,7 +1501,7 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
   integer,parameter:: nch =10,nwch = 3,ncoe = 5
   real(fp)    :: tbb(*)
   real(fp)    :: em_vector(*),emissivity,ts,frequency,ed0(nwch),discriminator(5)
-  integer :: snow_type,i,k,ich,nvalid_ch
+  integer :: snow_type,i,ich,nvalid_ch
   real(fp)  :: coe(nch*(ncoe+1))
   save coe
 
@@ -1592,7 +1591,7 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
   integer,parameter:: nch =10,nwch = 3,ncoe = 4
   real(fp)    :: tbb(*)
   real(fp)    :: em_vector(*),emissivity,frequency,ed0(nwch),discriminator(5)
-  integer :: snow_type,i,k,ich,nvalid_ch
+  integer :: snow_type,i,ich,nvalid_ch
   real(fp)  :: coe(50)
   save coe
 
@@ -1768,7 +1767,7 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 
   real(fp),parameter  :: earthrad = 6374._fp, satheight = 833.4_fp
 
-  integer         :: snow_type,ich,k
+  integer     :: snow_type,ich
 
   real(fp)    :: theta,frequency,depth,ts,esv_3w(*),esh_3w(*)
 

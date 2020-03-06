@@ -12,6 +12,14 @@
 !       Modified by:    Tong Zhu, 18-Nov-2008
 !                       tong.zhu@noaa.gov
 !
+!       Modified by:    James Rosinski, 08-Feb-2019
+!                       Rosinski@ucar.edu
+!
+! (C) Copyright 2019 UCAR
+!
+! WARNING: This is experimental software!
+! This software is licensed under the terms of the Apache Licence Version 2.0 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
 
 MODULE ODPS_Predictor
 
@@ -76,9 +84,6 @@ MODULE ODPS_Predictor
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: $'
-
   ! Dimensions of each predictor group.
   INTEGER, PARAMETER  :: N_G = 3
   INTEGER, PARAMETER  :: N_COMPONENTS_G(N_G)     = (/8,   5, 2/)
@@ -804,6 +809,20 @@ CONTAINS
       REAL(fp) ::    CH4_R
       REAL(fp) ::    CH4_ACH4zp
 
+      ! Silence gfortran complaints about maybe-used-uninit by init to huge()
+      N2O_S       = huge(N2O_S)
+      N2O_R       = huge(N2O_R)
+      N2O_A       = huge(N2O_A)
+      N2O         = huge(N2O)
+      CO_S        = huge(CO_S)
+      CO_R        = huge(CO_R)
+      CO_ACOdCOzp = huge(CO_ACOdCOzp)
+      CO_A        = huge(CO_A)
+      CH4_R       = huge(CH4_R)
+      CH4_ACH4zp  = huge(CH4_ACH4zp)
+      CH4_A       = huge(CH4_A)
+      CH4         = huge(CH4)
+
       Layer_Loop : DO k = 1, n_Layers
 
         !------------------------------------------
@@ -1207,7 +1226,12 @@ CONTAINS
     REAL(fp) ::    GAzp_TL(SIZE(Absorber, DIM=1), SIZE(Absorber, DIM=2))
     REAL(fp) ::    GATzp_sum_TL(SIZE(Absorber, DIM=2))
     REAL(fp) ::    GATzp_TL(SIZE(Absorber, DIM=1), SIZE(Absorber, DIM=2))
-    TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR    TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+    TYPE(PAFV_type), POINTER  :: PAFV
+
+    nullify(PAFV)
 
     ! use short name
     PAFV => Predictor%PAFV
@@ -1297,6 +1321,33 @@ CONTAINS
       REAL(fp) ::    CH4_R,        CH4_R_TL
       REAL(fp) ::    CH4_ACH4zp,   CH4_ACH4zp_TL
 
+      ! Silence gfortran complaints about maybe-used-uninit by init to huge()
+      N2O_TL        = huge(N2O_TL)
+      N2O_S_TL      = huge(N2O_S_TL)
+      N2O_S         = huge(N2O_S)
+      N2O_R         = huge(N2O_R)
+      N2O_R_TL      = huge(N2O_R_TL)
+      N2O           = huge(N2O)
+      N2O_A         = huge(N2O_A)
+      N2O_A_TL      = huge(N2O_A_TL)
+      CO_S_TL       = huge(CO_S_TL)
+      CO_S          = huge(CO_S)
+      CO_R          = huge(CO_R)
+      CO_R_TL       = huge(CO_R_TL)
+      CO_A_TL       = huge(CO_A_TL)
+      CO_A          = huge(CO_A)
+      CO_R          = huge(CO_R)
+      CO_ACODCOZP_TL= huge(CO_ACODCOZP_TL)
+      CO_ACODCOZP   = huge(CO_ACODCOZP)
+      CH4_TL        = huge(CH4_TL)
+      CH4_R_TL      = huge(CH4_R_TL)
+      CH4_A_TL      = huge(CH4_A_TL)
+      CH4_A         = huge(CH4_A)
+      CH4_R         = huge(CH4_R)
+      CH4           = huge(CH4)
+      CH4_ACH4ZP_TL = huge(CH4_ACH4ZP_TL)
+      CH4_ACH4ZP    = huge(CH4_ACH4ZP)
+      
       Layer_Loop : DO k = 1, n_Layers
 
         !------------------------------------------
@@ -1772,8 +1823,13 @@ CONTAINS
     REAL(fp) ::    GAzp_AD(SIZE(Absorber, DIM=1), SIZE(Absorber, DIM=2))
     REAL(fp) ::    GATzp_sum_AD(SIZE(Absorber, DIM=2))
     REAL(fp) ::    GATzp_AD(SIZE(Absorber, DIM=1), SIZE(Absorber, DIM=2))
-    TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!    TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+    TYPE(PAFV_type), POINTER  :: PAFV
 
+!JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
+    nullify(PAFV)
     ! use short name
     PAFV => Predictor%PAFV
 
@@ -2875,8 +2931,13 @@ CONTAINS
                  t2_TL,    s_t_TL, s_p_TL, Inverse_TL, d_Absorber_TL
      REAL(fp) :: Int_vapor_prev_TL, Int_vapor_TL, AveA_TL, ap1_TL
      INTEGER  :: i, k
-     TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR     TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+     TYPE(PAFV_type), POINTER  :: PAFV
 
+!JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
+     nullify(PAFV)
      ! short name
      PAFV => Predictor%PAFV
 
@@ -3060,8 +3121,13 @@ CONTAINS
      REAL(fp) :: t2_AD, s_t_AD, s_p_AD, Inverse_AD, d_Absorber_AD
      REAL(fp) :: Int_vapor_prev_AD, Int_vapor_AD, AveA_AD, ap1_AD
      INTEGER  :: i, k
-     TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR     TYPE(PAFV_type), POINTER  :: PAFV => NULL()
+     TYPE(PAFV_type), POINTER  :: PAFV
 
+!JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
+     nullify(PAFV)
      ! short name
      PAFV => Predictor%PAFV
 
@@ -3200,6 +3266,8 @@ CONTAINS
          Component_ID = COMPONENT_ID_MAP_G2(Component_Index)
       CASE( GROUP_3 )
          Component_ID = COMPONENT_ID_MAP_G3(Component_Index)
+      CASE DEFAULT
+         Component_ID = huge(Component_ID)  ! Entry not found: Hopefully induce code to fail 
     END SELECT
   END FUNCTION ODPS_Get_Component_ID
 
@@ -3215,7 +3283,9 @@ CONTAINS
           Absorber_ID = ABSORBER_ID_MAP_G2(Absorber_Index)
       CASE( GROUP_3 )
           Absorber_ID = ABSORBER_ID_MAP_G3(Absorber_Index)
-    END SELECT
+      CASE DEFAULT
+          Absorber_ID = huge(Absorber_ID)  ! Entry not found: Hopefully induce code to fail 
+      END SELECT
   END FUNCTION ODPS_Get_Absorber_ID
 
 

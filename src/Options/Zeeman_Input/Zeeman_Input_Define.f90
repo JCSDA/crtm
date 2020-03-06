@@ -36,7 +36,6 @@ MODULE Zeeman_Input_Define
   PUBLIC :: Zeeman_Input_SetValue
   PUBLIC :: Zeeman_Input_IsValid
   PUBLIC :: Zeeman_Input_Inspect
-  PUBLIC :: Zeeman_Input_DefineVersion
   PUBLIC :: Zeeman_Input_ValidRelease
   PUBLIC :: Zeeman_Input_ReadFile
   PUBLIC :: Zeeman_Input_WriteFile
@@ -53,8 +52,6 @@ MODULE Zeeman_Input_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ZEEMAN_INPUT_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ZEEMAN_INPUT_VERSION = 1  ! This is just the default data version.
@@ -360,35 +357,6 @@ real(fp), parameter :: big_number = 1.0e+09_fp
     WRITE(*,'(5x,"COS(PhiB)             :",1x,es22.15)') z%Cos_PhiB
     WRITE(*,'(5x,"Doppler shift (KHz)   :",1x,es22.15)') z%Doppler_Shift
   END SUBROUTINE Zeeman_Input_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Zeeman_Input_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL Zeeman_Input_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Zeeman_Input_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE Zeeman_Input_DefineVersion
 
 
 !----------------------------------------------------------------------------------
@@ -799,7 +767,7 @@ real(fp), parameter :: big_number = 1.0e+09_fp
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

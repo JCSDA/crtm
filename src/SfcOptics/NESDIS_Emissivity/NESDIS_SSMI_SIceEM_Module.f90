@@ -41,9 +41,6 @@ MODULE NESDIS_SSMI_SIceEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS
@@ -319,7 +316,7 @@ subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
 
   integer,parameter :: ntype = 3, nv=4, nh=3,ncoev=5,ncoeh=4
 
-  integer :: ich,k,lp,nch
+  integer :: ich,lp,nch
 
   real(fp), parameter, dimension(nv) ::   &
   freq_v=(/19.35_fp, 22.235_fp, 37.0_fp, 85.0_fp/)

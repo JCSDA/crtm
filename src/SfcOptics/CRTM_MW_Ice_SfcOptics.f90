@@ -47,7 +47,7 @@ MODULE CRTM_MW_Ice_SfcOptics
   USE NESDIS_MHS_SICEEM_Module,     ONLY: NESDIS_ICEEM_MHS
   USE NESDIS_SSMIS_SeaIceEM_Module, ONLY: NESDIS_SSMIS_IceEM
   USE NESDIS_ATMS_SeaICE_Module,    ONLY: NESDIS_ATMS_SeaICE
-
+  USE CRTM_MW_Snow_SfcOptics,       ONLY: Populate_Subset
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -63,13 +63,6 @@ MODULE CRTM_MW_Ice_SfcOptics
   PUBLIC :: Compute_MW_Ice_SfcOptics
   PUBLIC :: Compute_MW_Ice_SfcOptics_TL
   PUBLIC :: Compute_MW_Ice_SfcOptics_AD
-
-
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
   ! --------------------------------------
@@ -187,11 +180,17 @@ CONTAINS
     INTEGER,      PARAMETER :: AMSRE_V_INDEX(6) = (/1, 3, 5, 7,  9, 11/) ! AMSRE channels with V pol.
     INTEGER,      PARAMETER :: AMSRE_H_INDEX(6) = (/2, 4, 6, 8, 10, 12/) ! AMSRE channels with H pol.
     INTEGER,      PARAMETER :: AMSUA_INDEX(4)   = (/1, 2, 3, 15/)
+    INTEGER,      PARAMETER :: AMSUB_INDEX(2)   = (/1, 2/)
+    INTEGER,      PARAMETER :: SSMI_INDEX(7)   =  (/1,2,3,4,5,6,7/) 
     INTEGER,      PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
-    INTEGER,  PARAMETER :: ATMS_INDEX(5)    = (/1, 2, 3, 16,17/)          ! With mixed polarisations
+    INTEGER,      PARAMETER :: ATMS_INDEX(5)    = (/1, 2, 3, 16,17/)          ! With mixed polarisations
+    INTEGER,      PARAMETER :: MaxChan = 8 
     ! Local variables
     INTEGER :: i
     REAL(fp) :: Sensor_Zenith_Angle
+    REAL(fp) :: TBs_In(MaxChan)
+    REAL(fp) :: TBs_In_V(MaxChan)
+    REAL(fp) :: TBs_In_H(MaxChan)
 
 
     ! Set up
@@ -203,12 +202,13 @@ CONTAINS
     Sensor_Type: SELECT CASE( Surface%SensorData%WMO_Sensor_ID )
       ! ATMSemissivity model
       CASE( WMO_ATMS )    
+         TBs_In(1:5) = Populate_Subset( Surface, 5, ATMS_INDEX)
          DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_ATMS_SeaICE(  Sensor_Zenith_Angle,                     &  ! Input, Degree           
+          CALL NESDIS_ATMS_SeaICE(  Sensor_Zenith_Angle,                    &  ! Input, Degree           
                                    SfcOptics%Angle(i),                      &  ! Input, Degree           
                                    SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
                                    Surface%Ice_Temperature,                 &  ! Input, K
-                                   Surface%SensorData%Tb(ATMS_INDEX),       &  ! Input, ATMS           
+                                   TBs_In(1:5),                             &  ! Input, ATMS           
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component      
                                    SfcOptics%Emissivity(i,1)   )               ! Output, V component 
        END DO                                                                                           
@@ -216,12 +216,13 @@ CONTAINS
 
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )
+        TBs_In(1:4) = Populate_Subset( Surface, 4, AMSUA_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                   SfcOptics%Angle(i),                      &  ! Input, Degree
                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                   Surface%Ice_Temperature,                 &  ! Input, K
-                                  Surface%SensorData%Tb(AMSUA_INDEX),      &  ! Input, AMSUA
+                                  Tbs_In(1:4),                             &  ! Input, AMSUA
                                   NOT_USED(1:2),                           &  ! Input, AMSUB  *** NO AMSU-B DATA ***
                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
@@ -229,36 +230,40 @@ CONTAINS
 
       ! AMSU-B emissivity model
       CASE( WMO_AMSUB )
+        TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                   SfcOptics%Angle(i),                      &  ! Input, Degree
                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                   Surface%Ice_Temperature,                 &  ! Input, K
-                                  NOT_USED,                                &  ! Input  AMSUA  *** NO AMSU-A DATA ***
-                                  Surface%SensorData%Tb(1:2),              &  ! Input, AMSUB
+                                  NOT_USED(1:4),                           &  ! Input  AMSUA  *** NO AMSU-A DATA ***
+                                  TBs_In(1:2),                             &  ! Input, AMSUB
                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! MHS emissivity model
       CASE (WMO_MHS)
+        TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_MHS( Sensor_Zenith_Angle,                     &  ! Input, Degree
                                  SfcOptics%Angle(i),                      &  ! Input, Degree
                                  SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                  Surface%Ice_Temperature,                 &  ! Input, K
-                                 Surface%SensorData%Tb(1:2),              &  ! Input, MHS
+                                 TBs_In(1:2),                             &  ! Input, MHS
                                  SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                  SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! AMSR-E emissivity model
       CASE( WMO_AMSRE )
+        TBs_In_V(1:6) = Populate_Subset( Surface, 6, AMSRE_V_INDEX)
+        TBs_In_H(1:6) = Populate_Subset( Surface, 6, AMSRE_H_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_AMSRE_SSICEEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                      SfcOptics%Angle(i),                      &  ! Input, Degree
-                                     Surface%SensorData%Tb(AMSRE_V_INDEX),    &  ! Input, Tb_V, K
-                                     Surface%SensorData%Tb(AMSRE_H_INDEX),    &  ! Input, Tb_H, K
+                                     TBs_In_V(1:6),                           &  ! Input, Tb_V, K
+                                     TBs_In_H(1:6),                           &  ! Input, Tb_H, K
                                      Surface%Ice_Temperature,                 &  ! Input, Ts, K
                                      Surface%Ice_Temperature,                 &  ! Input, Tice, K
                                      SfcOptics%Emissivity(i,2),               &  ! Output, H component
@@ -267,11 +272,12 @@ CONTAINS
 
       ! SSM/I emissivity model
       CASE( WMO_SSMI )
+        TBs_In(1:7) = Populate_Subset( Surface, 7, SSMI_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_SSMI_SIceEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                    SfcOptics%Angle(i),                      &  ! Input, Degree
                                    Surface%Ice_Temperature,                 &  ! Input, K
-                                   Surface%SensorData%Tb,                   &  ! Input, K
+                                   TBs_In(1:7),                             &  ! Input, K
                                    Surface%Ice_Thickness,                   &  ! Input, mm
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
@@ -279,11 +285,12 @@ CONTAINS
 
       ! SSMIS emissivity model
       CASE( WMO_SSMIS )
+        TBs_In(1:8) = Populate_Subset( Surface, 8, SSMIS_INDEX)
         DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_SSMIS_IceEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                    SfcOptics%Angle(i),                      &  ! Input, Degree
                                    Surface%Ice_Temperature,                 &  ! Input, K
-                                   Surface%SensorData%Tb(SSMIS_INDEX),      &  ! Input, K
+                                   TBs_In(1:8),                             &  ! Input, K
                                    Surface%Ice_Thickness,                   &  ! Input, mm
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
@@ -302,7 +309,6 @@ CONTAINS
         END DO
 
     END SELECT Sensor_Type
-
 
     ! Compute the surface reflectivities,
     ! assuming a specular surface

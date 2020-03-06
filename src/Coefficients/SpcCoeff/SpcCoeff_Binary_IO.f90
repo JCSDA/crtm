@@ -28,12 +28,10 @@ MODULE SpcCoeff_Binary_IO
                                  SpcCoeff_Info
   USE ACCoeff_Define     , ONLY: ACCoeff_Associated
   USE ACCoeff_Binary_IO  , ONLY: ACCoeff_Binary_ReadFile , &
-                                 ACCoeff_Binary_WriteFile, &
-                                 ACCoeff_Binary_IOVersion
+                                 ACCoeff_Binary_WriteFile
   USE NLTECoeff_Define   , ONLY: NLTECoeff_Associated
   USE NLTECoeff_Binary_IO, ONLY: NLTECoeff_Binary_ReadFile , &
-                                 NLTECoeff_Binary_WriteFile, &
-                                 NLTECoeff_Binary_IOVersion
+                                 NLTECoeff_Binary_WriteFile
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -45,14 +43,11 @@ MODULE SpcCoeff_Binary_IO
   PUBLIC :: SpcCoeff_Binary_InquireFile
   PUBLIC :: SpcCoeff_Binary_ReadFile
   PUBLIC :: SpcCoeff_Binary_WriteFile
-  PUBLIC :: SpcCoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default message length
   INTEGER, PARAMETER :: ML = 512
   ! Ancillary data indicator
@@ -759,53 +754,4 @@ CONTAINS
      END SUBROUTINE Write_CleanUp
 
   END FUNCTION SpcCoeff_Binary_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       SpcCoeff_Binary_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the version information for the
-!       I/O module(s).
-!
-! CALLING SEQUENCE:
-!       CALL SpcCoeff_IOVersion( Id )
-!
-! OUTPUTS:
-!       Id:     Character string containing the version Id information for the
-!               structure I/O module(s). If the string length is sufficient,
-!               the version information for all the modules (this, and those
-!               for the derived type components) are concatenated. Otherwise
-!               only the version id for this module is returned.
-!               UNITS:      N/A
-!               TYPE:       CHARACTER(*)
-!               DIMENSION:  Scalar
-!               ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE SpcCoeff_Binary_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-    INTEGER, PARAMETER :: LINEFEED = 10
-    INTEGER, PARAMETER :: SL = 256
-    CHARACTER(SL)   :: AC_Id
-    CHARACTER(SL)   :: NC_Id
-    CHARACTER(SL*3) :: IO_Id
-    CALL ACCoeff_Binary_IOVersion( AC_Id )
-    CALL NLTECoeff_Binary_IOVersion( NC_Id )
-    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '    '//TRIM(AC_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '    '//TRIM(NC_Id)
-    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
-      Id = IO_Id
-    ELSE
-      Id = MODULE_VERSION_ID
-    END IF
-  END SUBROUTINE SpcCoeff_Binary_IOVersion
-
 END MODULE SpcCoeff_Binary_IO

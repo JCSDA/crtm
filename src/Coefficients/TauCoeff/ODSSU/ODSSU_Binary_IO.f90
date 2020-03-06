@@ -51,8 +51,6 @@ MODULE ODSSU_Binary_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length
@@ -203,7 +201,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check that the file is present
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -540,7 +538,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     !
     IF( ODSSU%n_TC_CellPressures  < 1 .OR. &

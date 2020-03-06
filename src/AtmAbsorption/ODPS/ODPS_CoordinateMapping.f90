@@ -57,7 +57,7 @@ MODULE ODPS_CoordinateMapping
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
+  '$Id: ODPS_CoordinateMapping.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 CONTAINS
 
@@ -1189,9 +1189,8 @@ CONTAINS
              write(6,*) 'z1,z2,z3 = ',z1,z2,z3
              write(6,*) 'px2(j),px2(j+1)    = ',px2(j),px2(j+1)
              return
-          else
-             dzd=ONE/dz
           endif
+          dzd=ONE/dz
           zw1=(z1-y1)*dzd*dy
           zw2=(z1-y2)*dzd*dy
           w10=zw1
@@ -1202,9 +1201,8 @@ CONTAINS
              write(6,*) 'z1,z2,z3 = ',z1,z2,z3
              write(6,*) 'px2(j),px2(j+1)    = ',px2(j),px2(j+1)
              return
-          else
-             dxd=ONE/dx
           endif
+          dxd=ONE/dx
 !
           d=(px2(j+1)-z2)*dxd
           if (z1 < z3 .and. ibot == 0) then
@@ -1255,9 +1253,14 @@ CONTAINS
              write(6,*) 'z3,z2,z1 = ',z3,z2,z1
              write(6,*) 'px2(j),px2(j+1)    = ',px2(j),px2(j+1)
              return
-          else
-             dzd=ONE/dz
           endif
+!JR This hack prevents erroneous SIGFPE from ifort 17.0.5.23 when signal
+!JR trapping is enabled. It does not change answers.
+          if (dz == 0._fp) then
+            dz = 1._fp
+          end if
+!JR End hack
+          dzd=ONE/dz
           zw1=(z3-y1)*dzd*dy
           zw2=(z3-y2)*dzd*dy
           w10=zw1

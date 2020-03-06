@@ -44,7 +44,6 @@ MODULE LSEatlas_Define
   PUBLIC :: LSEatlas_ValidRelease
   PUBLIC :: LSEatlas_Info
   PUBLIC :: LSEatlas_Name
-  PUBLIC :: LSEatlas_DefineVersion
   PUBLIC :: LSEatlas_SetValue
   PUBLIC :: LSEatlas_GetValue
   PUBLIC :: LSEatlas_InquireFile
@@ -63,8 +62,6 @@ MODULE LSEatlas_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Datatype information
   CHARACTER(*), PARAMETER :: LSEATLAS_DATATYPE = 'LSEatlas'
   ! Current valid release and version
@@ -320,14 +317,14 @@ CONTAINS
     IF ( .NOT. LSEatlas_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Frequency :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Frequency
+    WRITE(*,'(5(1x,es22.15,:))') self%Frequency
     WRITE(*,'(3x,"Latitude :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Latitude
+    WRITE(*,'(5(1x,es22.15,:))') self%Latitude
     WRITE(*,'(3x,"Longitude :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Longitude
+    WRITE(*,'(5(1x,es22.15,:))') self%Longitude
     ! Emissivity array
     WRITE(*,'(3x,"Emissivity :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Emissivity
+    WRITE(*,'(5(1x,es22.15,:))') self%Emissivity
   END SUBROUTINE LSEatlas_Inspect
 
 
@@ -496,36 +493,6 @@ CONTAINS
     datatype_name = self%Datatype_Name
 
   END FUNCTION LSEatlas_Name
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       LSEatlas_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL LSEatlas_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE LSEatlas_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE LSEatlas_DefineVersion
-
 
 
 !--------------------------------------------------------------------------------
@@ -1428,7 +1395,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

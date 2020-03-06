@@ -43,7 +43,6 @@ MODULE AerosolCoeff_Define
   PUBLIC :: AerosolCoeff_ValidRelease
   PUBLIC :: AerosolCoeff_Info
   PUBLIC :: AerosolCoeff_Frequency
-  PUBLIC :: AerosolCoeff_DefineVersion
   
 
   ! ---------------------
@@ -57,9 +56,6 @@ MODULE AerosolCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION = 1  ! This is just the data version for the release.
@@ -393,21 +389,21 @@ CONTAINS
       END IF
     END DO
     WRITE(*,'(3x,"AerosolCoeff Wavelength:")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%Wavelength
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Wavelength
     WRITE(*,'(3x,"AerosolCoeff Frequency :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%Frequency     
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Frequency     
     WRITE(*,'(3x,"AerosolCoeff Reff      :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%Reff     
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Reff     
     WRITE(*,'(3x,"AerosolCoeff RH        :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%RH 
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%RH 
     WRITE(*,'(3x,"AerosolCoeff ke        :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%ke     
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%ke     
     WRITE(*,'(3x,"AerosolCoeff w         :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%w      
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%w      
     WRITE(*,'(3x,"AerosolCoeff g         :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%g      
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%g      
     WRITE(*,'(3x,"AerosolCoeff pcoeff    :")') 
-    WRITE(*,'(5(1x,es13.6,:))') AerosolCoeff%pcoeff
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%pcoeff
   END SUBROUTINE AerosolCoeff_Inspect
 
 
@@ -576,37 +572,6 @@ CONTAINS
   END SUBROUTINE AerosolCoeff_Frequency
   
   
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL AerosolCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE AerosolCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE AerosolCoeff_DefineVersion
-
-
-
-
 !##################################################################################
 !##################################################################################
 !##                                                                              ##

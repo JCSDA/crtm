@@ -43,7 +43,6 @@ MODULE MWwaterCoeff_Define
   PUBLIC :: MWwaterCoeff_Inspect
   PUBLIC :: MWwaterCoeff_ValidRelease
   PUBLIC :: MWwaterCoeff_Info
-  PUBLIC :: MWwaterCoeff_DefineVersion
   PUBLIC :: MWwaterCoeff_ReadFile
   PUBLIC :: MWwaterCoeff_WriteFile
 
@@ -59,8 +58,6 @@ MODULE MWwaterCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: MWWATERCOEFF_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: MWWATERCOEFF_VERSION = 1  ! This is just the default data version.
@@ -392,35 +389,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE MWwaterCoeff_Info
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       MWwaterCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL MWwaterCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE MWwaterCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE MWwaterCoeff_DefineVersion
 
 
 !--------------------------------------------------------------------------------
@@ -1127,7 +1095,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

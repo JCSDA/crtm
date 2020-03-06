@@ -57,7 +57,6 @@ MODULE SpcCoeff_Define
                                    ACCoeff_Inspect       , &
                                    ACCoeff_ValidRelease  , &
                                    ACCoeff_Info          , &
-                                   ACCoeff_DefineVersion , &
                                    ACCoeff_Subset        , &
                                    ACCoeff_Concat        , &
                                    ACCoeff_ChannelReindex
@@ -69,7 +68,6 @@ MODULE SpcCoeff_Define
                                    NLTECoeff_Inspect       , &
                                    NLTECoeff_ValidRelease  , &
                                    NLTECoeff_Info          , &
-                                   NLTECoeff_DefineVersion , &
                                    NLTECoeff_Subset        , &
                                    NLTECoeff_Concat        , &
                                    NLTECoeff_ChannelReindex
@@ -93,7 +91,6 @@ MODULE SpcCoeff_Define
   PUBLIC :: SpcCoeff_Inspect
   PUBLIC :: SpcCoeff_ValidRelease
   PUBLIC :: SpcCoeff_Info
-  PUBLIC :: SpcCoeff_DefineVersion
   PUBLIC :: SpcCoeff_Subset
   PUBLIC :: SpcCoeff_Concat
   ! ...Channel flag specific procedures
@@ -112,14 +109,12 @@ MODULE SpcCoeff_Define
   PUBLIC :: ACCoeff_Inspect
   PUBLIC :: ACCoeff_ValidRelease
   PUBLIC :: ACCoeff_Info
-  PUBLIC :: ACCoeff_DefineVersion
   PUBLIC :: NLTECoeff_Associated    
   PUBLIC :: NLTECoeff_Destroy       
   PUBLIC :: NLTECoeff_Create        
   PUBLIC :: NLTECoeff_Inspect       
   PUBLIC :: NLTECoeff_ValidRelease  
   PUBLIC :: NLTECoeff_Info          
-  PUBLIC :: NLTECoeff_DefineVersion
 
 
   ! ---------------------
@@ -133,9 +128,6 @@ MODULE SpcCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Default message string length
@@ -402,21 +394,21 @@ CONTAINS
     WRITE(*,'(3x,"Channel_Flag               :")')
     WRITE(*,'(3(1x,b32.32,:))') SpcCoeff%Channel_Flag
     WRITE(*,'(3x,"Frequency                  :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Frequency                 
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Frequency                 
     WRITE(*,'(3x,"Wavenumber                 :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Wavenumber                
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Wavenumber                
     WRITE(*,'(3x,"Planck_C1                  :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Planck_C1                 
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Planck_C1                 
     WRITE(*,'(3x,"Planck_C2                  :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Planck_C2                 
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Planck_C2                 
     WRITE(*,'(3x,"Band_C1                    :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Band_C1                   
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Band_C1                   
     WRITE(*,'(3x,"Band_C2                    :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Band_C2                   
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Band_C2                   
     WRITE(*,'(3x,"Cosmic_Background_Radiance :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Cosmic_Background_Radiance
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Cosmic_Background_Radiance
     WRITE(*,'(3x,"Solar_Irradiance           :")')
-    WRITE(*,'(5(1x,es13.6,:))') SpcCoeff%Solar_Irradiance          
+    WRITE(*,'(5(1x,es22.15,:))') SpcCoeff%Solar_Irradiance          
     ! Derived types
     IF ( ACCoeff_Associated(   SpcCoeff%AC ) ) CALL ACCoeff_Inspect(   SpcCoeff%AC )
     IF ( NLTECoeff_Associated( SpcCoeff%NC ) ) CALL NLTECoeff_Inspect( SpcCoeff%NC )
@@ -581,54 +573,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE SpcCoeff_Info
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       SpcCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the version information for the
-!       definition module(s).
-!
-! CALLING SEQUENCE:
-!       CALL SpcCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:     Character string containing the version Id information for the
-!               structure definition module(s). If the string length is
-!               sufficient, the version information for all the modules (this,
-!               and those for the derived type components) are concatenated.
-!               Otherwise only the version id for this module is returned.
-!               UNITS:      N/A
-!               TYPE:       CHARACTER(*)
-!               DIMENSION:  Scalar
-!               ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE SpcCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-    INTEGER, PARAMETER :: LINEFEED = 10
-    INTEGER, PARAMETER :: SL = 256
-    CHARACTER(SL)   :: AC_Id
-    CHARACTER(SL)   :: NC_Id
-    CHARACTER(SL*3) :: Define_Id
-    CALL ACCoeff_DefineVersion( AC_Id )
-    CALL NLTECoeff_DefineVersion( NC_Id )
-    Define_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-                '  '//TRIM(AC_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-                '  '//TRIM(NC_Id)
-    IF ( LEN_TRIM(Define_Id) <= LEN(Id) ) THEN
-      Id = Define_Id
-    ELSE
-      Id = MODULE_VERSION_ID
-    END IF
-  END SUBROUTINE SpcCoeff_DefineVersion
 
 
 !--------------------------------------------------------------------------------

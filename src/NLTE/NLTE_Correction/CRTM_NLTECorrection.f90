@@ -50,9 +50,6 @@ MODULE CRTM_NLTECorrection
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   
   
 CONTAINS
@@ -121,6 +118,11 @@ CONTAINS
     INTEGER  :: i, k1, k2, k, isen, isun
     INTEGER  :: n_Sensor_Angles, n_Solar_Angles
 
+    ! Silence gfortran complaints about maybe-used-uninit by init to huge()
+    isen = huge(isen)
+    isun = huge(isun)
+    k1 = huge(k1)
+    k2 = huge(k2)
 
     ! Return if not an NLTE sensor
     IF ( .NOT. NLTECoeff_Associated( NLTECoeff ) ) RETURN

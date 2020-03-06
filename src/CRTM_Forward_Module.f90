@@ -10,12 +10,12 @@
 !
 
 MODULE CRTM_Forward_Module
-
+  !  use omp_lib   !JR Only needed for debugging OMP issues
 
   ! ------------
   ! Module usage
   ! ------------
-  USE Type_Kinds,                 ONLY: fp
+  USE Type_Kinds,                 ONLY: fp, LLong
   USE Message_Handler,            ONLY: SUCCESS, FAILURE, WARNING, Display_Message
   USE CRTM_Parameters,            ONLY: SET,NOT_SET,ZERO,ONE, &
                                         MAX_N_LAYERS        , &
@@ -43,7 +43,8 @@ MODULE CRTM_Forward_Module
                                         CRTM_ChannelInfo_n_Channels
   USE CRTM_RTSolution_Define,     ONLY: CRTM_RTSolution_type   , &
                                         CRTM_RTSolution_Destroy, &
-                                        CRTM_RTSolution_Zero
+                                        CRTM_RTSolution_Zero,    &
+                                        CRTM_RTSolution_Inspect
   USE CRTM_Options_Define,        ONLY: CRTM_Options_type, &
                                         CRTM_Options_IsValid
   USE CRTM_Atmosphere,            ONLY: CRTM_Atmosphere_AddLayers   , &
@@ -130,16 +131,11 @@ MODULE CRTM_Forward_Module
   PRIVATE
   ! Public procedures
   PUBLIC :: CRTM_Forward
-  PUBLIC :: CRTM_Forward_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
-
 
 CONTAINS
 
@@ -247,53 +243,31 @@ CONTAINS
     ! Local variables
     CHARACTER(256) :: Message
     LOGICAL :: Options_Present
-    LOGICAL :: compute_antenna_correction
-    LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
-    INTEGER :: iFOV
-    INTEGER :: n, n_Sensors,  SensorIndex
-    INTEGER :: l, n_Channels, ChannelIndex
+    INTEGER :: n_Sensors
+    INTEGER :: n_Channels
     INTEGER :: m, n_Profiles
-    INTEGER :: ln
-    INTEGER :: n_Full_Streams, mth_Azi
-    INTEGER :: cloud_coverage_flag
-    REAL(fp) :: Source_ZA
-    REAL(fp) :: Wavenumber
-    REAL(fp) :: transmittance, transmittance_clear
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default and use values
     TYPE(CRTM_Options_type) :: Default_Options, Opt
-    ! Local atmosphere structure for extra layering
-    TYPE(CRTM_Atmosphere_type) :: Atm
-    ! Clear sky structures
-    TYPE(CRTM_Atmosphere_type) :: Atm_Clear
-    TYPE(CRTM_AtmOptics_type)  :: AtmOptics_Clear
-    TYPE(CRTM_SfcOptics_type)  :: SfcOptics_Clear
-    TYPE(CRTM_RTSolution_type) :: RTSolution_Clear
-    TYPE(RTV_type)             :: RTV_Clear
-    ! Component variables
-    TYPE(CRTM_GeometryInfo_type) :: GeometryInfo
-    TYPE(CRTM_Predictor_type)    :: Predictor
-    TYPE(CRTM_AtmOptics_type)    :: AtmOptics
-    TYPE(CRTM_SfcOptics_type)    :: SfcOptics
-    ! Component variable internals
-    TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
-    TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
-    TYPE(CSvar_type)      :: CSvar  ! CloudScatter
-    TYPE(ASvar_type)      :: ASvar  ! AerosolScatter
-    TYPE(AOvar_type)      :: AOvar  ! AtmOptics
-    TYPE(RTV_type)        :: RTV    ! RTSolution
-    ! NLTE correction term predictor
-    TYPE(NLTE_Predictor_type)   :: NLTE_Predictor
-    ! Cloud cover object
-    TYPE(CRTM_CloudCover_type) :: CloudCover
 
+    ! Local variables required by threading, timing, and output verification
+    integer(LLong) :: count_rate, count_start, count_end
+    real :: elapsed
+    real :: elapsed_running = 0.         ! running total of elapsed times
+    logical, parameter :: enable_timing = .false.
+    logical, parameter :: output_verification = .false.
+    integer :: ret(size(Atmosphere))     ! return codes from profile_solution
+    integer :: nfailure                  ! number of non-success calls to profile_solution
 
     ! ------
     ! SET UP
     ! ------
     Error_Status = SUCCESS
-
+    if (enable_timing) then
+      call system_clock (count_rate=count_rate)
+      call system_clock (count=count_start)
+    end if
 
     ! If no sensors or channels, simply return
     n_Sensors  = SIZE(ChannelInfo)
@@ -336,44 +310,36 @@ CONTAINS
       END IF
     END IF
 
-
-    ! Reinitialise the output RTSolution
-    CALL CRTM_RTSolution_Zero(RTSolution)
-
-
-    ! Allocate the profile independent surface opticss local structure
-    CALL CRTM_SfcOptics_Create( SfcOptics, MAX_N_ANGLES, MAX_N_STOKES )
-    IF ( .NOT. CRTM_SfcOptics_Associated(SfcOptics) ) THEN
-      Error_Status = FAILURE
-      Message = 'Error allocating SfcOptics data structures'
-      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-      RETURN
-    END IF
-
-
     ! ------------
-    ! PROFILE LOOP
+    ! PROFILE LOOPS
     ! ------------
-    Profile_Loop: DO m = 1, n_Profiles
 
-
+!JR First loop just checks validity of Atmosphere(m) contents
+!$OMP PARALLEL DO PRIVATE (Message)
+    Profile_Loop1: DO m = 1, n_Profiles
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
       IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
          Error_Status = FAILURE
          WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
                 &"for the cloudy case profile #",i0)' ) m
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         RETURN
+         CYCLE Profile_Loop1
       END IF
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
          Error_Status = FAILURE
          WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
                 &"for the aerosol case profile #",i0)' ) m
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         RETURN
+         CYCLE Profile_Loop1
       END IF
+    end DO Profile_Loop1
 
+    if (Error_Status == FAILURE) then
+      return
+    end if
 
+!$OMP PARALLEL DO PRIVATE (m, Opt, AncillaryInput) SCHEDULE (runtime)
+    Profile_Loop2: DO m = 1, n_Profiles
       ! Check the optional Options structure argument
       Opt = Default_Options
       IF ( Options_Present ) THEN
@@ -382,9 +348,105 @@ CONTAINS
         AncillaryInput%SSU    = Options(m)%SSU
         AncillaryInput%Zeeman = Options(m)%Zeeman
       END IF
+      ret(m) = profile_solution (m, Opt, AncillaryInput)
+    end DO Profile_Loop2
+!$OMP END PARALLEL DO
+
+    nfailure = count (ret(:) /= SUCCESS)
+    if (nfailure > 0) then
+      Error_Status = FAILURE
+      WRITE(Message,'(i0," profiles failed")') nfailure
+      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+      return
+    end if
+
+    if (enable_timing) then
+      call system_clock (count=count_end)
+      elapsed = real (count_end - count_start) / real (count_rate)
+      elapsed_running = elapsed_running + elapsed
+      write(6,*) 'CRTM_Forward elapsed              =',elapsed
+      write(6,*) 'CRTM_Forward elapsed running total=',elapsed_running
+    end if
+
+    if (output_verification) then
+      write(6,*)'CRTM_Forward inspecting RTSolution...'
+      call CRTM_RTSolution_Inspect (RTSolution(:,:))
+    end if
+    return
+    
+  CONTAINS
+
+    ! Function profile_solution contains all the computational code inside of CRTM_Forward that
+    ! is contained inside an OMP loop. It is "contain"ed inside the function mainly so it can
+    ! access arrays which are arguments to CRTM_Forward. Subroutine Post_Process_RTSolution also
+    ! accesses CRTM_Forward data, but multi-level function "contain" clauses cause compiler
+    ! errors so arguments to this function were needed.
+    function profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
+      integer, intent(in) :: m               ! profile index
+      TYPE(CRTM_Options_type), intent(IN) :: Opt
+      TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
+    
+      ! Local variables
+      INTEGER :: Error_Status
+      CHARACTER(256) :: Message
+      LOGICAL :: compute_antenna_correction
+      LOGICAL :: Atmosphere_Invalid, Surface_Invalid, Geometry_Invalid, Options_Invalid
+      INTEGER :: iFOV
+      INTEGER :: n, l    ! sensor index, channel index
+      INTEGER :: SensorIndex
+      INTEGER :: ChannelIndex
+      INTEGER :: ln
+      INTEGER :: n_Full_Streams, mth_Azi
+      INTEGER :: cloud_coverage_flag
+      REAL(fp) :: Source_ZA
+      REAL(fp) :: Wavenumber
+      REAL(fp) :: transmittance, transmittance_clear
+
+      ! Local atmosphere structure for extra layering
+      TYPE(CRTM_Atmosphere_type) :: Atm
+      ! Clear sky structures
+      TYPE(CRTM_Atmosphere_type) :: Atm_Clear
+      TYPE(CRTM_AtmOptics_type)  :: AtmOptics_Clear
+      TYPE(CRTM_SfcOptics_type)  :: SfcOptics_Clear
+      TYPE(CRTM_RTSolution_type) :: RTSolution_Clear
+      TYPE(RTV_type)             :: RTV_Clear
+      ! Component variables
+      TYPE(CRTM_GeometryInfo_type) :: GeometryInfo
+      TYPE(CRTM_Predictor_type)    :: Predictor
+      TYPE(CRTM_AtmOptics_type)    :: AtmOptics
+      TYPE(CRTM_SfcOptics_type)    :: SfcOptics
+      ! Component variable internals
+      TYPE(CRTM_PVar_type)  :: PVar   ! Predictor
+      TYPE(CRTM_AAvar_type) :: AAvar  ! AtmAbsorption
+      TYPE(CSvar_type)      :: CSvar  ! CloudScatter
+      TYPE(ASvar_type)      :: ASvar  ! AerosolScatter
+      TYPE(AOvar_type)      :: AOvar  ! AtmOptics
+      TYPE(RTV_type)        :: RTV    ! RTSolution
+      ! NLTE correction term predictor
+      TYPE(NLTE_Predictor_type)   :: NLTE_Predictor
+      ! Cloud cover object
+      TYPE(CRTM_CloudCover_type) :: CloudCover
+
+      Error_Status = SUCCESS
+
+      ! Reinitialise the output RTSolution
+      CALL CRTM_RTSolution_Zero(RTSolution(:,m))
+
+
+      ! Allocate the profile independent surface opticss local structure
+      CALL CRTM_SfcOptics_Create( SfcOptics, MAX_N_ANGLES, MAX_N_STOKES )
+      IF ( .NOT. CRTM_SfcOptics_Associated(SfcOptics) ) THEN
+        Error_Status = FAILURE
+        Message = 'Error allocating SfcOptics data structures'
+        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+        RETURN
+      END IF
+
       ! ...Assign the option specific SfcOptics input
       SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
 
+      ! Check whether to skip this profile
+      IF ( Opt%Skip_Profile ) return
 
       ! Check the input data if required
       IF ( Opt%Check_Input ) THEN
@@ -548,8 +610,8 @@ CONTAINS
         RTV%aircraft%idx = CRTM_Get_PressureLevelIdx(Atm, Opt%Aircraft_Pressure)
         ! ...Issue warning if profile level is TOO different from flight level
         IF ( ABS(Atm%Level_Pressure(RTV%aircraft%idx)-Opt%Aircraft_Pressure) > AIRCRAFT_PRESSURE_THRESHOLD ) THEN
-          WRITE( Message,'("Difference between aircraft pressure level (",es13.6,&
-                          &"hPa) and closest input profile level (",es13.6,&
+          WRITE( Message,'("Difference between aircraft pressure level (",es22.15,&
+                          &"hPa) and closest input profile level (",es22.15,&
                           &"hPa) is larger than recommended (",f4.1,"hPa) for profile #",i0)') &
                           Opt%Aircraft_Pressure, Atm%Level_Pressure(RTV%aircraft%idx), &
                           AIRCRAFT_PRESSURE_THRESHOLD, m
@@ -883,40 +945,41 @@ CONTAINS
 
 
           ! The radiance post-processing
-          CALL Post_Process_RTSolution(RTSolution(ln,m))
+          CALL Post_Process_RTSolution(RTSolution(ln,m), &
+                                       NLTE_Predictor, &
+                                       ChannelIndex, SensorIndex, &
+                                       compute_antenna_correction, GeometryInfo)
 
 
           ! Perform clear-sky post-processing
           IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
-            CALL Post_Process_RTSolution(RTSolution_Clear)
+            CALL Post_Process_RTSolution(RTSolution_Clear, &
+                                         NLTE_Predictor, &
+                                         ChannelIndex, SensorIndex, &
+                                         compute_antenna_correction, GeometryInfo)
             ! ...Save the results in the output structure
             RTSolution(ln,m)%R_Clear  = RTSolution_Clear%Radiance
             RTSolution(ln,m)%Tb_Clear = RTSolution_Clear%Brightness_Temperature
           END IF
 
         END DO Channel_Loop
-
       END DO Sensor_Loop
 
-    END DO Profile_Loop
 
-
-    ! Clean up
-    CALL CRTM_Predictor_Destroy( Predictor )
-    CALL CRTM_AtmOptics_Destroy( AtmOptics )
-    CALL CRTM_AtmOptics_Destroy( AtmOptics_Clear )
-    CALL CRTM_SfcOptics_Destroy( SfcOptics )
-    CALL CRTM_SfcOptics_Destroy( SfcOptics_Clear )
-    CALL CRTM_Atmosphere_Destroy( Atm )
-    CALL CRTM_Atmosphere_Destroy( Atm_Clear )
-    ! ...Internal variables
-    CALL AOvar_Destroy( AOvar )
-    CALL CSvar_Destroy( CSvar )
-    CALL ASvar_Destroy( ASvar )
-    CALL RTV_Destroy( RTV ) 
-
-
-  CONTAINS
+      ! Clean up
+      CALL CRTM_Predictor_Destroy( Predictor )
+      CALL CRTM_AtmOptics_Destroy( AtmOptics )
+      CALL CRTM_AtmOptics_Destroy( AtmOptics_Clear )
+      CALL CRTM_SfcOptics_Destroy( SfcOptics )
+      CALL CRTM_SfcOptics_Destroy( SfcOptics_Clear )
+      CALL CRTM_Atmosphere_Destroy( Atm )
+      CALL CRTM_Atmosphere_Destroy( Atm_Clear )
+      ! ...Internal variables
+      CALL AOvar_Destroy( AOvar )
+      CALL CSvar_Destroy( CSvar )
+      CALL ASvar_Destroy( ASvar )
+      CALL RTV_Destroy( RTV )
+    end function profile_solution
 
 
     ! ----------------------------------------------------------------
@@ -928,63 +991,38 @@ CONTAINS
     !   3. Apply antenna correction to brightness temperature
     ! ----------------------------------------------------------------
 
-    SUBROUTINE Post_Process_RTSolution(rts)
-      TYPE(CRTM_RTSolution_type), INTENT(IN OUT) :: rts
+    SUBROUTINE Post_Process_RTSolution(rts, &
+                                       NLTE_Predictor, &
+                                       ChannelIndex, SensorIndex, &
+                                       compute_antenna_correction, GeometryInfo)
+      TYPE(CRTM_RTSolution_type),   INTENT(IN OUT) :: rts
+      TYPE(NLTE_Predictor_type),    INTENT(IN)     :: NLTE_Predictor
+      INTEGER,                      INTENT(IN) :: ChannelIndex, SensorIndex
+      LOGICAL,                      INTENT(IN) :: compute_antenna_correction
+      TYPE(CRTM_GeometryInfo_type), INTENT(IN) :: GeometryInfo
 
       ! Compute non-LTE correction to radiance if required
       IF ( Opt%Apply_NLTE_Correction .AND. NLTE_Predictor_IsActive(NLTE_Predictor) ) THEN
         CALL Compute_NLTE_Correction( &
-               SC(SensorIndex)%NC, &  ! Input
-               ChannelIndex      , &  ! Input
-               NLTE_Predictor    , &  ! Input
-               rts%Radiance        )  ! In/Output
+             SC(SensorIndex)%NC, &  ! Input
+             ChannelIndex      , &  ! Input
+             NLTE_Predictor    , &  ! Input
+             rts%Radiance        )  ! In/Output
       END IF
       ! Convert the radiance to brightness temperature
       CALL CRTM_Planck_Temperature( &
-             SensorIndex               , & ! Input
-             ChannelIndex              , & ! Input
-             rts%Radiance              , & ! Input
-             rts%Brightness_Temperature  ) ! Output
+           SensorIndex               , & ! Input
+           ChannelIndex              , & ! Input
+           rts%Radiance              , & ! Input
+           rts%Brightness_Temperature  ) ! Output
       ! Compute Antenna correction to brightness temperature if required
       IF ( compute_antenna_correction ) THEN
         CALL CRTM_Compute_AntCorr( &
-               GeometryInfo, &  ! Input
-               SensorIndex , &  ! Input
-               ChannelIndex, &  ! Input
-               rts           )  ! Output
+             GeometryInfo, &  ! Input
+             SensorIndex , &  ! Input
+             ChannelIndex, &  ! Input
+             rts           )  ! Output
       END IF
-
     END SUBROUTINE Post_Process_RTSolution
-
   END FUNCTION CRTM_Forward
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Forward_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Forward_Version( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Forward_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Forward_Version
-
 END MODULE CRTM_Forward_Module
