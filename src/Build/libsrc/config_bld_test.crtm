@@ -1,0 +1,303 @@
+#!/bin/bash
+#
+# CREATION HISTORY:
+#       Written by:   Jim Rosinski, 3-Mar-2019
+#
+# Usage: ./config_bld_test.crtm
+#
+# This script replaces everything that used to be in the config-setup/ directory. It sets up
+# env. vars. and compiler flags based on user input, then runs configure to create Makefiles.
+# It then runs "make clean"; "make"; "make check" in sequence, or the user can hit cntl-c and run 
+# these "make" commands manually as in the past. The primary motivations to move to a
+# script-based approach vs. the previous approach are:'
+#
+# 1) Avoid a potential explosion of the number of files required to support various
+#    permutations of compiler, debug flags, OpenMP, etc.
+#
+# 2) Embed the settings of various env. vars. inside a script to avoid potentially polluting
+#    the user's environment with unwanted settings for other work they may have ongoing.
+#
+# 3) Enable multiple per-vendor compiler versions to probably work without having to create
+#    separate "configure" files for them (e.g. pgf95 and pgfortran, xlf2003 and xlf2008)
+#
+# 4) For the novice user, walk them through the process of building the CRTM and then running
+#    the test code (check_crtm.fpp) to verify that everything is working correctly.
+#  
+# Very few changes have been made to configure.ac itself, just some compiler updates.
+# Options for ftn and g95 have been eliminated.
+# PGI option "pgfortran" added since "pgf95" is old. 
+# Both xlf2003 and xlf2008 are valid xlf compilers (old setup scripts only allowed xlf2003).
+#   However, I do not have access to xlf compilers so they are untested.
+#
+# Choosing defaults where available sets nearly the same "configure" settings as the
+# old "setup" scripts that needed to be "source"d. check_crtm answers match identically
+
+
+#################### Functions ###############################
+
+# get_yesno: Sets an input variable named by a string to "y" or "n" based on user input
+function get_yesno () {
+  if test "$#" -ne 2; then
+    echo "${FUNCNAME[0]}: requires 2 args: varname, question"
+    exit 1
+  fi
+
+  local varname=$1
+  local question=$2
+  local yesno=("y" "n")
+  local defans=${yesno[0]}
+  local ans
+
+  while [ true ]; do
+    echo -n "$question [$defans]"
+    read ans < /dev/stdin
+    if [[ -z $ans ]]; then
+      ans=$defans
+    fi
+    if [[ $ans == y || $ans == n ]]; then
+      break
+    else
+      echo "${FUNCNAME[0]}: You must enter y or n or <CR>"
+    fi
+  done
+  eval "$varname=\$ans"
+}
+
+# setvar: Sets an input variable named by a string to a value, with a default setting
+#         e.g. setvar "myvar" 2 sets $myvar based on user input, with a default value of 2
+function setvar () {
+  if test "$#" -ne 2; then
+    echo "${FUNCNAME[0]}: requires 2 args: varname, default_value"
+    exit 1
+  fi
+
+  local varname=$1
+  local defans=$2
+  local ans=''
+
+  echo -n "Enter $varname [$defans]"
+  read ans < /dev/stdin
+  if [[ -z $ans ]]; then
+    ans=$defans
+  fi
+  eval "$varname=\$ans"
+}
+
+# setvar_chk: Sets an input variable named by a string to a value, with a default setting and
+#             list of available settings
+#             e.g. setvar_chk "myvar" 1 1 2 sets $myvar based on user input, with a default value of
+#             1 and valid inpuut of 1 or 2.
+function setvar_chk () {
+  if test "$#" -lt 3; then
+    echo "${FUNCNAME[0]}: requires at least 3 args: varname, default, array of valids"
+    exit 1
+  fi
+
+  local varname=$1
+  shift
+  local defans=$1
+  shift
+  local validvals=($@)
+  local ans
+
+  while [ true ]; do
+    ans=''
+    echo -n "Enter $varname (${validvals[@]}) [$defans]"
+    read ans < /dev/stdin
+    if [[ -z $ans ]]; then
+      ans=$defans
+    fi
+  
+    for i in "${validvals[@]}"; do
+      if [[ $ans == $i ]]; then break; fi
+    done
+    if [[ $ans == $i ]]; then
+      break
+    else
+      echo "$ans not in list: ${validvals[@]}"
+    fi
+  done
+  eval "$varname=\$ans"
+}
+
+# checkstat: Tests the value of input arg vs 0, exits if non-zero. Designed to be run immediately
+# after a command, with $? as input argument
+function checkstat () {
+if [ $1 -ne 0 ]; then
+  echo "$cmd failed. Please start over"
+  exit 1
+fi
+}
+
+#################### Begin main script code ###############################
+
+# Set compiler, given a list of valid settings
+declare -a validcomp=("gfortran" "ifort" "pgf95" "pgfortran" "xlf2003" "xlf2008")
+setvar_chk "compiler" ${validcomp[0]} ${validcomp[@]}
+printf "compiler is $compiler\n\n"
+
+# Determine whether to start with optimized or debug default compilation flags
+declare -a opt_debug=("optimized" "debug")
+setvar_chk "opt" ${opt_debug[0]} ${opt_debug[@]}
+printf "opt is $opt\n\n"
+
+# Set hardwired flags, optimization flags, and link libraries based on compiler
+case $compiler in
+  ifort)
+    hardwired="-g -e08 -free -assume byterecl,realloc_lhs"
+    libs=""
+    case $opt in
+      optimized)
+	declare -a default_flags="-O3 -fp-model source"
+	;;
+      debug)
+	declare -a default_flags="-O0 -check bounds -traceback -fp-stack-check -mieee-fp"
+	;;
+    esac
+    ;;
+  gfortran)
+    hardwired="-g -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4  -Wall -Wconversion -std=f2008"
+    libs=""
+    case $opt in
+      optimized)
+	declare -a default_flags="-O3 -funroll-loops"
+	;;
+      debug)
+	declare -a default_flags="-O0 -finit-real=inf -fbounds-check -ffpe-trap=overflow,zero,invalid -fbacktrace"
+	;;
+    esac
+    ;;
+  pgf*)
+    hardwired="-g"
+    libs=""
+    case $opt in
+      optimized)
+	declare -a default_flags="-fast"
+	;;
+      debug)
+	declare -a default_flags="-Ktrap=ovf,divz -Mdaz -Mbounds -Mchkstk -Mdclchk -Minform,inform -Mnosave -Mref_externals -Kieee"
+	;;
+    esac
+    ;;
+  xlf*)
+    echo "NOTE: xlf* compilers have not been tested."
+    hardwired="-gdbg -qhalt=W -qlanglvl=2008pure -qsuffix=f=f90:cpp=F90"
+    libs="-lmass -lm"
+    case $opt in
+      optimized)
+	declare -a default_flags="-qarch=auto -qstrict -NS32768 -O3"
+	;;
+      debug)
+	declare -a default_flags="-qcheck -qextchk -qfloat=nomaf:rndsngl -qflttrap=ov:zero:en -qinitauto -qmaxmem=-1"
+	;;
+    esac
+    ;;
+  *)
+    echo "compiler=$compiler is unknown: hardwired=libs=empty"
+    hardwired=""
+    libs=""
+    echo "compiler=$compiler is unknown: Guessing default is -g"
+    declare -a default_flags=""
+    ;;
+esac
+printf "Hardwired flags based on compiler = \"$hardwired\"\n"
+printf "link libs based on compiler = \"$libs\"\n\n"
+
+# Determine whether to enable OpenMP threading, set $threadingarg appropriately if so
+get_yesno "omp_threading" "Do you want to enable OpenMP threading?"
+if [[ $omp_threading == y ]]; then
+  case $compiler in
+    ifort)
+      threadingarg="-qopenmp"
+      ;;
+    gfortran)
+      threadingarg="-fopenmp"
+      ;;
+    pgf*)
+      threadingarg="-mp"
+      ;;
+    xlf*)
+      threadingarg="-qsmp=omp"
+      ;;
+    *)
+      echo "compiler=$compiler is unknown: Enter omp_threading flag manually"
+      setvar "threadingarg" "unknown"
+      ;;
+  esac
+  printf "OMP threading is enabled. flag is \"$threadingarg\"\n\n"
+else
+  printf "OMP threading is disabled\n\n"
+  threadingarg=""
+fi
+
+if [[ $compiler == gfortran ]] && [[ $opt == debug ]]; then
+  get_yesno "enable_gcov" "Do you want to enable the gcov coverage analysis tool?"
+  if [[ $enable_gcov == y ]]; then
+    gcov_flags="-fprofile-arcs -ftest-coverage"
+    libs="$libs -lgcov"
+  fi
+fi
+
+setvar "optflags" "$default_flags $gcov_flags"
+printf "optflags = \"$optflags\"\n\n"
+
+# Set --prefix arg for configure
+setvar "install_prefix" "/usr/local"
+
+# Set and run "configure" command
+cmd="env FC=$compiler FCFLAGS=\"$hardwired $optflags $threadingarg\" LDFLAGS=\"$threadingarg\" LIBS=\"$libs\" ./configure --prefix=$install_prefix"
+
+printf "Based on input so far, default configure cmd is:\n $cmd\n\n"
+get_yesno "run_asis" "OK to run as-is (y) or enter modified command (n)"
+if [[ $run_asis == n ]]; then
+  echo "Enter configure cmd:"
+  read cmd < /dev/stdin
+fi
+echo "Running $cmd ..."
+eval $cmd
+checkstat $?
+echo Success
+echo "$cmd" > configure.cmd
+echo "Output from configure cmd (for potential later use) is stored in configure.cmd"
+
+get_yesno "keepgoing" "configure done. Do you want to continue by running \"make clean; make\"?"
+if [[ $keepgoing == n ]]; then
+  echo "Stopping. You can now run \"make clean; make; make check\" from the command line"
+  exit 0
+fi
+
+# Set number of threads for parallel make, then run "make clean; make"
+echo -n "Enter number of threads for parallel make (1 for serial):"
+read nthreads_make < /dev/stdin
+
+make clean
+make -j$nthreads_make 2>&1 | tee out.make.${opt}
+# Use PIPESTATUS array because previous cmd had a pipe
+checkstat ${PIPESTATUS[0]}
+echo Success
+
+get_yesno "keepgoing" "\"make\" done. Do you want to continue by running \"make check\"?"
+if [[ $keepgoing == n ]]; then
+  echo "Stopping. You can now run \"make check\" from the command line"
+  echo "Remember to set \$OMP_NUM_THREADS if the build was done with OpenMP enabled"
+  exit 0
+fi
+
+# If appropriate, set the value of $OMP_NUM_THREADS
+# Then run "make check" which compiles and runs check_crtm
+# check_crtm Output will be in the file listed
+if [[ $omp_threading == y ]]; then
+  echo "Enter value for OMP_NUM_THREADS:"
+  read nthreads
+  outfn=out.${compiler}.${opt}.nthreads${nthreads}
+  cmd="env OMP_NUM_THREADS=$nthreads make check 2>&1 > $outfn"
+else
+  outfn=out.${compiler}.${opt}
+  cmd="make check 2>&1 > $outfn"
+fi
+echo "Running $cmd ..."
+eval $cmd
+checkstat $?
+echo Success
+echo "Run output is in $outfn"
+exit 0
