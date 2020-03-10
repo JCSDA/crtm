@@ -44,10 +44,8 @@ MODULE CRTM_Module
 
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
-  CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = &
-#include "CRTM_Version.inc"
+  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = 'unknown'
+  CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = 'unknown'
 
 
 CONTAINS

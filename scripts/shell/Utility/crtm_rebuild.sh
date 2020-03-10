@@ -128,49 +128,50 @@ if [ $? -ne 0 ]; then
   cd ${CURRENT_DIR}; exit ${FAILURE}
 fi
 
-cd Build
-if [ $? -ne 0 ]; then
-  error_message "Error changing to CRTM build directory"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#JR Skip the rest of the stuff and instead use config_bld_test.crtm
+#cd Build
+#if [ $? -ne 0 ]; then
+#  error_message "Error changing to CRTM build directory"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-. config-setup/${COMPILER}${DEBUG}.setup
+#. config-setup/${COMPILER}${DEBUG}.setup
 
-NETCDF_DIR=${NETCDF} ./configure --prefix=${PWD}
-if [ $? -ne 0 ]; then
-  error_message "Error configuring the CRTM library build"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#NETCDF_DIR=${NETCDF} ./configure --prefix=${PWD}
+#if [ $? -ne 0 ]; then
+#  error_message "Error configuring the CRTM library build"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-make uninstall
-if [ $? -ne 0 ]; then
-  error_message "Error uninstalling prior to CRTM library build"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#make uninstall
+#if [ $? -ne 0 ]; then
+#  error_message "Error uninstalling prior to CRTM library build"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-make clean
-if [ $? -ne 0 ]; then
-  error_message "Error cleaning prior to CRTM library build"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#make clean
+#if [ $? -ne 0 ]; then
+#  error_message "Error cleaning prior to CRTM library build"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-make
-if [ $? -ne 0 ]; then
-  error_message "Error building the CRTM library"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#make
+#if [ $? -ne 0 ]; then
+#  error_message "Error building the CRTM library"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-make check
-if [ $? -ne 0 ]; then
-  error_message "Error checking the CRTM library build"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#make check
+#if [ $? -ne 0 ]; then
+#  error_message "Error checking the CRTM library build"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-make install
-if [ $? -ne 0 ]; then
-  error_message "Error installing the CRTM library"
-  cd ${CURRENT_DIR}; exit ${FAILURE}
-fi
+#make install
+#if [ $? -ne 0 ]; then
+#  error_message "Error installing the CRTM library"
+#  cd ${CURRENT_DIR}; exit ${FAILURE}
+#fi
 
-# Return to original directory
-cd ${CURRENT_DIR}
+## Return to original directory
+#cd ${CURRENT_DIR}

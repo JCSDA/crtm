@@ -75,7 +75,7 @@
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

@@ -58,7 +58,6 @@ MODULE TauCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  '$Id$'
   ! Message string length
   INTEGER , PARAMETER :: ML = 256
   ! Sensor ID string length
