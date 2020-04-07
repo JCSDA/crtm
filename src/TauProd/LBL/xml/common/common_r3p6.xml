@@ -1,6 +1,0 @@
-<lblinput>
-  <!-- Common 3.6 record -->
-  <record name="r3p6" type="common" format="(8es10.3)">
-    <entry name="vmol" dim="(MAX_N_ABSORBERS)" type="REAL(fp)" value="0.0_fp" desc="Molecular concentration"/>
-  </record>
-</lblinput>

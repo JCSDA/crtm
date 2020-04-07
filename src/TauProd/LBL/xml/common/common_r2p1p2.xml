@@ -1,7 +1,0 @@
-<lblinput>
-  <!-- Common 2.1.2 record. Doubles for use as 2.1.3 record also. -->
-  <record name="r2p1p2" type="common" format="(8es10.3)">
-    <entry name="wkl"    dim="(MAX_N_ABSORBERS)" type="REAL(fp)" value="0.0_fp" desc="Column densities (molecules/cm^2) or mixing ratios for absorbing gases"/>
-    <entry name="wbroad"                         type="REAL(fp)" value="0.0_fp" desc="Column density (molecules/cm^2) for broadening gases"/>
-  </record>
-</lblinput>

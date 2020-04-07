@@ -1,7 +1,0 @@
-Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
-DumpFile_Utility.o : DumpFile_Utility.f90 Message_Handler.o File_Utility.o Type_Kinds.o 
-File_Utility.o : File_Utility.f90 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Test_DumpFile.o : Test_DumpFile.f90 DumpFile_Utility.o Unit_Test.o Message_Handler.o Type_Kinds.o 
-Type_Kinds.o : Type_Kinds.f90 
-Unit_Test.o : Unit_Test.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 

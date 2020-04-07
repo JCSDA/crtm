@@ -1,6 +1,0 @@
-<lblinput>
-  <!-- Common 3.7.1 record -->
-  <record name="r3p7p1" type="common" format="(7a10,(/,8a10))">
-    <entry name="xsname" dim="(MAX_N_XSECT_ABSORBERS)" type="CHARACTER(10)" value="''" desc="Name of the cross-section molecules"/>
-  </record>
-</lblinput>
