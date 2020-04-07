@@ -1,0 +1,1 @@
+/Users/bjohns/CRTM/CRTM_dev/src//SfcOptics/NESDIS_Emissivity/NESDIS_AMSRE_SNOWEM_Module.f90
