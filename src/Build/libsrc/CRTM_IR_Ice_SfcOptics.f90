@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//SfcOptics/CRTM_IR_Ice_SfcOptics.f90

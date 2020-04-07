@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//SfcOptics/NESDIS_Emissivity/NESDIS_SEAICE_PHYEM_MODULE.f90

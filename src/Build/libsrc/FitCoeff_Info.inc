@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//Coefficients/FitCoeff/FitCoeff_Info.inc

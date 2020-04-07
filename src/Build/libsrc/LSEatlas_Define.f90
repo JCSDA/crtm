@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//Coefficients/EmisCoeff/IR_Land/LSEatlas/LSEatlas_Define.f90

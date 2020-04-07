@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//AtmScatter/AerosolScatter/ASvar_Define.f90

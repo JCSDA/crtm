@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//AtmOptics/AOvar_Define.f90

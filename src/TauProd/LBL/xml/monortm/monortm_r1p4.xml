@@ -1,8 +1,0 @@
-<lblinput>
-  <!-- MonoRTM 1.4 records -->
-  <record name="r1p4" type="monortm" format="(7(es10.3))">
-    <entry name="tbound"              type="REAL(fp)"      value="0.0_fp"                    desc="Temperature of end-of-path boundary (K)"/>
-    <entry name="sremis"    dim="(3)" type="REAL(fp)"      value="(/1.0_fp,0.0_fp,0.0_fp/)"  desc="Frequency dependent boundary emissivity coefficients"/>
-    <entry name="srrefl"    dim="(3)" type="REAL(fp)"      value="(/0.0_fp,0.0_fp,0.0_fp/)"  desc="Frequency dependent boundary reflectivity coefficients"/>
-  </record>
-</lblinput>

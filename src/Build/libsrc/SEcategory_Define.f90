@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//Coefficients/EmisCoeff/SEcategory/SEcategory_Define.f90

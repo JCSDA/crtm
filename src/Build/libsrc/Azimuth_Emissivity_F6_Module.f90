@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//SfcOptics/MW_Water/FASTEM_MWSSEM/Azimuth_Emissivity_F6_Module.f90

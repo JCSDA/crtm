@@ -1,1 +1,0 @@
-/Users/bjohns/CRTM/CRTM_dev/src//Coefficients/EmisCoeff/MW_Water/MWwaterCoeff_Define.f90
