@@ -4,7 +4,7 @@ JCSDA CRTM v2.3.x Build Instructions
 $Revision$
 
 
-CRTM SUPPORT EMAIL: ncep.list.emc.jcsda_crtm.support@noaa.gov
+CRTM SUPPORT EMAIL: crtm-support@googlegroups.com
 
 If you have problems building the library please include the
 generated "config.log" file in your email correspondence.
@@ -335,7 +335,7 @@ To also remove all the configuration products (i.e. the makefiles) type
 
 That's pretty much it. Any questions or bug reports can be sent to CRTM Support.
 
-  CRTM SUPPORT EMAIL: ncep.list.emc.jcsda_crtm.support@noaa.gov
+  CRTM SUPPORT EMAIL: crtm-support@googlegroups.com
 
 If you have problems building the library please include the generated "config.log"
 file in your email correspondence.
