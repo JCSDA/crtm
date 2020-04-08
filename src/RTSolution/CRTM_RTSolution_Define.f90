@@ -397,6 +397,9 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN) :: Unit
     ! Local variables
     INTEGER :: fid
+    CHARACTER(len=*), parameter :: fmt64 = '(3x,a,es22.15)'  ! print in 64-bit precision
+    CHARACTER(len=*), parameter :: fmt32 = '(3x,a,es13.6)'   ! print in 32-bit precision
+    CHARACTER(len=*), parameter :: fmt = fmt64               ! choose 64-bit precision
 
     ! Setup
     fid = OUTPUT_UNIT
@@ -412,18 +415,18 @@ CONTAINS
     WRITE(fid,'(3x,"WMO Sensor Id                 : ",i0)') RTSolution%WMO_Sensor_ID
     WRITE(fid,'(3x,"Channel                       : ",i0)') RTSolution%Sensor_Channel
     WRITE(fid,'(3x,"RT Algorithm Name             : ",a )') RTSolution%RT_Algorithm_Name
-    WRITE(fid,'(3x,"Scattering Optical Depth      : ",es22.15)') RTSolution%SOD
-    WRITE(fid,'(3x,"Surface Emissivity            : ",es22.15)') RTSolution%Surface_Emissivity
-    WRITE(fid,'(3x,"Surface Reflectivity          : ",es22.15)') RTSolution%Surface_Reflectivity
-    WRITE(fid,'(3x,"Up Radiance                   : ",es22.15)') RTSolution%Up_Radiance
-    WRITE(fid,'(3x,"Down Radiance                 : ",es22.15)') RTSolution%Down_Radiance
-    WRITE(fid,'(3x,"Down Solar Radiance           : ",es22.15)') RTSolution%Down_Solar_Radiance
-    WRITE(fid,'(3x,"Surface Planck Radiance       : ",es22.15)') RTSolution%Surface_Planck_Radiance
-    WRITE(fid,'(3x,"Total cloud cover             : ",es22.15)') RTSolution%Total_Cloud_Cover
-    WRITE(fid,'(3x,"Radiance (clear)              : ",es22.15)') RTSolution%R_clear
-    WRITE(fid,'(3x,"Brightness Temperature (clear): ",es22.15)') RTSolution%Tb_clear
-    WRITE(fid,'(3x,"Radiance                      : ",es22.15)') RTSolution%Radiance
-    WRITE(fid,'(3x,"Brightness Temperature        : ",es22.15)') RTSolution%Brightness_Temperature
+    WRITE(fid,fmt) "Scattering Optical Depth      : ", RTSolution%SOD
+    WRITE(fid,fmt) "Surface Emissivity            : ", RTSolution%Surface_Emissivity
+    WRITE(fid,fmt) "Surface Reflectivity          : ", RTSolution%Surface_Reflectivity
+    WRITE(fid,fmt) "Up Radiance                   : ", RTSolution%Up_Radiance
+    WRITE(fid,fmt) "Down Radiance                 : ", RTSolution%Down_Radiance
+    WRITE(fid,fmt) "Down Solar Radiance           : ", RTSolution%Down_Solar_Radiance
+    WRITE(fid,fmt) "Surface Planck Radiance       : ", RTSolution%Surface_Planck_Radiance
+    WRITE(fid,fmt) "Total cloud cover             : ", RTSolution%Total_Cloud_Cover
+    WRITE(fid,fmt) "Radiance (clear)              : ", RTSolution%R_clear
+    WRITE(fid,fmt) "Brightness Temperature (clear): ", RTSolution%Tb_clear
+    WRITE(fid,fmt) "Radiance                      : ", RTSolution%Radiance
+    WRITE(fid,fmt) "Brightness Temperature        : ", RTSolution%Brightness_Temperature
     IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
       WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
       WRITE(fid,'(3x,"Upwelling Overcast Radiance :")')
