@@ -19,7 +19,7 @@ The created installation directory can then be moved by NCO SPAs to its final
 or testing location (/nwprod/lib or /nwpara/lib) as required.
 
 If there are any questions or problems (or suggestions to make this even easier)
-don't hesistate to contact me at paul.vandelst@noaa.gov.
+don't hesistate to contact me at benjamin.t.johnson@noaa.gov (or crtm-support@googlegroups.com)
 
 Full-blown configuration, build, check, and install instructions are available
 in the README file.
