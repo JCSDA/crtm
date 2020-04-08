@@ -3,7 +3,7 @@ AC_REVISION($Id$)
 
 
 ## Initialise autoconf
-AC_INIT([CRTM], m4_esyscmd([tr -d "\n'" < libsrc/CRTM_Version.inc]), [ncep.list.emc.jcsda_crtm.support@noaa.gov], [crtm])
+AC_INIT([CRTM], m4_esyscmd([tr -d "\n'" < libsrc/CRTM_Version.inc]), [crtm-support@googlegroups.com], [crtm])
 
 
 # Output info for user
