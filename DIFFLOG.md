@@ -6,7 +6,7 @@
 [Author: Benjamin T. Johnson, UCAR/JCSDA (bjohns@ucar.edu)]
 [Creation Date: 2020-04-08]
 
-[Note: See CHANGELOG.md for a compact/human friendly changelog.]
+[Note: See crtm_release_notes.txt for a compact/human friendly description.]
 
 [Note: diff lines without any ###c### below them are identical between versions.]
 [Note: files listed at the end of this document do not exist in the older version.]
