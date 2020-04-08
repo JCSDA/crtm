@@ -59,7 +59,6 @@ MODULE ODAS_Predictor_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ODAS_PREDICTOR_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODAS_PREDICTOR_VERSION = 1  ! This is just the default data version.

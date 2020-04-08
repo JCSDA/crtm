@@ -79,7 +79,6 @@ MODULE ODSSU_AtmAbsorption
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

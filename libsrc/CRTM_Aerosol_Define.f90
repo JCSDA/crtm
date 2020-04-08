@@ -106,7 +106,6 @@ MODULE CRTM_Aerosol_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Aerosol types and names
   INTEGER, PARAMETER :: N_VALID_AEROSOL_CATEGORIES = 8
   INTEGER, PARAMETER ::        INVALID_AEROSOL = 0

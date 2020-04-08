@@ -47,7 +47,6 @@ MODULE ODAS_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Message character length
   INTEGER, PARAMETER :: ML = 512
   ! Keyword set value

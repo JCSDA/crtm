@@ -73,7 +73,6 @@ MODULE CRTM_TauCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
 
   ! --------------------------------------

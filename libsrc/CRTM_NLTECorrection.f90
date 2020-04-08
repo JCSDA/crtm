@@ -52,7 +52,6 @@ MODULE CRTM_NLTECorrection
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   
   
 CONTAINS

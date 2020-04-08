@@ -69,7 +69,6 @@ MODULE ODPS_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id:  $'
   ! ODPS invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(fp),     PARAMETER :: FP_INVALID = -1.0_fp

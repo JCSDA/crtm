@@ -29,7 +29,6 @@ PROGRAM check_crtm
   ! --------------------------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'check_crtm'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id: check_crtm.fpp 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 
 

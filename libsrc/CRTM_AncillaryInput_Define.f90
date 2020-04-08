@@ -25,7 +25,6 @@ MODULE CRTM_AncillaryInput_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   
   !--------------------
   ! Structure defintion

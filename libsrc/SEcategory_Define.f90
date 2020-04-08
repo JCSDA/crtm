@@ -67,7 +67,6 @@ MODULE SEcategory_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Datatype information
   CHARACTER(*), PARAMETER :: SECATEGORY_DATATYPE = 'SEcategory'
   ! Release and version

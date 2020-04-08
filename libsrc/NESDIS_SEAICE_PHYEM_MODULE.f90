@@ -33,7 +33,6 @@ MODULE NESDIS_SEAICE_PHYEM_MODULE
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS

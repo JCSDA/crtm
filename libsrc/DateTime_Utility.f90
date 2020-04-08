@@ -45,7 +45,6 @@ MODULE DateTime_Utility
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: NL = 20
 
 
