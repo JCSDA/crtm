@@ -43,7 +43,6 @@ MODULE DeltaRadTrainSet_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER,      PARAMETER :: SET = 1
   ! Literal constants

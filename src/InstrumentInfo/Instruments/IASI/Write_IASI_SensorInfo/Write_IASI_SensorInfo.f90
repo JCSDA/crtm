@@ -37,7 +37,6 @@ PROGRAM Write_IASI_SensorInfo
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Write_IASI_SensorInfo'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! Channel subset selections
   INTEGER,      PARAMETER :: N_SETS = 8

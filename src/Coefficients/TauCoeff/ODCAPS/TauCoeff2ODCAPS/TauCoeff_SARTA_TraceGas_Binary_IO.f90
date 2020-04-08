@@ -136,7 +136,6 @@ MODULE TauCoeff_SA_TraceGas_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_SA_TraceGas_Binary_IO.f90,v 5.6 2006/05/03 18:15:01 Ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0
@@ -1889,7 +1888,6 @@ END MODULE TauCoeff_SA_TraceGas_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauCoeff_SA_TraceGas_Binary_IO.f90,v 1.1 2006/05/03 19:42:09 ychen Exp $
 !
 ! $Date: 2006/05/03 19:42:09 $
 !

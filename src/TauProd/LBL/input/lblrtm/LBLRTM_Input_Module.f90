@@ -143,7 +143,6 @@ MODULE LBLRTM_Input_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: ML = 256
   
   

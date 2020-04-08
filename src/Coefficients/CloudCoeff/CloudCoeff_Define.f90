@@ -56,7 +56,6 @@ MODULE CloudCoeff_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! CloudCoeff init values
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value

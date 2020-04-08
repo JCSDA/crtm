@@ -35,7 +35,6 @@ PROGRAM AntCorr_Impact
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AntCorr_Impact'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! A list of the instruments for which we may have antenna correction data
   INTEGER,      PARAMETER :: N_AC_SENSORS = 10

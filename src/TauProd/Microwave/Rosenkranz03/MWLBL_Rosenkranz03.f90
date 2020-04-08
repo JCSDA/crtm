@@ -48,7 +48,6 @@ MODULE MWLBL_Rosenkranz03
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Literal constants
   REAL(fp), PRIVATE, PARAMETER :: ZERO           =  0.0_fp
   REAL(fp), PRIVATE, PARAMETER :: ZEROpointFIVE  =  0.5_fp

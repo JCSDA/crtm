@@ -44,7 +44,6 @@ PROGRAM tg_ASG_Rewrite
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'tg_ASG_Rewrite'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   ! Default dimensions
   INTEGER, PARAMETER :: N_ABSORBERS = 2  ! H2O and O3
   INTEGER, PARAMETER :: N_AEROSOLS  = 0  ! No aerosols, just clouds

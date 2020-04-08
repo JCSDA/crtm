@@ -123,7 +123,6 @@ MODULE AIRS_ChannelProperties
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AIRS_ChannelProperties.f90,v 1.6 2006/06/15 17:14:58 wd20pd Exp $'
 
   ! -- The data reading format string
   CHARACTER( * ), PRIVATE, PARAMETER :: FORMAT_STRING = &
@@ -852,7 +851,6 @@ END MODULE AIRS_ChannelProperties
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_ChannelProperties.f90,v 1.6 2006/06/15 17:14:58 wd20pd Exp $
 !
 ! $Date: 2006/06/15 17:14:58 $
 !

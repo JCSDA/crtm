@@ -63,7 +63,6 @@ MODULE ODCAPS_TauCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_TauCoeff.f90 2210 2008-07-01 19:30:54Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------

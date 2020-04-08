@@ -84,7 +84,6 @@ PROGRAM Test_MWSE
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_MWSE'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_MWSE.f90,v 1.6 2006/05/02 14:58:35 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -349,7 +348,6 @@ END PROGRAM Test_MWSE
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_MWSE.f90,v 1.6 2006/05/02 14:58:35 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:35 $
 !

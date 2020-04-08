@@ -31,7 +31,6 @@ PROGRAM Test_ComponentTest
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_ComponentTest'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER ::  NC_FILENAME = 'Test.ComponentTest.nc'
   INTEGER, PARAMETER :: SET = 1
   INTEGER, PARAMETER :: N_DATASETS   = 10

@@ -65,6 +65,5 @@ MODULE Units_Conversion
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 END MODULE Units_Conversion

@@ -135,7 +135,6 @@ PROGRAM Average_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Average_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Average_SRFs.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -807,7 +806,6 @@ END PROGRAM Average_SRFs
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Average_SRFs.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $
 !
 ! $Date: 2006/08/15 20:51:04 $
 !

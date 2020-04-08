@@ -44,7 +44,6 @@ MODULE NLTE_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length

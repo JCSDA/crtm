@@ -198,7 +198,6 @@ MODULE TauCoeff_SARTA_TraceGas_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauCoeff_SARTA_TraceGas_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- TauCoeff_SARTA_TraceGas valid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -1631,7 +1630,6 @@ END MODULE TauCoeff_SARTA_TraceGas_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauCoeff_SARTA_TraceGas_Define.f90,v 1.1 2006/05/03 19:42:09 ychen Exp $
 !
 ! $Date: 2006/05/03 19:42:09 $
 !

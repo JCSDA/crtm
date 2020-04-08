@@ -34,7 +34,6 @@ PROGRAM Create_Test_Surface
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Create_Test_Surface'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   ! Filenames
   CHARACTER(*), PARAMETER :: TEST_FILENAME = 'Test.Surface.bin'
   ! Structure dimensions

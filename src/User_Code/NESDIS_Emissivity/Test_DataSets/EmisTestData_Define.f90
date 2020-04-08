@@ -130,7 +130,6 @@ MODULE EmisTestData_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: EmisTestData_Define.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
 
   ! -- EmisTestData scalar member invalid value
   INTEGER,        PRIVATE, PARAMETER :: INVALID = -1
@@ -1179,7 +1178,6 @@ END MODULE EmisTestData_Define
 !                          -- MODIFICATION HISTORY --
 !---------------------------------------------------------------------------------
 !
-! $Id: EmisTestData_Define.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:35 $
 !

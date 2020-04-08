@@ -43,7 +43,6 @@ MODULE FTS_SensorData_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! The Sensor Id string length
   INTEGER, PARAMETER :: SL = 20

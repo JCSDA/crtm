@@ -69,7 +69,6 @@ MODULE CRTM_MW_Ice_SfcOptics
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
   ! --------------------------------------

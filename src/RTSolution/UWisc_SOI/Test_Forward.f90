@@ -100,7 +100,6 @@ PROGRAM Test_Forward
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Forward.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -356,7 +355,6 @@ END PROGRAM Test_Forward
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_Forward.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:35 $
 !

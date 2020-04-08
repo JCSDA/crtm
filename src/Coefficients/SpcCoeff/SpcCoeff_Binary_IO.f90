@@ -52,7 +52,6 @@ MODULE SpcCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default message length
   INTEGER, PARAMETER :: ML = 512
   ! Ancillary data indicator

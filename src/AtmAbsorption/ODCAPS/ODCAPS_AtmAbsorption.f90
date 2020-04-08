@@ -187,7 +187,6 @@ MODULE ODCAPS_AtmAbsorption
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_AtmAbsorption.f90,v 2.5 2006/05/24 16:19:28 ychen Exp $'
 
   ! -- Keyword set value
   !INTEGER, PRIVATE, PARAMETER :: SET = 1

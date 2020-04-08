@@ -103,7 +103,6 @@ PROGRAM SRF_netCDF_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_netCDF_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_netCDF_IO_Test.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -373,7 +372,6 @@ END PROGRAM SRF_netCDF_IO_Test
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_netCDF_IO_Test.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $
 !
 ! $Date: 2006/08/15 20:51:04 $
 !

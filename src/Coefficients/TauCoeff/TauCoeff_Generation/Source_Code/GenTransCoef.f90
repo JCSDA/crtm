@@ -162,7 +162,6 @@ program GenTransCoef
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'GenTransCoef'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: GenTransCoef.f90,v 1.1 2004/05/13 13:47:50 paulv Exp $'
 
   !--- atmospheric profile
 

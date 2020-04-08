@@ -167,7 +167,6 @@ PROGRAM Create_ProcessControl_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_ProcessControl_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_ProcessControl_File.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

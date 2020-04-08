@@ -218,7 +218,6 @@ MODULE ProcessControl_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ProcessControl_Define.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1319,7 +1318,6 @@ END MODULE ProcessControl_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: ProcessControl_Define.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

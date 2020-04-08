@@ -122,7 +122,6 @@ MODULE CRTMstats_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTMstats_netCDF_IO.f90,v 1.2 2006/11/22 16:02:04 dgroff Exp $'
 
   ! -- Literal constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO = 0.0_fp_kind
@@ -5084,7 +5083,6 @@ END MODULE CRTMstats_netCDF_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTMstats_netCDF_IO.f90,v 1.2 2006/11/22 16:02:04 dgroff Exp $
 !
 ! $Date: 2006/11/22 16:02:04 $
 !

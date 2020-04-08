@@ -35,7 +35,6 @@ MODULE Timing_Utility
 
   ! Parameters
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
 

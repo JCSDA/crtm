@@ -51,7 +51,6 @@ MODULE NESDIS_OCEANEM_Module
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: zero = 0.0_fp
   REAL(fp), PARAMETER :: one = 1.0_fp

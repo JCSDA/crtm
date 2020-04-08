@@ -35,7 +35,6 @@ PROGRAM ODASNC2ODSSUBIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'ODASNC2ODSSUBIN'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

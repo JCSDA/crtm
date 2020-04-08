@@ -59,7 +59,6 @@ PROGRAM SRF_ASCII2NC
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'SRF_ASCII2NC'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Invalid NCEP sensor ID. The NCEP sensor ID is no longer used and this

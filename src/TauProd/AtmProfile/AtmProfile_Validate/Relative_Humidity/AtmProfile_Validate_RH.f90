@@ -29,7 +29,6 @@ PROGRAM AtmProfile_Validate_RH
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AtmProfile_Validate_RH'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
   INTEGER, PARAMETER :: LUN = 1
   REAL(fp) :: MAX_RELATIVE_HUMIDITY = 100.0_fp
 

@@ -109,7 +109,6 @@ MODULE EmisTestData_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: EmisTestData_Binary_IO.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -821,7 +820,6 @@ END MODULE EmisTestData_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: EmisTestData_Binary_IO.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:35 $
 !

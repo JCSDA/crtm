@@ -22,7 +22,6 @@ PROGRAM Test_Date_Utility
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Date_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   INTEGER, PARAMETER :: DAYS_IN_A_YEAR = 365
 
   ! Variables

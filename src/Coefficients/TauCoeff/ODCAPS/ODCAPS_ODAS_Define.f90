@@ -183,7 +183,6 @@ MODULE ODCAPS_ODAS_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_ODAS_Define.f90,v 1.10 2006/05/02 19:42:09 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

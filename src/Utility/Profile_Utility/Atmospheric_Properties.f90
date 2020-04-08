@@ -45,7 +45,6 @@ MODULE Atmospheric_Properties
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! Scalng factor to return density in kg.m^-3
   REAL(fp), PARAMETER :: RHO_SCALE_FACTOR = 0.1_fp

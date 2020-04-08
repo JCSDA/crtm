@@ -43,7 +43,6 @@ MODULE CloudCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

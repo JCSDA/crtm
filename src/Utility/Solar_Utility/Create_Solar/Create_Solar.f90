@@ -75,7 +75,6 @@ PROGRAM Create_Solar
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_Solar'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   ! The input ASCII filename and data attributes
   CHARACTER(*), PARAMETER :: INFILE     = 'Kurucz_solar_extracted_490.0-26000cm-1.asc'
   CHARACTER(*), PARAMETER :: TITLE      = 'Kurucz synthetic and blackbody extraterrestrial solar source functions.'

@@ -43,7 +43,6 @@ MODULE ECMWF83_Profile_Set
   ! ----------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Message string length
   INTEGER,  PARAMETER :: ML = 512
   ! Invalid flag

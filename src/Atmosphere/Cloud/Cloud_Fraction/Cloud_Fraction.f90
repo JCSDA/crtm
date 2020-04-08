@@ -27,7 +27,6 @@ PROGRAM Cloud_Fraction
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME = 'Cloud_Fraction'
   CHARACTER(*),  PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   ! Generic
   LOGICAL , PARAMETER :: QUIET = .TRUE.
   ! Thresholds

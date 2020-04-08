@@ -64,7 +64,6 @@ MODULE LSEatlas_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Datatype information
   CHARACTER(*), PARAMETER :: LSEATLAS_DATATYPE = 'LSEatlas'
   ! Current valid release and version

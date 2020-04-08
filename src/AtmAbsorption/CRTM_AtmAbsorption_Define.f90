@@ -42,7 +42,6 @@ MODULE CRTM_AtmAbsorption_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
 
   ! ----------------------------------

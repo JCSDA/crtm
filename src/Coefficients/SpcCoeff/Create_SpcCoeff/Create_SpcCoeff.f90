@@ -70,7 +70,6 @@ PROGRAM Create_SpcCoeff
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SpcCoeff'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
   ! Cosmic background temperature

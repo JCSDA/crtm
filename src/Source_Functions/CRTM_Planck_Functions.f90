@@ -38,7 +38,6 @@ MODULE CRTM_Planck_Functions
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
     
     
 CONTAINS

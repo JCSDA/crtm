@@ -57,7 +57,6 @@ MODULE ODPS_CoordinateMapping
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
 CONTAINS
 

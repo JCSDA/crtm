@@ -45,7 +45,6 @@ MODULE SpcCoeff_Binary_IO_old
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
   ! Message character length

@@ -255,7 +255,6 @@ END MODULE MWSE_Snow_Parameters
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MWSE_Snow_Parameters.f90,v 1.1 2004/12/09 20:07:32 paulv Exp $
 !
 ! $Date: 2004/12/09 20:07:32 $
 !

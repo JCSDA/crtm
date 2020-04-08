@@ -58,7 +58,6 @@ MODULE Liebe93_Coefficients
   ! Module Parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
 
 

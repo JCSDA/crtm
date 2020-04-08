@@ -71,7 +71,6 @@ MODULE TauProfile_netCDF_IO_old
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! Literal constants
   REAL(dp), PARAMETER :: ZERO = 0.0_dp

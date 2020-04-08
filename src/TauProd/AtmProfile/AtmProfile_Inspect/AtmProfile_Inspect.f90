@@ -30,7 +30,6 @@ PROGRAM AtmProfile_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AtmProfile_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

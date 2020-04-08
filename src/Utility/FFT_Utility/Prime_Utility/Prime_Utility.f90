@@ -39,7 +39,6 @@ MODULE Prime_Utility
   ! Module parameters
   ! -----------------
   CHARACTER(*),PARAMETER :: MODULE_RCS_ID = &
-  '$Id: $'
 
 
 CONTAINS

@@ -77,6 +77,5 @@ MODULE Ocean_Permittivity
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 END MODULE Ocean_Permittivity

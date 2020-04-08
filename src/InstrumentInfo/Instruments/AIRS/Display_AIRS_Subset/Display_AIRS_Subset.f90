@@ -30,7 +30,6 @@ PROGRAM Display_AIRS_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Display_AIRS_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Display_AIRS_Subset.f90,v 1.4 2006/06/15 17:14:35 wd20pd Exp $'
   INTEGER,      PARAMETER :: N_VALID_SETS = 3
   CHARACTER(*), PARAMETER, DIMENSION( N_VALID_SETS ) :: &
     VALID_SET_NAME = (/ '281 channel set', &

@@ -30,7 +30,6 @@ PROGRAM Create_SensorInfo_Code
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_SensorInfo_Code'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_SensorInfo_Code.f90,v 1.1.2.1 2006/09/01 16:46:25 frpv Exp $'
   CHARACTER(*), PARAMETER :: SENSORINFO_FILENAME='SensorInfo'
   INTEGER, PARAMETER :: SL = 20
 

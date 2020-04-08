@@ -30,7 +30,6 @@ PROGRAM Check_TauProfile
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   INTEGER,  PARAMETER :: SET = 1
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp

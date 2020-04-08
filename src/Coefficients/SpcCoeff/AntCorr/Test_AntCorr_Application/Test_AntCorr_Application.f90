@@ -35,7 +35,6 @@ PROGRAM Test_AntCorr_Application
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Test_AntCorr_Application'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   
   ! Test data filenames
   INTEGER, PARAMETER :: N_SENSORS = 2

@@ -45,7 +45,6 @@ PROGRAM average_tape13_tau
 
   CHARACTER( LEN = 18 ),  PARAMETER :: program_name = 'AVERAGE_TAPE13_TAU'
   CHARACTER( LEN = 128 ), PARAMETER :: rcs_Id = &
-    '$Id: average_tape13_tau.f90,v 1.6 2000/07/13 23:19:58 paulv Exp $'
 
 
 

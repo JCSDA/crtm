@@ -56,7 +56,6 @@ MODULE ComponentTest_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   ! Keyword set flag

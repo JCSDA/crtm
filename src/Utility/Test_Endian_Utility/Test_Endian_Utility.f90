@@ -81,7 +81,6 @@ PROGRAM Test_Endian_Utility
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Endian_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Endian_Utility.f90,v 1.4 2004/11/30 20:43:04 paulv Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -407,7 +406,6 @@ END PROGRAM Test_Endian_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_Endian_Utility.f90,v 1.4 2004/11/30 20:43:04 paulv Exp $
 !
 ! $Date: 2004/11/30 20:43:04 $
 !

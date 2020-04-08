@@ -138,7 +138,6 @@ PROGRAM Check_TauProfile_Data
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile_Data'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_TauProfile_Data.f90,v 1.6 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -653,7 +652,6 @@ END PROGRAM Check_TauProfile_Data
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Check_TauProfile_Data.f90,v 1.6 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

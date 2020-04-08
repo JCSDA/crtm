@@ -76,7 +76,6 @@ MODULE CompTest_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: COMPTEST_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: COMPTEST_VERSION = 1  ! This is just the data version for the release.

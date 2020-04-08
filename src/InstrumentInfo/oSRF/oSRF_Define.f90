@@ -103,7 +103,6 @@ MODULE oSRF_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! Message length
   INTEGER,  PARAMETER :: SL = 20  ! Sensor Id length

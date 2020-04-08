@@ -28,7 +28,6 @@ PROGRAM AerosolCoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AerosolCoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   ! ---------
   ! Variables

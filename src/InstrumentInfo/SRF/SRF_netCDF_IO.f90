@@ -56,7 +56,6 @@ MODULE SRF_netCDF_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Invalid flag
   INTEGER, PARAMETER :: INVALID = -1
   ! Keyword set values

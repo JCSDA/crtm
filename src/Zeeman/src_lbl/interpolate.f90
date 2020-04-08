@@ -132,7 +132,6 @@ MODULE interpolate
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! -- Maximum order for interpolating polynomial
   INTEGER, PRIVATE, PARAMETER :: MAX_ORDER = 9
@@ -3262,7 +3261,6 @@ END MODULE interpolate
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
 !
 ! $Date: 2002/10/08 14:48:26 $
 !
