@@ -67,9 +67,6 @@ MODULE ODPS_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id:  $'
   ! ODPS invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(fp),     PARAMETER :: FP_INVALID = -1.0_fp
@@ -425,7 +422,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Reinitialise the dimensions
     ODPS%n_Layers     = 0
@@ -649,7 +646,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check dimension input
     IF ( n_Layers     < 1 .OR. &
@@ -843,7 +840,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     IF ( n_OCoeffs < 1 ) THEN
       Error_Status = FAILURE
@@ -986,7 +983,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! ALL *input* pointers must be associated
     IF ( .NOT. Associated_ODPS( ODPS_In ) ) THEN
@@ -1172,7 +1169,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check structures
     IF ( .NOT. Associated_ODPS( ODPS1 ) ) THEN
@@ -1501,7 +1498,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check structures
     IF ( .NOT. Associated_ODPS( ODPS1 ) ) THEN
@@ -1866,7 +1863,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Default precision is a single unit in last place
     ULP = 1
@@ -2191,7 +2188,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
 
     ! Check the release
@@ -2292,7 +2289,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = "unknown"
 
 
     ! Check the algorithm ID
@@ -2361,7 +2358,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Write the required data to the local string
     ! -------------------------------------------
