@@ -61,7 +61,7 @@ update:
 	update "*.output"; update "*.bin"
 
 $(EXE_FILE): $(OBJ_FILE)
-	$(FC) $(LDFLAGS) $(OBJ_FILE) -o $(EXE_FILE) $(LIBS)
+	$(FC) $(OBJ_FILE) -o $(EXE_FILE) $(LDFLAGS) $(LIBS)
 
 # Specify targets that do not generate filesystem objects
 .PHONY: all clean check update distclean
