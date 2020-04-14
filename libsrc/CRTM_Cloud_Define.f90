@@ -105,7 +105,7 @@ MODULE CRTM_Cloud_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_Cloud_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! The valid cloud categories and names
   INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6
   INTEGER, PARAMETER :: INVALID_CLOUD = 0

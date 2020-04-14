@@ -60,7 +60,7 @@ MODULE IRwaterCoeff_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: IRwaterCoeff_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Current valid release and version
   INTEGER, PARAMETER :: IRWATERCOEFF_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: IRWATERCOEFF_VERSION = 2  ! This is just the default data version.

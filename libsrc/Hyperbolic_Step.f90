@@ -31,7 +31,7 @@ MODULE Hyperbolic_Step
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Hyperbolic_Step.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Literals
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp

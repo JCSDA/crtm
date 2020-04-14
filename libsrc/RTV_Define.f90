@@ -65,7 +65,7 @@ MODULE RTV_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
+  '$Id: RTV_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
   ! Threshold for determing if an additional stream
   ! angle is required for the satellite zenith angle

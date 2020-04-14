@@ -65,7 +65,7 @@ MODULE CRTM_AtmOptics
   ! Module parameters
   ! ---------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_AtmOptics.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

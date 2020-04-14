@@ -38,7 +38,7 @@ MODULE CRTM_Planck_Functions
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
+    '$Id: CRTM_Planck_Functions.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
     
     
 CONTAINS

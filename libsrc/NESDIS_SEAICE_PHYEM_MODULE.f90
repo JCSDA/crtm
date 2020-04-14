@@ -33,7 +33,7 @@ MODULE NESDIS_SEAICE_PHYEM_MODULE
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: NESDIS_SEAICE_PHYEM_MODULE.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 
 CONTAINS

@@ -42,7 +42,7 @@ MODULE Slope_Variance
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Slope_Variance.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp

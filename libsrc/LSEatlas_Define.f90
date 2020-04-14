@@ -64,7 +64,7 @@ MODULE LSEatlas_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: LSEatlas_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Datatype information
   CHARACTER(*), PARAMETER :: LSEATLAS_DATATYPE = 'LSEatlas'
   ! Current valid release and version

@@ -57,7 +57,7 @@ MODULE NLTE_Predictor_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: NLTE_Predictor_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp

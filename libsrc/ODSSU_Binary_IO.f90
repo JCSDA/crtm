@@ -52,7 +52,7 @@ MODULE ODSSU_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
+    '$Id: ODSSU_Binary_IO.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length

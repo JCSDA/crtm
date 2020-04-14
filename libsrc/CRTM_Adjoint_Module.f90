@@ -159,7 +159,7 @@ MODULE CRTM_Adjoint_Module
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_Adjoint_Module.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 
 CONTAINS

@@ -53,7 +53,7 @@ MODULE Binary_File_Utility
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Binary_File_Utility.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Magic number header value for byte-swap checks
   INTEGER(Long), PARAMETER :: MAGIC_NUMBER = 123456789_Long
   ! Integer "logicals" for I/O

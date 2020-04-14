@@ -35,7 +35,7 @@ MODULE Timing_Utility
 
   ! Parameters
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Timing_Utility.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   INTEGER, PARAMETER :: ML = 256
 
 

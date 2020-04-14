@@ -59,7 +59,7 @@ MODULE AerosolCoeff_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: AerosolCoeff_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION = 1  ! This is just the data version for the release.

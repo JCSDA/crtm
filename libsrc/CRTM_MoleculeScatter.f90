@@ -38,7 +38,7 @@ MODULE CRTM_MoleculeScatter
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
+  '$Id: CRTM_MoleculeScatter.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Rayleigh factor
   REAL(fp),     PARAMETER :: RFACTOR = 27.0363_fp  ! = 287.0/9.8*923.1907/1000.0
 

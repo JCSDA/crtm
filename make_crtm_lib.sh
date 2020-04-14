@@ -1,7 +1,7 @@
 #!/bin/sh
 ###############################################################################
 #
-# $Id$
+# $Id: make_crtm_lib.sh 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $
 #
 # Script to configure, build, and install the CRTM library.
 #

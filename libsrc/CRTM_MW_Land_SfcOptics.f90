@@ -50,7 +50,7 @@ MODULE CRTM_MW_Land_SfcOptics
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_MW_Land_SfcOptics.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Message length
   INTEGER, PARAMETER :: ML = 256
   ! Valid type indices for the microwave land emissivity model

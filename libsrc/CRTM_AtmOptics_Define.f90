@@ -78,7 +78,7 @@ MODULE CRTM_AtmOptics_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: CRTM_AtmOptics_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: ATMOPTICS_RELEASE = 4  ! This determines structure and file formats.
   ! Close status for write errors

@@ -64,7 +64,7 @@ MODULE CRTM_Interpolation
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID=&
-  '$Id$'
+  '$Id: CRTM_Interpolation.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   INTEGER,  PARAMETER :: ORDER     = 2            ! Quadratic

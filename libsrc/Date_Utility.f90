@@ -39,7 +39,7 @@ MODULE Date_Utility
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Date_Utility.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! String length for character functions
   INTEGER, PARAMETER :: NL = 20
   ! Number of Months in a Year

@@ -52,7 +52,7 @@ MODULE SpcCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: SpcCoeff_Binary_IO.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Default message length
   INTEGER, PARAMETER :: ML = 512
   ! Ancillary data indicator

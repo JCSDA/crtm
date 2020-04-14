@@ -47,7 +47,7 @@ MODULE CRTM_Model_Profiles
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
+  '$Id: CRTM_Model_Profiles.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
   ! Model dimension info
   INTEGER, PARAMETER :: N_MODEL_LEVELS    = 101

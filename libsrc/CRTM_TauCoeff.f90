@@ -73,7 +73,7 @@ MODULE CRTM_TauCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
+  '$Id: CRTM_TauCoeff.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 
   ! --------------------------------------

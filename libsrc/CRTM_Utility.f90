@@ -56,7 +56,7 @@ MODULE CRTM_UTILITY
   ! -----------------
   ! Version Id for the module 
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = & 
-  '$Id$'
+  '$Id: CRTM_Utility.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Numerical small threshold value in Eigensystem
   REAL(fp), PARAMETER :: EIGEN_THRESHOLD = 1.0e-20_fp
 

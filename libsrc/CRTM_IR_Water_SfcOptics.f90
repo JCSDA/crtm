@@ -54,7 +54,7 @@ MODULE CRTM_IR_Water_SfcOptics
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_IR_Water_SfcOptics.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Coefficients for Sigma**2 in the Cox & Munk slope probability density function
   REAL(fp), PARAMETER :: CM_1 = 0.003_fp, CM_2 = 5.12e-3_fp
 

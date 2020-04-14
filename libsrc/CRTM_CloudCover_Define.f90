@@ -60,7 +60,7 @@ MODULE CRTM_CloudCover_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_CloudCover_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! The valid cloud categories and names
 ! INTEGER, PARAMETER :: N_OVERLAPS = 4
   INTEGER, PARAMETER :: N_OVERLAPS = 5          

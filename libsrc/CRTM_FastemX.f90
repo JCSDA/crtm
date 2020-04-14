@@ -111,7 +111,7 @@ MODULE CRTM_FastemX
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_FastemX.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
   ! FASTEM6 version number for use with azimuth model
   INTEGER, PARAMETER :: FASTEM6 = 6

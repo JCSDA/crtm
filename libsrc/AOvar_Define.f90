@@ -61,7 +61,7 @@ MODULE AOvar_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: AOvar_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: AOVAR_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: AOVAR_VERSION = 1  ! This is just the default data version.

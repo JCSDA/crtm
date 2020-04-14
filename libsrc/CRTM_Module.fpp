@@ -45,7 +45,7 @@ MODULE CRTM_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_Module.fpp 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = &
 #include "CRTM_Version.inc"
 

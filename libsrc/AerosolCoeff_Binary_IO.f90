@@ -44,7 +44,7 @@ MODULE AerosolCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
+    '$Id: AerosolCoeff_Binary_IO.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

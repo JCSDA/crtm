@@ -166,7 +166,7 @@ MODULE UnitTest_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: UnitTest_Define.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   INTEGER,      PARAMETER :: SL = 512
   INTEGER,      PARAMETER :: CR = 13
   INTEGER,      PARAMETER :: LF = 10

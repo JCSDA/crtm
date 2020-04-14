@@ -76,7 +76,7 @@ MODULE CRTM_LifeCycle
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_LifeCycle.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! Error message length
   INTEGER, PARAMETER :: SL = 5000  ! Maximum length for path+filenames

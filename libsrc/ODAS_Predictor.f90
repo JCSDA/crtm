@@ -70,7 +70,7 @@ MODULE ODAS_Predictor
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: ODAS_Predictor.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
 
 
   ! Absorbers in the gas absorption model

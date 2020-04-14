@@ -64,7 +64,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: CRTM_MW_Water_SfcOptics.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Low frequency model threshold
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD = 20.0_fp ! GHz
 

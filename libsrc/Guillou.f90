@@ -44,7 +44,7 @@ MODULE Guillou
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: Guillou.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   REAL(fp), PARAMETER :: ONE    = 1.0_fp

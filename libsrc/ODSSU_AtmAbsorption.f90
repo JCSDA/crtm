@@ -79,7 +79,7 @@ MODULE ODSSU_AtmAbsorption
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
+  '$Id: ODSSU_AtmAbsorption.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

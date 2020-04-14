@@ -47,7 +47,7 @@ MODULE ODAS_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
+    '$Id: ODAS_Binary_IO.f90 99117 2017-11-27 18:37:14Z tong.zhu@noaa.gov $'
   ! Message character length
   INTEGER, PARAMETER :: ML = 512
   ! Keyword set value
