@@ -54,6 +54,7 @@ MODULE Zeeman_Input_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ZEEMAN_INPUT_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ZEEMAN_INPUT_VERSION = 1  ! This is just the default data version.

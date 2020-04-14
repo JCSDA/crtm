@@ -52,6 +52,7 @@ MODULE ODPS_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+    '$Id: ODPS_Binary_IO.f90 2169 2008-06-12 15:07:56Z paul.vandelst@noaa.gov $'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length

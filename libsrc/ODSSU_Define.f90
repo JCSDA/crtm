@@ -58,6 +58,7 @@ MODULE ODSSU_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
   ! ODSSU invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(Double), PARAMETER :: FP_INVALID = -1.0_Double

@@ -248,6 +248,7 @@ MODULE CRTM_Atmosphere_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
   ! The absorber IDs. Use HITRAN definitions
   INTEGER, PARAMETER :: N_VALID_ABSORBER_IDS = 32

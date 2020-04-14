@@ -82,6 +82,7 @@ MODULE ODPS_Predictor_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id: xODPS_Predictor_Define.f90 18500 2012-04-02 11:07:35Z paul.vandelst@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: ODPS_PREDICTOR_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODPS_PREDICTOR_VERSION = 1  ! This is just the default data version.

@@ -54,6 +54,7 @@ MODULE Subset_Define
   ! Module Parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
   ! -----------------------------------

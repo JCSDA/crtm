@@ -70,6 +70,7 @@ MODULE ODAS_Predictor
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
   ! Absorbers in the gas absorption model

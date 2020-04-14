@@ -33,6 +33,7 @@ MODULE NESDIS_SnowEM_Parameters
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
   ! Snow types
   INTEGER, PUBLIC, PARAMETER :: INVALID_SNOW_TYPE   = -999

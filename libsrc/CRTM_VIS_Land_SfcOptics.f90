@@ -49,6 +49,7 @@ MODULE CRTM_VIS_Land_SfcOptics
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

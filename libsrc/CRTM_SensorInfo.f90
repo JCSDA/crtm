@@ -32,6 +32,7 @@ MODULE CRTM_SensorInfo
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
+  '$Id$'
   ! WMO SENSOR codes from COMMON CODE TABLE C-8
   INTEGER, PUBLIC, PARAMETER :: WMO_HIRS2    = 605
   INTEGER, PUBLIC, PARAMETER :: WMO_MSU      = 623

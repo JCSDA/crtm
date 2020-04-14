@@ -59,6 +59,7 @@ MODULE PAFV_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: PAFV_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: PAFV_VERSION = 1  ! This is just the default data version.

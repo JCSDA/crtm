@@ -84,6 +84,7 @@ MODULE CRTM_Geometry_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Literal constants 
   REAL(fp), PARAMETER :: ZERO = 0.0_fp 
   ! Message string length 

@@ -77,6 +77,7 @@ MODULE ODPS_Predictor
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+  '$Id: $'
 
   ! Dimensions of each predictor group.
   INTEGER, PARAMETER  :: N_G = 3

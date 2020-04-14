@@ -105,6 +105,7 @@ MODULE CRTM_Cloud_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! The valid cloud categories and names
   INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6
   INTEGER, PARAMETER :: INVALID_CLOUD = 0

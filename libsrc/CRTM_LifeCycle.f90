@@ -76,6 +76,7 @@ MODULE CRTM_LifeCycle
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! Error message length
   INTEGER, PARAMETER :: SL = 5000  ! Maximum length for path+filenames

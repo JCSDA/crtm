@@ -60,6 +60,7 @@ MODULE CRTM_CloudCover_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! The valid cloud categories and names
 ! INTEGER, PARAMETER :: N_OVERLAPS = 4
   INTEGER, PARAMETER :: N_OVERLAPS = 5          

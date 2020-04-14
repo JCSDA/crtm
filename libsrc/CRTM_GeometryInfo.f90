@@ -49,6 +49,7 @@ MODULE CRTM_GeometryInfo
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Metres->kilometres conversion factor
   REAL(fp), PARAMETER :: M_TO_KM = 1.0e-03_fp
 

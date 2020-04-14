@@ -75,6 +75,7 @@ MODULE ODZeeman_AtmAbsorption
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
 
 CONTAINS

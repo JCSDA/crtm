@@ -39,6 +39,7 @@ MODULE Date_Utility
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! String length for character functions
   INTEGER, PARAMETER :: NL = 20
   ! Number of Months in a Year

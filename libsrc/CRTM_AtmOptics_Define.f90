@@ -78,6 +78,7 @@ MODULE CRTM_AtmOptics_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ATMOPTICS_RELEASE = 4  ! This determines structure and file formats.
   ! Close status for write errors
