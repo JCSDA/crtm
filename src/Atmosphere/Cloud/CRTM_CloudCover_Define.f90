@@ -857,8 +857,8 @@ CONTAINS
       REAL(fp) :: prod_TL
       REAL(fp) :: maxcov_TL
 
-      ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-      maxcov_TL = huge(maxcov_TL)
+      ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+      maxcov_TL = HUGE(maxcov_TL)
       prod_TL                = -self_TL%Cloud_Fraction(1)
       self_TL%Cloud_Cover(1) = -prod_TL
       DO k = 2, n_layers
@@ -1457,8 +1457,8 @@ CONTAINS
     !JR Code modification is for MPAS test case for which n_Layers may differ across profiles
     !JR and previous code failed
     if (n_Layers /= self%n_Layers) then
-      if (allocated(self%Cloud_Fraction)) deallocate (self%Cloud_Fraction)
-      if (allocated(self%Cloud_Cover))    deallocate (self%Cloud_Cover)
+      if (allocated(self%Cloud_Fraction)) DEALLOCATE (self%Cloud_Fraction)
+      if (allocated(self%Cloud_Cover))    DEALLOCATE (self%Cloud_Cover)
       
       ALLOCATE( self%Cloud_Fraction( n_Layers ), &
                 self%Cloud_Cover( n_Layers ), &
@@ -1503,12 +1503,12 @@ CONTAINS
     !JR Code modification is for MPAS test case for which n_Layers may differ across profiles
     !JR and previous code failed
     if (n_Layers /= self%n_Layers) then
-      if (allocated(self%prod))    deallocate (self%prod)
-      if (allocated(self%lwc))     deallocate (self%lwc)
-      if (allocated(self%wc_sum))  deallocate (self%wc_sum)
-      if (allocated(self%wc))      deallocate (self%wc)
-      if (allocated(self%maxcov))  deallocate (self%maxcov)
-      if (allocated(self%cwc_sum)) deallocate (self%cwc_sum)
+      if (allocated(self%prod))    DEALLOCATE (self%prod)
+      if (allocated(self%lwc))     DEALLOCATE (self%lwc)
+      if (allocated(self%wc_sum))  DEALLOCATE (self%wc_sum)
+      if (allocated(self%wc))      DEALLOCATE (self%wc)
+      if (allocated(self%maxcov))  DEALLOCATE (self%maxcov)
+      if (allocated(self%cwc_sum)) DEALLOCATE (self%cwc_sum)
       ALLOCATE( self%prod( 0:n_Layers ), &
                 self%lwc( 1:n_Layers ), &
                 self%wc_sum( 0:n_Layers ), &

@@ -809,19 +809,19 @@ CONTAINS
       REAL(fp) ::    CH4_R
       REAL(fp) ::    CH4_ACH4zp
 
-      ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-      N2O_S       = huge(N2O_S)
-      N2O_R       = huge(N2O_R)
-      N2O_A       = huge(N2O_A)
-      N2O         = huge(N2O)
-      CO_S        = huge(CO_S)
-      CO_R        = huge(CO_R)
-      CO_ACOdCOzp = huge(CO_ACOdCOzp)
-      CO_A        = huge(CO_A)
-      CH4_R       = huge(CH4_R)
-      CH4_ACH4zp  = huge(CH4_ACH4zp)
-      CH4_A       = huge(CH4_A)
-      CH4         = huge(CH4)
+      ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+      N2O_S       = HUGE(N2O_S)
+      N2O_R       = HUGE(N2O_R)
+      N2O_A       = HUGE(N2O_A)
+      N2O         = HUGE(N2O)
+      CO_S        = HUGE(CO_S)
+      CO_R        = HUGE(CO_R)
+      CO_ACOdCOzp = HUGE(CO_ACOdCOzp)
+      CO_A        = HUGE(CO_A)
+      CH4_R       = HUGE(CH4_R)
+      CH4_ACH4zp  = HUGE(CH4_ACH4zp)
+      CH4_A       = HUGE(CH4_A)
+      CH4         = HUGE(CH4)
 
       Layer_Loop : DO k = 1, n_Layers
 
@@ -1231,7 +1231,7 @@ CONTAINS
 !JR    TYPE(PAFV_type), POINTER  :: PAFV => NULL()
     TYPE(PAFV_type), POINTER  :: PAFV
 
-    nullify(PAFV)
+    NULLIFY(PAFV)
 
     ! use short name
     PAFV => Predictor%PAFV
@@ -1321,32 +1321,32 @@ CONTAINS
       REAL(fp) ::    CH4_R,        CH4_R_TL
       REAL(fp) ::    CH4_ACH4zp,   CH4_ACH4zp_TL
 
-      ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-      N2O_TL        = huge(N2O_TL)
-      N2O_S_TL      = huge(N2O_S_TL)
-      N2O_S         = huge(N2O_S)
-      N2O_R         = huge(N2O_R)
-      N2O_R_TL      = huge(N2O_R_TL)
-      N2O           = huge(N2O)
-      N2O_A         = huge(N2O_A)
-      N2O_A_TL      = huge(N2O_A_TL)
-      CO_S_TL       = huge(CO_S_TL)
-      CO_S          = huge(CO_S)
-      CO_R          = huge(CO_R)
-      CO_R_TL       = huge(CO_R_TL)
-      CO_A_TL       = huge(CO_A_TL)
-      CO_A          = huge(CO_A)
-      CO_R          = huge(CO_R)
-      CO_ACODCOZP_TL= huge(CO_ACODCOZP_TL)
-      CO_ACODCOZP   = huge(CO_ACODCOZP)
-      CH4_TL        = huge(CH4_TL)
-      CH4_R_TL      = huge(CH4_R_TL)
-      CH4_A_TL      = huge(CH4_A_TL)
-      CH4_A         = huge(CH4_A)
-      CH4_R         = huge(CH4_R)
-      CH4           = huge(CH4)
-      CH4_ACH4ZP_TL = huge(CH4_ACH4ZP_TL)
-      CH4_ACH4ZP    = huge(CH4_ACH4ZP)
+      ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+      N2O_TL        = HUGE(N2O_TL)
+      N2O_S_TL      = HUGE(N2O_S_TL)
+      N2O_S         = HUGE(N2O_S)
+      N2O_R         = HUGE(N2O_R)
+      N2O_R_TL      = HUGE(N2O_R_TL)
+      N2O           = HUGE(N2O)
+      N2O_A         = HUGE(N2O_A)
+      N2O_A_TL      = HUGE(N2O_A_TL)
+      CO_S_TL       = HUGE(CO_S_TL)
+      CO_S          = HUGE(CO_S)
+      CO_R          = HUGE(CO_R)
+      CO_R_TL       = HUGE(CO_R_TL)
+      CO_A_TL       = HUGE(CO_A_TL)
+      CO_A          = HUGE(CO_A)
+      CO_R          = HUGE(CO_R)
+      CO_ACODCOZP_TL= HUGE(CO_ACODCOZP_TL)
+      CO_ACODCOZP   = HUGE(CO_ACODCOZP)
+      CH4_TL        = HUGE(CH4_TL)
+      CH4_R_TL      = HUGE(CH4_R_TL)
+      CH4_A_TL      = HUGE(CH4_A_TL)
+      CH4_A         = HUGE(CH4_A)
+      CH4_R         = HUGE(CH4_R)
+      CH4           = HUGE(CH4)
+      CH4_ACH4ZP_TL = HUGE(CH4_ACH4ZP_TL)
+      CH4_ACH4ZP    = HUGE(CH4_ACH4ZP)
       
       Layer_Loop : DO k = 1, n_Layers
 
@@ -1829,7 +1829,7 @@ CONTAINS
     TYPE(PAFV_type), POINTER  :: PAFV
 
 !JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
-    nullify(PAFV)
+    NULLIFY(PAFV)
     ! use short name
     PAFV => Predictor%PAFV
 
@@ -2937,7 +2937,7 @@ CONTAINS
      TYPE(PAFV_type), POINTER  :: PAFV
 
 !JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
-     nullify(PAFV)
+     NULLIFY(PAFV)
      ! short name
      PAFV => Predictor%PAFV
 
@@ -3127,7 +3127,7 @@ CONTAINS
      TYPE(PAFV_type), POINTER  :: PAFV
 
 !JR Looks silly since next stmt sets PAFV, but nullify here to guard agains future code changes
-     nullify(PAFV)
+     NULLIFY(PAFV)
      ! short name
      PAFV => Predictor%PAFV
 
@@ -3267,7 +3267,7 @@ CONTAINS
       CASE( GROUP_3 )
          Component_ID = COMPONENT_ID_MAP_G3(Component_Index)
       CASE DEFAULT
-         Component_ID = huge(Component_ID)  ! Entry not found: Hopefully induce code to fail 
+         Component_ID = HUGE(Component_ID)  ! Entry not found: Hopefully induce code to fail 
     END SELECT
   END FUNCTION ODPS_Get_Component_ID
 
@@ -3284,7 +3284,7 @@ CONTAINS
       CASE( GROUP_3 )
           Absorber_ID = ABSORBER_ID_MAP_G3(Absorber_Index)
       CASE DEFAULT
-          Absorber_ID = huge(Absorber_ID)  ! Entry not found: Hopefully induce code to fail 
+          Absorber_ID = HUGE(Absorber_ID)  ! Entry not found: Hopefully induce code to fail 
       END SELECT
   END FUNCTION ODPS_Get_Absorber_ID
 

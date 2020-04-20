@@ -397,9 +397,9 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN) :: Unit
     ! Local variables
     INTEGER :: fid
-    CHARACTER(len=*), parameter :: fmt64 = '(3x,a,es22.15)'  ! print in 64-bit precision
-    CHARACTER(len=*), parameter :: fmt32 = '(3x,a,es13.6)'   ! print in 32-bit precision
-    CHARACTER(len=*), parameter :: fmt = fmt64               ! choose 64-bit precision
+    CHARACTER(len=*), PARAMETER :: fmt64 = '(3x,a,es22.15)'  ! print in 64-bit precision
+    CHARACTER(len=*), PARAMETER :: fmt32 = '(3x,a,es13.6)'   ! print in 32-bit precision
+    CHARACTER(len=*), PARAMETER :: fmt = fmt64               ! choose 64-bit precision
 
     ! Setup
     fid = OUTPUT_UNIT

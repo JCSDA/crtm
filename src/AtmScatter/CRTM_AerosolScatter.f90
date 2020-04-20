@@ -797,7 +797,7 @@ CONTAINS
       CASE(ORGANIC_CARBON_AEROSOL)    ; k=6
       CASE(BLACK_CARBON_AEROSOL)      ; k=7
       CASE(SULFATE_AEROSOL)           ; k=8
-      CASE DEFAULT                    ; k=huge(k) ! Case not found: Hopefully induce code to fail
+      CASE DEFAULT                    ; k=HUGE(k) ! Case not found: Hopefully induce code to fail
     END SELECT
   END FUNCTION Aerosol_Type_Index
 
@@ -915,7 +915,7 @@ CONTAINS
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
     REAL(fp), POINTER :: z(:,:)
         
-    nullify (z)
+    NULLIFY (z)
     ! Setup
     ! -----
     ! No TL output when all dimensions
@@ -1026,7 +1026,7 @@ CONTAINS
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
     REAL(fp), POINTER :: z(:,:)
 
-    nullify(z)
+    NULLIFY(z)
 
     ! Setup
     ! -----

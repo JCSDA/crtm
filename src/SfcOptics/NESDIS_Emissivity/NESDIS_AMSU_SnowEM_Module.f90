@@ -474,8 +474,8 @@ subroutine em_initialization(frequency,em_vector)
   real(fp)    :: kratio, bconst,emissivity
   integer :: ich
 
-  ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-  emissivity = huge(emissivity)
+  ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+  emissivity = HUGE(emissivity)
 ! Sixteen candidate snow emissivity spectra
 
   em(1, 1: N_FREQUENCY) = WET_SNOW_EMISS(1:N_FREQUENCY)

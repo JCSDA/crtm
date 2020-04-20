@@ -352,8 +352,8 @@ CONTAINS
     ! Cloud cover object
     TYPE(CRTM_CloudCover_type) :: CloudCover, CloudCover_AD
 
-    ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-    r_cloudy = huge(r_cloudy)
+    ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+    r_cloudy = HUGE(r_cloudy)
     ! ------
     ! SET UP
     ! ------

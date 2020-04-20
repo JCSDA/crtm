@@ -224,7 +224,7 @@ CONTAINS
     LOGICAL :: no_optran
     LOGICAL :: allocate_success
 
-    allocate_success = .true. ! Default value is success since it may get tested w/o setting
+    allocate_success = .TRUE. ! Default value is success since it may get tested w/o setting
     ! Check input
     IF ( n_Layers < 1 ) RETURN
 

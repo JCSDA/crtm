@@ -460,10 +460,10 @@ CONTAINS
     REAL(fp) :: w1, w2, Doppler_shift
     INTEGER  :: i, j, j1, j2, js1, js2, k, inode, n_nodes, n_Layers, nc, np
 
-    ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-    inode = huge(inode)
-    w1 = huge(w1)
-    w2 = huge(w2)
+    ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+    inode = HUGE(inode)
+    w1 = HUGE(w1)
+    w2 = HUGE(w2)
     OD_Path = ZERO
     np = TC%n_Predictors(1, ChannelIndex)
 

@@ -443,8 +443,8 @@ CONTAINS
      REAL(fp)   :: frequency,freq(nch),emissivity,emis(nch)
      REAL(fp)   :: kratio, bconst
 
-     ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-     emissivity = huge(emissivity)
+     ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+     emissivity = HUGE(emissivity)
    ! Sixteen candidate snow emissivity spectra
      IF (snow_type == INVALID_SNOW_TYPE) snow_type = 4
 
@@ -542,8 +542,8 @@ CONTAINS
      ! Quadratic EQ terms (1.0,tb(4),tb(4)^2,tb(5),tb(5)^2,Ts)
      REAL(fp) :: coe3(6)
 
-     ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-     dem = huge(dem)
+     ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+     dem = HUGE(dem)
    ! Sixteen candidate snow emissivity spectra
      em = SNOW_EMISS_ATMS_LIB
      freq = FREQUENCY_ATMS
@@ -1003,8 +1003,8 @@ CONTAINS
      LOGICAL:: pick_status,tindex(nind)
      SAVE      threshold,DI_coe,LI_coe, HI_coe,nmodel
 
-     ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-     npass = huge(npass)
+     ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+     npass = HUGE(npass)
      nmodel = (/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/)
 
    ! Fitting coefficients for emissivity index at 31.4 GHz
@@ -1546,8 +1546,8 @@ CONTAINS
      REAL(fp) :: kratio, bconst,emissivity
      INTEGER :: ich
 
-     ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-     emissivity = huge(emissivity)
+     ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+     emissivity = HUGE(emissivity)
    ! Sixteen candidate snow emissivity spectra
 
      em = TRANSPOSE(SNOW_EMISS_ATMS_LIB)

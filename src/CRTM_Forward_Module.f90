@@ -335,7 +335,7 @@ CONTAINS
     end DO Profile_Loop1
 
     if (Error_Status == FAILURE) then
-      return
+      RETURN
     end if
 
 !$OMP PARALLEL DO PRIVATE (m, Opt, AncillaryInput) SCHEDULE (runtime)
@@ -357,7 +357,7 @@ CONTAINS
       Error_Status = FAILURE
       WRITE(Message,'(i0," profiles failed")') nfailure
       CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-      return
+      RETURN
     end if
 
     if (enable_timing) then
@@ -372,7 +372,7 @@ CONTAINS
       write(6,*)'CRTM_Forward inspecting RTSolution...'
       call CRTM_RTSolution_Inspect (RTSolution(:,:))
     end if
-    return
+    RETURN
     
   CONTAINS
 
@@ -446,7 +446,7 @@ CONTAINS
       SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
 
       ! Check whether to skip this profile
-      IF ( Opt%Skip_Profile ) return
+      IF ( Opt%Skip_Profile ) RETURN
 
       ! Check the input data if required
       IF ( Opt%Check_Input ) THEN

@@ -118,11 +118,11 @@ CONTAINS
     INTEGER  :: i, k1, k2, k, isen, isun
     INTEGER  :: n_Sensor_Angles, n_Solar_Angles
 
-    ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-    isen = huge(isen)
-    isun = huge(isun)
-    k1 = huge(k1)
-    k2 = huge(k2)
+    ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+    isen = HUGE(isen)
+    isun = HUGE(isun)
+    k1 = HUGE(k1)
+    k2 = HUGE(k2)
 
     ! Return if not an NLTE sensor
     IF ( .NOT. NLTECoeff_Associated( NLTECoeff ) ) RETURN

@@ -886,7 +886,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
-      CASE DEFAULT       ; k=huge(k)   ! Case not found: Hopefully induce code to fail
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     ! Perform interpolation
@@ -942,7 +942,7 @@ CONTAINS
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
     REAL(fp), POINTER :: z(:,:)
     
-    nullify(z)
+    NULLIFY(z)
     ! Setup
     ! -----
     ! No TL output when all dimensions
@@ -985,7 +985,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
-      CASE DEFAULT       ; k=huge(k)   ! Case not found: Hopefully induce code to fail
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     
@@ -1057,7 +1057,7 @@ CONTAINS
 !JR    REAL(fp), POINTER :: z(:,:) => NULL()
     REAL(fp), POINTER :: z(:,:)
 
-    nullify(z)
+    NULLIFY(z)
     ! Setup
     ! -----
     ! No AD output when all dimensions
@@ -1089,7 +1089,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
-      CASE DEFAULT       ; k=huge(k)   ! Case not found: Hopefully induce code to fail
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     ! Perform interpolation
@@ -1315,8 +1315,8 @@ CONTAINS
     REAL(fp), POINTER :: z2(:,:)
     REAL(fp), POINTER :: z3(:,:,:)
 
-    nullify(z2)
-    nullify(z3)
+    NULLIFY(z2)
+    NULLIFY(z3)
 
     ! Setup
     ! -----
@@ -1508,8 +1508,8 @@ CONTAINS
     REAL(fp), POINTER :: z2(:,:)
     REAL(fp), POINTER :: z3(:,:,:)
 
-    nullify(z2)
-    nullify(z3)
+    NULLIFY(z2)
+    NULLIFY(z3)
     ! Setup
     ! -----
     ! Initialise local adjoint variables
