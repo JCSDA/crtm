@@ -436,7 +436,7 @@ CONTAINS
       WRITE(fid,'(3x,"Layer Optical Depth      :")')
       WRITE(fid,'(5(1x,es22.15,:))') RTSolution%Layer_Optical_Depth
     END IF
-    flush(fid)
+    FLUSH(fid)
   END SUBROUTINE Scalar_Inspect
 
 
