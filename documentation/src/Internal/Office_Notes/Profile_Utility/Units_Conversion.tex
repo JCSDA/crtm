@@ -1,0 +1,74 @@
+\section{Units Conversion}
+%=========================
+\subsection{Specific amount $\leftrightarrow$ mixing ratio}
+%----------------------------------------------------------
+\subsubsection{Specific amount $\rightarrow$ mixing ratio}
+%.........................................................
+The specific amount, $SA$, of some gas, $g$, is defined as the ratio of the mass of gas to the total mass of air and water vapor in a given volume,
+\begin{equation}
+  SA_g = \frac{M_g}{M_w + M_d}
+  \label{eqn:SA_defn}
+\end{equation}
+\begin{tabular}{llcl}
+  where & $M_g$ & = & mass of gas\\
+        & $M_w$ & = & mass of water vapour\\
+        & $M_d$ & = & mass of dry air (including $M_g$)
+\end{tabular}
+
+The gas mass mixing ratio, $MR$, is defined as the ratio of the mass of the gas to the mass of dry air in a given volume:
+\begin{equation}
+  MR_g = \frac{M_g}{M_d}
+  \label{eqn:MR_defn}
+\end{equation}
+Rearranging equation \ref{eqn:SA_defn} and substituting it into equation \ref{eqn:MR_defn} gives,
+\begin{equation*}
+  \begin{array}{c@{{}={}}l}
+    \displaystyle
+    \frac{\D 1}{\D SA_g} & \frac{\D M_d + M_w}{\D M_g}\\[0.1in]
+                         & \frac{\D M_d}{\D M_g} + \frac{\D M_w}{\D M_g}\\[0.1in]
+                         & \frac{\D M_d}{\D M_g} + \frac{\D M_w}{\D M_d}\cdot\frac{\D M_d}{\D M_g}\\[0.1in]
+                         & \frac{\D 1}{\D MR_g}(1 + MR_w)
+  \end{array}
+\end{equation*}
+therefore
+\begin{equation}
+  MR_g = SA_g(1 + MR_w)
+  \label{eqn:MR2SA_defn}
+\end{equation}
+for input units of g/g or kg/kg. For input units of g/kg then,
+\begin{equation}
+  MR_g = SA_g(1 + 0.001MR_w)
+  \label{eqn:MR2SA_gkg_defn}
+\end{equation}
+If the input specific amount is for water vapor (specific humidity, $SH$), then \ref{eqn:MR2SA_gkg_defn} becomes,
+\begin{equation}
+  \begin{array}{ll@{{}={}}l}
+       & MR_w & SH(1 + 0.001MR_w)\\
+  i.e. & MR_w & SH + 0.001MRw\cdot SH
+  \end{array}
+  \label{eqn:MR2SH_defn}
+\end{equation}
+
+         MRw = SA ( 1 + 0.001*MRw )
+
+       i.e.
+
+         MRw = SA + 0.001*MRw*SA
+
+       i.e.
+
+         MRw( 1 - 0.001*SA ) = SA
+
+       therefore,
+
+                      SA
+         MRw = ------------------   .......(4)
+                ( 1 - 0.001*SA )
+
+
+
+
+
+
+
+To convert gas concentrations from mixing ratio to specific amount.

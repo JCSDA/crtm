@@ -1,0 +1,51 @@
+\subsection{\texttt{Inspect} interface}
+  \label{sec:Inspect_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Inspect
+ 
+  PURPOSE:
+    Subroutine method to display the contents of a CloudCover object.
+ 
+  CALLING SEQUENCE:
+    CALL cc_obj%Inspect( Hires=hires, Unit=unit, Verbose=Verbose )
+ 
+  OBJECTS:
+    cc_obj:  Cloud cover object
+             UNITS:      N/A
+             CLASS:      CRTM_CloudCover_type
+             DIMENSION:  Scalar
+             ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUTS:
+    Hires:   Set this logical argument to output object contents with
+             more significant digits.
+             If == .FALSE., output format is 'es13.6' [DEFAULT].
+                == .TRUE.,  output format is 'es22.15'
+             If not specified, default is .FALSE.
+             UNITS:      N/A
+             TYPE:       LOGICAL
+             DIMENSION:  Scalar
+             ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+    Unit:    Unit number for an already open file to which the output
+             will be written.
+             If the argument is specified and the file unit is not
+             connected, the output goes to stdout.
+             UNITS:      N/A
+             TYPE:       INTEGER
+             DIMENSION:  Scalar
+             ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+    Verbose: Set this logical argument to output the intermediate variable
+             sub-object contents if they are available.
+             If == .FALSE., the intermediate variables are NOT output [DEFAULT].
+                == .TRUE.,  the intermediate variables are output if available
+             If not specified, default is .FALSE.
+             UNITS:      N/A
+             TYPE:       LOGICAL
+             DIMENSION:  Scalar
+             ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  \end{alltt}

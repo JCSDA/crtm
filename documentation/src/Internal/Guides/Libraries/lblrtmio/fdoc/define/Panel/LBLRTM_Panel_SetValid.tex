@@ -1,0 +1,25 @@
+\subsection{\texttt{LBLRTM\_Panel\_SetValid} interface}
+  \label{sec:LBLRTM_Panel_SetValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Panel_SetValid
+ 
+  PURPOSE:
+        Elemental subroutine to mark an instance of an LBLRTM_Panel object
+        as containing valid data.
+ 
+        Valid flag is set only if the LBLRTM_Panel object is allocated AND
+        if the embedded LBLRTM_Phdr object is also valid.
+ 
+  CALLING SEQUENCE:
+        CALL LBLRTM_Panel_SetValid( LBLRTM_Panel )
+ 
+  OBJECTS:
+        LBLRTM_Panel:  Instance which is to have its validity set.
+                       UNITS:      N/A
+                       TYPE:       LBLRTM_Panel_type
+                       DIMENSION:  Scalar or any rank
+                       ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

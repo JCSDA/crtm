@@ -1,0 +1,32 @@
+\subsection{\texttt{CRTM\_RTSolution\_Associated} interface}
+  \label{sec:CRTM_RTSolution_Associated_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_RTSolution_Associated
+ 
+  PURPOSE:
+        Elemental function to test the status of the allocatable components
+        of a CRTM RTSolution object.
+ 
+  CALLING SEQUENCE:
+        Status = CRTM_RTSolution_Associated( RTSolution )
+ 
+  OBJECTS:
+        RTSolution:   RTSolution structure which is to have its member's
+                      status tested.
+                      UNITS:      N/A
+                      TYPE:       CRTM_RTSolution_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Status:       The return value is a logical value indicating the
+                      status of the RTSolution members.
+                        .TRUE.  - if the array components are allocated.
+                        .FALSE. - if the array components are not allocated.
+                      UNITS:      N/A
+                      TYPE:       LOGICAL
+                      DIMENSION:  Same as input RTSolution argument
+ 
+  \end{alltt}

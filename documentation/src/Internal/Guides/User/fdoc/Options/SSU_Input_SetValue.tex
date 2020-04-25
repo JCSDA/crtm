@@ -1,0 +1,49 @@
+\subsection{\texttt{SSU\_Input\_SetValue} interface}
+  \label{sec:SSU_Input_SetValue_interface}
+  \begin{alltt}
+ 
+  NAME:
+        SSU_Input_SetValue
+ 
+  PURPOSE:
+        Elemental subroutine to set the values of SSU_Input
+        object components.
+ 
+  CALLING SEQUENCE:
+        CALL SSU_Input_SetValue( SSU_Input                    , &
+                                 Time          = Time         , &
+                                 Cell_Pressure = Cell_Pressure, &
+                                 Channel       = Channel        )
+ 
+  OBJECTS:
+        SSU_Input:            SSU_Input object for which component values
+                              are to be set.
+                              UNITS:      N/A
+                              TYPE:       SSU_Input_type
+                              DIMENSION:  Scalar or any rank
+                              ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUTS:
+        Time:                 SSU instrument mission time.
+                              UNITS:      decimal year
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as SSU_Input
+                              ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Cell_Pressure:        SSU channel CO2 cell pressure. Must be
+                              specified with the Channel optional dummy
+                              argument.
+                              UNITS:      hPa
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as SSU_Input
+                              ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Channel:              SSU channel for which the CO2 cell pressure
+                              is to be set. Must be specified with the
+                              Cell_Pressure optional dummy argument.
+                              UNITS:      N/A
+                              TYPE:       INTEGER
+                              DIMENSION:  Scalar or same as SSU_Input
+                              ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  \end{alltt}

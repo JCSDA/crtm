@@ -1,0 +1,29 @@
+\subsection{\texttt{CRTM\_Aerosol\_Create} interface}
+  \label{sec:CRTM_Aerosol_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Aerosol_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of the CRTM Aerosol object.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Aerosol_Create( Aerosol, n_Layers )
+ 
+  OBJECTS:
+        Aerosol:      Aerosol structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Aerosol_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        n_Layers:     Number of layers for which there is Aerosol data.
+                      Must be > 0.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as Aerosol object
+                      ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

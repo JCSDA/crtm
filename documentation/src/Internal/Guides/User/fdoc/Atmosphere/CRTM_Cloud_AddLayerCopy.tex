@@ -1,0 +1,38 @@
+\subsection{\texttt{CRTM\_Cloud\_AddLayerCopy} interface}
+  \label{sec:CRTM_Cloud_AddLayerCopy_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Cloud_AddLayerCopy
+ 
+  PURPOSE:
+        Elemental function to copy an instance of the CRTM Cloud object
+        with additional layers added to the TOA of the input.
+ 
+  CALLING SEQUENCE:
+        cld_out = CRTM_Cloud_AddLayerCopy( cld, n_Added_Layers )
+ 
+  OBJECTS:
+        cld:             Cloud structure to copy.
+                         UNITS:      N/A
+                         TYPE:       CRTM_Cloud_type
+                         DIMENSION:  Scalar or any rank
+                         ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        n_Added_Layers:  Number of layers to add to the function result.
+                         UNITS:      N/A
+                         TYPE:       INTEGER
+                         DIMENSION:  Same as Cloud object
+                         ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        cld_out:         Copy of the input Cloud structure with space for
+                         extra layers added to TOA.
+                         UNITS:      N/A
+                         TYPE:       CRTM_Cloud_type
+                         DIMENSION:  Same as input.
+                         ATTRIBUTES: INTENT(OUT)
+ 
+ 
+  \end{alltt}

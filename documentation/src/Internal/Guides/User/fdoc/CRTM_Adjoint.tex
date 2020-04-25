@@ -1,0 +1,119 @@
+\subsection{\texttt{CRTM\_Adjoint} interface}
+  \label{sec:CRTM_Adjoint_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Adjoint
+ 
+  PURPOSE:
+        Function that calculates the adjoint of top-of-atmosphere (TOA)
+        radiances and brightness temperatures for an input atmospheric
+        profile or profile set and user specified satellites/channels.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Adjoint( Atmosphere       , &
+                                     Surface          , &
+                                     RTSolution_AD    , &
+                                     Geometry         , &
+                                     ChannelInfo      , &
+                                     Atmosphere_AD    , &
+                                     Surface_AD       , &
+                                     RTSolution       , &
+                                     Options = Options  )
+ 
+  INPUTS:
+        Atmosphere:     Structure containing the Atmosphere data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Rank-1 (n_Profiles)
+                        ATTRIBUTES: INTENT(IN)
+ 
+        Surface:        Structure containing the Surface data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Surface_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN)
+ 
+        RTSolution_AD:  Structure containing the RT solution adjoint inputs.
+                        **NOTE: On EXIT from this function, the contents of
+                                this structure may be modified (e.g. set to
+                                zero.)
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Rank-2 (n_Channels x n_Profiles)
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        Geometry:       Structure containing the view geometry
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Geometry_type
+                        DIMENSION:  Same as input Atmosphere argument
+                        ATTRIBUTES: INTENT(IN)
+ 
+        ChannelInfo:    Structure returned from the CRTM_Init() function
+                        that contains the satellite/sensor channel index
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_ChannelInfo_type
+                        DIMENSION:  Rank-1 (n_Sensors)
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUTS:
+        Options:        Options structure containing the optional forward model
+                        arguments for the CRTM.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Options_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  OUTPUTS:
+        Atmosphere_AD:  Structure containing the adjoint Atmosphere data.
+                        **NOTE: On ENTRY to this function, the contents of
+                                this structure should be defined (e.g.
+                                initialized to some value based on the
+                                position of this function in the call chain.)
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Same as input Atmosphere argument
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        Surface_AD:     Structure containing the tangent-linear Surface data.
+                        **NOTE: On ENTRY to this function, the contents of
+                                this structure should be defined (e.g.
+                                initialized to some value based on the
+                                position of this function in the call chain.)
+                        UNITS:      N/A
+                        TYPE:       CRTM_Surface_type
+                        DIMENSION:  Same as input Atmosphere argument
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        RTSolution:     Structure containing the solution to the RT equation
+                        for the given inputs.
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Same as input RTSolution_AD argument
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS the computation was sucessful
+                           == FAILURE an unrecoverable error occurred
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  SIDE EFFECTS:
+       Note that the input adjoint arguments are modified upon exit, and
+       the output adjoint arguments must be defined upon entry. This is
+       a consequence of the adjoint formulation where, effectively, the
+       chain rule is being used and this function could reside anywhere
+       in the chain of derivative terms.
+ 
+  COMMENTS:
+        - The Options optional structure arguments contain
+          spectral information (e.g. emissivity) that must have the same
+          spectral dimensionality (the "L" dimension) as the RTSolution
+          structures.
+ 
+  \end{alltt}

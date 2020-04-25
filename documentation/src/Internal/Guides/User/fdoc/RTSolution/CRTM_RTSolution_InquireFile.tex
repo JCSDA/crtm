@@ -1,0 +1,47 @@
+\subsection{\texttt{CRTM\_RTSolution\_InquireFile} interface}
+  \label{sec:CRTM_RTSolution_InquireFile_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_RTSolution_InquireFile
+ 
+  PURPOSE:
+        Function to inquire CRTM RTSolution object files.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_RTSolution_InquireFile( Filename               , &
+                                                    n_Channels = n_Channels, &
+                                                    n_Profiles = n_Profiles  )
+ 
+  INPUTS:
+        Filename:       Character string specifying the name of a
+                        CRTM RTSolution data file to read.
+                        UNITS:      N/A
+                        TYPE:       CHARACTER(*)
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL OUTPUTS:
+        n_Channels:     The number of spectral channels for which there is
+                        data in the file.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+ 
+        n_Profiles:     The number of profiles in the data file.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS, the file inquire was successful
+                           == FAILURE, an unrecoverable error occurred.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  \end{alltt}

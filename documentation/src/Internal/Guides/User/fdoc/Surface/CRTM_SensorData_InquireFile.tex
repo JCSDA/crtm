@@ -1,0 +1,39 @@
+\subsection{\texttt{CRTM\_SensorData\_InquireFile} interface}
+  \label{sec:CRTM_SensorData_InquireFile_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_SensorData_InquireFile
+ 
+  PURPOSE:
+        Function to inquire CRTM SensorData object files.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_SensorData_InquireFile( Filename           , &
+                                                    n_DataSets = n_DataSets  )
+ 
+  INPUTS:
+        Filename:       Character string specifying the name of a
+                        CRTM SensorData data file to read.
+                        UNITS:      N/A
+                        TYPE:       CHARACTER(*)
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL OUTPUTS:
+        n_DataSets:     The number of datasets in the file.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: OPTIONAL, INTENT(OUT)
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS, the file inquire was successful
+                           == FAILURE, an unrecoverable error occurred.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  \end{alltt}

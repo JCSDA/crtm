@@ -1,0 +1,83 @@
+\subsection{\texttt{CRTM\_AOD\_AD} interface}
+  \label{sec:CRTM_AOD_AD_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_AOD_AD
+ 
+  PURPOSE:
+        Function that calculates the adjoint nadir aerosol optical depth.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_AOD_AD( Atmosphere       , &
+                                    RTSolution_AD    , &
+                                    ChannelInfo      , &
+                                    RTSolution       , &
+                                    Atmosphere_AD    , &
+                                    Options = Options  )
+ 
+  INPUTS:
+        Atmosphere:     Structure containing the Atmosphere data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Rank-1 (n_Profiles)
+                        ATTRIBUTES: INTENT(IN)
+ 
+        RTSolution_AD:  Structure containing the RT solution adjoint inputs.
+                        **NOTE: On EXIT from this function, the contents of
+                                this structure may be modified (e.g. set to
+                                zero.)
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Rank-2 (n_Channels x n_Profiles)
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        ChannelInfo:    Structure returned from the CRTM_Init() function
+                        that contains the satellite/sensor channel index
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_ChannelInfo_type
+                        DIMENSION:  Rank-1 (n_Sensors)
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUTS:
+        RTSolution:     Structure containing the soluition to the RT equation
+                        for the given inputs.
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Rank-2 (n_Channels x n_Profiles)
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+        Atmosphere_AD:  Structure containing the adjoint Atmosphere data.
+                        **NOTE: On ENTRY to this function, the contents of
+                                this structure should be defined (e.g.
+                                initialized to some value based on the
+                                position of this function in the call chain.)
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Same as input Atmosphere argument
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUTS:
+        Options:        Options structure containing the optional arguments
+                        for the CRTM.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Options_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS the computation was sucessful
+                           == FAILURE an unrecoverable error occurred
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  COMMENTS:
+        - Many of the components of the Options optional input structure
+          are not used in this function. Consult the CRTM User Guide for
+          which Options components are usable for AOD calculations.
+ 
+  \end{alltt}

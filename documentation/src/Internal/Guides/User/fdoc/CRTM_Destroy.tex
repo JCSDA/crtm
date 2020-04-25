@@ -1,0 +1,51 @@
+\subsection{\texttt{CRTM\_Destroy} interface}
+  \label{sec:CRTM_Destroy_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Destroy
+ 
+  PURPOSE:
+        Function to deallocate all the shared data arrays allocated and
+        populated during the CRTM initialization.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Destroy( ChannelInfo            , &
+                                     Process_ID = Process_ID  )
+ 
+  OUTPUTS:
+        ChannelInfo:  Reinitialized ChannelInfo structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_ChannelInfo_type
+                      DIMENSION:  Rank-1
+                      ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUTS:
+        Process_ID:   Set this argument to the MPI process ID that this
+                      function call is running under. This value is used
+                      solely for controlling message output. If MPI is not
+                      being used, ignore this argument.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error
+                      status. The error codes are defined in the
+                      Message_Handler module.
+                      If == SUCCESS the CRTM deallocations were successful
+                         == FAILURE an unrecoverable error occurred.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  SIDE EFFECTS:
+        All CRTM shared data arrays and structures are deallocated.
+ 
+  COMMENTS:
+        Note the INTENT on the output ChannelInfo argument is IN OUT rather than
+        just OUT. This is necessary because the argument may be defined upon
+        input. To prevent memory leaks, the IN OUT INTENT is a must.
+ 
+  \end{alltt}
