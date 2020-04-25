@@ -1433,7 +1433,7 @@ CONTAINS
     LOGICAL :: allocate_ivar
 
 
-    if (present (Error_Message)) Error_Message = 'success'
+    if (present (Error_Message)) Error_Message = 'SUCCESS'
     ! Check input
     IF ( n_Layers < 1 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = 'Invalid dimension inputs'
@@ -1446,7 +1446,7 @@ CONTAINS
     ! Intermediate variable object
     IF ( allocate_ivar ) THEN
       CALL self%iVar%Create(n_Layers, n_Clouds, Error_Message = Error_Message)       
-      if (Error_Message /= 'success') return
+      if (Error_Message /= 'SUCCESS') return
       IF ( .NOT. self%iVar%Is_Usable() ) RETURN
     END IF
 
@@ -1491,7 +1491,7 @@ CONTAINS
     ! Local variables
     INTEGER :: alloc_stat
 
-    if (present (Error_Message)) Error_Message = 'success'
+    if (present (Error_Message)) Error_Message = 'SUCCESS'
     ! Check input
     IF ( n_Layers < 1 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = 'iVar: Invalid dimension input'
@@ -1503,12 +1503,12 @@ CONTAINS
     !JR Code modification is for MPAS test case for which n_Layers may differ across profiles
     !JR and previous code failed
     if (n_Layers /= self%n_Layers) then
-      if (allocated(self%prod))    DEALLOCATE (self%prod)
-      if (allocated(self%lwc))     DEALLOCATE (self%lwc)
-      if (allocated(self%wc_sum))  DEALLOCATE (self%wc_sum)
-      if (allocated(self%wc))      DEALLOCATE (self%wc)
-      if (allocated(self%maxcov))  DEALLOCATE (self%maxcov)
-      if (allocated(self%cwc_sum)) DEALLOCATE (self%cwc_sum)
+      if (ALLOCATED(self%prod))    DEALLOCATE (self%prod)
+      if (ALLOCATED(self%lwc))     DEALLOCATE (self%lwc)
+      if (ALLOCATED(self%wc_sum))  DEALLOCATE (self%wc_sum)
+      if (ALLOCATED(self%wc))      DEALLOCATE (self%wc)
+      if (ALLOCATED(self%maxcov))  DEALLOCATE (self%maxcov)
+      if (ALLOCATED(self%cwc_sum)) DEALLOCATE (self%cwc_sum)
       ALLOCATE( self%prod( 0:n_Layers ), &
                 self%lwc( 1:n_Layers ), &
                 self%wc_sum( 0:n_Layers ), &

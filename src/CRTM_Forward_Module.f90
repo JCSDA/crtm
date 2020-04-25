@@ -10,7 +10,6 @@
 !
 
 MODULE CRTM_Forward_Module
-  !  use omp_lib   !JR Only needed for debugging OMP issues
 
   ! ------------
   ! Module usage
@@ -253,21 +252,21 @@ CONTAINS
 
     ! Local variables required by threading, timing, and output verification
     integer(LLong) :: count_rate, count_start, count_end
-    real :: elapsed
-    real :: elapsed_running = 0.         ! running total of elapsed times
-    logical, parameter :: enable_timing = .false.
-    logical, parameter :: output_verification = .false.
-    integer :: ret(size(Atmosphere))     ! return codes from profile_solution
-    integer :: nfailure                  ! number of non-success calls to profile_solution
+    REAL :: elapsed
+    REAL :: elapsed_running = 0.         ! running total of elapsed times
+    LOGICAL, PARAMETER :: enable_timing = .false.
+    LOGICAL, PARAMETER :: output_verification = .false.
+    INTEGER :: ret(size(Atmosphere))     ! return codes from profile_solution
+    INTEGER :: nfailure                  ! number of non-success calls to profile_solution
 
     ! ------
     ! SET UP
     ! ------
     Error_Status = SUCCESS
-    if (enable_timing) then
-      call system_clock (count_rate=count_rate)
-      call system_clock (count=count_start)
-    end if
+    IF (enable_timing) THEN
+      CALL SYSTEM_CLOCK (count_rate=count_rate)
+      CALL SYSTEM_CLOCK (count=count_start)
+    END IF
 
     ! If no sensors or channels, simply return
     n_Sensors  = SIZE(ChannelInfo)
@@ -332,11 +331,11 @@ CONTAINS
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
          CYCLE Profile_Loop1
       END IF
-    end DO Profile_Loop1
+    END DO Profile_Loop1
 
-    if (Error_Status == FAILURE) then
+    IF (Error_Status == FAILURE) THEN
       RETURN
-    end if
+    END IF
 
 !$OMP PARALLEL DO PRIVATE (m, Opt, AncillaryInput) SCHEDULE (runtime)
     Profile_Loop2: DO m = 1, n_Profiles
@@ -349,29 +348,29 @@ CONTAINS
         AncillaryInput%Zeeman = Options(m)%Zeeman
       END IF
       ret(m) = profile_solution (m, Opt, AncillaryInput)
-    end DO Profile_Loop2
+    END DO Profile_Loop2
 !$OMP END PARALLEL DO
 
     nfailure = count (ret(:) /= SUCCESS)
-    if (nfailure > 0) then
+    IF (nfailure > 0) THEN
       Error_Status = FAILURE
       WRITE(Message,'(i0," profiles failed")') nfailure
       CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
       RETURN
-    end if
+    END IF
 
-    if (enable_timing) then
-      call system_clock (count=count_end)
-      elapsed = real (count_end - count_start) / real (count_rate)
+    IF (enable_timing) THEN
+      CALL SYSTEM_CLOCK (count=count_end)
+      elapsed = REAL (count_end - count_start) / REAL (count_rate)
       elapsed_running = elapsed_running + elapsed
-      write(6,*) 'CRTM_Forward elapsed              =',elapsed
-      write(6,*) 'CRTM_Forward elapsed running total=',elapsed_running
-    end if
+      WRITE(6,*) 'CRTM_Forward elapsed              =',elapsed
+      WRITE(6,*) 'CRTM_Forward elapsed running total=',elapsed_running
+    END IF
 
-    if (output_verification) then
-      write(6,*)'CRTM_Forward inspecting RTSolution...'
-      call CRTM_RTSolution_Inspect (RTSolution(:,:))
-    end if
+    IF (output_verification) THEN
+      WRITE(6,*)'CRTM_Forward inspecting RTSolution...'
+      CALL CRTM_RTSolution_Inspect (RTSolution(:,:))
+    END IF
     RETURN
     
   CONTAINS
