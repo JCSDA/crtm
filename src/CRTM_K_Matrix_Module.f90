@@ -474,7 +474,7 @@ CONTAINS
     ! access arrays which are arguments to CRTM_K_Matrix. Subroutines Pre_Process_RTSolution_K
     ! and Post_Process_RTSolution_K also access CRTM_K_Matrix data, but multi-level function
     ! "contain" clauses cause compiler errors so arguments to these functions were needed.
-    function profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
+    FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
       integer, intent(in) :: m               ! profile index
       TYPE(CRTM_Options_type), intent(IN) :: Opt
       TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
@@ -1559,7 +1559,7 @@ CONTAINS
       CALL CSvar_Destroy( CSvar )
       CALL ASvar_Destroy( ASvar )
       CALL RTV_Destroy( RTV )
-    end function profile_solution
+    END FUNCTION profile_solution
  
     ! ----------------------------------------------------------------
     ! Local subroutine to post-process the FORWARD radiance, as it is

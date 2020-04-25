@@ -380,7 +380,7 @@ CONTAINS
     ! access arrays which are arguments to CRTM_Forward. Subroutine Post_Process_RTSolution also
     ! accesses CRTM_Forward data, but multi-level function "contain" clauses cause compiler
     ! errors so arguments to this function were needed.
-    function profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
+    FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
       integer, intent(in) :: m               ! profile index
       TYPE(CRTM_Options_type), intent(IN) :: Opt
       TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
@@ -978,7 +978,7 @@ CONTAINS
       CALL CSvar_Destroy( CSvar )
       CALL ASvar_Destroy( ASvar )
       CALL RTV_Destroy( RTV )
-    end function profile_solution
+    END FUNCTION profile_solution
 
 
     ! ----------------------------------------------------------------
