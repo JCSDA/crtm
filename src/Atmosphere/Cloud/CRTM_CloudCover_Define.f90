@@ -858,7 +858,7 @@ CONTAINS
       REAL(fp) :: maxcov_TL
 
       ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
-      maxcov_TL = HUGE(maxcov_TL)
+      maxcov_TL              = HUGE(maxcov_TL)
       prod_TL                = -self_TL%Cloud_Fraction(1)
       self_TL%Cloud_Cover(1) = -prod_TL
       DO k = 2, n_layers
@@ -1468,7 +1468,7 @@ CONTAINS
         RETURN
       END IF
       self%n_Layers = n_Layers
-    end if
+    END IF
     ! ...Initialise
     self%Cloud_Fraction    = ZERO
     self%Cloud_Cover       = ZERO
@@ -1523,7 +1523,7 @@ CONTAINS
         RETURN
       END IF
       self%n_Layers = n_Layers
-    end if
+    END IF
       ! Initialise
     self%n_Clouds = n_Clouds  
     self%prod    = ZERO
