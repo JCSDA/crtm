@@ -168,4 +168,11 @@ Type_Kinds.o : Type_Kinds.f90
 UnitTest_Define.o : UnitTest_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 
 Zeeman_Input_Define.o : Zeeman_Input_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Zeeman_Utility.o : Zeeman_Utility.f90 File_Utility.o Message_Handler.o Type_Kinds.o 
-CRTM_Module.o : CRTM_Module.fpp CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Module.o : CRTM_Module.fpp CRTM_Version.inc CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Version.o : CRTM_Version.inc 
+FitCoeff_Destroy.o : FitCoeff_Destroy.inc 
+FitCoeff_Equal.o : FitCoeff_Equal.inc 
+FitCoeff_Info.o : FitCoeff_Info.inc 
+FitCoeff_ReadFile.o : FitCoeff_ReadFile.inc 
+FitCoeff_SetValue.o : FitCoeff_SetValue.inc 
+FitCoeff_WriteFile.o : FitCoeff_WriteFile.inc 

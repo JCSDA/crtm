@@ -5,7 +5,7 @@
 !
 
 MODULE CRTM_Module
-
+#include "CRTM_Version.inc"
   ! Module information
   ! ------------------
   ! Support modules
@@ -45,7 +45,7 @@ MODULE CRTM_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = 'unknown'
-  CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = 'unknown'
+  CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = CRTM_VERSION
 
 
 CONTAINS
