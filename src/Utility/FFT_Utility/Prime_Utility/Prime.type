@@ -1,9 +1,0 @@
-TYPE :: Prime_type
-  ! Dimensions
-  INTEGER :: nPrimes
-  ! Scalars
-  INTEGER :: number = 0 ! Number used as input to generation/factorisation routines
-  ! Arrays
-  INTEGER, DIMENSION(nPrimes) :: n    ! Prime numbers
-  INTEGER, DIMENSION(nPrimes) :: nExp ! Prime number exponents (for factorisation)
-END TYPE Prime_type

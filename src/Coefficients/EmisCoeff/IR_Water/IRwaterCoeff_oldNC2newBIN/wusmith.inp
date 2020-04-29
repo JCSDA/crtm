@@ -1,5 +1,0 @@
-Wu-Smith.CM-PDF.HQS_HQS-RefInd.EmisCoeff.nc
-WuSmith.IRwater.EmisCoeff.bin
-Water Surface IR Emissivity/Reflection Model
- Created from Wu-Smith.CM-PDF.HQS_HQS-RefInd.EmisCoeff.nc
-Model PDF - C. Cox and W. Munk (1954), J. Opt. Soc. Am., 44(11), pp838-859; Refractive Index - G.M. Hale and M.R. Querry (1973), Appl. Opt., 12(3), pp555-563 [REAL PART], and Segelstein, D.J. "The complex refractive index of water", MS Thesis (University of Missouri, Kansas City, Missouri, 1981) [IMAG PART]; Salinity correction - D. Friedman (1969), Appl. Opt., 8(10), pp2073-2078; Emissivity model - X. Wu and W.L. Smith (1997), Appl. Opt. 36(12), pp2609-2619.

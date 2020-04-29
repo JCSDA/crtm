@@ -1,5 +1,0 @@
-ECMWF5K_ASC2BIN.o : ECMWF5K_ASC2BIN.f90 ECMWF5K_Parameters.o Message_Handler.o File_Utility.o Type_Kinds.o 
-ECMWF5K_Parameters.o : ECMWF5K_Parameters.f90 Type_Kinds.o 
-File_Utility.o : File_Utility.f90 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Type_Kinds.o : Type_Kinds.f90 

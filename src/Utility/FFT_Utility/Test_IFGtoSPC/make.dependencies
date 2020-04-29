@@ -1,9 +1,0 @@
-Type_Kinds.o : Type_Kinds.f90 
-Test_IFGtoSPC.o : Test_IFGtoSPC.f90 Type_Kinds.o Binary_File_Utility.o Message_Handler.o Fundamental_Constants.o FFT_Spectral_Utility.o 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 
-File_Utility.o : File_Utility.f90 
-FFT_Spectral_Utility.o : FFT_Spectral_Utility.f90 Type_Kinds.o File_Utility.o Message_Handler.o Fundamental_Constants.o Compare_Float_Numbers.o 
-Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
-Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
-Binary_File_Utility.o : Binary_File_Utility.f90 Type_Kinds.o File_Utility.o Message_Handler.o Endian_Utility.o 

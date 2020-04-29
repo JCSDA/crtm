@@ -1,3 +1,0 @@
-Endian_Utility.o : Endian_Utility.f90 Type_Kinds.o 
-Test_Endian_Utility.o : Test_Endian_Utility.f90 Endian_Utility.o Type_Kinds.o 
-Type_Kinds.o : Type_Kinds.f90 
