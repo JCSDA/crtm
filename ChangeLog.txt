@@ -1,0 +1,41 @@
+This file documents changes vs. the "develop" branch of CRTM under JEDI.
+Contents of the "develop" branch are almost identical to CRTM version 2.3.0.
+One exception is that all "DefineVersion" methods were removed in "develop"
+because they were vestiges of CVS/SVN constructs which git does not recognize.
+
+3/26/2019:
+o Merge develop branch. Primary feature is bugfix to CRTM_CloudCover_Define.f90
+  for MPAS test case which results in different number of levels across
+  profiles. Also avoids multiple calls to "allocate" which failed silently in
+  "Create" method within CRTM_CloudCover_Define.f90
+
+o Add "flush" to CRTM_RTSolution_Define.f90 to prevent output from getting lost
+
+3/7/2019:
+o Bugfix for Options_Present in CRTM_K_Matrix. In the earlier experimental
+  release of OpenMP capability to friendly users (2/8/2019), when the optional
+  "Options" argument to CRTM_K_Matrix was present it wasn't handled properly.
+
+o Enable OpenMP threading inside CRTM_Forward. Like CRTM_K_Matrix, the
+  threading is implemented over Profiles. If CRTM_Forward and/or CRTM_K_Matrix
+  are called on a per-profile basis, there will be no benefit to enabling
+  threading. But for large numbers of Profiles, our tests have indicated large
+  speedups. For example, on NOAA machine "theia" which has Haswell nodes,
+  speedups of around 16X were observed on a single 24-core node.
+
+  We note that in order to get correct behavior with OpenMP threading enabled,
+  numerous routines called under CRTM_K_Matrix and CRTM_Forwared required
+  modifications to make them thread-safe.
+
+o Remove directory config-setup/ and contents, replace with an interactive
+  script (config_bld_test.crtm) which sets compiler, flags, and other arguments
+  based on user input. It also optionally runs "make" and test code
+  "check_crtm". Update supported compilers (e.g. add pgfortran and xlf2008) and
+  modify some flags (e.g. add "-g" in almost all cases because its cost is
+  insignificant). See README for further details.
+
+o Code modifications to address some of the compiler warnings from gfortran.
+
+o For gfortran in debug mode, add flags "-O0 -finit-real=inf -fbacktrace"
+
+o Regenerate make.dependencies
