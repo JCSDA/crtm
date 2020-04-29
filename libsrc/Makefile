@@ -16,7 +16,7 @@ installdir = $(prefix)/$(distdir)
 
 # Tool-specific substitution variables
 FC      = gfortran
-FCFLAGS = -fconvert=big-endian -O3 -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4 -funroll-loops -ggdb -Wall -Wconversion -std=f2008 -cpp -ffree-form -fimplicit-none -frecord-marker=4 -ggdb -Wall -Wconversion -std=f2008 -c
+FCFLAGS = -fconvert=big-endian -g -O2 -ffree-form -c
 AR      = ar
 ARFLAGS = crvs
 RANLIB  = ranlib
