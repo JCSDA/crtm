@@ -1766,7 +1766,7 @@ $as_echo "$as_me: CRTM v2.3.0" >&6;}
 
 
 # Define the configuration files
-ac_config_files="$ac_config_files Makefile libsrc/Makefile libsrc/test/Makefile"
+ac_config_files="$ac_config_files Makefile libsrc/Makefile"
 
 
 

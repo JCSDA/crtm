@@ -11,7 +11,7 @@ AC_MSG_NOTICE([AC_PACKAGE_NAME AC_PACKAGE_VERSION])
 AC_CONFIG_SRCDIR([libsrc/CRTM_Module.fpp])
 
 # Define the configuration files
-AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
+AC_CONFIG_FILES([Makefile libsrc/Makefile])
 
 # Check for Fortran compilers
 AC_PROG_FC(gfortran ifort xlf2003 xlf2008 pgfortran)
