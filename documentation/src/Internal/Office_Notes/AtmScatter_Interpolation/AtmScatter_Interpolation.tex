@@ -1,0 +1,114 @@
+% The generic preamble
+\input{preamble}
+
+% Define included documents
+\includeonly{Optical_Property_Dependencies.section,Test_Cloud_and_Aerosol_Profiles.section,Forward_Model_Impact.section,Forward_Tangent-Linear_Model_Tests.section,Tangent-Linear_Adjoint_Model_Tests.section}
+
+
+% Definitions for tables
+\newcommand{\rb}[1]{\raisebox{1.5ex}[0pt]{#1}}
+\newcommand{\po}{\ensuremath{p_{0}}}
+\newcommand{\bpo}{\boldmath\po\unboldmath}
+\newcommand{\Dp}{\ensuremath{\Delta p}}
+\newcommand{\bDp}{\boldmath\Dp\unboldmath}
+\newcommand{\reff}{\ensuremath{R_{eff}}}
+\newcommand{\breff}{\boldmath\reff\unboldmath}
+\newcommand{\bhpa}{\textbf{(hPa)}}
+\newcommand{\bmicron}{\boldmath\micron\unboldmath}
+
+% Title info
+\title{Impact of Optical Property Interpolation on Atmospheric Scattering Computations}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
+\date{April, 2008}
+\docnumber{(unassigned)}
+\docseries{CRTM}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%\draftwatermark
+
+\begin{abstract}
+The CRTM interpolates the optical properties of clouds and aerosols from look-up tables (LUTs) for use in the scattering radiative transfer. This document details the impact of three different interpolation methodologies on the forward, tangent-linear and adjoint components of the cloud and aerosol scattering computations. Linear, cubic, and averaged quadratic inteprolation schemes were tested with the latter having the property of piecewise continuity of derivatives across LUT hingepoints.
+
+\textbf{Keywords}: CRTM, scattering, clouds, aerosols, interpolation, derivative continuity
+\end{abstract}
+
+
+\section{Interpolation Schemes}
+%==============================
+For all of the CRTM cloud and aerosol optical property look-up table (LUT) interpolations described in this document, four different interpolation schemes were tested:
+ \begin{itemize}
+   \item{``old'' linear interpolation}
+   \item{new linear interpolation}
+   \item{cubic interpolation}
+   \item{averaged quadratic interpolation}
+ \end{itemize}
+The difference between the old and new linear (or 2-point) interpolation routines are only in the way the interpolating polynomials are computed; the old scheme computed the polynomials explicitly like so,
+\begin{eqnarray*}
+  p_{1}(x) & = & \frac{x-x_{2}}{x_{1}-x_{2}} \\
+  p_{2}(x) & = & \frac{x-x_{1}}{x_{2}-x_{1}}
+\end{eqnarray*}
+whereas the new scheme used the more generic form for computing Lagrangian polynomials for any set of $n+1$ points,
+\begin{equation}
+  p_{j}(x) = \prod_{\scriptstyle k=1 \atop \scriptstyle k \ne j}^{n+1}\frac{x-x_{k}}{x_{j}-x_{k}}
+  \label{eqn:lagrangian_poly}
+\end{equation}
+with $n=1$. For cubic (or 4-point) interpolation, the same code was used but with $n=3$. In all cases the actual interpolating polynomial is computed using
+\begin{equation}
+  P(x) = \sum_{j=1}^{n+1} p_{j}(x)\cdot y_{j}
+  \label{eqn:interpolating_poly}
+\end{equation}
+
+The averaged quadratic scheme\cite{Purser_AvgQuad_Interpolation} uses a weighted average of two adjacent 3-point (i.e. $n=2$) interpolating polynomials to perform interpolation in the overlapping region,
+\begin{equation}
+  P(x) = W_{l}\sum_{j=1}^{n+1} p_{j}(x)\cdot y_{j} + W_{r}\sum_{j=2}^{n+2} p_{j}(x)\cdot y_{j}
+  \label{eqn:avgquad_poly}
+\end{equation}
+with
+\begin{eqnarray*}
+  W_{l} & = & 1 - \frac{x-x_{2}}{x_{3}-x_{2}}\\
+   & & \\
+  W_{r} & = & 1 - W_{l}
+\end{eqnarray*}
+This scheme preserves the interpolating function derivative continuity, in a piecewise fashion, across an interpolation boundary (also referred to here as a hingepoint). For end-point interpolation, the averaging weights are set accordingly to $W_{l}=1,W_{r}=0$, or $W_{l}=0,W_{r}=1$.
+
+Comparisons between the old and new linear interpolation tests were run as a ``sanity-check'' only; they agreed and are not shown here. All of the subsequent test comparisons are between the linear, cubic, and averaged quadratic runs. Where applicable, tests were carried out for NOAA-18 HIRS/4, AMSU-A, and MHS; GOES-11 imager;  DMSP-16 SSMIS; and IASI Band 1 (645-1210\invcm) although not all the results are shown here. 
+
+% Include all the various sections
+%=================================
+\include{Optical_Property_Dependencies.section}
+\include{Test_Cloud_and_Aerosol_Profiles.section}
+\include{Forward_Model_Impact.section}
+\include{Forward_Tangent-Linear_Model_Tests.section}
+\include{Tangent-Linear_Adjoint_Model_Tests.section}
+
+%More stuff
+%- Timing tests
+
+
+\section{Conclusions}
+%====================
+While not a new observation, it is quite clear that the use of a simple polynomial for interpolation is not sufficient when comparing forward, tangent-linear, and adjoint model output. An interpolation scheme that preserves the continuity of derivatives across interpolation hingepoints, such as the averaged quadratic scheme discussed in this document, is required to ensure the adjoint model output of the CloudScatter and AerosolScatter modules of the CRTM are useful in the context of data assimilation. It is more than likely that the impact of the LUT interpolation schemes on the cloud and aerosol property Jacobians will not be large (if detactable at all), but the CRTM uses these interpolating procedures in several other modules (e.g. surface emissivity LUTs) so doing it correctly affects more than just the scattering codes in the CRTM.
+
+In addition, the construction of the LUT data needs to be done more carefully. Insufficient data ranges for the parameters in question (e.g. effective radii, cloud temperatures) are more likely to be an issue even if the interpolation was perfect. Also, ensuring the LUT data are well represented in both the independent and dependent data directions is necessary to prevent spurious excursions in the interpolated data.
+
+% The references section
+%=======================
+\bibliographystyle{plain}
+\bibliography{bibliography}
+
+
+%% The appendices section
+%%=======================
+%\begin{appendix}
+%
+%\end{appendix}
+
+
+\end{document}
+

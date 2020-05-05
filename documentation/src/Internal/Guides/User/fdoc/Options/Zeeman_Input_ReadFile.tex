@@ -1,0 +1,64 @@
+\subsection{\texttt{Zeeman\_Input\_ReadFile} interface}
+  \label{sec:Zeeman_Input_ReadFile_interface}
+  \begin{alltt}
+ 
+  NAME:
+        Zeeman_Input_ReadFile
+ 
+  PURPOSE:
+        Function to read Zeeman_Input object files.
+ 
+  CALLING SEQUENCE:
+        Error_Status = Zeeman_Input_ReadFile( &
+                         Zeeman_Input       , &
+                         Filename           , &
+                         No_Close = No_Close, &
+                         Quiet    = Quiet     )
+ 
+  OBJECTS:
+        Zeeman_Input:   Zeeman_Input object containing the data read from file.
+                        UNITS:      N/A
+                        TYPE:       Zeeman_Input_type
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        Filename:       Character string specifying the name of a
+                        Zeeman_Input data file to read.
+                        UNITS:      N/A
+                        TYPE:       CHARACTER(*)
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL INPUTS:
+        No_Close:       Set this logical argument to *NOT* close the datafile
+                        upon exiting this routine. This option is required if
+                        the Zeeman_Input data is embedded within another file.
+                        If == .FALSE., File is closed upon function exit [DEFAULT].
+                           == .TRUE.,  File is NOT closed upon function exit
+                        If not specified, default is .FALSE.
+                        UNITS:      N/A
+                        TYPE:       LOGICAL
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Quiet:          Set this logical argument to suppress INFORMATION
+                        messages being printed to stdout
+                        If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+                           == .TRUE.,  INFORMATION messages are SUPPRESSED.
+                        If not specified, default is .FALSE.
+                        UNITS:      N/A
+                        TYPE:       LOGICAL
+                        DIMENSION:  Scalar
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS, the file read was successful
+                           == FAILURE, an unrecoverable error occurred.
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  \end{alltt}

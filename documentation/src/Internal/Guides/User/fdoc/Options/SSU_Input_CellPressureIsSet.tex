@@ -1,0 +1,40 @@
+\subsection{\texttt{SSU\_Input\_CellPressureIsSet} interface}
+  \label{sec:SSU_Input_CellPressureIsSet_interface}
+  \begin{alltt}
+ 
+  NAME:
+        SSU_Input_CellPressureIsSet
+ 
+  PURPOSE:
+        Elemental function to determine if SSU_Input object cell pressures
+        are set (i.e. > zero).
+ 
+  CALLING SEQUENCE:
+        result = SSU_Input_CellPressureIsSet( ssu )
+ 
+          or
+ 
+        IF ( SSU_Input_CellPressureIsSet( ssu ) ) THEN
+          ...
+        END IF
+ 
+  OBJECTS:
+        ssu:       SSU_Input object for which the cell pressures
+                   are to be tested.
+                   UNITS:      N/A
+                   TYPE:       SSU_Input_type
+                   DIMENSION:  Scalar or any rank
+                   ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        result:    Logical variable indicating whether or not all the
+                   SSU cell pressures are set.
+                   If == .FALSE., cell pressure values are <= 0.0hPa and
+                                  thus are considered to be NOT set or valid.
+                      == .TRUE.,  cell pressure values are > 0.0hPa and
+                                  thus are considered to be set and valid.
+                   UNITS:      N/A
+                   TYPE:       LOGICAL
+                   DIMENSION:  Scalar
+ 
+  \end{alltt}

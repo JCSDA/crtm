@@ -1,0 +1,149 @@
+\section{AerosolScatter Profile Results}
+%=======================================
+
+\subsection{AerosolScatter Forward Model Profile Results}
+%--------------------------------------------------------
+Aerosol optical properties are only used in the infrared spectral region, so only one routine is profiled here -- the generic \texttt{get\_aerosol\_opt}. As with the CloudScatter forward model results, no significant timing differences are seen since the number of calculations is essentially the same.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt}} & 39&52 & 230&06   & &   34&28 & 245&13 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                           & 40&73 &  91&91   & &   37&85 & 103&73 \\
+    &\texttt{find\_random\_index}                  & 49&10 &   0&00   & &   53&28 &   0&00 \\
+    &\texttt{lpoly}                                &  8&01 &  40&15   & &    9&09 &  40&75 \\
+    &\texttt{aerosol\_type\_index}                 &  0&18 &   0&00   & &    0&44 &   0&00 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran AerosolScatter Forward model profile results for the \texttt{Get\_Aerosol\_Opt} subroutine. All times in seconds.}
+  \label{tab:fwd_as_test_get_aerosol_opt_gfortran}
+\end{table}
+
+
+
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt}} & 267&45 & 1855&09   & &   234&69 & 1889&82 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                           & 579&35 &  817&80   & &   583&05 &  795&91 \\
+    &\texttt{lpoly}                                &  74&27 &  260&30   & &    73&78 &  263&76 \\
+    &\texttt{find\_random\_index}                  & 122&63 &    0&00   & &   172&29 &    0&00 \\
+    &\texttt{aerosol\_type\_index}                 &   0&74 &    0&00   & &     1&03 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM AerosolScatter Forward model profile results for the \texttt{Get\_Aerosol\_Opt} subroutine. All times in seconds.}
+  \label{tab:fwd_as_test_get_aerosol_opt_ibm}
+\end{table}
+
+
+
+\subsection{AerosolScatter Tangent-Linear Model Profile Results}
+%============================================================
+Here we see the decreased execution time of the modified code due to the reuse of the intermediate interpolation results in the tangent-linear model. The speedup is around 3-4x.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt\_tl}} & 152&97 & 549&00   & &   41&19 & 498&31 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_tl}                           &  85&45 & 285&46   & &   98&44 & 315&26 \\
+    &\texttt{lpoly\_tl}                                &  15&46 &  66&40   & &   15&01 &  69&23 \\
+    &\texttt{find\_random\_index}                      &  51&30 &   0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{lpoly}                                    &   8&45 &  36&11   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{aerosol\_type\_index}                     &   0&38 &   0&00   & &    0&37 &   0&00 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran AerosolScatter Tangent-linear model profile results for the \texttt{Get\_Aerosol\_Opt\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_as_test_get_aerosol_opt_gfortran}
+\end{table}
+
+
+
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt\_tl}} & 1944&73 & 5353&09   & &    436&08 & 4861&03 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_tl}                           & 1380&02 & 2944&39   & &   1423&29 & 2896&04 \\
+    &\texttt{lpoly\_tl}                                &   85&19 &  480&71   & &     86&00 &  454&49 \\
+    &\texttt{lpoly}                                    &   73&51 &  264&22   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                      &  124&16 &    0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{aerosol\_type\_index}                     &    0&88 &    0&00   & &      1&21 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM AerosolScatter Tangent-linear model profile results for the \texttt{Get\_Aerosol\_Opt\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_as_test_get_aerosol_opt_ibm}
+\end{table}
+
+\subsection{AerosolScatter Adjoint Model Profile Results}
+%=====================================================
+As with the AerosolScatter tangent-linear model, we see the decreased execution time of the modified code due to the reuse of the intermediate interpolation results in the adjoint model. The speedup is around 2-3x, although the total test time is relatively short so care must be taken in interpreting those factors. As with the CloudScatter updates, the main point here is that the modifications do not make the code slower.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt\_ad}} & 28&84 & 117&95   & &    9&86 &  92&47 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_ad}                           & 19&48 &  57&33   & &   19&22 &  53&72 \\
+    &\texttt{lpoly\_ad}                                &  3&26 &  16&92   & &    3&39 &  14&75 \\
+    &\texttt{lpoly}                                    &  1&80 &   7&77   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                      &  9&38 &   0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{aerosol\_type\_index}                     &  0&05 &   0&00   & &    0&05 &   0&00 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran AerosolScatter Adjoint model profile results for the \texttt{Get\_Aerosol\_Opt\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_as_test_get_aerosol_opt_gfortran}
+\end{table}
+
+
+
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_aerosol\_opt\_ad}} & 290&81 & 1064&11   & &    88&80 &  985&50 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_ad}                           & 269&14 &  561&43   & &   276&07 &  563&02 \\
+    &\texttt{lpoly\_ad}                                &  15&95 &  124&51   & &    15&52 &  121&79 \\
+    &\texttt{lpoly}                                    &  13&22 &   48&02   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                      &  22&79 &    0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{aerosol\_type\_index}                     &   0&19 &    0&00   & &     0&16 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM AerosolScatter Adjoint model profile results for the \texttt{Get\_Aerosol\_Opt\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_as_test_get_aerosol_opt_ibm}
+\end{table}

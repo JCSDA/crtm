@@ -1,0 +1,29 @@
+\subsection{\texttt{CRTM\_Cloud\_Create} interface}
+  \label{sec:CRTM_Cloud_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Cloud_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of the CRTM Cloud object.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Cloud_Create( Cloud, n_Layers )
+ 
+  OBJECTS:
+        Cloud:        Cloud structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Cloud_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        n_Layers:     Number of layers for which there is cloud data.
+                      Must be > 0.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as Cloud object
+                      ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

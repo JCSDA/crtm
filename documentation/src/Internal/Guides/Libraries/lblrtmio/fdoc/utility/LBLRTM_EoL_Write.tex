@@ -1,0 +1,33 @@
+\subsection{\texttt{LBLRTM\_EoL\_Write} interface}
+  \label{sec:LBLRTM_EoL_Write_interface}
+  \begin{alltt}
+  NAME:
+        LBLRTM_EoL_Write
+ 
+  PURPOSE:
+        Function to write an end-of-layer (EoL) marker to an output
+        LBLRTM format file.
+ 
+  CALLING SEQUENCE:
+        Error_Status = LBLRTM_EoL_Write( FileID )
+ 
+  INPUTS:
+        FileId:        The unit number for the already open LBLRTM file.
+                       UNITS:      N/A
+                       TYPE:       INTEGER
+                       DIMENSION:  Scalar
+                       ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error status.
+                      The error codes are defined in the Message_Handler module.
+                      If == SUCCESS the LBLRTM file EOL write was successful
+                         == FAILURE an unrecoverable error occurred
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  SIDE EFFECTS:
+        If an error occurs writing to the file, it is closed.
+ 
+  \end{alltt}

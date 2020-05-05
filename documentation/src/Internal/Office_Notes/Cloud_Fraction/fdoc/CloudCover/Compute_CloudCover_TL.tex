@@ -1,0 +1,51 @@
+\subsection{\texttt{Compute\_CloudCover\_TL} interface}
+  \label{sec:Compute_CloudCover_TL_interface}
+  \begin{alltt}
+ 
+  NAME:
+    Compute_CloudCover_TL
+ 
+  PURPOSE:
+    Function method to compute the tangent-linear cloud cover profile for
+    supplied forward model results and a Atmosphere perturbation, and populate
+    the tangent-linear CloudCover object with the results.
+ 
+  CALLING SEQUENCE:
+    err_stat = cc_obj_TL%Compute_CloudCover_TL( &
+                 cc_FWD       , &
+                 atmosphere_TL  )
+ 
+  OBJECTS:
+    cc_obj_TL:      The tangent-linear cloud cover object which is to be
+                    populated with perturbed cloud cover results.
+                    UNITS:      N/A
+                    CLASS:      CRTM_CloudCover_type
+                    DIMENSION:  Scalar
+                    ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+    cc_FWD:         The forward model cloud cover object.
+                    UNITS:      N/A
+                    CLASS:      CRTM_CloudCover_type
+                    DIMENSION:  Scalar
+                    ATTRIBUTES: INTENT(IN)
+ 
+    atmosphere_TL:  The tangent-linear atmosphere object containing the layer
+                    cloud fraction perturbation profile, and the cloud amount
+                    perturbation profiles for when cloud water content averaging
+                    of the cloud cover is selected.
+                    UNITS:      N/A
+                    TYPE:       CRTM_Atmosphere_type
+                    DIMENSION:  Scalar
+                    ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+    err_stat:       The return value is an integer defining the error status.
+                    The error codes are defined in the Message_Handler module.
+                      If == SUCCESS, the computation was successful
+                         == FAILURE, an unrecoverable error occurred.
+                    UNITS:      N/A
+                    TYPE:       INTEGER
+                    DIMENSION:  Scalar
+ 
+  \end{alltt}
