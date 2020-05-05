@@ -64,8 +64,6 @@ MODULE RTV_Define
   ! Module parameters
   ! -----------------
   ! Version Id for the module
-  CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! Threshold for determing if an additional stream
   ! angle is required for the satellite zenith angle

@@ -40,14 +40,11 @@ MODULE NLTECoeff_Binary_IO
   PUBLIC :: NLTECoeff_Binary_InquireFile
   PUBLIC :: NLTECoeff_Binary_ReadFile
   PUBLIC :: NLTECoeff_Binary_WriteFile
-  PUBLIC :: NLTECoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
@@ -770,34 +767,4 @@ CONTAINS
      END SUBROUTINE Write_Cleanup
 
   END FUNCTION NLTECoeff_Binary_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       NLTECoeff_Binary_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL NLTECoeff_Binary_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE NLTECoeff_Binary_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE NLTECoeff_Binary_IOVersion
-  
 END MODULE NLTECoeff_Binary_IO

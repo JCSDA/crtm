@@ -52,8 +52,6 @@ MODULE Binary_File_Utility
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Magic number header value for byte-swap checks
   INTEGER(Long), PARAMETER :: MAGIC_NUMBER = 123456789_Long
   ! Integer "logicals" for I/O

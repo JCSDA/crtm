@@ -43,7 +43,6 @@ MODULE AOvar_Define
   PUBLIC :: AOvar_Inspect
   PUBLIC :: AOvar_ValidRelease
   PUBLIC :: AOvar_Info
-  PUBLIC :: AOvar_DefineVersion
   PUBLIC :: AOvar_InquireFile
   PUBLIC :: AOvar_ReadFile
   PUBLIC :: AOvar_WriteFile
@@ -56,12 +55,9 @@ MODULE AOvar_Define
     MODULE PROCEDURE AOvar_Equal
   END INTERFACE OPERATOR(==)
 
-
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: AOVAR_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: AOVAR_VERSION = 1  ! This is just the default data version.
@@ -161,13 +157,13 @@ CONTAINS
     IF ( .NOT. AOvar_Associated(self) ) RETURN
 
     ! Data
-    WRITE(*,'(3x,"Total transmittance :",1x,es13.6)') self%transmittance
+    WRITE(*,'(3x,"Total transmittance :",1x,es22.15)') self%transmittance
     WRITE(*,'(3x,"Optical depth (sigma) :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%optical_depth
+    WRITE(*,'(5(1x,es22.15,:))') self%optical_depth
     WRITE(*,'(3x,"Volume scattering coefficient (bs) :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%bs
+    WRITE(*,'(5(1x,es22.15,:))') self%bs
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%w
+    WRITE(*,'(5(1x,es22.15,:))') self%w
   END SUBROUTINE AOvar_Inspect
 
 
@@ -227,13 +223,6 @@ CONTAINS
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
   END SUBROUTINE AOvar_Info
-
-
-  SUBROUTINE AOvar_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE AOvar_DefineVersion
-
 
   FUNCTION AOvar_InquireFile( &
     Filename, &  ! Input
@@ -607,7 +596,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

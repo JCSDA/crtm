@@ -56,9 +56,6 @@ MODULE ODSSU_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! ODSSU invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(Double), PARAMETER :: FP_INVALID = -1.0_Double
@@ -327,8 +324,9 @@ CONTAINS
 
     ! Set up
     ! ------
+    Allocate_Status2 = 0  ! Avoid compiler warning about potentially unused variable
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
     ! Default is to clear scalar members...
     Clear = .TRUE.
     ! ....unless the No_Clear argument is set
@@ -550,8 +548,9 @@ CONTAINS
 
     ! Set up
     ! ------
+    Allocate_Status2 = 0  ! Avoid compiler warning about potentially unused variable
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check dimension input
     IF ( n_Absorbers          < 1 .OR. &
@@ -589,6 +588,9 @@ CONTAINS
               ODSSU%Sensor_Channel( n_Channels )                      , &
               ODSSU%Absorber_ID( n_Absorbers )                        , &
               STAT = Allocate_Status1 )
+
+    ! Silence gfortran complaints about maybe-used-uninit by init to 0 (success)
+    Allocate_Status2 = 0    
     IF(ODSSU%subAlgorithm == ODAS_ALGORITHM) THEN  
        ALLOCATE(ODSSU%ODAS( n_TC_CellPressures ),  STAT=Allocate_Status2) 
     ENDIF
@@ -706,7 +708,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
 
     ! Check the release
@@ -807,7 +809,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT(RCS_Id) ) RCS_Id = "unknown"
 
 
     ! Check the algorithm ID
@@ -875,7 +877,7 @@ CONTAINS
 
     ! Set up
     ! ------
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Write the required data to the local string
     ! -------------------------------------------

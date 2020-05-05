@@ -46,7 +46,6 @@ MODULE FitCoeff_Define
   PUBLIC :: FitCoeff_Inspect
   PUBLIC :: FitCoeff_ValidRelease
   PUBLIC :: FitCoeff_Info
-  PUBLIC :: FitCoeff_DefineVersion
   PUBLIC :: FitCoeff_InquireFile
   PUBLIC :: FitCoeff_ReadFile
   PUBLIC :: FitCoeff_WriteFile
@@ -119,8 +118,6 @@ MODULE FitCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: FITCOEFF_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: FITCOEFF_VERSION = 1  ! This is just the default data version.
@@ -513,7 +510,7 @@ CONTAINS
     IF ( .NOT. FitCoeff_1D_Associated(self) ) RETURN
     ! Coefficient data
     WRITE(*,'(3x,"Coefficients:")')
-    WRITE(*,'(5(1x,es13.6,:))') self%C
+    WRITE(*,'(5(1x,es22.15,:))') self%C
   END SUBROUTINE FitCoeff_1D_Inspect
 
 
@@ -530,7 +527,7 @@ CONTAINS
     WRITE(*,'(3x,"Coefficients:")')
     DO i = 1, self%Dimensions(2)
       WRITE(*,'(5x,"Outer dimension = ",i0," of ",i0)') i, self%Dimensions(2)
-      WRITE(*,'(5(1x,es13.6,:))') self%C(:,i)
+      WRITE(*,'(5(1x,es22.15,:))') self%C(:,i)
     END DO
   END SUBROUTINE FitCoeff_2D_Inspect
 
@@ -550,7 +547,7 @@ CONTAINS
       WRITE(*,'(5x,"Outer dimension = ",i0," of ",i0)') j, self%Dimensions(3)
       DO i = 1, self%Dimensions(2)
         WRITE(*,'(7x,"Middle dimension = ",i0," of ",i0)') i, self%Dimensions(2)
-        WRITE(*,'(5(1x,es13.6,:))') self%C(:,i,j)
+        WRITE(*,'(5(1x,es22.15,:))') self%C(:,i,j)
       END DO
     END DO
   END SUBROUTINE FitCoeff_3D_Inspect
@@ -690,35 +687,6 @@ CONTAINS
     INCLUDE 'FitCoeff_Info.inc'
   END SUBROUTINE FitCoeff_3D_Info
  
- 
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       FitCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL FitCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE FitCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE FitCoeff_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

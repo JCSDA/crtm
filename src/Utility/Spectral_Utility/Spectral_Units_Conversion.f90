@@ -35,9 +35,6 @@ MODULE Spectral_Units_Conversion
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
 

@@ -46,8 +46,6 @@ MODULE ODAS_Binary_IO
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Message character length
   INTEGER, PARAMETER :: ML = 512
   ! Keyword set value
@@ -236,7 +234,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -495,7 +493,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check that the file is present
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN
@@ -858,7 +856,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Open the ODAS data file
     ! -----------------------

@@ -41,7 +41,6 @@ MODULE ODAS_Predictor_Define
   PUBLIC :: ODAS_Predictor_Zero
 !  PUBLIC :: ODAS_Predictor_ValidRelease
 !  PUBLIC :: ODAS_Predictor_Info
-!  PUBLIC :: ODAS_Predictor_DefineVersion
 !  PUBLIC :: ODAS_Predictor_InquireFile
 !  PUBLIC :: ODAS_Predictor_ReadFile
 !  PUBLIC :: ODAS_Predictor_WriteFile
@@ -58,8 +57,6 @@ MODULE ODAS_Predictor_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ODAS_PREDICTOR_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODAS_PREDICTOR_VERSION = 1  ! This is just the default data version.
@@ -316,7 +313,7 @@ CONTAINS
 
   SUBROUTINE ODAS_Predictor_Inspect(self)
     TYPE(ODAS_Predictor_type), INTENT(IN) :: self
-    CHARACTER(*), PARAMETER :: RFMT='es13.6'
+    CHARACTER(*), PARAMETER :: RFMT='es22.15'
     INTEGER :: i, j
     WRITE(*,'(1x,"ODAS_Predictor OBJECT")')
     ! Release/version info

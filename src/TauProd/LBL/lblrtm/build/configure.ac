@@ -3,7 +3,7 @@ AC_REVISION($Id: configure.ac 42447 2014-07-02 13:53:17Z paul.vandelst@noaa.gov 
 
 
 ## Initialise autoconf
-AC_INIT([LBLRTM I/O], [v1.0.0], [ncep.list.emc.jcsda_crtm.support@noaa.gov], [lblrtmio])
+AC_INIT([LBLRTM I/O], [v1.0.0], [crtm-support@googlegroups.com], [lblrtmio])
 
 
 # Output info for user

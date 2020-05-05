@@ -60,8 +60,6 @@ MODULE ODAS_TauCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id$'
 
 
   ! --------------------------------------

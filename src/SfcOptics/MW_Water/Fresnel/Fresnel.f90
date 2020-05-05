@@ -33,9 +33,6 @@ MODULE Fresnel
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   REAL(fp), PARAMETER :: ONE    = 1.0_fp

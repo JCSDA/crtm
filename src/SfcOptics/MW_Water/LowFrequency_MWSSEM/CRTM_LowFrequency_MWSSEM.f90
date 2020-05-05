@@ -66,9 +66,6 @@ MODULE CRTM_LowFrequency_MWSSEM
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! Various quantities
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD        = 20.0_fp  ! Frequency threshold for permittivity models(GHz)

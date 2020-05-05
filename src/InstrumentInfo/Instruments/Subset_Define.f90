@@ -36,7 +36,6 @@ MODULE Subset_Define
   PUBLIC :: Subset_Destroy
   PUBLIC :: Subset_Create
   PUBLIC :: Subset_Inspect
-  PUBLIC :: Subset_DefineVersion
   PUBLIC :: Subset_SetValue
   PUBLIC :: Subset_GetValue
   PUBLIC :: Subset_Generate
@@ -53,8 +52,6 @@ MODULE Subset_Define
   ! -----------------
   ! Module Parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
   ! -----------------------------------
@@ -254,36 +251,6 @@ CONTAINS
           
   END SUBROUTINE Subset_Inspect
   
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Subset_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the version information for the
-!       definition module(s).
-!
-! CALLING SEQUENCE:
-!       CALL Subset_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:     Character string containing the version Id information for
-!               this module.
-!               UNITS:      N/A
-!               TYPE:       CHARACTER(*)
-!               DIMENSION:  Scalar
-!               ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Subset_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE Subset_DefineVersion
-
 
 !--------------------------------------------------------------------------------
 !:sdoc+:

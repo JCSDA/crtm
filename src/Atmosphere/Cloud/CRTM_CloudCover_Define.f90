@@ -59,8 +59,6 @@ MODULE CRTM_CloudCover_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! The valid cloud categories and names
 ! INTEGER, PARAMETER :: N_OVERLAPS = 4
   INTEGER, PARAMETER :: N_OVERLAPS = 5          
@@ -451,7 +449,7 @@ CONTAINS
     overlap) &  ! Optional input
   RESULT(err_stat)
     ! Arguments
-    CLASS(CRTM_CloudCover_type), INTENT(OUT)  :: self
+    CLASS(CRTM_CloudCover_type), INTENT(INOUT)  :: self
     TYPE(CRTM_Atmosphere_type) , INTENT(INOUT):: atm        
     INTEGER,           OPTIONAL, INTENT(IN)   :: overlap
     ! Function result
@@ -483,11 +481,9 @@ CONTAINS
       CALL Display_Message(PROCEDURE_NAME, err_msg, err_stat); RETURN
     END IF
 
-
     ! Create the output object
     n_layers = Atm%n_Layers
     n_clouds = Atm%n_Clouds 
-!   CALL self%Create(n_layers, Forward = .TRUE., Error_Message = err_msg)                    
     CALL self%Create(n_layers, n_clouds, Forward = .TRUE., Error_Message = err_msg)            
     IF ( .NOT. self%Is_Usable() ) THEN
       err_stat = FAILURE
@@ -746,7 +742,6 @@ CONTAINS
     ! Create the output object
     n_layers = Atm_TL%n_Layers
     n_clouds = Atm_TL%n_Clouds
-!   CALL self_TL%Create(n_layers, Error_Message = err_msg)           
     CALL self_TL%Create(n_layers, n_clouds, Error_Message = err_msg) 
     IF ( .NOT. self_TL%Is_Usable() ) THEN
       err_stat = FAILURE
@@ -862,6 +857,8 @@ CONTAINS
       REAL(fp) :: prod_TL
       REAL(fp) :: maxcov_TL
 
+      ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+      maxcov_TL              = HUGE(maxcov_TL)
       prod_TL                = -self_TL%Cloud_Fraction(1)
       self_TL%Cloud_Cover(1) = -prod_TL
       DO k = 2, n_layers
@@ -958,7 +955,7 @@ CONTAINS
 !                   UNITS:      N/A
 !                   CLASS:      CRTM_CloudCover_type
 !                   DIMENSION:  Scalar
-!                   ATTRIBUTES: INTENT(IN OUT)
+!                   ATTRIBUTES: INTENT(INOUT)
 !
 ! INPUTS:
 !   cc_FWD:         The forward model cloud cover object.
@@ -984,7 +981,7 @@ CONTAINS
 !                   UNITS:      N/A
 !                   TYPE:       CRTM_Atmosphere_type
 !                   DIMENSION:  Scalar
-!                   ATTRIBUTES: INTENT(IN OUT)
+!                   ATTRIBUTES: INTENT(INOUT)
 !
 ! FUNCTION RESULT:
 !   err_stat:       The return value is an integer defining the error status.
@@ -1005,10 +1002,10 @@ CONTAINS
     atm_AD ) &  ! Output, but contains information on input
   RESULT(err_stat)
     ! Arguments
-    CLASS(CRTM_CloudCover_type), INTENT(IN OUT) :: self_AD
+    CLASS(CRTM_CloudCover_type), INTENT(INOUT) :: self_AD
     CLASS(CRTM_CloudCover_type), INTENT(IN)     :: cc_FWD
     TYPE(CRTM_Atmosphere_type) , INTENT(IN)     :: atm
-    TYPE(CRTM_Atmosphere_type) , INTENT(IN OUT) :: atm_AD
+    TYPE(CRTM_Atmosphere_type) , INTENT(INOUT) :: atm_AD
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -1432,11 +1429,11 @@ CONTAINS
     LOGICAL,           OPTIONAL, INTENT(IN)  :: Forward
     CHARACTER(*),      OPTIONAL, INTENT(OUT) :: Error_Message
     ! Local variables
-    CHARACTER(ML) :: alloc_msg
     INTEGER :: alloc_stat
     LOGICAL :: allocate_ivar
 
 
+    if (present (Error_Message)) Error_Message = 'SUCCESS'
     ! Check input
     IF ( n_Layers < 1 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = 'Invalid dimension inputs'
@@ -1448,24 +1445,31 @@ CONTAINS
 
     ! Intermediate variable object
     IF ( allocate_ivar ) THEN
-!     CALL self%iVar%Create(n_Layers, Error_Message = Error_Message)                  
       CALL self%iVar%Create(n_Layers, n_Clouds, Error_Message = Error_Message)       
+      if (Error_Message /= 'SUCCESS') return
       IF ( .NOT. self%iVar%Is_Usable() ) RETURN
     END IF
 
 
     ! Main object
-    ! ...Perform the allocations
-    ALLOCATE( self%Cloud_Fraction( n_Layers ), &
-              self%Cloud_Cover( n_Layers ), &
-              STAT = alloc_stat )
-             !STAT = alloc_stat, ERRMSG = alloc_msg )
-    IF ( alloc_stat /= 0 ) THEN
-      IF ( PRESENT(Error_Message) ) Error_Message = alloc_msg
-      RETURN
+    ! ...Perform the allocations if requested n_Layers does not equal existing n_Layers
+    !JR Must deallocate components in order for subsequent allocate to succeed
+    !JR Code modification is for MPAS test case for which n_Layers may differ across profiles
+    !JR and previous code failed
+    if (n_Layers /= self%n_Layers) then
+      if (allocated(self%Cloud_Fraction)) DEALLOCATE (self%Cloud_Fraction)
+      if (allocated(self%Cloud_Cover))    DEALLOCATE (self%Cloud_Cover)
+      
+      ALLOCATE( self%Cloud_Fraction( n_Layers ), &
+                self%Cloud_Cover( n_Layers ), &
+                STAT = alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        IF ( PRESENT(Error_Message) ) Error_Message = 'CloudCover_Define Create: allocate failure'
+        RETURN
+      END IF
+      self%n_Layers = n_Layers
     END IF
     ! ...Initialise
-    self%n_Layers = n_Layers
     self%Cloud_Fraction    = ZERO
     self%Cloud_Cover       = ZERO
     ! ...Set allocation indicator
@@ -1485,31 +1489,42 @@ CONTAINS
     INTEGER               , INTENT(IN)  :: n_Clouds 
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Error_Message
     ! Local variables
-    CHARACTER(ML) :: alloc_msg
     INTEGER :: alloc_stat
 
+    if (present (Error_Message)) Error_Message = 'SUCCESS'
     ! Check input
     IF ( n_Layers < 1 ) THEN
       IF ( PRESENT(Error_Message) ) Error_Message = 'iVar: Invalid dimension input'
       RETURN
     END IF
 
-    ! Perform the allocations
-    ALLOCATE( self%prod( 0:n_Layers ), &
-              self%lwc( 1:n_Layers ), &
-              self%wc_sum( 0:n_Layers ), &
-              self%wc( 1:n_Clouds, 1:n_Layers ), & 
-              self%maxcov( 1:n_Layers ), & 
-              self%cwc_sum( 0:n_Layers ), &
-              STAT = alloc_stat )
-             !STAT = alloc_stat, ERRMSG = alloc_msg )
-    IF ( alloc_stat /= 0 ) THEN
-      IF ( PRESENT(Error_Message) ) Error_Message = 'iVar: '//TRIM(alloc_msg)
-      RETURN
+    ! Perform the allocations if requested n_Layers does not equal requested n_Layers
+    !JR Must deallocate components in order for subsequent allocate to succeed
+    !JR Code modification is for MPAS test case for which n_Layers may differ across profiles
+    !JR and previous code failed
+    if (n_Layers /= self%n_Layers) then
+      if (ALLOCATED(self%prod))    DEALLOCATE (self%prod)
+      if (ALLOCATED(self%lwc))     DEALLOCATE (self%lwc)
+      if (ALLOCATED(self%wc_sum))  DEALLOCATE (self%wc_sum)
+      if (ALLOCATED(self%wc))      DEALLOCATE (self%wc)
+      if (ALLOCATED(self%maxcov))  DEALLOCATE (self%maxcov)
+      if (ALLOCATED(self%cwc_sum)) DEALLOCATE (self%cwc_sum)
+      ALLOCATE( self%prod( 0:n_Layers ), &
+                self%lwc( 1:n_Layers ), &
+                self%wc_sum( 0:n_Layers ), &
+                self%wc( 1:n_Clouds, 1:n_Layers ), & 
+                self%maxcov( 1:n_Layers ), & 
+                self%cwc_sum( 0:n_Layers ), &
+                STAT = alloc_stat )
+      IF ( alloc_stat /= 0 ) THEN
+        IF ( PRESENT(Error_Message) ) then
+          Error_Message = 'CloudCover_Define ivar_Create: allocate failure'
+        END IF
+        RETURN
+      END IF
+      self%n_Layers = n_Layers
     END IF
-    
-    ! Initialise
-    self%n_Layers = n_Layers
+      ! Initialise
     self%n_Clouds = n_Clouds  
     self%prod    = ZERO
     self%lwc     = ZERO
@@ -1546,7 +1561,7 @@ CONTAINS
 ! OPTIONAL INPUTS:
 !   Hires:   Set this logical argument to output object contents with
 !            more significant digits.
-!            If == .FALSE., output format is 'es13.6' [DEFAULT].
+!            If == .FALSE., output format is 'es22.15' [DEFAULT].
 !               == .TRUE.,  output format is 'es22.15'
 !            If not specified, default is .FALSE.
 !            UNITS:      N/A
@@ -1588,7 +1603,7 @@ CONTAINS
     LOGICAL :: verbose_inspect
 
     ! Setup
-    fmtstring = 'es13.6'
+    fmtstring = 'es22.15'
     IF ( PRESENT(Hires) ) THEN
       IF ( Hires ) fmtstring = 'es22.15'
     END IF
@@ -1626,7 +1641,7 @@ CONTAINS
     CHARACTER(20) :: fmtstring
 
     ! Setup
-    fmtstring = 'es13.6'
+    fmtstring = 'es22.15'
     IF ( PRESENT(Hires) ) THEN
       IF ( Hires ) fmtstring = 'es22.15'
     END IF
@@ -1668,7 +1683,7 @@ CONTAINS
 !            UNITS:      N/A
 !            CLASS:      CRTM_CloudCover_type
 !            DIMENSION:  Scalar or any rank
-!            ATTRIBUTES: INTENT(IN OUT)
+!            ATTRIBUTES: INTENT(INOUT)
 !
 ! COMMENTS:
 !   - The dimension components of the object are *NOT* set to zero.
@@ -1678,7 +1693,7 @@ CONTAINS
 !--------------------------------------------------------------------------------
 
   ELEMENTAL SUBROUTINE Set_To_Zero( self )
-    CLASS(CRTM_CloudCover_type), INTENT(IN OUT) :: self
+    CLASS(CRTM_CloudCover_type), INTENT(INOUT) :: self
     ! Do nothing if structure is unused
     IF ( .NOT. self%Is_Usable() ) RETURN
     ! Only zero out the data
@@ -1692,7 +1707,7 @@ CONTAINS
 
 
   ELEMENTAL SUBROUTINE iVar_Set_To_Zero( self )
-    CLASS(iVar_type), INTENT(IN OUT) :: self
+    CLASS(iVar_type), INTENT(INOUT) :: self
     ! Do nothing if structure is unused
     IF ( .NOT. self%Is_Usable() ) RETURN
     ! Only zero out the data

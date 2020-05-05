@@ -105,9 +105,6 @@ MODULE NESDIS_ATMS_SeaICE_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: NESDIS_ATMS_SeaICE_Module.f90 21141 2012-09-14 17:40:43Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS

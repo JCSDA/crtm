@@ -41,7 +41,6 @@ MODULE PAFV_Define
   PUBLIC :: PAFV_Inspect
   PUBLIC :: PAFV_ValidRelease
   PUBLIC :: PAFV_Info
-  PUBLIC :: PAFV_DefineVersion
   PUBLIC :: PAFV_InquireFile
   PUBLIC :: PAFV_ReadFile
   PUBLIC :: PAFV_WriteFile
@@ -58,8 +57,6 @@ MODULE PAFV_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: PAFV_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: PAFV_VERSION = 1  ! This is just the default data version.
@@ -486,79 +483,79 @@ CONTAINS
     ! ...ODPS Forward variables
     WRITE(*,'(5x,"ODPS2User_Idx :")'); WRITE(*,'(10(1x,i3,:))') self%ODPS2User_Idx
     WRITE(*,'(5x,"interp_index  :")'); WRITE(*,'(10(1x,i3,:))') self%interp_index
-    WRITE(*,'(5x,"Acc_Weighting :")'); WRITE(*,'(5(1x,es13.6,:))') self%Acc_Weighting
-    WRITE(*,'(5x,"Temperature   :")'); WRITE(*,'(5(1x,es13.6,:))') self%Temperature
-    WRITE(*,'(5x,"Absorber      :")'); WRITE(*,'(5(1x,es13.6,:))') self%Absorber
+    WRITE(*,'(5x,"Acc_Weighting :")'); WRITE(*,'(5(1x,es22.15,:))') self%Acc_Weighting
+    WRITE(*,'(5x,"Temperature   :")'); WRITE(*,'(5(1x,es22.15,:))') self%Temperature
+    WRITE(*,'(5x,"Absorber      :")'); WRITE(*,'(5(1x,es22.15,:))') self%Absorber
     WRITE(*,'(5x,"idx_map       :")'); WRITE(*,'(10(1x,i3,:))') self%idx_map
     WRITE(*,'(5x,"H2O_idx       :",1x,i0)') self%H2O_idx
     ! ...Pressure profiles for interpolations
-    WRITE(*,'(5x,"Ref_LnPressure  :")'); WRITE(*,'(5(1x,es13.6,:))') self%Ref_LnPressure
-    WRITE(*,'(5x,"User_LnPressure :")'); WRITE(*,'(5(1x,es13.6,:))') self%User_LnPressure
+    WRITE(*,'(5x,"Ref_LnPressure  :")'); WRITE(*,'(5(1x,es22.15,:))') self%Ref_LnPressure
+    WRITE(*,'(5x,"User_LnPressure :")'); WRITE(*,'(5(1x,es22.15,:))') self%User_LnPressure
     ! ...Predictor forward variables
-    WRITE(*,'(5x,"PDP         :")'); WRITE(*,'(5(1x,es13.6,:))') self%PDP
-    WRITE(*,'(5x,"Tz_ref      :")'); WRITE(*,'(5(1x,es13.6,:))') self%Tz_ref
-    WRITE(*,'(5x,"Tz          :")'); WRITE(*,'(5(1x,es13.6,:))') self%Tz
-    WRITE(*,'(5x,"Tzp_ref     :")'); WRITE(*,'(5(1x,es13.6,:))') self%Tzp_ref
-    WRITE(*,'(5x,"Tzp         :")'); WRITE(*,'(5(1x,es13.6,:))') self%Tzp
-    WRITE(*,'(5x,"GAz_ref     :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAz_ref
-    WRITE(*,'(5x,"GAz_sum     :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAz_sum
-    WRITE(*,'(5x,"GAz         :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAz
-    WRITE(*,'(5x,"GAzp_ref    :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAzp_ref
-    WRITE(*,'(5x,"GAzp_sum    :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAzp_sum
-    WRITE(*,'(5x,"GAzp        :")'); WRITE(*,'(5(1x,es13.6,:))') self%GAzp
-    WRITE(*,'(5x,"GATzp_ref   :")'); WRITE(*,'(5(1x,es13.6,:))') self%GATzp_ref
-    WRITE(*,'(5x,"GATzp_sum   :")'); WRITE(*,'(5(1x,es13.6,:))') self%GATzp_sum
-    WRITE(*,'(5x,"GATzp       :")'); WRITE(*,'(5(1x,es13.6,:))') self%GATzp
-    WRITE(*,'(5x,"DT          :")'); WRITE(*,'(5(1x,es13.6,:))') self%DT
-    WRITE(*,'(5x,"T           :")'); WRITE(*,'(5(1x,es13.6,:))') self%T
-    WRITE(*,'(5x,"T2          :")'); WRITE(*,'(5(1x,es13.6,:))') self%T2
-    WRITE(*,'(5x,"DT2         :")'); WRITE(*,'(5(1x,es13.6,:))') self%DT2
-    WRITE(*,'(5x,"H2O         :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2O
-    WRITE(*,'(5x,"H2O_A       :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2O_A
-    WRITE(*,'(5x,"H2O_R       :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2O_R
-    WRITE(*,'(5x,"H2O_S       :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2O_S
-    WRITE(*,'(5x,"H2O_R4      :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2O_R4
-    WRITE(*,'(5x,"H2OdH2OTzp  :")'); WRITE(*,'(5(1x,es13.6,:))') self%H2OdH2OTzp
-    WRITE(*,'(5x,"CO2         :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO2
-    WRITE(*,'(5x,"O3          :")'); WRITE(*,'(5(1x,es13.6,:))') self%O3
-    WRITE(*,'(5x,"O3_A        :")'); WRITE(*,'(5(1x,es13.6,:))') self%O3_A
-    WRITE(*,'(5x,"O3_R        :")'); WRITE(*,'(5(1x,es13.6,:))') self%O3_R
-    WRITE(*,'(5x,"CO          :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO
-    WRITE(*,'(5x,"CO_A        :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO_A
-    WRITE(*,'(5x,"CO_R        :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO_R
-    WRITE(*,'(5x,"CO_S        :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO_S
-    WRITE(*,'(5x,"CO_ACOdCOzp :")'); WRITE(*,'(5(1x,es13.6,:))') self%CO_ACOdCOzp
-    WRITE(*,'(5x,"N2O         :")'); WRITE(*,'(5(1x,es13.6,:))') self%N2O
-    WRITE(*,'(5x,"N2O_A       :")'); WRITE(*,'(5(1x,es13.6,:))') self%N2O_A
-    WRITE(*,'(5x,"N2O_R       :")'); WRITE(*,'(5(1x,es13.6,:))') self%N2O_R
-    WRITE(*,'(5x,"N2O_S       :")'); WRITE(*,'(5(1x,es13.6,:))') self%N2O_S
-    WRITE(*,'(5x,"CH4         :")'); WRITE(*,'(5(1x,es13.6,:))') self%CH4
-    WRITE(*,'(5x,"CH4_A       :")'); WRITE(*,'(5(1x,es13.6,:))') self%CH4_A
-    WRITE(*,'(5x,"CH4_R       :")'); WRITE(*,'(5(1x,es13.6,:))') self%CH4_R
-    WRITE(*,'(5x,"CH4_ACH4zp  :")'); WRITE(*,'(5(1x,es13.6,:))') self%CH4_ACH4zp
+    WRITE(*,'(5x,"PDP         :")'); WRITE(*,'(5(1x,es22.15,:))') self%PDP
+    WRITE(*,'(5x,"Tz_ref      :")'); WRITE(*,'(5(1x,es22.15,:))') self%Tz_ref
+    WRITE(*,'(5x,"Tz          :")'); WRITE(*,'(5(1x,es22.15,:))') self%Tz
+    WRITE(*,'(5x,"Tzp_ref     :")'); WRITE(*,'(5(1x,es22.15,:))') self%Tzp_ref
+    WRITE(*,'(5x,"Tzp         :")'); WRITE(*,'(5(1x,es22.15,:))') self%Tzp
+    WRITE(*,'(5x,"GAz_ref     :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAz_ref
+    WRITE(*,'(5x,"GAz_sum     :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAz_sum
+    WRITE(*,'(5x,"GAz         :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAz
+    WRITE(*,'(5x,"GAzp_ref    :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAzp_ref
+    WRITE(*,'(5x,"GAzp_sum    :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAzp_sum
+    WRITE(*,'(5x,"GAzp        :")'); WRITE(*,'(5(1x,es22.15,:))') self%GAzp
+    WRITE(*,'(5x,"GATzp_ref   :")'); WRITE(*,'(5(1x,es22.15,:))') self%GATzp_ref
+    WRITE(*,'(5x,"GATzp_sum   :")'); WRITE(*,'(5(1x,es22.15,:))') self%GATzp_sum
+    WRITE(*,'(5x,"GATzp       :")'); WRITE(*,'(5(1x,es22.15,:))') self%GATzp
+    WRITE(*,'(5x,"DT          :")'); WRITE(*,'(5(1x,es22.15,:))') self%DT
+    WRITE(*,'(5x,"T           :")'); WRITE(*,'(5(1x,es22.15,:))') self%T
+    WRITE(*,'(5x,"T2          :")'); WRITE(*,'(5(1x,es22.15,:))') self%T2
+    WRITE(*,'(5x,"DT2         :")'); WRITE(*,'(5(1x,es22.15,:))') self%DT2
+    WRITE(*,'(5x,"H2O         :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2O
+    WRITE(*,'(5x,"H2O_A       :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2O_A
+    WRITE(*,'(5x,"H2O_R       :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2O_R
+    WRITE(*,'(5x,"H2O_S       :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2O_S
+    WRITE(*,'(5x,"H2O_R4      :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2O_R4
+    WRITE(*,'(5x,"H2OdH2OTzp  :")'); WRITE(*,'(5(1x,es22.15,:))') self%H2OdH2OTzp
+    WRITE(*,'(5x,"CO2         :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO2
+    WRITE(*,'(5x,"O3          :")'); WRITE(*,'(5(1x,es22.15,:))') self%O3
+    WRITE(*,'(5x,"O3_A        :")'); WRITE(*,'(5(1x,es22.15,:))') self%O3_A
+    WRITE(*,'(5x,"O3_R        :")'); WRITE(*,'(5(1x,es22.15,:))') self%O3_R
+    WRITE(*,'(5x,"CO          :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO
+    WRITE(*,'(5x,"CO_A        :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO_A
+    WRITE(*,'(5x,"CO_R        :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO_R
+    WRITE(*,'(5x,"CO_S        :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO_S
+    WRITE(*,'(5x,"CO_ACOdCOzp :")'); WRITE(*,'(5(1x,es22.15,:))') self%CO_ACOdCOzp
+    WRITE(*,'(5x,"N2O         :")'); WRITE(*,'(5(1x,es22.15,:))') self%N2O
+    WRITE(*,'(5x,"N2O_A       :")'); WRITE(*,'(5(1x,es22.15,:))') self%N2O_A
+    WRITE(*,'(5x,"N2O_R       :")'); WRITE(*,'(5(1x,es22.15,:))') self%N2O_R
+    WRITE(*,'(5x,"N2O_S       :")'); WRITE(*,'(5(1x,es22.15,:))') self%N2O_S
+    WRITE(*,'(5x,"CH4         :")'); WRITE(*,'(5(1x,es22.15,:))') self%CH4
+    WRITE(*,'(5x,"CH4_A       :")'); WRITE(*,'(5(1x,es22.15,:))') self%CH4_A
+    WRITE(*,'(5x,"CH4_R       :")'); WRITE(*,'(5(1x,es22.15,:))') self%CH4_R
+    WRITE(*,'(5x,"CH4_ACH4zp  :")'); WRITE(*,'(5(1x,es22.15,:))') self%CH4_ACH4zp
     ! Optical depth variables
     WRITE(*,'(3x,"ODPS optical depth arrays :")')
-    WRITE(*,'(5x,"OD      :")'); WRITE(*,'(5(1x,es13.6,:))') self%OD
-    WRITE(*,'(5x,"OD_path :")'); WRITE(*,'(5(1x,es13.6,:))') self%OD_path
+    WRITE(*,'(5x,"OD      :")'); WRITE(*,'(5(1x,es22.15,:))') self%OD
+    WRITE(*,'(5x,"OD_path :")'); WRITE(*,'(5(1x,es22.15,:))') self%OD_path
     ! Zeeman specific Forward variables
     WRITE(*,'(3x,"Zeeman-specific data :")')
-    WRITE(*,'(5x,"w1, w2 :")'); WRITE(*,'(2(1x,es13.6))') self%w1, self%w2
+    WRITE(*,'(5x,"w1, w2 :")'); WRITE(*,'(2(1x,es22.15))') self%w1, self%w2
     WRITE(*,'(5x,"inode  :")'); WRITE(*,'(1x,i0)') self%inode
     ! Compact-OPTRAN Forward variables
     IF ( self%OPTRAN ) THEN
       WRITE(*,'(3x,"Compact-OPTRAN option :")')
       WRITE(*,'(3x,"n_OUsed_Pred :",1x,i0)') self%n_OUsed_Pred
-      WRITE(*,'(5x,"dPonG      :")'); WRITE(*,'(5(1x,es13.6,:))') self%dPonG
-      WRITE(*,'(5x,"d_Absorber :")'); WRITE(*,'(5(1x,es13.6,:))') self%d_Absorber
-      WRITE(*,'(5x,"Int_vapor  :")'); WRITE(*,'(5(1x,es13.6,:))') self%Int_vapor
-      WRITE(*,'(5x,"AveA       :")'); WRITE(*,'(5(1x,es13.6,:))') self%AveA
-      WRITE(*,'(5x,"Inverse    :")'); WRITE(*,'(5(1x,es13.6,:))') self%Inverse
-      WRITE(*,'(5x,"s_t        :")'); WRITE(*,'(5(1x,es13.6,:))') self%s_t
-      WRITE(*,'(5x,"s_p        :")'); WRITE(*,'(5(1x,es13.6,:))') self%s_p
-      WRITE(*,'(5x,"Ap1        :")'); WRITE(*,'(5(1x,es13.6,:))') self%Ap1
-      WRITE(*,'(5x,"b          :")'); WRITE(*,'(5(1x,es13.6,:))') self%b
-      WRITE(*,'(5x,"LN_Chi     :")'); WRITE(*,'(5(1x,es13.6,:))') self%LN_Chi
-      WRITE(*,'(5x,"Chi        :")'); WRITE(*,'(5(1x,es13.6,:))') self%Chi
+      WRITE(*,'(5x,"dPonG      :")'); WRITE(*,'(5(1x,es22.15,:))') self%dPonG
+      WRITE(*,'(5x,"d_Absorber :")'); WRITE(*,'(5(1x,es22.15,:))') self%d_Absorber
+      WRITE(*,'(5x,"Int_vapor  :")'); WRITE(*,'(5(1x,es22.15,:))') self%Int_vapor
+      WRITE(*,'(5x,"AveA       :")'); WRITE(*,'(5(1x,es22.15,:))') self%AveA
+      WRITE(*,'(5x,"Inverse    :")'); WRITE(*,'(5(1x,es22.15,:))') self%Inverse
+      WRITE(*,'(5x,"s_t        :")'); WRITE(*,'(5(1x,es22.15,:))') self%s_t
+      WRITE(*,'(5x,"s_p        :")'); WRITE(*,'(5(1x,es22.15,:))') self%s_p
+      WRITE(*,'(5x,"Ap1        :")'); WRITE(*,'(5(1x,es22.15,:))') self%Ap1
+      WRITE(*,'(5x,"b          :")'); WRITE(*,'(5(1x,es22.15,:))') self%b
+      WRITE(*,'(5x,"LN_Chi     :")'); WRITE(*,'(5(1x,es22.15,:))') self%LN_Chi
+      WRITE(*,'(5x,"Chi        :")'); WRITE(*,'(5(1x,es22.15,:))') self%Chi
     END IF
   END SUBROUTINE PAFV_Inspect
 
@@ -702,35 +699,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE PAFV_Info
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       PAFV_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL PAFV_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE PAFV_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE PAFV_DefineVersion
 
 
 !------------------------------------------------------------------------------

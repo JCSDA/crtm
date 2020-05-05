@@ -3,7 +3,7 @@ AC_REVISION($Id$)
 
 
 ## Initialise autoconf
-AC_INIT([Profile Utility], m4_esyscmd([tr -d "\n'" < libsrc/Profile_Utility_Version.inc]), [ncep.list.emc.jcsda_crtm.support@noaa.gov], [profile_utility])
+AC_INIT([Profile Utility], m4_esyscmd([tr -d "\n'" < libsrc/Profile_Utility_Version.inc]), [crtm-support@googlegroups.com], [profile_utility])
 
 
 # Output info for user

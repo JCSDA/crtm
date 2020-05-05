@@ -39,7 +39,6 @@ MODULE NLTE_Predictor_Define
   PUBLIC :: NLTE_Predictor_Inspect
   PUBLIC :: NLTE_Predictor_ValidRelease
   PUBLIC :: NLTE_Predictor_Info
-  PUBLIC :: NLTE_Predictor_DefineVersion
   PUBLIC :: NLTE_Predictor_Compare
   PUBLIC :: NLTE_Predictor_IsActive
 
@@ -55,9 +54,6 @@ MODULE NLTE_Predictor_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -178,11 +174,11 @@ CONTAINS
     WRITE(*,'(3x,"isen      :",1x,i0)') NLTE_Predictor%isen
     WRITE(*,'(3x,"isol      :",1x,i0)') NLTE_Predictor%isol
     WRITE(*,'(3x,"Tm        :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTE_Predictor%Tm
+    WRITE(*,'(5(1x,es22.15,:))') NLTE_Predictor%Tm
     WRITE(*,'(3x,"Predictor :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTE_Predictor%Predictor
+    WRITE(*,'(5(1x,es22.15,:))') NLTE_Predictor%Predictor
     WRITE(*,'(3x,"w         :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTE_Predictor%w
+    WRITE(*,'(5(1x,es22.15,:))') NLTE_Predictor%w
     
   END SUBROUTINE NLTE_Predictor_Inspect
   
@@ -313,35 +309,6 @@ CONTAINS
   END SUBROUTINE NLTE_Predictor_Info
  
  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       NLTE_Predictor_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL NLTE_Predictor_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE NLTE_Predictor_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE NLTE_Predictor_DefineVersion
-
-
 !------------------------------------------------------------------------------
 !:sdoc+:
 ! NAME:

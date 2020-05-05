@@ -63,8 +63,6 @@ MODULE CRTM_Interpolation
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID=&
-  '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   INTEGER,  PARAMETER :: ORDER     = 2            ! Quadratic
@@ -155,21 +153,21 @@ CONTAINS
     WRITE(*,'(3x,"Order : ",i0)') self%Order
     WRITE(*,'(3x,"nPts  : ",i0)') self%nPts
     WRITE(*,'(3x,"Left-side :")')
-    WRITE(*,'(5x,"Weighting factor : ",es13.6)') self%w_left
+    WRITE(*,'(5x,"Weighting factor : ",es22.15)') self%w_left
     WRITE(*,'(5x,"Polynomial :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%lp_left
+    WRITE(*,'(5(1x,es22.15,:))') self%lp_left
     WRITE(*,'(5x,"Numerator differences :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%dxi_left
+    WRITE(*,'(5(1x,es22.15,:))') self%dxi_left
     WRITE(*,'(5x,"Denominator differences :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%dx_left
+    WRITE(*,'(5(1x,es22.15,:))') self%dx_left
     WRITE(*,'(3x,"Right-side :")')
-    WRITE(*,'(5x,"Weighting factor : ",es13.6)') self%w_right
+    WRITE(*,'(5x,"Weighting factor : ",es22.15)') self%w_right
     WRITE(*,'(5x,"Polynomial :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%lp_right
+    WRITE(*,'(5(1x,es22.15,:))') self%lp_right
     WRITE(*,'(5x,"Numerator differences :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%dxi_right
+    WRITE(*,'(5(1x,es22.15,:))') self%dxi_right
     WRITE(*,'(5x,"Denominator differences :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%dx_right
+    WRITE(*,'(5(1x,es22.15,:))') self%dx_right
   END SUBROUTINE LPoly_Inspect
 
 

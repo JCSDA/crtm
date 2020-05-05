@@ -42,15 +42,11 @@ MODULE SOI_Module
   PUBLIC :: CRTM_SOI
   PUBLIC :: CRTM_SOI_TL
   PUBLIC :: CRTM_SOI_AD
-  PUBLIC :: CRTM_SOI_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS
@@ -689,35 +685,6 @@ CONTAINS
       END DO
 
    END SUBROUTINE CRTM_SOI_AD
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_SOI_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_SOI_Version( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_SOI_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_SOI_Version
-
 
 !################################################################################
 !################################################################################

@@ -38,7 +38,6 @@ MODULE SSU_Input_Define
   PUBLIC :: SSU_Input_IsValid
   PUBLIC :: SSU_Input_Inspect
   PUBLIC :: SSU_Input_ValidRelease
-  PUBLIC :: SSU_Input_DefineVersion
   PUBLIC :: SSU_Input_GetValue
   PUBLIC :: SSU_Input_SetValue
   PUBLIC :: SSU_Input_CellPressureIsSet
@@ -57,8 +56,6 @@ MODULE SSU_Input_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: SSU_INPUT_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: SSU_INPUT_VERSION = 1  ! This is just the default data version.
@@ -259,35 +256,6 @@ CONTAINS
     END IF
 
   END FUNCTION SSU_Input_ValidRelease
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       SSU_Input_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL SSU_Input_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE SSU_Input_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE SSU_Input_DefineVersion
 
 
 !--------------------------------------------------------------------------------
@@ -866,7 +834,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

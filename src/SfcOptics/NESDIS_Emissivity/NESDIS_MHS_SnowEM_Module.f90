@@ -39,9 +39,6 @@ MODULE NESDIS_MHS_SNOWEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
 
 CONTAINS

@@ -72,8 +72,6 @@ MODULE CRTM_TauCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
 
   ! --------------------------------------
@@ -752,7 +750,7 @@ CONTAINS
     ! Set up
     ! ------
     Error_Status = SUCCESS
-    IF ( PRESENT( RCS_Id ) ) RCS_Id = MODULE_RCS_ID
+    IF ( PRESENT( RCS_Id ) ) RCS_Id = "unknown"
 
     ! Check that the file exists
     IF ( .NOT. File_Exists( TRIM(Filename) ) ) THEN

@@ -52,7 +52,6 @@ MODULE ODPS_Predictor_Define
   PUBLIC :: ODPS_Predictor_Zero
 !  PUBLIC :: ODPS_Predictor_ValidRelease
 !  PUBLIC :: ODPS_Predictor_Info
-!  PUBLIC :: ODPS_Predictor_DefineVersion
 !  PUBLIC :: ODPS_Predictor_InquireFile
 !  PUBLIC :: ODPS_Predictor_ReadFile
 !  PUBLIC :: ODPS_Predictor_WriteFile
@@ -81,8 +80,6 @@ MODULE ODPS_Predictor_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: xODPS_Predictor_Define.f90 18500 2012-04-02 11:07:35Z paul.vandelst@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: ODPS_PREDICTOR_RELEASE = 2  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ODPS_PREDICTOR_VERSION = 1  ! This is just the default data version.
@@ -403,15 +400,15 @@ CONTAINS
     END DO
     ! ...Pressure profiles for interpolations
     WRITE(*,'(5x,"Ref_Level_LnPressure  :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Ref_Level_LnPressure
+    WRITE(*,'(5(1x,es22.15,:))') self%Ref_Level_LnPressure
     WRITE(*,'(5x,"User_Level_LnPressure :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%User_Level_LnPressure
+    WRITE(*,'(5(1x,es22.15,:))') self%User_Level_LnPressure
     ! Compact-OPTRAN Forward variables
     IF ( self%OPTRAN ) THEN
       WRITE(*,'(3x,"n_OPredictors :",1x,i0)') self%n_OPredictors
-      WRITE(*,'(5x,"OX :")'); WRITE(*,'(5(1x,es13.6,:))') self%OX
-      WRITE(*,'(5x,"Ap :")'); WRITE(*,'(5(1x,es13.6,:))') self%Ap
-      WRITE(*,'(5x,"dA :")'); WRITE(*,'(5(1x,es13.6,:))') self%dA
+      WRITE(*,'(5x,"OX :")'); WRITE(*,'(5(1x,es22.15,:))') self%OX
+      WRITE(*,'(5x,"Ap :")'); WRITE(*,'(5(1x,es22.15,:))') self%Ap
+      WRITE(*,'(5x,"dA :")'); WRITE(*,'(5(1x,es22.15,:))') self%dA
     END IF
   END SUBROUTINE ODPS_Predictor_Inspect
 

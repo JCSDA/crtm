@@ -47,7 +47,6 @@ MODULE CRTM_AtmOptics_Define
   PUBLIC :: CRTM_AtmOptics_Inspect
   PUBLIC :: CRTM_AtmOptics_ValidRelease
   PUBLIC :: CRTM_AtmOptics_Info
-  PUBLIC :: CRTM_AtmOptics_DefineVersion
   PUBLIC :: CRTM_AtmOptics_Compare
   PUBLIC :: CRTM_AtmOptics_InquireFile
   PUBLIC :: CRTM_AtmOptics_ReadFile
@@ -77,8 +76,6 @@ MODULE CRTM_AtmOptics_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Release and version
   INTEGER, PARAMETER :: ATMOPTICS_RELEASE = 4  ! This determines structure and file formats.
   ! Close status for write errors
@@ -306,6 +303,7 @@ CONTAINS
                 self%Delta_Truncation( n_Layers ), &
                 self%Phase_Coefficient( 0:n_Legendre_Terms, n_Phase_Elements, n_Layers ), &
                 STAT = alloc_stat )
+      self%Single_Scatter_Albedo(:) = 0._fp
       IF ( alloc_stat /= 0 ) RETURN
       ! Set maximum dimension values
       self%Max_Layers         = n_Layers
@@ -384,22 +382,22 @@ CONTAINS
     WRITE(*,'(3x,"n_Layers         : ",i0," (of max. ",i0,")")') self%n_Layers        , self%Max_Layers
     WRITE(*,'(3x,"n_Legendre_Terms : ",i0," (of max. ",i0,")")') self%n_Legendre_Terms, self%Max_Legendre_Terms
     WRITE(*,'(3x,"n_Phase_Elements : ",i0," (of max. ",i0,")")') self%n_Phase_Elements, self%Max_Phase_Elements
-    WRITE(*,'(3x,"Scattering Optical Depth : ",es13.6)') self%Scattering_Optical_Depth
+    WRITE(*,'(3x,"Scattering Optical Depth : ",es22.15)') self%Scattering_Optical_Depth
     IF ( .NOT. CRTM_AtmOptics_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Optical_Depth :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Optical_Depth(1:self%n_Layers)
+    WRITE(*,'(5(1x,es22.15,:))') self%Optical_Depth(1:self%n_Layers)
     WRITE(*,'(3x,"Single_Scatter_Albedo :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Single_Scatter_Albedo(1:self%n_Layers)
+    WRITE(*,'(5(1x,es22.15,:))') self%Single_Scatter_Albedo(1:self%n_Layers)
     WRITE(*,'(3x,"Asymmetry_Factor :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Asymmetry_Factor(1:self%n_Layers)
+    WRITE(*,'(5(1x,es22.15,:))') self%Asymmetry_Factor(1:self%n_Layers)
     WRITE(*,'(3x,"Delta_Truncation :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Delta_Truncation(1:self%n_Layers)
+    WRITE(*,'(5(1x,es22.15,:))') self%Delta_Truncation(1:self%n_Layers)
     WRITE(*,'(3x,"Phase_Coefficient Legendre polynomial coefficients :")')
     DO k = 1, self%n_Layers
       DO ip = 1, self%n_Phase_Elements
         WRITE(*,'(5x,"Layer: ",i0,"; Phase element: ",i0)') k, ip
-        WRITE(*,'(5(1x,es13.6,:))') self%Phase_Coefficient(0:self%n_Legendre_Terms,ip,k)
+        WRITE(*,'(5(1x,es22.15,:))') self%Phase_Coefficient(0:self%n_Legendre_Terms,ip,k)
       END DO
       WRITE(*,*)
     END DO
@@ -540,36 +538,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE CRTM_AtmOptics_Info
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_AtmOptics_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_AtmOptics_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_AtmOptics_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_AtmOptics_DefineVersion
-
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
@@ -1263,7 +1231,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

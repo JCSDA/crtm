@@ -9,6 +9,14 @@
 !   Written by:     Paul van Delst, 13-May-2004
 !                   paul.vandelst@noaa.gov
 !
+!  Modified by:    James Rosinski, 08-Feb-2019
+!                  Rosinski@ucar.edu
+!
+! (C) Copyright 2019 UCAR
+!
+! WARNING: This is experimental software!
+! This software is licensed under the terms of the Apache Licence Version 2.0 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
 MODULE CRTM_RTSolution_Define
 
@@ -53,7 +61,6 @@ MODULE CRTM_RTSolution_Define
   PUBLIC :: CRTM_RTSolution_Create
   PUBLIC :: CRTM_RTSolution_Zero
   PUBLIC :: CRTM_RTSolution_Inspect
-  PUBLIC :: CRTM_RTSolution_DefineVersion
   PUBLIC :: CRTM_RTSolution_Compare
   PUBLIC :: CRTM_RTSolution_Statistics
   PUBLIC :: CRTM_RTSolution_InquireFile
@@ -97,8 +104,6 @@ MODULE CRTM_RTSolution_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -392,6 +397,9 @@ CONTAINS
     INTEGER,          OPTIONAL, INTENT(IN) :: Unit
     ! Local variables
     INTEGER :: fid
+    CHARACTER(len=*), PARAMETER :: fmt64 = '(3x,a,es22.15)'  ! print in 64-bit precision
+    CHARACTER(len=*), PARAMETER :: fmt32 = '(3x,a,es13.6)'   ! print in 32-bit precision
+    CHARACTER(len=*), PARAMETER :: fmt = fmt64               ! choose 64-bit precision
 
     ! Setup
     fid = OUTPUT_UNIT
@@ -407,26 +415,28 @@ CONTAINS
     WRITE(fid,'(3x,"WMO Sensor Id                 : ",i0)') RTSolution%WMO_Sensor_ID
     WRITE(fid,'(3x,"Channel                       : ",i0)') RTSolution%Sensor_Channel
     WRITE(fid,'(3x,"RT Algorithm Name             : ",a )') RTSolution%RT_Algorithm_Name
-    WRITE(fid,'(3x,"Scattering Optical Depth      : ",es13.6)') RTSolution%SOD
-    WRITE(fid,'(3x,"Surface Emissivity            : ",es13.6)') RTSolution%Surface_Emissivity
-    WRITE(fid,'(3x,"Surface Reflectivity          : ",es13.6)') RTSolution%Surface_Reflectivity
-    WRITE(fid,'(3x,"Up Radiance                   : ",es13.6)') RTSolution%Up_Radiance
-    WRITE(fid,'(3x,"Down Radiance                 : ",es13.6)') RTSolution%Down_Radiance
-    WRITE(fid,'(3x,"Down Solar Radiance           : ",es13.6)') RTSolution%Down_Solar_Radiance
-    WRITE(fid,'(3x,"Surface Planck Radiance       : ",es13.6)') RTSolution%Surface_Planck_Radiance
-    WRITE(fid,'(3x,"Total cloud cover             : ",es13.6)') RTSolution%Total_Cloud_Cover
-    WRITE(fid,'(3x,"Radiance (clear)              : ",es13.6)') RTSolution%R_clear
-    WRITE(fid,'(3x,"Brightness Temperature (clear): ",es13.6)') RTSolution%Tb_clear
-    WRITE(fid,'(3x,"Radiance                      : ",es13.6)') RTSolution%Radiance
-    WRITE(fid,'(3x,"Brightness Temperature        : ",es13.6)') RTSolution%Brightness_Temperature
-    IF ( .NOT. CRTM_RTSolution_Associated(RTSolution) ) RETURN
-    WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
-    WRITE(fid,'(3x,"Upwelling Overcast Radiance :")')
-    WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Upwelling_Overcast_Radiance
-    WRITE(fid,'(3x,"Upwelling Radiance :")')
-    WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Upwelling_Radiance
-    WRITE(fid,'(3x,"Layer Optical Depth :")')
-    WRITE(fid,'(5(1x,es13.6,:))') RTSolution%Layer_Optical_Depth
+    WRITE(fid,fmt) "Scattering Optical Depth      : ", RTSolution%SOD
+    WRITE(fid,fmt) "Surface Emissivity            : ", RTSolution%Surface_Emissivity
+    WRITE(fid,fmt) "Surface Reflectivity          : ", RTSolution%Surface_Reflectivity
+    WRITE(fid,fmt) "Up Radiance                   : ", RTSolution%Up_Radiance
+    WRITE(fid,fmt) "Down Radiance                 : ", RTSolution%Down_Radiance
+    WRITE(fid,fmt) "Down Solar Radiance           : ", RTSolution%Down_Solar_Radiance
+    WRITE(fid,fmt) "Surface Planck Radiance       : ", RTSolution%Surface_Planck_Radiance
+    WRITE(fid,fmt) "Total cloud cover             : ", RTSolution%Total_Cloud_Cover
+    WRITE(fid,fmt) "Radiance (clear)              : ", RTSolution%R_clear
+    WRITE(fid,fmt) "Brightness Temperature (clear): ", RTSolution%Tb_clear
+    WRITE(fid,fmt) "Radiance                      : ", RTSolution%Radiance
+    WRITE(fid,fmt) "Brightness Temperature        : ", RTSolution%Brightness_Temperature
+    IF ( CRTM_RTSolution_Associated(RTSolution) ) THEN
+      WRITE(fid,'(3x,"n_Layers : ",i0)') RTSolution%n_Layers
+      WRITE(fid,'(3x,"Upwelling Overcast Radiance :")')
+      WRITE(fid,'(5(1x,es22.15,:))') RTSolution%Upwelling_Overcast_Radiance
+      WRITE(fid,'(3x,"Upwelling Radiance :")')
+      WRITE(fid,'(5(1x,es22.15,:))') RTSolution%Upwelling_Radiance
+      WRITE(fid,'(3x,"Layer Optical Depth      :")')
+      WRITE(fid,'(5(1x,es22.15,:))') RTSolution%Layer_Optical_Depth
+    END IF
+    FLUSH(fid)
   END SUBROUTINE Scalar_Inspect
 
 
@@ -451,37 +461,6 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
-
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!   CRTM_RTSolution_DefineVersion
-!
-! PURPOSE:
-!   Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!   CALL CRTM_RTSolution_DefineVersion( Id )
-!
-! OUTPUTS:
-!   Id:            Character string containing the version Id information
-!                  for the module.
-!                  UNITS:      N/A
-!                  TYPE:       CHARACTER(*)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_RTSolution_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_RTSolution_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:
