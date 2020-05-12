@@ -486,7 +486,6 @@ CONTAINS
    ! input argument list:
    !
    !     frequency        -  frequency in GHz
-   !     theta            -  local zenith angle (currently, not used here)
    !     tb[1] ~ tb[5]    -  brightness temperature at five ATMS window channels:
    !                              tb[1] : 23.8 GHz
    !                              tb[2] : 31.4 GHz
@@ -521,7 +520,6 @@ CONTAINS
      REAL(fp) :: ediff(ntype), X(nwch),Y(nwch),emw(nwch)
      REAL(fp) :: XX,XY,del,dem,dem2,delta,deltb
      INTEGER  :: minlc(1)
-     REAL(fp) :: theta,deg2rad,sinthetas,costhetas
      INTEGER  :: windex(nwch)=(/1,2,3,11,12/)             ! window channel index of the library spectrum
      ! Coefficients of quadratic equations used to estimate the emissivity difference
      ! between Ch-31.4GHz and 88.2GHZ
@@ -536,11 +534,6 @@ CONTAINS
    ! Sixteen candidate snow emissivity spectra
      em = SNOW_EMISS_ATMS_LIB
      freq = FREQUENCY_ATMS
-
-     deg2rad = pi/180.0_fp
-     sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
-     sinthetas = sinthetas*sinthetas
-     costhetas = 1.0_fp - sinthetas
 
      minlc =minloc(ABS(freq-frequency)); freq_idx=minlc(1)
 
