@@ -8,6 +8,9 @@
 ! CREATION HISTORY:
 !       Written by:     Quanhua Liu, 29-Jun-2010
 !                       Quanhua.Liu@noaa.gov
+!       Modified by     Yingtao Ma, 2020/6/11
+!                       yingtao.ma@noaa.gov
+!                       Implemented CMAQ aerosol
 !
 
 MODULE CRTM_AOD_Module
@@ -61,11 +64,15 @@ MODULE CRTM_AOD_Module
   PUBLIC :: CRTM_AOD_TL
   PUBLIC :: CRTM_AOD_AD
   PUBLIC :: CRTM_AOD_K
+  PUBLIC :: CRTM_AOD_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
+  ! Version Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
  
@@ -339,7 +346,6 @@ CONTAINS
               RETURN
             END IF
           END IF
-
 
           ! Save the nadir optical depth
           RTSolution(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics%Optical_Depth
@@ -1379,4 +1385,34 @@ CONTAINS
     END DO Profile_Loop
 
   END FUNCTION CRTM_AOD_K
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_AOD_Version
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_AOD_Version( Id )
+!
+! OUTPUTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_AOD_Version( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_AOD_Version
+
 END MODULE CRTM_AOD_Module
