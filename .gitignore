@@ -1,1 +1,5 @@
 fix/
+src/Build/libsrc/*.f90
+src/Build/libsrc/*.fpp
+src/Build/libsrc/*.inc
+
