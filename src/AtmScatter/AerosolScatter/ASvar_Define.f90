@@ -8,6 +8,8 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 14-Feb-2012
 !                       paul.vandelst@noaa.gov
+!       Modified by:    Yingtao Ma, 2020/8/13; yingtao.ma@noaa.gov
+!                       Modified ASinterp_type structure to allow forinterpolation over size variance 
 !                       
 
 MODULE ASvar_Define
@@ -46,6 +48,7 @@ MODULE ASvar_Define
   PUBLIC :: ASvar_Inspect
   PUBLIC :: ASvar_ValidRelease
   PUBLIC :: ASvar_Info
+  PUBLIC :: ASvar_DefineVersion
   PUBLIC :: ASvar_InquireFile
   PUBLIC :: ASvar_ReadFile
   PUBLIC :: ASvar_WriteFile
@@ -62,6 +65,8 @@ MODULE ASvar_Define
   ! -----------------
   ! Module parameters
   ! -----------------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id: ASvar_Define.f90 17810 2012-02-17 22:56:28Z paul.vandelst@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: ASVAR_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ASVAR_VERSION = 1  ! This is just the default data version.
@@ -83,18 +88,23 @@ MODULE ASvar_Define
     ! The interpolating polynomials
     TYPE(LPoly_type) :: wlp  ! Frequency
     TYPE(LPoly_type) :: xlp  ! Effective radius
+    TYPE(LPoly_type) :: vlp  ! Size variance
     ! The LUT interpolation indices
     INTEGER :: i1, i2        ! Frequency
     INTEGER :: j1, j2        ! Effective radius
+    INTEGER :: k1, k2        ! Size variance
     ! The LUT interpolation boundary check
     LOGICAL :: f_outbound    ! Frequency
     LOGICAL :: r_outbound    ! Effective radius
+    LOGICAL :: v_outbound    ! Size variance
     ! The interpolation input
     REAL(fp) :: f_int        ! Frequency
     REAL(fp) :: r_int        ! Effective radius
+    REAL(fp) :: v_int        ! Size variance
     ! The data to be interpolated
     REAL(fp) :: f(NPTS)      ! Frequency
     REAL(fp) :: r(NPTS)      ! Effective radius
+    REAL(fp) :: v(NPTS)      ! Size variance
   END TYPE ASinterp_type
   
   
@@ -213,17 +223,17 @@ CONTAINS
     WRITE(*,'(3x,"Mass extinction coefficient (ke) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"ke Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es22.15,:))') self%ke(:,i4)
+      WRITE(*,'(5(1x,es13.6,:))') self%ke(:,i4)
     END DO
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"w Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es22.15,:))') self%w(:,i4)
+      WRITE(*,'(5(1x,es13.6,:))') self%w(:,i4)
     END DO
     WRITE(*,'(3x,"Asymmetry factor (g) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"g Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es22.15,:))') self%g(:,i4)
+      WRITE(*,'(5(1x,es13.6,:))') self%g(:,i4)
     END DO
     WRITE(*,'(3x,"Phase coefficients (pcoeff) :")')
     DO i4 = 1, self%n_Aerosols
@@ -232,12 +242,12 @@ CONTAINS
         WRITE(*,'(7x,"pcoeff Layer index #",i0)') i3
         DO i2 = 1, self%n_Phase_Elements
           WRITE(*,'(9x,"pcoeff Phase element index #",i0)') i2
-          WRITE(*,'(5(1x,es22.15,:))') self%pcoeff(0:,i2,i3,i4)
+          WRITE(*,'(5(1x,es13.6,:))') self%pcoeff(0:,i2,i3,i4)
         END DO
       END DO
     END DO
     WRITE(*,'(3x,"Volume scattering coefficient (total_bs) :")')
-    WRITE(*,'(5(1x,es22.15,:))') self%total_bs
+    WRITE(*,'(5(1x,es13.6,:))') self%total_bs
   END SUBROUTINE ASvar_Inspect
 
 
@@ -304,6 +314,13 @@ CONTAINS
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
   END SUBROUTINE ASvar_Info
+
+
+  SUBROUTINE ASvar_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE ASvar_DefineVersion
+
 
   FUNCTION ASvar_InquireFile( &
     Filename        , &  ! Input
@@ -714,7 +731,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = 'Unknown', &
+                 Write_Module = MODULE_VERSION_ID, &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )
