@@ -2,4 +2,5 @@ fix/
 src/Build/libsrc/*.f90
 src/Build/libsrc/*.fpp
 src/Build/libsrc/*.inc
-
+src/Build/libsrc/*.o
+src/Build/libsrc/*.mod
