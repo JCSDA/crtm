@@ -54,7 +54,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Cloud_Zero, &
                                    CRTM_Cloud_IsValid, &
                                    CRTM_Cloud_Inspect, &
-                                   CRTM_Cloud_DefineVersion, &
+!yma                                   CRTM_Cloud_DefineVersion, &
                                    CRTM_Cloud_Compare, &
                                    CRTM_Cloud_SetLayers, &
                                    CRTM_Cloud_ReadFile, &
@@ -117,7 +117,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Cloud_Zero
   PUBLIC :: CRTM_Cloud_IsValid
   PUBLIC :: CRTM_Cloud_Inspect
-  PUBLIC :: CRTM_Cloud_DefineVersion
+!yma  PUBLIC :: CRTM_Cloud_DefineVersion
   PUBLIC :: CRTM_Cloud_SetLayers
   ! Aerosol entities
   ! ...Parameters
