@@ -218,24 +218,24 @@ CONTAINS
     
     ! Read the CloudCoeff data file
     IF ( Cloud_Model == 'CRTM_v2.3' ) THEN
-      ! ...Binary IO
       IF ( CloudCoeff_IO == 'Binary' ) THEN
+        !...Binary IO
         err_stat = CloudCoeff_Binary_ReadFile( &
                      CloudCoeff_File, &
                      CloudC, &
                      Quiet = .NOT. noisy )
       ELSE
-      ! ...NetCDF IO
+        !...NetCDF IO
         err_stat = CloudCoeff_netCDF_ReadFile( &
                      CloudCoeff_File, &
                      CloudC, &
                      Quiet = .NOT. noisy )
       END IF
-      IF ( err_stat /= SUCCESS ) THEN
-        WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
-        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-        RETURN
-      END IF
+    END IF
+    IF ( err_stat /= SUCCESS ) THEN
+      WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+      RETURN
     END IF
 
   END FUNCTION CRTM_CloudCoeff_Load
