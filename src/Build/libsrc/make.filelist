@@ -29,8 +29,8 @@ FSRC_FILES = \
   Subset_Define.f90 \
   SpcCoeff_Define.f90 ACCoeff_Define.f90 NLTECoeff_Define.f90 \
   SpcCoeff_Binary_IO.f90 ACCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.f90 \
-  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
-  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
+  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 CloudCoeff_netCDF_IO.f90 \
+  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 AerosolCoeff_netCDF_IO.f90 \
   CRTM_Options_Define.f90 \
   CRTM_AOD_Module.f90 \
   IRwaterCoeff_Define.f90 \

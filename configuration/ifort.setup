@@ -4,6 +4,9 @@
 #-------------------------------------------------------------------------------#
 
 export FC="ifort"
+export NC4_DIR="/opt/netcdf4/4.6.2-intel-18.0.3"
+export HDF_DIR="/opt/hdf5/1.8.21-intel-18.0.3"
+#export HDF4_DIR="/opt/hdf4/4.2.14-intel-18.0.3"
 
 export FCFLAGS="\
 -O3 \
@@ -14,4 +17,9 @@ export FCFLAGS="\
 
 export LDFLAGS=""
 
-export LIBS=""
+export LIBS="\
+-L $NC4_DIR/lib -lnetcdf -lnetcdff \
+-L $HDF_DIR/lib -lhdf5 \
+-g -fpp -traceback -check bounds \
+-I $NC4_DIR/include \
+-I $HDF_DIR/include "

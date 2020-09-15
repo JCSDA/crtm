@@ -62,6 +62,20 @@ PROGRAM check_crtm
   ! on the default Re (earth radius) and h (satellite height)
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
+
+  ! Aerosol coefficient information
+  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM_v2.3'
+  CHARACTER(*), PARAMETER :: AerosolCoeff_Format = 'Binary'
+  CHARACTER(*), PARAMETER :: AerosolCoeff_File = 'AerosolCoeff.bin'
+  !CHARACTER(*), PARAMETER :: AerosolCoeff_Format = 'netCDF'
+  !CHARACTER(*), PARAMETER :: AerosolCoeff_File = 'AerosolCoeff.nc'
+
+  ! Cloud coefficient information
+  CHARACTER(*), PARAMETER :: Cloud_Model = 'CRTM_v2.3'
+  CHARACTER(*), PARAMETER :: CloudCoeff_Format = 'Binary'
+  CHARACTER(*), PARAMETER :: CloudCoeff_File = 'CloudCoeff.bin'
+  !CHARACTER(*), PARAMETER :: CloudCoeff_Format = 'netCDF'
+  !CHARACTER(*), PARAMETER :: CloudCoeff_File = 'CloudCoeff.nc'
   ! ============================================================================
   
 
@@ -118,6 +132,12 @@ PROGRAM check_crtm
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   err_stat = CRTM_Init( SENSOR_ID, &
                         chinfo, &
+                        Aerosol_Model, &
+                        AerosolCoeff_Format, &
+                        AerosolCoeff_File, &
+                        Cloud_Model, &
+                        CloudCoeff_Format, &
+                        CloudCoeff_File, &
                         File_Path=COEFFICIENT_PATH, &
                         Quiet=.TRUE.)
   IF ( err_stat /= SUCCESS ) THEN

@@ -145,7 +145,11 @@ printf "opt is $opt\n\n"
 case $compiler in
   ifort)
     hardwired="-g -e08 -free -assume byterecl,realloc_lhs"
-    libs=""
+    libs="-L /opt/netcdf4/4.6.2-intel-18.0.3/lib -lnetcdf -lnetcdff\
+          -L /opt/hdf5/1.8.21-intel-18.0.3/lib -lhdf5\
+          -g -fpp -traceback -check bounds\
+          -I /opt/netcdf4/4.6.2-intel-18.0.3/include\
+          -I /opt/hdf5/1.8.21-intel-18.0.3/include"    
     case $opt in
       optimized)
 	declare -a default_flags="-O3 -fp-model source"
