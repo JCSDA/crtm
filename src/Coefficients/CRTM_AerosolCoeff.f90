@@ -220,27 +220,23 @@ CONTAINS
     END IF
     
     ! Read the AerosolCoeff data file
-    ! CD: different LUT from different models may have different data structure
-    !     will need to incoporate Aerosol_Model into IO module as an argument
-    !     or assign different IO module based aerosol model
-    !     for now use this if statement to work with default CRTM_v2.3 LUT 
     IF (Aerosol_Model == 'CRTM_v2.3') THEN  
-    IF (AerosolCoeff_IO == 'Binary') THEN
-    ! ...Binary IO
-    WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO) 
-    err_stat = AerosolCoeff_Binary_ReadFile( &
-                 AerosolCoeff_File, &
-                 AeroC, &
-                 Quiet = .NOT. noisy )
+      IF (AerosolCoeff_IO == 'Binary') THEN
+        ! ...Binary IO
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO) 
+        err_stat = AerosolCoeff_Binary_ReadFile( &
+                     AerosolCoeff_File, &
+                     AeroC, &
+                     Quiet = .NOT. noisy )
     
-    ELSE
-    ! ...netCDF IO     
-    WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO)
-    err_stat = AerosolCoeff_netCDF_ReadFile( &
-                 AerosolCoeff_File, &
-                 AeroC, &
-                 Quiet = .NOT. noisy )
-    END IF
+      ELSE
+        ! ...netCDF IO     
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO)
+        err_stat = AerosolCoeff_netCDF_ReadFile( &
+                     AerosolCoeff_File, &
+                     AeroC, &
+                     Quiet = .NOT. noisy )
+      END IF
     END IF
     IF ( err_stat /= SUCCESS ) THEN
       WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
