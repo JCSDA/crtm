@@ -28,9 +28,6 @@ PROGRAM check_crtm
   ! Some non-CRTM-y Parameters
   ! --------------------------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'check_crtm'
-  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-
-
 
   ! ============================================================================
   ! STEP 2. **** SET UP SOME PARAMETERS FOR THE CRTM RUN ****
