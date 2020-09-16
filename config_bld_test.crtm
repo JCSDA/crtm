@@ -291,9 +291,9 @@ if [[ $omp_threading == y ]]; then
   read nthreads
   outfn=out.${compiler}.${opt}.nthreads${nthreads}
   cmd="env OMP_NUM_THREADS=$nthreads make check 2>&1 > $outfn"
-#else
-#  outfn=out.${compiler}.${opt}
-#  cmd="make check 2>&1 > $outfn"
+else
+  outfn=out.${compiler}.${opt}
+  cmd="make check 2>&1 > $outfn"
 fi
 echo "Running $cmd ..."
 eval $cmd
