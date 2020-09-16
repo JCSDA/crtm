@@ -161,7 +161,10 @@ case $compiler in
     ;;
   gfortran)
     hardwired="-g -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4  -Wall -Wconversion -std=f2008"
-    libs=""
+    libs="-L /usr/local/Cellar/netcdf/4.7.4_1/lib -lnetcdf -lnetcdff \
+          -L /usr/local/Cellar/hdf5/1.12.0_1/lib -lhdf5 \
+          -I /usr/local/Cellar/netcdf/4.7.4_1/include \
+          -I /usr/local/Cellar/hdf5/1.12.0_1/include "
     case $opt in
       optimized)
 	declare -a default_flags="-O3 -funroll-loops"

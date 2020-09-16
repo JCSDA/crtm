@@ -4,6 +4,8 @@
 #-------------------------------------------------------------------------------#
 
 export FC="gfortran"
+export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"
+export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"
 
 export FCFLAGS="\
 -O3 \
@@ -19,4 +21,8 @@ export FCFLAGS="\
 
 export LDFLAGS=""
 
-export LIBS=""
+export LIBS="\
+-L $NC4_DIR/lib -lnetcdf -lnetcdff \
+-L $HDF_DIR/lib -lhdf5 \
+-I $NC4_DIR/include \
+-I $HDF_DIR/include "
