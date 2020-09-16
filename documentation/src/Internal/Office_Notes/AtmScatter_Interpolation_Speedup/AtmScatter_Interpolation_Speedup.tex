@@ -1,0 +1,66 @@
+% The generic preamble
+\input{preamble}
+
+\includeonly{Introduction,CloudScatter_Profile,AerosolScatter_Profile,CRTM_Profile}
+% Title info
+\title{Cloud and Aerosol Optical Property Lookup Table Interpolation Speedup for REL-1.2}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
+\date{December, 2008}
+\docnumber{(unassigned)}
+\docseries{CRTM}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+%\draftwatermark
+
+% The front matter
+%=================
+\thispagestyle{empty}
+\vspace*{10cm}
+\begin{center}
+  {\sffamily\Large\bfseries Change History}
+  \begin{table}[htp]
+    \centering
+    \begin{tabular}{|p{2cm}|p{3cm}|p{8cm}|}
+      \hline
+      \sffamily\textbf{Date} & \sffamily\textbf{Author} & \sffamily\textbf{Change}\\
+      \hline\hline
+      2008-12-04 & P.van Delst & Initial release.\\
+      \hline
+      2008-12-31 & P.van Delst & Consolidated the CloudScatter and AerosolScatter timing results. Added the CRTM ComponentTest linux/gfortran timing results\\
+      \hline
+    \end{tabular}
+  \end{table}
+\end{center}
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+
+% The main matter
+%================
+\include{Introduction}
+\include{CloudScatter_Profile}
+\include{AerosolScatter_Profile}
+\include{CRTM_Profile}
+
+
+% The references section
+%=======================
+%\clearpage
+%\bibliographystyle{plainnat}
+%\bibliography{bibliography}
+
+
+% The appendices section
+%=======================
+%\begin{appendix}
+%\end{appendix}
+
+\end{document}
+

@@ -19,12 +19,15 @@ MODULE CRTM_AncillaryInput_Define
   USE Zeeman_Input_Define
   ! Disable implicit typing
   IMPLICIT NONE
-  
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
+
+  ! ------------
+  ! Visibilities
+  ! ------------
+  ! Everything private by default
+  PRIVATE
+  ! Structures
+  PUBLIC :: CRTM_AncillaryInput_type
+  ! Procedures
   
   !--------------------
   ! Structure defintion

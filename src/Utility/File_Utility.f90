@@ -350,16 +350,6 @@ END MODULE File_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-!
-! $Date: 2006/03/17 21:05:12 $
-!
-! $Revision$
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: File_Utility.f90,v $
 ! Revision 1.15  2006/03/17 21:05:12  paulv
 ! - Stripped out the mod block.
 ! - Simplified header documentation.

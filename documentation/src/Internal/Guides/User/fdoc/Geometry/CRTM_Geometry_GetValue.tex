@@ -1,0 +1,125 @@
+\subsection{\texttt{CRTM\_Geometry\_GetValue} interface}
+  \label{sec:CRTM_Geometry_GetValue_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Geometry_GetValue
+  
+  PURPOSE:
+        Elemental subroutine to get the values of CRTM Geometry
+        object components.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Geometry_GetValue( geo, &
+                                     iFOV                 = iFOV                , &
+                                     Longitude            = Longitude           , &
+                                     Latitude             = Latitude            , &
+                                     Surface_Altitude     = Surface_Altitude    , &
+                                     Sensor_Scan_Angle    = Sensor_Scan_Angle   , &
+                                     Sensor_Zenith_Angle  = Sensor_Zenith_Angle , &
+                                     Sensor_Azimuth_Angle = Sensor_Azimuth_Angle, &
+                                     Source_Zenith_Angle  = Source_Zenith_Angle , &
+                                     Source_Azimuth_Angle = Source_Azimuth_Angle, &
+                                     Flux_Zenith_Angle    = Flux_Zenith_Angle   , &
+                                     Year                 = Year                , &
+                                     Month                = Month               , &
+                                     Day                  = Day                   )
+ 
+  OBJECTS:
+        geo:                  Geometry object from which component values
+                              are to be retrieved.
+                              UNITS:      N/A
+                              TYPE:       CRTM_Geometry_type
+                              DIMENSION:  Scalar or any rank
+                              ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL OUTPUTS:
+        iFOV:                 Sensor field-of-view index.
+                              UNITS:      N/A
+                              TYPE:       INTEGER
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Longitude:            Earth longitude
+                              UNITS:      degrees East (0->360) 
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Latitude:             Earth latitude.
+                              UNITS:      degrees North (-90->+90)
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Surface_Altitude:     Altitude of the Earth's surface at the specifed
+                              lon/lat location.
+                              UNITS:      metres (m)
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Sensor_Scan_Angle:    The sensor scan angle from nadir.
+                              UNITS:      degrees
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Sensor_Zenith_Angle:  The zenith angle from the field-of-view
+                              to the sensor.
+                              UNITS:      degrees
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Sensor_Azimuth_Angle: The azimuth angle subtended by the horizontal
+                              projection of a direct line from the satellite
+                              to the FOV and the North-South axis measured
+                              clockwise from North.
+                              UNITS:      degrees from North (0->360) 
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Source_Zenith_Angle:  The zenith angle from the field-of-view
+                              to a source (sun or moon).
+                              UNITS:      degrees
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Source_Azimuth_Angle: The azimuth angle subtended by the horizontal
+                              projection of a direct line from the source
+                              to the FOV and the North-South axis measured
+                              clockwise from North.
+                              UNITS:      degrees from North (0->360) 
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Flux_Zenith_Angle:    The zenith angle used to approximate downwelling
+                              flux transmissivity
+                              UNITS:      degrees
+                              TYPE:       REAL(fp)
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Year:                 The year in 4-digit format, e.g. 1997.
+                              UNITS:      N/A
+                              TYPE:       INTEGER
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Month:                The month of the year (1-12).
+                              UNITS:      N/A
+                              TYPE:       INTEGER
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+        Day:                  The day of the month (1-28/29/30/31).
+                              UNITS:      N/A
+                              TYPE:       INTEGER
+                              DIMENSION:  Scalar or same as geo input
+                              ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+  \end{alltt}

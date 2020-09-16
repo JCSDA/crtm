@@ -54,8 +54,6 @@ MODULE CRTM_UTILITY
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module 
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = & 
   ! Numerical small threshold value in Eigensystem
   REAL(fp), PARAMETER :: EIGEN_THRESHOLD = 1.0e-20_fp
 

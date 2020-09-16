@@ -52,8 +52,6 @@ MODULE CRTM_AerosolCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

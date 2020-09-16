@@ -51,7 +51,6 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Cloud_Zero, &
                                    CRTM_Cloud_IsValid, &
                                    CRTM_Cloud_Inspect, &
-                                   CRTM_Cloud_DefineVersion, &
                                    CRTM_Cloud_Compare, &
                                    CRTM_Cloud_SetLayers, &
                                    CRTM_Cloud_ReadFile, &
@@ -81,7 +80,6 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Aerosol_Zero, &
                                    CRTM_Aerosol_IsValid, &
                                    CRTM_Aerosol_Inspect, &
-                                   CRTM_Aerosol_DefineVersion, &
                                    CRTM_Aerosol_Compare, &
                                    CRTM_Aerosol_SetLayers, &
                                    CRTM_Aerosol_ReadFile, &
@@ -123,7 +121,6 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Cloud_Zero
   PUBLIC :: CRTM_Cloud_IsValid
   PUBLIC :: CRTM_Cloud_Inspect
-  PUBLIC :: CRTM_Cloud_DefineVersion
   PUBLIC :: CRTM_Cloud_SetLayers
   ! Aerosol entities
   ! ...Parameters
@@ -150,7 +147,6 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Aerosol_Zero
   PUBLIC :: CRTM_Aerosol_IsValid
   PUBLIC :: CRTM_Aerosol_Inspect
-  PUBLIC :: CRTM_Aerosol_DefineVersion
   PUBLIC :: CRTM_Aerosol_SetLayers
   ! Atmosphere entities
   ! ...Parameters
@@ -197,7 +193,6 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Atmosphere_Zero
   PUBLIC :: CRTM_Atmosphere_IsValid
   PUBLIC :: CRTM_Atmosphere_Inspect
-  PUBLIC :: CRTM_Atmosphere_DefineVersion
   PUBLIC :: CRTM_Atmosphere_Compare
   PUBLIC :: CRTM_Atmosphere_SetLayers
   PUBLIC :: CRTM_Atmosphere_InquireFile
@@ -247,7 +242,6 @@ MODULE CRTM_Atmosphere_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
   ! The absorber IDs. Use HITRAN definitions
   INTEGER, PARAMETER :: N_VALID_ABSORBER_IDS = 32
@@ -1033,19 +1027,19 @@ CONTAINS
     ! Profile information
     k = Atm%n_Layers
     WRITE(fid, '(3x,"Level pressure:")')
-    WRITE(fid, '(5(1x,es13.6,:))') Atm%Level_Pressure(0:k)
+    WRITE(fid, '(5(1x,es22.15,:))') Atm%Level_Pressure(0:k)
     WRITE(fid, '(3x,"Layer pressure:")')
-    WRITE(fid, '(5(1x,es13.6,:))') Atm%Pressure(1:k)
+    WRITE(fid, '(5(1x,es22.15,:))') Atm%Pressure(1:k)
     WRITE(fid, '(3x,"Layer temperature:")')
-    WRITE(fid, '(5(1x,es13.6,:))') Atm%Temperature(1:k)
+    WRITE(fid, '(5(1x,es22.15,:))') Atm%Temperature(1:k)
     WRITE(fid, '(3x,"Layer absorber:")')
     DO j = 1, Atm%n_Absorbers
       WRITE(fid, '(5x,a,"(",a,")")') TRIM(ABSORBER_ID_NAME(Atm%Absorber_Id(j))), &
                                      TRIM(ABSORBER_UNITS_NAME(Atm%Absorber_Units(j)))
-      WRITE(fid, '(5(1x,es13.6,:))') Atm%Absorber(1:k,j)
+      WRITE(fid, '(5(1x,es22.15,:))') Atm%Absorber(1:k,j)
     END DO
     WRITE(fid, '(3x,"Layer cloud fraction:")')    
-    WRITE(fid, '(5(1x,es13.6,:))') Atm%Cloud_Fraction(1:k)
+    WRITE(fid, '(5(1x,es22.15,:))') Atm%Cloud_Fraction(1:k)
     ! Cloud information
     IF ( Atm%n_Clouds > 0 ) CALL CRTM_Cloud_Inspect(Atm%Cloud, Unit=Unit)
     ! Aerosol information
@@ -1083,36 +1077,6 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Atmosphere_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Atmosphere_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Atmosphere_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Atmosphere_DefineVersion
-
 
 !--------------------------------------------------------------------------------
 !:sdoc+:

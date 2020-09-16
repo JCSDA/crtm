@@ -1,0 +1,79 @@
+% The generic preamble
+\input{preamble}
+
+% Define included documents
+\includeonly{ATMS,CrIS,VIIRS}
+
+
+% Definitions for tables
+\newcommand{\frequency}[1]{\ensuremath{f_{#1}}}
+\newcommand{\bfrequency}[1]{\boldmath\frequency{#1}\unboldmath}
+\newcommand{\bdf}[1]{\boldmath\df{#1}\unboldmath}
+\newcommand{\sideband}[1]{\ensuremath{df_{#1}}}
+\newcommand{\bsideband}[1]{\boldmath\sideband{#1}\unboldmath}
+
+% Title info
+\title{Instrument Information for NPP/NPOESS Instruments: ATMS, CrIS, and VIIRS}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
+\date{June, 2008}
+\docnumber{(unassigned)}
+\docseries{CRTM}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+\draftwatermark
+
+\begin{abstract}
+This document describes the necessary NPP/NPOESS instrument information for ATMS, CrIS, and VIIRS to allow computation of instrument resolution transmittances from a line-by-line transmittance model. These instrument transmittances are then used to derive the fast model coefficients for the CRTM.
+\textbf{Keywords}: NPP, NPOESS, ATMS, CrIS, VIIRS, CRTM, fast model.
+\end{abstract}
+
+\section{Introduction}
+%=====================
+
+\subsection{Sensor identification}
+%---------------------------------
+The CRTM and WMO\cite{WMO_Common_Code_Tables} sensor identifications for the NPP instruments are shown in table \ref{tab:npp_sensor_id}.
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|c|c|c|c|}
+    \hline
+    \textbf{Sensor} & \textbf{CRTM Sensor Id} & \textbf{WMO Sensor Id} & \textbf{WMO Satellite Id} \\
+    \hline\hline
+    ATMS  & \texttt{atms\_npp}  & 621 &            \\
+    CrIS  & \texttt{cris\_npp}  & 620 & 224 \\
+    VIIRS & \texttt{viirs\_npp} & 616 &            \\
+    \hline
+  \end{tabular}
+  \caption{Sensor and satellite identification for NPP}
+  \label{tab:npp_sensor_id}
+\end{table}
+
+
+% Include all the other various sections
+%=======================================
+\include{ATMS}
+\include{CrIS}
+\include{VIIRS}
+
+
+% The references section
+%=======================
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+
+%% The appendices section
+%%=======================
+%\begin{appendix}
+%
+%\end{appendix}
+
+
+\end{document}
+

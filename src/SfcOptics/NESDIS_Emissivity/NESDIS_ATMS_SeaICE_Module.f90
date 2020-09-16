@@ -105,8 +105,6 @@ MODULE NESDIS_ATMS_SeaICE_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS

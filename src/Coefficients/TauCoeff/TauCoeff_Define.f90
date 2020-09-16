@@ -58,8 +58,6 @@ MODULE TauCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   ! Message string length
   INTEGER , PARAMETER :: ML = 256
   ! Sensor ID string length

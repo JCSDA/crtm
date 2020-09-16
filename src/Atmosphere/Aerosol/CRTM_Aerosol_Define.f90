@@ -68,7 +68,6 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: CRTM_Aerosol_Zero
   PUBLIC :: CRTM_Aerosol_IsValid
   PUBLIC :: CRTM_Aerosol_Inspect
-  PUBLIC :: CRTM_Aerosol_DefineVersion
   PUBLIC :: CRTM_Aerosol_Compare
   PUBLIC :: CRTM_Aerosol_SetLayers
   PUBLIC :: CRTM_Aerosol_InquireFile
@@ -105,7 +104,6 @@ MODULE CRTM_Aerosol_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Aerosol types and names
   INTEGER, PARAMETER :: N_VALID_AEROSOL_CATEGORIES = 8
   INTEGER, PARAMETER ::        INVALID_AEROSOL = 0
@@ -584,9 +582,9 @@ CONTAINS
     WRITE(fid,'(3x,"Category :",1x,a)') CRTM_Aerosol_CategoryName(aerosol)
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
     WRITE(fid,'(3x,"Effective radius:")')
-    WRITE(fid,'(5(1x,es13.6,:))') Aerosol%Effective_Radius
+    WRITE(fid,'(5(1x,es22.15,:))') Aerosol%Effective_Radius
     WRITE(fid,'(3x,"Concentration:")')
-    WRITE(fid,'(5(1x,es13.6,:))') Aerosol%Concentration
+    WRITE(fid,'(5(1x,es22.15,:))') Aerosol%Concentration
   END SUBROUTINE Scalar_Inspect
 
   SUBROUTINE Rank1_Inspect( Aerosol, Unit )
@@ -620,36 +618,6 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Aerosol_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Aerosol_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Aerosol_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Aerosol_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

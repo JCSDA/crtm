@@ -32,7 +32,6 @@ MODULE Search_Utility
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS

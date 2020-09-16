@@ -61,14 +61,11 @@ MODULE CRTM_AOD_Module
   PUBLIC :: CRTM_AOD_TL
   PUBLIC :: CRTM_AOD_AD
   PUBLIC :: CRTM_AOD_K
-  PUBLIC :: CRTM_AOD_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
  
@@ -241,6 +238,9 @@ CONTAINS
       Check_Input = .TRUE.
       IF (Options_Present) THEN
         Check_Input = Options(m)%Check_Input
+
+        ! Check whether to skip this profile
+        IF ( Options(m)%Skip_Profile ) CYCLE Profile_Loop
       END IF
 
 
@@ -1379,34 +1379,4 @@ CONTAINS
     END DO Profile_Loop
 
   END FUNCTION CRTM_AOD_K
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_AOD_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_AOD_Version( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_AOD_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_AOD_Version
-
 END MODULE CRTM_AOD_Module

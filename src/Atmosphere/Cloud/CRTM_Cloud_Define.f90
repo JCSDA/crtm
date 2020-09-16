@@ -67,7 +67,6 @@ MODULE CRTM_Cloud_Define
   PUBLIC :: CRTM_Cloud_Zero
   PUBLIC :: CRTM_Cloud_IsValid
   PUBLIC :: CRTM_Cloud_Inspect
-  PUBLIC :: CRTM_Cloud_DefineVersion
   PUBLIC :: CRTM_Cloud_Compare
   PUBLIC :: CRTM_Cloud_SetLayers
   PUBLIC :: CRTM_Cloud_InquireFile
@@ -104,7 +103,6 @@ MODULE CRTM_Cloud_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! The valid cloud categories and names
   INTEGER, PARAMETER :: N_VALID_CLOUD_CATEGORIES = 6
   INTEGER, PARAMETER :: INVALID_CLOUD = 0
@@ -586,9 +584,9 @@ CONTAINS
     WRITE(fid,'(3x,"Category :",1x,a)') CRTM_Cloud_CategoryName(cloud)
     IF ( .NOT. CRTM_Cloud_Associated(Cloud) ) RETURN
     WRITE(fid,'(3x,"Effective radius:")')
-    WRITE(fid,'(5(1x,es13.6,:))') Cloud%Effective_Radius
+    WRITE(fid,'(5(1x,es22.15,:))') Cloud%Effective_Radius
     WRITE(fid,'(3x,"Water content:")')
-    WRITE(fid,'(5(1x,es13.6,:))') Cloud%Water_Content
+    WRITE(fid,'(5(1x,es22.15,:))') Cloud%Water_Content
   END SUBROUTINE Scalar_Inspect
 
   SUBROUTINE Rank1_Inspect( Cloud, Unit )
@@ -622,36 +620,6 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Cloud_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Cloud_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Cloud_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Cloud_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

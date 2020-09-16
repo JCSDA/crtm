@@ -37,13 +37,11 @@ MODULE AerosolCoeff_Binary_IO
   PUBLIC :: AerosolCoeff_Binary_InquireFile
   PUBLIC :: AerosolCoeff_Binary_ReadFile
   PUBLIC :: AerosolCoeff_Binary_WriteFile
-  PUBLIC :: AerosolCoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
@@ -674,34 +672,4 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION AerosolCoeff_Binary_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_Binary_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL AerosolCoeff_Binary_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE AerosolCoeff_Binary_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE AerosolCoeff_Binary_IOVersion
-
 END MODULE AerosolCoeff_Binary_IO

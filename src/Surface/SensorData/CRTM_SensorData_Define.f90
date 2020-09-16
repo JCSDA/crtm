@@ -55,7 +55,6 @@ MODULE CRTM_SensorData_Define
   PUBLIC :: CRTM_SensorData_Zero
   PUBLIC :: CRTM_SensorData_IsValid
   PUBLIC :: CRTM_SensorData_Inspect
-  PUBLIC :: CRTM_SensorData_DefineVersion
   PUBLIC :: CRTM_SensorData_Compare
   PUBLIC :: CRTM_SensorData_InquireFile
   PUBLIC :: CRTM_SensorData_ReadFile
@@ -81,7 +80,6 @@ MODULE CRTM_SensorData_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -437,38 +435,8 @@ CONTAINS
     WRITE(fid,'(3x,"Sensor channels:")')
     WRITE(fid,'(10(1x,i5))') SensorData%Sensor_Channel
     WRITE(fid,'(3x,"Brightness temperatures:")')
-    WRITE(fid,'(10(1x,es13.6))') SensorData%Tb
+    WRITE(fid,'(10(1x,es22.15))') SensorData%Tb
   END SUBROUTINE CRTM_SensorData_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_SensorData_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_SensorData_DefineVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_SensorData_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_SensorData_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

@@ -47,7 +47,6 @@ MODULE SEcategory_Define
   PUBLIC :: SEcategory_Info
   PUBLIC :: SEcategory_Name
   PUBLIC :: SEcategory_Index
-  PUBLIC :: SEcategory_DefineVersion
   PUBLIC :: SEcategory_SetValue
   PUBLIC :: SEcategory_GetValue
   PUBLIC :: SEcategory_InquireFile
@@ -66,7 +65,6 @@ MODULE SEcategory_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Datatype information
   CHARACTER(*), PARAMETER :: SECATEGORY_DATATYPE = 'SEcategory'
   ! Release and version
@@ -312,7 +310,7 @@ CONTAINS
     IF ( .NOT. SEcategory_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Frequency :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Frequency
+    WRITE(*,'(5(1x,es22.15,:))') self%Frequency
     WRITE(*,'(3x,"Surface_Type - (IsValid) :")')
     DO n = 1, self%n_Surface_Types
       WRITE(*,'(5x,a," - (",l1,")")') TRIM(self%Surface_Type(n)), self%Surface_Type_IsValid(n)
@@ -321,7 +319,7 @@ CONTAINS
     WRITE(*,'(3x,"Reflectance :")')
     DO n = 1, self%n_Surface_Types
       WRITE(*,'(5x,a)') self%Surface_Type(n)
-      WRITE(*,'(5(1x,es13.6,:))') self%Reflectance(:,n)
+      WRITE(*,'(5(1x,es22.15,:))') self%Reflectance(:,n)
     END DO
   END SUBROUTINE SEcategory_Inspect
 
@@ -558,36 +556,6 @@ CONTAINS
     END DO
 
   END FUNCTION SEcategory_Index
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       SEcategory_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL SEcategory_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE SEcategory_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE SEcategory_DefineVersion
-
 
 
 !--------------------------------------------------------------------------------
@@ -1535,7 +1503,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

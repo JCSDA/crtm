@@ -40,8 +40,6 @@ MODULE NESDIS_AMSRE_SICEEM_Module
   ! Module parameters
   ! -----------------
   ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-
 
   INTEGER, PUBLIC, PARAMETER                          :: N_FREQ= 7
 
@@ -387,6 +385,8 @@ real(fp), intent (out) :: Emissivity_V,Emissivity_H
 integer           :: ich
 
 !  Initialization
+! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+   em_vector(:) = HUGE(em_vector)
 
    Emissivity_H = 0.82_fp
 

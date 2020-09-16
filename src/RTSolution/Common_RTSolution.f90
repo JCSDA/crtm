@@ -58,8 +58,6 @@ MODULE Common_RTSolution
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   
 CONTAINS
 

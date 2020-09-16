@@ -35,13 +35,11 @@ MODULE NLTE_Predictor_IO
   PUBLIC :: NLTE_Predictor_InquireFile
   PUBLIC :: NLTE_Predictor_ReadFile
   PUBLIC :: NLTE_Predictor_WriteFile
-  PUBLIC :: NLTE_Predictor_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
@@ -618,34 +616,4 @@ CONTAINS
      END SUBROUTINE Write_Cleanup
 
   END FUNCTION NLTE_Predictor_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       NLTE_Predictor_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL NLTE_Predictor_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE NLTE_Predictor_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE NLTE_Predictor_IOVersion
-  
 END MODULE NLTE_Predictor_IO

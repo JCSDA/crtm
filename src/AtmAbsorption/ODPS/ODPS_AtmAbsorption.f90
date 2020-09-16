@@ -53,7 +53,6 @@ MODULE ODPS_AtmAbsorption
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   ! Maximum allowed layer optical depth
   REAL(fp), PARAMETER :: MAX_OD = 20.0_fp
 

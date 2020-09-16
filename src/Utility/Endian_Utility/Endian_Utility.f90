@@ -556,16 +556,6 @@ END MODULE Endian_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-!
-! $Date: 2004/12/01 19:35:15 $
-!
-! $Revision$
-!
-! $State: Exp $
-!
-! $Name:  $
-!
-! $Log: Endian_Utility.f90,v $
 ! Revision 2.3  2004/12/01 19:35:15  paulv
 ! - Documentation errors corrected.
 !

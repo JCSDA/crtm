@@ -1,0 +1,39 @@
+\subsection{\texttt{CRTM\_Aerosol\_IsValid} interface}
+  \label{sec:CRTM_Aerosol_IsValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Aerosol_IsValid
+ 
+  PURPOSE:
+        Non-pure function to perform some simple validity checks on a
+        CRTM Aerosol object.
+ 
+        If invalid data is found, a message is printed to stdout.
+ 
+  CALLING SEQUENCE:
+        result = CRTM_Aerosol_IsValid( Aerosol )
+ 
+          or
+ 
+        IF ( CRTM_Aerosol_IsValid( Aerosol ) ) THEN....
+ 
+  OBJECTS:
+        Aerosol:       CRTM Aerosol object which is to have its
+                       contents checked.
+                       UNITS:      N/A
+                       TYPE:       CRTM_Aerosol_type
+                       DIMENSION:  Scalar
+                       ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        result:        Logical variable indicating whether or not the input
+                       passed the check.
+                       If == .FALSE., Aerosol object is unused or contains
+                                      invalid data.
+                          == .TRUE.,  Aerosol object can be used in CRTM.
+                       UNITS:      N/A
+                       TYPE:       LOGICAL
+                       DIMENSION:  Scalar
+ 
+  \end{alltt}

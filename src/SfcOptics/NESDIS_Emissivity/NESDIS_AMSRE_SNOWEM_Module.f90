@@ -41,8 +41,6 @@ MODULE NESDIS_AMSRE_SNOWEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS
@@ -204,6 +202,8 @@ real(fp)              :: esh1,esv1,esh2,esv2,desh,desv,dem
 real(fp), intent(out) :: Emissivity_V,Emissivity_H
 
 !  Initialization
+! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+   em_vector(:) = HUGE(em_vector)
 
    Emissivity_H = 0.82_fp
 

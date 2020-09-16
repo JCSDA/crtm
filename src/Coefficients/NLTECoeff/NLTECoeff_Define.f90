@@ -48,7 +48,6 @@ MODULE NLTECoeff_Define
   PUBLIC :: NLTECoeff_Inspect
   PUBLIC :: NLTECoeff_ValidRelease
   PUBLIC :: NLTECoeff_Info
-  PUBLIC :: NLTECoeff_DefineVersion
   PUBLIC :: NLTECoeff_Subset
   PUBLIC :: NLTECoeff_Concat
   PUBLIC :: NLTECoeff_ChannelReindex
@@ -65,8 +64,6 @@ MODULE NLTECoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
@@ -377,21 +374,21 @@ CONTAINS
     WRITE(*,'(10(1x,i5,:))') NLTECoeff%Sensor_Channel
     ! Pressure arrays
     WRITE(*,'(3x,"Upper_Plevel :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Upper_Plevel
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Upper_Plevel
     WRITE(*,'(3x,"Lower_Plevel :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Lower_Plevel
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Lower_Plevel
     ! Temperature arrays
     WRITE(*,'(3x,"Min_Tm  :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Min_Tm
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Min_Tm
     WRITE(*,'(3x,"Max_Tm  :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Max_Tm
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Max_Tm
     WRITE(*,'(3x,"Mean_Tm :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Mean_Tm
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Mean_Tm
     ! Coefficient table dimension vectors
     WRITE(*,'(3x,"Secant_Sensor_Zenith :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Secant_Sensor_Zenith
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Secant_Sensor_Zenith
     WRITE(*,'(3x,"Secant_Solar_Zenith  :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%Secant_Solar_Zenith
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%Secant_Solar_Zenith
     WRITE(*,'(3x,"NLTE_Channel         :")')
     WRITE(*,'(10(1x,i5,:))') NLTECoeff%NLTE_Channel
     ! NLTE channel flag
@@ -408,7 +405,7 @@ CONTAINS
     END DO
     ! Coefficient data
     WRITE(*,'(3x,"NLTE correction coefficients :")')
-    WRITE(*,'(5(1x,es13.6,:))') NLTECoeff%C
+    WRITE(*,'(5(1x,es22.15,:))') NLTECoeff%C
   END SUBROUTINE NLTECoeff_Inspect
 
 
@@ -544,35 +541,6 @@ CONTAINS
   END SUBROUTINE NLTECoeff_Info
  
  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       NLTECoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL NLTECoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE NLTECoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE NLTECoeff_DefineVersion
-
-
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !

@@ -46,7 +46,6 @@ MODULE CSvar_Define
   PUBLIC :: CSvar_Inspect
   PUBLIC :: CSvar_ValidRelease
   PUBLIC :: CSvar_Info
-  PUBLIC :: CSvar_DefineVersion
   PUBLIC :: CSvar_InquireFile
   PUBLIC :: CSvar_ReadFile
   PUBLIC :: CSvar_WriteFile
@@ -63,7 +62,6 @@ MODULE CSvar_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Release and version
   INTEGER, PARAMETER :: CSVAR_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: CSVAR_VERSION = 1  ! This is just the default data version.
@@ -220,17 +218,17 @@ CONTAINS
     WRITE(*,'(3x,"Mass extinction coefficient (ke) :")')
     DO i4 = 1, self%n_Clouds
       WRITE(*,'(5x,"ke Cloud index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%ke(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%ke(:,i4)
     END DO
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
     DO i4 = 1, self%n_Clouds
       WRITE(*,'(5x,"w Cloud index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%w(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%w(:,i4)
     END DO
     WRITE(*,'(3x,"Asymmetry factor (g) :")')
     DO i4 = 1, self%n_Clouds
       WRITE(*,'(5x,"g Cloud index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%g(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%g(:,i4)
     END DO
     WRITE(*,'(3x,"Phase coefficients (pcoeff) :")')
     DO i4 = 1, self%n_Clouds
@@ -239,12 +237,12 @@ CONTAINS
         WRITE(*,'(7x,"pcoeff Layer index #",i0)') i3
         DO i2 = 1, self%n_Phase_Elements
           WRITE(*,'(9x,"pcoeff Phase element index #",i0)') i2
-          WRITE(*,'(5(1x,es13.6,:))') self%pcoeff(0:,i2,i3,i4)
+          WRITE(*,'(5(1x,es22.15,:))') self%pcoeff(0:,i2,i3,i4)
         END DO
       END DO
     END DO
     WRITE(*,'(3x,"Volume scattering coefficient (total_bs) :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%total_bs
+    WRITE(*,'(5(1x,es22.15,:))') self%total_bs
   END SUBROUTINE CSvar_Inspect
 
 
@@ -311,12 +309,6 @@ CONTAINS
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
   END SUBROUTINE CSvar_Info
-
-
-  SUBROUTINE CSvar_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CSvar_DefineVersion
 
 
   FUNCTION CSvar_InquireFile( &
@@ -728,7 +720,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

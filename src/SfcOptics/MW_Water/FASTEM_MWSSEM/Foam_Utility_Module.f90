@@ -35,7 +35,6 @@ MODULE Foam_Utility_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp

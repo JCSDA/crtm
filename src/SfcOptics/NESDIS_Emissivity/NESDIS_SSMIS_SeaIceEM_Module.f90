@@ -41,8 +41,6 @@ MODULE NESDIS_SSMIS_SeaIceEM_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS

@@ -46,7 +46,6 @@ MODULE CRTM_Model_Profiles
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
 
   ! Model dimension info
   INTEGER, PARAMETER :: N_MODEL_LEVELS    = 101

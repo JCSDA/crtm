@@ -110,7 +110,6 @@ MODULE CRTM_FastemX
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
   ! FASTEM6 version number for use with azimuth model
   INTEGER, PARAMETER :: FASTEM6 = 6

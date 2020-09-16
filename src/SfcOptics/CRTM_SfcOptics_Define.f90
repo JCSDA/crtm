@@ -45,7 +45,6 @@ MODULE CRTM_SfcOptics_Define
   PUBLIC :: CRTM_SfcOptics_Create
   PUBLIC :: CRTM_SfcOptics_Zero
   PUBLIC :: CRTM_SfcOptics_Inspect
-  PUBLIC :: CRTM_SfcOptics_DefineVersion
   PUBLIC :: CRTM_SfcOptics_Compare
 
 
@@ -63,12 +62,6 @@ MODULE CRTM_SfcOptics_Define
   INTERFACE OPERATOR(-)
     MODULE PROCEDURE CRTM_SfcOptics_Subtract
   END INTERFACE OPERATOR(-)  
-
-
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
   ! -----------------------------------
@@ -375,53 +368,23 @@ CONTAINS
     ! Display components
     WRITE(*, '(3x,"Compute flag              :",1x,l1)') self%Compute
     WRITE(*, '(3x,"Use_New_MWSSEM flag       :",1x,l1)') self%Use_New_MWSSEM
-    WRITE(*, '(3x,"  MWSSEM- azimuth angle   :",1x,es13.6)') self%Azimuth_Angle
-    WRITE(*, '(3x,"  MWSSEM- transmittance   :",1x,es13.6)') self%Transmittance
+    WRITE(*, '(3x,"  MWSSEM- azimuth angle   :",1x,es22.15)') self%Azimuth_Angle
+    WRITE(*, '(3x,"  MWSSEM- transmittance   :",1x,es22.15)') self%Transmittance
     WRITE(*, '(3x,"Satellite view angle index:",1x,i0)') self%Index_Sat_Ang
     WRITE(*, '(3x,"Azimuth Fourier component :",1x,i0)') self%mth_Azi
-    WRITE(*, '(3x,"Weighted mean Tsfc        :",1x,es13.6)') self%Surface_Temperature
+    WRITE(*, '(3x,"Weighted mean Tsfc        :",1x,es22.15)') self%Surface_Temperature
     IF ( .NOT. CRTM_SfcOptics_Associated(self) ) RETURN
     WRITE(*, '(3x,"Angle :")')
-    WRITE(*, '(5(1x,es13.6,:))') self%Angle
+    WRITE(*, '(5(1x,es22.15,:))') self%Angle
     WRITE(*, '(3x,"Weight :")')
-    WRITE(*, '(5(1x,es13.6,:))') self%Weight
+    WRITE(*, '(5(1x,es22.15,:))') self%Weight
     WRITE(*, '(3x,"Emissivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') self%Emissivity
+    WRITE(*, '(5(1x,es22.15,:))') self%Emissivity
     WRITE(*, '(3x,"Reflectivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') self%Reflectivity
+    WRITE(*, '(5(1x,es22.15,:))') self%Reflectivity
     WRITE(*, '(3x,"Direct_Reflectivity :")')
-    WRITE(*, '(5(1x,es13.6,:))') self%Direct_Reflectivity
+    WRITE(*, '(5(1x,es22.15,:))') self%Direct_Reflectivity
   END SUBROUTINE CRTM_SfcOptics_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_SfcOptics_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_SfcOptics_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_SfcOptics_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_SfcOptics_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

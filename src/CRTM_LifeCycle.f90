@@ -70,12 +70,10 @@ MODULE CRTM_LifeCycle
   PUBLIC :: CRTM_Init
   PUBLIC :: CRTM_Destroy
   PUBLIC :: CRTM_IsInitialized
-  PUBLIC :: CRTM_LifeCycleVersion
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! Error message length
   INTEGER, PARAMETER :: SL = 5000  ! Maximum length for path+filenames
@@ -888,34 +886,4 @@ CONTAINS
     LOGICAL :: Status
     Status = ALL(CRTM_ChannelInfo_Associated(ChannelInfo))
   END FUNCTION CRTM_IsInitialized
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_LifeCycleVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_LifeCycleVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_LifeCycleVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_LifeCycleVersion
-
 END MODULE CRTM_LifeCycle

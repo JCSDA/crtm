@@ -1,0 +1,37 @@
+\section{Compilation}
+%=====================
+The compiler and compilation switches used for the two build systems are shown in table \ref{tab:lblrtm_compilation_switches}. Two executables were built: a single precision and a double precision version. For the latter build, compiler switches were used to promote the default floating point real and default integer types to double precision. As shown in table \ref{tab:lblrtm_compilation_switches}, two compilers were used in the testing on the linux system: gfortran and pgf95.
+
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{p{4cm} p{3cm} p{4cm}}
+    \hline
+    \sffamily\textbf{System} & \sffamily\textbf{Compiler} & \sffamily\textbf{Switches} \\
+    \hline\hline
+                              &                  & \texttt{-c}\\           
+                              & gfortran         & \texttt{-ffixed-form}\\ 
+                              & 4.4.0 (20081021) & \texttt{-fdefault-real-8}$^\dagger$\\
+                              &                  & \texttt{-fdefault-integer-8}$^\dagger$\\
+    \cline{2-3}
+    \rb{Red Hat RHE4.0 linux} &                  & \texttt{-c}\\
+                              & PGI f95          & \texttt{-fast}\\
+                              & 7.2-4            & \texttt{-r8}$^\dagger$\\
+                              &                  & \texttt{-i8}$^\dagger$\\
+    \hline
+                              &                  & \texttt{-c}\\ 
+                              &                  & \texttt{-qarch=auto}\\
+                              & xlf95            & \texttt{-qfixed=72}\\
+    IBM AIX 5.3               & 10.01.0000.0006  & \texttt{-qmaxmem=-1}\\
+                              &                  & \texttt{-O2}\\
+                              &                  & \texttt{-qrealsize=8}$^\dagger$\\
+                              &                  & \texttt{-qintsize=8}$^\dagger$\\
+    \hline
+  \end{tabular}
+  \caption{Switches for the compilers on the two systems on which LNFL v2.5 and LBLRTM v11.3 were tested. $^\dagger$These switches were only used for the double precision build for LBLRTM.}
+  \label{tab:lblrtm_compilation_switches}
+\end{table}
+
+Note that the gfortran switches do not include any optimisation levels. Anomalous residuals occurred in one of the test cases when either the \texttt{-O2} or \texttt{-O3} switch was used when compiling the LBLRTM v11.3 source code with gfortran. Results from this optimised gfortran test case are shown in appendix \ref{app:busted_gfortran_compiler_results}.
+
+Also note that an earlier version of the IBM AIX compiler, v10.01.0000.0002, does not correctly compile LBLRTM in double precision mode when certain LBLRTM input options are used. For the sake of other user's sanity, results for that particular compiler version for the double precision build are shown separately in appendix \ref{app:busted_ibm_compiler_results}. This is a known bug in the IBM compiler and a bug report was previously filed with IBM when the issue was discovered during LBLRTM v9.3 builds.
+

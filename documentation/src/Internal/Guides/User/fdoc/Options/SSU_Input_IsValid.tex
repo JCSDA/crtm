@@ -1,0 +1,39 @@
+\subsection{\texttt{SSU\_Input\_IsValid} interface}
+  \label{sec:SSU_Input_IsValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        SSU_Input_IsValid
+ 
+  PURPOSE:
+        Non-pure function to perform some simple validity checks on a
+        SSU_Input object.
+ 
+        If invalid data is found, a message is printed to stdout.
+ 
+  CALLING SEQUENCE:
+        result = SSU_Input_IsValid( ssu )
+ 
+          or
+ 
+        IF ( SSU_Input_IsValid( ssu ) ) THEN....
+ 
+  OBJECTS:
+        ssu:       SSU_Input object which is to have its
+                   contents checked.
+                   UNITS:      N/A
+                   TYPE:       SSU_Input_type
+                   DIMENSION:  Scalar
+                   ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        result:    Logical variable indicating whether or not the input
+                   passed the check.
+                   If == .FALSE., object is unused or contains
+                                  invalid data.
+                      == .TRUE.,  object can be used.
+                   UNITS:      N/A
+                   TYPE:       LOGICAL
+                   DIMENSION:  Scalar
+ 
+  \end{alltt}

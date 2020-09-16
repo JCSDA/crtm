@@ -64,7 +64,6 @@ MODULE CRTM_Predictor_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -225,7 +224,7 @@ CONTAINS
     LOGICAL :: no_optran
     LOGICAL :: allocate_success
 
-
+    allocate_success = .FALSE.   ! If at end of CASE stmt this hasn't been set TRUE, bail
     ! Check input
     IF ( n_Layers < 1 ) RETURN
 

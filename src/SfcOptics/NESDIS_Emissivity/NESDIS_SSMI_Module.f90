@@ -38,8 +38,6 @@ MODULE NESDIS_SSMI_Module
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS
@@ -331,7 +329,7 @@ subroutine NESDIS_SSMI_SSICEEM_CORE(Snow_status,Ice_status,frequency,Ts,tv,th,em
 
   integer,parameter :: ntype = 3, nv=4, nh=3,ncoev=5,ncoeh=4
 
-  integer :: ntype_index,ich,k,lp,nch
+  integer :: ntype_index,ich,lp,nch
 
   integer, parameter :: SICEALG = 1
   integer, parameter :: SNOWALG = 2

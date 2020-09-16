@@ -1,0 +1,80 @@
+\subsection{\texttt{CRTM\_Forward} interface}
+  \label{sec:CRTM_Forward_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Forward
+ 
+  PURPOSE:
+        Function that calculates top-of-atmosphere (TOA) radiances
+        and brightness temperatures for an input atmospheric profile or
+        profile set and user specified satellites/channels.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Forward( Atmosphere       , &
+                                     Surface          , &
+                                     Geometry         , &
+                                     ChannelInfo      , &
+                                     RTSolution       , &
+                                     Options = Options  )
+ 
+  INPUTS:
+        Atmosphere:     Structure containing the Atmosphere data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Atmosphere_type
+                        DIMENSION:  Rank-1 (n_Profiles)
+                        ATTRIBUTES: INTENT(IN)
+ 
+        Surface:        Structure containing the Surface data.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Surface_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN)
+ 
+        Geometry:       Structure containing the view geometry
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Geometry_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN)
+ 
+        ChannelInfo:    Structure returned from the CRTM_Init() function
+                        that contains the satellite/sensor channel index
+                        information.
+                        UNITS:      N/A
+                        TYPE:       CRTM_ChannelInfo_type
+                        DIMENSION:  Rank-1 (n_Sensors)
+                        ATTRIBUTES: INTENT(IN)
+ 
+  OUTPUTS:
+        RTSolution:     Structure containing the soluition to the RT equation
+                        for the given inputs.
+                        UNITS:      N/A
+                        TYPE:       CRTM_RTSolution_type
+                        DIMENSION:  Rank-2 (n_Channels x n_Profiles)
+                        ATTRIBUTES: INTENT(IN OUT)
+ 
+  OPTIONAL INPUTS:
+        Options:        Options structure containing the optional arguments
+                        for the CRTM.
+                        UNITS:      N/A
+                        TYPE:       CRTM_Options_type
+                        DIMENSION:  Same as input Atmosphere structure
+                        ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:   The return value is an integer defining the error status.
+                        The error codes are defined in the Message_Handler module.
+                        If == SUCCESS the computation was sucessful
+                           == FAILURE an unrecoverable error occurred
+                        UNITS:      N/A
+                        TYPE:       INTEGER
+                        DIMENSION:  Scalar
+ 
+  COMMENTS:
+        - The Options optional input structure argument contains
+          spectral information (e.g. emissivity) that must have the same
+          spectral dimensionality (the "L" dimension) as the output
+          RTSolution structure.
+ 
+  \end{alltt}

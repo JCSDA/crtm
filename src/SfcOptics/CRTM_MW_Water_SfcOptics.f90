@@ -62,8 +62,6 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Low frequency model threshold
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD = 20.0_fp ! GHz
 

@@ -36,13 +36,11 @@ MODULE CloudCoeff_Binary_IO
   PUBLIC :: CloudCoeff_Binary_InquireFile
   PUBLIC :: CloudCoeff_Binary_ReadFile
   PUBLIC :: CloudCoeff_Binary_WriteFile
-  PUBLIC :: CloudCoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
@@ -676,34 +674,4 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION CloudCoeff_Binary_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CloudCoeff_Binary_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CloudCoeff_Binary_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CloudCoeff_Binary_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CloudCoeff_Binary_IOVersion
-
 END MODULE CloudCoeff_Binary_IO

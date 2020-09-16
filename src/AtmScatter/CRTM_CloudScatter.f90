@@ -11,6 +11,14 @@
 !                        Paul van Delst, paul.vandelst@noaa.gov
 !                        02-July-2005
 !
+!       Modified by:    James Rosinski, 08-Feb-2019
+!                       Rosinski@ucar.edu
+!
+! (C) Copyright 2019 UCAR
+!
+! WARNING: This is experimental software!
+! This software is licensed under the terms of the Apache Licence Version 2.0 
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
 
 MODULE CRTM_CloudScatter
 
@@ -84,8 +92,6 @@ MODULE CRTM_CloudScatter
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
@@ -880,6 +886,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     ! Perform interpolation
@@ -930,9 +937,12 @@ CONTAINS
     REAL(fp) :: f_TL(NPTS), r_TL(NPTS)
     REAL(fp) :: z_TL(NPTS,NPTS)
     TYPE(LPoly_type) :: wlp_TL, xlp_TL
-    REAL(fp), POINTER :: z(:,:) => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR    REAL(fp), POINTER :: z(:,:) => NULL()
+    REAL(fp), POINTER :: z(:,:)
     
-
+    NULLIFY(z)
     ! Setup
     ! -----
     ! No TL output when all dimensions
@@ -975,6 +985,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     
@@ -1041,9 +1052,12 @@ CONTAINS
     REAL(fp) :: f_AD(NPTS), r_AD(NPTS)
     REAL(fp) :: z_AD(NPTS,NPTS)
     TYPE(LPoly_type) :: wlp_AD, xlp_AD
-    REAL(fp), POINTER :: z(:,:) => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR    REAL(fp), POINTER :: z(:,:) => NULL()
+    REAL(fp), POINTER :: z(:,:)
 
-
+    NULLIFY(z)
     ! Setup
     ! -----
     ! No AD output when all dimensions
@@ -1075,6 +1089,7 @@ CONTAINS
       CASE(SNOW_CLOUD)   ; k=1  ! Solid
       CASE(GRAUPEL_CLOUD); k=2  ! Solid
       CASE(HAIL_CLOUD)   ; k=3  ! Solid
+      CASE DEFAULT       ; k=HUGE(k)   ! Case not found: Hopefully induce code to fail
     END SELECT
     
     ! Perform interpolation
@@ -1293,9 +1308,15 @@ CONTAINS
     REAL(fp) :: z2_TL(NPTS,NPTS)
     REAL(fp) :: z3_TL(NPTS,NPTS,NPTS)
     TYPE(LPoly_type) :: wlp_TL, xlp_TL, ylp_TL
-    REAL(fp), POINTER :: z2(:,:)   => NULL()
-    REAL(fp), POINTER :: z3(:,:,:) => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR    REAL(fp), POINTER :: z2(:,:) => NULL()
+!JR    REAL(fp), POINTER :: z3(:,:,:) => NULL()
+    REAL(fp), POINTER :: z2(:,:)
+    REAL(fp), POINTER :: z3(:,:,:)
 
+    NULLIFY(z2)
+    NULLIFY(z3)
 
     ! Setup
     ! -----
@@ -1480,9 +1501,15 @@ CONTAINS
     REAL(fp) :: z2_AD(NPTS,NPTS)
     REAL(fp) :: z3_AD(NPTS,NPTS,NPTS)
     TYPE(LPoly_type) :: wlp_AD, xlp_AD, ylp_AD
-    REAL(fp), POINTER :: z2(:,:)   => NULL()
-    REAL(fp), POINTER :: z3(:,:,:) => NULL()
+!JR Static initialization means only 1 copy of the variable. OpenMP over profiles
+!JR means $OPENMP_NUM_THREADS copies are needed. So change to run-time initialization
+!JR    REAL(fp), POINTER :: z2(:,:) => NULL()
+!JR    REAL(fp), POINTER :: z3(:,:,:) => NULL()
+    REAL(fp), POINTER :: z2(:,:)
+    REAL(fp), POINTER :: z3(:,:,:)
 
+    NULLIFY(z2)
+    NULLIFY(z3)
     ! Setup
     ! -----
     ! Initialise local adjoint variables

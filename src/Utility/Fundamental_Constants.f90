@@ -37,14 +37,11 @@ MODULE Fundamental_Constants
   ! ------------------
   PRIVATE
   ! Procedures
-  PUBLIC :: Fundamental_Constants_Version
-
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Numeric literals
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -277,37 +274,4 @@ MODULE Fundamental_Constants
   REAL(fp), PARAMETER, PUBLIC :: LOSCHMIDT_CONSTANT = AVOGADRO_CONSTANT / &
   !                                                   -----------------
                                                       STP_MOLAR_VOLUME
-
-
-CONTAINS
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Fundamental_Constants_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL Fundamental_Constants_Version( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE Fundamental_Constants_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE Fundamental_Constants_Version
-
 END MODULE Fundamental_Constants

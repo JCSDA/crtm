@@ -151,15 +151,11 @@ MODULE CRTM_Adjoint_Module
   PRIVATE
   ! Public procedures
   PUBLIC :: CRTM_Adjoint
-  PUBLIC :: CRTM_Adjoint_Version
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-
 
 CONTAINS
 
@@ -356,7 +352,8 @@ CONTAINS
     ! Cloud cover object
     TYPE(CRTM_CloudCover_type) :: CloudCover, CloudCover_AD
 
-
+    ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+    r_cloudy = HUGE(r_cloudy)
     ! ------
     ! SET UP
     ! ------
@@ -464,6 +461,8 @@ CONTAINS
       ! ...Assign the option specific SfcOptics input
       SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
 
+      ! Check whether to skip this profile
+      IF ( Opt%Skip_Profile ) CYCLE Profile_Loop
 
       ! Check the input data if required
       IF ( Opt%Check_Input ) THEN
@@ -1507,36 +1506,5 @@ CONTAINS
       END IF
 
     END SUBROUTINE Pre_Process_RTSolution_AD
-
   END FUNCTION CRTM_Adjoint
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Adjoint_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Adjoint_Version( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Adjoint_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Adjoint_Version
-
 END MODULE CRTM_Adjoint_Module

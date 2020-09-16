@@ -41,14 +41,11 @@ MODULE CRTM_GeometryInfo
   PUBLIC :: CRTM_GeometryInfo_Compute
   PUBLIC :: SACONV, SACONV_TL, SACONV_AD 
   PUBLIC :: VACONV, VACONV_TL, VACONV_AD 
-  PUBLIC :: CRTM_GeometryInfo_Version 
   
   
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
   ! Metres->kilometres conversion factor
   REAL(fp), PARAMETER :: M_TO_KM = 1.0e-03_fp
 
@@ -623,36 +620,6 @@ CONTAINS
     Altitude_AD = Altitude_AD + (M_TO_KM * ra_AD)
   
   END SUBROUTINE VACONV_AD
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_GeometryInfo_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_GeometryInfo_Version( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_GeometryInfo_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_GeometryInfo_Version
-
 
 !##################################################################################
 !##################################################################################

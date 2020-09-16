@@ -63,13 +63,7 @@ MODULE CRTM_MW_Snow_SfcOptics
   PUBLIC :: Compute_MW_Snow_SfcOptics
   PUBLIC :: Compute_MW_Snow_SfcOptics_TL
   PUBLIC :: Compute_MW_Snow_SfcOptics_AD
-
-
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-
+  PUBLIC :: Populate_Subset
 
   ! --------------------------------------
   ! Structure definition to hold forward
@@ -192,12 +186,18 @@ CONTAINS
     INTEGER,  PARAMETER :: AMSRE_V_INDEX(6) = (/1, 3, 5, 7, 9, 11/)  ! AMSRE channels with V pol.
     INTEGER,  PARAMETER :: AMSRE_H_INDEX(6) = (/2, 4, 6, 8, 10, 12/) ! AMSRE channels with H pol.
     INTEGER,  PARAMETER :: AMSUA_INDEX(4)   = (/1, 2, 3, 15/)
+    INTEGER,  PARAMETER :: AMSUB_INDEX(2)   = (/1, 2/)
     INTEGER,  PARAMETER :: SSMIS_INDEX(8)   = (/13,12,14,16,15,17,18,8/)  ! With swapped polarisations
+    INTEGER,  PARAMETER :: SSMI_INDEX(7)   =  (/1,2,3,4,5,6,7/) 
     INTEGER,  PARAMETER :: ATMS_INDEX(5)    = (/1, 2, 3, 16,17/)          ! With mixed polarisations
+    INTEGER,  PARAMETER :: MaxChan = 8 
     ! Local variables
     INTEGER :: i
     REAL(fp) :: Sensor_Zenith_Angle
     REAL(fp) :: Alpha
+    REAL(fp) :: TBs_In(MaxChan)
+    REAL(fp) :: TBs_In_V(MaxChan)
+    REAL(fp) :: TBs_In_H(MaxChan)
 
 
     ! Set up
@@ -210,11 +210,13 @@ CONTAINS
 
       ! ATMSemissivity model
       CASE( WMO_ATMS )    
+         TBs_In(1:5) = Populate_Subset( Surface, 5, ATMS_INDEX)
+
          DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ATMS_SNOWEM( Sensor_Zenith_Angle,                     &  ! Input, Degree           
                                    SfcOptics%Angle(i),                      &  ! Input, Degree           
                                    SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
-                                   Surface%SensorData%Tb(ATMS_INDEX),       &  ! Input, ATMS           
+                                   TBs_In(1:5),                             &  ! Input, ATMS           
                                    Surface%Snow_Temperature,                &  ! Input, K                
                                    Surface%Snow_Depth,                      &  ! Input, mm               
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component      
@@ -224,51 +226,59 @@ CONTAINS
 
       ! AMSU-A emissivity model
       CASE( WMO_AMSUA )
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                     &  ! Input, Degree
+         TBs_In(1:4) = Populate_Subset( Surface, 4, AMSUA_INDEX)
+
+         DO i = 1, SfcOptics%n_Angles
+           CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
                                    SfcOptics%Angle(i),                      &  ! Input, Degree
                                    SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                    Surface%Snow_Depth,                      &  ! Input, mm
                                    Surface%Snow_Temperature,                &  ! Input, K
-                                   Surface%SensorData%Tb(AMSUA_INDEX),      &  ! Input, AMSUA
+                                   TBs_In(1:4),                             &  ! Input, AMSUA
                                    NOT_USED(1:2),                           &  ! Input, AMSUB  *** NO AMSU-B DATA ***
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+         END DO
 
       ! AMSU-B emissivity model
       CASE( WMO_AMSUB)
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                     &  ! Input, Degree
+         TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+
+         DO i = 1, SfcOptics%n_Angles
+           CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
                                    SfcOptics%Angle(i),                      &  ! Input, Degree
                                    SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                    Surface%Snow_Depth,                      &  ! Input, mm
                                    Surface%Snow_Temperature,                &  ! Input, K
-                                   NOT_USED,                                &  ! Input  AMSUA  *** NO AMSU-A DATA ***
-                                   Surface%SensorData%Tb(1:2),              &  ! Input, AMSUB
+                                   NOT_USED(1:4),                           &  ! Input  AMSUA  *** NO AMSU-A DATA ***
+                                   TBs_In(1:2),                             &  ! Input, AMSUB
                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! MHS emissivity model
       CASE (WMO_MHS)
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_SNOWEM_MHS( Sensor_Zenith_Angle,                     &  ! Input, Degree
-                                  SfcOptics%Angle(i),                      &  ! Input, Degree
-                                  SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                  Surface%Snow_Temperature,                &  ! Input, K
-                                  Surface%SensorData%Tb(1:2),              &  ! Input, AMSUB
-                                  SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                  SfcOptics%Emissivity(i,1)                )  ! Output, V component
+         TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+
+         DO i = 1, SfcOptics%n_Angles
+            CALL NESDIS_SNOWEM_MHS( Sensor_Zenith_Angle,                   &  ! Input, Degree
+                                 SfcOptics%Angle(i),                      &  ! Input, Degree
+                                 SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+                                 Surface%Snow_Temperature,                &  ! Input, K
+                                 Tbs_In(1:2),                             &  ! Input, AMSUB
+                                 SfcOptics%Emissivity(i,2),               &  ! Output, H component
+                                 SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! AMSR-E emissivity model
       CASE( WMO_AMSRE )
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_AMSRE_SNOW(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+         TBs_In_V(1:6) = Populate_Subset( Surface, 6, AMSRE_V_INDEX)
+         TBs_In_H(1:6) = Populate_Subset( Surface, 6, AMSRE_H_INDEX)
+         DO i = 1, SfcOptics%n_Angles
+            CALL NESDIS_AMSRE_SNOW(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
                                  SfcOptics%Angle(i),                      &  ! Input, Degree
-                                 Surface%SensorData%Tb(AMSRE_V_INDEX),    &  ! Input, Tb_V, K
-                                 Surface%SensorData%Tb(AMSRE_H_INDEX),    &  ! Input, Tb_H, K
+                                 TBs_In_V(1:6),                           &  ! Input, Tb_V, K
+                                 TBs_In_H(1:6),                           &  ! Input, Tb_H, K
                                  Surface%Snow_Temperature,                &  ! Input, Ts, K
                                  Surface%Snow_Temperature,                &  ! Input, Tsnow, K
                                  SfcOptics%Emissivity(i,2),               &  ! Output, H component
@@ -277,26 +287,28 @@ CONTAINS
 
       ! SSM/I emissivity model
       CASE( WMO_SSMI )
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_SSMI_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                  SfcOptics%Angle(i),                      &  ! Input, Degree
-                                  Surface%Snow_Temperature,                &  ! Input, K
-                                  Surface%SensorData%Tb,                   &  ! Input, K
-                                  Surface%Snow_Depth,                      &  ! Input, mm
-                                  SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                  SfcOptics%Emissivity(i,1)                )  ! Output, V component
+         TBs_In(1:7) = Populate_Subset( Surface, 7, SSMI_INDEX)
+         DO i = 1, SfcOptics%n_Angles
+            CALL NESDIS_SSMI_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+                                    SfcOptics%Angle(i),                      &  ! Input, Degree
+                                    Surface%Snow_Temperature,                &  ! Input, K
+                                    TBs_In(1:7),                             &  ! Input, K
+                                    Surface%Snow_Depth,                      &  ! Input, mm
+                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
+                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! SSMIS emissivity model
       CASE( WMO_SSMIS )
-        DO i = 1, SfcOptics%n_Angles
-          CALL NESDIS_SSMIS_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                   SfcOptics%Angle(i),                      &  ! Input, Degree
-                                   Surface%Snow_Temperature,                &  ! Input, K
-                                   Surface%SensorData%Tb(SSMIS_INDEX),      &  ! Input, K
-                                   Surface%Snow_Depth,                      &  ! Input, mm
-                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
+         TBs_In(1:8) = Populate_Subset( Surface, 8, SSMIS_INDEX)
+         DO i = 1, SfcOptics%n_Angles
+            CALL NESDIS_SSMIS_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+                                     SfcOptics%Angle(i),                      &  ! Input, Degree
+                                     Surface%Snow_Temperature,                &  ! Input, K
+                                     TBs_In(1:8),                             &  ! Input, K
+                                     Surface%Snow_Depth,                      &  ! Input, mm
+                                     SfcOptics%Emissivity(i,2),               &  ! Output, H component
+                                     SfcOptics%Emissivity(i,1)                )  ! Output, V component
         END DO
 
       ! MSU emissivity model
@@ -339,9 +351,7 @@ CONTAINS
         END IF
 
     END SELECT Sensor_Type
-
-
-    ! Compute the surface reflectivities,
+    
     ! assuming a specular surface
     SfcOptics%Reflectivity = ZERO
     DO i = 1, SfcOptics%n_Angles
@@ -489,5 +499,72 @@ CONTAINS
     SfcOptics_AD%Emissivity   = ZERO
 
   END FUNCTION Compute_MW_Snow_SfcOptics_AD
+
+!----------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       Populate_Subset
+!
+! PURPOSE:
+!       Repackages brightness temperatures into a subset of channels required by
+!       lower NESDIS emissivity routines.
+!
+! CALLING SEQUENCE:
+!       Output_TBs = Populate_Subset( Surface, Num_Output_Channels, Required_Channels )
+!
+! INPUTS:
+!       Surface:         CRTM Surface Structure
+!                        UNITS:      N/A
+!                        TYPE:       CRTM_Surface_type
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Num_Output Channels:   The number of channels required
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Scalar
+!                        ATTRIBUTES: INTENT(IN)
+!
+!       Required_Channels:   The required channels 
+!                        UNITS:      N/A
+!                        TYPE:       INTEGER
+!                        DIMENSION:  Num_Output Channels
+!                        ATTRIBUTES: INTENT(IN)
+! FUNCTION RESULT:
+!       Output_TBs:    An array of the required brightness temperatures
+!                        UNITS:      K
+!                        TYPE:       REAL
+!                        DIMENSION:  Num_Output Channels
+!
+! COMMENTS:
+!
+!:sdoc-:
+!----------------------------------------------------------------------------------
+
+  FUNCTION Populate_Subset( &
+        Surface, &
+        Num_Output_Channels, &
+        Required_Channels) &
+  RESULT ( Output_TBs )
+    ! Arguments
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
+    INTEGER, INTENT(IN) :: Num_Output_Channels
+    INTEGER, INTENT(IN) :: Required_Channels(Num_Output_Channels)
+    ! Function Result
+    REAL(fp) :: Output_TBs(Num_Output_Channels) 
+    ! Local Variables
+    INTEGER :: I, J
+
+    Output_TBs(:) = -99.9_fp
+
+    DO I = 1, Num_Output_Channels
+      DO J = 1,Surface%SensorData%n_Channels
+        IF (Required_Channels(I) == Surface%SensorData%Sensor_Channel(J)) &
+            Output_TBs(I) = Surface%SensorData%Tb(J)
+      END DO
+    END DO
+
+  END FUNCTION Populate_Subset
 
 END MODULE CRTM_MW_Snow_SfcOptics

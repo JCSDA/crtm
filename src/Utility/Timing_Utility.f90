@@ -34,7 +34,6 @@ MODULE Timing_Utility
 
 
   ! Parameters
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   INTEGER, PARAMETER :: ML = 256
 
 
@@ -247,7 +246,7 @@ CONTAINS
 !   Seconds:       Set this logical argument to create a string that is
 !                  simply the number of seconds of elpased time.
 !                  If == .FALSE., the output string format is HH:MM:SS.sss [DEFAULT].
-!                     == .TRUE.,  the output string format is XX.XXXXXXe+EE (es13.6).
+!                     == .TRUE.,  the output string format is XX.XXXXXXe+EE (es22.15).
 !                  If not specified, default is .FALSE.
 !                  UNITS:      N/A
 !                  TYPE:       LOGICAL
@@ -256,7 +255,7 @@ CONTAINS
 !
 !   Fmt_String:    Character string holding the format string to use for
 !                  seconds of elasped time output. If not supplied, the
-!                  default is '(es13.6)'.
+!                  default is '(es22.15)'.
 !                  This argument is ignored if the "Seconds" argument is
 !                  not specified, or not set.
 !                  UNITS:      N/A
@@ -301,7 +300,7 @@ CONTAINS
     ! ...Process keyword arguments
     hhmmss = .TRUE.
     IF ( PRESENT(Seconds) ) hhmmss = .NOT. Seconds
-    fmt = '(es13.6)'
+    fmt = '(es22.15)'
     IF ( PRESENT(Fmt_String) ) fmt = ADJUSTL(Fmt_String)
 
 

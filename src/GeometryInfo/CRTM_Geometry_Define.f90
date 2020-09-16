@@ -59,7 +59,6 @@ MODULE CRTM_Geometry_Define
   PUBLIC :: CRTM_Geometry_GetValue
   PUBLIC :: CRTM_Geometry_IsValid
   PUBLIC :: CRTM_Geometry_Inspect
-  PUBLIC :: CRTM_Geometry_DefineVersion
   PUBLIC :: CRTM_Geometry_Compare
   PUBLIC :: CRTM_Geometry_InquireFile
   PUBLIC :: CRTM_Geometry_ReadFile
@@ -83,7 +82,6 @@ MODULE CRTM_Geometry_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Literal constants 
   REAL(fp), PARAMETER :: ZERO = 0.0_fp 
   ! Message string length 
@@ -764,7 +762,7 @@ CONTAINS
     TYPE(CRTM_Geometry_type), INTENT(IN) :: geo
     INTEGER,        OPTIONAL, INTENT(IN) :: Unit
     ! Local parameters
-    CHARACTER(*), PARAMETER :: RFMT = 'es13.6'
+    CHARACTER(*), PARAMETER :: RFMT = 'es22.15'
     ! Local variables
     INTEGER :: fid
     
@@ -797,36 +795,6 @@ CONTAINS
     WRITE(fid, '(3x,"Day                 :",1x,i4)') geo%Day  
 
   END SUBROUTINE CRTM_Geometry_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Geometry_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Geometry_DefineVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Geometry_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Geometry_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:

@@ -1,1 +1,1 @@
-'v2.3.0'
+#define CRTM_VERSION 'v2.3.0'

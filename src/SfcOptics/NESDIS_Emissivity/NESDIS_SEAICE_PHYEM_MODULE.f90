@@ -31,8 +31,6 @@ MODULE NESDIS_SEAICE_PHYEM_MODULE
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS
@@ -246,6 +244,8 @@ CONTAINS
 
      COMPLEX(fp) :: ebrine,eice,eair,esice,xx
 
+     ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
+     sb = HUGE(sb)
      pi=acos(-1.0_fp)
      ESWI=4.9_fp
      t=temp-273.15_fp

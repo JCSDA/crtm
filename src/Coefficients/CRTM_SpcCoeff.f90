@@ -102,7 +102,6 @@ MODULE CRTM_SpcCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

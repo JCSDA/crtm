@@ -59,13 +59,7 @@ MODULE CRTM_RTSolution
   PUBLIC :: CRTM_Compute_RTSolution_TL
   PUBLIC :: CRTM_Compute_RTSolution_AD
   PUBLIC :: CRTM_Compute_nStreams
-  PUBLIC :: CRTM_RTSolution_Version
 
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  ! Version Id for the module
-  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
 
 CONTAINS
 
@@ -1087,33 +1081,4 @@ CONTAINS
     RTSolution%n_full_Streams  = nStreams + 2
 
   END FUNCTION CRTM_Compute_nStreams
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_RTSolution_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_RTSolution_Version( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_RTSolution_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_RTSolution_Version
-
 END MODULE CRTM_RTSolution

@@ -48,8 +48,6 @@ MODULE SensorInfo_Parameters
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
   ! Invalid sensor ids
   INTEGER, PARAMETER :: INVALID_WMO_SATELLITE_ID = 1023
   INTEGER, PARAMETER :: INVALID_WMO_SENSOR_ID    = 2047

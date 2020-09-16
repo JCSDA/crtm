@@ -165,7 +165,6 @@ MODULE UnitTest_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   INTEGER,      PARAMETER :: SL = 512
   INTEGER,      PARAMETER :: CR = 13
   INTEGER,      PARAMETER :: LF = 10

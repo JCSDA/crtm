@@ -56,7 +56,6 @@ MODULE ODAS_AtmAbsorption
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
   ! ------------------------------------------

@@ -43,7 +43,6 @@ MODULE CRTM_ChannelInfo_Define
   PUBLIC :: CRTM_ChannelInfo_Destroy
   PUBLIC :: CRTM_ChannelInfo_Create
   PUBLIC :: CRTM_ChannelInfo_Inspect
-  PUBLIC :: CRTM_ChannelInfo_DefineVersion
   PUBLIC :: CRTM_ChannelInfo_n_Channels
   PUBLIC :: CRTM_ChannelInfo_Channels
   PUBLIC :: CRTM_ChannelInfo_Subset
@@ -60,8 +59,6 @@ MODULE CRTM_ChannelInfo_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   
@@ -518,36 +515,6 @@ CONTAINS
     END IF
 
   END FUNCTION CRTM_ChannelInfo_Subset
-  
-  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_ChannelInfo_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_ChannelInfo_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_ChannelInfo_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_ChannelInfo_DefineVersion
-
 
 !##################################################################################
 !##################################################################################

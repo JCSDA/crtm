@@ -47,12 +47,6 @@ MODULE ODPS_TauCoeff
   PUBLIC :: Destroy_TauCoeff
 
 
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-
-
   ! --------------------------------------
   ! The shared data for the gas absorption
   ! (AtmAbsorption) model

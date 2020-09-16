@@ -52,7 +52,6 @@ MODULE CRTM_VISlandCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Message string length
   INTEGER, PARAMETER :: ML = 512
 

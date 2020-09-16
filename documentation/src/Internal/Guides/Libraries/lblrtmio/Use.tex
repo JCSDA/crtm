@@ -1,0 +1,142 @@
+\chapter{How to use the LBLRTM I/O library}
+%==========================================
+%==========================================
+\label{chapter:use}
+
+This section will hopefully get you started using the LBLRTM I/O library as quickly as possible. We will only be referring to the reading of datafiles in this section.
+
+
+\section{Environment setup in your Fortran program}
+%==================================================
+
+All of the LBLRTM I/O user procedures, parameters, and derived data type definitions are accessible via the container module \f{LBLRTMIO\_Module}. Thus, one needs to put the following statement in any calling program, module or procedure,
+
+\hspace{0.4cm}\f{USE LBLRTMIO\_Module}
+
+Once you become more familiar with the components of the LBLRTM I/O library you require, you can also specify an \f{ONLY} clause with the \f{USE} statement,
+
+\hspace{0.4cm}\f{USE LBLRTMIO\_Module}[\f{, ONLY:}\textit{only-list}]
+
+where \textit{only-list} is a list of the symbols you want to ``import'' from \f{LBLRTMIO\_Module}. This latter form is the preferred style for self-documenting your code; e.g. when you give the code to someone else, they will be able to identify from which module various symbols in your code originate.
+
+You can find out what version of the LBLRTM I/O library you are using by calling the \hyperref[sec:LBLRTMIO_Version_interface]{\f{LBLRTMIO\_Version}} subroutine.
+
+
+
+\section{Define the LBLRTM \File{} object}
+%=========================================
+
+An LBLRTM \File{} object is declared like so,
+\begin{alltt}
+  TYPE(\hyperref[fig:LBLRTM_File_type_structure]{LBLRTM_File_type}) :: ofile\end{alltt}
+
+One additional variable required is an integer to hold the error status of the I/O functions, e.g. 
+
+\hspace{0.4cm}\f{INTEGER :: err\_stat}
+
+That's pretty much it.
+
+
+
+\section{Call the LBLRTM File read function}
+%===========================================
+
+Below are three examples of calling the LBLRTM \File{} read function. See \ref{sec:LBLRTM_File_Read_interface} for the full description of the function interface.
+
+\subsection{Single layer, single panel LBLRTM file}
+%--------------------------------------------------
+Reading a single layer, single panel file (e.g. an optical depth file) is the simplest. Let's call the input file ``\f{ODdeflt\_100}''. To read it, the syntax is:
+\begin{alltt}
+  err_stat = \hyperref[sec:LBLRTM_File_Read_interface]{LBLRTM_File_Read}(ofile, 'ODdeflt_100')
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+The error status return code ``\f{SUCCESS}'' is defined in the library.
+
+
+\subsection{Single layer, double panel LBLRTM file}
+%--------------------------------------------------
+Because there is no unambiguous way to determine if an LBLRTM file is single or double panel, if a file is a double panel file (e.g. containing radiance and transmittance data) that information must be supplied to the read function. By default the function reads single panel files. To read a double panel file (let's call this one ``\f{TAPE12}''), the syntax is:
+\begin{alltt}
+  err_stat = \hyperref[sec:LBLRTM_File_Read_interface]{LBLRTM_File_Read}(ofile, 'TAPE12', Double_Panel=.TRUE.)
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+The optional logical argument ``\f{Double\_Panel}'' causes the \File{} object to be correctly allocated to hold both sets of spectral data.
+
+
+\subsection{Multiple layer, double panel LBLRTM file}
+%----------------------------------------------------
+As with the single/double panel format issue, there is also no unambiguous way to determine up front if an LBLRTM file contains multiple layers. So, again, that information must be supplied to the read function. By default the function reads only a single layer. To read multiple layers from a file (let's call this one ``\f{TAPE13}''), the syntax is:
+\begin{alltt}
+  err_stat = \hyperref[sec:LBLRTM_File_Read_interface]{LBLRTM_File_Read}(ofile, 'TAPE13', n_Layers=10, Double_Panel=.TRUE.)
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+The optional integer argument ``\f{n\_Layers}'' specifies the amount of data allocated for the \File{} object and the number of layers to read in. If there are more layers in the file than that specified, they are ignored. 
+
+
+
+\section{Inspecting the File object contents}
+%============================================
+
+You can dump the contents of the LBLRTM \File{} object to stdout via the \hyperref[sec:LBLRTM_File_Inspect_interface]{\f{LBLRTM\_File\_Inspect}} subroutine like so:
+
+\hspace{0.4cm}\f{CALL }\hyperref[sec:LBLRTM_File_Read_interface]{\f{LBLRTM\_File\_Inspect}}(ofile)
+
+Note that this will generate a \emph{lot} of output so it's mostly useful for debugging purposes.
+
+
+
+\section{Accessing the File object contents}
+%===========================================
+
+The LBLRTM I/O library is (not yet) fully object oriented. As such, there are no \f{Get} methods for the \File{} object and access to the data is done via direct reference to the object components. See figures \ref{fig:LBLRTM_File_type_structure} and \ref{fig:LBLRTM_Layer_type_structure} for the complete \File{} and \Layer{} object definitions respetively.
+
+The following code snippet shows how the individual layer spectra can be accessed, including use of a \Layer{} object ``method'' to compute the frequency grid for the spectrum:
+\begin{alltt}
+  ! Some type declarations
+  TYPE(\hyperref[fig:LBLRTM_File_type_structure]{LBLRTM_File_type}) :: oFile
+  INTEGER :: i, k, n
+  REAL(DP), ALLOCATABLE :: frequency
+  
+  \textrm{\textit{...Read file, etc...}}
+  
+  ! Loop over the layer data
+  DO k = 1, oFile\%n_Layers
+  
+    ! Compute the frequency grid for the current layer
+    CALL \hyperref[sec:LBLRTM_Layer_Frequency_interface]{LBLRTM_Layer_Frequency}(oFile\%Layer(k), frequency)
+    IF ( .NOT. ALLOCATED(frequency) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    
+    ! Loop over the spectra (i.e. single- or double-panel)
+    DO n = 1, oFile\%Layer(k)\%n_Spectra
+    
+      ! Loop over the spectral points
+      DO i = 1, oFile\%Layer(k)\%n_Points
+    
+        ! Display current spectrum value for each frequency
+        PRINT *, f(i), oFile\%Layer(k)\%Spectrum(i,n)
+        
+      END DO
+    END DO
+    
+    ! Not strictly necessary, but a good habit
+    DEALLOCATE(frequency)
+    
+  END DO\end{alltt}
+
+
+
+
+\section{Cleaning up}
+%============================================
+
+You don't have to explicitly destroy LBLRTM \File{} objects, but it's a good habit to get into. Deallocation of the \File{} object is done via the \hyperref[sec:LBLRTM_File_Destroy_interface]{\f{LBLRTM\_File\_Destroy}} subroutine like so:
+
+\hspace{0.4cm}\f{CALL }\hyperref[sec:LBLRTM_File_Destroy_interface]{\f{LBLRTM\_File\_Destroy}}(ofile)
+

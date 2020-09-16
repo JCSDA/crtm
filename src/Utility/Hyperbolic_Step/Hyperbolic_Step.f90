@@ -30,7 +30,6 @@ MODULE Hyperbolic_Step
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Literals
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp

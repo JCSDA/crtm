@@ -39,7 +39,6 @@ MODULE CRTM_Surface_Define
                                     CRTM_SensorData_Zero, &
                                     CRTM_SensorData_IsValid, &
                                     CRTM_SensorData_Inspect, &
-                                    CRTM_SensorData_DefineVersion, &
                                     CRTM_SensorData_Compare, &
                                     CRTM_SensorData_ReadFile, &
                                     CRTM_SensorData_WriteFile
@@ -66,7 +65,6 @@ MODULE CRTM_Surface_Define
   PUBLIC :: CRTM_SensorData_Zero
   PUBLIC :: CRTM_SensorData_IsValid
   PUBLIC :: CRTM_SensorData_Inspect
-  PUBLIC :: CRTM_SensorData_DefineVersion
   PUBLIC :: CRTM_SensorData_Compare
   ! Surface entities
   ! ...Gross surface parameters
@@ -89,7 +87,6 @@ MODULE CRTM_Surface_Define
   PUBLIC :: CRTM_Surface_Inspect
   PUBLIC :: CRTM_Surface_IsCoverageValid
   PUBLIC :: CRTM_Surface_CoverageType
-  PUBLIC :: CRTM_Surface_DefineVersion
   PUBLIC :: CRTM_Surface_Compare
   PUBLIC :: CRTM_Surface_InquireFile
   PUBLIC :: CRTM_Surface_ReadFile
@@ -125,7 +122,6 @@ MODULE CRTM_Surface_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -645,7 +641,7 @@ CONTAINS
     TYPE(CRTM_Surface_type), INTENT(IN) :: Sfc
     LOGICAL :: IsValid
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Surface_IsCoverageValid'
-    REAL(fp)    , PARAMETER :: TOLERANCE = 1.0e-10_fp
+    REAL(fp)    , PARAMETER :: TOLERANCE = 1.0e-6_fp
     CHARACTER(ML) :: msg
     REAL(fp) :: Total_Coverage
 
@@ -661,7 +657,7 @@ CONTAINS
 
     ! Check total coverage sums to 1
     IF ( ABS(Total_Coverage-ONE) > TOLERANCE ) THEN
-      WRITE( msg,'("Total coverage fraction does not sum to 1 +/- ",es13.6)' ) TOLERANCE
+      WRITE( msg,'("Total coverage fraction does not sum to 1 +/- ",es22.15,G12.4)' ) TOLERANCE, Total_Coverage
       CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
       IsValid = .FALSE.
     END IF
@@ -677,14 +673,14 @@ CONTAINS
 
       ! Check for coverage < -TOLERANCE
       IF ( Coverage < -TOLERANCE ) THEN
-        WRITE( msg,'(a," coverage fraction is < ",es13.6)' ) TRIM(Name), -TOLERANCE
+        WRITE( msg,'(a," coverage fraction is < ",es22.15)' ) TRIM(Name), -TOLERANCE
         CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
         IsValid = .FALSE.
       END IF
 
       ! Check for coverage > 1+TOLERANCE
       IF ( Coverage > ONE+TOLERANCE ) THEN
-        WRITE( msg,'(a," coverage fraction is > 1 +",es13.6)' ) TRIM(Name), TOLERANCE
+        WRITE( msg,'(a," coverage fraction is > 1 +",es22.15)' ) TRIM(Name), TOLERANCE
         CALL Display_Message( ROUTINE_NAME,msg,INFORMATION )
         IsValid = .FALSE.
       END IF
@@ -738,35 +734,6 @@ CONTAINS
     IF ( sfc%Snow_Coverage  > ZERO ) Coverage_Type = Coverage_Type + SNOW_SURFACE
     IF ( sfc%Ice_Coverage   > ZERO ) Coverage_Type = Coverage_Type + ICE_SURFACE
   END FUNCTION CRTM_Surface_CoverageType
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Surface_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Surface_DefineVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Surface_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Surface_DefineVersion
 
 
 !------------------------------------------------------------------------------
@@ -1834,12 +1801,12 @@ CONTAINS
       IF ( File_Open(Unit) ) fid = Unit
     END IF
     WRITE(fid,'(3x,"Land type index      :",1x,i0)') Sfc%Land_Type
-    WRITE(fid,'(3x,"Land Temperature     :",1x,es13.6)') Sfc%Land_Temperature
-    WRITE(fid,'(3x,"Soil Moisture Content:",1x,es13.6)') Sfc%Soil_Moisture_Content
-    WRITE(fid,'(3x,"Canopy Water Content :",1x,es13.6)') Sfc%Canopy_Water_Content
-    WRITE(fid,'(3x,"Vegetation Fraction  :",1x,es13.6)') Sfc%Vegetation_Fraction
-    WRITE(fid,'(3x,"Soil Temperature     :",1x,es13.6)') Sfc%Soil_Temperature
-    WRITE(fid,'(3x,"Leaf Area Index      :",1x,es13.6)') Sfc%LAI
+    WRITE(fid,'(3x,"Land Temperature     :",1x,es22.15)') Sfc%Land_Temperature
+    WRITE(fid,'(3x,"Soil Moisture Content:",1x,es22.15)') Sfc%Soil_Moisture_Content
+    WRITE(fid,'(3x,"Canopy Water Content :",1x,es22.15)') Sfc%Canopy_Water_Content
+    WRITE(fid,'(3x,"Vegetation Fraction  :",1x,es22.15)') Sfc%Vegetation_Fraction
+    WRITE(fid,'(3x,"Soil Temperature     :",1x,es22.15)') Sfc%Soil_Temperature
+    WRITE(fid,'(3x,"Leaf Area Index      :",1x,es22.15)') Sfc%LAI
     WRITE(fid,'(3x,"Soil type index      :",1x,i0)') Sfc%Soil_Type
     WRITE(fid,'(3x,"Vegetation type index:",1x,i0)') Sfc%Vegetation_Type
   END SUBROUTINE CRTM_LandSurface_Inspect
@@ -1943,10 +1910,10 @@ CONTAINS
       IF ( File_Open(Unit) ) fid = Unit
     END IF
     WRITE(fid,'(3x,"Water Type index :",1x,i0)') Sfc%Water_Type
-    WRITE(fid,'(3x,"Water Temperature:",1x,es13.6)') Sfc%Water_Temperature
-    WRITE(fid,'(3x,"Wind Speed       :",1x,es13.6)') Sfc%Wind_Speed
-    WRITE(fid,'(3x,"Wind Direction   :",1x,es13.6)') Sfc%Wind_Direction
-    WRITE(fid,'(3x,"Salinity         :",1x,es13.6)') Sfc%Salinity
+    WRITE(fid,'(3x,"Water Temperature:",1x,es22.15)') Sfc%Water_Temperature
+    WRITE(fid,'(3x,"Wind Speed       :",1x,es22.15)') Sfc%Wind_Speed
+    WRITE(fid,'(3x,"Wind Direction   :",1x,es22.15)') Sfc%Wind_Direction
+    WRITE(fid,'(3x,"Salinity         :",1x,es22.15)') Sfc%Salinity
   END SUBROUTINE CRTM_WaterSurface_Inspect
 
 
@@ -2040,10 +2007,10 @@ CONTAINS
       IF ( File_Open(Unit) ) fid = Unit
     END IF
     WRITE(fid,'(3x,"Snow Type index :",1x,i0)') Sfc%Snow_Type
-    WRITE(fid,'(3x,"Snow Temperature:",1x,es13.6)') Sfc%Snow_Temperature
-    WRITE(fid,'(3x,"Snow Depth      :",1x,es13.6)') Sfc%Snow_Depth
-    WRITE(fid,'(3x,"Snow Density    :",1x,es13.6)') Sfc%Snow_Density
-    WRITE(fid,'(3x,"Snow Grain_Size :",1x,es13.6)') Sfc%Snow_Grain_Size
+    WRITE(fid,'(3x,"Snow Temperature:",1x,es22.15)') Sfc%Snow_Temperature
+    WRITE(fid,'(3x,"Snow Depth      :",1x,es22.15)') Sfc%Snow_Depth
+    WRITE(fid,'(3x,"Snow Density    :",1x,es22.15)') Sfc%Snow_Density
+    WRITE(fid,'(3x,"Snow Grain_Size :",1x,es22.15)') Sfc%Snow_Grain_Size
   END SUBROUTINE CRTM_SnowSurface_Inspect
 
 
@@ -2137,10 +2104,10 @@ CONTAINS
       IF ( File_Open(Unit) ) fid = Unit
     END IF
     WRITE(fid,'(3x,"Ice Type index :",1x,i0)') Sfc%Ice_Type
-    WRITE(fid,'(3x,"Ice Temperature:",1x,es13.6)') Sfc%Ice_Temperature
-    WRITE(fid,'(3x,"Ice Thickness  :",1x,es13.6)') Sfc%Ice_Thickness
-    WRITE(fid,'(3x,"Ice Density    :",1x,es13.6)') Sfc%Ice_Density
-    WRITE(fid,'(3x,"Ice Roughness  :",1x,es13.6)') Sfc%Ice_Roughness
+    WRITE(fid,'(3x,"Ice Temperature:",1x,es22.15)') Sfc%Ice_Temperature
+    WRITE(fid,'(3x,"Ice Thickness  :",1x,es22.15)') Sfc%Ice_Thickness
+    WRITE(fid,'(3x,"Ice Density    :",1x,es22.15)') Sfc%Ice_Density
+    WRITE(fid,'(3x,"Ice Roughness  :",1x,es22.15)') Sfc%Ice_Roughness
   END SUBROUTINE CRTM_IceSurface_Inspect
 
 

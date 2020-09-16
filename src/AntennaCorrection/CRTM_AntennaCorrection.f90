@@ -36,13 +36,6 @@ MODULE CRTM_AntennaCorrection
   PUBLIC :: CRTM_Compute_AntCorr_TL
   PUBLIC :: CRTM_Compute_AntCorr_AD
 
-
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  
-
 CONTAINS
 
 

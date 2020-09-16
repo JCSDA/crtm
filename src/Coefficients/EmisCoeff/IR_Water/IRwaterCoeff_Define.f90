@@ -42,7 +42,6 @@ MODULE IRwaterCoeff_Define
   PUBLIC :: IRwaterCoeff_Inspect
   PUBLIC :: IRwaterCoeff_ValidRelease
   PUBLIC :: IRwaterCoeff_Info
-  PUBLIC :: IRwaterCoeff_DefineVersion
   PUBLIC :: IRwaterCoeff_InquireFile
   PUBLIC :: IRwaterCoeff_ReadFile
   PUBLIC :: IRwaterCoeff_WriteFile
@@ -59,7 +58,6 @@ MODULE IRwaterCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Current valid release and version
   INTEGER, PARAMETER :: IRWATERCOEFF_RELEASE = 3  ! This determines structure and file formats.
   INTEGER, PARAMETER :: IRWATERCOEFF_VERSION = 2  ! This is just the default data version.
@@ -311,18 +309,18 @@ CONTAINS
     IF ( .NOT. IRwaterCoeff_Associated(self) ) RETURN
     ! Dimension arrays
     WRITE(*,'(3x,"Angle      :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Angle     
+    WRITE(*,'(5(1x,es22.15,:))') self%Angle     
     WRITE(*,'(3x,"Frequency  :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Frequency 
+    WRITE(*,'(5(1x,es22.15,:))') self%Frequency 
     WRITE(*,'(3x,"Wind_Speed :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%Wind_Speed
+    WRITE(*,'(5(1x,es22.15,:))') self%Wind_Speed
     ! Emissivity array
     WRITE(*,'(3x,"Emissivity :")')
     DO i3 = 1, self%n_Wind_Speeds
-      WRITE(*,'(5x,"WIND_SPEED :",es13.6)') self%Wind_Speed(i3)
+      WRITE(*,'(5x,"WIND_SPEED :",es22.15)') self%Wind_Speed(i3)
       DO i2 = 1, self%n_Frequencies
-        WRITE(*,'(5x,"FREQUENCY  :",es13.6)') self%Frequency(i2)      
-        WRITE(*,'(5(1x,es13.6,:))') self%Emissivity(:,i2,i3)
+        WRITE(*,'(5x,"FREQUENCY  :",es22.15)') self%Frequency(i2)      
+        WRITE(*,'(5(1x,es22.15,:))') self%Emissivity(:,i2,i3)
       END DO
     END DO
   END SUBROUTINE IRwaterCoeff_Inspect
@@ -454,35 +452,6 @@ CONTAINS
   END SUBROUTINE IRwaterCoeff_Info
  
  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       IRwaterCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL IRwaterCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE IRwaterCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE IRwaterCoeff_DefineVersion
-
-
 !------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -1143,7 +1112,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )

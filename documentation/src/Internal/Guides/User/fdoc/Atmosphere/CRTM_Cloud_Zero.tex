@@ -1,0 +1,26 @@
+\subsection{\texttt{CRTM\_Cloud\_Zero} interface}
+  \label{sec:CRTM_Cloud_Zero_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Cloud_Zero
+ 
+  PURPOSE:
+        Elemental subroutine to zero out the data arrays in a CRTM Cloud object.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Cloud_Zero( Cloud )
+ 
+  OBJECTS:
+        Cloud:         CRTM Cloud structure in which the data arrays are
+                       to be zeroed out.
+                       UNITS:      N/A
+                       TYPE:       CRTM_Cloud_type
+                       DIMENSION:  Scalar or any rank
+                       ATTRIBUTES: INTENT(IN OUT)
+ 
+  COMMENTS:
+        - The dimension components of the structure are *NOT* set to zero.
+        - The cloud type component is *NOT* reset.
+ 
+  \end{alltt}

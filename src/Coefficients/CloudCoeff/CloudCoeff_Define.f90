@@ -40,7 +40,6 @@ MODULE CloudCoeff_Define
   PUBLIC :: CloudCoeff_Inspect
   PUBLIC :: CloudCoeff_ValidRelease
   PUBLIC :: CloudCoeff_Info
-  PUBLIC :: CloudCoeff_DefineVersion
   
 
   ! ---------------------
@@ -54,8 +53,6 @@ MODULE CloudCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! CloudCoeff init values
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value
@@ -489,17 +486,17 @@ CONTAINS
     ! Dimensional vectors
     WRITE(*,'(/3x,"Dimensional vectors...")')
     WRITE(*,'(5x,"CloudCoeff Frequency_MW:")')
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Frequency_MW
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_MW
     WRITE(*,'(5x,"CloudCoeff Frequency_IR:")') 
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Frequency_IR
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Frequency_IR
     WRITE(*,'(5x,"CloudCoeff Reff_MW     :")') 
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Reff_MW     
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_MW     
     WRITE(*,'(5x,"CloudCoeff Reff_IR     :")') 
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Reff_IR     
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Reff_IR     
     WRITE(*,'(5x,"CloudCoeff Temperature :")') 
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Temperature 
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Temperature 
     WRITE(*,'(5x,"CloudCoeff Density     :")') 
-    WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%Density     
+    WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%Density     
 
     ! Microwave data
     WRITE(*,'(/3x,"Microwave data...")')
@@ -511,10 +508,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Temperatures
       WRITE(*,'(5x,"Microwave liquid phase mass extinction coefficients:")') 
-      WRITE(*,'(7x,"Temperature     : ",es13.6)') CloudCoeff%Temperature(j)
+      WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_L_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_L_MW(:,i,j)     
       END DO
     END DO
     
@@ -524,10 +521,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Temperatures
       WRITE(*,'(5x,"Microwave liquid phase single scatter albedo:")') 
-      WRITE(*,'(7x,"Temperature     : ",es13.6)') CloudCoeff%Temperature(j)
+      WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_L_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_L_MW(:,i,j)     
       END DO
     END DO
 
@@ -537,10 +534,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Temperatures
       WRITE(*,'(5x,"Microwave liquid phase asymmetry parameter:")') 
-      WRITE(*,'(7x,"Temperature     : ",es13.6)') CloudCoeff%Temperature(j)
+      WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_L_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_L_MW(:,i,j)     
       END DO
     END DO
 
@@ -557,10 +554,10 @@ CONTAINS
           WRITE(*,'(7x,"Legendre term: ",i0)') k
           kidx = k + CloudCoeff%Legendre_Offset(m)
           DO j = 1, CloudCoeff%n_Temperatures
-            WRITE(*,'(7x,"Temperature     : ",es13.6)') CloudCoeff%Temperature(j)
+            WRITE(*,'(7x,"Temperature     : ",es22.15)') CloudCoeff%Temperature(j)
             DO i = 1, CloudCoeff%n_MW_Radii
-              WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-              WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_L_MW(:,i,j,kidx,l)
+              WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+              WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_L_MW(:,i,j,kidx,l)
             END DO
           END DO
         END DO
@@ -574,10 +571,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Microwave solid phase mass extinction coefficients:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_S_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_S_MW(:,i,j)     
       END DO
     END DO
     
@@ -587,10 +584,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Microwave solid phase single scatter albedo:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_S_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_S_MW(:,i,j)     
       END DO
     END DO
     
@@ -600,10 +597,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Microwave solid phase asymmetry parameter:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_MW_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_S_MW(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_S_MW(:,i,j)     
       END DO
     END DO
     
@@ -620,10 +617,10 @@ CONTAINS
           WRITE(*,'(7x,"Legendre term: ",i0)') k
           kidx = k + CloudCoeff%Legendre_Offset(m)
           DO j = 1, CloudCoeff%n_Densities
-            WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+            WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
             DO i = 1, CloudCoeff%n_MW_Radii
-              WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_MW(i)
-              WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_S_MW(:,i,j,kidx,l)
+              WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_MW(i)
+              WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_S_MW(:,i,j,kidx,l)
             END DO
           END DO
         END DO
@@ -641,8 +638,8 @@ CONTAINS
     END IF
     WRITE(*,'(5x,"Infrared liquid phase mass extinction coefficients:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
-      WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_IR(:,i,0)     
+      WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_IR(:,i,0)     
     END DO
     
     IF ( wait ) THEN
@@ -651,8 +648,8 @@ CONTAINS
     END IF
     WRITE(*,'(5x,"Infrared liquid phase single scatter albedo:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
-      WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_IR(:,i,0)     
+      WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_IR(:,i,0)     
     END DO
 
     IF ( wait ) THEN
@@ -661,8 +658,8 @@ CONTAINS
     END IF
     WRITE(*,'(5x,"Infrared liquid phase asymmetry parameter:")') 
     DO i = 1, CloudCoeff%n_IR_Radii
-      WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-      WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_IR(:,i,0)     
+      WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+      WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_IR(:,i,0)     
     END DO
 
     DO m = 1, CloudCoeff%n_Stream_Sets
@@ -676,8 +673,8 @@ CONTAINS
         WRITE(*,'(7x,"Legendre term: ",i0)') k
         kidx = k + CloudCoeff%Legendre_Offset(m)
         DO i = 1, CloudCoeff%n_IR_Radii
-          WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-          WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_IR(:,i,0,kidx)
+          WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+          WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_IR(:,i,0,kidx)
         END DO
       END DO
     END DO
@@ -689,10 +686,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Infrared solid phase mass extinction coefficients:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_IR_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%ke_IR(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%ke_IR(:,i,j)     
       END DO
     END DO
     
@@ -702,10 +699,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Infrared solid phase single scatter albedo:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_IR_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%w_IR(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%w_IR(:,i,j)     
       END DO
     END DO
     
@@ -715,10 +712,10 @@ CONTAINS
     END IF
     DO j = 1, CloudCoeff%n_Densities
       WRITE(*,'(5x,"Infrared solid phase asymmetry parameter:")') 
-      WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+      WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
       DO i = 1, CloudCoeff%n_IR_Radii
-        WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-        WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%g_IR(:,i,j)     
+        WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+        WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%g_IR(:,i,j)     
       END DO
     END DO
     
@@ -733,10 +730,10 @@ CONTAINS
         WRITE(*,'(7x,"Legendre term: ",i0)') k
         kidx = k + CloudCoeff%Legendre_Offset(m)
         DO j = 1, CloudCoeff%n_Densities
-          WRITE(*,'(7x,"Density         : ",es13.6)') CloudCoeff%Density(j)
+          WRITE(*,'(7x,"Density         : ",es22.15)') CloudCoeff%Density(j)
           DO i = 1, CloudCoeff%n_IR_Radii
-            WRITE(*,'(7x,"Effective radius: ",es13.6)') CloudCoeff%Reff_IR(i)
-            WRITE(*,'(5(1x,es13.6,:))') CloudCoeff%pcoeff_IR(:,i,j,kidx)
+            WRITE(*,'(7x,"Effective radius: ",es22.15)') CloudCoeff%Reff_IR(i)
+            WRITE(*,'(5(1x,es22.15,:))') CloudCoeff%pcoeff_IR(:,i,j,kidx)
           END DO
         END DO
       END DO
@@ -881,38 +878,6 @@ CONTAINS
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE CloudCoeff_Info
-  
-  
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CloudCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CloudCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CloudCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CloudCoeff_DefineVersion
-
-
-
 
 !##################################################################################
 !##################################################################################

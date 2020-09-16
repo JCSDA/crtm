@@ -44,9 +44,6 @@ MODULE NLTE_Parameters
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-
   ! Pressure levels for computing mean temperatures in the two layers
   INTEGER,  PARAMETER :: N_NLTE_LAYERS = 2
   INTEGER,  PARAMETER :: N_PLay = N_NLTE_LAYERS

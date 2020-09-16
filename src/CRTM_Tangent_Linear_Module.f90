@@ -145,14 +145,6 @@ MODULE CRTM_Tangent_Linear_Module
   PRIVATE
   ! Public procedures
   PUBLIC :: CRTM_Tangent_Linear
-  PUBLIC :: CRTM_Tangent_Linear_Version
-
-
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
 
 
 CONTAINS
@@ -437,6 +429,8 @@ CONTAINS
       SfcOptics%Use_New_MWSSEM    = .NOT. Opt%Use_Old_MWSSEM
       SfcOptics_TL%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
 
+      ! Check whether to skip this profile
+      IF ( Opt%Skip_Profile ) CYCLE Profile_Loop
 
       ! Check the input data if required
       IF ( Opt%Check_Input ) THEN
@@ -1154,36 +1148,5 @@ CONTAINS
       END IF
 
     END SUBROUTINE Post_Process_RTSolution
-
   END FUNCTION CRTM_Tangent_Linear
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Tangent_Linear_Version
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Tangent_Linear_Version( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Tangent_Linear_Version( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Tangent_Linear_Version
-
 END MODULE CRTM_Tangent_Linear_Module

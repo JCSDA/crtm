@@ -1,0 +1,43 @@
+\subsection{\texttt{LBLRTM\_Phdr\_Write} interface}
+  \label{sec:LBLRTM_Phdr_Write_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Phdr_Write
+ 
+  PURPOSE:
+        Function to write an LBLRTM panel header to an LBLRTM format
+        file.
+ 
+  CALLING SEQUENCE:
+        Error_Status = LBLRTM_Phdr_Write( &
+                         LBLRTM_Phdr, &
+                         FileId       )
+ 
+  OBJECTS:
+        LBLRTM_Phdr:  LBLRTM panel header object to write to file.
+                      UNITS:      N/A
+                      TYPE:       LBLRTM_Phdr_type
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN)
+ 
+  INPUTS:
+        FileId:       The unit number for the already open LBLRTM file.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+                      ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Error_Status: The return value is an integer defining the error status.
+                      The error codes are defined in the Message_Handler module.
+                      If == SUCCESS the LBLRTM panel header write was successful
+                         == FAILURE an error occurred
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Scalar
+ 
+  SIDE EFFECTS:
+        If an error occurs, the output file is closed.
+ 
+  \end{alltt}

@@ -73,7 +73,6 @@ MODULE CRTM_Options_Define
   PUBLIC :: CRTM_Options_Create
   PUBLIC :: CRTM_Options_IsValid
   PUBLIC :: CRTM_Options_Inspect
-  PUBLIC :: CRTM_Options_DefineVersion
   PUBLIC :: CRTM_Options_SetValue
   PUBLIC :: CRTM_Options_SetEmissivity
   PUBLIC :: CRTM_Options_InquireFile
@@ -103,7 +102,6 @@ MODULE CRTM_Options_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double
@@ -172,6 +170,8 @@ MODULE CRTM_Options_Define
     ! Zeeman-splitting input
     TYPE(Zeeman_Input_type) :: Zeeman
 
+    ! Whether to skip this profile
+    LOGICAL :: Skip_Profile = .FALSE.
   END TYPE CRTM_Options_type
   !:tdoc-:
 
@@ -812,7 +812,7 @@ CONTAINS
     WRITE(*,'(3x,"Use old MWSSEM flag         :",1x,l1)') self%Use_Old_MWSSEM
     WRITE(*,'(3x,"Use antenna correction flag :",1x,l1)') self%Use_Antenna_Correction
     WRITE(*,'(3x,"Apply NLTE correction flag  :",1x,l1)') self%Apply_NLTE_Correction
-    WRITE(*,'(3x,"Aircraft pressure altitude  :",1x,es13.6)') self%Aircraft_Pressure
+    WRITE(*,'(3x,"Aircraft pressure altitude  :",1x,es22.15)') self%Aircraft_Pressure
     WRITE(*,'(3x,"RT algorithm Id             :",1x,i0)') self%RT_Algorithm_Id
     WRITE(*,'(3x,"Include scattering flag     :",1x,l1)') self%Include_Scattering
     WRITE(*,'(3x,"Use n_Streams flag          :",1x,l1)') self%Use_n_Streams
@@ -826,10 +826,10 @@ CONTAINS
       WRITE(*,'(5x,"Use emissivity flag          :",1x,l1)') self%Use_Emissivity
       WRITE(*,'(5x,"Use direct reflectivity flag :",1x,l1)') self%Use_Direct_Reflectivity
       WRITE(*,'(5x,"Emissivity :")')
-      WRITE(*,'(5(1x,es13.6,:))') self%Emissivity
+      WRITE(*,'(5(1x,es22.15,:))') self%Emissivity
       WRITE(*,'(5x,"Use direct reflectivity flag :",1x,l1)') self%Use_Direct_Reflectivity
       WRITE(*,'(5x,"Direct reflectivity :")')
-      WRITE(*,'(5(1x,es13.6,:))') self%Direct_Reflectivity
+      WRITE(*,'(5(1x,es22.15,:))') self%Direct_Reflectivity
     END IF
     ! ...SSU input
     CALL SSU_Input_Inspect( self%SSU )
@@ -837,36 +837,6 @@ CONTAINS
     CALL Zeeman_Input_Inspect( self%Zeeman )
 
   END SUBROUTINE CRTM_Options_Inspect
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       CRTM_Options_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL CRTM_Options_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE CRTM_Options_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CRTM_Options_DefineVersion
-
 
 !------------------------------------------------------------------------------
 !:sdoc+:
