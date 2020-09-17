@@ -36,6 +36,10 @@ PROGRAM check_crtm
   ! ============================================================================
   ! STEP 2. **** SET UP SOME PARAMETERS FOR THE CRTM RUN ****
   !
+  ! Format of aerosol/cloud coefficient
+  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
+  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+
   ! Directory location of coefficients
 #ifdef LITTLE_ENDIAN
   CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
@@ -43,6 +47,7 @@ PROGRAM check_crtm
   CHARACTER(*), PARAMETER :: ENDIAN_TYPE='big_endian'
 #endif
   CHARACTER(*), PARAMETER :: COEFFICIENT_PATH='coefficients/'//ENDIAN_TYPE//'/'
+  CHARACTER(*), PARAMETER :: NC_COEFFICIENT_PATH='coefficients/netcdf/'
 
   ! Directory location of results for comparison [NOT USED YET]
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/'
@@ -63,19 +68,6 @@ PROGRAM check_crtm
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
 
-  ! Aerosol coefficient information
-  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM_v2.3'
-  CHARACTER(*), PARAMETER :: AerosolCoeff_Format = 'Binary'
-  CHARACTER(*), PARAMETER :: AerosolCoeff_File = 'AerosolCoeff.bin'
-  !CHARACTER(*), PARAMETER :: AerosolCoeff_Format = 'netCDF'
-  !CHARACTER(*), PARAMETER :: AerosolCoeff_File = 'AerosolCoeff.nc'
-
-  ! Cloud coefficient information
-  CHARACTER(*), PARAMETER :: Cloud_Model = 'CRTM_v2.3'
-  CHARACTER(*), PARAMETER :: CloudCoeff_Format = 'Binary'
-  CHARACTER(*), PARAMETER :: CloudCoeff_File = 'CloudCoeff.bin'
-  !CHARACTER(*), PARAMETER :: CloudCoeff_Format = 'netCDF'
-  !CHARACTER(*), PARAMETER :: CloudCoeff_File = 'CloudCoeff.nc'
   ! ============================================================================
   
 
@@ -84,12 +76,15 @@ PROGRAM check_crtm
   ! Variables
   ! ---------
   CHARACTER(256) :: message, version
+  CHARACTER(256) :: Aerosol_Model
+  CHARACTER(256) :: AerosolCoeff_File
+  CHARACTER(256) :: AerosolCoeff_Format
+  CHARACTER(256) :: Cloud_Model
+  CHARACTER(256) :: CloudCoeff_File
+  CHARACTER(256) :: CloudCoeff_Format
   INTEGER :: err_stat, alloc_stat
   INTEGER :: n_channels
   INTEGER :: l, m, n, nc
-
-
-
   ! ============================================================================
   ! STEP 3. **** DEFINE THE CRTM INTERFACE STRUCTURES ****
   !
@@ -129,6 +124,24 @@ PROGRAM check_crtm
   !
   ! 4a. Initialise all the sensors at once
   ! --------------------------------------
+  !...Aerosol and cloud coefficient information
+  Aerosol_Model = 'CRTM_v2.3'
+  Cloud_Model   = 'CRTM_v2.3'
+  IF ( Coeff_Format == 'Binary' ) THEN
+    AerosolCoeff_Format = 'Binary'
+    AerosolCoeff_File   = 'AerosolCoeff.bin'
+    CloudCoeff_Format   = 'Binary'
+    CloudCoeff_File     = 'CloudCoeff.bin'
+  ! if netCDF I/O
+  ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+    AerosolCoeff_Format = 'netCDF'
+    AerosolCoeff_File   = 'AerosolCoeff.nc4'
+    CloudCoeff_Format   = 'netCDF'
+    CloudCoeff_File     = 'CloudCoeff.nc4'
+  ELSE
+
+  END IF
+
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   err_stat = CRTM_Init( SENSOR_ID, &
                         chinfo, &
@@ -139,6 +152,7 @@ PROGRAM check_crtm
                         CloudCoeff_Format, &
                         CloudCoeff_File, &
                         File_Path=COEFFICIENT_PATH, &
+                        NC_File_Path=NC_COEFFICIENT_PATH, &
                         Quiet=.TRUE.)
   IF ( err_stat /= SUCCESS ) THEN
     message = 'Error initializing CRTM'

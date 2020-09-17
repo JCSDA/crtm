@@ -220,23 +220,34 @@ CONTAINS
     IF ( Cloud_Model == 'CRTM_v2.3' ) THEN
       IF ( CloudCoeff_IO == 'Binary' ) THEN
         !...Binary IO
+        WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_Binary_ReadFile( &
                      CloudCoeff_File, &
                      CloudC, &
                      Quiet = .NOT. noisy )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+          RETURN
+        END IF
       ELSE
         !...NetCDF IO
+        WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_netCDF_ReadFile( &
                      CloudCoeff_File, &
                      CloudC, &
                      Quiet = .NOT. noisy )
-      END IF
-    END IF
-    IF ( err_stat /= SUCCESS ) THEN
-      WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+          RETURN
+        END IF
+      END IF ! CloudCoeff_IO 
+    ELSE
+      WRITE( msg,'("Error reading CloudCoeff from model:  ",a)') TRIM(Cloud_Model)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
-    END IF
+    END IF !Cloud_Model
 
   END FUNCTION CRTM_CloudCoeff_Load
 

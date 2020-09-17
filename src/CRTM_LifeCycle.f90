@@ -114,6 +114,7 @@ CONTAINS
 !                                 VISiceCoeff_File    = VISiceCoeff_File    , &
 !                                 MWwaterCoeff_File   = MWwaterCoeff_File   , &
 !                                 File_Path           = File_Path           , &
+!                                 NC_File_Path        = NC_File_Path        , &
 !                                 Quiet               = Quiet               , &
 !                                 Process_ID          = Process_ID          , &
 !                                 Output_Process_ID   = Output_Process_ID   )
@@ -317,8 +318,16 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       File_Path:          Character string specifying a file path for the
-!                           input data files. If not specified, the current
-!                           directory is the default.
+!                           input data files in Binary format. If not specified,
+!                           the current directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       NC_File_Path:       Character string specifying a file path for the
+!                           input data files in netCDF format. If not specified, 
+!                           the current directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -345,7 +354,13 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
-!                           all INFORMATION messages are to be output. If
+!                           all INFORMATION message!       File_Path:          Character string specifying a file path for the
+!                           input data files. If not specified, the current
+!                           directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONALs are to be output. If
 !                           the passed Process_ID value agrees with this value
 !                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
@@ -392,6 +407,7 @@ CONTAINS
     VISiceCoeff_File    , &  ! Optional input
     MWwaterCoeff_File   , &  ! Optional input
     File_Path           , &  ! Optional input
+    NC_File_Path        , &  ! Optional input
     Load_CloudCoeff     , &  ! Optional input
     Load_AerosolCoeff   , &  ! Optional input
     Quiet               , &  ! Optional input
@@ -418,6 +434,7 @@ CONTAINS
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: MWwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: NC_File_Path
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet
@@ -526,8 +543,6 @@ CONTAINS
     IF ( PRESENT(MWwaterCoeff_File   ) ) Default_MWwaterCoeff_File   = TRIM(ADJUSTL(MWwaterCoeff_File))
     ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
-      Default_CloudCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
-      Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
       Default_IRwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRwaterCoeff_File)
       Default_IRlandCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRlandCoeff_File)
       Default_IRsnowCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRsnowCoeff_File)
@@ -537,6 +552,22 @@ CONTAINS
       Default_VISsnowCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISsnowCoeff_File)
       Default_VISiceCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISiceCoeff_File)
       Default_MWwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_MWwaterCoeff_File)
+    END IF
+    ! ...Was aerosol or cloud lookup table in netCDF or Binary format?
+    IF ( PRESENT(AerosolCoeff_Format) .AND. AerosolCoeff_Format == 'netCDF' ) THEN
+      IF ( PRESENT(NC_File_Path) ) THEN
+        Default_AerosolCoeff_File  = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_AerosolCoeff_File)
+      END IF
+    ELSE IF ( PRESENT(File_Path) ) THEN
+        Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
+    END IF
+
+    IF ( PRESENT(CloudCoeff_Format) .AND. CloudCoeff_Format == 'netCDF' ) THEN
+      IF ( PRESENT(NC_File_Path) ) THEN
+        Default_CloudCoeff_File    = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_CloudCoeff_File)
+      END IF
+    ELSE IF ( PRESENT(File_Path) ) THEN
+        Default_CloudCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
     END IF
 
 

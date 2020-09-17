@@ -54,8 +54,7 @@ create_coeff_links:
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  link_coeffs.sh -t big-endian $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
 	  link_coeffs.sh -t little-endian $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) && \
-          link_coeffs.sh -t netcdf $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
-          link_coeffs.sh -t netcdf $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) || exit 1
+          link_coeffs.sh -t netcdf $(CRTM_FIXFILE_ROOT) netcdf $(CHECK_SENSOR_ID_LIST) 
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
@@ -65,8 +64,8 @@ remove_coeff_links:
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  $(REMOVE) big_endian/*.bin && \
 	  $(REMOVE) little_endian/*.bin && \
-	  $(REMOVE) big_endian/*.nc && \
-          $(REMOVE) little_endian/*.nc || exit 1
+	  $(REMOVE) netcdf/*.nc && \
+          $(REMOVE) netcdf/*.nc4 || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo

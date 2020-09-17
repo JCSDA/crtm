@@ -53,9 +53,6 @@ MODULE CRTM_AerosolCoeff
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -223,23 +220,31 @@ CONTAINS
     IF (Aerosol_Model == 'CRTM_v2.3') THEN  
       IF (AerosolCoeff_IO == 'Binary') THEN
         ! ...Binary IO
-        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO) 
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File) 
         err_stat = AerosolCoeff_Binary_ReadFile( &
                      AerosolCoeff_File, &
                      AeroC, &
                      Quiet = .NOT. noisy )
-    
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+        END IF
       ELSE
         ! ...netCDF IO     
-        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_IO)
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
         err_stat = AerosolCoeff_netCDF_ReadFile( &
                      AerosolCoeff_File, &
                      AeroC, &
                      Quiet = .NOT. noisy )
-      END IF
-    END IF
-    IF ( err_stat /= SUCCESS ) THEN
-      WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+        END IF
+      END IF ! AerosolCoeff_IO
+    ELSE
+      WRITE( msg,'("Error reading AerosolCoeff from model:  ",a)') TRIM(Aerosol_Model)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF
