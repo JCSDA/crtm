@@ -962,11 +962,14 @@ CONTAINS
           END IF
 
         END DO Channel_Loop
-      END DO Sensor_Loop
+        ! Clean up created items intenal to sensor loop
+        CALL CRTM_Predictor_Destroy( Predictor )
+        CALL RTV_Destroy( RTV )
+        
+     END DO Sensor_Loop
 
 
       ! Clean up
-      CALL CRTM_Predictor_Destroy( Predictor )
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
       CALL CRTM_AtmOptics_Destroy( AtmOptics_Clear )
       CALL CRTM_SfcOptics_Destroy( SfcOptics )
@@ -977,7 +980,7 @@ CONTAINS
       CALL AOvar_Destroy( AOvar )
       CALL CSvar_Destroy( CSvar )
       CALL ASvar_Destroy( ASvar )
-      CALL RTV_Destroy( RTV )
+
     END FUNCTION profile_solution
 
 
