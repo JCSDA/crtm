@@ -64,8 +64,8 @@ remove_coeff_links:
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  $(REMOVE) big_endian/*.bin && \
 	  $(REMOVE) little_endian/*.bin && \
-	  $(REMOVE) netcdf/*.nc && \
-          $(REMOVE) netcdf/*.nc4 || exit 1
+	  $(REMOVE) netcdf/*.nc || exit 1
+#$(REMOVE) netcdf/*.nc4 || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo

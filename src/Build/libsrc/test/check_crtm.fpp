@@ -80,10 +80,8 @@ PROGRAM check_crtm
   ! Variables
   ! ---------
   CHARACTER(256) :: message, version
-  CHARACTER(256) :: Aerosol_Model
   CHARACTER(256) :: AerosolCoeff_File
   CHARACTER(256) :: AerosolCoeff_Format
-  CHARACTER(256) :: Cloud_Model
   CHARACTER(256) :: CloudCoeff_File
   CHARACTER(256) :: CloudCoeff_Format
   INTEGER :: err_stat, alloc_stat
