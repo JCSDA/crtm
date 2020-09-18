@@ -360,8 +360,15 @@ CONTAINS
              CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
            ENDIF
      END SELECT
-   ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing
-     CALL ATMS_SNOW_ByTBTs_D(Frequency,Tbs,Ts,Snow_Type,em_vector)
+
+    if (any(Tbs((/1,2,3,4,5/)) < 50.0_fp) .or. any(TBs((/1,2,3,4,5/)) > 500.0_fp)) then
+        !** use default snow EM
+        CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
+     else
+        ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing
+        CALL ATMS_SNOW_ByTBTs_D(Frequency,Tbs,Ts,Snow_Type,em_vector)  
+     end if
+
 
    ! Get the emissivity angle dependence
      CALL NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp_kind,9,13,2.0_fp,esh1,esv1)

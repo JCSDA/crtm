@@ -32,16 +32,16 @@ MODULE CRTM_MW_Snow_SfcOptics
   USE CRTM_SpcCoeff,              ONLY: SC
   USE CRTM_Surface_Define,        ONLY: CRTM_Surface_type
   USE CRTM_GeometryInfo_Define,   ONLY: CRTM_GeometryInfo_type, &
-                                        CRTM_GeometryInfo_GetValue
+       CRTM_GeometryInfo_GetValue
   USE CRTM_SfcOptics_Define,      ONLY: CRTM_SfcOptics_type
   USE CRTM_SensorInfo,            ONLY: WMO_AMSUA, &
-                                        WMO_AMSUB, &
-                                        WMO_AMSRE, &
-                                        WMO_SSMI , &
-                                        WMO_MSU  , &
-                                        WMO_MHS  , &
-                                        WMO_SSMIS, &
-                                        WMO_ATMS
+       WMO_AMSUB, &
+       WMO_AMSRE, &
+       WMO_SSMI , &
+       WMO_MSU  , &
+       WMO_MHS  , &
+       WMO_SSMIS, &
+       WMO_ATMS
   USE NESDIS_LandEM_Module,       ONLY: NESDIS_LandEM
   USE NESDIS_AMSU_SNOWEM_Module,  ONLY: NESDIS_AMSU_SNOWEM
   USE NESDIS_SSMI_SNOWEM_Module,  ONLY: NESDIS_SSMI_SnowEM
@@ -70,101 +70,101 @@ MODULE CRTM_MW_Snow_SfcOptics
   ! variables across FWD, TL, and AD calls
   ! --------------------------------------
   TYPE :: iVar_type
-    PRIVATE
-    INTEGER :: Dummy = 0
+     PRIVATE
+     INTEGER :: Dummy = 0
   END TYPE iVar_type
 
 
 CONTAINS
 
 
-!----------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Compute_MW_Snow_SfcOptics
-!
-! PURPOSE:
-!       Function to compute the surface emissivity and reflectivity at microwave
-!       frequencies over a snow surface.
-!
-!       This function is a wrapper for third party code.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Snow_SfcOptics( &
-!                        Surface     , &
-!                        GeometryInfo, &
-!                        SensorIndex , &
-!                        ChannelIndex, &
-!                        SfcOptics     )
-!
-! INPUTS:
-!       Surface:         CRTM_Surface structure containing the surface state
-!                        data.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_GeometryInfo_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       SensorIndex:     Sensor index id. This is a unique index associated
-!                        with a (supported) sensor used to access the
-!                        shared coefficient data for a particular sensor.
-!                        See the ChannelIndex argument.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       ChannelIndex:    Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data for a particular sensor's
-!                        channel.
-!                        See the SensorIndex argument.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-! OUTPUTS:
-!       SfcOptics:       CRTM_SfcOptics structure containing the surface
-!                        optical properties required for the radiative
-!                        transfer calculation. On input the Angle component
-!                        is assumed to contain data.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_SfcOptics_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was sucessful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output SfcOptics argument is IN OUT rather
-!       than just OUT as it is assumed to contain some data upon input.
-!
-!:sdoc-:
-!----------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------
+  !:sdoc+:
+  !
+  ! NAME:
+  !       Compute_MW_Snow_SfcOptics
+  !
+  ! PURPOSE:
+  !       Function to compute the surface emissivity and reflectivity at microwave
+  !       frequencies over a snow surface.
+  !
+  !       This function is a wrapper for third party code.
+  !
+  ! CALLING SEQUENCE:
+  !       Error_Status = Compute_MW_Snow_SfcOptics( &
+  !                        Surface     , &
+  !                        GeometryInfo, &
+  !                        SensorIndex , &
+  !                        ChannelIndex, &
+  !                        SfcOptics     )
+  !
+  ! INPUTS:
+  !       Surface:         CRTM_Surface structure containing the surface state
+  !                        data.
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_Surface_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  !       GeometryInfo:    CRTM_GeometryInfo structure containing the
+  !                        view geometry information.
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_GeometryInfo_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  !       SensorIndex:     Sensor index id. This is a unique index associated
+  !                        with a (supported) sensor used to access the
+  !                        shared coefficient data for a particular sensor.
+  !                        See the ChannelIndex argument.
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  !       ChannelIndex:    Channel index id. This is a unique index associated
+  !                        with a (supported) sensor channel used to access the
+  !                        shared coefficient data for a particular sensor's
+  !                        channel.
+  !                        See the SensorIndex argument.
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  ! OUTPUTS:
+  !       SfcOptics:       CRTM_SfcOptics structure containing the surface
+  !                        optical properties required for the radiative
+  !                        transfer calculation. On input the Angle component
+  !                        is assumed to contain data.
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_SfcOptics_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN OUT)
+  !
+  ! FUNCTION RESULT:
+  !       Error_Status:    The return value is an integer defining the error status.
+  !                        The error codes are defined in the Message_Handler module.
+  !                        If == SUCCESS the computation was sucessful
+  !                           == FAILURE an unrecoverable error occurred
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !
+  ! COMMENTS:
+  !       Note the INTENT on the output SfcOptics argument is IN OUT rather
+  !       than just OUT as it is assumed to contain some data upon input.
+  !
+  !:sdoc-:
+  !----------------------------------------------------------------------------------
 
   FUNCTION Compute_MW_Snow_SfcOptics( &
-    Surface     , &  ! Input
-    GeometryInfo, &  ! Input
-    SensorIndex , &  ! Input
-    ChannelIndex, &  ! Input
-    SfcOptics   ) &  ! Output
-  RESULT( Error_Status )
+       Surface     , &  ! Input
+       GeometryInfo, &  ! Input
+       SensorIndex , &  ! Input
+       ChannelIndex, &  ! Input
+       SfcOptics   ) &  ! Output
+       RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
@@ -193,6 +193,7 @@ CONTAINS
     INTEGER,  PARAMETER :: MaxChan = 8 
     ! Local variables
     INTEGER :: i
+    LOGICAL :: badTBflag
     REAL(fp) :: Sensor_Zenith_Angle
     REAL(fp) :: Alpha
     REAL(fp) :: TBs_In(MaxChan)
@@ -202,213 +203,268 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
+    badTBflag = .false.
     CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Sensor_Zenith_Angle = Sensor_Zenith_Angle )
 
 
     ! Compute the surface emissivities
     Sensor_Type: SELECT CASE( Surface%SensorData%WMO_Sensor_ID )
 
-      ! ATMSemissivity model
-      CASE( WMO_ATMS )    
-         TBs_In(1:5) = Populate_Subset( Surface, 5, ATMS_INDEX)
+       ! ATMSemissivity model
+    CASE( WMO_ATMS )    
+       TBs_In(1:5) = Populate_Subset( Surface, 5, ATMS_INDEX)
+       if (any(TBs_In(1:5) < 50.0_fp) .or. any(TBs_In(1:5) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-         DO i = 1, SfcOptics%n_Angles
+       DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ATMS_SNOWEM( Sensor_Zenith_Angle,                     &  ! Input, Degree           
-                                   SfcOptics%Angle(i),                      &  ! Input, Degree           
-                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
-                                   TBs_In(1:5),                             &  ! Input, ATMS           
-                                   Surface%Snow_Temperature,                &  ! Input, K                
-                                   Surface%Snow_Depth,                      &  ! Input, mm               
-                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component      
-                                   SfcOptics%Emissivity(i,1)   )               ! Output, V component 
-         END DO                                                                                           
+               SfcOptics%Angle(i),                      &  ! Input, Degree           
+               SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz                  
+               TBs_In(1:5),                             &  ! Input, ATMS           
+               Surface%Snow_Temperature,                &  ! Input, K                
+               Surface%Snow_Depth,                      &  ! Input, mm               
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component      
+               SfcOptics%Emissivity(i,1)   )               ! Output, V component 
+       END DO
 
 
-      ! AMSU-A emissivity model
-      CASE( WMO_AMSUA )
-         TBs_In(1:4) = Populate_Subset( Surface, 4, AMSUA_INDEX)
+       ! AMSU-A emissivity model
+    CASE( WMO_AMSUA )
+       TBs_In(1:4) = Populate_Subset( Surface, 4, AMSUA_INDEX)
+       if (any(TBs_In(1:4) < 50.0_fp) .or. any(TBs_In(1:4) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-         DO i = 1, SfcOptics%n_Angles
-           CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
-                                   SfcOptics%Angle(i),                      &  ! Input, Degree
-                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                   Surface%Snow_Depth,                      &  ! Input, mm
-                                   Surface%Snow_Temperature,                &  ! Input, K
-                                   TBs_In(1:4),                             &  ! Input, AMSUA
-                                   NOT_USED(1:2),                           &  ! Input, AMSUB  *** NO AMSU-B DATA ***
-                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
-         END DO
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               Surface%Snow_Depth,                      &  ! Input, mm
+               Surface%Snow_Temperature,                &  ! Input, K
+               TBs_In(1:4),                             &  ! Input, AMSUA
+               NOT_USED(1:2),                           &  ! Input, AMSUB  *** NO AMSU-B DATA ***
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
 
-      ! AMSU-B emissivity model
-      CASE( WMO_AMSUB)
-         TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+       ! AMSU-B emissivity model
+    CASE( WMO_AMSUB)
+       TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+       if (any(TBs_In(1:2) < 50.0_fp) .or. any(TBs_In(1:2) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-         DO i = 1, SfcOptics%n_Angles
-           CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
-                                   SfcOptics%Angle(i),                      &  ! Input, Degree
-                                   SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                   Surface%Snow_Depth,                      &  ! Input, mm
-                                   Surface%Snow_Temperature,                &  ! Input, K
-                                   NOT_USED(1:4),                           &  ! Input  AMSUA  *** NO AMSU-A DATA ***
-                                   TBs_In(1:2),                             &  ! Input, AMSUB
-                                   SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                   SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_AMSU_SNOWEM( Sensor_Zenith_Angle,                    &  ! Input, Degree
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               Surface%Snow_Depth,                      &  ! Input, mm
+               Surface%Snow_Temperature,                &  ! Input, K
+               NOT_USED(1:4),                           &  ! Input  AMSUA  *** NO AMSU-A DATA ***
+               TBs_In(1:2),                             &  ! Input, AMSUB
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
 
-      ! MHS emissivity model
-      CASE (WMO_MHS)
-         TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+       ! MHS emissivity model
+    CASE (WMO_MHS)
+       TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
+       if (any(TBs_In(1:2) < 50.0_fp) .or. any(TBs_In(1:2) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-         DO i = 1, SfcOptics%n_Angles
-            CALL NESDIS_SNOWEM_MHS( Sensor_Zenith_Angle,                   &  ! Input, Degree
-                                 SfcOptics%Angle(i),                      &  ! Input, Degree
-                                 SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                 Surface%Snow_Temperature,                &  ! Input, K
-                                 Tbs_In(1:2),                             &  ! Input, AMSUB
-                                 SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                 SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_SNOWEM_MHS( Sensor_Zenith_Angle,                   &  ! Input, Degree
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               Surface%Snow_Temperature,                &  ! Input, K
+               Tbs_In(1:2),                             &  ! Input, AMSUB
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
 
-      ! AMSR-E emissivity model
-      CASE( WMO_AMSRE )
-         TBs_In_V(1:6) = Populate_Subset( Surface, 6, AMSRE_V_INDEX)
-         TBs_In_H(1:6) = Populate_Subset( Surface, 6, AMSRE_H_INDEX)
-         DO i = 1, SfcOptics%n_Angles
-            CALL NESDIS_AMSRE_SNOW(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                 SfcOptics%Angle(i),                      &  ! Input, Degree
-                                 TBs_In_V(1:6),                           &  ! Input, Tb_V, K
-                                 TBs_In_H(1:6),                           &  ! Input, Tb_H, K
-                                 Surface%Snow_Temperature,                &  ! Input, Ts, K
-                                 Surface%Snow_Temperature,                &  ! Input, Tsnow, K
-                                 SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                 SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+       ! AMSR-E emissivity model
+    CASE( WMO_AMSRE )
+       TBs_In_V(1:6) = Populate_Subset( Surface, 6, AMSRE_V_INDEX)
+       if (any(TBs_In_V(1:6) < 50.0_fp) .or. any(TBs_In_V(1:6) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-      ! SSM/I emissivity model
-      CASE( WMO_SSMI )
-         TBs_In(1:7) = Populate_Subset( Surface, 7, SSMI_INDEX)
-         DO i = 1, SfcOptics%n_Angles
-            CALL NESDIS_SSMI_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                    SfcOptics%Angle(i),                      &  ! Input, Degree
-                                    Surface%Snow_Temperature,                &  ! Input, K
-                                    TBs_In(1:7),                             &  ! Input, K
-                                    Surface%Snow_Depth,                      &  ! Input, mm
-                                    SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                    SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+       TBs_In_H(1:6) = Populate_Subset( Surface, 6, AMSRE_H_INDEX)
+       if (any(TBs_In_H(1:6) < 50.0_fp) .or. any(TBs_In_H(1:6) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
 
-      ! SSMIS emissivity model
-      CASE( WMO_SSMIS )
-         TBs_In(1:8) = Populate_Subset( Surface, 8, SSMIS_INDEX)
-         DO i = 1, SfcOptics%n_Angles
-            CALL NESDIS_SSMIS_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
-                                     SfcOptics%Angle(i),                      &  ! Input, Degree
-                                     Surface%Snow_Temperature,                &  ! Input, K
-                                     TBs_In(1:8),                             &  ! Input, K
-                                     Surface%Snow_Depth,                      &  ! Input, mm
-                                     SfcOptics%Emissivity(i,2),               &  ! Output, H component
-                                     SfcOptics%Emissivity(i,1)                )  ! Output, V component
-        END DO
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_AMSRE_SNOW(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               TBs_In_V(1:6),                           &  ! Input, Tb_V, K
+               TBs_In_H(1:6),                           &  ! Input, Tb_H, K
+               Surface%Snow_Temperature,                &  ! Input, Ts, K
+               Surface%Snow_Temperature,                &  ! Input, Tsnow, K
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
 
-      ! MSU emissivity model
-      CASE( WMO_MSU )
-        DO i = 1, SfcOptics%n_Angles
+       ! SSM/I emissivity model
+    CASE( WMO_SSMI )
+       TBs_In(1:7) = Populate_Subset( Surface, 7, SSMI_INDEX)
+       if (any(TBs_In(1:7) < 50.0_fp) .or. any(TBs_In(1:7) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
+
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_SSMI_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               Surface%Snow_Temperature,                &  ! Input, K
+               TBs_In(1:7),                             &  ! Input, K
+               Surface%Snow_Depth,                      &  ! Input, mm
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
+
+       ! SSMIS emissivity model
+    CASE( WMO_SSMIS )
+       TBs_In(1:8) = Populate_Subset( Surface, 8, SSMIS_INDEX)
+       if (any(TBs_In(1:8) < 50.0_fp) .or. any(TBs_In(1:8) > 500.0_fp)) then
+          badTBflag = .true.
+          exit Sensor_Type ! exit case early
+       end if
+
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_SSMIS_SnowEM(SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
+               SfcOptics%Angle(i),                      &  ! Input, Degree
+               Surface%Snow_Temperature,                &  ! Input, K
+               TBs_In(1:8),                             &  ! Input, K
+               Surface%Snow_Depth,                      &  ! Input, mm
+               SfcOptics%Emissivity(i,2),               &  ! Output, H component
+               SfcOptics%Emissivity(i,1)                )  ! Output, V component
+       END DO
+
+       ! MSU emissivity model
+    CASE( WMO_MSU )
+       DO i = 1, SfcOptics%n_Angles
           IF( Surface%Snow_Temperature > MSU_SNOW_TEMPERATURE_THRESHOLD .AND. &
-              Surface%SensorData%Tb(1) > MSU_TB_THRESHOLD                     ) THEN
-            Alpha = MSU_ALPHA_C * Surface%Snow_Temperature
-            SfcOptics%Emissivity(i,1) = (Surface%SensorData%Tb(1)-Alpha)/&
-                                        (Surface%Snow_Temperature-Alpha)
-            IF( SfcOptics%Emissivity(i,1) > ONE ) &
-              SfcOptics%Emissivity(i,1) = ONE
-            IF( SfcOptics%Emissivity(i,1) < MSU_EMISSIVITY_THRESHOLD ) &
-              SfcOptics%Emissivity(i,1) = MSU_EMISSIVITY_THRESHOLD
+               Surface%SensorData%Tb(1) > MSU_TB_THRESHOLD                     ) THEN
+             Alpha = MSU_ALPHA_C * Surface%Snow_Temperature
+             SfcOptics%Emissivity(i,1) = (Surface%SensorData%Tb(1)-Alpha)/&
+                  (Surface%Snow_Temperature-Alpha)
+             IF( SfcOptics%Emissivity(i,1) > ONE ) &
+                  SfcOptics%Emissivity(i,1) = ONE
+             IF( SfcOptics%Emissivity(i,1) < MSU_EMISSIVITY_THRESHOLD ) &
+                  SfcOptics%Emissivity(i,1) = MSU_EMISSIVITY_THRESHOLD
           ELSE
-            SfcOptics%Emissivity(i,1) = MSU_DEFAULT_EMISSIVITY
+             SfcOptics%Emissivity(i,1) = MSU_DEFAULT_EMISSIVITY
           END IF
           SfcOptics%Emissivity(i,2) = SfcOptics%Emissivity(i,1)
-        END DO
+       END DO
 
-      ! Default physical model
-      CASE DEFAULT
-        IF ( SC(SensorIndex)%Frequency(ChannelIndex) < FREQUENCY_THRESHOLD ) THEN
+       ! Default physical model
+    CASE DEFAULT
+       IF ( SC(SensorIndex)%Frequency(ChannelIndex) < FREQUENCY_THRESHOLD ) THEN
           DO i = 1, SfcOptics%n_Angles
-            CALL NESDIS_LandEM( SfcOptics%Angle(i),                      & ! Input, Degree
-                                SC(SensorIndex)%Frequency(ChannelIndex), & ! Input, GHz
-                                NOT_USED(1),                             & ! Input, Soil_Moisture_Content, g.cm^-3
-                                NOT_USED(1),                             & ! Input, Vegetation_Fraction
-                                Surface%Snow_Temperature,                & ! Input, K
-                                Surface%Snow_Temperature,                & ! Input, K
-                                Surface%Lai,                             & ! Input, Leaf Area Index
-                                Surface%Soil_Type,                       & ! Input, Soil Type (1 -  9)
-                                Surface%Vegetation_Type,                 & ! Input, Vegetation Type (1 - 13)
-                                Surface%Snow_Depth,                      & ! Input, mm
-                                SfcOptics%Emissivity(i,2),               & ! Output, H component
-                                SfcOptics%Emissivity(i,1)                ) ! Output, V component
+             CALL NESDIS_LandEM( SfcOptics%Angle(i),                      & ! Input, Degree
+                  SC(SensorIndex)%Frequency(ChannelIndex), & ! Input, GHz
+                  NOT_USED(1),                             & ! Input, Soil_Moisture_Content, g.cm^-3
+                  NOT_USED(1),                             & ! Input, Vegetation_Fraction
+                  Surface%Snow_Temperature,                & ! Input, K
+                  Surface%Snow_Temperature,                & ! Input, K
+                  Surface%Lai,                             & ! Input, Leaf Area Index
+                  Surface%Soil_Type,                       & ! Input, Soil Type (1 -  9)
+                  Surface%Vegetation_Type,                 & ! Input, Vegetation Type (1 - 13)
+                  Surface%Snow_Depth,                      & ! Input, mm
+                  SfcOptics%Emissivity(i,2),               & ! Output, H component
+                  SfcOptics%Emissivity(i,1)                ) ! Output, V component
           END DO
-        ELSE
+       ELSE
           SfcOptics%Emissivity(1:SfcOptics%n_Angles,1:2) = DEFAULT_EMISSIVITY
-        END IF
+       END IF
 
     END SELECT Sensor_Type
-    
+
+    IF (badTBflag) THEN
+       ! Bad brightness temperatures, default down to LandEM model. 
+       DO i = 1, SfcOptics%n_Angles
+          CALL NESDIS_LandEM( SfcOptics%Angle(i),                      & ! Input, Degree
+               SC(SensorIndex)%Frequency(ChannelIndex), & ! Input, GHz
+               NOT_USED(1),                             & ! Input, Soil_Moisture_Content, g.cm^-3
+               NOT_USED(1),                             & ! Input, Vegetation_Fraction
+               Surface%Snow_Temperature,                & ! Input, K
+               Surface%Snow_Temperature,                & ! Input, K
+               Surface%Lai,                             & ! Input, Leaf Area Index
+               Surface%Soil_Type,                       & ! Input, Soil Type (1 -  9)
+               Surface%Vegetation_Type,                 & ! Input, Vegetation Type (1 - 13)
+               Surface%Snow_Depth,                      & ! Input, mm
+               SfcOptics%Emissivity(i,2),               & ! Output, H component
+               SfcOptics%Emissivity(i,1)                ) ! Output, V component
+       END DO
+    END IF
+
     ! assuming a specular surface
     SfcOptics%Reflectivity = ZERO
     DO i = 1, SfcOptics%n_Angles
-      SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
-      SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
+       SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
+       SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
     END DO
 
   END FUNCTION Compute_MW_Snow_SfcOptics
 
 
-!----------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Compute_MW_Snow_SfcOptics_TL
-!
-! PURPOSE:
-!       Function to compute the tangent-linear surface emissivity and
-!       reflectivity at microwave frequencies over a snow surface.
-!
-!       This function is a wrapper for third party code.
-!
-!       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO TL
-!           COMPONENTS IN THE MW SNOW SFCOPTICS COMPUTATIONS.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Snow_SfcOptics_TL( SfcOptics_TL )
-!
-! OUTPUTS:
-!       SfcOptics_TL:    Structure containing the tangent-linear surface
-!                        optical properties required for the tangent-
-!                        linear radiative transfer calculation.
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_SfcOptics_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was sucessful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the output SfcOptics_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined
-!       upon input.
-!
-!:sdoc-:
-!----------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------
+  !:sdoc+:
+  !
+  ! NAME:
+  !       Compute_MW_Snow_SfcOptics_TL
+  !
+  ! PURPOSE:
+  !       Function to compute the tangent-linear surface emissivity and
+  !       reflectivity at microwave frequencies over a snow surface.
+  !
+  !       This function is a wrapper for third party code.
+  !
+  !       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO TL
+  !           COMPONENTS IN THE MW SNOW SFCOPTICS COMPUTATIONS.
+  !
+  ! CALLING SEQUENCE:
+  !       Error_Status = Compute_MW_Snow_SfcOptics_TL( SfcOptics_TL )
+  !
+  ! OUTPUTS:
+  !       SfcOptics_TL:    Structure containing the tangent-linear surface
+  !                        optical properties required for the tangent-
+  !                        linear radiative transfer calculation.
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_SfcOptics_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN OUT)
+  !
+  ! FUNCTION RESULT:
+  !       Error_Status:    The return value is an integer defining the error status.
+  !                        The error codes are defined in the Message_Handler module.
+  !                        If == SUCCESS the computation was sucessful
+  !                           == FAILURE an unrecoverable error occurred
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !
+  ! COMMENTS:
+  !       Note the INTENT on the output SfcOptics_TL argument is IN OUT rather
+  !       than just OUT. This is necessary because the argument may be defined
+  !       upon input.
+  !
+  !:sdoc-:
+  !----------------------------------------------------------------------------------
 
   FUNCTION Compute_MW_Snow_SfcOptics_TL( &
-    SfcOptics_TL) &  ! TL  Output
-  RESULT ( err_stat )
+       SfcOptics_TL) &  ! TL  Output
+       RESULT ( err_stat )
     ! Arguments
     TYPE(CRTM_SfcOptics_type), INTENT(IN OUT) :: SfcOptics_TL
     ! Function result
@@ -431,55 +487,55 @@ CONTAINS
 
 
 
-!----------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Compute_MW_Snow_SfcOptics_AD
-!
-! PURPOSE:
-!       Function to compute the adjoint surface emissivity and
-!       reflectivity at microwave frequencies over a snow surface.
-!
-!       This function is a wrapper for third party code.
-!
-!       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO AD
-!           COMPONENTS IN THE MW SNOW SFCOPTICS COMPUTATIONS.
-!
-! CALLING SEQUENCE:
-!       Error_Status = Compute_MW_Snow_SfcOptics_AD( SfcOptics_AD )
-!
-! INPUTS:
-!       SfcOptics_AD:    Structure containing the adjoint surface optical
-!                        properties required for the adjoint radiative
-!                        transfer calculation.
-!                        *** COMPONENTS MODIFIED UPON OUTPUT ***
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_SfcOptics_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-! FUNCTION RESULT:
-!       Error_Status:    The return value is an integer defining the error status.
-!                        The error codes are defined in the Message_Handler module.
-!                        If == SUCCESS the computation was sucessful
-!                           == FAILURE an unrecoverable error occurred
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!
-! COMMENTS:
-!       Note the INTENT on the input adjoint arguments are IN OUT regardless
-!       of their specification as "input" or "output". This is because these
-!       arguments may contain information on input, or need to be zeroed on
-!       output (or both).
-!
-!:sdoc-:
-!----------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------
+  !:sdoc+:
+  !
+  ! NAME:
+  !       Compute_MW_Snow_SfcOptics_AD
+  !
+  ! PURPOSE:
+  !       Function to compute the adjoint surface emissivity and
+  !       reflectivity at microwave frequencies over a snow surface.
+  !
+  !       This function is a wrapper for third party code.
+  !
+  !       NB: CURRENTLY THIS IS A STUB FUNCTION AS THERE ARE NO AD
+  !           COMPONENTS IN THE MW SNOW SFCOPTICS COMPUTATIONS.
+  !
+  ! CALLING SEQUENCE:
+  !       Error_Status = Compute_MW_Snow_SfcOptics_AD( SfcOptics_AD )
+  !
+  ! INPUTS:
+  !       SfcOptics_AD:    Structure containing the adjoint surface optical
+  !                        properties required for the adjoint radiative
+  !                        transfer calculation.
+  !                        *** COMPONENTS MODIFIED UPON OUTPUT ***
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_SfcOptics_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN OUT)
+  !
+  ! FUNCTION RESULT:
+  !       Error_Status:    The return value is an integer defining the error status.
+  !                        The error codes are defined in the Message_Handler module.
+  !                        If == SUCCESS the computation was sucessful
+  !                           == FAILURE an unrecoverable error occurred
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !
+  ! COMMENTS:
+  !       Note the INTENT on the input adjoint arguments are IN OUT regardless
+  !       of their specification as "input" or "output". This is because these
+  !       arguments may contain information on input, or need to be zeroed on
+  !       output (or both).
+  !
+  !:sdoc-:
+  !----------------------------------------------------------------------------------
 
   FUNCTION Compute_MW_Snow_SfcOptics_AD( &
-    SfcOptics_AD) &  ! AD  Input
-  RESULT( err_stat )
+       SfcOptics_AD) &  ! AD  Input
+       RESULT( err_stat )
     ! Arguments
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_AD
     ! Function result
@@ -500,53 +556,53 @@ CONTAINS
 
   END FUNCTION Compute_MW_Snow_SfcOptics_AD
 
-!----------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       Populate_Subset
-!
-! PURPOSE:
-!       Repackages brightness temperatures into a subset of channels required by
-!       lower NESDIS emissivity routines.
-!
-! CALLING SEQUENCE:
-!       Output_TBs = Populate_Subset( Surface, Num_Output_Channels, Required_Channels )
-!
-! INPUTS:
-!       Surface:         CRTM Surface Structure
-!                        UNITS:      N/A
-!                        TYPE:       CRTM_Surface_type
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Num_Output Channels:   The number of channels required
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Required_Channels:   The required channels 
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Num_Output Channels
-!                        ATTRIBUTES: INTENT(IN)
-! FUNCTION RESULT:
-!       Output_TBs:    An array of the required brightness temperatures
-!                        UNITS:      K
-!                        TYPE:       REAL
-!                        DIMENSION:  Num_Output Channels
-!
-! COMMENTS:
-!
-!:sdoc-:
-!----------------------------------------------------------------------------------
+  !----------------------------------------------------------------------------------
+  !:sdoc+:
+  !
+  ! NAME:
+  !       Populate_Subset
+  !
+  ! PURPOSE:
+  !       Repackages brightness temperatures into a subset of channels required by
+  !       lower NESDIS emissivity routines.
+  !
+  ! CALLING SEQUENCE:
+  !       Output_TBs = Populate_Subset( Surface, Num_Output_Channels, Required_Channels )
+  !
+  ! INPUTS:
+  !       Surface:         CRTM Surface Structure
+  !                        UNITS:      N/A
+  !                        TYPE:       CRTM_Surface_type
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  !       Num_Output Channels:   The number of channels required
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Scalar
+  !                        ATTRIBUTES: INTENT(IN)
+  !
+  !       Required_Channels:   The required channels 
+  !                        UNITS:      N/A
+  !                        TYPE:       INTEGER
+  !                        DIMENSION:  Num_Output Channels
+  !                        ATTRIBUTES: INTENT(IN)
+  ! FUNCTION RESULT:
+  !       Output_TBs:    An array of the required brightness temperatures
+  !                        UNITS:      K
+  !                        TYPE:       REAL
+  !                        DIMENSION:  Num_Output Channels
+  !
+  ! COMMENTS:
+  !
+  !:sdoc-:
+  !----------------------------------------------------------------------------------
 
   FUNCTION Populate_Subset( &
-        Surface, &
-        Num_Output_Channels, &
-        Required_Channels) &
-  RESULT ( Output_TBs )
+       Surface, &
+       Num_Output_Channels, &
+       Required_Channels) &
+       RESULT ( Output_TBs )
     ! Arguments
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     INTEGER, INTENT(IN) :: Num_Output_Channels
@@ -559,10 +615,10 @@ CONTAINS
     Output_TBs(:) = -99.9_fp
 
     DO I = 1, Num_Output_Channels
-      DO J = 1,Surface%SensorData%n_Channels
-        IF (Required_Channels(I) == Surface%SensorData%Sensor_Channel(J)) &
-            Output_TBs(I) = Surface%SensorData%Tb(J)
-      END DO
+       DO J = 1,Surface%SensorData%n_Channels
+          IF (Required_Channels(I) == Surface%SensorData%Sensor_Channel(J)) &
+               Output_TBs(I) = Surface%SensorData%Tb(J)
+       END DO
     END DO
 
   END FUNCTION Populate_Subset
