@@ -67,7 +67,6 @@ MODULE CRTM_SensorData_Define_old
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_SensorData_Define.f90 7521 2010-04-23 18:37:49Z david.groff@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

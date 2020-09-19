@@ -176,7 +176,6 @@ program GenTransCoef
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'GenTransCoef'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   INTEGER, PARAMETER  :: TAUCOEFF_VERSION   = 4
   INTEGER, PARAMETER  :: AbsID_HITRAN_H2O   = 1     ! HITRAN atmospheric indices

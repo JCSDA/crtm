@@ -3302,7 +3302,6 @@ END MODULE MONORTM_Input
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MONORTM_Input.f90 655 2007-05-29 22:07:15Z paul.vandelst@noaa.gov $
 !
 ! $Date: 2006/07/26 21:43:58 $
 !

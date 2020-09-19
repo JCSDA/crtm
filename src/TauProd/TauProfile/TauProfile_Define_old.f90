@@ -250,7 +250,6 @@ MODULE TauProfile_Define_old
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! -- TauProfile invalid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -2237,7 +2236,6 @@ END MODULE TauProfile_Define_old
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

@@ -189,7 +189,6 @@ MODULE CRTM_Forward_Module
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SOI_CRTM_Forward_Module.f90,v 1.1 2006/06/15 17:53:50 wd20pd Exp $'
 
 
 CONTAINS
@@ -1052,7 +1051,6 @@ END MODULE CRTM_Forward_Module
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SOI_CRTM_Forward_Module.f90,v 1.1 2006/06/15 17:53:50 wd20pd Exp $
 !
 ! $Date: 2006/06/15 17:53:50 $
 !

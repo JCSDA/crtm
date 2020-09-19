@@ -32,7 +32,6 @@ PROGRAM Test_AntCorr
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Test_AntCorr'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: BIN_FILENAME = 'Test.AntCorr.bin'
   CHARACTER(*), PARAMETER :: NC_FILENAME  = 'Test.AntCorr.nc'
   

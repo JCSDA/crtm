@@ -375,7 +375,6 @@ MODULE CRTMstats_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTMstats_Define.f90,v 1.2 2006/11/22 16:09:30 dgroff Exp $'
 
   ! -- CRTMstats invalid value
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -3087,7 +3086,6 @@ END MODULE CRTMstats_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTMstats_Define.f90,v 1.2 2006/11/22 16:09:30 dgroff Exp $
 !
 ! $Date: 2006/11/22 16:09:30 $
 !

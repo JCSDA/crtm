@@ -50,7 +50,6 @@ MODULE GrELS_netCDF_IO
   ! -----------------
   ! Module version
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   

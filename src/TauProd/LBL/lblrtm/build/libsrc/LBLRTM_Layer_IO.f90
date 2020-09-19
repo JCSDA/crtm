@@ -63,7 +63,6 @@ MODULE LBLRTM_Layer_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: LBLRTM_Layer_IO.f90 35139 2013-12-26 18:14:43Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

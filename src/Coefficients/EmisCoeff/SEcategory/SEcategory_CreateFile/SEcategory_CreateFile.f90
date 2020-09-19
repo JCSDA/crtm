@@ -29,7 +29,6 @@ PROGRAM SEcategory_CreateFile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'SEcategory_CreateFile'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
 
   ! Program header

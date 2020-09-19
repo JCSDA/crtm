@@ -49,7 +49,6 @@ MODULE SensorInfo_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Input data formats

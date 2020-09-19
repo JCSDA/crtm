@@ -40,7 +40,6 @@ PROGRAM IRwaterCoeff_oldNC2newBIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'IRwaterCoeff_oldNC2newBIN'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
 
   ! ---------

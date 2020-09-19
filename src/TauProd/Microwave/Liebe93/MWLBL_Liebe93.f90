@@ -52,7 +52,6 @@ MODULE MWLBL_Liebe93
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO           = 0.0_fp
   REAL(fp), PARAMETER :: ZEROpointEIGHT = 0.8_fp

@@ -143,7 +143,6 @@ MODULE ODCAPS_Predictor_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Predictor_Define.f90,v 1.9 2005/08/16 16:20:38 qliu Exp $'
 
   ! -- Literal constants
   REAL( fp ), PRIVATE, PARAMETER :: ZERO = 0.0_fp

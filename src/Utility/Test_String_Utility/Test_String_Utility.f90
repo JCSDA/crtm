@@ -75,7 +75,6 @@ PROGRAM Test_String_Utility
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_String_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_String_Utility.f90,v 1.4 2004/11/30 18:57:19 paulv Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -170,7 +169,6 @@ END PROGRAM Test_String_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_String_Utility.f90,v 1.4 2004/11/30 18:57:19 paulv Exp $
 !
 ! $Date: 2004/11/30 18:57:19 $
 !

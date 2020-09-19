@@ -45,7 +45,6 @@ PROGRAM Extract_IASI_TauCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   
   INTEGER,      PARAMETER :: N_VALID_SETS = 5
   CHARACTER(*), PARAMETER :: VALID_SET_NAME(N_VALID_SETS) = &

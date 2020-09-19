@@ -57,7 +57,6 @@ PROGRAM Compute_Coeff
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compute_Coeff'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
   CHARACTER( * ), PARAMETER :: ParameterList = 'Namelist.txt'

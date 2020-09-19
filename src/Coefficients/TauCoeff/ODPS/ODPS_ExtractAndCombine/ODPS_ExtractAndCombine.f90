@@ -26,7 +26,6 @@ PROGRAM ODPS_ExtractAndCombine
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'ODPS_ExtractAndCombine'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
 

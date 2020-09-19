@@ -42,7 +42,6 @@ PROGRAM ACCoeff_ASC2NC
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'ACCoeff_ASC2NC'
   CHARACTER(*),  PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   ! The sensorinfo file name
   CHARACTER(*), PARAMETER :: SENSORINFO_FILENAME = 'SensorInfo'
   ! The sensors

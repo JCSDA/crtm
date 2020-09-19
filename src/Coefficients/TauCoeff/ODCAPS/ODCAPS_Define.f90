@@ -409,7 +409,6 @@ MODULE ODCAPS_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- ODCAPS valid values
   INTEGER,      PARAMETER :: IP_INVALID = -1

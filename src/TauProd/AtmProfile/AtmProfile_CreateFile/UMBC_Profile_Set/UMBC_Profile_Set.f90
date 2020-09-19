@@ -113,7 +113,6 @@ MODULE UMBC_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! -- The number of absorbers and profiles
   INTEGER, PUBLIC, PARAMETER :: N_UMBC_ABSORBERS = 5
@@ -931,7 +930,6 @@ END MODULE UMBC_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

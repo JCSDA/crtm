@@ -106,7 +106,6 @@ PROGRAM Create_Process_Defaults_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_Process_Defaults_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_Process_Defaults_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -560,7 +559,6 @@ END PROGRAM Create_Process_Defaults_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Create_Process_Defaults_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

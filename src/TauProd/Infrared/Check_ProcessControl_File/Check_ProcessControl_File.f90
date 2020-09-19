@@ -122,7 +122,6 @@ PROGRAM Check_ProcessControl_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_ProcessControl_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_ProcessControl_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -381,7 +380,6 @@ END PROGRAM Check_ProcessControl_File
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Check_ProcessControl_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

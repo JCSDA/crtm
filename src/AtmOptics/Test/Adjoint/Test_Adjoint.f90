@@ -200,7 +200,6 @@ PROGRAM Test_Adjoint
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Adjoint'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Adjoint.f90,v 1.1 2006/07/10 20:08:49 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
   INTEGER, PARAMETER :: SL = 512
@@ -1322,7 +1321,6 @@ END PROGRAM Test_Adjoint
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Test_Adjoint.f90,v 1.1 2006/07/10 20:08:49 dgroff Exp $
 !
 ! $Date: 2006/07/10 20:08:49 $
 !

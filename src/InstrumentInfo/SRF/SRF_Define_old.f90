@@ -237,7 +237,6 @@ MODULE SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SRF_Define.f90 774 2007-07-24 18:24:06Z paul.vandelst@noaa.gov $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1952,7 +1951,6 @@ END MODULE SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: SRF_Define.f90 774 2007-07-24 18:24:06Z paul.vandelst@noaa.gov $
 !
 ! $Date: 2006/08/15 20:32:27 $
 !

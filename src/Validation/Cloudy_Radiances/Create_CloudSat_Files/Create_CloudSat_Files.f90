@@ -43,7 +43,6 @@ PROGRAM Create_CloudSat_Files
   ! Parameters
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_CloudSat_Files'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
   CHARACTER(*), PARAMETER :: ATMOSPHERE_FILENAME = 'CloudSat_Atmosphere.bin'
   CHARACTER(*), PARAMETER :: SURFACE_FILENAME = 'gdas2.t18z.sfluxgrbf00.nc'
   

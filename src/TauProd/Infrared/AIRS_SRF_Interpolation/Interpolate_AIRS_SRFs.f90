@@ -49,7 +49,6 @@ PROGRAM Interpolate_AIRS_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Interpolate_AIRS_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Interpolate_AIRS_SRFs.f90,v 2.3 2006/07/25 20:38:08 wd20pd Exp $'
 
   ! -- Input AIRS SRF filename
   CHARACTER( * ),  PARAMETER ::  AIRS_SRF_FILENAME = 'airs_srf.nc'

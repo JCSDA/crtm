@@ -44,7 +44,6 @@ public :: polyint_test  ! Temporary
   ! -----------------
   ! RCS Id field
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Maximum order for interpolating polynomial
   INTEGER,        PRIVATE, PARAMETER :: MAX_ORDER = 11
   ! Literal constants

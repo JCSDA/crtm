@@ -34,7 +34,6 @@ PROGRAM TauCoeff2ODSSU
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'TauCoeff2ODSSU'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

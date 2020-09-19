@@ -50,7 +50,6 @@ MODULE Solar_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants

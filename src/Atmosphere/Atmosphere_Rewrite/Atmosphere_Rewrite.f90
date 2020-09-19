@@ -37,7 +37,6 @@ PROGRAM Atmosphere_Rewrite
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Atmosphere_Rewrite'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   INTEGER, PARAMETER :: ML = 256
   LOGICAL, PARAMETER :: QUIET = .TRUE.
   

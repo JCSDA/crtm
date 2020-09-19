@@ -53,7 +53,6 @@ MODULE DumpFile_Utility
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   
   ! Keyword set value
   INTEGER,  PARAMETER :: SET = 1

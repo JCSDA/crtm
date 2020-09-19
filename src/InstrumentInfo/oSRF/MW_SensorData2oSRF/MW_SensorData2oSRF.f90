@@ -45,7 +45,6 @@ PROGRAM MW_SensorData2oSRF
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'MW_SensorData2oSRF'
 
   

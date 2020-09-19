@@ -16,7 +16,6 @@ PROGRAM ECMWF5K_ASC2BIN
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'ECMWF5K_ASC2BIN'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   
   
   ! ---------

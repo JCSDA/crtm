@@ -104,7 +104,6 @@ PROGRAM Aerosol_Rewrite
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME   = 'Aerosol_Rewrite'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Aerosol_Rewrite.f90,v 1.2 2006/05/02 14:58:34 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -391,7 +390,6 @@ END PROGRAM Aerosol_Rewrite
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Aerosol_Rewrite.f90,v 1.2 2006/05/02 14:58:34 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:34 $
 !

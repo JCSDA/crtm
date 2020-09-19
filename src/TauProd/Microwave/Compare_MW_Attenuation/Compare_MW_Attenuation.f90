@@ -152,7 +152,6 @@ PROGRAM Compare_MW_Attenuation
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compare_MW_Attenuation'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Compare_MW_Attenuation.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -923,7 +922,6 @@ END PROGRAM Compare_MW_Attenuation
 !#                          -- MODIFICATION HISTORY --                          # 
 !#------------------------------------------------------------------------------#
 !
-! $Id: Compare_MW_Attenuation.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

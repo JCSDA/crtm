@@ -231,7 +231,6 @@ MODULE TauCoeff_SARTA_Subset_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauCoeff_SARTA_Subset_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- TauCoeff_SARTA_Subset valid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -2052,7 +2051,6 @@ END MODULE TauCoeff_SARTA_Subset_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: TauCoeff_SARTA_Subset_Define.f90,v 1.1 2006/05/03 19:42:09 ychen Exp $
 !
 ! $Date: 2006/05/03 19:42:09 $
 !

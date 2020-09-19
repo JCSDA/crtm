@@ -1535,13 +1535,15 @@ CONTAINS
 
         END DO Channel_Loop
 
+        CALL CRTM_Predictor_Destroy( Predictor )
+        CALL CRTM_Predictor_Destroy( Predictor_K )
+        CALL RTV_Destroy( RTV )
+
       END DO Sensor_Loop
 
       ! Deallocate local sensor independent data structures
       ! ...Atmospheric optics
       ! Clean up
-      CALL CRTM_Predictor_Destroy( Predictor )
-      CALL CRTM_Predictor_Destroy( Predictor_K )
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
       CALL CRTM_AtmOptics_Destroy( AtmOptics_K )
       CALL CRTM_AtmOptics_Destroy( AtmOptics_Clear )
@@ -1558,7 +1560,7 @@ CONTAINS
       CALL AOvar_Destroy( AOvar )
       CALL CSvar_Destroy( CSvar )
       CALL ASvar_Destroy( ASvar )
-      CALL RTV_Destroy( RTV )
+
     END FUNCTION profile_solution
  
     ! ----------------------------------------------------------------

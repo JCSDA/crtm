@@ -45,7 +45,6 @@ MODULE IASI_Subset
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
   ! The EUMETSAT IASI subset 300 channel list

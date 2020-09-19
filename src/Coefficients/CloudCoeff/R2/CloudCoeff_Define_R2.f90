@@ -46,7 +46,6 @@ MODULE CloudCoeff_Define_R2
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! CloudCoeff init values
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! Keyword set value

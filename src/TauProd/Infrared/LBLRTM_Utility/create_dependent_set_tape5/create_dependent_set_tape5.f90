@@ -58,7 +58,6 @@ PROGRAM create_dependent_set_tape5
 ! -- RCS Id
 
   CHARACTER( LEN = 128 ), PARAMETER :: rcs_Id = &
-    '$Id: create_dependent_set_tape5.f90,v 1.2 2000/07/14 17:31:42 paulv Exp $'
 
 
 

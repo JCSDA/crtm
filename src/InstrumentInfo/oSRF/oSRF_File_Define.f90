@@ -76,7 +76,6 @@ MODULE oSRF_File_Define
   ! -----------------
   ! Module version id
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Invalid flag
   INTEGER, PARAMETER :: INVALID = -1
   ! Keyword set values

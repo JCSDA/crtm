@@ -44,7 +44,6 @@ MODULE CRTM_BRDF_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
 
 CONTAINS

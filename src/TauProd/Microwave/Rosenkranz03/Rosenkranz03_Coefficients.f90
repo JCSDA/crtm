@@ -360,7 +360,6 @@ END MODULE Rosenkranz03_Coefficients
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Rosenkranz03_Coefficients.f90,v 1.2 2004/12/16 19:03:55 paulv Exp $
 !
 ! $Date: 2004/12/16 19:03:55 $
 !

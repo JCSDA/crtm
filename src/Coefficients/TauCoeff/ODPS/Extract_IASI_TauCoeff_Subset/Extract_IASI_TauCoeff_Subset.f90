@@ -48,7 +48,6 @@ PROGRAM Extract_IASI_TauCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Extract_IASI_TauCoeff_Subset.f90 5277 2009-10-19 18:05:00Z yong.chen@noaa.gov $'
   
   INTEGER, PARAMETER :: SL = 256
 

@@ -121,7 +121,6 @@ MODULE ODCAPS_ODAS_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ODCAPS_ODAS_Binary_IO.f90,v 1.1 2006/05/02 18:15:01 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

@@ -129,7 +129,6 @@ MODULE SpcCoeff_Define_old
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! SpcCoeff invalid value

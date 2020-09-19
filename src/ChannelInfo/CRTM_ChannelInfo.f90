@@ -180,7 +180,6 @@ MODULE CRTM_ChannelInfo
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_ChannelInfo.f90,v 1.11 2006/05/02 14:58:34 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1155,7 +1154,6 @@ END MODULE CRTM_ChannelInfo
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTM_ChannelInfo.f90,v 1.11 2006/05/02 14:58:34 dgroff Exp $
 !
 ! $Date: 2006/05/02 14:58:34 $
 !

@@ -39,7 +39,6 @@ MODULE Planck_Functions
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Numeric literals
   REAL(fp), PARAMETER :: ONE = 1.0_fp
   ! Unit types

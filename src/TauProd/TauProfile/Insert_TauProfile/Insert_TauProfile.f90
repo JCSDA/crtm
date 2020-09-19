@@ -45,7 +45,6 @@ PROGRAM Insert_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Insert_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Insert_TauProfile.f90,v 1.7 2006/07/27 22:05:39 wd20pd Exp $'
 
   INTEGER, PARAMETER :: N_DIRECTIONS = 2
   CHARACTER( * ),  PARAMETER, DIMENSION( N_DIRECTIONS ) :: &

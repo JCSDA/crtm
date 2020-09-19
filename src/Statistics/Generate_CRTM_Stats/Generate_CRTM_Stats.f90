@@ -223,7 +223,6 @@ PROGRAM Generate_CRTM_Stats
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME   = 'Generate_CRTM_Stats'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Generate_CRTM_Stats.f90,v 1.5 2006/11/27 14:38:15 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
   
@@ -1254,7 +1253,6 @@ END PROGRAM Generate_CRTM_Stats
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Generate_CRTM_Stats.f90,v 1.5 2006/11/27 14:38:15 dgroff Exp $
 !
 ! $Date: 2006/11/27 14:38:15 $
 !

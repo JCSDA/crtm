@@ -33,7 +33,6 @@ PROGRAM Surface_ConvertFormat
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Surface_ConvertFormat'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
 
 
   ! ---------
