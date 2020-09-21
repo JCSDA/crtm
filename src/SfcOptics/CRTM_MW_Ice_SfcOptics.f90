@@ -353,7 +353,7 @@ CONTAINS
 
     IF (badTBflag) then
        ! set default ice emissivity option
-       SfcOptics%Emissivity(i,1:2) = DEFAULT_EMISSIVITY
+       SfcOptics%Emissivity(1:SfcOptics%n_Angles,1:2) = DEFAULT_EMISSIVITY
     END IF
 
     ! Compute the surface reflectivities,
