@@ -31,7 +31,6 @@ PROGRAM Display_MW_SensorData
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Display_MW_SensorData'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
 
   ! ---------

@@ -29,7 +29,6 @@ PROGRAM Test_netCDF_Utility
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Test_netCDF_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Test_netCDF_Utility.f90,v 1.1 2006/06/08 21:47:55 wd20pd Exp $'
   CHARACTER( * ), PARAMETER ::  NC_FILENAME = 'Test.netCDF.nc'
 
 

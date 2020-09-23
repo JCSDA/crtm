@@ -350,7 +350,6 @@ END MODULE File_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: File_Utility.f90 886 2007-08-23 22:51:40Z paul.vandelst@noaa.gov $
 !
 ! $Date: 2006/03/17 21:05:12 $
 !

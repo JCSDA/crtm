@@ -61,7 +61,6 @@ PROGRAM Select_TauProfile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Select_TauProfile'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Literal constants

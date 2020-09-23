@@ -223,7 +223,6 @@ MODULE netCDF_Variable_Utility
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: netCDF_Variable_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $'
 
 
 CONTAINS
@@ -13624,7 +13623,6 @@ END MODULE netCDF_Variable_Utility
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: netCDF_Variable_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $
 !
 ! $Date: 2006/07/26 21:39:05 $
 !

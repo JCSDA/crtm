@@ -140,7 +140,6 @@ PROGRAM Assemble_TauProfile_Data
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Assemble_TauProfile_Data'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Assemble_TauProfile_Data.f90,v 2.2 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -640,7 +639,6 @@ END PROGRAM Assemble_TauProfile_Data
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Assemble_TauProfile_Data.f90,v 2.2 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

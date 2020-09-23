@@ -183,7 +183,6 @@ MODULE Tau_OPTRAN_SARTA_Coeff_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Tau_OPTRAN_SARTA_Coeff_Define.f90,v 1.10 2006/05/02 19:42:09 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1244,7 +1243,6 @@ END MODULE Tau_OPTRAN_SARTA_Coeff_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Tau_OPTRAN_SARTA_Coeff_Define.f90,v 1.1 2006/05/02 19:42:09 ychen Exp $
 !
 ! $Date: 2006/05/02 19:42:09 $
 !

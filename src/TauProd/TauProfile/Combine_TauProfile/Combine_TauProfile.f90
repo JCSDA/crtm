@@ -137,7 +137,6 @@ PROGRAM Combine_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Combine_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Combine_TauProfile.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -708,7 +707,6 @@ END PROGRAM Combine_TauProfile
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Combine_TauProfile.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

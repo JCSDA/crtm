@@ -44,7 +44,6 @@ MODULE CrIS_Subset
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
   ! The NESDIS CrIS subset 374 channel list

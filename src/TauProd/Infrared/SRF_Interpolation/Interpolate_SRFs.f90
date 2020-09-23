@@ -62,7 +62,6 @@ PROGRAM Interpolate_SRFs
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME = 'Interpolate_SRFs'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Numeric literals
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONEpointFIVE = 1.5_fp

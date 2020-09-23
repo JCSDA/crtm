@@ -27,7 +27,6 @@ PROGRAM Test_Dumpfile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_Dumpfile'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER :: TEST_FILE = 'DumpFile.bin'
   ! Record size and number
   INTEGER, PARAMETER :: N_PTS     = 100

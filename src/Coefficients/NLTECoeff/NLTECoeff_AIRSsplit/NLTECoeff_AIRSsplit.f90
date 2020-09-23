@@ -34,7 +34,6 @@ PROGRAM NLTECoeff_AIRSsplit
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'NLTECoeff_AIRSsplit'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! Module channel ranges
   INTEGER, PARAMETER :: M1B_CHANNEL_BEGIN = 2015

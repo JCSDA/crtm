@@ -81,7 +81,6 @@ MODULE ListFile_Utility
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! String lengths
   INTEGER, PARAMETER :: STRLEN = 5000
   INTEGER, PARAMETER :: ML = 256

@@ -39,7 +39,6 @@ PROGRAM Sensor_Planck_Utility_Example
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Sensor_Planck_Utility_Example'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
 
   ! ---------

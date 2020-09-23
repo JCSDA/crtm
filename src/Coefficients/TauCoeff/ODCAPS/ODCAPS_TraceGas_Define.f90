@@ -198,7 +198,6 @@ MODULE ODCAPS_TraceGas_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_TraceGas_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- ODCAPS_TraceGas valid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1

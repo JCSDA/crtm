@@ -64,7 +64,6 @@ MODULE LBLRTM_Panel_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: LBLRTM_Panel_Define.f90 35139 2013-12-26 18:14:43Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

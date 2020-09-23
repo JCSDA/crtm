@@ -34,6 +34,9 @@
 
 
 #################### Functions ###############################
+# OS/Machine
+hostname=$(hostname)
+uname=$(uname)
 
 # get_yesno: Sets an input variable named by a string to "y" or "n" based on user input
 function get_yesno () {
@@ -145,7 +148,15 @@ printf "opt is $opt\n\n"
 case $compiler in
   ifort)
     hardwired="-g -e08 -free -assume byterecl,realloc_lhs"
-    libs=""
+    if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
+      libs="-L /opt/netcdf4/4.6.2-intel-18.0.3/lib -lnetcdf -lnetcdff\
+            -L /opt/hdf5/1.8.21-intel-18.0.3/lib -lhdf5\
+            -g -fpp -traceback -check bounds\
+            -I /opt/netcdf4/4.6.2-intel-18.0.3/include\
+            -I /opt/hdf5/1.8.21-intel-18.0.3/include"    
+    else
+      libs=""
+    fi
     case $opt in
       optimized)
 	declare -a default_flags="-O3 -fp-model source"
@@ -157,7 +168,14 @@ case $compiler in
     ;;
   gfortran)
     hardwired="-g -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4  -Wall -Wconversion -std=f2008"
-    libs=""
+    if [[ "$uname" == "Darwin" ]] ; then # macOS, brew install
+      libs="-L /usr/local/Cellar/netcdf/4.7.4_1/lib -lnetcdf -lnetcdff \
+            -L /usr/local/Cellar/hdf5/1.12.0_1/lib -lhdf5 \
+            -I /usr/local/Cellar/netcdf/4.7.4_1/include \
+            -I /usr/local/Cellar/hdf5/1.12.0_1/include "
+    else
+      libs=""
+    fi
     case $opt in
       optimized)
 	declare -a default_flags="-O3 -funroll-loops"

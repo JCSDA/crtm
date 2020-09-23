@@ -204,7 +204,6 @@ MODULE AIRS_ChannelProperties_Define
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AIRS_ChannelProperties_Define.f90,v 1.5 2004/08/11 19:59:51 paulv Exp $'
 
   ! -- Data structure string lengths
   INTEGER, PRIVATE, PARAMETER :: ML = 5
@@ -243,7 +242,6 @@ END MODULE AIRS_ChannelProperties_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: AIRS_ChannelProperties_Define.f90,v 1.5 2004/08/11 19:59:51 paulv Exp $
 !
 ! $Date: 2004/08/11 19:59:51 $
 !

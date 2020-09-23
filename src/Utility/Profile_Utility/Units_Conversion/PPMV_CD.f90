@@ -37,7 +37,6 @@ MODULE PPMV_CD
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   REAL(fp),     PARAMETER :: SCALE_FACTOR = 1.0e-07_fp / NA
 
 

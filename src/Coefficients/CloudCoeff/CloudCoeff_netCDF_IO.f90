@@ -27,8 +27,8 @@ MODULE CloudCoeff_netCDF_IO
                                CloudCoeff_Create       , &
                                CloudCoeff_Inspect      , &
                                CloudCoeff_ValidRelease , &
-                               CloudCoeff_Info         , &
-                               CloudCoeff_DefineVersion
+                               CloudCoeff_Info
+                               !CloudCoeff_DefineVersion
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -51,7 +51,6 @@ MODULE CloudCoeff_netCDF_IO
   ! -----------------
   ! Module version
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants

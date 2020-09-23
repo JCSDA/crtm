@@ -61,7 +61,6 @@ PROGRAM Create_FTS_SpcCoeff
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_FTS_SpcCoeff'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   ! String lengths
   INTEGER, PARAMETER :: SL = 256
   ! Literal constants

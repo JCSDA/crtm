@@ -54,7 +54,6 @@ PROGRAM CRTM_Examples
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'CRTM_Examples'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-     '$Id$'
 
   ! CRTM Model Type
   INTEGER, PARAMETER      :: N_MODEL_TYPES = 4

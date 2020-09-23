@@ -72,7 +72,6 @@ MODULE SRF_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! String lengths
   INTEGER,  PARAMETER :: ML = 256 ! msg length
   INTEGER,  PARAMETER :: SL = 20  ! Sensor Id length

@@ -28,8 +28,8 @@ MODULE AerosolCoeff_netCDF_IO
                                  AerosolCoeff_Inspect      , &
                                  AerosolCoeff_ValidRelease , &
                                  AerosolCoeff_Info         , &
-                                 AerosolCoeff_Frequency    , &
-                                 AerosolCoeff_DefineVersion
+                                 AerosolCoeff_Frequency
+                                 !AerosolCoeff_DefineVersion
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -52,7 +52,6 @@ MODULE AerosolCoeff_netCDF_IO
   ! -----------------
   ! Module version
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants

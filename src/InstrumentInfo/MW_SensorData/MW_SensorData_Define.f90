@@ -73,7 +73,6 @@ MODULE MW_SensorData_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
   ! Sensor id string length

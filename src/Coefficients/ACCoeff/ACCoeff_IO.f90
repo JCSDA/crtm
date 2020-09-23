@@ -46,7 +46,6 @@ MODULE ACCoeff_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   
 
 CONTAINS

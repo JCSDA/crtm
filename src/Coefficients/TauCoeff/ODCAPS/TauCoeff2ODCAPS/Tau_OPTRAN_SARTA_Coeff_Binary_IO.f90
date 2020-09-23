@@ -121,7 +121,6 @@ MODULE Tau_OPTRAN_SA_Coeff_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Tau_OPTRAN_SA_Coeff_Binary_IO.f90,v 1.1 2006/05/02 18:15:01 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1140,7 +1139,6 @@ END MODULE Tau_OPTRAN_SA_Coeff_Binary_IO
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Tau_OPTRAN_SARTA_Coeff_Define.f90,v 1.1 2006/05/02 19:42:09 ychen Exp $
 !
 ! $Date: 2006/05/02 19:42:09 $
 !

@@ -62,7 +62,6 @@ MODULE Liebe92_Coefficients
   ! Module Parameters
   ! ----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   ! Conversion factors for converting MPM92 coefficients to MPM93 units
   REAL(fp), PARAMETER :: O2_A1_SCALE = 1.0e-07_fp

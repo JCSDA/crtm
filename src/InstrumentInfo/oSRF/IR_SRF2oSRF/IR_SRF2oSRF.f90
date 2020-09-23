@@ -45,7 +45,6 @@ PROGRAM IR_SRF2oSRF
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'IR_SRF2oSRF'
 
   

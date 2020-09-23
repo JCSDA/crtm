@@ -15,7 +15,6 @@ PROGRAM AerosolCoeff_R2_to_R3
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AerosolCoeff_R2_to_R3'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   INTEGER :: Error_Status
   CHARACTER(5000) :: Title, History, Comment

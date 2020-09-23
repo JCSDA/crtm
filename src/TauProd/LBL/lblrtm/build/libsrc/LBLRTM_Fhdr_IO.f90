@@ -46,7 +46,6 @@ MODULE LBLRTM_Fhdr_IO
   ! PRIVATE Module parameters
   ! -------------------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: LBLRTM_Fhdr_IO.f90 37071 2014-02-21 14:52:06Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

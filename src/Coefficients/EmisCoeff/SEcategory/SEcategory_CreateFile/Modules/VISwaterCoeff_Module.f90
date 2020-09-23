@@ -31,7 +31,6 @@ MODULE VISwaterCoeff_Module
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER :: SURFACE_TYPE_NAME = 'water'
   CHARACTER(*), PARAMETER :: MODULE_NAME = 'VIS'//SURFACE_TYPE_NAME//'Coeff_Module'
   INTEGER , PARAMETER :: ML = 256

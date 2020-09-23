@@ -110,7 +110,6 @@ MODULE Model_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Model_Profile_Set.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Private dimensions.
   INTEGER, PRIVATE, PARAMETER :: N_MODEL_LEVELS    = 50
@@ -1786,7 +1785,6 @@ END MODULE Model_Profile_Set
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: Model_Profile_Set.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $
 !
 ! $Date: 2006/06/30 16:47:16 $
 !

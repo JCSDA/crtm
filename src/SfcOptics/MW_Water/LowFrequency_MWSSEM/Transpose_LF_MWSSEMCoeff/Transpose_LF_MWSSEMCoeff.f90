@@ -26,7 +26,6 @@ PROGRAM Transpose_LF_MWSSEMCoeff
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Transpose_LF_MWSSEMCoeff'
   
   INTEGER, PARAMETER :: N_WIND_SPEEDS = 40

@@ -88,7 +88,6 @@ MODULE AIRS_SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -1229,7 +1228,6 @@ END MODULE AIRS_SRF_Define
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
 !
 ! $Date: 2006/08/15 20:51:04 $
 !

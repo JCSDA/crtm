@@ -68,7 +68,6 @@ PROGRAM MW_TauProfile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'MW_TauProfile'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   ! Keyword argument set value
   INTEGER, PARAMETER :: SET = 1
   ! direction names

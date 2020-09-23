@@ -46,7 +46,6 @@ PROGRAM Extract_AIRS_TauCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Extract_AIRS_TauCoeff_Subset.f90 21313 2012-09-24 17:01:59Z yong.chen@noaa.gov $'
   
   INTEGER, PARAMETER :: SL = 256
 

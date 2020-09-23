@@ -64,7 +64,6 @@ MODULE CRTM_Surface_IO_old
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256

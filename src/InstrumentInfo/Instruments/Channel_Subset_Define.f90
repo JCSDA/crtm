@@ -47,7 +47,6 @@ MODULE Channel_Subset_Define
   ! Module Parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: SET = 1
   INTEGER, PARAMETER :: INVALID = -1
   INTEGER, PARAMETER :: ML = 256

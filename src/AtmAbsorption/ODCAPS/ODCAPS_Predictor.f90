@@ -190,7 +190,6 @@ MODULE ODCAPS_Predictor
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Predictor.f90,v 1.1 2006/05/09 21:10:52 ychen Exp $'
 
   TYPE :: APVariables_type
     PRIVATE
