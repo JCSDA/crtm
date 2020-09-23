@@ -65,7 +65,7 @@ SUCCESS=0
 FAILURE=1
 # ..Define defaults
 DEBUG=""
-COMPILER="gfortran"
+#COMPILER="gfortran"
 
 
 
