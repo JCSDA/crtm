@@ -18,7 +18,7 @@ export FCFLAGS="\
 
 export LDFLAGS=""
 
-if [ "$hostname" == "s4-submit.ssec.wisc.edu" ] ; then #S4
+if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
   export LIBS="\
   -L $NC4_DIR/lib -lnetcdf -lnetcdff \
   -L $HDF_DIR/lib -lhdf5 \
