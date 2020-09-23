@@ -3,6 +3,7 @@
 # PRODUCTION build settings for Linux gfortran compiler
 #-------------------------------------------------------------------------------#
 
+uname=$(uname)
 export FC="gfortran"
 export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"
 export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"
@@ -21,8 +22,12 @@ export FCFLAGS="\
 
 export LDFLAGS=""
 
-export LIBS="\
--L $NC4_DIR/lib -lnetcdf -lnetcdff \
--L $HDF_DIR/lib -lhdf5 \
--I $NC4_DIR/include \
--I $HDF_DIR/include "
+if [ "$uname" == "Darwin" ] ; then #mac OS, brew install
+  export LIBS="\
+  -L $NC4_DIR/lib -lnetcdf -lnetcdff \
+  -L $HDF_DIR/lib -lhdf5 \
+  -I $NC4_DIR/include \
+  -I $HDF_DIR/include "
+else
+  export LIBS=""
+fi
