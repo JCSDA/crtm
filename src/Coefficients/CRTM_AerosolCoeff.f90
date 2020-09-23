@@ -32,6 +32,7 @@ MODULE CRTM_AerosolCoeff
                                     AerosolCoeff_Associated, &
                                     AerosolCoeff_Destroy
   USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_ReadFile
+  USE AerosolCoeff_netCDF_IO, ONLY: AerosolCoeff_netCDF_ReadFile
   ! Disable all implicit typing
   IMPLICIT NONE
 
@@ -77,19 +78,41 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AerosolCoeff_Load( &
-!                        Filename,                              &
+!                        Aerosol_Model , & 
+!                        AerosolCoeff_IO , &
+!                        Filename , &                             
 !                        File_Path         = File_Path        , &
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
 !                        Output_Process_ID = Output_Process_ID  )
 !
 ! INPUT ARGUMENTS:
-!       Filename:           Name of the Binary format AerosolCoeff file.
+!       Aerosol_Model:      Name of the aerosol scheme for scattering calculation
+!                           Available aerosol scheme:
+!                           - CRTM_v2.3  [DEFAULT]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
+!       AerosolCoeff_IO:    Format of the aerosol optical properties data
+!                           Available options:
+!                           - Binary  [DEFAULT]
+!                           - netCDF
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       Filename:           Name of the data file containing the aerosol optical
+!                           properties data for scattering calculations.
+!                           Available datafiles:
+!                           - AerosolCoeff.bin  [DEFAULT, Binary]
+!                           - AerosolCoeff.nc   [netCDF-Classic/4]
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 ! OPTIONAL INPUT ARGUMENTS:
 !       File_Path:          Character string specifying a file path for the
@@ -148,6 +171,8 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_AerosolCoeff_Load( &
+    Aerosol_Model    , &  ! Input
+    AerosolCoeff_IO  , &  ! Input
     Filename         , &  ! Input
     File_Path        , &  ! Optional input
     Quiet            , &  ! Optional input
@@ -155,7 +180,9 @@ CONTAINS
     Output_Process_ID) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),           INTENT(IN) :: Aerosol_Model
     CHARACTER(*),           INTENT(IN) :: Filename
+    CHARACTER(*),           INTENT(IN) :: AerosolCoeff_IO
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
     LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
@@ -190,12 +217,34 @@ CONTAINS
     END IF
     
     ! Read the AerosolCoeff data file
-    err_stat = AerosolCoeff_Binary_ReadFile( &
-                 AerosolCoeff_File, &
-                 AeroC, &
-                 Quiet = .NOT. noisy )
-    IF ( err_stat /= SUCCESS ) THEN
-      WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+    IF (Aerosol_Model == 'CRTM_v2.3') THEN  
+      IF (AerosolCoeff_IO == 'Binary') THEN
+        ! ...Binary IO
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File) 
+        err_stat = AerosolCoeff_Binary_ReadFile( &
+                     AerosolCoeff_File, &
+                     AeroC, &
+                     Quiet = .NOT. noisy )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+        END IF
+      ELSE
+        ! ...netCDF IO     
+        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
+        err_stat = AerosolCoeff_netCDF_ReadFile( &
+                     AerosolCoeff_File, &
+                     AeroC, &
+                     Quiet = .NOT. noisy )
+        IF ( err_stat /= SUCCESS ) THEN
+          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+        RETURN
+        END IF
+      END IF ! AerosolCoeff_IO
+    ELSE
+      WRITE( msg,'("Error reading AerosolCoeff from model:  ",a)') TRIM(Aerosol_Model)
       CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
     END IF

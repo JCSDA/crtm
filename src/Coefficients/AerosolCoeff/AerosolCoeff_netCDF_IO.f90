@@ -28,8 +28,8 @@ MODULE AerosolCoeff_netCDF_IO
                                  AerosolCoeff_Inspect      , &
                                  AerosolCoeff_ValidRelease , &
                                  AerosolCoeff_Info         , &
-                                 AerosolCoeff_Frequency    , &
-                                 AerosolCoeff_DefineVersion
+                                 AerosolCoeff_Frequency
+                                 !AerosolCoeff_DefineVersion
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE

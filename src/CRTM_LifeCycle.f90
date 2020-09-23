@@ -7,6 +7,8 @@
 ! Written by:     Paul van Delst, 21-May-2004
 !                 paul.vandelst@noaa.gov
 !
+! Modified by:
+! Aug-2020    Cheng Dang (dangch@ucar.edu)   Add input arguments for aerosol scheme/file/format
 
 MODULE CRTM_LifeCycle
 
@@ -94,23 +96,28 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_Init( Sensor_ID  , &
 !                                 ChannelInfo, &
-!                                 CloudCoeff_File    = CloudCoeff_File   , &
-!                                 AerosolCoeff_File  = AerosolCoeff_File , &
-!                                 Load_CloudCoeff    = Load_CloudCoeff   , &
-!                                 Load_AerosolCoeff  = Load_AerosolCoeff , &
-!                                 IRwaterCoeff_File  = IRwaterCoeff_File , &
-!                                 IRlandCoeff_File   = IRlandCoeff_File  , &
-!                                 IRsnowCoeff_File   = IRsnowCoeff_File  , &
-!                                 IRiceCoeff_File    = IRiceCoeff_File   , &
-!                                 VISwaterCoeff_File = VISwaterCoeff_File, &
-!                                 VISlandCoeff_File  = VISlandCoeff_File , &
-!                                 VISsnowCoeff_File  = VISsnowCoeff_File , &
-!                                 VISiceCoeff_File   = VISiceCoeff_File  , &
-!                                 MWwaterCoeff_File  = MWwaterCoeff_File , &
-!                                 File_Path          = File_Path         , &
-!                                 Quiet              = Quiet             , &
-!                                 Process_ID         = Process_ID        , &
-!                                 Output_Process_ID  = Output_Process_ID   )
+!                                 Aerosol_Model       = Aerosol_Model       , &
+!                                 AerosolCoeff_Format = AerosolCoeff_Format , &
+!                                 AerosolCoeff_File   = AerosolCoeff_File   , &
+!                                 Cloud_Model         = Cloud_Model         , &
+!                                 CloudCoeff_Format   = CloudCoeff_Format   , &
+!                                 CloudCoeff_File     = CloudCoeff_File     , &
+!                                 Load_CloudCoeff     = Load_CloudCoeff     , &
+!                                 Load_AerosolCoeff   = Load_AerosolCoeff   , &
+!                                 IRwaterCoeff_File   = IRwaterCoeff_File   , &
+!                                 IRlandCoeff_File    = IRlandCoeff_File    , &
+!                                 IRsnowCoeff_File    = IRsnowCoeff_File    , &
+!                                 IRiceCoeff_File     = IRiceCoeff_File     , &
+!                                 VISwaterCoeff_File  = VISwaterCoeff_File  , &
+!                                 VISlandCoeff_File   = VISlandCoeff_File   , &
+!                                 VISsnowCoeff_File   = VISsnowCoeff_File   , &
+!                                 VISiceCoeff_File    = VISiceCoeff_File    , &
+!                                 MWwaterCoeff_File   = MWwaterCoeff_File   , &
+!                                 File_Path           = File_Path           , &
+!                                 NC_File_Path        = NC_File_Path        , &
+!                                 Quiet               = Quiet               , &
+!                                 Process_ID          = Process_ID          , &
+!                                 Output_Process_ID   = Output_Process_ID   )
 !
 ! INPUTS:
 !       Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
@@ -137,19 +144,55 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(OUT)
 !
 ! OPTIONAL INPUTS:
-!       CloudCoeff_File:    Name of the data file containing the cloud optical
+!       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
+!                          Available aerosol scheme:
+!                          - CRTM_v2.3  [DEFAULT]
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       AerosolCoeff_Format:    Format of the aerosol optical properties data
+!                               Available options:
+!                               - Binary  [DEFAULT]
+!                               - netCDF
+!                               UNITS:      N/A
+!                               TYPE:       CHARACTER(*)
+!                               DIMENSION:  Scalar
+!                               ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       AerosolCoeff_File:  Name of the data file containing the aerosol optical
 !                           properties data for scattering calculations.
 !                           Available datafiles:
-!                           - CloudCoeff.bin  [DEFAULT]
+!                           - AerosolCoeff.bin  [DEFAULT, Binary]
+!                           - AerosolCoeff.nc   [netCDF-Classic/4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
-!       AerosolCoeff_File:  Name of the data file containing the aerosol optical
+!       Cloud_Model:       Name of the cloud scheme for scattering calculation
+!                          Available cloud scheme:
+!                          - CRTM_v2.3  [DEFAULT]
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       CloudCoeff_Format:     Format of the cloud optical properties data
+!                              Available options
+!                              - Binary  [DEFAULT]
+!                              - netCDF
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER(*)
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       CloudCoeff_File:    Name of the data file containing the cloud optical
 !                           properties data for scattering calculations.
 !                           Available datafiles:
-!                           - AerosolCoeff.bin  [DEFAULT]
+!                           - CloudCoeff.bin  [DEFAULT, Binary]
+!                           - CloudCoeff.nc     [netCDF-Classic/4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -275,8 +318,16 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       File_Path:          Character string specifying a file path for the
-!                           input data files. If not specified, the current
-!                           directory is the default.
+!                           input data files in Binary format. If not specified,
+!                           the current directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       NC_File_Path:       Character string specifying a file path for the
+!                           input data files in netCDF format. If not specified, 
+!                           the current directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -303,7 +354,13 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
-!                           all INFORMATION messages are to be output. If
+!                           all INFORMATION message!       File_Path:          Character string specifying a file path for the
+!                           input data files. If not specified, the current
+!                           directory is the default.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONALs are to be output. If
 !                           the passed Process_ID value agrees with this value
 !                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
@@ -331,32 +388,41 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_Init( &
-    Sensor_ID         , &  ! Input
-    ChannelInfo       , &  ! Output
-    CloudCoeff_File   , &  ! Optional input
-    AerosolCoeff_File , &  ! Optional input
-    EmisCoeff_File    , &  ! Optional input  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
-    IRwaterCoeff_File , &  ! Optional input
-    IRlandCoeff_File  , &  ! Optional input
-    IRsnowCoeff_File  , &  ! Optional input
-    IRiceCoeff_File   , &  ! Optional input
-    VISwaterCoeff_File, &  ! Optional input
-    VISlandCoeff_File , &  ! Optional input
-    VISsnowCoeff_File , &  ! Optional input
-    VISiceCoeff_File  , &  ! Optional input
-    MWwaterCoeff_File , &  ! Optional input
-    File_Path         , &  ! Optional input
-    Load_CloudCoeff   , &  ! Optional input
-    Load_AerosolCoeff , &  ! Optional input
-    Quiet             , &  ! Optional input
-    Process_ID        , &  ! Optional input
-    Output_Process_ID ) &  ! Optional input
+    Sensor_ID           , &  ! Input
+    ChannelInfo         , &  ! Output
+    Aerosol_Model       , &  ! Optional input
+    AerosolCoeff_Format , &  ! Optional input
+    AerosolCoeff_File   , &  ! Optional input
+    Cloud_Model         , &  ! Optional input
+    CloudCoeff_Format   , &  ! Optional input 
+    CloudCoeff_File     , &  ! Optional input
+    EmisCoeff_File      , &  ! Optional input  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
+    IRwaterCoeff_File   , &  ! Optional input
+    IRlandCoeff_File    , &  ! Optional input
+    IRsnowCoeff_File    , &  ! Optional input
+    IRiceCoeff_File     , &  ! Optional input
+    VISwaterCoeff_File  , &  ! Optional input
+    VISlandCoeff_File   , &  ! Optional input
+    VISsnowCoeff_File   , &  ! Optional input
+    VISiceCoeff_File    , &  ! Optional input
+    MWwaterCoeff_File   , &  ! Optional input
+    File_Path           , &  ! Optional input
+    NC_File_Path        , &  ! Optional input
+    Load_CloudCoeff     , &  ! Optional input
+    Load_AerosolCoeff   , &  ! Optional input
+    Quiet               , &  ! Optional input
+    Process_ID          , &  ! Optional input
+    Output_Process_ID )   &  ! Optional input
   RESULT( err_stat )
     ! Arguments
     CHARACTER(*)               , INTENT(IN)  :: Sensor_ID(:)
     TYPE(CRTM_ChannelInfo_type), INTENT(OUT) :: ChannelInfo(:)
-    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: Aerosol_Model
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_Format
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: AerosolCoeff_File
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: Cloud_Model
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_Format
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: CloudCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: EmisCoeff_File  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: IRlandCoeff_File
@@ -368,6 +434,7 @@ CONTAINS
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: VISiceCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: MWwaterCoeff_File
     CHARACTER(*),      OPTIONAL, INTENT(IN)  :: File_Path
+    CHARACTER(*),      OPTIONAL, INTENT(IN)  :: NC_File_Path
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_CloudCoeff
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Load_AerosolCoeff
     LOGICAL     ,      OPTIONAL, INTENT(IN)  :: Quiet
@@ -379,8 +446,12 @@ CONTAINS
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Init'
     ! Local variables
     CHARACTER(ML) :: msg, pid_msg
-    CHARACTER(SL) :: Default_CloudCoeff_File
+    CHARACTER(SL) :: Default_Aerosol_Model
+    CHARACTER(SL) :: Default_AerosolCoeff_Format
     CHARACTER(SL) :: Default_AerosolCoeff_File
+    CHARACTER(SL) :: Default_Cloud_Model
+    CHARACTER(SL) :: Default_CloudCoeff_Format
+    CHARACTER(SL) :: Default_CloudCoeff_File    
     CHARACTER(SL) :: Default_IRwaterCoeff_File
     CHARACTER(SL) :: Default_IRlandCoeff_File
     CHARACTER(SL) :: Default_IRsnowCoeff_File
@@ -390,6 +461,7 @@ CONTAINS
     CHARACTER(SL) :: Default_VISsnowCoeff_File
     CHARACTER(SL) :: Default_VISiceCoeff_File
     CHARACTER(SL) :: Default_MWwaterCoeff_File
+    
 
     INTEGER :: l, n, n_Sensors
     LOGICAL :: Local_Load_CloudCoeff
@@ -438,33 +510,39 @@ CONTAINS
 
     ! Specify sensor-independent coefficient filenames
     ! ...Default filenames
-    Default_CloudCoeff_File    = 'CloudCoeff.bin'
-    Default_AerosolCoeff_File  = 'AerosolCoeff.bin'
-    Default_IRwaterCoeff_File  = 'Nalli.IRwater.EmisCoeff.bin'
-    Default_IRlandCoeff_File   = 'NPOESS.IRland.EmisCoeff.bin'
-    Default_IRsnowCoeff_File   = 'NPOESS.IRsnow.EmisCoeff.bin'
-    Default_IRiceCoeff_File    = 'NPOESS.IRice.EmisCoeff.bin'
-    Default_VISwaterCoeff_File = 'NPOESS.VISwater.EmisCoeff.bin'
-    Default_VISlandCoeff_File  = 'NPOESS.VISland.EmisCoeff.bin'
-    Default_VISsnowCoeff_File  = 'NPOESS.VISsnow.EmisCoeff.bin'
-    Default_VISiceCoeff_File   = 'NPOESS.VISice.EmisCoeff.bin'
-    Default_MWwaterCoeff_File  = 'FASTEM6.MWwater.EmisCoeff.bin'
+    Default_Aerosol_Model       = 'CRTM_v2.3'
+    Default_AerosolCoeff_Format = 'Binary'
+    Default_AerosolCoeff_File   = 'AerosolCoeff.bin'
+    Default_Cloud_Model         = 'CRTM_v2.3'
+    Default_CloudCoeff_Format   = 'Binary'
+    Default_CloudCoeff_File     = 'CloudCoeff.bin'
+    Default_IRwaterCoeff_File   = 'Nalli.IRwater.EmisCoeff.bin'
+    Default_IRlandCoeff_File    = 'NPOESS.IRland.EmisCoeff.bin'
+    Default_IRsnowCoeff_File    = 'NPOESS.IRsnow.EmisCoeff.bin'
+    Default_IRiceCoeff_File     = 'NPOESS.IRice.EmisCoeff.bin'
+    Default_VISwaterCoeff_File  = 'NPOESS.VISwater.EmisCoeff.bin'
+    Default_VISlandCoeff_File   = 'NPOESS.VISland.EmisCoeff.bin'
+    Default_VISsnowCoeff_File   = 'NPOESS.VISsnow.EmisCoeff.bin'
+    Default_VISiceCoeff_File    = 'NPOESS.VISice.EmisCoeff.bin'
+    Default_MWwaterCoeff_File   = 'FASTEM6.MWwater.EmisCoeff.bin'
     ! ...Were other filenames specified?
-    IF ( PRESENT(CloudCoeff_File   ) ) Default_CloudCoeff_File    = TRIM(ADJUSTL(CloudCoeff_File))
-    IF ( PRESENT(AerosolCoeff_File ) ) Default_AerosolCoeff_File  = TRIM(ADJUSTL(AerosolCoeff_File))
-    IF ( PRESENT(IRwaterCoeff_File ) ) Default_IRwaterCoeff_File  = TRIM(ADJUSTL(IRwaterCoeff_File))
-    IF ( PRESENT(IRlandCoeff_File  ) ) Default_IRlandCoeff_File   = TRIM(ADJUSTL(IRlandCoeff_File))
-    IF ( PRESENT(IRsnowCoeff_File  ) ) Default_IRsnowCoeff_File   = TRIM(ADJUSTL(IRsnowCoeff_File))
-    IF ( PRESENT(IRiceCoeff_File   ) ) Default_IRiceCoeff_File    = TRIM(ADJUSTL(IRiceCoeff_File))
-    IF ( PRESENT(VISwaterCoeff_File) ) Default_VISwaterCoeff_File = TRIM(ADJUSTL(VISwaterCoeff_File))
-    IF ( PRESENT(VISlandCoeff_File ) ) Default_VISlandCoeff_File  = TRIM(ADJUSTL(VISlandCoeff_File))
-    IF ( PRESENT(VISsnowCoeff_File ) ) Default_VISsnowCoeff_File  = TRIM(ADJUSTL(VISsnowCoeff_File))
-    IF ( PRESENT(VISiceCoeff_File  ) ) Default_VISiceCoeff_File   = TRIM(ADJUSTL(VISiceCoeff_File))
-    IF ( PRESENT(MWwaterCoeff_File ) ) Default_MWwaterCoeff_File  = TRIM(ADJUSTL(MWwaterCoeff_File))
+    IF ( PRESENT(Aerosol_Model       ) ) Default_Aerosol_Model       = TRIM(ADJUSTL(Aerosol_Model))
+    IF ( PRESENT(AerosolCoeff_Format ) ) Default_AerosolCoeff_Format = TRIM(ADJUSTL(AerosolCoeff_Format))
+    IF ( PRESENT(AerosolCoeff_File   ) ) Default_AerosolCoeff_File   = TRIM(ADJUSTL(AerosolCoeff_File))
+    IF ( PRESENT(Cloud_Model         ) ) Default_Cloud_Model         = TRIM(ADJUSTL(Cloud_Model))
+    IF ( PRESENT(CloudCoeff_Format   ) ) Default_CloudCoeff_Format   = TRIM(ADJUSTL(CloudCoeff_Format))
+    IF ( PRESENT(CloudCoeff_File     ) ) Default_CloudCoeff_File     = TRIM(ADJUSTL(CloudCoeff_File))
+    IF ( PRESENT(IRwaterCoeff_File   ) ) Default_IRwaterCoeff_File   = TRIM(ADJUSTL(IRwaterCoeff_File))
+    IF ( PRESENT(IRlandCoeff_File    ) ) Default_IRlandCoeff_File    = TRIM(ADJUSTL(IRlandCoeff_File))
+    IF ( PRESENT(IRsnowCoeff_File    ) ) Default_IRsnowCoeff_File    = TRIM(ADJUSTL(IRsnowCoeff_File))
+    IF ( PRESENT(IRiceCoeff_File     ) ) Default_IRiceCoeff_File     = TRIM(ADJUSTL(IRiceCoeff_File))
+    IF ( PRESENT(VISwaterCoeff_File  ) ) Default_VISwaterCoeff_File  = TRIM(ADJUSTL(VISwaterCoeff_File))
+    IF ( PRESENT(VISlandCoeff_File   ) ) Default_VISlandCoeff_File   = TRIM(ADJUSTL(VISlandCoeff_File))
+    IF ( PRESENT(VISsnowCoeff_File   ) ) Default_VISsnowCoeff_File   = TRIM(ADJUSTL(VISsnowCoeff_File))
+    IF ( PRESENT(VISiceCoeff_File    ) ) Default_VISiceCoeff_File    = TRIM(ADJUSTL(VISiceCoeff_File))
+    IF ( PRESENT(MWwaterCoeff_File   ) ) Default_MWwaterCoeff_File   = TRIM(ADJUSTL(MWwaterCoeff_File))
     ! ...Was a path specified?
     IF ( PRESENT(File_Path) ) THEN
-      Default_CloudCoeff_File    = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
-      Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
       Default_IRwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRwaterCoeff_File)
       Default_IRlandCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRlandCoeff_File)
       Default_IRsnowCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_IRsnowCoeff_File)
@@ -474,6 +552,22 @@ CONTAINS
       Default_VISsnowCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISsnowCoeff_File)
       Default_VISiceCoeff_File   = TRIM(ADJUSTL(File_Path)) // TRIM(Default_VISiceCoeff_File)
       Default_MWwaterCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_MWwaterCoeff_File)
+    END IF
+    ! ...Was aerosol or cloud lookup table in netCDF or Binary format?
+    IF ( PRESENT(AerosolCoeff_Format) .AND. AerosolCoeff_Format == 'netCDF' ) THEN
+      IF ( PRESENT(NC_File_Path) ) THEN
+        Default_AerosolCoeff_File  = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_AerosolCoeff_File)
+      END IF
+    ELSE IF ( PRESENT(File_Path) ) THEN
+        Default_AerosolCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_AerosolCoeff_File)
+    END IF
+
+    IF ( PRESENT(CloudCoeff_Format) .AND. CloudCoeff_Format == 'netCDF' ) THEN
+      IF ( PRESENT(NC_File_Path) ) THEN
+        Default_CloudCoeff_File    = TRIM(ADJUSTL(NC_File_Path)) // TRIM(Default_CloudCoeff_File)
+      END IF
+    ELSE IF ( PRESENT(File_Path) ) THEN
+        Default_CloudCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
     END IF
 
 
@@ -505,8 +599,13 @@ CONTAINS
 
     ! Load the cloud coefficients
     IF ( Local_Load_CloudCoeff ) THEN
+      WRITE(*, '("Load the cloud coefficients: ") ')
+      WRITE(*, '("...Cloud model: ", a) ') TRIM(Default_Cloud_Model)
+      WRITE(*, '("...CloudCoeff file: ", a) ') TRIM(Default_CloudCoeff_File)
       err_stat = CRTM_CloudCoeff_Load( &
-                   Default_CloudCoeff_File, &
+                   Default_Cloud_Model                  , &
+                   Default_CloudCoeff_Format            , &            
+                   Default_CloudCoeff_File              , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )
@@ -520,8 +619,13 @@ CONTAINS
 
     ! Load the aerosol coefficients
     IF ( Local_Load_AerosolCoeff ) THEN
+      WRITE(*, '("Load the aerosol coefficients: ") ')
+      WRITE(*, '("...Aerosol model: ", a) ') TRIM(Default_Aerosol_Model)
+      WRITE(*, '("...AerosolCoeff file: ", a) ') TRIM(Default_AerosolCoeff_File)
       err_stat = CRTM_AerosolCoeff_Load( &
-                   Default_AerosolCoeff_File, &
+                   Default_Aerosol_Model                , &
+                   Default_AerosolCoeff_Format          , &
+                   Default_AerosolCoeff_File            , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
                    Output_Process_ID = Output_Process_ID  )

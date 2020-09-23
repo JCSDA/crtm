@@ -27,8 +27,8 @@ MODULE CloudCoeff_netCDF_IO
                                CloudCoeff_Create       , &
                                CloudCoeff_Inspect      , &
                                CloudCoeff_ValidRelease , &
-                               CloudCoeff_Info         , &
-                               CloudCoeff_DefineVersion
+                               CloudCoeff_Info
+                               !CloudCoeff_DefineVersion
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
