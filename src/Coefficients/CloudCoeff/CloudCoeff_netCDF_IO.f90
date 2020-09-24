@@ -43,14 +43,12 @@ MODULE CloudCoeff_netCDF_IO
   PUBLIC :: CloudCoeff_netCDF_InquireFile
   PUBLIC :: CloudCoeff_netCDF_ReadFile
   PUBLIC :: CloudCoeff_netCDF_WriteFile
-  PUBLIC :: CloudCoeff_netCDF_IOVersion
+  !PUBLIC :: CloudCoeff_netCDF_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! Module version
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
@@ -1485,10 +1483,10 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE CloudCoeff_netCDF_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE CloudCoeff_netCDF_IOVersion
+!  SUBROUTINE CloudCoeff_netCDF_IOVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    Id = MODULE_VERSION_ID
+!  END SUBROUTINE CloudCoeff_netCDF_IOVersion
 
 
 !##################################################################################
@@ -1538,11 +1536,11 @@ CONTAINS
 
     ! Mandatory global attributes
     ! ...Software ID
-    GAttName = WRITE_MODULE_HISTORY_GATTNAME
-    NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),MODULE_VERSION_ID )
-    IF ( NF90_Status /= NF90_NOERR ) THEN
-      CALL WriteGAtts_Cleanup(); RETURN
-    END IF
+    !GAttName = WRITE_MODULE_HISTORY_GATTNAME
+    !NF90_Status = NF90_PUT_ATT( FileId,NF90_GLOBAL,TRIM(GAttName),MODULE_VERSION_ID )
+    !IF ( NF90_Status /= NF90_NOERR ) THEN
+    !  CALL WriteGAtts_Cleanup(); RETURN
+    !END IF
     ! ...Creation date
     CALL DATE_AND_TIME( cdate, ctime, czone )
     GAttName = CREATION_DATE_AND_TIME_GATTNAME
