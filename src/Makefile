@@ -18,7 +18,7 @@ include $(BUILD_DIR)/$(LIBSRC_DIR)/make.filelist
 MAKE_INC_FILES = make.rules
 
 # Sensor ids to link for build check target
-CHECK_SENSOR_ID_LIST = cris399_npp atms_npp
+CHECK_SENSOR_ID_LIST = cris399_npp atms_npp v.abi_g17
 
 
 # Main target
@@ -52,6 +52,8 @@ remove_links: remove_coeff_links
 create_coeff_links:
 	@echo
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
+	  link_coeffs.sh -a -t big-endian $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
+	  link_coeffs.sh -a -t little-endian $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) && \
 	  link_coeffs.sh -t big-endian $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
 	  link_coeffs.sh -t little-endian $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) && \
           link_coeffs.sh -t netcdf $(CRTM_FIXFILE_ROOT) netcdf $(CHECK_SENSOR_ID_LIST) 

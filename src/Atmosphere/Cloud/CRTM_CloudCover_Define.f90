@@ -456,7 +456,7 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                              
+    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-6_fp                              
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD                                 
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -515,7 +515,12 @@ CONTAINS
           ! scaled cloud water content
           atm%Cloud(n)%Water_Content(1:n_layers) = atm%Cloud(n)%Water_Content(1:n_layers) / self%Total_Cloud_Cover 
        END DO
-    END IF
+    ELSE
+       DO n = 1, n_clouds 
+          ! scaled cloud water content
+          atm%Cloud(n)%Water_Content(1:n_layers) = ZERO
+       END DO
+    end IF
 
   CONTAINS
 
@@ -718,7 +723,7 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_TL'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                               
+    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-6_fp
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD      
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -1025,7 +1030,7 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_AD'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                           
+    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-6_fp                           
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD
 
     ! Local variables
@@ -1106,8 +1111,7 @@ CONTAINS
        ENDDO
 !<<test1
 
-
-     END IF
+    end IF
 
     ! Compute the cloud cover
     SELECT CASE (self_AD%Overlap)
