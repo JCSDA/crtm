@@ -566,7 +566,7 @@ CONTAINS
 
 
       ! Setup for fractional cloud coverage
-!!$      IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+      IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
       
         ! Compute cloudcover
         Error_Status = CloudCover%Compute_CloudCover(atm, Overlap = opt%Overlap_Id)
@@ -596,7 +596,7 @@ CONTAINS
         SfcOptics_Clear%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
         ! ...CLEAR SKY average surface skin temperature for multi-surface types
         CALL CRTM_Compute_SurfaceT( Surface(m), SfcOptics_Clear )
-!!$     END IF
+      END IF
 
 
       ! Average surface skin temperature for multi-surface types
@@ -746,9 +746,7 @@ CONTAINS
           IF ( SC(SensorIndex)%Solar_Irradiance(ChannelIndex) > ZERO .AND. &
                Source_ZA < MAX_SOURCE_ZENITH_ANGLE ) THEN
             RTV%Solar_Flag_true = .TRUE.
-!!$            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) then 
-               RTV_Clear%Solar_Flag_true = .TRUE.
-!!$            end IF
+            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) RTV_Clear%Solar_Flag_true = .TRUE.
           END IF
           ! ...Visible channel with solar radiation
           IF ( SpcCoeff_IsVisibleSensor(SC(SensorIndex)) .AND. RTV%Solar_Flag_true ) THEN
@@ -778,15 +776,15 @@ CONTAINS
           ELSE
             RTV%Visible_Flag_true = .FALSE.
             RTV%n_Azi = 0
-!!$            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
               RTV_Clear%Visible_Flag_true = .FALSE.
               RTV_Clear%n_Azi = 0
-!!$            END IF
+            END IF
           END IF
 
 
           ! Copy the clear-sky AtmOptics
-!!$          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
             Error_Status = CRTM_AtmOptics_NoScatterCopy( AtmOptics, AtmOptics_Clear )
             IF ( Error_Status /= SUCCESS ) THEN
               WRITE( Message,'("Error copying CLEAR SKY AtmOptics for ",a,&
@@ -795,7 +793,7 @@ CONTAINS
               CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
               RETURN
             END IF
-!!$          END IF
+          END IF
 
 
           ! Compute the cloud particle absorption/scattering properties
@@ -845,10 +843,10 @@ CONTAINS
           CALL CRTM_Compute_Transmittance(AtmOptics,transmittance)
           SfcOptics%Transmittance = transmittance
           ! ...Clear sky for fractional cloud cover
-!!$          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
-          CALL CRTM_Compute_Transmittance(AtmOptics_Clear,transmittance_clear)
-          SfcOptics_Clear%Transmittance = transmittance_clear
-!!$          END IF
+          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+            CALL CRTM_Compute_Transmittance(AtmOptics_Clear,transmittance_clear)
+            SfcOptics_Clear%Transmittance = transmittance_clear
+          END IF
 
 
           ! Fill the SfcOptics structures for the optional emissivity input case.
@@ -865,7 +863,7 @@ CONTAINS
               SfcOptics%Direct_Reflectivity(1,1) = SfcOptics%Reflectivity(1,1,1,1)
             END IF
             ! ...Repeat for fractional clear-sky case
-!!$            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
               SfcOptics_Clear%Compute = .FALSE.
               SfcOptics_Clear%Emissivity(1,1)       = Opt%Emissivity(ln)
               SfcOptics_Clear%Reflectivity(1,1,1,1) = ONE - Opt%Emissivity(ln)
@@ -874,7 +872,7 @@ CONTAINS
               ELSE
                 SfcOptics_Clear%Direct_Reflectivity(1,1) = SfcOptics%Reflectivity(1,1,1,1)
               END IF
-!!$            END IF
+            END IF
           END IF
 
 
@@ -908,8 +906,9 @@ CONTAINS
               RETURN
             END IF
 
+
             ! Repeat clear sky for fractionally cloudy atmospheres
-!!$            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+            IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
               RTV_Clear%mth_Azi = mth_Azi
               SfcOptics_Clear%mth_Azi = mth_Azi
               Error_Status = CRTM_Compute_RTSolution( &
@@ -929,19 +928,19 @@ CONTAINS
                 CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
                 RETURN
               END IF
-!!$            END IF
+            END IF
 
           END DO Azimuth_Fourier_Loop
 
 
           ! Combine cloudy and clear radiances for fractional cloud coverage
-!!$          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
             RTSolution(ln,m)%Radiance = &
                 ((ONE - CloudCover%Total_Cloud_Cover) * RTSolution_Clear%Radiance) + &
                 (CloudCover%Total_Cloud_Cover * RTSolution(ln,m)%Radiance)
             ! ...Save the cloud cover in the output structure
             RTSolution(ln,m)%Total_Cloud_Cover = CloudCover%Total_Cloud_Cover
-!!$          END IF
+          END IF
 
 
           ! The radiance post-processing
@@ -952,7 +951,7 @@ CONTAINS
 
 
           ! Perform clear-sky post-processing
-!!$          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
+          IF ( CRTM_Atmosphere_IsFractional(cloud_coverage_flag) ) THEN
             CALL Post_Process_RTSolution(RTSolution_Clear, &
                                          NLTE_Predictor, &
                                          ChannelIndex, SensorIndex, &
@@ -960,12 +959,7 @@ CONTAINS
             ! ...Save the results in the output structure
             RTSolution(ln,m)%R_Clear  = RTSolution_Clear%Radiance
             RTSolution(ln,m)%Tb_Clear = RTSolution_Clear%Brightness_Temperature
-          
-
-            print '(A,2I5, 4G12.4)', 'TB clear:', l, m, RTSolution(ln,m)%Tb_Clear, RTSolution(ln,m)%Brightness_Temperature,  &
-                 RTSolution(ln,m)%Tb_Clear - RTSolution(ln,m)%Brightness_Temperature, RTSolution(ln,m)%Total_Cloud_Cover
-
-!!$          END IF
+          END IF
 
         END DO Channel_Loop
         ! Clean up created items intenal to sensor loop

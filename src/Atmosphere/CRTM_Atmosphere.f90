@@ -157,25 +157,39 @@ CONTAINS
     ! Local variables
     LOGICAL :: cloudy_layer_mask(atm%n_Layers)
     INTEGER :: idx(atm%n_Layers)
-    INTEGER :: n, nc, k, n_layers
-
-    n_layers = atm%n_Layers
+    INTEGER :: n, nc, k
     
     ! Default clear
-    coverage_flag = FRACTIONAL  !** changed from default clear to default fractional
+    coverage_flag = CLEAR
     IF ( atm%n_Clouds == 0 ) RETURN
  
-!!$    ! Check each cloud separately
-!!$    Cloud_Loop: DO n = 1, atm%n_Clouds
-!!$       ! Check for ANY fractional coverage
-!!$       DO k = 1,n_layers
-!!$          IF (atm%Cloud(n)%Water_Content(k) > WATER_CONTENT_THRESHOLD .AND. &
-!!$               atm%cloud_fraction(k) > MIN_COVERAGE_THRESHOLD) THEN   !** get the layers with water
-!!$             coverage_flag = FRACTIONAL
-!!$             RETURN  !** once one cloud layer is fractional, leave the subroutine. 
-!!$          END IF
-!!$       END DO
-!!$    END DO Cloud_Loop
+    ! Check each cloud separately
+    Cloud_Loop: DO n = 1, atm%n_Clouds
+    
+      ! Determine if there are ANY cloudy layers
+      cloudy_layer_mask = atm%Cloud(n)%Water_Content > WATER_CONTENT_THRESHOLD
+      nc = COUNT(cloudy_layer_mask)
+      IF ( nc == 0 ) CYCLE Cloud_Loop
+
+      ! Get the indices of those cloudy layers
+      idx(1:nc) = PACK([(k, k=1,atm%Cloud(n)%n_Layers)], cloudy_layer_mask)
+
+      ! Check for ANY fractional coverage
+      ! ??? How to do this without the loop ???
+      DO k = 1, nc
+!       IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) .AND. &
+!            (atm%Cloud_Fraction(idx(k)) < MAX_COVERAGE_THRESHOLD) ) THEN
+        IF ( (atm%Cloud_Fraction(idx(k)) > MIN_COVERAGE_THRESHOLD) ) THEN       
+          coverage_flag = FRACTIONAL
+          RETURN
+        END IF
+      END DO
+
+!     ! Check for ALL totally clear or totally cloudy
+!     IF ( ALL(atm%Cloud_Fraction(idx(1:nc)) < MIN_COVERAGE_THRESHOLD) .OR. &
+!          ALL(atm%Cloud_Fraction(idx(1:nc)) > MAX_COVERAGE_THRESHOLD) ) coverage_flag = OVERCAST                  
+
+    END DO Cloud_Loop
     
   END FUNCTION CRTM_Atmosphere_Coverage
 
