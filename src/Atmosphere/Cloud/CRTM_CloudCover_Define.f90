@@ -25,11 +25,12 @@ MODULE CRTM_CloudCover_Define
                                     OPERATOR(.EqualTo.), &
                                     Compares_Within_Tolerance
   USE CRTM_Parameters       , ONLY: ZERO, ONE, &
+                                    MIN_COVERAGE_THRESHOLD, &
                                     WATER_CONTENT_THRESHOLD
   USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type, &
                                     CRTM_Atmosphere_Associated
   USE CRTM_Cloud_Define     , ONLY: OPERATOR(==), &
-                                    OPERATOR(+), &
+                                    OPERATOR(+),  &
                                     CRTM_Cloud_type, &
                                     CRTM_Cloud_Associated, &
                                     CRTM_Cloud_Zero
@@ -456,7 +457,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                              
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD                                 
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -718,7 +718,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_TL'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                               
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD      
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -1025,7 +1024,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_AD'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                           
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD
 
     ! Local variables

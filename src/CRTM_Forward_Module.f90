@@ -26,6 +26,7 @@ MODULE CRTM_Forward_Module
                                         MAX_SOURCE_ZENITH_ANGLE, &
                                         MAX_N_STREAMS, &
                                         AIRCRAFT_PRESSURE_THRESHOLD, &
+                                        MIN_COVERAGE_THRESHOLD, &
                                         SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsVisibleSensor, &
@@ -229,7 +230,7 @@ CONTAINS
     Options    ) &  ! Optional input, M
   RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)     ! M
+    TYPE(CRTM_Atmosphere_type),        INTENT(IN OUT) :: Atmosphere(:)     ! M
     TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)        ! M
     TYPE(CRTM_Geometry_type),          INTENT(IN)     :: Geometry(:)       ! M
     TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! n_Sensors
@@ -244,7 +245,7 @@ CONTAINS
     LOGICAL :: Options_Present
     INTEGER :: n_Sensors
     INTEGER :: n_Channels
-    INTEGER :: m, n_Profiles
+    INTEGER :: m, n_Profiles, nc
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default and use values
@@ -316,13 +317,26 @@ CONTAINS
 !JR First loop just checks validity of Atmosphere(m) contents
 !$OMP PARALLEL DO PRIVATE (Message)
     Profile_Loop1: DO m = 1, n_Profiles
-      ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
-      IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE
-         WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
-                &"for the cloudy case profile #",i0)' ) m
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         CYCLE Profile_Loop1
+       ! Fix for cloud_Fraction < MIN_COVERAGE_THRESHOLD
+       IF ( Atmosphere(m)%n_Clouds > 0) then
+          !** clear clouds where cloud_fraction < threshold
+          do nc = 1, Atmosphere(m)%n_clouds
+             where (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+                Atmosphere(m)%Cloud_Fraction(:) = ZERO
+                Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
+                Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
+             end where
+          end do
+ 
+
+         ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
+         IF( .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
+            Error_Status = FAILURE
+            WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
+                 &"for the cloudy case profile #",i0)' ) m
+            CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+            CYCLE Profile_Loop1
+         END IF
       END IF
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
          Error_Status = FAILURE
@@ -394,7 +408,7 @@ CONTAINS
       INTEGER :: n, l    ! sensor index, channel index
       INTEGER :: SensorIndex
       INTEGER :: ChannelIndex
-      INTEGER :: ln
+      INTEGER :: ln, nc
       INTEGER :: n_Full_Streams, mth_Azi
       INTEGER :: cloud_coverage_flag
       REAL(fp) :: Source_ZA
@@ -962,14 +976,11 @@ CONTAINS
           END IF
 
         END DO Channel_Loop
-        ! Clean up created items intenal to sensor loop
-        CALL CRTM_Predictor_Destroy( Predictor )
-        CALL RTV_Destroy( RTV )
-        
-     END DO Sensor_Loop
+      END DO Sensor_Loop
 
 
       ! Clean up
+      CALL CRTM_Predictor_Destroy( Predictor )
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
       CALL CRTM_AtmOptics_Destroy( AtmOptics_Clear )
       CALL CRTM_SfcOptics_Destroy( SfcOptics )
@@ -980,7 +991,7 @@ CONTAINS
       CALL AOvar_Destroy( AOvar )
       CALL CSvar_Destroy( CSvar )
       CALL ASvar_Destroy( ASvar )
-
+      CALL RTV_Destroy( RTV )
     END FUNCTION profile_solution
 
 
