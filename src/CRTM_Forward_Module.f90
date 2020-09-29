@@ -975,6 +975,12 @@ CONTAINS
             RTSolution(ln,m)%Tb_Clear = RTSolution_Clear%Brightness_Temperature
           END IF
 
+          !** output Tb_clear in the case of n_clouds = 0  (note this is NOT aerosol cleared)
+          IF (Atm%n_Clouds == 0) THEN
+             RTSolution%Tb_clear = RTSolution%Brightness_Temperature
+             RTSolution%R_clear  = RTSolution%Radiance
+          END IF
+
         END DO Channel_Loop
       END DO Sensor_Loop
 
