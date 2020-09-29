@@ -976,9 +976,10 @@ CONTAINS
           END IF
 
           !** output Tb_clear in the case of n_clouds = 0  (note this is NOT aerosol cleared)
-          IF (Atm%n_Clouds == 0) THEN
-             RTSolution%Tb_clear = RTSolution%Brightness_Temperature
-             RTSolution%R_clear  = RTSolution%Radiance
+          IF (Atm%n_Clouds == 0 .or. CloudCover%Total_Cloud_Cover < MIN_COVERAGE_THRESHOLD) THEN
+             print *, 'ture:', ln, m, RTSolution(ln,m)%Tb_clear, RTSolution(ln,m)%Brightness_Temperature
+             RTSolution(ln,m)%Tb_clear = RTSolution(ln,m)%Brightness_Temperature
+             RTSolution(ln,m)%R_clear  = RTSolution(ln,m)%Radiance
           END IF
 
         END DO Channel_Loop
