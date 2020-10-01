@@ -10,8 +10,8 @@
 !
 
 MODULE CRTM_Adjoint_Module
-
-
+  
+  
   ! ------------
   ! Module usage
   ! ------------
@@ -26,6 +26,7 @@ MODULE CRTM_Adjoint_Module
                                         MAX_N_AZIMUTH_FOURIER  , &
                                         MAX_SOURCE_ZENITH_ANGLE, &
                                         MAX_N_STREAMS          , &
+                                        MIN_COVERAGE_THRESHOLD , &
                                         SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsInfraredSensor , &
@@ -279,20 +280,20 @@ CONTAINS
 !
 !:sdoc-:
 !--------------------------------------------------------------------------------
-
+  
   FUNCTION CRTM_Adjoint( &
-    Atmosphere   , &  ! FWD Input, M
-    Surface      , &  ! FWD Input, M
-    RTSolution_AD, &  ! AD  Input, L x M
-    Geometry     , &  ! Input, M
-    ChannelInfo  , &  ! Input, Scalar
-    Atmosphere_AD, &  ! AD  Output, M
-    Surface_AD   , &  ! AD  Output, M
-    RTSolution   , &  ! FWD Output, L x M
-    Options      ) &  ! Optional FWD input,  M
+       Atmosphere   ,    &  ! FWD Input, M
+       Surface      ,    &  ! FWD Input, M
+       RTSolution_AD,    &  ! AD  Input, L x M
+       Geometry     ,    &  ! Input, M
+       ChannelInfo  ,    &  ! Input, Scalar
+       Atmosphere_AD,    &  ! AD  Output, M
+       Surface_AD   ,    &  ! AD  Output, M
+       RTSolution   ,    &  ! FWD Output, L x M
+       Options      )    &  ! Optional FWD input,  M
   RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)      ! M
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere(:)      ! M
     TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)         ! M
     TYPE(CRTM_RTSolution_type)       , INTENT(IN OUT) :: RTSolution_AD(:,:) ! L x M
     TYPE(CRTM_Geometry_type)         , INTENT(IN)     :: Geometry(:)        ! M
@@ -315,7 +316,7 @@ CONTAINS
     INTEGER :: n, n_Sensors,  SensorIndex
     INTEGER :: l, n_Channels, ChannelIndex
     INTEGER :: m, n_Profiles
-    INTEGER :: ln
+    INTEGER :: ln, nc
     INTEGER :: n_Full_Streams, mth_Azi
     INTEGER :: cloud_coverage_flag
     REAL(fp) :: Source_ZA
@@ -348,7 +349,7 @@ CONTAINS
     TYPE(AOvar_type)      :: AOvar  ! AtmOptics
     TYPE(RTV_type)        :: RTV    ! RTSolution
     ! NLTE correction term predictors
-    TYPE(NLTE_Predictor_type) :: NLTE_Predictor, NLTE_Predictor_AD
+    TYPE(NLTE_Predictor_type)  :: NLTE_Predictor, NLTE_Predictor_AD
     ! Cloud cover object
     TYPE(CRTM_CloudCover_type) :: CloudCover, CloudCover_AD
 
@@ -358,26 +359,26 @@ CONTAINS
     ! SET UP
     ! ------
     Error_Status = SUCCESS
-
-
+    
+    
     ! If no sensors or channels, simply return
     n_Sensors  = SIZE(ChannelInfo)
     n_Channels = SUM(CRTM_ChannelInfo_n_Channels(ChannelInfo))
     IF ( n_Sensors == 0 .OR. n_Channels == 0 ) RETURN
-
-
+    
+    
     ! Check spectral arrays
     IF ( SIZE(RTSolution   ,DIM=1) < n_Channels .OR. &
          SIZE(RTSolution_AD,DIM=1) < n_Channels      ) THEN
-      Error_Status = FAILURE
-      WRITE( Message,'("Output RTSolution structure arrays too small (",i0," and ",i0,&
-             &") to hold results for the number of requested channels (",i0,")")') &
-             SIZE(RTSolution,DIM=1), SIZE(RTSolution_AD,DIM=1), n_Channels
-      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-      RETURN
+       Error_Status = FAILURE
+       WRITE( Message,'("Output RTSolution structure arrays too small (",i0," and ",i0,&
+            &") to hold results for the number of requested channels (",i0,")")') &
+            SIZE(RTSolution,DIM=1), SIZE(RTSolution_AD,DIM=1), n_Channels
+       CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+       RETURN
     END IF
-
-
+    
+    
     ! Check the number of profiles
     ! ...Number of atmospheric profiles.
     n_Profiles = SIZE(Atmosphere)
@@ -388,37 +389,37 @@ CONTAINS
          SIZE(Atmosphere_AD)       /= n_Profiles .OR. &
          SIZE(Surface_AD)          /= n_Profiles .OR. &
          SIZE(RTSolution,   DIM=2) /= n_Profiles      ) THEN
-      Error_Status = FAILURE
-      Message = 'Inconsistent profile dimensionality for input arguments.'
-      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-      RETURN
+       Error_Status = FAILURE
+       Message = 'Inconsistent profile dimensionality for input arguments.'
+       CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+       RETURN
     END IF
     ! ...Check the profile dimensionality of the other optional arguments
     Options_Present = .FALSE.
     IF ( PRESENT(Options) ) THEN
-      Options_Present = .TRUE.
-      IF ( SIZE(Options) /= n_Profiles ) THEN
-        Error_Status = FAILURE
-        Message = 'Inconsistent profile dimensionality for Options optional input argument.'
-        CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-        RETURN
-      END IF
+       Options_Present = .TRUE.
+       IF ( SIZE(Options) /= n_Profiles ) THEN
+          Error_Status = FAILURE
+          Message = 'Inconsistent profile dimensionality for Options optional input argument.'
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+          RETURN
+       END IF
     END IF
 
 
     ! Reinitialise the output RTSolution
     CALL CRTM_RTSolution_Zero(RTSolution)
-
-
+    
+    
     ! Allocate the profile independent surface optics local structure
     CALL CRTM_SfcOptics_Create( SfcOptics   , MAX_N_ANGLES, MAX_N_STOKES )
     CALL CRTM_SfcOptics_Create( SfcOptics_AD, MAX_N_ANGLES, MAX_N_STOKES )
     IF ( (.NOT. CRTM_SfcOptics_Associated(SfcOptics   )) .OR. &
          (.NOT. CRTM_SfcOptics_Associated(SfcOptics_AD)) ) THEN
-      Error_Status = FAILURE
-      Message = 'Error allocating SfcOptics data structures'
-      CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-      RETURN
+       Error_Status = FAILURE
+       Message = 'Error allocating SfcOptics data structures'
+       CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+       RETURN
     END IF
 
 
@@ -426,51 +427,63 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-
-
-      ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
-      IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE
-         WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
-                &"for the cloudy case profile #",i0)' ) m
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         RETURN
-      END IF
-      IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE
-         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
-                &"for the aerosol case profile #",i0)' ) m
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         RETURN
-      END IF
-
-
-      ! Copy over forward "non-variable" inputs to adjoint outputs
-      CALL CRTM_Atmosphere_NonVariableCopy( Atmosphere(m), Atmosphere_AD(m) )
-      CALL CRTM_Surface_NonVariableCopy( Surface(m), Surface_AD(m) )
-
-
-      ! Check the optional Options structure argument
-      Opt = Default_Options
-      IF ( Options_Present ) THEN
-        Opt = Options(m)
-        ! Copy over ancillary input
-        AncillaryInput%SSU    = Options(m)%SSU
-        AncillaryInput%Zeeman = Options(m)%Zeeman
-      END IF
-      ! ...Assign the option specific SfcOptics input
-      SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
-
-      ! Check whether to skip this profile
-      IF ( Opt%Skip_Profile ) CYCLE Profile_Loop
-
-      ! Check the input data if required
-      IF ( Opt%Check_Input ) THEN
-        ! ...Mandatory inputs
-        Atmosphere_Invalid = .NOT. CRTM_Atmosphere_IsValid( Atmosphere(m) )
-        Surface_Invalid    = .NOT. CRTM_Surface_IsValid( Surface(m) )
-        Geometry_Invalid   = .NOT. CRTM_Geometry_IsValid( Geometry(m) )
-        IF ( Atmosphere_Invalid .OR. Surface_Invalid .OR. Geometry_Invalid ) THEN
+       
+       
+       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
+       IF ( Atmosphere(m)%n_Clouds > 0) THEN
+          !** clear clouds where cloud_fraction < threshold
+          DO nc = 1, Atmosphere(m)%n_clouds
+             WHERE (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+                Atmosphere(m)%Cloud_Fraction(:) = ZERO
+                Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
+                Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
+             END WHERE
+          END DO
+          
+          
+          IF(.NOT. CRTM_CloudCoeff_IsLoaded() )THEN
+             Error_Status = FAILURE
+             WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
+                  &"for the cloudy case profile #",i0)' ) m
+             CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+             RETURN
+          END IF
+       END IF
+       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
+          Error_Status = FAILURE
+          WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
+               &"for the aerosol case profile #",i0)' ) m
+          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+          RETURN
+       END IF
+       
+       
+       ! Copy over forward "non-variable" inputs to adjoint outputs
+       CALL CRTM_Atmosphere_NonVariableCopy( Atmosphere(m), Atmosphere_AD(m) )
+       CALL CRTM_Surface_NonVariableCopy( Surface(m), Surface_AD(m) )
+       
+       
+       ! Check the optional Options structure argument
+       Opt = Default_Options
+       IF ( Options_Present ) THEN
+          Opt = Options(m)
+          ! Copy over ancillary input
+          AncillaryInput%SSU    = Options(m)%SSU
+          AncillaryInput%Zeeman = Options(m)%Zeeman
+       END IF
+       ! ...Assign the option specific SfcOptics input
+       SfcOptics%Use_New_MWSSEM = .NOT. Opt%Use_Old_MWSSEM
+       
+       ! Check whether to skip this profile
+       IF ( Opt%Skip_Profile ) CYCLE Profile_Loop
+       
+       ! Check the input data if required
+       IF ( Opt%Check_Input ) THEN
+          ! ...Mandatory inputs
+          Atmosphere_Invalid = .NOT. CRTM_Atmosphere_IsValid( Atmosphere(m) )
+          Surface_Invalid    = .NOT. CRTM_Surface_IsValid( Surface(m) )
+          Geometry_Invalid   = .NOT. CRTM_Geometry_IsValid( Geometry(m) )
+          IF ( Atmosphere_Invalid .OR. Surface_Invalid .OR. Geometry_Invalid ) THEN
           Error_Status = FAILURE
           WRITE( Message,'("Input data check failed for profile #",i0)' ) m
           CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
