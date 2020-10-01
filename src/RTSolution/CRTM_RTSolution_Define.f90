@@ -1651,9 +1651,8 @@ CONTAINS
       rts%Total_Cloud_Cover      , &
       rts%R_clear                , &
       rts%Tb_clear
-    print *, 'diagnostic1: ', rts%SOD
     IF ( io_stat /= 0 ) THEN
-      msg = 'X Error reading scalar intermediate results - '//TRIM(io_msg)
+      msg = 'Error reading scalar intermediate results - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
     END IF
     IF ( n_Layers > 0 ) THEN
@@ -1662,7 +1661,7 @@ CONTAINS
         rts%Upwelling_Radiance, &
         rts%Layer_Optical_Depth
       IF ( io_stat /= 0 ) THEN
-        msg = 'Y Error reading array intermediate results - '//TRIM(io_msg)
+        msg = 'Error reading array intermediate results - '//TRIM(io_msg)
         CALL Read_Record_Cleanup(); RETURN
       END IF
     END IF
@@ -1761,7 +1760,7 @@ CONTAINS
       rts%R_clear                , &
       rts%Tb_clear
     IF ( io_stat /= 0 ) THEN
-      msg = 'Z Error writing scalar intermediate results - '//TRIM(io_msg)
+      msg = 'Error writing scalar intermediate results - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
     IF ( rts%n_Layers > 0 ) THEN
@@ -1770,7 +1769,7 @@ CONTAINS
         rts%Upwelling_Radiance, &
         rts%Layer_Optical_Depth
       IF ( io_stat /= 0 ) THEN
-        msg = 'W Error writing array intermediate results - '//TRIM(io_msg)
+        msg = 'Error writing array intermediate results - '//TRIM(io_msg)
         CALL Write_Record_Cleanup(); RETURN
       END IF
     END IF
