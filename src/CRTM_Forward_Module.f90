@@ -252,12 +252,12 @@ CONTAINS
     TYPE(CRTM_Options_type) :: Default_Options, Opt
 
     ! Local variables required by threading, timing, and output verification
-    integer(LLong) :: count_rate, count_start, count_end
+    INTEGER(LLong) :: count_rate, count_start, count_end
     REAL :: elapsed
     REAL :: elapsed_running = 0.         ! running total of elapsed times
-    LOGICAL, PARAMETER :: enable_timing = .false.
-    LOGICAL, PARAMETER :: output_verification = .false.
-    INTEGER :: ret(size(Atmosphere))     ! return codes from profile_solution
+    LOGICAL, PARAMETER :: enable_timing = .FALSE.
+    LOGICAL, PARAMETER :: output_verification = .FALSE.
+    INTEGER :: ret(SIZE(Atmosphere))     ! return codes from profile_solution
     INTEGER :: nfailure                  ! number of non-success calls to profile_solution
 
     ! ------
@@ -318,16 +318,15 @@ CONTAINS
 !$OMP PARALLEL DO PRIVATE (Message)
     Profile_Loop1: DO m = 1, n_Profiles
        ! Fix for cloud_Fraction < MIN_COVERAGE_THRESHOLD
-       IF ( Atmosphere(m)%n_Clouds > 0) then
+       IF ( Atmosphere(m)%n_Clouds > 0) THEN
           !** clear clouds where cloud_fraction < threshold
-          do nc = 1, Atmosphere(m)%n_clouds
-             where (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+          DO nc = 1, Atmosphere(m)%n_clouds
+             WHERE (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
                 Atmosphere(m)%Cloud_Fraction(:) = ZERO
                 Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
                 Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
-             end where
-          end do
- 
+             END WHERE
+          END DO
 
          ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
          IF( .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
@@ -365,7 +364,7 @@ CONTAINS
     END DO Profile_Loop2
 !$OMP END PARALLEL DO
 
-    nfailure = count (ret(:) /= SUCCESS)
+    nfailure = COUNT (ret(:) /= SUCCESS)
     IF (nfailure > 0) THEN
       Error_Status = FAILURE
       WRITE(Message,'(i0," profiles failed")') nfailure
@@ -395,9 +394,9 @@ CONTAINS
     ! accesses CRTM_Forward data, but multi-level function "contain" clauses cause compiler
     ! errors so arguments to this function were needed.
     FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
-      integer, intent(in) :: m               ! profile index
-      TYPE(CRTM_Options_type), intent(IN) :: Opt
-      TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
+      INTEGER, INTENT(in) :: m               ! profile index
+      TYPE(CRTM_Options_type), INTENT(IN) :: Opt
+      TYPE(CRTM_AncillaryInput_type), INTENT(IN) :: AncillaryInput
     
       ! Local variables
       INTEGER :: Error_Status
@@ -976,7 +975,7 @@ CONTAINS
           END IF
 
           !** output Tb_clear in the case of n_clouds = 0  (note this is NOT aerosol cleared)
-          IF (Atm%n_Clouds == 0 .or. CloudCover%Total_Cloud_Cover < MIN_COVERAGE_THRESHOLD) THEN
+          IF (Atm%n_Clouds == 0 .OR. CloudCover%Total_Cloud_Cover < MIN_COVERAGE_THRESHOLD) THEN
              RTSolution(ln,m)%Tb_clear = RTSolution(ln,m)%Brightness_Temperature
              RTSolution(ln,m)%R_clear  = RTSolution(ln,m)%Radiance
           END IF
