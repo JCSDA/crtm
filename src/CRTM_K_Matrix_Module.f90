@@ -410,14 +410,14 @@ CONTAINS
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
        IF ( Atmosphere(m)%n_Clouds > 0) then
           !** clear clouds where cloud_fraction < threshold
-          do nc = 1, Atmosphere(m)%n_clouds
-             where (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+          DO nc = 1, Atmosphere(m)%n_clouds
+             WHERE (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
                 Atmosphere(m)%Cloud_Fraction(:) = ZERO
                 Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
                 Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
-             end where
-          end do
-
+             END WHERE
+          END DO
+          
 
           IF(.NOT. CRTM_CloudCoeff_IsLoaded() )THEN
              
@@ -435,13 +435,13 @@ CONTAINS
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
          CYCLE Profile_Loop1
       END IF
-    end DO Profile_Loop1
+    END DO Profile_Loop1
 !$OMP END PARALLEL DO
 
-    if (Error_Status == FAILURE) then
-      RETURN
-    end if
-
+    IF (Error_Status == FAILURE) THEN
+       RETURN
+    END IF
+    
 !$OMP PARALLEL DO PRIVATE (m, Opt, AncillaryInput) SCHEDULE (runtime)
     Profile_Loop2: DO m = 1, n_Profiles
       ! Check the optional Options structure argument
@@ -489,7 +489,7 @@ CONTAINS
     ! and Post_Process_RTSolution_K also access CRTM_K_Matrix data, but multi-level function
     ! "contain" clauses cause compiler errors so arguments to these functions were needed.
     FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
-      integer, intent(in) :: m               ! profile index
+      INTEGER, INTENT(in) :: m               ! profile index
       TYPE(CRTM_Options_type), intent(IN) :: Opt
       TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
     
