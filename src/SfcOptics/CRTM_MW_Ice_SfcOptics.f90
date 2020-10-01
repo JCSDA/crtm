@@ -196,7 +196,7 @@ CONTAINS
 
     ! Set up
     Error_Status = SUCCESS
-    badTBflag = .false.
+    badTBflag = .FALSE.
     CALL CRTM_GeometryInfo_GetValue( GeometryInfo, Sensor_Zenith_Angle = Sensor_Zenith_Angle )
 
 
@@ -205,10 +205,10 @@ CONTAINS
        ! ATMSemissivity model
     CASE( WMO_ATMS )    
        TBs_In(1:5) = Populate_Subset( Surface, 5, ATMS_INDEX)
-       if (any(TBs_In(1:5) < 50.0_fp) .or. any(TBs_In(1:5) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:5) < 50.0_fp) .OR. ANY(TBs_In(1:5) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ATMS_SeaICE(  Sensor_Zenith_Angle,                    &  ! Input, Degree           
                SfcOptics%Angle(i),                      &  ! Input, Degree           
@@ -223,10 +223,10 @@ CONTAINS
        ! AMSU-A emissivity model
     CASE( WMO_AMSUA )
        TBs_In(1:4) = Populate_Subset( Surface, 4, AMSUA_INDEX)
-       if (any(TBs_In(1:4) < 50.0_fp) .or. any(TBs_In(1:4) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:4) < 50.0_fp) .OR. ANY(TBs_In(1:4) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
@@ -242,10 +242,10 @@ CONTAINS
        ! AMSU-B emissivity model
     CASE( WMO_AMSUB )
        TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
-       if (any(TBs_In(1:2) < 50.0_fp) .or. any(TBs_In(1:2) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:2) < 50.0_fp) .OR. ANY(TBs_In(1:2) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_AMSU( Sensor_Zenith_Angle,                     &  ! Input, Degree
@@ -261,10 +261,10 @@ CONTAINS
        ! MHS emissivity model
     CASE (WMO_MHS)
        TBs_In(1:2) = Populate_Subset( Surface, 2, AMSUB_INDEX)
-       if (any(TBs_In(1:2) < 50.0_fp) .or. any(TBs_In(1:2) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:2) < 50.0_fp) .OR. ANY(TBs_In(1:2) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_ICEEM_MHS( Sensor_Zenith_Angle,                     &  ! Input, Degree
@@ -279,16 +279,16 @@ CONTAINS
        ! AMSR-E emissivity model
     CASE( WMO_AMSRE )
        TBs_In_V(1:6) = Populate_Subset( Surface, 6, AMSRE_V_INDEX)
-       if (any(TBs_In_V(1:6) < 50.0_fp) .or. any(TBs_In_V(1:6) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In_V(1:6) < 50.0_fp) .OR. ANY(TBs_In_V(1:6) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        TBs_In_H(1:6) = Populate_Subset( Surface, 6, AMSRE_H_INDEX)
-       if (any(TBs_In_H(1:6) < 50.0_fp) .or. any(TBs_In_H(1:6) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In_H(1:6) < 50.0_fp) .OR. ANY(TBs_In_H(1:6) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_AMSRE_SSICEEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
@@ -304,10 +304,10 @@ CONTAINS
        ! SSM/I emissivity model
     CASE( WMO_SSMI )
        TBs_In(1:7) = Populate_Subset( Surface, 7, SSMI_INDEX)
-       if (any(TBs_In(1:7) < 50.0_fp) .or. any(TBs_In(1:7) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:7) < 50.0_fp) .OR. ANY(TBs_In(1:7) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_SSMI_SIceEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
@@ -322,10 +322,10 @@ CONTAINS
        ! SSMIS emissivity model
     CASE( WMO_SSMIS )
        TBs_In(1:8) = Populate_Subset( Surface, 8, SSMIS_INDEX)
-       if (any(TBs_In(1:8) < 50.0_fp) .or. any(TBs_In(1:8) > 500.0_fp)) then
-          badTBflag = .true.
-          exit Sensor_Type ! exit case early
-       end if
+       IF (ANY(TBs_In(1:8) < 50.0_fp) .OR. ANY(TBs_In(1:8) > 500.0_fp)) THEN
+          badTBflag = .TRUE.
+          EXIT Sensor_Type ! exit case early
+       END IF
 
        DO i = 1, SfcOptics%n_Angles
           CALL NESDIS_SSMIS_IceEM( SC(SensorIndex)%Frequency(ChannelIndex), &  ! Input, GHz
@@ -351,7 +351,7 @@ CONTAINS
 
     END SELECT Sensor_Type
 
-    IF (badTBflag) then
+    IF (badTBflag) THEN
        ! set default ice emissivity option
        SfcOptics%Emissivity(1:SfcOptics%n_Angles,1:2) = DEFAULT_EMISSIVITY
     END IF
