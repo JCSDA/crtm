@@ -334,9 +334,9 @@ CONTAINS
     INTEGER(LLong) :: count_rate, count_start, count_end
     REAL :: elapsed
     REAL :: elapsed_running = 0.         ! running total of elapsed times
-    LOGICAL, parameter :: enable_timing = .false.
-    LOGICAL, parameter :: output_verification = .false.
-    INTEGER :: ret(size(Atmosphere))     ! return codes from profile_solution
+    LOGICAL, PARAMETER :: enable_timing = .FALSE.
+    LOGICAL, PARAMETER :: output_verification = .FALSE.
+    INTEGER :: ret(SIZE(Atmosphere))     ! return codes from profile_solution
     INTEGER :: nfailure                  ! number of non-success calls to profile_solution
 
     ! ------
@@ -408,7 +408,7 @@ CONTAINS
 !$OMP PARALLEL DO PRIVATE (Message)
     Profile_Loop1: DO m = 1, n_Profiles
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
-       IF ( Atmosphere(m)%n_Clouds > 0) then
+       IF ( Atmosphere(m)%n_Clouds > 0) THEN
           !** clear clouds where cloud_fraction < threshold
           DO nc = 1, Atmosphere(m)%n_clouds
              WHERE (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
@@ -490,8 +490,8 @@ CONTAINS
     ! "contain" clauses cause compiler errors so arguments to these functions were needed.
     FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
       INTEGER, INTENT(in) :: m               ! profile index
-      TYPE(CRTM_Options_type), intent(IN) :: Opt
-      TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
+      TYPE(CRTM_Options_type), INTENT(IN) :: Opt
+      TYPE(CRTM_AncillaryInput_type), INTENT(IN) :: AncillaryInput
     
       ! Local variables
       INTEGER :: Error_Status
@@ -541,7 +541,7 @@ CONTAINS
       Error_Status = SUCCESS
 
       ! Silence gfortran complaints about maybe-used-uninit by init to huge()
-      r_cloudy = huge(r_cloudy)
+      r_cloudy = HUGE(r_cloudy)
       
       ! Reinitialise the output RTSolution
       CALL CRTM_RTSolution_Zero(RTSolution(:,m))
