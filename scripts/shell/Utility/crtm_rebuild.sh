@@ -65,8 +65,8 @@ SUCCESS=0
 FAILURE=1
 # ..Define defaults
 DEBUG=""
-#COMPILER="gfortran"
-
+COMPILER=${FC}
+echo "Compiler:" $COMPILER
 
 
 # Parse command line options
