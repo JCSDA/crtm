@@ -361,13 +361,13 @@ CONTAINS
            ENDIF
      END SELECT
 
-    if (any(Tbs((/1,2,3,4,5/)) < 50.0_fp) .or. any(TBs((/1,2,3,4,5/)) > 500.0_fp)) then
+    IF (ANY(Tbs((/1,2,3,4,5/)) < 50.0_fp) .OR. ANY(TBs((/1,2,3,4,5/)) > 500.0_fp)) THEN
         !** use default snow EM
         CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
-     else
+     ELSE
         ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing
         CALL ATMS_SNOW_ByTBTs_D(Frequency,Tbs,Ts,Snow_Type,em_vector)  
-     end if
+     END IF
 
 
    ! Get the emissivity angle dependence
@@ -555,12 +555,12 @@ CONTAINS
      em = SNOW_EMISS_ATMS_LIB
      freq = FREQUENCY_ATMS
 
-     minlc =minloc(ABS(freq-frequency)); freq_idx=minlc(1)
+     minlc =MINLOC(ABS(freq-frequency)); freq_idx=minlc(1)
 
    !*** IDENTIFY SNOW TYPE
      snow_type = 4 !default
-     ediff=abs(Tb(1)/em(1,:)-Tb(2)/em(2,:))+abs(Tb(2)/em(2,:)-Tb(4)/em(11,:))
-     minlc = minloc(ediff) ; snow_type=minlc(1)
+     ediff=ABS(Tb(1)/em(1,:)-Tb(2)/em(2,:))+ABS(Tb(2)/em(2,:)-Tb(4)/em(11,:))
+     minlc = MINLOC(ediff) ; snow_type=minlc(1)
 
    !*** adjustment from the library values
      emw=em(windex,snow_type)
@@ -568,7 +568,7 @@ CONTAINS
 !JR Tb(3) is undefined (~-3.e38) for some UFO tests. If SIGFPE trapping is enabled, log of a negative
 !JR number will generate NaN and possibly an abort. Thus the following change. Y(3) is never referenced 
 !JR so this mod does not impact the solution. Though Tb(3) is referenced so that may not be a good thing
-     Y((/1,2,4,5/)) = log(Tb((/1,2,4,5/))/(Ts*emw((/1,2,4,5/))))
+     Y((/1,2,4,5/)) = LOG(Tb((/1,2,4,5/))/(Ts*emw((/1,2,4,5/))))
      IF(frequency > 100.0_fp) THEN
        XX=DOT_PRODUCT(X((/1,2,4,5/)),X((/1,2,4,5/)))
        XY=DOT_PRODUCT(X((/1,2,4,5/)),Y((/1,2,4,5/)))
@@ -1485,7 +1485,7 @@ CONTAINS
      COMPLEX(fp)  eair
      freq_3w = (/31.4_fp,89.0_fp,150.0_fp/)
 
-     eair = cmplx(one,-zero,fp)
+     eair = CMPLX(one,-zero,fp)
 
      snow_type = -999
 
@@ -1683,10 +1683,10 @@ CONTAINS
               ichmax = 2
            ENDIF
            DO ich = ichmin,ichmax
-              dem = dem + abs(discriminator(ich) - em(k,ich+4))
+              dem = dem + ABS(discriminator(ich) - em(k,ich+4))
            END DO
            DO ich = 4,5
-              dem = dem + abs(discriminator(ich) - em(k,ich+5))
+              dem = dem + ABS(discriminator(ich) - em(k,ich+5))
            END DO
            IF (dem < demmin0) THEN
               demmin0 = dem
@@ -1708,10 +1708,10 @@ CONTAINS
      DO ich = 5, 9
         IF (ich .LE. 7) THEN
            IF (discriminator(ich - 4) .NE. -999.9_fp) &
-              adjust_check = adjust_check + abs(emis(ich) - discriminator(ich - 4))
+              adjust_check = adjust_check + ABS(emis(ich) - discriminator(ich - 4))
         ELSE
            IF (discriminator(ich - 4) .NE. -999.9_fp)  &
-              adjust_check = adjust_check + abs(emis(ich+1) - discriminator(ich - 4))
+              adjust_check = adjust_check + ABS(emis(ich+1) - discriminator(ich - 4))
         ENDIF
      END DO
 
@@ -1820,7 +1820,7 @@ CONTAINS
      REAL(fp) :: theta,frequency,depth,ts,esv_3w(:),esh_3w(:)
      REAL(fp) :: discriminator(5),emmod(nw_3),dem(nw_3)
      REAL(fp) :: emissivity,em_vector(2)
-     REAL(Double) :: dem_coe(nw_3,0:ncoe-1),sinthetas,costhetas,deg2rad
+     REAL(DOUBLE) :: dem_coe(nw_3,0:ncoe-1),sinthetas,costhetas,deg2rad
 
      SAVE  dem_coe
 
@@ -1838,7 +1838,7 @@ CONTAINS
 
 
      deg2rad = 3.14159_fp*pi/180.0_fp
-     sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
+     sinthetas = SIN(theta*deg2rad)* earthrad/(earthrad + satheight)
      sinthetas = sinthetas*sinthetas
      costhetas = one - sinthetas
 
