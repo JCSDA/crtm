@@ -18,6 +18,8 @@ export FCFLAGS="\
 
 export LDFLAGS=""
 
+HDF5DISC="/usr/local/other/hdf5/1.13.0/intel-19.1.0.16_impi-20.0.0.166/"
+
 if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
   export LIBS="\
   -L $NC4_DIR/lib -lnetcdf -lnetcdff \
@@ -25,6 +27,13 @@ if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
   -g -fpp -traceback -check bounds \
   -I $NC4_DIR/include \
   -I $HDF_DIR/include "
+elif [[ "$hostname" == "discover"* ]] ; then # NCCS Discover
+  export LIBS="\
+  -L $NETCDF/lib -lnetcdf -lnetcdff \
+  -L $HDF5DISC/lib -lhdf5 \
+  -g -fpp -traceback -check bounds \
+  -I $NETCDF/include \
+  -I $HDF5DISC/include "
 else
   export LIBS=""
 fi
