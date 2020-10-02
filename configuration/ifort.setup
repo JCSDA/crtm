@@ -27,7 +27,7 @@ if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
   -g -fpp -traceback -check bounds \
   -I $NC4_DIR/include \
   -I $HDF_DIR/include "
-elif [[ "$hostname" == "discover31" ]] ; then # NCCS Discover
+elif [[ "$hostname" == "discover"* ]] ; then # NCCS Discover
   export LIBS="\
   -L $NETCDF/lib -lnetcdf -lnetcdff \
   -L $HDF5DISC/lib -lhdf5 \
