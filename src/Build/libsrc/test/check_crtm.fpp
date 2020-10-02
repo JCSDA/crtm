@@ -67,7 +67,6 @@ PROGRAM check_crtm
   ! on the default Re (earth radius) and h (satellite height)
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
-
   ! ============================================================================
   
 
@@ -329,7 +328,13 @@ PROGRAM check_crtm
      DO l = 1, n_Channels
        WRITE( *, '(/5x,"Channel ",i0," results")') chinfo(n)%Sensor_Channel(l)
        CALL CRTM_RTSolution_Inspect(rts(l,m))
+       CALL CRTM_RTSolution_Inspect(rts_K(l,m))
+       CALL CRTM_Atmosphere_Inspect(atm_K(l,m))
+       CALL CRTM_Surface_Inspect(sfc_K(l,m))
+
      END DO
+     CALL CRTM_Atmosphere_Inspect(atm(m))
+     CALL CRTM_Surface_Inspect(sfc(m))
    END DO
 
 
