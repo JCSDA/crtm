@@ -72,17 +72,17 @@ fi
 # Set compiler-specific flags. Normally in autoconf this is done OUTSIDE of configure. One example
 # problem with the approach utilized here is e.g. what if FC=mpif90? It won't pick up the
 # appropriate flags. But this approach makes running configure very simple.
-case $FC in
-  gfortran*)
-    FCFLAGS="$FCFLAGS -cpp -ffree-form -fimplicit-none -frecord-marker=4 -ggdb -Wall -Wconversion -std=f2008" ;;
-  ifort)
-    FCFLAGS="$FCFLAGS -e08 -free -assume byterecl,realloc_lhs" ;;
-  pgfortran)
-    FCFLAGS="$FCFLAGS -Mfree -Mdaz -Minform,inform -Mnosave -Mref_externals -Kieee" ;;
-  xlf20*)
-    FCFLAGS="$FCFLAGS -qdbg -qhalt=W -qlanglvl=2008pure -qsuffix=f=f90:cpp=fpp:cpp=F90" ;;
-  *) AC_MSG_WARN([Compiler $FC not found: no default flags will be set]);;
-esac
+# case $FC in
+#  gfortran*)
+#    FCFLAGS="$FCFLAGS -cpp -ffree-form -fimplicit-none -frecord-marker=4 -ggdb -Wall -Wconversion -std=f2008" ;;
+#  ifort)
+#    FCFLAGS="$FCFLAGS -e08 -free -assume byterecl,realloc_lhs" ;;
+#  pgfortran)
+#    FCFLAGS="$FCFLAGS -Mfree -Mdaz -Minform,inform -Mnosave -Mref_externals -Kieee" ;;
+#  xlf20*)
+#    FCFLAGS="$FCFLAGS -qdbg -qhalt=W -qlanglvl=2008pure -qsuffix=f=f90:cpp=fpp:cpp=F90" ;;
+#  *) AC_MSG_WARN([Compiler $FC not found: no default flags will be set]);;
+#esac
 
 # Add a canned list of debugging flags if --debug was specified. Note -O setting will overried
 # any user-specified settings at configure time
@@ -139,60 +139,60 @@ if test "x$enable_openmp" = xyes; then
   fi
 fi
 
-# Optional auto-profiling with GPTL. Default not enabled
-# Check for enabling GPTL timing library
-AC_ARG_WITH([gptl],
-              [AS_HELP_STRING([--with-gptl=<path>],
-                              [GPTL timing library is to be included])],
-              [gptl_path=$with_gptl],[gptl_path=none])
-
-if test "$gptl_path" != none; then
-  PKG_CONFIG_PATH="${gptl_path}/lib/pkgconfig"
-  PKG_CHECK_MODULES(GPTL, gptl, found_gptl=yes, found_gptl=no)
-  if test "$found_gptl" = yes; then
-# PKG_CHECK_MODULES only works with C, but GPTL_CFLAGS will work here
-    case "${FC}" in
-       xlf2*) FPPFLAGS="$FPPFLAGS -WF,-DENABLE_GPTL $GPTL_CFLAGS";;
-       *)     FPPFLAGS="$FPPFLAGS -DENABLE_GPTL $GPTL_CFLAGS";;
-    esac
-
-    FCFLAGS="$FCFLAGS $GPTL_CFLAGS"
-    LDFLAGS="$LDFLAGS $GPTL_LIBS"
-
-# Check for enabling auto-profiling (default enabled when GPTL support enabled)
-    AC_ARG_ENABLE([autoprofiling],
-      AS_HELP_STRING([--disable-autoprofiling], [Disable autoprofiing even when GPTL enabled]))
-
-    AS_IF([test "x$enable_autoprofiling" != "xno"], [
-# Adjust flags is auto-profiling also desired
-# See if auto-instrumentation flag is available. If so, set INSTRFLAG for testing
-      AX_CHECK_COMPILE_FLAG([-finstrument-functions], [finstrf=yes], [finstrf=no])
-      AX_CHECK_COMPILE_FLAG([-Minstrument:functions], [minstrf=yes], [minstrf=no])
-    ])
-# Auto-instrumentation often requires a special link flag
-    rdynamic=yes
-    bdynamic=yes
-    AX_CHECK_LINK_FLAG(-rdynamic, [AC_SUBST([INSTR_LINK], [-rdynamic])], [rdynamic=no])
-    if test "$rdynamic" = yes; then
-      INSTR_LINK="-rdynamic"
-      AC_MSG_NOTICE([-rdynamic link flag may be needed for auto-instrumentation])
-    else
-      AX_CHECK_LINK_FLAG(-Bdynamic, [AC_SUBST([INSTR_LINK], [-Bdynamic])], [bdynamic=no])
-      if test "$bdynamic" = yes; then
-        INSTR_LINK="-Bdynamic"
-        AC_MSG_NOTICE([-Bdynamic link flag may be needed for auto-instrumentation])
-      else
-        AC_MSG_WARN([Dynamic linking flag not found: Auto-instrumentation may not work properly])
-      fi
-    fi
-
-    if test "x$finstrf" = xyes; then
-      FCFLAGS="$FCFLAGS -finstrument-functions"
-    elif test "x$minstrf" = xyes; then
-      FCFLAGS="$FCFLAGS -Minstrument:functions"
-    fi
-  fi
-fi
+## Optional auto-profiling with GPTL. Default not enabled
+## Check for enabling GPTL timing library
+#AC_ARG_WITH([gptl],
+#              [AS_HELP_STRING([--with-gptl=<path>],
+#                              [GPTL timing library is to be included])],
+#              [gptl_path=$with_gptl],[gptl_path=none])
+#
+#if test "$gptl_path" != none; then
+#  PKG_CONFIG_PATH="${gptl_path}/lib/pkgconfig"
+#  PKG_CHECK_MODULES(GPTL, gptl, found_gptl=yes, found_gptl=no)
+#  if test "$found_gptl" = yes; then
+## PKG_CHECK_MODULES only works with C, but GPTL_CFLAGS will work here
+#    case "${FC}" in
+#       xlf2*) FPPFLAGS="$FPPFLAGS -WF,-DENABLE_GPTL $GPTL_CFLAGS";;
+#       *)     FPPFLAGS="$FPPFLAGS -DENABLE_GPTL $GPTL_CFLAGS";;
+#    esac
+#
+#    FCFLAGS="$FCFLAGS $GPTL_CFLAGS"
+#    LDFLAGS="$LDFLAGS $GPTL_LIBS"
+#
+## Check for enabling auto-profiling (default enabled when GPTL support enabled)
+#    AC_ARG_ENABLE([autoprofiling],
+#      AS_HELP_STRING([--disable-autoprofiling], [Disable autoprofiing even when GPTL enabled]))
+#
+#    AS_IF([test "x$enable_autoprofiling" != "xno"], [
+## Adjust flags is auto-profiling also desired
+## See if auto-instrumentation flag is available. If so, set INSTRFLAG for testing
+#      AX_CHECK_COMPILE_FLAG([-finstrument-functions], [finstrf=yes], [finstrf=no])
+#      AX_CHECK_COMPILE_FLAG([-Minstrument:functions], [minstrf=yes], [minstrf=no])
+#    ])
+## Auto-instrumentation often requires a special link flag
+#    rdynamic=yes
+#    bdynamic=yes
+#    AX_CHECK_LINK_FLAG(-rdynamic, [AC_SUBST([INSTR_LINK], [-rdynamic])], [rdynamic=no])
+#    if test "$rdynamic" = yes; then
+#      INSTR_LINK="-rdynamic"
+#      AC_MSG_NOTICE([-rdynamic link flag may be needed for auto-instrumentation])
+#    else
+#      AX_CHECK_LINK_FLAG(-Bdynamic, [AC_SUBST([INSTR_LINK], [-Bdynamic])], [bdynamic=no])
+#      if test "$bdynamic" = yes; then
+#        INSTR_LINK="-Bdynamic"
+#        AC_MSG_NOTICE([-Bdynamic link flag may be needed for auto-instrumentation])
+#      else
+#        AC_MSG_WARN([Dynamic linking flag not found: Auto-instrumentation may not work properly])
+#      fi
+#    fi
+#
+#    if test "x$finstrf" = xyes; then
+#      FCFLAGS="$FCFLAGS -finstrument-functions"
+#    elif test "x$minstrf" = xyes; then
+#      FCFLAGS="$FCFLAGS -Minstrument:functions"
+#    fi
+#  fi
+#fi
 
 # Generate variable substitutions
 AC_SUBST(ENDIAN_PLATFORM)
