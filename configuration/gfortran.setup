@@ -11,8 +11,8 @@ if [ "$uname" == "Linux"  ] ; then
 		export NC4_DIR=/usr/local/ #singularity container only
 		export HDF_DIR=/usr/local/ #singularity container only
 elif [ "$uname" == "Darwin" ] ; then
-		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac
-		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac
+		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac OS (brew install)
+		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac OS (brew install)
 fi
 
 #set the number of openmp threads
@@ -36,7 +36,7 @@ export LDFLAGS="-fopenmp"
 
 export LIBS=""
 
-if [ "$uname" == "Darwin" ] || [ "$uname" == "Linux" ] ; then #mac OS, brew install
+if [ "$uname" == "Darwin" ] || [ "$uname" == "Linux" ] ; then #mac OS, brew install or linux (singularity) 
 		export LIBS="\
   -L $NC4_DIR/lib -lnetcdf -lnetcdff \
   -L $HDF_DIR/lib -lhdf5 \
