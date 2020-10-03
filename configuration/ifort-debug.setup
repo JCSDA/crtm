@@ -9,6 +9,8 @@ export NC4_DIR="/opt/netcdf4/4.6.2-intel-18.0.3"
 export HDF_DIR="/opt/hdf5/1.8.21-intel-18.0.3"
 #export HDF4_DIR="/opt/hdf4/4.2.14-intel-18.0.3"
 
+export OMP_NUM_THREADS=4  #set here for testing purposes, probably want to override this
+
 export FCFLAGS="\
 -g \
 -check bounds \
@@ -16,13 +18,11 @@ export FCFLAGS="\
 -traceback \
 -free \
 -assume byterecl,realloc_lhs \
+-qopenmp \
 -fp-stack-check \
 -mieee-fp"
 
-
-
-
-export LDFLAGS=""
+export LDFLAGS="-qopenmp"
 
 if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
   export LIBS="\
