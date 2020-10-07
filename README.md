@@ -1,6 +1,4 @@
-<a href="https://zenhub.com"><img src="https://raw.githubusercontent.com/ZenHubIO/support/master/zenhub-badge.png"></a>
-
-#CRTM REL-2.4.0
+# CRTM REL-2.4.0
 
 
 ## Preamble
@@ -13,7 +11,7 @@ This is a fully functional release of CRTM v2.4.0.
 
 
 
-  ##Contents
+  ## Contents
   ===================================================
   1. [Configuration, building, and testing the library] (#config)
   2. [Installing the library] (#install)
