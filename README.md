@@ -31,7 +31,8 @@ This is a fully functional release of CRTM v2.4.0.
   - Note: the development repository build differs from a release build. 
 	
 	The CRTM development directory structure looks like:
-	```
+
+```
   .
   ├── LICENSE
   ├── NOTES
@@ -80,7 +81,7 @@ This is a fully functional release of CRTM v2.4.0.
   │   ├── Zeeman/
   └── test/
       └── Main/
-  ```
+```
   
   ## Installing the library <a name="install"></a>
     ### ame="gnuinstall"></a>
