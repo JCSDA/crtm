@@ -17,17 +17,17 @@ This is a fully functional release of CRTM v2.4.0.
 Contents
 ========
 
-1. Configuration
-  a. The easy (I hope) way
-  b. The more flexible way
-2. Building the library
-3. Testing the library
-4. Installing the library
-  a. GNU Install
-      - Linking to the library
-  b. Uninstalling the library
-5. Cleaning up
-6. Feedback and contact info
+1. Configuration  
+  a. The easy (I hope) way  
+  b. The more flexible way  
+2. Building the library  
+3. Testing the library  
+4. Installing the library  
+  a. GNU Install  
+      - Linking to the library  
+  b. Uninstalling the library  
+5. Cleaning up  
+6. Feedback and contact info  
 
 
 
