@@ -1,7 +1,8 @@
-# CRTM REL-2.4.0
+CRTM REL-2.4.0
+==============
 
-
-## Preamble
+Preamble
+--------
 CRTM v2.4.0 alpha release (REL-2.4.0-alpha)
 Created on October 7, 2020
 
@@ -11,29 +12,33 @@ This is a fully functional release of CRTM v2.4.0.
 
 
 
-## Contents
-===================================================
-[Configuration, building, and testing the library] (#config)
-[Installing the library] (#install)
-[GNU Install] (#gnuinstall)
-[Linking to the library] (#linking)
-[Uninstalling the library] (#uninstall)
-[Cleaning up] (#cleanup)
-[Feedback and contact info] (#contact)
+Contents
+========
+1. Configuration
+  a. The easy (I hope) way
+  b. The more flexible way
+2. Building the library
+3. Testing the library
+4. Installing the library
+  a. GNU Install
+      - Linking to the library
+  b. Uninstalling the library
+5. Cleaning up
+6. Feedback and contact info
 
 
 
-## Configuration, building, and testing the library <a name="config"></a>
-	
+Configuration, building, and testing the library
+================================================	
 JCSDA CRTM v2.4.x Build Instructions
-====================================
+
 - Development Repository Build
 - Note: the development repository build differs from a release build. 
 	
-The CRTM development directory structure looks like:
+The CRTM development directory structure looks like
 
 ```
-  .
+ .
   ├── LICENSE
   ├── NOTES
   ├── README.md
@@ -82,21 +87,15 @@ The CRTM development directory structure looks like:
   └── test/
       └── Main/
 ```
-  
-## Installing the library <a name="install"></a>
-### ame="gnuinstall"></a>
-#### ibrary <a name="linking"></a>
-###  library <a name="uninstall"></a>
-## Cleaning up <a name="cleanup"></a>
 
-
-## Feedback and contact info <a name="contact"></a>
+Feedback and Contact Information
 
 CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
 
+```
 If you have problems building the library please include the
 generated "config.log" file in your email correspondence.
-
+```
 
 
 
