@@ -19,9 +19,12 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, CIMSS/SSEC 24-Jun-2004
 !                       paul.vandelst@noaa.gov
+!       Modified by     Yingtao Ma, 2020/6/11
+!                       yingtao.ma@noaa.gov
+!                       Implemented CMAQ aerosol
 !
 
-MODULE CRTM_AerosolCoeff
+MODULE CRTM_AerosolCoeff  !yma 20/6/16: consider using submodule(AerosolCoeff_Define) in the future
 
   ! ----------------
   ! Enviroment setup
@@ -30,7 +33,11 @@ MODULE CRTM_AerosolCoeff
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
   USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, &
                                     AerosolCoeff_Associated, &
-                                    AerosolCoeff_Destroy
+                                    AerosolCoeff_Destroy, &
+                                    AerosolCoeff_is_GOCART, &
+                                    AerosolCoeff_is_CMAQ, &
+                                    AerosolCoeff_typeID_to_index, &
+                                    AerosolCoeff_typeName_to_index
   USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_ReadFile
   USE AerosolCoeff_netCDF_IO, ONLY: AerosolCoeff_netCDF_ReadFile
   ! Disable all implicit typing
@@ -42,17 +49,28 @@ MODULE CRTM_AerosolCoeff
   ! ------------
   ! Everything private by default
   PRIVATE
+  
   ! The shared data
   PUBLIC :: AeroC
-  ! Public routines in this module
+  
+  ! Public routines defined in this module
   PUBLIC :: CRTM_AerosolCoeff_Load
   PUBLIC :: CRTM_AerosolCoeff_Destroy
   PUBLIC :: CRTM_AerosolCoeff_IsLoaded
+
+  ! Public routines inherit from AerosolCoeff_Define module
+  PUBLIC :: AerosolCoeff_is_GOCART
+  PUBLIC :: AerosolCoeff_is_CMAQ
+  PUBLIC :: AerosolCoeff_typeID_to_index
+  PUBLIC :: AerosolCoeff_typeName_to_index
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
+  ! RCS Id for the module
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -253,7 +271,6 @@ CONTAINS
 
 
 !------------------------------------------------------------------------------
-!:sdoc+:
 !
 ! NAME:
 !       CRTM_AerosolCoeff_Destroy
@@ -265,7 +282,7 @@ CONTAINS
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AerosolCoeff_Destroy( Process_ID = Process_ID )
 !
-! OPTIONAL INPUTS:
+! OPTIONAL INPUT ARGUMENTS:
 !       Process_ID:       Set this argument to the MPI process ID that this
 !                         function call is running under. This value is used
 !                         solely for controlling message output. If MPI is not
@@ -289,12 +306,11 @@ CONTAINS
 ! SIDE EFFECTS:
 !       This function modifies the contents of the public data structure AeroC.
 !
-!:sdoc-:
 !------------------------------------------------------------------------------
 
   FUNCTION CRTM_AerosolCoeff_Destroy( Process_ID ) RESULT( err_stat )
     ! Arguments
-    INTEGER, OPTIONAL, INTENT(IN) :: Process_ID
+    INTEGER, OPTIONAL, INTENT(IN)  :: Process_ID
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -344,4 +360,8 @@ CONTAINS
     IsLoaded = AerosolCoeff_Associated( AeroC )
   END FUNCTION CRTM_AerosolCoeff_IsLoaded
 
+
+
 END MODULE CRTM_AerosolCoeff
+
+

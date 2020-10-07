@@ -8,6 +8,9 @@
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 23-Feb-2004
 !                       paul.vandelst@noaa.gov
+!       Modified by     Yingtao Ma, 2020/6/11
+!                       yingtao.ma@noaa.gov
+!                       Implemented CMAQ aerosol
 !
 
 MODULE CRTM_Atmosphere_Define
@@ -51,21 +54,13 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Cloud_Zero, &
                                    CRTM_Cloud_IsValid, &
                                    CRTM_Cloud_Inspect, &
+!yma                                   CRTM_Cloud_DefineVersion, &
                                    CRTM_Cloud_Compare, &
                                    CRTM_Cloud_SetLayers, &
                                    CRTM_Cloud_ReadFile, &
                                    CRTM_Cloud_WriteFile
-  USE CRTM_Aerosol_Define  , ONLY: N_VALID_AEROSOL_CATEGORIES, &
-                                   INVALID_AEROSOL       , &
-                                   DUST_AEROSOL          , &
-                                   SEASALT_SSAM_AEROSOL  , &
-                                   SEASALT_SSCM1_AEROSOL , &
-                                   SEASALT_SSCM2_AEROSOL , &
-                                   SEASALT_SSCM3_AEROSOL , &
-                                   ORGANIC_CARBON_AEROSOL, &
-                                   BLACK_CARBON_AEROSOL  , &
-                                   SULFATE_AEROSOL       , &
-                                   AEROSOL_CATEGORY_NAME, &
+  USE CRTM_Aerosol_Define  , ONLY: AerosolCoeff_n_aerosol_categories, &
+                                   AerosolCoeff_INVALID_AEROSOL, &
                                    CRTM_Aerosol_type, &
                                    OPERATOR(==), &
                                    OPERATOR(+), &
@@ -80,6 +75,7 @@ MODULE CRTM_Atmosphere_Define
                                    CRTM_Aerosol_Zero, &
                                    CRTM_Aerosol_IsValid, &
                                    CRTM_Aerosol_Inspect, &
+                                   CRTM_Aerosol_DefineVersion, &
                                    CRTM_Aerosol_Compare, &
                                    CRTM_Aerosol_SetLayers, &
                                    CRTM_Aerosol_ReadFile, &
@@ -121,20 +117,11 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Cloud_Zero
   PUBLIC :: CRTM_Cloud_IsValid
   PUBLIC :: CRTM_Cloud_Inspect
+!yma  PUBLIC :: CRTM_Cloud_DefineVersion
   PUBLIC :: CRTM_Cloud_SetLayers
   ! Aerosol entities
   ! ...Parameters
-  PUBLIC :: N_VALID_AEROSOL_CATEGORIES
-  PUBLIC :: INVALID_AEROSOL
-  PUBLIC :: DUST_AEROSOL
-  PUBLIC :: SEASALT_SSAM_AEROSOL
-  PUBLIC :: SEASALT_SSCM1_AEROSOL
-  PUBLIC :: SEASALT_SSCM2_AEROSOL
-  PUBLIC :: SEASALT_SSCM3_AEROSOL
-  PUBLIC :: ORGANIC_CARBON_AEROSOL
-  PUBLIC :: BLACK_CARBON_AEROSOL
-  PUBLIC :: SULFATE_AEROSOL
-  PUBLIC :: AEROSOL_CATEGORY_NAME
+  PUBLIC :: AerosolCoeff_INVALID_AEROSOL
   ! ...Structures
   PUBLIC :: CRTM_Aerosol_type
   ! ...Procedures
@@ -147,7 +134,9 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Aerosol_Zero
   PUBLIC :: CRTM_Aerosol_IsValid
   PUBLIC :: CRTM_Aerosol_Inspect
+  PUBLIC :: CRTM_Aerosol_DefineVersion
   PUBLIC :: CRTM_Aerosol_SetLayers
+  PUBLIC :: AerosolCoeff_n_aerosol_categories
   ! Atmosphere entities
   ! ...Parameters
   PUBLIC :: N_VALID_ABSORBER_IDS
@@ -193,6 +182,7 @@ MODULE CRTM_Atmosphere_Define
   PUBLIC :: CRTM_Atmosphere_Zero
   PUBLIC :: CRTM_Atmosphere_IsValid
   PUBLIC :: CRTM_Atmosphere_Inspect
+  PUBLIC :: CRTM_Atmosphere_DefineVersion
   PUBLIC :: CRTM_Atmosphere_Compare
   PUBLIC :: CRTM_Atmosphere_SetLayers
   PUBLIC :: CRTM_Atmosphere_InquireFile
@@ -242,6 +232,8 @@ MODULE CRTM_Atmosphere_Define
   ! -----------------
   ! Module parameters
   ! -----------------
+  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+  '$Id$'
 
   ! The absorber IDs. Use HITRAN definitions
   INTEGER, PARAMETER :: N_VALID_ABSORBER_IDS = 32
@@ -1077,6 +1069,36 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
+
+
+!--------------------------------------------------------------------------------
+!:sdoc+:
+!
+! NAME:
+!       CRTM_Atmosphere_DefineVersion
+!
+! PURPOSE:
+!       Subroutine to return the module version information.
+!
+! CALLING SEQUENCE:
+!       CALL CRTM_Atmosphere_DefineVersion( Id )
+!
+! OUTPUTS:
+!       Id:            Character string containing the version Id information
+!                      for the module.
+!                      UNITS:      N/A
+!                      TYPE:       CHARACTER(*)
+!                      DIMENSION:  Scalar
+!                      ATTRIBUTES: INTENT(OUT)
+!
+!:sdoc-:
+!--------------------------------------------------------------------------------
+
+  SUBROUTINE CRTM_Atmosphere_DefineVersion( Id )
+    CHARACTER(*), INTENT(OUT) :: Id
+    Id = MODULE_VERSION_ID
+  END SUBROUTINE CRTM_Atmosphere_DefineVersion
+
 
 !--------------------------------------------------------------------------------
 !:sdoc+:
