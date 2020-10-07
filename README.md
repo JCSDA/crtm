@@ -3,7 +3,9 @@ CRTM REL-2.4.0
 
 Preamble
 --------
-CRTM v2.4.0 alpha release (REL-2.4.0-alpha)
+
+CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)
+
 Created on October 7, 2020
 
 This is a fully functional release of CRTM v2.4.0.
@@ -14,6 +16,7 @@ This is a fully functional release of CRTM v2.4.0.
 
 Contents
 ========
+
 1. Configuration
   a. The easy (I hope) way
   b. The more flexible way
