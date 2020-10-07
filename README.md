@@ -11,26 +11,26 @@ This is a fully functional release of CRTM v2.4.0.
 
 
 
-  ## Contents
-  ===================================================
-  1. [Configuration, building, and testing the library] (#config)
-  2. [Installing the library] (#install)
-    a. [GNU Install] (#gnuinstall)
-         - [Linking to the library] (#linking)
-    b. [Uninstalling the library] (#uninstall)
-  3. [Cleaning up] (#cleanup)
-  4. [Feedback and contact info] (#contact)
+## Contents
+===================================================
+[Configuration, building, and testing the library] (#config)
+[Installing the library] (#install)
+[GNU Install] (#gnuinstall)
+[Linking to the library] (#linking)
+[Uninstalling the library] (#uninstall)
+[Cleaning up] (#cleanup)
+[Feedback and contact info] (#contact)
 
 
 
-  ## Configuration, building, and testing the library <a name="config"></a>
+## Configuration, building, and testing the library <a name="config"></a>
 	
-	JCSDA CRTM v2.4.x Build Instructions
-	====================================
-  - Development Repository Build
-  - Note: the development repository build differs from a release build. 
+JCSDA CRTM v2.4.x Build Instructions
+====================================
+- Development Repository Build
+- Note: the development repository build differs from a release build. 
 	
-	The CRTM development directory structure looks like:
+The CRTM development directory structure looks like:
 
 ```
   .
@@ -83,19 +83,19 @@ This is a fully functional release of CRTM v2.4.0.
       └── Main/
 ```
   
-  ## Installing the library <a name="install"></a>
-    ### ame="gnuinstall"></a>
-         #### ibrary <a name="linking"></a>
-    ###  library <a name="uninstall"></a>
-  ## Cleaning up <a name="cleanup"></a>
+## Installing the library <a name="install"></a>
+### ame="gnuinstall"></a>
+#### ibrary <a name="linking"></a>
+###  library <a name="uninstall"></a>
+## Cleaning up <a name="cleanup"></a>
 
 
-  ## Feedback and contact info <a name="contact"></a>
+## Feedback and contact info <a name="contact"></a>
 
-	CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
+CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
 
-	If you have problems building the library please include the
-	generated "config.log" file in your email correspondence.
+If you have problems building the library please include the
+generated "config.log" file in your email correspondence.
 
 
 
