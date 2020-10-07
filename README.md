@@ -40,15 +40,15 @@ JCSDA CRTM v2.4.x Build Instructions
 	
 The CRTM development directory structure looks like
 
-```
+<pre>
  .
   ├── LICENSE
   ├── NOTES
   ├── README.md
   ├── Set_CRTM_Environment.sh
-  ├── configuration/
-  ├── documentation/
-  ├── fix/
+  ├── <b>configuration/</b>
+  ├── <b>documentation/</b>
+  ├── <b>fix/</b>
   │   ├── AerosolCoeff/
   │   ├── CloudCoeff/
   │   ├── EmisCoeff/
@@ -58,14 +58,15 @@ The CRTM development directory structure looks like
   │   ├── idl/
   │   ├── ruby/
   │   └── shell/
-  ├── src/
+  ├── <b>src/</b>
   │   ├── Ancillary/
   │   ├── AntennaCorrection/
   │   ├── AtmAbsorption/
   │   ├── AtmOptics/
   │   ├── AtmScatter/
   │   ├── Atmosphere/
-  │   ├── Build/
+  │   ├── <b>Build/</b>
+	│   │   └── <b>libsrc/</b>
   │   ├── CRTM_Utility/
   │   ├── ChannelInfo/
   │   ├── Coefficients/
@@ -87,9 +88,9 @@ The CRTM development directory structure looks like
   │   ├── Utility/
   │   ├── Validation/
   │   ├── Zeeman/
-  └── test/
+  └── <b>test/</b>
       └── Main/
-```
+</pre>
 
 Feedback and Contact Information
 
