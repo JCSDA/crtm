@@ -84,47 +84,47 @@ fi
 #  *) AC_MSG_WARN([Compiler $FC not found: no default flags will be set]);;
 #esac
 
-# Add a canned list of debugging flags if --debug was specified. Note -O setting will overried
-# any user-specified settings at configure time
-AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [set compiler flags for debugging]))
-if test "x$enable_debug" = xyes; then
-  AC_MSG_NOTICE([debug flags requested: any -O settings from the environment will be overridden])
-# Debug flags
-  case ${FC} in
-    gfortran*)
-      FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -ffpe-trap=overflow,zero,invalid" ;;
-    ifort)
-      FCFLAGS="$FCFLAGS -g -O0 -check bounds -fp-stack-check -mieee-fp" ;;
-    pgfortran)
-      FCFLAGS="$FCFLAGS -g -O0 -Ktrap=ovf,divz -Mbounds -Mchkstk -Mdclchk" ;;
-    xlf2*)
-      FCFLAGS="$FCFLAGS -qcheck -qextcheck -qfloat=nomaf:rndsngl -qflttrap=ov:zero:en -qinitauto -qmaxmem=-1" ;;
-  esac
-fi
+## Add a canned list of debugging flags if --debug was specified. Note -O setting will overried
+## any user-specified settings at configure time
+#AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [set compiler flags for debugging]))
+#if test "x$enable_debug" = xyes; then
+#  AC_MSG_NOTICE([debug flags requested: any -O settings from the environment will be overridden])
+## Debug flags
+#  case ${FC} in
+#    gfortran*)
+#      FCFLAGS="$FCFLAGS -g -O0 -fbounds-check -ffpe-trap=overflow,zero,invalid" ;;
+#    ifort)
+#      FCFLAGS="$FCFLAGS -g -O0 -check bounds -fp-stack-check -mieee-fp" ;;
+#    pgfortran)
+#      FCFLAGS="$FCFLAGS -g -O0 -Ktrap=ovf,divz -Mbounds -Mchkstk -Mdclchk" ;;
+#    xlf2*)
+#      FCFLAGS="$FCFLAGS -qcheck -qextcheck -qfloat=nomaf:rndsngl -qflttrap=ov:zero:en -qinitauto -qmaxmem=-1" ;;
+#  esac
+#fi
 
-# Add a canned list of optimization flags if --optimize was specified. Note -O setting will override
-# any user-specified settings at configure time
-AC_ARG_ENABLE([optimize], [AS_HELP_STRING([--enable-optimized],
-	         	   [set compiler flags for optimized performance])])
-test "x$enable_optimize" = xyes || enable_optimize=no
-if test "x$enable_optimize" = xyes; then
-  if test "x$enable_debug" = xyes; then
-    AC_MSG_ERROR([--enable-debug and --enable-optimize are mutually exclusive!])
-  fi
-  AC_MSG_NOTICE([optimize flags requested: any -O settings from the environment will be overridden])
-# Optimized flags
-  case ${FC} in
-    gfortran*)
-      FCFLAGS="$FCFLAGS -O3 -funroll-loops" ;;
-    ifort)
-      FCFLAGS="$FCFLAGS -O3 -fp-model source" ;;
-    pgfortran)
-      FCFLAGS="$FCFLAGS -gopt -O3" ;;
-# The following has not been tested due to no access to xlf compilers
-    xlf20*)
-      FCFLAGS="$FCFLAGS -qarch=auto -qstrict -NS32768 -O3" ;;
-  esac
-fi
+## Add a canned list of optimization flags if --optimize was specified. Note -O setting will override
+## any user-specified settings at configure time
+#AC_ARG_ENABLE([optimize], [AS_HELP_STRING([--enable-optimized],
+#	         	   [set compiler flags for optimized performance])])
+#test "x$enable_optimize" = xyes || enable_optimize=no
+#if test "x$enable_optimize" = xyes; then
+#  if test "x$enable_debug" = xyes; then
+#    AC_MSG_ERROR([--enable-debug and --enable-optimize are mutually exclusive!])
+#  fi
+#  AC_MSG_NOTICE([optimize flags requested: any -O settings from the environment will be overridden])
+## Optimized flags
+#  case ${FC} in
+#    gfortran*)
+#      FCFLAGS="$FCFLAGS -O3 -funroll-loops" ;;
+#    ifort)
+#      FCFLAGS="$FCFLAGS -O3 -fp-model source" ;;
+#    pgfortran)
+#      FCFLAGS="$FCFLAGS -gopt -O3" ;;
+## The following has not been tested due to no access to xlf compilers
+#    xlf20*)
+#      FCFLAGS="$FCFLAGS -qarch=auto -qstrict -NS32768 -O3" ;;
+#  esac
+#fi
 
 # Check for enabling OpenMP (default disabled)
 AC_ARG_ENABLE([openmp], AS_HELP_STRING([--enable-openmp], [Enable OpenMP]))
