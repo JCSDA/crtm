@@ -100,7 +100,7 @@ In the above list, the directories highlighted in bold (bold in markdown), are t
 A user is only likely to be interested in creating a "build" or use a previously created build (see releases/* on the github.com repository).
 
 A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
-But after a clean clone of the develepment repository, none of the links to source code have been created yet under `src/Build`.   
+But after a clean clone of the develepment repository, none of the links to source code have been created yet under `src/Build`.   To get there, follow the next steps.
 
 Configuration
 -------------
@@ -130,7 +130,19 @@ for a build using the gfortran compiler using debug options you would type:
 
 (note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
-"Build release" Setup and Configuration:
+**Configuration Step 2**
+    `$ . ./Set_CRTM_Environment.sh`
+
+This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
+
+**Configuration Step 3**
+    `cd /scripts/shell/Utility`
+		`./crtm_rebuild.sh`
+
+This script should perform the necessary steps to link to the source files in `src/Build/libsrc`, and start the build process there.
+If you hit error messages at this point, you may want to move to the next section "Build Release" Setup and Configuration.  
+
+(optional) "Build Release" Setup and Configuration:
 ----------------------------------------
 
 Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.
