@@ -127,44 +127,46 @@ for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
 
-    `$ . configuration/gfortran-debug.setup`  
+    $ . configuration/gfortran-debug.setup
 
 (note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
 **Configuration Step 2**
 
-    `$ . ./Set_CRTM_Environment.sh`
+    $ . ./Set_CRTM_Environment.sh
 
 This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
 
 **Configuration Step 3**
 
-		`cd src/`  
-		`make realclean`  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.  
-		`make`  
+	  cd src/  
+		make realclean  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.  
+		make  
 This performs the linking process with the upper level `src/` directories into the `src/Build/libsrc` directories
 
 Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
 
 **Build Step 1**
 
-    `cd Build`  
-		`./configure`  (see additional configure options below)  
-     `make -j4`  
+    cd Build  
+		./configure  (see additional configure options below)  
+    make -j4
+	
 Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
 
 (optional) "Build Release" Setup and Configuration:
 ----------------------------------------
 
-Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.
-(1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.  
+Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
+(1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.   
 (2) The `Makefile.in` file, which contains instructions on how executing the `configure` script will generate `Makefile` in libsrc and test subdirectories.  
 
 The build `Makefile`s assume that environment variables (envars) will be defined that describe the compilation environment. The envars
-that *must* be defined are:
-  FC:      the Fortran95/2003 compiler executable,
-  FCFLAGS: the flags/switches provided to the Fortran compiler,
+that *must* be defined are:  
+  FC:      the Fortran95/2003 compiler executable,  
+  FCFLAGS: the flags/switches provided to the Fortran compiler.
+	
 
 
 
