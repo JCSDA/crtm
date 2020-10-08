@@ -140,10 +140,11 @@ This sets the required environment variables to identify various paths needed to
 **Configuration Step 3**
 <pre>
 	  cd src/  
-		make realclean  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.  
+		make realclean  
 		make
 </pre>
-This performs the linking process with the upper level `src/` directories into the `src/Build/libsrc` directories
+The command `make realclean` ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts with a clean build.
+The command `make` at the `src/` level performs the linking process between the upper level `src/**` directories and the `src/Build/libsrc` directory.  
 
 Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
 
