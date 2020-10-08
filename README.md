@@ -125,28 +125,32 @@ All of the above files define values for the environment variables `FC`, `FCFLAG
 To use these files to define the CRTM build environment, you should source them. For example, if you use the sh/bash/ksh shells and you want to setup
 for a build using the gfortran compiler using debug options you would type:
 
-**Configuration Step 1**  
+**Configuration Step 1**
+
     `$ . configuration/gfortran-debug.setup`  
 
 (note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
 **Configuration Step 2**
+
     `$ . ./Set_CRTM_Environment.sh`
 
 This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
 
 **Configuration Step 3**
-		`cd src/`
-		`make realclean`  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.
+
+		`cd src/`  
+		`make realclean`  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.  
 		`make`  
 This performs the linking process with the upper level `src/` directories into the `src/Build/libsrc` directories
 
 Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
 
 **Build Step 1**
-    `cd Build`
-		`./configure`  (see additional configure options below) 
-     `make -j4`
+
+    `cd Build`  
+		`./configure`  (see additional configure options below)  
+     `make -j4`  
 Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
 
