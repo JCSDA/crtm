@@ -124,8 +124,9 @@ All of the above files define values for the environment variables `FC`, `FCFLAG
 To use these files to define the CRTM build environment, you should source them. For example, if you use the sh/bash/ksh shells and you want to setup
 for a build using the gfortran compiler using debug options you would type:
 
-** configuration Step 1 ** 
-`$ . configuration/gfortran-debug.setup`
+**Configuration Step 1**  
+    `$ . configuration/gfortran-debug.setup`  
+
 (note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
 
