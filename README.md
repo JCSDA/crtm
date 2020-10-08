@@ -94,13 +94,38 @@ The CRTM development directory structure looks like
       └── Main/
 </pre>
 
-In the above list, the directories highlighted in bold (visible in markdown), are the key directories of interest to the casual developer.
+In the above list, the directories highlighted in bold (bold in markdown), are the key directories of interest to the casual developer.
 A user is only likely to be interested in creating a "build" or use a previously created build (see releases/* on the github.com repository).
 
 A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
 But after a clean clone of the repository, none of the links to source code have been created yet under `src/Build`.  
 
 ##Configuration
+
+At the top level (CRTM_dev/), the `configuration` directory contains the various compiler-specific configuration files.
+```
+  $ ls  config-setup/
+  ftn.setup                 ftn.setup.csh
+  g95-debug.setup           gfortran.setup.csh     pgf95.setup
+  g95-debug.setup.csh       ifort-debug.setup      pgf95.setup.csh
+  g95.setup                 ifort-debug.setup.csh  xlf2003-debug.setup
+  g95.setup.csh             ifort.setup            xlf2003-debug.setup.csh
+  gfortran-debug.setup      ifort.setup.csh        xlf2003.setup
+  gfortran-debug.setup.csh  pgf95-debug.setup      xlf2003.setup.csh
+  gfortran.setup            pgf95-debug.setup.csh
+
+```
+[Note: as of the time of writing, October 2020, only `ifort.setup`, `ifort-debug.setup`, `gfortran.setup`, `gfortran-debug.setup` have been actively developed and tested.  It is strongly recommended that the user use one of these compilers until the remaining setup files are updated.  Contact the support email address for specific compiler support requests.  The c-shell (.csh) extension files have not been updated.]
+
+All of the above files define values for the environment variables `FC`, `FCFLAGS`, `LDFLAGS`, and `LIBS`.
+ 
+To use these files to define the CRTM build environment, you should source them. For example, if you use the sh/bash/ksh shells and you want to setup
+for a build using the gfortran compiler using debug options you would type:
+
+** configuration Step 1 ** 
+`$ . config-setup/gfortran-debug.setup`
+(note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
+
 
 Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.
 (1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.  
@@ -112,7 +137,11 @@ that *must* be defined are:
   FCFLAGS: the flags/switches provided to the Fortran compiler,
 
 
+
+
 ##Building
+From the top level directory (CRTM_dev/):
+
 
 
 Feedback and Contact Information
