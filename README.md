@@ -136,11 +136,19 @@ for a build using the gfortran compiler using debug options you would type:
 This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
 
 **Configuration Step 3**
-    `cd /scripts/shell/Utility`
-		`./crtm_rebuild.sh`
+		`cd src/`
+		`make realclean`  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.
+		`make`  
+This performs the linking process with the upper level `src/` directories into the `src/Build/libsrc` directories
 
-This script should perform the necessary steps to link to the source files in `src/Build/libsrc`, and start the build process there.
-If you hit error messages at this point, you may want to move to the next section "Build Release" Setup and Configuration.  
+Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
+
+**Build Step 1**
+    `cd Build`
+		`./configure`  (see additional configure options below) 
+     `make -j4`
+Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
+
 
 (optional) "Build Release" Setup and Configuration:
 ----------------------------------------
@@ -156,12 +164,31 @@ that *must* be defined are:
 
 
 
+**Additioal options for configure**
+`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `libsrc/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).
+
+You can set a different install directory as follows:
+  `$ ./configure --prefix=<install directory>`
+
+The `--prefix` switch sets the installation directory, make sure you have write access to that directory.
+
+By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
+
+  `$ ./configure --disable-big-endian --prefix=<install directory>`
+
+If you need more flexibility in the library build you can specify the necessary information directly to the configure script that generates the makefiles. For
+example, for the intel ifort compiler:
+```
+  $ ./configure --prefix=${PWD} \
+                --disable-big-endian \
+                FC="ifort" \
+                FCFLAGS="-O3 -openmp -g -traceback" 
+```
+This overrides the FC and FCFLAGS variables that were set by "sourcing" the `configuration/` file earlier, it is strongly recommended that you use the provided configuration files since they contain flags that have been added after substantial debugging and testing.
 
 
 
-
-
-Feedback and Contact Information
+**Feedback and Contact Information**
 
 CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
 
