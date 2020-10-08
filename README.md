@@ -41,7 +41,7 @@ JCSDA CRTM v2.4.x Build Instructions
 - Development Repository Build
 - Note: the development repository build differs from a release build. 
 	
-The CRTM development directory structure looks like
+The CRTM **development** repository directory structure looks like:
 
 <pre>
  .
@@ -102,7 +102,7 @@ A user is only likely to be interested in creating a "build" or use a previously
 A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
 But after a clean clone of the repository, none of the links to source code have been created yet under `src/Build`.  
 
-##Configuration
+## Configuration
 
 At the top level (CRTM_dev/), the `configuration` directory contains the various compiler-specific configuration files.
 ```
