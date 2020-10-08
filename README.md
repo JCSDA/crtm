@@ -127,38 +127,51 @@ for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
 
-    $ . configuration/gfortran-debug.setup
+    . configuration/gfortran-debug.setup
 
-(note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
+(note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
 **Configuration Step 2**
 
-    $ . ./Set_CRTM_Environment.sh
+    . ./Set_CRTM_Environment.sh
 
-This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
+Again noting the leading `. `.  This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
 
 **Configuration Step 3**
 <pre>
-$ cd src/  
-$ make realclean  
-$ make
+cd src/  
+make realclean  
+make
 </pre>
 The command `make realclean` ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts with a clean build.
 The command `make` at the `src/` level performs the linking process between the upper level `src/**` directories and the `src/Build/libsrc` directory.  
 
 Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
 
+Assuming no fatal error messages, continue to the Build steps below.
+
 **Build Step 1**
 <pre>
-$ cd Build  
-$ ./configure
-$ make -j4
+cd Build/
+make clean
+./configure
+make -j4
 </pre>
 
-(See additional options for `configure` below.  `-j4` is the number of parallel make processes.)
+(See additional options for `configure` below.  `-j4` sets the number of parallel make processes to 4.)
 
-Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
+Now we have finally compiled the linked source codes that reside in the `libsrc/` directory.    Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
+**Build Step 2**
+<pre>
+cd libsrc/
+ls -l *.mod
+ls -l *.a
+make check
+make install
+</pre>
+
+The ls commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
 
 (optional) "Build Release" Setup and Configuration:
 ----------------------------------------
@@ -175,7 +188,8 @@ that *must* be defined are:
 
 
 
-**Additional options for configure**
+**Additional options for `configure`**
+
 `configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `libsrc/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).
 
 You can set a different install directory as follows:
@@ -207,6 +221,11 @@ If you have problems building the library please include the generated "config.l
 
 
 
+Known Issues
+============
 
+(1) Transmitance Coefficient generation codes included in src/ are not functional.  Contact CRTM support above for details.  
+(2) No testing was done on PGI compilers.
+(3) Compiler setup files do not contain "generic" ways to point to netCDF libraries - you need to edit those files and ensure that the paths point to the correct place.
 
 
