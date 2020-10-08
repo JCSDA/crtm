@@ -14,7 +14,7 @@ This is a fully functional release of CRTM v2.4.0.
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
-(2) A netcdf4 / HDF5 library.   
+(2) A netCDF4 / HDF5 library.   
 
 
 Contents
@@ -100,7 +100,7 @@ In the above list, the directories highlighted in bold (bold in markdown), are t
 A user is only likely to be interested in creating a "build" or use a previously created build (see releases/* on the github.com repository).
 
 A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
-But after a clean clone of the develepment repository, none of the links to source code have been created yet under `src/Build`.   To get there, follow the next steps.
+But after a clean clone of the development repository, none of the links to source code have been created yet under `src/Build`.   To get there, follow the next steps.
 
 Configuration
 -------------
@@ -138,20 +138,21 @@ for a build using the gfortran compiler using debug options you would type:
 This sets the required environment variables to identify various paths needed to build.  `CRTM_ROOT`, `CRTM_SOURCE_ROOT`, etc.
 
 **Configuration Step 3**
-
+<pre>
 	  cd src/  
 		make realclean  This ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts.  
-		make  
+		make
+</pre>
 This performs the linking process with the upper level `src/` directories into the `src/Build/libsrc` directories
 
 Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
 
 **Build Step 1**
-
+<pre>
     cd Build  
 		./configure  (see additional configure options below)  
     make -j4
-	
+</pre>
 Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
 
@@ -170,7 +171,7 @@ that *must* be defined are:
 
 
 
-**Additioal options for configure**
+**Additional options for configure**
 `configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `libsrc/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).
 
 You can set a different install directory as follows:
@@ -182,8 +183,8 @@ By default, the CRTM is built for big-endian I/O. The --disable-big-endian switc
 
   `$ ./configure --disable-big-endian --prefix=<install directory>`
 
-If you need more flexibility in the library build you can specify the necessary information directly to the configure script that generates the makefiles. For
-example, for the intel ifort compiler:
+If you need more flexibility in the library build you can specify the necessary information directly to the configure script that generates the Makefiles. For
+example, for the Intel ifort compiler:
 ```
   $ ./configure --prefix=${PWD} \
                 --disable-big-endian \
