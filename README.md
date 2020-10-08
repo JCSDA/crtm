@@ -102,7 +102,7 @@ A user is only likely to be interested in creating a "build" or use a previously
 A typical "build release" of CRTM (what you would normally find in a tarball and see in libraries) is what's contained under the `src/Build` directory.
 But after a clean clone of the repository, none of the links to source code have been created yet under `src/Build`.  
 
-## Configuration
+##Configuration
 
 At the top level (CRTM_dev/), the `configuration` directory contains the various compiler-specific configuration files.
 ```
@@ -129,6 +129,7 @@ for a build using the gfortran compiler using debug options you would type:
 
 (note the `.` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
+###"Build release" Setup and Configuration:
 
 Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.
 (1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.  
@@ -142,8 +143,7 @@ that *must* be defined are:
 
 
 
-##Building
-From the top level directory (CRTM_dev/):
+
 
 
 
@@ -151,10 +151,8 @@ Feedback and Contact Information
 
 CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
 
-```
-If you have problems building the library please include the
-generated "config.log" file in your email correspondence.
-```
+If you have problems building the library please include the generated "config.log" file in your email correspondence.
+
 
 
 
