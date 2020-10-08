@@ -12,9 +12,9 @@ This is a fully functional release of CRTM v2.4.0.
 
 "Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
 
-Basic requirements:
-(1) A Fortran 2003 compatible compiler.
-(2) A netcdf4 / HDF5 library.  
+Basic requirements:  
+(1) A Fortran 2003 compatible compiler.  
+(2) A netcdf4 / HDF5 library.   
 
 
 Contents
