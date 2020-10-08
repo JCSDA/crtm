@@ -139,9 +139,9 @@ This sets the required environment variables to identify various paths needed to
 
 **Configuration Step 3**
 <pre>
-	  cd src/  
-		make realclean  
-		make
+$ cd src/  
+$ make realclean  
+$ make
 </pre>
 The command `make realclean` ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts with a clean build.
 The command `make` at the `src/` level performs the linking process between the upper level `src/**` directories and the `src/Build/libsrc` directory.  
@@ -150,10 +150,13 @@ Note: You may see certain "nc4" files listed as missing, these are files that wi
 
 **Build Step 1**
 <pre>
-    cd Build  
-		./configure  (see additional configure options below)  
-    make -j4
+$ cd Build  
+$ ./configure
+$ make -j4
 </pre>
+
+(See additional options for `configure` below.  `-j4` is the number of parallel make processes.)
+
 Here we finally compile the linked source codes that reside in the libsrc directory.  Please note that once the source codes are linked in the libsrc directory, all development and testing can occur at the `Build/` level.  In the `libsrc/` directory, the source codes link back to the version-controlled counterparts, so you'll want to answer "yes" to any queries about opening the version controlled codes when trying to edit them (this occurs in `emacs`, for example).
 
 
