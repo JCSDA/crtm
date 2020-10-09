@@ -21,8 +21,6 @@ Contents
 ========
 
 1. Configuration  
-  a. The easy (I hope) way  
-  b. The more flexible way  
 2. Building the library  
 3. Testing the library  
 4. Installing the library  
@@ -174,18 +172,27 @@ make install
 The ls commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
 
 (optional) "Build Release" Setup and Configuration:
-----------------------------------------
+--------------------------------------------------
 
 Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
 (1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.   
 (2) The `Makefile.in` file, which contains instructions on how executing the `configure` script will generate `Makefile` in libsrc and test subdirectories.  
 
-The build `Makefile`s assume that environment variables (envars) will be defined that describe the compilation environment. The envars
+The Build `Makefile`s assume that environment variables (envars) will be defined that describe the compilation environment. The envars
 that *must* be defined are:  
   FC:      the Fortran95/2003 compiler executable,  
   FCFLAGS: the flags/switches provided to the Fortran compiler.
-	
+These can be set (in the Build directory) by `. ./config-setup/<compiler>.setup` as described previously).
 
+In src/Build:
+<pre>
+. ./config-setup/gfortran-debug.setup
+make clean
+./configure
+make -j4
+make check
+make install
+</pre>
 
 
 **Additional options for `configure`**
