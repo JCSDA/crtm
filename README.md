@@ -225,7 +225,7 @@ Known Issues
 ============
 
 (1) Transmitance Coefficient generation codes included in src/ are not functional.  Contact CRTM support above for details.  
-(2) No testing was done on PGI compilers.
+(2) No testing was done on PGI compilers.  
 (3) Compiler setup files do not contain "generic" ways to point to netCDF libraries - you need to edit those files and ensure that the paths point to the correct place.
 
 
