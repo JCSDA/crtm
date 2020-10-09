@@ -105,8 +105,8 @@ Configuration
 -------------
 
 At the top level (`CRTM_dev/`), the `configuration` directory contains the various compiler-specific configuration files.
-```
-  $ ls  configuration/
+<pre>
+  ls  configuration/
   ftn.setup                 ftn.setup.csh
   g95-debug.setup           gfortran.setup.csh     pgf95.setup
   g95-debug.setup.csh       ifort-debug.setup      pgf95.setup.csh
@@ -116,7 +116,7 @@ At the top level (`CRTM_dev/`), the `configuration` directory contains the vario
   gfortran-debug.setup.csh  pgf95-debug.setup      xlf2003.setup.csh
   gfortran.setup            pgf95-debug.setup.csh
 
-```
+</pre>
 [Note: as of the time of writing, October 2020, only `ifort.setup`, `ifort-debug.setup`, `gfortran.setup`, `gfortran-debug.setup` have been actively developed and tested.  It is strongly recommended that the user use one of these compilers until the remaining setup files are updated.  Contact the support email address for specific compiler support requests.  The c-shell (.csh) extension files have not been updated.]
 
 All of the above files define values for the environment variables `FC`, `FCFLAGS`, `LDFLAGS`, and `LIBS`.
@@ -274,21 +274,21 @@ make install
 The `--prefix` switch sets the installation directory, make sure you have write access to that directory.  
 
 You can override this by setting a different install directory as follows:  
-  `./configure --prefix=<install directory>`  
+  `   ./configure --prefix=<install directory>`  
 For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., CRTM_dev/src/Build/crtm_v2.4.0-alpha/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 
-  `$ ./configure --disable-big-endian --prefix=<install directory>`
+  `   ./configure --disable-big-endian --prefix=<install directory>`
 
 If you need more flexibility in the library build you can specify the necessary information directly to the configure script that generates the Makefiles. For
 example, for the Intel ifort compiler:
-```
-  $ ./configure --prefix=${PWD} \
+<pre>
+  ./configure --prefix=${PWD} \
                 --disable-big-endian \
                 FC="ifort" \
                 FCFLAGS="-O3 -openmp -g -traceback" 
-```
+</pre>
 This overrides the FC and FCFLAGS variables that were set by "sourcing" the `configuration/` file earlier, it is strongly recommended that you use the provided configuration files since they contain flags that have been added after substantial debugging and testing.
 
 
