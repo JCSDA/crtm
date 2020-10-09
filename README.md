@@ -211,7 +211,7 @@ LDFLAGS="-L${libroot}/lib ${LDFLAGS}"
 LIBS="-lcrtm ${LIBS}"
 </pre>
 
-c. Uninstalling the library
+Uninstalling the library
 ---------------------------
 
 To uninstall the library (assuming you haven't moved the installation directory contents somewhere else) you can type:
@@ -225,8 +225,8 @@ This will DELETE the created installation directory. So, for a library version, 
 then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0-alpha" directory.
 
 
-5. CLEANING UP
-==============
+CLEANING UP
+===========
 
 Two targets are provided for cleaning up after the build. To remove all the build products type
 
