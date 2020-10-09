@@ -15,7 +15,8 @@ This is a fully functional release of CRTM v2.4.0.
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
 (2) A netCDF4 / HDF5 library.   
-
+(3) A linux, macOS, or unix-style environment.  This has not been tested under any Windows Fortran environments.
+(4) Bash shell is preferred. 
 
 Contents
 ========
@@ -197,6 +198,51 @@ tail -n10 make_check.out
 make install  
 </pre>
 
+
+Linking to the library
+......................
+
+Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.3.0/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
+
+<pre>
+libroot="/home/username/CRTM/crtm_v2.3.0"
+FCFLAGS="-I${libroot}/include ${FCFLAGS}"
+LDFLAGS="-L${libroot}/lib ${LDFLAGS}"
+LIBS="-lcrtm ${LIBS}"
+</pre>
+
+c. Uninstalling the library
+---------------------------
+
+To uninstall the library (assuming you haven't moved the installation directory contents somewhere else) you can type:
+
+    make uninstall
+
+This will DELETE the created installation directory. So, for a library version, say, v2.4.0-alpha, if your configure script invocation was something like
+
+    ./configure --prefix=${PWD} ...other command line arguments...
+
+then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0-alpha" directory.
+
+
+5. CLEANING UP
+==============
+
+Two targets are provided for cleaning up after the build. To remove all the build products type
+
+<pre>
+cd src/Build
+make clean
+</pre>
+
+To also remove all the configuration products (i.e. the makefiles) type
+
+<pre>
+cd src/Build
+make distclean
+</pre>
+
+
 (optional) "Build Release" Setup and Configuration:
 --------------------------------------------------
 
@@ -272,7 +318,17 @@ Installing <path>/CRTM_dev based scripts...
   crtm_install_scripts.sh(INFORMATION): Creating a crtmrc file with $PATH modification. For a permanent change modify your .bash_profile (or similar) file.
 </pre>
 
-This uncommon error message relates to the fact that you do not have a `$HOME` environment variable set.  You'll also need a `$HOME/bin` directory. Typically something like: `export HOME="/home/users/username/"` or `export HOME="~"` may work as well.    However, usually `$HOME` is set automatically by your system. If you're having this problem, you're likely to have even more problems later -- contact your Sysadmin first.
+This uncommon error message relates to the fact that you do not have a `$HOME` environment variable set.  You'll also need a `$HOME/bin` directory. Typically something like: `export HOME="/home/users/username/"` or `export HOME="~"` may work as well.    However, usually `$HOME` is set automatically by your system. If you're having this problem, you're likely to have even more problems later -- contact your Sysadmin first.  
+
+<pre>
+checking whether the Fortran compiler works... no
+configure: error: in `<path>/src/Build':
+configure: error: Fortran compiler cannot create executables
+</pre>
+
+Bash users, type `export | grep "FC"`, it should be set to the name of a compiler, e.g., `declare -x FC="ifort"`.  next simply type `ifort` (or whatever FC is trying to use)  at the command prompt to see if it's accessible.   If it says `command not found`, then you're missing the path to your compiler.  This could be a `module` command that needs to be run, or a valid compiler needs to be installed.  This varies based on operating system. 
+
+
 
 
 
