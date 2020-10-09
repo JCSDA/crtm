@@ -256,10 +256,23 @@ If you have problems building the library please include the generated "config.l
 
 
 Known Issues
-============
+------------
 
 (1) Transmitance Coefficient generation codes included in src/ are not functional.  Contact CRTM support above for details.  
 (2) No testing was done on PGI compilers.  
 (3) Compiler setup files do not contain "generic" ways to point to netCDF libraries - you need to edit those files and ensure that the paths point to the correct place.
+
+Troubleshooting
+---------------
+<pre>
+Installing <path>/CRTM_dev based scripts...
+  crtm_install_scripts.sh(INFORMATION): CRTM root directory is CRTM_dev
+  crtm_install_scripts.sh(INFORMATION): /bin exists...
+  crtm_install_scripts.sh(INFORMATION): Your $PATH does NOT contain /bin...
+  crtm_install_scripts.sh(INFORMATION): Creating a crtmrc file with $PATH modification. For a permanent change modify your .bash_profile (or similar) file.
+</pre>
+
+This uncommon error message relates to the fact that you do not have a `$HOME` environment variable set.  You'll also need a `$HOME/bin` directory. Typically something like: `export HOME="/home/users/username/"` or `export HOME="~"` may work as well.    However, usually `$HOME` is set automatically by your system. If you're having this problem, you're likely to have even more problems later -- contact your Sysadmin first.
+
 
 
