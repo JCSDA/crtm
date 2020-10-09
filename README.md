@@ -169,7 +169,7 @@ make check
 make install
 </pre>
 
-The ls commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
+The `ls` commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
 
 (optional) "Build Release" Setup and Configuration:
 --------------------------------------------------
