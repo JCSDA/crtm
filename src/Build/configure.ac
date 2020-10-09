@@ -1,8 +1,13 @@
 ## Put version control id tag in output configure script
 AC_REVISION($Id: $)
 
-## Initialise autoconf
+# Initialise autoconf
 AC_INIT([CRTM], m4_esyscmd([tr -d "\n'" < libsrc/CRTM_Version.inc |tr -d "\n'" < libsrc/CRTM_Version.inc | tr -d "#define CRTM_VERSION "]), [ncep.list.emc.jcsda_crtm.support@noaa.gov], [crtm])
+
+
+## Initialise autoconf
+#AC_INIT([CRTM], m4_esyscmd([tr -d "\n'" < libsrc/CRTM_Version.inc]), [ncep.list.emc.jcsda_crtm.support@noaa.gov], [crtm])
+
 
 # Output info for user
 AC_MSG_NOTICE([AC_PACKAGE_NAME AC_PACKAGE_VERSION])
