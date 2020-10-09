@@ -137,22 +137,25 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-cd src/  
+cd src/
+cd Build/
+make clean  
+cd ..  
 make realclean  
-make
+make  
 </pre>
-The command `make realclean` ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts with a clean build.
+The commands `make clean` and `make realclean` ensures that the underlying links, compiled files, generated Makefiles. are removed to avoid conflicts with a clean build.
 The command `make` at the `src/` level performs the linking process between the upper level `src/**` directories and the `src/Build/libsrc` directory.  
 
-Note: You may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.
+Note: After runnin `make`, you may see certain "nc4" files listed as missing, these are files that will be converted to netCDF4 format, but have not yet been added.  
 
 Assuming no fatal error messages, continue to the Build steps below.
 
 **Build Step 1**
 <pre>
 cd Build/
+./configure --prefix=${PWD}
 make clean
-./configure
 make -j4
 </pre>
 
@@ -170,6 +173,29 @@ make install
 </pre>
 
 The `ls` commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
+The `make check` command 
+
+Summary of Build Script
+-----------------------
+<pre>
+. configuration/gfortran-debug.setup  
+. ./Set_CRTM_Environment.sh  
+cd src/  
+make realclean  
+make  
+cd Build/  
+./configure --prefix=${PWD}  
+make clean  
+make -j4  
+cd libsrc/  
+ls -l *.mod  
+ls -l *.a  
+rm -rf make_check.out  
+make check > make_check.out  
+head -n10 make_check.out  
+tail -n10 make_check.out  
+make install  
+</pre>
 
 (optional) "Build Release" Setup and Configuration:
 --------------------------------------------------
@@ -187,8 +213,8 @@ These can be set (in the Build directory) by `. ./config-setup/<compiler>.setup`
 In src/Build:
 <pre>
 . ./config-setup/gfortran-debug.setup
+./configure --prefix=${PWD}
 make clean
-./configure
 make -j4
 make check
 make install
@@ -197,12 +223,13 @@ make install
 
 **Additional options for `configure`**
 
-`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `libsrc/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).
+`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).  
 
-You can set a different install directory as follows:
-  `$ ./configure --prefix=<install directory>`
+The `--prefix` switch sets the installation directory, make sure you have write access to that directory.  
 
-The `--prefix` switch sets the installation directory, make sure you have write access to that directory.
+You can override this by setting a different install directory as follows:  
+  `./configure --prefix=<install directory>`  
+For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., CRTM_dev/src/Build/crtm_v2.4.0-alpha/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 

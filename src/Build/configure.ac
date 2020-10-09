@@ -13,7 +13,7 @@ AC_INIT([CRTM], m4_esyscmd([tr -d "\n'" < libsrc/CRTM_Version.inc |tr -d "\n'" <
 AC_MSG_NOTICE([AC_PACKAGE_NAME AC_PACKAGE_VERSION])
 
 # Check for existence of unique file before proceeding
-AC_CONFIG_SRCDIR([libsrc/CRTM_Module.fpp])
+AC_CONFIG_SRCDIR([libsrc/CRTM_Module.F90])
 
 # Define the configuration files
 AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
@@ -50,11 +50,11 @@ AC_MSG_RESULT([$ENDIAN_IO])
 
 # ...All little-endian I/O requires the following for the check program
 # ...Special case the xlf2* compiler to:
-#      a) recognise the .fpp (Fortran PreProcessor) suffix
+#      a) recognise the .F90 (previously .fpp, Fortran PreProcessor) suffix
 #      b) not insert "#line" directives when it encounters multiple empty lines
 if test "${ENDIAN_IO}" = little; then
   case ${FC} in
-    xlf2*)   FPPFLAGS="-qsuffix=cpp=fpp -WF,-P -WF,-DLITTLE_ENDIAN $FPPFLAGS" ;;
+    xlf2*)   FPPFLAGS="-qsuffix=cpp=fpp=F90 -WF,-P -WF,-DLITTLE_ENDIAN $FPPFLAGS" ;;
     *)       FPPFLAGS="-DLITTLE_ENDIAN $FPPFLAGS" ;;
   esac
 fi

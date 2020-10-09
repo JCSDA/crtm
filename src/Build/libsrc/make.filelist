@@ -5,7 +5,7 @@
 #
 
 # The list of files that need preprocessing
-FPP_FILES = CRTM_Module.fpp
+FPP_FILES = CRTM_Module.F90
 
 # The list of regular source files
 FSRC_FILES = \
@@ -148,7 +148,7 @@ SRC_FILES = $(FSRC_FILES) \
 
 # The list of object files
 OBJ_FILES = ${FSRC_FILES:.f90=.o} \
-            ${FPP_FILES:.fpp=.o}
+            ${FPP_FILES:.F90=.o}
 
 # The list of include files
 INC_FILES = CRTM_Version.inc \
