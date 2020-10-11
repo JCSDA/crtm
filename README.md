@@ -200,7 +200,7 @@ make install
 
 
 Linking to the library
-......................
+----------------------
 
 Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.3.0/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
 
@@ -212,7 +212,7 @@ LIBS="-lcrtm ${LIBS}"
 </pre>
 
 Uninstalling the library
----------------------------
+------------------------
 
 To uninstall the library (assuming you haven't moved the installation directory contents somewhere else) you can type:
 
@@ -225,8 +225,8 @@ This will DELETE the created installation directory. So, for a library version, 
 then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0-alpha" directory.
 
 
-CLEANING UP
-===========
+Cleaning Up
+-----------
 
 Two targets are provided for cleaning up after the build. To remove all the build products type
 
