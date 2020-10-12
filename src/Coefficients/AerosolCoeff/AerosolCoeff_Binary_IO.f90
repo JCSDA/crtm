@@ -28,10 +28,8 @@ MODULE AerosolCoeff_Binary_IO
                                  AerosolCoeff_Create      , &
                                  AerosolCoeff_ValidRelease, &
                                  AerosolCoeff_Info        , &
-                                 AerosolCoeff_Frequency   , &
-                                 AerosolCoeff_is_GOCART   , &
-                                 AerosolCoeff_is_CMAQ
-                                 
+                                 AerosolCoeff_Frequency
+
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -43,14 +41,12 @@ MODULE AerosolCoeff_Binary_IO
   PUBLIC :: AerosolCoeff_Binary_InquireFile
   PUBLIC :: AerosolCoeff_Binary_ReadFile
   PUBLIC :: AerosolCoeff_Binary_WriteFile
-  PUBLIC :: AerosolCoeff_Binary_IOVersion
+  !PUBLIC :: AerosolCoeff_Binary_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
@@ -157,6 +153,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_Binary_InquireFile( &
+    Aerosol_Model   , &  ! Input
     Filename        , &  ! Input
     n_Wavelengths   , &  ! Optional output
     n_Radii         , &  ! Optional output
@@ -169,14 +166,15 @@ CONTAINS
     Version         ) &  ! Optional Output
   RESULT ( err_stat )
     ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths       
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii 
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma             
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types             
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH                
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
     INTEGER,      OPTIONAL, INTENT(OUT) :: Release
     INTEGER,      OPTIONAL, INTENT(OUT) :: Version
     ! Function result
@@ -188,7 +186,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     TYPE(AerosolCoeff_type) :: AerosolCoeff
-    
+
     ! Setup
     err_stat = SUCCESS
     fid = -100
@@ -211,9 +209,9 @@ CONTAINS
       WRITE( msg,'("Error reading Release/Version. IOSTAT = ",i0)' ) io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
-    
+
     ! Read the dimensions
-    if ( AerosolCoeff_is_GOCART( AerosolCoeff ) ) then
+    IF ( Aerosol_Model == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                  AerosolCoeff%n_Radii         , &
                                  AerosolCoeff%n_Types         , &
@@ -221,7 +219,7 @@ CONTAINS
                                  AerosolCoeff%n_Legendre_Terms, &
                                  AerosolCoeff%n_Phase_Elements
       AerosolCoeff%n_Sigma = 0
-    elseif ( AerosolCoeff_is_CMAQ( AerosolCoeff ) ) then
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                  AerosolCoeff%n_Radii         , &
                                  AerosolCoeff%n_Sigma         , &
@@ -229,37 +227,37 @@ CONTAINS
                                  AerosolCoeff%n_RH            , &
                                  AerosolCoeff%n_Legendre_Terms, &
                                  AerosolCoeff%n_Phase_Elements
-    else
-      WRITE( msg,'("Invalid version of aerosol coefficient")' ) 
+    ELSE
+      WRITE( msg,'("Invalid version of aerosol coefficient")' )
       CALL Inquire_Cleanup(); RETURN
-    endif
-    
+    END IF
+
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimensions from ",a,". IOSTAT = ",i0)' ) &
              TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
-    
+
     ! Close the file
     CLOSE( fid,IOSTAT=io_stat )
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error closing ",a,". IOSTAT = ",i0)' ) TRIM(Filename), io_stat
       CALL Inquire_Cleanup(); RETURN
     END IF
-    
+
     ! Set the return arguments
     IF ( PRESENT(n_Wavelengths   ) ) n_Wavelengths    = AerosolCoeff%n_Wavelengths
-    IF ( PRESENT(n_Radii         ) ) n_Radii          = AerosolCoeff%n_Radii   
-    IF ( PRESENT(n_Sigma         ) ) n_Sigma          = AerosolCoeff%n_Sigma      
+    IF ( PRESENT(n_Radii         ) ) n_Radii          = AerosolCoeff%n_Radii
+    IF ( PRESENT(n_Sigma         ) ) n_Sigma          = AerosolCoeff%n_Sigma
     IF ( PRESENT(n_Types         ) ) n_Types          = AerosolCoeff%n_Types
-    IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH      
+    IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = AerosolCoeff%n_Legendre_Terms
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = AerosolCoeff%n_Phase_Elements
-    IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release     
-    IF ( PRESENT(Version         ) ) Version          = AerosolCoeff%Version     
+    IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release
+    IF ( PRESENT(Version         ) ) Version          = AerosolCoeff%Version
 
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp()
       ! Close file if necessary
       IF ( File_Open(fid) ) THEN
@@ -286,11 +284,21 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_Binary_ReadFile( &
-!                        Filename     , &
+!                        Aerosol_Model  , &
+!                        Filename       , &
 !                        AerosolCoeff   , &
 !                        Quiet = Quiet  )
 !
 ! INPUTS:
+!       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
+!                          Available aerosol scheme:
+!                          - GOCART  [DEFAULT]
+!                          - CMAQ
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       Filename:       Character string specifying the name of a
 !                       AerosolCoeff format data file to read.
 !                       UNITS:      N/A
@@ -329,12 +337,14 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_Binary_ReadFile( &
-    Filename    , &  ! Input
-    AerosolCoeff, &  ! Output
-    Quiet       , &  ! Optional input
-    Debug       ) &  ! Optional input (Debug output control)
+    Aerosol_Model, &  ! Input
+    Filename     , &  ! Input
+    AerosolCoeff , &  ! Output
+    Quiet        , &  ! Optional input
+    Debug       )  &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),            INTENT(IN)  :: Filename
     TYPE(AerosolCoeff_type), INTENT(OUT) :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
@@ -361,7 +371,7 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
 
-    
+
     ! Open the file
     err_stat = Open_Binary_File( Filename, fid )
     IF ( err_stat /= SUCCESS ) THEN
@@ -383,7 +393,7 @@ CONTAINS
 
     ! Read the aerosol coefficient data
     ! ...Read the dimensions
-    if ( AerosolCoeff_is_GOCART( dummy ) ) then
+    IF ( Aerosol_Model == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
                                  dummy%n_Radii         , &
                                  dummy%n_Types         , &
@@ -391,26 +401,29 @@ CONTAINS
                                  dummy%n_Legendre_Terms, &
                                  dummy%n_Phase_Elements
       dummy%n_Sigma = 0
-    elseif ( AerosolCoeff_is_CMAQ( dummy ) ) then
+      dummy%Scheme = "GOCART"
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
                                  dummy%n_Radii         , &
                                  dummy%n_Sigma         , &
                                  dummy%n_Types         , &
                                  dummy%n_RH            , &
                                  dummy%n_Legendre_Terms, &
-                                 dummy%n_Phase_Elements      
-    else
-      WRITE( msg,'("Invalid version of aerosol coefficient")' ) 
+                                 dummy%n_Phase_Elements
+       dummy%Scheme = "CMAQ"
+    ELSE
+      WRITE( msg,'("Invalid scheme of aerosol coefficient")' )
       CALL Read_Cleanup(); RETURN
-    endif
+    END IF
 
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
+
     ! ...Allocate the object
     CALL AerosolCoeff_Create( &
-           AerosolCoeff, &
+           AerosolCoeff          , &
            dummy%n_Wavelengths   , &
            dummy%n_Radii         , &
            dummy%n_Sigma         , &
@@ -428,7 +441,7 @@ CONTAINS
       WRITE( msg,'("Error reading data source string length. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
-    
+
     IF ( strlen /= LEN(AerosolCoeff%Data_Source) ) THEN
       msg = 'Data source string length does not match structure definition'
       CALL Read_Cleanup(); RETURN
@@ -438,11 +451,11 @@ CONTAINS
       WRITE( msg,'("Error reading data source string. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
-    
+
 
     ! ...Read the type vector
     READ( fid,IOSTAT=io_stat ) AerosolCoeff%Type
-       
+
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading type vector data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
@@ -465,21 +478,20 @@ CONTAINS
       WRITE( msg,'("Error reading type names. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
-    
+
     ! ...Read the dimension vectors
-    if ( AerosolCoeff_is_GOCART( dummy ) ) then
+    IF ( Aerosol_Model == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                  AerosolCoeff%Reff      , &
                                  AerosolCoeff%RH
-      
-    elseif ( AerosolCoeff_is_CMAQ( dummy ) ) then
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                  AerosolCoeff%Frequency , &
                                  AerosolCoeff%Reff      , &
                                  AerosolCoeff%Rsig      , &
                                  AerosolCoeff%RH
-    endif
-    
+    END IF
+
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error reading dimension vector data. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
@@ -497,16 +509,10 @@ CONTAINS
     ! ...Assign the release and version number read in
     AerosolCoeff%Release = dummy%Release
     AerosolCoeff%Version = dummy%Version
+    AerosolCoeff%Scheme  = dummy%Scheme
+
     ! ...Compute the frequencies
-    CALL AerosolCoeff_Frequency( AerosolCoeff )    
-
-!!test
-!print*, AerosolCoeff%Wavelength
-!print*, AerosolCoeff%Rsig 
-!print*, dummy%Release, dummy%Version
-!!print*, AerosolCoeff%g
-!stop
-
+    CALL AerosolCoeff_Frequency( AerosolCoeff )
 
     ! Close the file
     CLOSE( fid,IOSTAT=io_stat )
@@ -515,7 +521,6 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
- 
     ! Output an info message
     IF ( noisy ) THEN
       CALL AerosolCoeff_Info( AerosolCoeff, msg )
@@ -523,7 +528,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Read_CleanUp()
       IF ( File_Open(Filename) ) THEN
         CLOSE( fid,IOSTAT=io_stat )
@@ -534,7 +539,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Read_CleanUp
-  
+
   END FUNCTION AerosolCoeff_Binary_ReadFile
 
 
@@ -596,12 +601,14 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_Binary_WriteFile( &
-    Filename    , &  ! Input
-    AerosolCoeff, &  ! Input
-    Quiet       , &  ! Optional input
-    Debug       ) &  ! Optional input (Debug output control)
+    Aerosol_Model, &  ! Input
+    Filename     , &  ! Input
+    AerosolCoeff , &  ! Input
+    Quiet        , &  ! Optional input
+    Debug       )  &  ! Optional input (Debug output control)
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),            INTENT(IN)  :: Filename
     TYPE(AerosolCoeff_type), INTENT(IN)  :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
@@ -616,7 +623,7 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check Quiet argument
@@ -630,7 +637,7 @@ CONTAINS
 
     ! Check the AerosolCoeff object
     ! ...Is there any data?
-    IF ( .NOT. AerosolCoeff_Associated( AerosolCoeff ) ) THEN 
+    IF ( .NOT. AerosolCoeff_Associated( AerosolCoeff ) ) THEN
       msg = 'Input AerosolCoeff object is not allocated.'
       CALL Write_Cleanup(); RETURN
     END IF
@@ -655,18 +662,18 @@ CONTAINS
       WRITE( msg,'("Error reading Release/Version. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
     END IF
-    
-    
+
+
     ! Write the aerosol coefficient data
     ! ...Write the dimensions
-    if ( AerosolCoeff_is_GOCART( AerosolCoeff ) ) then
+    IF ( Aerosol_Model == "GOCART" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                   AerosolCoeff%n_Radii         , &
                                   AerosolCoeff%n_Types         , &
                                   AerosolCoeff%n_RH            , &
                                   AerosolCoeff%n_Legendre_Terms, &
                                   AerosolCoeff%n_Phase_Elements
-    elseif ( AerosolCoeff_is_CMAQ( AerosolCoeff ) ) then
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                   AerosolCoeff%n_Radii         , &
                                   AerosolCoeff%n_Sigma         , &
@@ -674,11 +681,11 @@ CONTAINS
                                   AerosolCoeff%n_RH            , &
                                   AerosolCoeff%n_Legendre_Terms, &
                                   AerosolCoeff%n_Phase_Elements
-    else
-      WRITE( msg,'("Invalid version of aerosol coefficient")' ) 
+    ELSE
+      WRITE( msg,'("Invalid version of aerosol coefficient")' )
       CALL Write_Cleanup(); RETURN
-    endif
-    
+    END IF
+
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
@@ -712,17 +719,17 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Write the dimension vectors
-    if ( AerosolCoeff_is_GOCART( AerosolCoeff ) ) then
-      WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
+    IF ( Aerosol_Model == "GOCART" ) THEN
+       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                   AerosolCoeff%Reff      , &
-                                  AerosolCoeff%RH        
-    elseif ( AerosolCoeff_is_CMAQ( AerosolCoeff ) ) then
+                                  AerosolCoeff%RH
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                   AerosolCoeff%Frequency , &
                                   AerosolCoeff%Reff      , &
                                   AerosolCoeff%Rsig      , &
-                                  AerosolCoeff%RH        
-    endif
+                                  AerosolCoeff%RH
+    END IF
 
     IF ( io_stat /= 0 ) THEN
       WRITE( msg,'("Error writing dimension vector data. IOSTAT = ",i0)' ) io_stat
@@ -737,8 +744,8 @@ CONTAINS
       WRITE( msg,'("Error writing coefficient data. IOSTAT = ",i0)' ) io_stat
       CALL Write_Cleanup(); RETURN
     END IF
-    
-    
+
+
     ! Close the file
     CLOSE( fid,STATUS='KEEP',IOSTAT=io_stat )
     IF ( io_stat /= 0 ) THEN
@@ -754,7 +761,7 @@ CONTAINS
     END IF
 
   CONTAINS
-  
+
     SUBROUTINE Write_CleanUp()
       IF ( File_Open(Filename) ) THEN
         CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
@@ -766,34 +773,5 @@ CONTAINS
     END SUBROUTINE Write_CleanUp
 
   END FUNCTION AerosolCoeff_Binary_WriteFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_Binary_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL AerosolCoeff_Binary_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:   Character string containing the version Id information
-!             for the module.
-!             UNITS:      N/A
-!             TYPE:       CHARACTER(*)
-!             DIMENSION:  Scalar
-!             ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE AerosolCoeff_Binary_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE AerosolCoeff_Binary_IOVersion
 
 END MODULE AerosolCoeff_Binary_IO

@@ -6,9 +6,9 @@
 !
 ! Written by:     Paul van Delst, 21-May-2004
 !                 paul.vandelst@noaa.gov
-!
-! Modified by:
-! Aug-2020    Cheng Dang (dangch@ucar.edu)   Add input arguments for aerosol scheme/file/format
+! Modified by:    Cheng Dang, 1-Aug-2020
+!                 dangch@ucar.edu
+!                 Add optional arguments for aerosol/cloud scheme/file/format
 
 MODULE CRTM_LifeCycle
 
@@ -146,7 +146,8 @@ CONTAINS
 ! OPTIONAL INPUTS:
 !       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
 !                          Available aerosol scheme:
-!                          - CRTM_v2.3  [DEFAULT]
+!                          - GOCART  [DEFAULT]
+!                          - CMAQ
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -164,8 +165,12 @@ CONTAINS
 !       AerosolCoeff_File:  Name of the data file containing the aerosol optical
 !                           properties data for scattering calculations.
 !                           Available datafiles:
-!                           - AerosolCoeff.bin  [DEFAULT, Binary]
-!                           - AerosolCoeff.nc   [netCDF-Classic/4]
+!                           GOCART:
+!                           - AerosolCoeff.bin      [DEFAULT, Binary]
+!                           - AerosolCoeff.nc/nc4   [netCDF-Classic/nc4]
+!                           CMAQ:
+!                           - AerosolCoeff.CMAQ.bin      [Binary]
+!                           - AerosolCoeff.CMAQ.nc/nc4   [netCDF-Classic/nc4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -173,7 +178,7 @@ CONTAINS
 !
 !       Cloud_Model:       Name of the cloud scheme for scattering calculation
 !                          Available cloud scheme:
-!                          - CRTM_v2.3  [DEFAULT]
+!                          - GOCART  [DEFAULT]
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -326,7 +331,7 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
 !       NC_File_Path:       Character string specifying a file path for the
-!                           input data files in netCDF format. If not specified, 
+!                           input data files in netCDF format. If not specified,
 !                           the current directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
@@ -394,7 +399,7 @@ CONTAINS
     AerosolCoeff_Format , &  ! Optional input
     AerosolCoeff_File   , &  ! Optional input
     Cloud_Model         , &  ! Optional input
-    CloudCoeff_Format   , &  ! Optional input 
+    CloudCoeff_Format   , &  ! Optional input
     CloudCoeff_File     , &  ! Optional input
     EmisCoeff_File      , &  ! Optional input  ! *** DEPRECATED. Replaced by IRwaterCoeff_File
     IRwaterCoeff_File   , &  ! Optional input
@@ -451,7 +456,7 @@ CONTAINS
     CHARACTER(SL) :: Default_AerosolCoeff_File
     CHARACTER(SL) :: Default_Cloud_Model
     CHARACTER(SL) :: Default_CloudCoeff_Format
-    CHARACTER(SL) :: Default_CloudCoeff_File    
+    CHARACTER(SL) :: Default_CloudCoeff_File
     CHARACTER(SL) :: Default_IRwaterCoeff_File
     CHARACTER(SL) :: Default_IRlandCoeff_File
     CHARACTER(SL) :: Default_IRsnowCoeff_File
@@ -461,7 +466,7 @@ CONTAINS
     CHARACTER(SL) :: Default_VISsnowCoeff_File
     CHARACTER(SL) :: Default_VISiceCoeff_File
     CHARACTER(SL) :: Default_MWwaterCoeff_File
-    
+
 
     INTEGER :: l, n, n_Sensors
     LOGICAL :: Local_Load_CloudCoeff
@@ -506,14 +511,14 @@ CONTAINS
       CALL Display_Message( ROUTINE_NAME, TRIM(msg)//TRIM(pid_msg), err_stat )
       RETURN
     END IF
-      
+
 
     ! Specify sensor-independent coefficient filenames
     ! ...Default filenames
-    Default_Aerosol_Model       = 'CRTM_v2.3'
+    Default_Aerosol_Model       = 'GOCART'
     Default_AerosolCoeff_Format = 'Binary'
     Default_AerosolCoeff_File   = 'AerosolCoeff.bin'
-    Default_Cloud_Model         = 'CRTM_v2.3'
+    Default_Cloud_Model         = 'GOCART'
     Default_CloudCoeff_Format   = 'Binary'
     Default_CloudCoeff_File     = 'CloudCoeff.bin'
     Default_IRwaterCoeff_File   = 'Nalli.IRwater.EmisCoeff.bin'
@@ -570,7 +575,6 @@ CONTAINS
         Default_CloudCoeff_File  = TRIM(ADJUSTL(File_Path)) // TRIM(Default_CloudCoeff_File)
     END IF
 
-
     ! Load the spectral coefficients
     err_stat = CRTM_SpcCoeff_Load( &
                  Sensor_ID                            , &
@@ -604,7 +608,7 @@ CONTAINS
       WRITE(*, '("...CloudCoeff file: ", a) ') TRIM(Default_CloudCoeff_File)
       err_stat = CRTM_CloudCoeff_Load( &
                    Default_Cloud_Model                  , &
-                   Default_CloudCoeff_Format            , &            
+                   Default_CloudCoeff_Format            , &
                    Default_CloudCoeff_File              , &
                    Quiet             = Quiet            , &
                    Process_ID        = Process_ID       , &
@@ -685,7 +689,7 @@ CONTAINS
         RETURN
       END IF
     END IF Infrared_Sensor
-    
+
     ! ...Visible
     Visible_Sensor: IF ( ANY(SpcCoeff_IsVisibleSensor(SC)) ) THEN
       ! ...VIS land
@@ -733,7 +737,7 @@ CONTAINS
         RETURN
       END IF
     END IF Visible_Sensor
-    
+
     ! ...Microwave
     Microwave_Sensor: IF ( ANY(SpcCoeff_IsMicrowaveSensor(SC)) ) THEN
       ! ...MW water

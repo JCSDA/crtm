@@ -1,7 +1,7 @@
 !
 ! AerosolCoeff_Define
 !
-! Module defining the AerosolCoeff data structure and containing routines to 
+! Module defining the AerosolCoeff data structure and containing routines to
 ! manipulate it.
 !
 !
@@ -21,7 +21,7 @@ MODULE AerosolCoeff_Define
   ! Environment set up
   ! ------------------
   ! Module use
-  USE Type_Kinds               , ONLY: Long, Double
+  USE Type_Kinds               , ONLY: fp, Long, Double
   USE Message_Handler          , ONLY: SUCCESS, FAILURE, INFORMATION, Display_Message
   USE Compare_Float_Numbers    , ONLY: OPERATOR(.EqualTo.)
   USE String_Utility           , ONLY: StrUpCase
@@ -47,18 +47,16 @@ MODULE AerosolCoeff_Define
   PUBLIC :: AerosolCoeff_ValidRelease
   PUBLIC :: AerosolCoeff_Info
   PUBLIC :: AerosolCoeff_Frequency
-  PUBLIC :: AerosolCoeff_DefineVersion
+  !PUBLIC :: AerosolCoeff_DefineVersion
 
-  PUBLIC :: AerosolCoeff_is_GOCART
-  PUBLIC :: AerosolCoeff_is_CMAQ
   PUBLIC :: AerosolCoeff_typeID_to_index
   PUBLIC :: AerosolCoeff_typeName_to_index
   PUBLIC :: AerosolCoeff_typeID_to_name
   PUBLIC :: AerosolCoeff_n_aerosol_categories
   PUBLIC :: AerosolCoeff_INVALID_AEROSOL
-  
-  
-  
+
+
+
 
   ! ---------------------
   ! Procedure overloading
@@ -71,11 +69,6 @@ MODULE AerosolCoeff_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  !
-  ! Version Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
-
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: AEROSOLCOEFF_RELEASE        = 3  ! This determines structure and file formats.
   !INTEGER, PARAMETER :: AEROSOLCOEFF_VERSION_GOCART =  #currently use version# >0 for GOCART
@@ -83,7 +76,7 @@ MODULE AerosolCoeff_Define
 
   ! Invalid aerosol type ID
   INTEGER, PARAMETER :: AerosolCoeff_INVALID_AEROSOL = 0
-  
+
   ! String lengths
   INTEGER, PARAMETER :: SL = 80
   INTEGER, PARAMETER :: ML = 256
@@ -99,6 +92,7 @@ MODULE AerosolCoeff_Define
     ! Release and version information
     INTEGER(Long) :: Release = 0
     INTEGER(Long) :: Version = 0
+    CHARACTER(SL) :: Scheme  = ''
     ! Allocation indicator
     LOGICAL :: Is_Allocated = .FALSE.
     ! Data source
@@ -112,7 +106,7 @@ MODULE AerosolCoeff_Define
     INTEGER(Long) :: Max_Legendre_Terms = 0   ! I5 dimension
     INTEGER(Long) :: n_Legendre_Terms   = 0
     INTEGER(Long) :: Max_Phase_Elements = 0   ! I6 dimension
-    INTEGER(Long) :: n_Phase_Elements   = 0   
+    INTEGER(Long) :: n_Phase_Elements   = 0
     ! LUT dimension vectors
     INTEGER(Long), ALLOCATABLE :: Type(:)            ! I3
     CHARACTER(SL), ALLOCATABLE :: Type_Name(:)       ! I3
@@ -188,7 +182,7 @@ CONTAINS
 !
 ! NAME:
 !       AerosolCoeff_Destroy
-! 
+!
 ! PURPOSE:
 !       Elemental subroutine to re-initialize AerosolCoeff objects.
 !
@@ -208,6 +202,7 @@ CONTAINS
   ELEMENTAL SUBROUTINE AerosolCoeff_Destroy( AerosolCoeff )
     TYPE(AerosolCoeff_type), INTENT(OUT) :: AerosolCoeff
     AerosolCoeff%Is_Allocated = .FALSE.
+    AerosolCoeff%Scheme             = ''
     AerosolCoeff%n_Wavelengths      = 0
     AerosolCoeff%n_Radii            = 0
     AerosolCoeff%n_Sigma            = 0
@@ -218,13 +213,13 @@ CONTAINS
     AerosolCoeff%Max_Phase_Elements = 0
     AerosolCoeff%n_Phase_Elements   = 0
   END SUBROUTINE AerosolCoeff_Destroy
-  
+
 
 !--------------------------------------------------------------------------------
 !
 ! NAME:
 !       AerosolCoeff_Create
-! 
+!
 ! PURPOSE:
 !       Elemental subroutine to create an instance of a AerosolCoeff object.
 !
@@ -246,7 +241,7 @@ CONTAINS
 !
 ! INPUTS:
 !       n_Wavelengths:     The number of wavelengths in the look-up
-!                          table (LUT) 
+!                          table (LUT)
 !                          The "I1" dimension. Must be > 0.
 !                          UNITS:      N/A
 !                          TYPE:       INTEGER
@@ -308,15 +303,15 @@ CONTAINS
       INTEGER,                 INTENT(IN)  :: n_Wavelengths
       INTEGER,                 INTENT(IN)  :: n_Radii
       INTEGER,                 INTENT(IN)  :: n_Sigma_in
-      INTEGER,                 INTENT(IN)  :: n_Types      
-      INTEGER,                 INTENT(IN)  :: n_RH 
+      INTEGER,                 INTENT(IN)  :: n_Types
+      INTEGER,                 INTENT(IN)  :: n_RH
       INTEGER,                 INTENT(IN)  :: n_Legendre_Terms
       INTEGER,                 INTENT(IN)  :: n_Phase_Elements
       ! Local parameters
       CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AerosolCoeff_Create'
       ! Local variables
       INTEGER :: alloc_stat, n_Sigma
-   
+
       ! Check input
       IF ( n_Wavelengths    < 1 .OR. &
            n_Radii          < 1 .OR. &
@@ -352,20 +347,21 @@ CONTAINS
                                     n_Phase_Elements    ), &
                STAT = alloc_stat )
       IF ( alloc_stat /= 0 ) RETURN
-   
-   
+
+
       ! Initialise
       ! ...Dimensions
-      AerosolCoeff%n_Types            = n_Types 
-      AerosolCoeff%n_Wavelengths      = n_Wavelengths 
-      AerosolCoeff%n_Radii            = n_Radii 
+      AerosolCoeff%n_Types            = n_Types
+      AerosolCoeff%n_Wavelengths      = n_Wavelengths
+      AerosolCoeff%n_Radii            = n_Radii
       AerosolCoeff%n_Sigma            = n_Sigma
-      AerosolCoeff%n_RH               = n_RH 
+      AerosolCoeff%n_RH               = n_RH
       AerosolCoeff%Max_Legendre_Terms = n_Legendre_Terms
       AerosolCoeff%n_Legendre_Terms   = n_Legendre_Terms
       AerosolCoeff%Max_Phase_Elements = n_Phase_Elements
-      AerosolCoeff%n_Phase_Elements   = n_Phase_Elements 
+      AerosolCoeff%n_Phase_Elements   = n_Phase_Elements
       ! ...Arrays
+      ! AerosolCoeff%Scheme     = ''
       AerosolCoeff%Type       = 0
       AerosolCoeff%Type_Name  = ''
       AerosolCoeff%Wavelength = ZERO
@@ -377,8 +373,8 @@ CONTAINS
       AerosolCoeff%w          = ZERO
       AerosolCoeff%g          = ZERO
       AerosolCoeff%pcoeff     = ZERO
-   
-   
+
+
       ! Set allocationindicator
       AerosolCoeff%Is_Allocated = .TRUE.
 
@@ -412,15 +408,16 @@ CONTAINS
     INTEGER :: i
     WRITE(*,'(1x,"AerosolCoeff OBJECT")')
     WRITE(*,'(3x,"Data source      :",1x,a )') TRIM(AerosolCoeff%Data_Source)
-    WRITE(*,'(3x,"n_Wavelengths    :",1x,i0)') AerosolCoeff%n_Wavelengths   
-    WRITE(*,'(3x,"n_Radii          :",1x,i0)') AerosolCoeff%n_Radii         
-    WRITE(*,'(3x,"n_Sigma          :",1x,i0)') AerosolCoeff%n_Sigma         
-    WRITE(*,'(3x,"n_Types          :",1x,i0)') AerosolCoeff%n_Types         
-    WRITE(*,'(3x,"n_RH             :",1x,i0)') AerosolCoeff%n_RH    
+    WRITE(*,'(3x,"Scheme           :",1x,a )') TRIM(AerosolCoeff%Scheme)
+    WRITE(*,'(3x,"n_Wavelengths    :",1x,i0)') AerosolCoeff%n_Wavelengths
+    WRITE(*,'(3x,"n_Radii          :",1x,i0)') AerosolCoeff%n_Radii
+    WRITE(*,'(3x,"n_Sigma          :",1x,i0)') AerosolCoeff%n_Sigma
+    WRITE(*,'(3x,"n_Types          :",1x,i0)') AerosolCoeff%n_Types
+    WRITE(*,'(3x,"n_RH             :",1x,i0)') AerosolCoeff%n_RH
     WRITE(*,'(3x,"n_Legendre_Terms :",1x,i0)') AerosolCoeff%n_Legendre_Terms
     WRITE(*,'(3x,"n_Phase_Elements :",1x,i0)') AerosolCoeff%n_Phase_Elements
     IF ( .NOT. AerosolCoeff_Associated(AerosolCoeff) ) RETURN
-    WRITE(*,'(3x,"AerosolCoeff Type_Name:")') 
+    WRITE(*,'(3x,"AerosolCoeff Type_Name:")')
     DO i = 1, AerosolCoeff%n_Types
       IF ( AerosolCoeff%Type(i) < 1 .OR. &
            AerosolCoeff%Type(i) > AerosolCoeff%n_Types ) THEN
@@ -429,25 +426,25 @@ CONTAINS
         WRITE(*,'(5x,i2,") ",a)') i, TRIM(AerosolCoeff%Type_Name(i))
       END IF
     END DO
-    WRITE(*,'(3x,"AerosolCoeff Wavelength:")') 
+    WRITE(*,'(3x,"AerosolCoeff Wavelength:")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Wavelength
-    WRITE(*,'(3x,"AerosolCoeff Frequency :")') 
-    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Frequency     
-    WRITE(*,'(3x,"AerosolCoeff Reff      :")') 
+    WRITE(*,'(3x,"AerosolCoeff Frequency :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Frequency
+    WRITE(*,'(3x,"AerosolCoeff Reff      :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Reff
     if (AerosolCoeff%n_Sigma >0) then
-      WRITE(*,'(3x,"AerosolCoeff Rsig      :")') 
+      WRITE(*,'(3x,"AerosolCoeff Rsig      :")')
       WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Rsig
     endif
-    WRITE(*,'(3x,"AerosolCoeff RH        :")') 
-    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%RH 
-    WRITE(*,'(3x,"AerosolCoeff ke        :")') 
-    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%ke     
-    WRITE(*,'(3x,"AerosolCoeff w         :")') 
-    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%w      
-    WRITE(*,'(3x,"AerosolCoeff g         :")') 
-    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%g      
-    WRITE(*,'(3x,"AerosolCoeff pcoeff    :")') 
+    WRITE(*,'(3x,"AerosolCoeff RH        :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%RH
+    WRITE(*,'(3x,"AerosolCoeff ke        :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%ke
+    WRITE(*,'(3x,"AerosolCoeff w         :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%w
+    WRITE(*,'(3x,"AerosolCoeff g         :")')
+    WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%g
+    WRITE(*,'(3x,"AerosolCoeff pcoeff    :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%pcoeff
   END SUBROUTINE AerosolCoeff_Inspect
 
@@ -580,14 +577,14 @@ CONTAINS
            AerosolCoeff%n_RH            , &
            AerosolCoeff%n_Legendre_Terms, &
            AerosolCoeff%n_Phase_Elements
-                       
+
     ! Trim the output based on the
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
 
   END SUBROUTINE AerosolCoeff_Info
-  
-  
+
+
 !--------------------------------------------------------------------------------
 !:sdoc+:
 !
@@ -615,92 +612,11 @@ CONTAINS
   ELEMENTAL SUBROUTINE AerosolCoeff_Frequency( AerosolCoeff )
     TYPE(AerosolCoeff_type), INTENT(IN OUT) :: AerosolCoeff
     IF ( .NOT. AerosolCoeff_Associated( AerosolCoeff ) ) RETURN
-    AerosolCoeff%Frequency = micron_to_inverse_cm( AerosolCoeff%Wavelength )
+    AerosolCoeff%Frequency = micron_to_inverse_cm( REAL(AerosolCoeff%Wavelength,fp) )
   END SUBROUTINE AerosolCoeff_Frequency
-  
-  
+
+
 !--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_DefineVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL AerosolCoeff_DefineVersion( Id )
-!
-! OUTPUTS:
-!       Id:    Character string containing the version Id information
-!              for the module.
-!              UNITS:      N/A
-!              TYPE:       CHARACTER(*)
-!              DIMENSION:  Scalar
-!              ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-  SUBROUTINE AerosolCoeff_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE AerosolCoeff_DefineVersion
-
-
-
-!------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_is_GOCART
-!
-! PURPOSE:
-!       Function to test if the AerosolCoeff is GOCART version.
-!
-! CALLING SEQUENCE:
-!       status = AerosolCoeff_is_GOCART()
-!
-!:sdoc-:
-!------------------------------------------------------------------------------
-   FUNCTION AerosolCoeff_is_GOCART( AerosolCoeff ) RESULT( IsGOCART )
-!------------------------------------------------------------------------------
-      TYPE(AerosolCoeff_type), INTENT(IN) :: AerosolCoeff
-      LOGICAL :: IsGOCART
-      
-      !IsGOCART = AerosolCoeff%Version == AEROSOLCOEFF_VERSION_GOCART
-!yma      IsGOCART = AerosolCoeff%Version > 0
-      IsGOCART = AerosolCoeff%Version ==4
-   END FUNCTION AerosolCoeff_is_GOCART
-
-!------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_is_CMAQ
-!
-! PURPOSE:
-!       Function to test if the AerosolCoeff is CMAQ version.
-!
-! CALLING SEQUENCE:
-!       status = AerosolCoeff_is_CMAQ()
-!
-!:sdoc-:
-!------------------------------------------------------------------------------
-   FUNCTION AerosolCoeff_is_CMAQ( AerosolCoeff ) RESULT( IsCMAQ )
-!------------------------------------------------------------------------------
-      TYPE(AerosolCoeff_type), INTENT(IN) :: AerosolCoeff
-      LOGICAL :: IsCMAQ
-      
-      !IsCMAQ = AerosolCoeff%Version == AEROSOLCOEFF_VERSION_CMAQ
-!yma      IsCMAQ = AerosolCoeff%Version <0
-      IsCMAQ = AerosolCoeff%Version ==2
-  END FUNCTION AerosolCoeff_is_CMAQ
-  
-
-
-!------------------------------------------------------------------------------
-!
 ! NAME:
 !       AerosolCoeff_typeID_to_index
 !
@@ -719,7 +635,7 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       aerIndex:         The return value is an integer indicate the location of 
+!       aerIndex:         The return value is an integer indicate the location of
 !                         the aerosol coefficients in the AeroC structure.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
@@ -745,7 +661,7 @@ CONTAINS
             aerIndex = it
             exit
          endif
-      enddo 
+      enddo
 
       if (aerIndex <0) then
          Error_Status = FAILURE
@@ -783,7 +699,7 @@ CONTAINS
 !                         ATTRIBUTES: INTENT(IN)
 !
 ! FUNCTION RESULT:
-!       aerIndex:         The return value is an integer indicate the location of 
+!       aerIndex:         The return value is an integer indicate the location of
 !                         the aerosol coefficients in the AeroC structure.
 !                         UNITS:      N/A
 !                         TYPE:       INTEGER
@@ -792,7 +708,7 @@ CONTAINS
 ! SIDE EFFECTS:
 !       If the input type ID not exist, an error message will be issued.
 !
-! 
+!
 ! GOCART Aerosol_Type_Name =
 !  "Dust                                                                            ",
 !  "Sea salt-SSAM                                                                   ",
@@ -823,7 +739,7 @@ CONTAINS
       CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AerosolCoeff_typeName_to_index'
       INTEGER                 :: Error_Status, it
       CHARACTER(ML)           :: Message
-      
+
       aerIndex = -1
       do it = 1, AerosolCoeff%n_Types
          if ( StrUpCase(trim(adjustl(Aerosol_name))) == &
@@ -831,8 +747,8 @@ CONTAINS
             aerIndex = it
             exit
          endif
-      enddo 
-         
+      enddo
+
       if (aerIndex <0) then
          Error_Status = FAILURE
          WRITE(Message, &
@@ -883,7 +799,7 @@ CONTAINS
       TYPE(AerosolCoeff_type) ,INTENT(IN) :: AerosolCoeff
       INTEGER                 ,INTENT(IN) :: Aerosol_ID
       character(:), allocatable           :: Aerosol_Name
-      
+
       integer :: aerIndex
 
       aerIndex = AerosolCoeff_typeID_to_index( AerosolCoeff, Aerosol_ID )
@@ -978,7 +894,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-    
+
     ! Check the object association status
     IF ( (.NOT. AerosolCoeff_Associated(x)) .OR. &
          (.NOT. AerosolCoeff_Associated(y))      ) RETURN
@@ -1009,5 +925,5 @@ CONTAINS
       is_equal = .TRUE.
 
   END FUNCTION AerosolCoeff_Equal
-  
+
 END MODULE AerosolCoeff_Define

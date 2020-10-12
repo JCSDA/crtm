@@ -1,16 +1,16 @@
-! 
+!
 ! ASvar_Define
 !
 ! Module defining the CRTM AerosolScatter module internal
 ! variable object.
-! 
+!
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 14-Feb-2012
 !                       paul.vandelst@noaa.gov
 !       Modified by:    Yingtao Ma, 2020/8/13; yingtao.ma@noaa.gov
-!                       Modified ASinterp_type structure to allow forinterpolation over size variance 
-!                       
+!                       Modified ASinterp_type structure to allow forinterpolation over size variance
+!
 
 MODULE ASvar_Define
 
@@ -48,7 +48,6 @@ MODULE ASvar_Define
   PUBLIC :: ASvar_Inspect
   PUBLIC :: ASvar_ValidRelease
   PUBLIC :: ASvar_Info
-  PUBLIC :: ASvar_DefineVersion
   PUBLIC :: ASvar_InquireFile
   PUBLIC :: ASvar_ReadFile
   PUBLIC :: ASvar_WriteFile
@@ -65,8 +64,6 @@ MODULE ASvar_Define
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: ASvar_Define.f90 17810 2012-02-17 22:56:28Z paul.vandelst@noaa.gov $'
   ! Release and version
   INTEGER, PARAMETER :: ASVAR_RELEASE = 1  ! This determines structure and file formats.
   INTEGER, PARAMETER :: ASVAR_VERSION = 1  ! This is just the default data version.
@@ -79,7 +76,7 @@ MODULE ASvar_Define
   INTEGER,  PARAMETER :: ML = 256 ! Message length
   INTEGER,  PARAMETER :: SL =  80 ! String length
 
-  
+
   ! ---------------------
   ! Structure definitions
   ! ---------------------
@@ -106,8 +103,8 @@ MODULE ASvar_Define
     REAL(fp) :: r(NPTS)      ! Effective radius
     REAL(fp) :: v(NPTS)      ! Size variance
   END TYPE ASinterp_type
-  
-  
+
+
   ! The internal variable definition to hold information
   ! between FWD, TL, AD, and K-matrix calls
   TYPE :: ASvar_type
@@ -150,7 +147,7 @@ CONTAINS
     Status = self%Is_Allocated
   END FUNCTION ASvar_Associated
 
- 
+
   ELEMENTAL SUBROUTINE ASvar_Destroy( self )
     TYPE(ASvar_type), INTENT(OUT) :: self
     self%Is_Allocated = .FALSE.
@@ -159,8 +156,8 @@ CONTAINS
     self%n_Layers         = 0
     self%n_Aerosols       = 0
   END SUBROUTINE ASvar_Destroy
-  
-  
+
+
   ELEMENTAL SUBROUTINE ASvar_Create( &
     self            , &  ! Output
     n_Legendre_Terms, &  ! Input
@@ -169,10 +166,10 @@ CONTAINS
     n_Aerosols        )  ! Input
     ! Arguments
     TYPE(ASvar_type), INTENT(OUT) :: self
-    INTEGER              , INTENT(IN)  :: n_Legendre_Terms        
-    INTEGER              , INTENT(IN)  :: n_Phase_Elements             
-    INTEGER              , INTENT(IN)  :: n_Layers                
-    INTEGER              , INTENT(IN)  :: n_Aerosols                   
+    INTEGER              , INTENT(IN)  :: n_Legendre_Terms
+    INTEGER              , INTENT(IN)  :: n_Phase_Elements
+    INTEGER              , INTENT(IN)  :: n_Layers
+    INTEGER              , INTENT(IN)  :: n_Aerosols
     ! Local variables
     INTEGER :: alloc_stat
 
@@ -196,14 +193,14 @@ CONTAINS
     ! Initialise dimensions only!
     self%n_Legendre_Terms = n_Legendre_Terms
     self%n_Phase_Elements = n_Phase_Elements
-    self%n_Layers         = n_Layers        
-    self%n_Aerosols       = n_Aerosols      
+    self%n_Layers         = n_Layers
+    self%n_Aerosols       = n_Aerosols
 
     ! Set allocation indicator
     self%Is_Allocated = .TRUE.
   END SUBROUTINE ASvar_Create
-  
-  
+
+
   SUBROUTINE ASvar_Inspect( self)
     TYPE(ASvar_type), INTENT(IN) :: self
     INTEGER :: i2, i3, i4
@@ -215,25 +212,25 @@ CONTAINS
     ! Dimensions
     WRITE(*,'(3x,"n_Legendre_Terms    :",1x,i0)') self%n_Legendre_Terms
     WRITE(*,'(3x,"n_Phase_Elements    :",1x,i0)') self%n_Phase_Elements
-    WRITE(*,'(3x,"n_Layers            :",1x,i0)') self%n_Layers        
-    WRITE(*,'(3x,"n_Aerosols          :",1x,i0)') self%n_Aerosols      
+    WRITE(*,'(3x,"n_Layers            :",1x,i0)') self%n_Layers
+    WRITE(*,'(3x,"n_Aerosols          :",1x,i0)') self%n_Aerosols
     IF ( .NOT. ASvar_Associated(self) ) RETURN
 
     ! Data
     WRITE(*,'(3x,"Mass extinction coefficient (ke) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"ke Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%ke(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%ke(:,i4)
     END DO
     WRITE(*,'(3x,"Single scatter albedo (w) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"w Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%w(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%w(:,i4)
     END DO
     WRITE(*,'(3x,"Asymmetry factor (g) :")')
     DO i4 = 1, self%n_Aerosols
       WRITE(*,'(5x,"g Aerosol index #",i0)') i4
-      WRITE(*,'(5(1x,es13.6,:))') self%g(:,i4)
+      WRITE(*,'(5(1x,es22.15,:))') self%g(:,i4)
     END DO
     WRITE(*,'(3x,"Phase coefficients (pcoeff) :")')
     DO i4 = 1, self%n_Aerosols
@@ -242,12 +239,12 @@ CONTAINS
         WRITE(*,'(7x,"pcoeff Layer index #",i0)') i3
         DO i2 = 1, self%n_Phase_Elements
           WRITE(*,'(9x,"pcoeff Phase element index #",i0)') i2
-          WRITE(*,'(5(1x,es13.6,:))') self%pcoeff(0:,i2,i3,i4)
+          WRITE(*,'(5(1x,es22.15,:))') self%pcoeff(0:,i2,i3,i4)
         END DO
       END DO
     END DO
     WRITE(*,'(3x,"Volume scattering coefficient (total_bs) :")')
-    WRITE(*,'(5(1x,es13.6,:))') self%total_bs
+    WRITE(*,'(5(1x,es22.15,:))') self%total_bs
   END SUBROUTINE ASvar_Inspect
 
 
@@ -308,26 +305,20 @@ CONTAINS
            self%n_Legendre_Terms, &
            self%n_Phase_Elements, &
            self%n_Layers        , &
-           self%n_Aerosols      
-                       
+           self%n_Aerosols
+
     ! Trim the output based on the
     ! dummy argument string length
     Info = Long_String(1:MIN(LEN(Info), LEN_TRIM(Long_String)))
   END SUBROUTINE ASvar_Info
 
 
-  SUBROUTINE ASvar_DefineVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    Id = MODULE_VERSION_ID
-  END SUBROUTINE ASvar_DefineVersion
-
-
   FUNCTION ASvar_InquireFile( &
     Filename        , &  ! Input
-    n_Legendre_Terms, &  ! Optional output  
-    n_Phase_Elements, &  ! Optional output  
-    n_Layers        , &  ! Optional output  
-    n_Aerosols      , &  ! Optional output  
+    n_Legendre_Terms, &  ! Optional output
+    n_Phase_Elements, &  ! Optional output
+    n_Layers        , &  ! Optional output
+    n_Aerosols      , &  ! Optional output
     Release         , &  ! Optional output
     Version         , &  ! Optional output
     Title           , &  ! Optional output
@@ -338,13 +329,13 @@ CONTAINS
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
     INTEGER     , OPTIONAL, INTENT(OUT) :: n_Phase_Elements
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers        
-    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Aerosols      
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release        
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version        
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Layers
+    INTEGER     , OPTIONAL, INTENT(OUT) :: n_Aerosols
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -356,7 +347,7 @@ CONTAINS
     INTEGER :: fid
     TYPE(ASvar_type) :: ASvar
 
- 
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check that the file exists
@@ -393,7 +384,7 @@ CONTAINS
       ASvar%n_Legendre_Terms, &
       ASvar%n_Phase_Elements, &
       ASvar%n_Layers        , &
-      ASvar%n_Aerosols      
+      ASvar%n_Aerosols
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading dimension values from '//TRIM(Filename)//' - '//TRIM(io_msg)
       CALL Inquire_Cleanup(); RETURN
@@ -422,14 +413,14 @@ CONTAINS
 
     ! Assign the return arguments
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = ASvar%n_Legendre_Terms
-    IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = ASvar%n_Phase_Elements    
-    IF ( PRESENT(n_Layers        ) ) n_Layers         = ASvar%n_Layers        
-    IF ( PRESENT(n_Aerosols      ) ) n_Aerosols       = ASvar%n_Aerosols          
-    IF ( PRESENT(Release         ) ) Release          = ASvar%Release        
-    IF ( PRESENT(Version         ) ) Version          = ASvar%Version        
-    
+    IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = ASvar%n_Phase_Elements
+    IF ( PRESENT(n_Layers        ) ) n_Layers         = ASvar%n_Layers
+    IF ( PRESENT(n_Aerosols      ) ) n_Aerosols       = ASvar%n_Aerosols
+    IF ( PRESENT(Release         ) ) Release          = ASvar%Release
+    IF ( PRESENT(Version         ) ) Version          = ASvar%Version
+
   CONTAINS
-  
+
     SUBROUTINE Inquire_CleanUp()
       ! Close file if necessary
       IF ( File_Open(fid) ) THEN
@@ -441,7 +432,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
     END SUBROUTINE Inquire_CleanUp
-    
+
   END FUNCTION ASvar_InquireFile
 
 
@@ -476,7 +467,7 @@ CONTAINS
     INTEGER :: io_stat
     INTEGER :: fid
     TYPE(ASvar_type) :: dummy
-    
+
     ! Setup
     err_stat = SUCCESS
     ! ...Check No_Close argument
@@ -490,7 +481,7 @@ CONTAINS
       IF ( Debug ) noisy = .TRUE.
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( Filename ) ) THEN
       ! ...Inquire for the logical unit number
@@ -534,7 +525,7 @@ CONTAINS
       dummy%n_Legendre_Terms, &
       dummy%n_Phase_Elements, &
       dummy%n_Layers        , &
-      dummy%n_Aerosols      
+      dummy%n_Aerosols
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading data dimensions - '//TRIM(io_msg)
       CALL Read_Cleanup(); RETURN
@@ -542,17 +533,17 @@ CONTAINS
     ! ...Allocate the object
     CALL ASvar_Create( &
            ASvar                 , &
-           dummy%n_Legendre_Terms, &        
-           dummy%n_Phase_Elements, &        
-           dummy%n_Layers        , &        
-           dummy%n_Aerosols        )                  
+           dummy%n_Legendre_Terms, &
+           dummy%n_Phase_Elements, &
+           dummy%n_Layers        , &
+           dummy%n_Aerosols        )
     IF ( .NOT. ASvar_Associated( ASvar ) ) THEN
       msg = 'ASvar object allocation failed.'
       CALL Read_Cleanup(); RETURN
     END IF
     ! ...Explicitly assign the version number
     ASvar%Version = dummy%Version
-        
+
 
     ! Read the global attributes
     err_stat = ReadGAtts_Binary_File( &
@@ -621,7 +612,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Read_CleanUp()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -666,7 +657,7 @@ CONTAINS
     LOGICAL :: noisy
     INTEGER :: io_stat
     INTEGER :: fid
-    
+
 
     ! Setup
     err_stat = SUCCESS
@@ -686,7 +677,7 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
 
-   
+
     ! Check if the file is open.
     IF ( File_Open( FileName ) ) THEN
       ! ...Inquire for the logical unit number
@@ -721,7 +712,7 @@ CONTAINS
       ASvar%n_Legendre_Terms, &
       ASvar%n_Phase_Elements, &
       ASvar%n_Layers        , &
-      ASvar%n_Aerosols      
+      ASvar%n_Aerosols
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing data dimensions - '//TRIM(io_msg)
       CALL Write_Cleanup(); RETURN
@@ -731,7 +722,7 @@ CONTAINS
     ! Write the global attributes
     err_stat = WriteGAtts_Binary_File( &
                  fid, &
-                 Write_Module = MODULE_VERSION_ID, &
+                 Write_Module = 'Unknown', &
                  Title        = Title  , &
                  History      = History, &
                  Comment      = Comment  )
@@ -796,7 +787,7 @@ CONTAINS
      END IF
 
    CONTAINS
-   
+
      SUBROUTINE Write_Cleanup()
        IF ( File_Open(Filename) ) THEN
          CLOSE( fid, IOSTAT=io_stat, IOMSG=io_msg )
@@ -809,7 +800,7 @@ CONTAINS
 
   END FUNCTION ASvar_WriteFile
 
-  
+
 !################################################################################
 !################################################################################
 !##                                                                            ##
@@ -824,7 +815,7 @@ CONTAINS
 
     ! Set up
     is_equal = .FALSE.
-   
+
     ! Check the object association status
     IF ( (.NOT. ASvar_Associated(x)) .OR. &
          (.NOT. ASvar_Associated(y))      ) RETURN

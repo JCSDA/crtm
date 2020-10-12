@@ -1,14 +1,16 @@
 !
 ! AerosolCoeff_netCDF_IO
 !
-! Module containing routines to read and write AerosolCoeff netCDF 
+! Module containing routines to read and write AerosolCoeff netCDF
 ! format files.
 !
 !
 ! CREATION HISTORY:
 !       Written by:     Paul van Delst, 28-Apr-2007
 !                       paul.vandelst@noaa.gov
-!
+!       Modified by     Cheng Dang, 10-Oct-2020;
+!                       dangch@ucar.edu
+!                       Update dimensions to accomdate CMAQ aerosol Coefficient
 
 MODULE AerosolCoeff_netCDF_IO
 
@@ -58,14 +60,15 @@ MODULE AerosolCoeff_netCDF_IO
   ! Global attribute names. Case sensitive
   CHARACTER(*), PARAMETER :: RELEASE_GATTNAME     = 'Release'
   CHARACTER(*), PARAMETER :: VERSION_GATTNAME     = 'Version'
-  CHARACTER(*), PARAMETER :: DATA_SOURCE_GATTNAME = 'Data_Source' 
-  CHARACTER(*), PARAMETER :: TITLE_GATTNAME       = 'Title' 
-  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME     = 'History' 
-  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME     = 'Comment' 
+  CHARACTER(*), PARAMETER :: DATA_SOURCE_GATTNAME = 'Data_Source'
+  CHARACTER(*), PARAMETER :: TITLE_GATTNAME       = 'Title'
+  CHARACTER(*), PARAMETER :: HISTORY_GATTNAME     = 'History'
+  CHARACTER(*), PARAMETER :: COMMENT_GATTNAME     = 'Comment'
 
   ! Dimension names
   CHARACTER(*), PARAMETER :: WAVELENGTH_DIMNAME = 'n_Wavelengths'
   CHARACTER(*), PARAMETER :: REFF_DIMNAME       = 'n_Radii'
+  CHARACTER(*), PARAMETER :: RSIG_DIMNAME       = 'n_Sigma'
   CHARACTER(*), PARAMETER :: TYPE_DIMNAME       = 'n_Types'
   CHARACTER(*), PARAMETER :: RH_DIMNAME         = 'n_RH'
   CHARACTER(*), PARAMETER :: LEGENDRE_DIMNAME   = 'n_Legendre_Terms'
@@ -77,6 +80,7 @@ MODULE AerosolCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: TYPE_NAME_VARNAME  = 'Aerosol_Type_Name'
   CHARACTER(*), PARAMETER :: WAVELENGTH_VARNAME = 'Wavelength'
   CHARACTER(*), PARAMETER :: REFF_VARNAME       = 'Reff'
+  CHARACTER(*), PARAMETER :: RSIG_VARNAME       = 'Rsig'
   CHARACTER(*), PARAMETER :: RH_VARNAME         = 'RH'
   CHARACTER(*), PARAMETER :: KE_VARNAME         = 'ke'
   CHARACTER(*), PARAMETER :: W_VARNAME          = 'w'
@@ -90,19 +94,20 @@ MODULE AerosolCoeff_netCDF_IO
   CHARACTER(*), PARAMETER :: TYPE_NAME_LONGNAME  = 'Aerosol type name'
   CHARACTER(*), PARAMETER :: WAVELENGTH_LONGNAME = 'Wavelength'
   CHARACTER(*), PARAMETER :: REFF_LONGNAME       = 'Effective radius'
+  CHARACTER(*), PARAMETER :: RSIG_LONGNAME       = 'Mode radius deviation'
   CHARACTER(*), PARAMETER :: RH_LONGNAME         = 'Relative humidity'
   CHARACTER(*), PARAMETER :: KE_LONGNAME         = 'ke'
   CHARACTER(*), PARAMETER :: W_LONGNAME          = 'w'
   CHARACTER(*), PARAMETER :: G_LONGNAME          = 'g'
   CHARACTER(*), PARAMETER :: PCOEFF_LONGNAME     = 'pcoeff'
-  
+
   ! Variable description attribute.
   CHARACTER(*), PARAMETER :: DESCRIPTION_ATTNAME = 'description'
-
   CHARACTER(*), PARAMETER :: TYPE_DESCRIPTION       = 'Flag/index value used to identify and reference the aerosol type'
   CHARACTER(*), PARAMETER :: TYPE_NAME_DESCRIPTION  = 'Name of the aerosol type'
   CHARACTER(*), PARAMETER :: WAVELENGTH_DESCRIPTION = 'Wavelength LUT dimension vector'
   CHARACTER(*), PARAMETER :: REFF_DESCRIPTION       = 'Effective radius LUT dimension vector'
+  CHARACTER(*), PARAMETER :: RSIG_DESCRIPTION       = 'Mode radius standard deviation LUT dimension vector'
   CHARACTER(*), PARAMETER :: RH_DESCRIPTION         = 'Relative humidity LUT dimension vector'
   CHARACTER(*), PARAMETER :: KE_DESCRIPTION         = 'Mass extinction coefficient for aerosol scatterers'
   CHARACTER(*), PARAMETER :: W_DESCRIPTION          = 'Single scatter albedo for aerosol scatterers'
@@ -112,11 +117,11 @@ MODULE AerosolCoeff_netCDF_IO
 
   ! Variable units attribute.
   CHARACTER(*), PARAMETER :: UNITS_ATTNAME = 'units'
-  
   CHARACTER(*), PARAMETER :: TYPE_UNITS       = 'N/A'
   CHARACTER(*), PARAMETER :: TYPE_NAME_UNITS  = 'N/A'
   CHARACTER(*), PARAMETER :: WAVELENGTH_UNITS = 'Microns (um)'
   CHARACTER(*), PARAMETER :: REFF_UNITS       = 'Microns (um)'
+  CHARACTER(*), PARAMETER :: RSIG_UNITS       = 'N/A'
   CHARACTER(*), PARAMETER :: RH_UNITS         = 'fraction (0->1)'
   CHARACTER(*), PARAMETER :: KE_UNITS         = 'Metres squared per kilogram (m^2.kg^-1)'
   CHARACTER(*), PARAMETER :: W_UNITS          = 'N/A'
@@ -126,11 +131,12 @@ MODULE AerosolCoeff_netCDF_IO
 
   ! Variable _FillValue attribute.
   CHARACTER(*), PARAMETER :: FILLVALUE_ATTNAME = '_FillValue'
-  
+
   INTEGER(Long), PARAMETER :: TYPE_FILLVALUE       = 0
   CHARACTER(*) , PARAMETER :: TYPE_NAME_FILLVALUE  = NF90_FILL_CHAR
   REAL(Double) , PARAMETER :: WAVELENGTH_FILLVALUE = ZERO
   REAL(Double) , PARAMETER :: REFF_FILLVALUE       = ZERO
+  REAL(Double) , PARAMETER :: RSIG_FILLVALUE       = ZERO
   REAL(Double) , PARAMETER :: RH_FILLVALUE         = ZERO
   REAL(Double) , PARAMETER :: KE_FILLVALUE         = ZERO
   REAL(Double) , PARAMETER :: W_FILLVALUE          = ZERO
@@ -144,8 +150,9 @@ MODULE AerosolCoeff_netCDF_IO
   INTEGER, PARAMETER :: WAVELENGTH_TYPE = NF90_DOUBLE
   INTEGER, PARAMETER :: FREQUENCY_TYPE  = NF90_DOUBLE
   INTEGER, PARAMETER :: REFF_TYPE       = NF90_DOUBLE
+  INTEGER, PARAMETER :: RSIG_TYPE       = NF90_DOUBLE
   INTEGER, PARAMETER :: RH_TYPE         = NF90_DOUBLE
-  INTEGER, PARAMETER :: KE_TYPE         = NF90_DOUBLE 
+  INTEGER, PARAMETER :: KE_TYPE         = NF90_DOUBLE
   INTEGER, PARAMETER :: W_TYPE          = NF90_DOUBLE
   INTEGER, PARAMETER :: G_TYPE          = NF90_DOUBLE
   INTEGER, PARAMETER :: PCOEFF_TYPE     = NF90_DOUBLE
@@ -284,9 +291,11 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_netCDF_InquireFile( &
+    Aerosol_Model   , &  ! Input
     Filename        , &  ! Input
     n_Wavelengths   , &  ! Optional output
     n_Radii         , &  ! Optional output
+    n_Sigma         , &  ! Optional output
     n_Types         , &  ! Optional output
     n_RH            , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
@@ -295,21 +304,25 @@ CONTAINS
     Version         , &  ! Optional output
     Title           , &  ! Optional output
     History         , &  ! Optional output
+    Scheme          , &  ! Optional output
     Comment         ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),           INTENT(IN)  :: Filename
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths       
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii             
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types             
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH                
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements    
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Release         
-    INTEGER,      OPTIONAL, INTENT(OUT) :: Version         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title           
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History         
-    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment         
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Phase_Elements
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Release
+    INTEGER,      OPTIONAL, INTENT(OUT) :: Version
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Scheme
+    CHARACTER(*), OPTIONAL, INTENT(OUT) :: Comment
     ! Function result
     INTEGER :: err_stat
     ! Function parameters
@@ -321,7 +334,7 @@ CONTAINS
     INTEGER :: FileId
     INTEGER :: DimId
     TYPE(AerosolCoeff_type) :: AerosolCoeff
-    
+
     ! Set up
     err_stat = SUCCESS
     Close_File = .FALSE.
@@ -339,7 +352,7 @@ CONTAINS
 
 
     ! Get the dimensions
-    ! ...n_Wavelengths dimension 
+    ! ...n_Wavelengths dimension
     NF90_Status = NF90_INQ_DIMID( FileId,WAVELENGTH_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//WAVELENGTH_DIMNAME//' - '// &
@@ -352,7 +365,7 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_Radii dimension 
+    ! ...n_Radii dimension
     NF90_Status = NF90_INQ_DIMID( FileId,REFF_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//REFF_DIMNAME//' - '// &
@@ -365,7 +378,20 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_Types dimension 
+    ! ...n_Sigma dimension
+    NF90_Status = NF90_INQ_DIMID( FileId,RSIG_DIMNAME,DimId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring dimension ID for '//RSIG_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_INQUIRE_DIMENSION( FileId,DimId,Len=AerosolCoeff%n_Sigma )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading dimension value for '//RSIG_DIMNAME//' - '// &
+            TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Inquire_Cleanup(); RETURN
+    END IF
+    ! ...n_Types dimension
     NF90_Status = NF90_INQ_DIMID( FileId,TYPE_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//TYPE_DIMNAME//' - '// &
@@ -378,7 +404,7 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_RH dimension 
+    ! ...n_RH dimension
     NF90_Status = NF90_INQ_DIMID( FileId,RH_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//RH_DIMNAME//' - '// &
@@ -391,7 +417,7 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_Legendre_Terms dimension 
+    ! ...n_Legendre_Terms dimension
     NF90_Status = NF90_INQ_DIMID( FileId,LEGENDRE_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//LEGENDRE_DIMNAME//' - '// &
@@ -404,7 +430,7 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-    ! ...n_Phase_Elements dimension 
+    ! ...n_Phase_Elements dimension
     NF90_Status = NF90_INQ_DIMID( FileId,PHASE_DIMNAME,DimId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring dimension ID for '//PHASE_DIMNAME//' - '// &
@@ -417,8 +443,8 @@ CONTAINS
             TRIM(NF90_STRERROR( NF90_Status ))
       CALL Inquire_Cleanup(); RETURN
     END IF
-  
-  
+
+
     ! Get the global attributes
     err_stat = ReadGAtts( Filename, &
                           FileId  , &
@@ -432,6 +458,9 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
+    ! Add scheme
+    AerosolCoeff%Scheme = Aerosol_Model
+
 
     ! Close the file
     NF90_Status = NF90_CLOSE( FileId )
@@ -441,19 +470,20 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-
     ! Set the return values
     IF ( PRESENT(n_Wavelengths   ) ) n_Wavelengths    = AerosolCoeff%n_Wavelengths
-    IF ( PRESENT(n_Radii         ) ) n_Radii          = AerosolCoeff%n_Radii      
+    IF ( PRESENT(n_Radii         ) ) n_Radii          = AerosolCoeff%n_Radii
+    IF ( PRESENT(n_Sigma         ) ) n_Sigma          = AerosolCoeff%n_Sigma
     IF ( PRESENT(n_Types         ) ) n_Types          = AerosolCoeff%n_Types
-    IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH      
+    IF ( PRESENT(n_RH            ) ) n_RH             = AerosolCoeff%n_RH
     IF ( PRESENT(n_Legendre_Terms) ) n_Legendre_Terms = AerosolCoeff%n_Legendre_Terms-1  ! Indexed from 0, so subtract 1.
     IF ( PRESENT(n_Phase_Elements) ) n_Phase_Elements = AerosolCoeff%n_Phase_Elements
-    IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release     
-    IF ( PRESENT(Version         ) ) Version          = AerosolCoeff%Version     
+    IF ( PRESENT(Release         ) ) Release          = AerosolCoeff%Release
+    IF ( PRESENT(Version         ) ) Version          = AerosolCoeff%Version
+    IF ( PRESENT(Scheme          ) ) Scheme           = AerosolCoeff%Scheme
 
   CONTAINS
- 
+
     SUBROUTINE Inquire_CleanUp()
       IF ( Close_File ) THEN
         NF90_Status = NF90_CLOSE( FileId )
@@ -544,6 +574,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_netCDF_WriteFile( &
+    Aerosol_Model, &  ! Input
     Filename    , &  ! Input
     AerosolCoeff, &  ! Input
     Quiet       , &  ! Optional input
@@ -552,6 +583,7 @@ CONTAINS
     Comment     ) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN) :: Aerosol_Model
     CHARACTER(*),            INTENT(IN) :: Filename
     TYPE(AerosolCoeff_type), INTENT(IN) :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN) :: Quiet
@@ -589,22 +621,51 @@ CONTAINS
 
 
     ! Create the output file
-    err_stat = CreateFile( &
-                 Filename                              , &  ! Input
-                 AerosolCoeff%n_Wavelengths            , &  ! Input
-                 AerosolCoeff%n_Radii                  , &  ! Input
-                 AerosolCoeff%n_Types                  , &  ! Input
-                 AerosolCoeff%n_RH                     , &  ! Input
-                 AerosolCoeff%n_Legendre_Terms         , &  ! Input
-                 AerosolCoeff%n_Phase_Elements         , &  ! Input
-                 FileId                                , &  ! Output
-                 Version     = AerosolCoeff%Version    , &  ! Optional input
-                 Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
-                 Title       = Title                   , &  ! Optional input
-                 History     = History                 , &  ! Optional input
-                 Comment     = Comment                   )  ! Optional input
-    IF ( err_stat /= SUCCESS ) THEN
-      msg = 'Error creating output file '//TRIM(Filename)
+    IF ( Aerosol_Model == "GOCART" ) THEN
+      err_stat = CreateFile( &
+                   Filename                              , &  ! Input
+                   AerosolCoeff%n_Wavelengths            , &  ! Input
+                   AerosolCoeff%n_Radii                  , &  ! Input
+                   AerosolCoeff%n_Sigma                  , &  ! Input
+                   AerosolCoeff%n_Types                  , &  ! Input
+                   AerosolCoeff%n_RH                     , &  ! Input
+                   AerosolCoeff%n_Legendre_Terms         , &  ! Input
+                   AerosolCoeff%n_Phase_Elements         , &  ! Input
+                   FileId                                , &  ! Output
+                   !Scheme      = AerosolCoeff%Scheme     , &  ! Optional input
+                   Version     = AerosolCoeff%Version    , &  ! Optional input
+                   Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
+                   Title       = Title                   , &  ! Optional input
+                   History     = History                 , &  ! Optional input
+                   Comment     = Comment                   )  ! Optional input
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error creating output file '//TRIM(Filename)
+        CALL Write_Cleanup(); RETURN
+      END IF
+    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+      err_stat = CreateFile( &
+                   Filename                              , &  ! Input
+                   AerosolCoeff%n_Wavelengths            , &  ! Input
+                   AerosolCoeff%n_Radii                  , &  ! Input
+                   AerosolCoeff%n_Sigma                  , &  ! Input
+                   AerosolCoeff%n_Types                  , &  ! Input
+                   AerosolCoeff%n_RH                     , &  ! Input
+                   AerosolCoeff%n_Legendre_Terms         , &  ! Input
+                   AerosolCoeff%n_Phase_Elements         , &  ! Input
+                   FileId                                , &  ! Output
+                   !Scheme      = AerosolCoeff%Scheme     , &  ! Optional input
+                   Version     = AerosolCoeff%Version    , &  ! Optional input
+                   Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
+                   Title       = Title                   , &  ! Optional input
+                   History     = History                 , &  ! Optional input
+                   Comment     = Comment                   )  ! Optional input
+      IF ( err_stat /= SUCCESS ) THEN
+        msg = 'Error creating output file '//TRIM(Filename)
+        CALL Write_Cleanup(); RETURN
+      END IF
+    ELSE
+      msg = 'AerosolCoeff_netCDF_WriteFile: Invalid scheme of aerosol coefficient'// &
+            TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Close the file if any error from here on
@@ -612,7 +673,7 @@ CONTAINS
 
 
     ! Write the data items
-    ! ...Type variable 
+    ! ...Type variable
     NF90_Status = NF90_INQ_VARID( FileId,TYPE_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//TYPE_VARNAME//&
@@ -625,7 +686,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Type_Name variable 
+    ! ...Type_Name variable
     NF90_Status = NF90_INQ_VARID( FileId,TYPE_NAME_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//TYPE_NAME_VARNAME//&
@@ -638,7 +699,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Wavelength variable 
+    ! ...Wavelength variable
     NF90_Status = NF90_INQ_VARID( FileId,WAVELENGTH_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//WAVELENGTH_VARNAME//&
@@ -651,7 +712,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Reff variable 
+    ! ...Reff variable
     NF90_Status = NF90_INQ_VARID( FileId,REFF_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_VARNAME//&
@@ -664,7 +725,22 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...RH variable 
+    ! ...Rsig variable for CMAQ
+    IF ( Aerosol_Model == "CMAQ" ) THEN
+      NF90_Status = NF90_INQ_VARID( FileId,REFF_VARNAME,VarId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_PUT_VAR( FileId,VarID,AerosolCoeff%Rsig )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error writing '//RSIG_VARNAME//' to '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Write_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...RH variable
     NF90_Status = NF90_INQ_VARID( FileId,RH_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//RH_VARNAME//&
@@ -677,7 +753,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...ke variable 
+    ! ...ke variable
     NF90_Status = NF90_INQ_VARID( FileId,KE_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_VARNAME//&
@@ -690,7 +766,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...w variable 
+    ! ...w variable
     NF90_Status = NF90_INQ_VARID( FileId,W_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//W_VARNAME//&
@@ -703,7 +779,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...g variable 
+    ! ...g variable
     NF90_Status = NF90_INQ_VARID( FileId,G_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//G_VARNAME//&
@@ -716,7 +792,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...pcoeff variable 
+    ! ...pcoeff variable
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_VARNAME//&
@@ -841,14 +917,16 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_netCDF_ReadFile( &
-    Filename    , &  ! Input
-    AerosolCoeff, &  ! Output
-    Quiet       , &  ! Optional input
-    Title       , &  ! Optional output
-    History     , &  ! Optional output
-    Comment     ) &  ! Optional output
+    Aerosol_Model , &  ! Input
+    Filename      , &  ! Input
+    AerosolCoeff  , &  ! Output
+    Quiet         , &  ! Optional input
+    Title         , &  ! Optional output
+    History       , &  ! Optional output
+    Comment     )   &  ! Optional output
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),            INTENT(IN)  :: Filename
     TYPE(AerosolCoeff_type), INTENT(OUT) :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN)  :: Quiet
@@ -866,9 +944,10 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: FileId
     INTEGER :: n_Wavelengths
-    INTEGER :: n_Radii      
+    INTEGER :: n_Radii
+    INTEGER :: n_Sigma
     INTEGER :: n_Types
-    INTEGER :: n_RH      
+    INTEGER :: n_RH
     INTEGER :: n_Legendre_Terms
     INTEGER :: n_Phase_Elements
     INTEGER :: VarId
@@ -886,14 +965,15 @@ CONTAINS
     Noisy = .TRUE.
     IF ( PRESENT(Quiet) ) Noisy = .NOT. Quiet
 
-
     ! Inquire the file to get the dimensions
     err_stat = AerosolCoeff_netCDF_InquireFile( &
+                 Aerosol_Model, &
                  Filename, &
                  n_Wavelengths    = n_Wavelengths, &
                  n_Radii          = n_Radii      , &
-                 n_Types          = n_Types, &
-                 n_RH             = n_RH      , &
+                 n_Sigma          = n_Sigma      , &
+                 n_Types          = n_Types      , &
+                 n_RH             = n_RH         , &
                  n_Legendre_Terms = n_Legendre_Terms, &
                  n_Phase_Elements = n_Phase_Elements  )
     IF ( err_stat /= SUCCESS ) THEN
@@ -901,12 +981,12 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
-
     ! Allocate the output structure
     CALL AerosolCoeff_Create( &
-           AerosolCoeff, &
+           AerosolCoeff    , &
            n_Wavelengths   , &
            n_Radii         , &
+           n_Sigma         , &
            n_Types         , &
            n_RH            , &
            n_Legendre_Terms, &
@@ -927,7 +1007,6 @@ CONTAINS
     ! ...Close the file if any error from here on
     Close_File = .TRUE.
 
-
     ! Read the global attributes
     err_stat = ReadGAtts( Filename, &
                           FileID  , &
@@ -946,10 +1025,11 @@ CONTAINS
       msg = 'AerosolCoeff Release check failed.'
       CALL Read_Cleanup(); RETURN
     END IF
+    ! Assign scheme based on Aerosol_Model
+    AerosolCoeff%Scheme = Aerosol_Model
 
-    
     ! Read the AerosolCoeff data
-    ! ...Type variable 
+    ! ...Type variable
     NF90_Status = NF90_INQ_VARID( FileId,TYPE_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//TYPE_VARNAME//&
@@ -962,7 +1042,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Type_Name variable 
+    ! ...Type_Name variable
     NF90_Status = NF90_INQ_VARID( FileId,TYPE_NAME_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//TYPE_NAME_VARNAME//&
@@ -975,7 +1055,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Wavelength variable 
+    ! ...Wavelength variable
     NF90_Status = NF90_INQ_VARID( FileId,WAVELENGTH_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//WAVELENGTH_VARNAME//&
@@ -988,7 +1068,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Reff variable 
+    ! ...Reff variable
     NF90_Status = NF90_INQ_VARID( FileId,REFF_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//REFF_VARNAME//&
@@ -1001,7 +1081,22 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...RH variable 
+    ! ...Rsig variable for CMAQ
+    IF ( Aerosol_Model == 'CMAQ') THEN
+      NF90_Status = NF90_INQ_VARID( FileId,RSIG_VARNAME,VarId )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
+              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Read_Cleanup(); RETURN
+      END IF
+      NF90_Status = NF90_GET_VAR( FileId,VarID,AerosolCoeff%Rsig )
+      IF ( NF90_Status /= NF90_NOERR ) THEN
+        msg = 'Error reading '//RSIG_VARNAME//' from '//TRIM(Filename)//&
+              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+        CALL Read_Cleanup(); RETURN
+      END IF
+    END IF
+    ! ...RH variable
     NF90_Status = NF90_INQ_VARID( FileId,RH_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//RH_VARNAME//&
@@ -1014,7 +1109,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...ke variable 
+    ! ...ke variable
     NF90_Status = NF90_INQ_VARID( FileId,KE_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//KE_VARNAME//&
@@ -1027,7 +1122,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...w variable 
+    ! ...w variable
     NF90_Status = NF90_INQ_VARID( FileId,W_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//W_VARNAME//&
@@ -1040,7 +1135,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...g variable 
+    ! ...g variable
     NF90_Status = NF90_INQ_VARID( FileId,G_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//G_VARNAME//&
@@ -1053,7 +1148,7 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...pcoeff variable 
+    ! ...pcoeff variable
     NF90_Status = NF90_INQ_VARID( FileId,PCOEFF_VARNAME,VarId )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error inquiring '//TRIM(Filename)//' for '//PCOEFF_VARNAME//&
@@ -1067,7 +1162,6 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
-
     ! Close the file
     NF90_Status = NF90_CLOSE( FileId ); Close_File = .FALSE.
     IF ( NF90_Status /= NF90_NOERR ) THEN
@@ -1075,10 +1169,8 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
 
-
     ! Compute the frequencies
-    CALL AerosolCoeff_Frequency( AerosolCoeff )    
-    
+    CALL AerosolCoeff_Frequency( AerosolCoeff )
 
     ! Output an info message
     IF ( Noisy ) THEN
@@ -1087,7 +1179,7 @@ CONTAINS
     END IF
 
   CONTAINS
- 
+
     SUBROUTINE Read_CleanUp()
       IF ( Close_File ) THEN
         NF90_Status = NF90_CLOSE( FileId )
@@ -1099,37 +1191,8 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Read_CleanUp
-    
+
   END FUNCTION AerosolCoeff_netCDF_ReadFile
-
-
-!--------------------------------------------------------------------------------
-!:sdoc+:
-!
-! NAME:
-!       AerosolCoeff_netCDF_IOVersion
-!
-! PURPOSE:
-!       Subroutine to return the module version information.
-!
-! CALLING SEQUENCE:
-!       CALL AerosolCoeff_netCDF_IOVersion( Id )
-!
-! OUTPUT ARGUMENTS:
-!       Id:            Character string containing the version Id information
-!                      for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT(OUT)
-!
-!:sdoc-:
-!--------------------------------------------------------------------------------
-
-!  SUBROUTINE AerosolCoeff_netCDF_IOVersion( Id )
-!    CHARACTER(*), INTENT(OUT) :: Id
-!    Id = MODULE_VERSION_ID
-!  END SUBROUTINE AerosolCoeff_netCDF_IOVersion
 
 
 !##################################################################################
@@ -1154,7 +1217,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN) :: Filename
     INTEGER     ,           INTENT(IN) :: FileId
-    INTEGER     , OPTIONAL, INTENT(IN) :: Version         
+    INTEGER     , OPTIONAL, INTENT(IN) :: Version
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Data_Source
     CHARACTER(*), OPTIONAL, INTENT(IN) :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN) :: History
@@ -1248,9 +1311,9 @@ CONTAINS
         CALL WriteGAtts_Cleanup(); RETURN
       END IF
     END IF
-    
+
  CONTAINS
-  
+
     SUBROUTINE WriteGAtts_CleanUp()
       NF90_Status = NF90_CLOSE( FileId )
       IF ( NF90_Status /= NF90_NOERR ) &
@@ -1263,7 +1326,7 @@ CONTAINS
                             TRIM(NF90_STRERROR( NF90_Status ) )//TRIM(msg), &
                             err_stat )
     END SUBROUTINE WriteGAtts_CleanUp
-    
+
   END FUNCTION WriteGAtts
 
 
@@ -1282,8 +1345,8 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     ,           INTENT(IN)  :: FileId
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Release        
-    INTEGER     , OPTIONAL, INTENT(OUT) :: Version         
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Release
+    INTEGER     , OPTIONAL, INTENT(OUT) :: Version
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Data_Source
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: Title
     CHARACTER(*), OPTIONAL, INTENT(OUT) :: History
@@ -1297,7 +1360,7 @@ CONTAINS
     CHARACTER(256)  :: GAttName
     CHARACTER(5000) :: GAttString
     INTEGER :: NF90_Status
-    
+
     ! Set up
     err_stat = SUCCESS
 
@@ -1324,7 +1387,7 @@ CONTAINS
       NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF        
+      END IF
       CALL StrClean( GAttString )
       Data_Source = GAttString(1:MIN(LEN(Data_Source), LEN_TRIM(GAttString)))
     END IF
@@ -1334,7 +1397,7 @@ CONTAINS
       NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF        
+      END IF
       CALL StrClean( GAttString )
       title = GAttString(1:MIN(LEN(title), LEN_TRIM(GAttString)))
     END IF
@@ -1344,7 +1407,7 @@ CONTAINS
       NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF        
+      END IF
       CALL StrClean( GAttString )
       history = GAttString(1:MIN(LEN(history), LEN_TRIM(GAttString)))
     END IF
@@ -1354,7 +1417,7 @@ CONTAINS
       NF90_Status = NF90_GET_ATT( FileID,NF90_GLOBAL,TRIM(GAttName),GAttString )
       IF ( NF90_Status /= NF90_NOERR ) THEN
         CALL ReadGAtts_Cleanup(); RETURN
-      END IF        
+      END IF
       CALL StrClean( GAttString )
       comment = GAttString(1:MIN(LEN(comment), LEN_TRIM(GAttString)))
     END IF
@@ -1371,12 +1434,11 @@ CONTAINS
   END FUNCTION ReadGAtts
 
 
-  ! Function to create a AerosolCoeff file for writing
-
   FUNCTION CreateFile( &
     Filename        , &  ! Input
     n_Wavelengths   , &  ! Input
     n_Radii         , &  ! Input
+    n_Sigma         , &  ! Input
     n_Types         , &  ! Input
     n_RH            , &  ! Input
     n_Legendre_Terms, &  ! Input
@@ -1391,13 +1453,14 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Filename
     INTEGER     ,           INTENT(IN)  :: n_Wavelengths
-    INTEGER     ,           INTENT(IN)  :: n_Radii      
+    INTEGER     ,           INTENT(IN)  :: n_Radii
+    INTEGER     ,           INTENT(IN)  :: n_Sigma
     INTEGER     ,           INTENT(IN)  :: n_Types
-    INTEGER     ,           INTENT(IN)  :: n_RH      
+    INTEGER     ,           INTENT(IN)  :: n_RH
     INTEGER     ,           INTENT(IN)  :: n_Legendre_Terms
     INTEGER     ,           INTENT(IN)  :: n_Phase_Elements
     INTEGER     ,           INTENT(OUT) :: FileId
-    INTEGER     , OPTIONAL, INTENT(IN)  :: Version         
+    INTEGER     , OPTIONAL, INTENT(IN)  :: Version
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Data_Source
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: Title
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: History
@@ -1412,6 +1475,7 @@ CONTAINS
     INTEGER :: NF90_Status
     INTEGER :: n_Wavelengths_DimID
     INTEGER :: n_Radii_DimID
+    INTEGER :: n_Sigma_DimID
     INTEGER :: n_Types_DimID
     INTEGER :: n_RH_DimID
     INTEGER :: n_Legendre_Terms_DimID
@@ -1420,7 +1484,7 @@ CONTAINS
     INTEGER :: varID
     INTEGER :: Put_Status(4)
     TYPE(AerosolCoeff_type) :: dummy
-    
+
     ! Setup
     err_stat = SUCCESS
     Close_File = .FALSE.
@@ -1448,6 +1512,13 @@ CONTAINS
     NF90_Status = NF90_DEF_DIM( FileID,REFF_DIMNAME,n_Radii,n_Radii_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//REFF_DIMNAME//' dimension in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Number of mode radius deviation
+    NF90_Status = NF90_DEF_DIM( FileID,RSIG_DIMNAME,n_Sigma,n_Sigma_DimID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//RSIG_DIMNAME//' dimension in '//&
             TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Create_Cleanup(); RETURN
     END IF
@@ -1481,7 +1552,7 @@ CONTAINS
       CALL Create_Cleanup(); RETURN
     END IF
     ! ...Type_Name string length
-    CALL AerosolCoeff_Create(dummy,0,0,1,0,0,0) ! Only n_Types dimension non-zero
+    CALL AerosolCoeff_Create(dummy,0,0,0,1,0,0,0) ! Only n_Types dimension non-zero
     NF90_Status = NF90_DEF_DIM( FileID,TNSL_DIMNAME,LEN(dummy%Type_Name(1)),tnsl_DimID )
     IF ( NF90_Status /= NF90_NOERR ) THEN
       msg = 'Error defining '//TNSL_DIMNAME//' dimension in '//&
@@ -1578,6 +1649,25 @@ CONTAINS
     Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,REFF_DESCRIPTION )
     Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,REFF_UNITS       )
     Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,REFF_FILLVALUE   )
+    IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
+      msg = 'Error writing '//REFF_VARNAME//' variable attributes to '//TRIM(Filename)
+      CALL Create_Cleanup(); RETURN
+    END IF
+    ! ...Rsig variable
+    NF90_Status = NF90_DEF_VAR( FileID, &
+      RSIG_VARNAME, &
+      RSIG_TYPE, &
+      dimIDs=(/n_Sigma_DimID,n_Types_DimID/), &
+      varID=VarID )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error defining '//RSIG_VARNAME//' variable in '//&
+            TRIM(Filename)//' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Create_Cleanup(); RETURN
+    END IF
+    Put_Status(1) = NF90_PUT_ATT( FileID,VarID,LONGNAME_ATTNAME   ,RSIG_LONGNAME    )
+    Put_Status(2) = NF90_PUT_ATT( FileID,VarID,DESCRIPTION_ATTNAME,RSIG_DESCRIPTION )
+    Put_Status(3) = NF90_PUT_ATT( FileID,VarID,UNITS_ATTNAME      ,RSIG_UNITS       )
+    Put_Status(4) = NF90_PUT_ATT( FileID,VarID,FILLVALUE_ATTNAME  ,RSIG_FILLVALUE   )
     IF ( ANY(Put_Status /= NF90_NOERR) ) THEN
       msg = 'Error writing '//REFF_VARNAME//' variable attributes to '//TRIM(Filename)
       CALL Create_Cleanup(); RETURN
@@ -1689,7 +1779,7 @@ CONTAINS
     END IF
 
   CONTAINS
- 
+
     SUBROUTINE Create_CleanUp()
       IF ( Close_File ) THEN
         NF90_Status = NF90_CLOSE( FileID )
@@ -1700,7 +1790,7 @@ CONTAINS
       err_stat = FAILURE
       CALL Display_Message( ROUTINE_NAME,msg,err_stat )
     END SUBROUTINE Create_CleanUp
-    
+
   END FUNCTION CreateFile
 
 END MODULE AerosolCoeff_netCDF_IO

@@ -89,7 +89,7 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       Cloud_Model:        Name of the cloud scheme for scattering calculation
 !                           Available cloud scheme:
-!                           - CRTM_v2.3  [DEFAULT]
+!                           - GOCART  [DEFAULT]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -217,9 +217,8 @@ CONTAINS
     END IF
     
     ! Read the CloudCoeff data file
-    IF ( Cloud_Model == 'CRTM_v2.3' ) THEN
+    IF ( Cloud_Model == 'GOCART' ) THEN
       IF ( CloudCoeff_IO == 'Binary' ) THEN
-        !...Binary IO
         WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_Binary_ReadFile( &
                      CloudCoeff_File, &
@@ -229,9 +228,8 @@ CONTAINS
           WRITE( msg,'("Error reading CloudCoeff file ",a)') TRIM(CloudCoeff_File)
           CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
           RETURN
-        END IF
-      ELSE
-        !...NetCDF IO
+        END IF 
+      ELSEIF ( CloudCoeff_IO == 'netCDF' ) THEN
         WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_netCDF_ReadFile( &
                      CloudCoeff_File, &
@@ -242,6 +240,9 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
           RETURN
         END IF
+      ELSE
+          WRITE( msg,'("Invalid CloudCoeff format: ",a)') TRIM(CloudCoeff_IO)
+          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )     
       END IF ! CloudCoeff_IO 
     ELSE
       WRITE( msg,'("Error reading CloudCoeff from model:  ",a)') TRIM(Cloud_Model)

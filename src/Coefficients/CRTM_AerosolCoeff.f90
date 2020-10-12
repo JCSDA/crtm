@@ -2,7 +2,7 @@
 ! CRTM_AerosolCoeff
 !
 ! Module containing the shared CRTM aerosol coefficients (AerosolCoeff)
-! and their load/destruction routines. 
+! and their load/destruction routines.
 !
 ! PUBLIC DATA:
 !       AeroC:  Data structure containing the aerosol bulk optical
@@ -33,11 +33,7 @@ MODULE CRTM_AerosolCoeff  !yma 20/6/16: consider using submodule(AerosolCoeff_De
   USE Message_Handler       , ONLY: SUCCESS, FAILURE, Display_Message
   USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, &
                                     AerosolCoeff_Associated, &
-                                    AerosolCoeff_Destroy, &
-                                    AerosolCoeff_is_GOCART, &
-                                    AerosolCoeff_is_CMAQ, &
-                                    AerosolCoeff_typeID_to_index, &
-                                    AerosolCoeff_typeName_to_index
+                                    AerosolCoeff_Destroy
   USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_ReadFile
   USE AerosolCoeff_netCDF_IO, ONLY: AerosolCoeff_netCDF_ReadFile
   ! Disable all implicit typing
@@ -49,28 +45,18 @@ MODULE CRTM_AerosolCoeff  !yma 20/6/16: consider using submodule(AerosolCoeff_De
   ! ------------
   ! Everything private by default
   PRIVATE
-  
+
   ! The shared data
   PUBLIC :: AeroC
-  
+
   ! Public routines defined in this module
   PUBLIC :: CRTM_AerosolCoeff_Load
   PUBLIC :: CRTM_AerosolCoeff_Destroy
   PUBLIC :: CRTM_AerosolCoeff_IsLoaded
 
-  ! Public routines inherit from AerosolCoeff_Define module
-  PUBLIC :: AerosolCoeff_is_GOCART
-  PUBLIC :: AerosolCoeff_is_CMAQ
-  PUBLIC :: AerosolCoeff_typeID_to_index
-  PUBLIC :: AerosolCoeff_typeName_to_index
-
-
   ! -----------------
   ! Module parameters
   ! -----------------
-  ! RCS Id for the module
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -96,9 +82,9 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = CRTM_AerosolCoeff_Load( &
-!                        Aerosol_Model , & 
+!                        Aerosol_Model   , &
 !                        AerosolCoeff_IO , &
-!                        Filename , &                             
+!                        Filename , &
 !                        File_Path         = File_Path        , &
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
@@ -107,7 +93,8 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       Aerosol_Model:      Name of the aerosol scheme for scattering calculation
 !                           Available aerosol scheme:
-!                           - CRTM_v2.3  [DEFAULT]
+!                           - GOCART  [DEFAULT]
+!                           - CMAQ
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -125,8 +112,12 @@ CONTAINS
 !       Filename:           Name of the data file containing the aerosol optical
 !                           properties data for scattering calculations.
 !                           Available datafiles:
+!                           GOCART:
 !                           - AerosolCoeff.bin  [DEFAULT, Binary]
 !                           - AerosolCoeff.nc   [netCDF-Classic/4]
+!                           CMAQ:
+!                           - AerosolCoeff.CMAQ.bin  [Binary]
+!                           - AerosolCoeff.CMAQ.nc   [netCDF-Classic/4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -164,7 +155,7 @@ CONTAINS
 !       Output_Process_ID:  Set this argument to the MPI process ID in which
 !                           all INFORMATION messages are to be output. If
 !                           the passed Process_ID value agrees with this value
-!                           the INFORMATION messages are output. 
+!                           the INFORMATION messages are output.
 !                           This argument is ignored if the Quiet argument
 !                           is set.
 !                           UNITS:      N/A
@@ -202,7 +193,7 @@ CONTAINS
     CHARACTER(*),           INTENT(IN) :: Filename
     CHARACTER(*),           INTENT(IN) :: AerosolCoeff_IO
     CHARACTER(*), OPTIONAL, INTENT(IN) :: File_Path
-    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet             
+    LOGICAL     , OPTIONAL, INTENT(IN) :: Quiet
     INTEGER     , OPTIONAL, INTENT(IN) :: Process_ID
     INTEGER     , OPTIONAL, INTENT(IN) :: Output_Process_ID
     ! Function result
@@ -214,7 +205,7 @@ CONTAINS
     CHARACTER(ML) :: AerosolCoeff_File
     LOGICAL :: noisy
 
-    ! Setup 
+    ! Setup
     err_stat = SUCCESS
     ! ...Assign the filename to local variable
     AerosolCoeff_File = ADJUSTL(Filename)
@@ -233,39 +224,38 @@ CONTAINS
     ELSE
       pid_msg = ''
     END IF
-    
+
     ! Read the AerosolCoeff data file
-    IF (Aerosol_Model == 'CRTM_v2.3') THEN  
-      IF (AerosolCoeff_IO == 'Binary') THEN
-        ! ...Binary IO
-        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File) 
-        err_stat = AerosolCoeff_Binary_ReadFile( &
-                     AerosolCoeff_File, &
-                     AeroC, &
-                     Quiet = .NOT. noisy )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
-          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-        RETURN
-        END IF
-      ELSE
-        ! ...netCDF IO     
-        WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
-        err_stat = AerosolCoeff_netCDF_ReadFile( &
-                     AerosolCoeff_File, &
-                     AeroC, &
-                     Quiet = .NOT. noisy )
-        IF ( err_stat /= SUCCESS ) THEN
-          WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
-          CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
-        RETURN
-        END IF
-      END IF ! AerosolCoeff_IO
-    ELSE
-      WRITE( msg,'("Error reading AerosolCoeff from model:  ",a)') TRIM(Aerosol_Model)
-      CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+    IF ( AerosolCoeff_IO == 'Binary' ) THEN
+      ! ...Binary IO
+      WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
+      err_stat = AerosolCoeff_Binary_ReadFile( &
+                   Aerosol_Model, &
+                   AerosolCoeff_File, &
+                   AeroC, &
+                   Quiet = .NOT. noisy )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error reading AerosolCoeff file ",a)') TRIM(AerosolCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
-    END IF
+      END IF
+    ELSEIF ( AerosolCoeff_IO == 'netCDF' ) THEN
+      ! ...netCDF IO
+      WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
+      err_stat = AerosolCoeff_netCDF_ReadFile( &
+                   Aerosol_Model, &
+                   AerosolCoeff_File, &
+                   AeroC, &
+                   Quiet = .NOT. noisy )
+      IF ( err_stat /= SUCCESS ) THEN
+        WRITE( msg,'("Error reading AerosolCoeff file: ",a)') TRIM(AerosolCoeff_File)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+      RETURN
+      END IF
+    ELSE
+        WRITE( msg,'("Invalid AerosolCoeff file format: ",a)') TRIM(AerosolCoeff_IO)
+        CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
+    END IF ! AerosolCoeff_IO
 
   END FUNCTION CRTM_AerosolCoeff_Load
 
@@ -363,5 +353,3 @@ CONTAINS
 
 
 END MODULE CRTM_AerosolCoeff
-
-
