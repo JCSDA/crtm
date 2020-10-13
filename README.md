@@ -174,7 +174,10 @@ make install
 </pre>
 
 The `ls` commands are to verify that indeed the .mod files have been created and the library file (which external codes link against) has also been created.
-The `make check` command 
+The `make check` command builds and runs the default CRTM test `check_crtm`, located in the `src/Build/libsrc/test` directory.
+
+`make install` installs the library in the directory defined by the command `configure --prefix=directory_name`.
+
 
 Summary of Build Script
 -----------------------
