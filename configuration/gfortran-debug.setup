@@ -7,10 +7,10 @@ uname=$(uname -s)
 
 export FC="gfortran"
 
-if [ "$uname" == "Linux"  ] ; then
+if [[ "$uname" == "Linux"  ]] ; then
 		export NC4_DIR=/usr/local/ #singularity container only
 		export HDF_DIR=/usr/local/ #singularity container only
-elif [ "$uname" == "Darwin" ] ; then
+elif [[ "$uname" == "Darwin" ]] ; then
 		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac OS, brew install
 		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac OS, brew install
 fi
@@ -36,7 +36,7 @@ export LDFLAGS="-fopenmp"
 
 export LIBS=""
 
-if [ "$uname" == "Darwin" ] || [ "$uname" == "Linux" ] ; then #mac OS, brew install or Linux (singularity)
+if [[ "$uname" == "Darwin" ]] || [[ "$uname" == "Linux" ]] ; then #mac OS, brew install or Linux (singularity)
 		export LIBS="\
   -L $NC4_DIR/lib -lnetcdf -lnetcdff \
   -L $HDF_DIR/lib -lhdf5 \

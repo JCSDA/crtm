@@ -54,7 +54,7 @@ create_coeff_links:
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR)/$(CHECK_DIR)/$(COEFF_DIR) && \
 	  link_coeffs.sh -t big-endian $(CRTM_FIXFILE_ROOT) big_endian $(CHECK_SENSOR_ID_LIST) && \
 	  link_coeffs.sh -t little-endian $(CRTM_FIXFILE_ROOT) little_endian $(CHECK_SENSOR_ID_LIST) && \
-          link_coeffs.sh -t netcdf4 $(CRTM_FIXFILE_ROOT) netcdf $(CHECK_SENSOR_ID_LIST) 
+          link_coeffs.sh -t netcdf4 $(CRTM_FIXFILE_ROOT) netcdf $(CHECK_SENSOR_ID_LIST) || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
