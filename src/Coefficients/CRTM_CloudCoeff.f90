@@ -89,7 +89,7 @@ CONTAINS
 ! INPUT ARGUMENTS:
 !       Cloud_Model:        Name of the cloud scheme for scattering calculation
 !                           Available cloud scheme:
-!                           - GOCART  [DEFAULT]
+!                           - CRTM  [DEFAULT]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -217,8 +217,8 @@ CONTAINS
     END IF
     
     ! Read the CloudCoeff data file
-    IF ( Cloud_Model == 'GOCART' ) THEN
-      IF ( CloudCoeff_IO == 'Binary' ) THEN
+    IF ( TRIM(Cloud_Model) == 'CRTM' ) THEN
+      IF ( TRIM(CloudCoeff_IO) == 'Binary' ) THEN
         WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_Binary_ReadFile( &
                      CloudCoeff_File, &
@@ -229,7 +229,7 @@ CONTAINS
           CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
           RETURN
         END IF 
-      ELSEIF ( CloudCoeff_IO == 'netCDF' ) THEN
+      ELSEIF ( TRIM(CloudCoeff_IO) == 'netCDF' ) THEN
         WRITE( msg, '("Reading CloudCoeff file:  ",a)') TRIM(CloudCoeff_File)
         err_stat = CloudCoeff_netCDF_ReadFile( &
                      CloudCoeff_File, &

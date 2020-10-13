@@ -167,10 +167,10 @@ CONTAINS
 !                           Available datafiles:
 !                           GOCART:
 !                           - AerosolCoeff.bin      [DEFAULT, Binary]
-!                           - AerosolCoeff.nc/nc4   [netCDF-Classic/nc4]
+!                           - AerosolCoeff.nc/nc4   [netCDF-Classic/4]
 !                           CMAQ:
 !                           - AerosolCoeff.CMAQ.bin      [Binary]
-!                           - AerosolCoeff.CMAQ.nc/nc4   [netCDF-Classic/nc4]
+!                           - AerosolCoeff.CMAQ.nc/nc4   [netCDF-Classic/4]
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
 !                           DIMENSION:  Scalar
@@ -178,7 +178,7 @@ CONTAINS
 !
 !       Cloud_Model:       Name of the cloud scheme for scattering calculation
 !                          Available cloud scheme:
-!                          - GOCART  [DEFAULT]
+!                          - CRTM  [DEFAULT]
 !                          UNITS:      N/A
 !                          TYPE:       CHARACTER(*)
 !                          DIMENSION:  Scalar
@@ -518,7 +518,7 @@ CONTAINS
     Default_Aerosol_Model       = 'GOCART'
     Default_AerosolCoeff_Format = 'Binary'
     Default_AerosolCoeff_File   = 'AerosolCoeff.bin'
-    Default_Cloud_Model         = 'GOCART'
+    Default_Cloud_Model         = 'CRTM'
     Default_CloudCoeff_Format   = 'Binary'
     Default_CloudCoeff_File     = 'CloudCoeff.bin'
     Default_IRwaterCoeff_File   = 'Nalli.IRwater.EmisCoeff.bin'

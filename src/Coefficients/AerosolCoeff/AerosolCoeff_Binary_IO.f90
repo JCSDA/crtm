@@ -211,7 +211,7 @@ CONTAINS
     END IF
 
     ! Read the dimensions
-    IF ( Aerosol_Model == "GOCART" ) THEN
+    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                  AerosolCoeff%n_Radii         , &
                                  AerosolCoeff%n_Types         , &
@@ -219,7 +219,7 @@ CONTAINS
                                  AerosolCoeff%n_Legendre_Terms, &
                                  AerosolCoeff%n_Phase_Elements
       AerosolCoeff%n_Sigma = 0
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                  AerosolCoeff%n_Radii         , &
                                  AerosolCoeff%n_Sigma         , &
@@ -393,7 +393,7 @@ CONTAINS
 
     ! Read the aerosol coefficient data
     ! ...Read the dimensions
-    IF ( Aerosol_Model == "GOCART" ) THEN
+    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
                                  dummy%n_Radii         , &
                                  dummy%n_Types         , &
@@ -401,8 +401,7 @@ CONTAINS
                                  dummy%n_Legendre_Terms, &
                                  dummy%n_Phase_Elements
       dummy%n_Sigma = 0
-      dummy%Scheme = "GOCART"
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) dummy%n_Wavelengths   , &
                                  dummy%n_Radii         , &
                                  dummy%n_Sigma         , &
@@ -410,7 +409,6 @@ CONTAINS
                                  dummy%n_RH            , &
                                  dummy%n_Legendre_Terms, &
                                  dummy%n_Phase_Elements
-       dummy%Scheme = "CMAQ"
     ELSE
       WRITE( msg,'("Invalid scheme of aerosol coefficient")' )
       CALL Read_Cleanup(); RETURN
@@ -420,6 +418,8 @@ CONTAINS
       WRITE( msg,'("Error reading data dimensions. IOSTAT = ",i0)' ) io_stat
       CALL Read_Cleanup(); RETURN
     END IF
+    ! Add aerosol scheme
+    dummy%Scheme = TRIM(Aerosol_Model)
 
     ! ...Allocate the object
     CALL AerosolCoeff_Create( &
@@ -480,11 +480,11 @@ CONTAINS
     END IF
 
     ! ...Read the dimension vectors
-    IF ( Aerosol_Model == "GOCART" ) THEN
+    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                  AerosolCoeff%Reff      , &
                                  AerosolCoeff%RH
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
       READ( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                  AerosolCoeff%Frequency , &
                                  AerosolCoeff%Reff      , &
@@ -530,7 +530,7 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE Read_CleanUp()
-      IF ( File_Open(Filename) ) THEN
+      IF ( File_Open( TRIM(Filename) ) ) THEN
         CLOSE( fid,IOSTAT=io_stat )
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error closing input file during error cleanup.'
@@ -649,7 +649,7 @@ CONTAINS
 
 
     ! Open the file for writing
-    err_stat = Open_Binary_File( Filename, fid, For_Output=.TRUE. )
+    err_stat = Open_Binary_File( Filename, fid, For_Output = .TRUE. )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error opening '//TRIM(Filename)
       CALL Write_Cleanup(); RETURN
@@ -666,14 +666,14 @@ CONTAINS
 
     ! Write the aerosol coefficient data
     ! ...Write the dimensions
-    IF ( Aerosol_Model == "GOCART" ) THEN
+    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                   AerosolCoeff%n_Radii         , &
                                   AerosolCoeff%n_Types         , &
                                   AerosolCoeff%n_RH            , &
                                   AerosolCoeff%n_Legendre_Terms, &
                                   AerosolCoeff%n_Phase_Elements
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%n_Wavelengths   , &
                                   AerosolCoeff%n_Radii         , &
                                   AerosolCoeff%n_Sigma         , &
@@ -719,11 +719,11 @@ CONTAINS
       CALL Write_Cleanup(); RETURN
     END IF
     ! ...Write the dimension vectors
-    IF ( Aerosol_Model == "GOCART" ) THEN
+    IF ( TRIM(Aerosol_Model) == "GOCART" ) THEN
        WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                   AerosolCoeff%Reff      , &
                                   AerosolCoeff%RH
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
+    ELSEIF ( TRIM(Aerosol_Model) == "CMAQ" ) THEN
       WRITE( fid,IOSTAT=io_stat ) AerosolCoeff%Wavelength, &
                                   AerosolCoeff%Frequency , &
                                   AerosolCoeff%Reff      , &
@@ -763,7 +763,7 @@ CONTAINS
   CONTAINS
 
     SUBROUTINE Write_CleanUp()
-      IF ( File_Open(Filename) ) THEN
+      IF ( File_Open( Filename ) ) THEN
         CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat )
         IF ( io_stat /= 0 ) &
           msg = TRIM(msg)//'; Error deleting output file during error cleanup.'

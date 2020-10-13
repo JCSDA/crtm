@@ -226,7 +226,7 @@ CONTAINS
     END IF
 
     ! Read the AerosolCoeff data file
-    IF ( AerosolCoeff_IO == 'Binary' ) THEN
+    IF ( TRIM(AerosolCoeff_IO) == 'Binary' ) THEN
       ! ...Binary IO
       WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
       err_stat = AerosolCoeff_Binary_ReadFile( &
@@ -239,7 +239,7 @@ CONTAINS
         CALL Display_Message( ROUTINE_NAME,TRIM(msg)//TRIM(pid_msg),err_stat )
       RETURN
       END IF
-    ELSEIF ( AerosolCoeff_IO == 'netCDF' ) THEN
+    ELSEIF ( TRIM(AerosolCoeff_IO) == 'netCDF' ) THEN
       ! ...netCDF IO
       WRITE( msg, '("Reading AerosolCoeff file:  ",a)') TRIM(AerosolCoeff_File)
       err_stat = AerosolCoeff_netCDF_ReadFile( &

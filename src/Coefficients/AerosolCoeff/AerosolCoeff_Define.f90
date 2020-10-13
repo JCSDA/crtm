@@ -432,10 +432,10 @@ CONTAINS
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Frequency
     WRITE(*,'(3x,"AerosolCoeff Reff      :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Reff
-    if (AerosolCoeff%n_Sigma >0) then
+    IF ( AerosolCoeff%n_Sigma > 0 ) THEN
       WRITE(*,'(3x,"AerosolCoeff Rsig      :")')
       WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%Rsig
-    endif
+    END IF
     WRITE(*,'(3x,"AerosolCoeff RH        :")')
     WRITE(*,'(5(1x,es22.15,:))') AerosolCoeff%RH
     WRITE(*,'(3x,"AerosolCoeff ke        :")')
@@ -656,19 +656,19 @@ CONTAINS
       CHARACTER(ML)           :: Message
 
       aerIndex = -1
-      do it = 1, AerosolCoeff%n_Types
-         if ( Aerosol_ID == AerosolCoeff%Type(it) ) then
-            aerIndex = it
-            exit
-         endif
-      enddo
+      DO it = 1, AerosolCoeff%n_Types
+        IF ( Aerosol_ID == AerosolCoeff%Type(it) ) THEN
+          aerIndex = it
+          EXIT
+        END IF
+      END DO
 
-      if (aerIndex <0) then
+      IF ( aerIndex <0 ) THEN
          Error_Status = FAILURE
          WRITE(Message,'("Invalid aerosol type ID ",i0,", not exist in specified aerosol coefficient file")') Aerosol_ID
          CALL Display_Message(ROUTINE_NAME, Message, Error_Status )
          RETURN
-      endif
+      END IF 
 
    END FUNCTION AerosolCoeff_typeID_to_index
 
@@ -730,10 +730,10 @@ CONTAINS
 !  "dust-like                                                                       " ;
 !
 !-------------------------------------------------------------------------------
-   FUNCTION AerosolCoeff_typeName_to_index( AerosolCoeff, aerosol_name ) RESULT( aerIndex )
+   FUNCTION AerosolCoeff_typeName_to_index( AerosolCoeff, Aerosol_Name ) RESULT( aerIndex )
 !-------------------------------------------------------------------------------
       TYPE(AerosolCoeff_type) ,INTENT(IN) :: AerosolCoeff
-      CHARACTER(*)            ,INTENT(IN) :: aerosol_name
+      CHARACTER(*)            ,INTENT(IN) :: Aerosol_Name
       INTEGER :: aerIndex
 
       CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'AerosolCoeff_typeName_to_index'
@@ -741,22 +741,22 @@ CONTAINS
       CHARACTER(ML)           :: Message
 
       aerIndex = -1
-      do it = 1, AerosolCoeff%n_Types
-         if ( StrUpCase(trim(adjustl(Aerosol_name))) == &
-              StrUpCase(trim(adjustl(AerosolCoeff%Type_Name(it)))) ) then
+      DO it = 1, AerosolCoeff%n_Types
+        IF ( StrUpCase(TRIM(ADJUSTL(Aerosol_Name)) ) == &
+             StrUpCase(TRIM(ADJUSTL(AerosolCoeff%Type_Name(it)))) ) THEN
             aerIndex = it
-            exit
-         endif
-      enddo
+            EXIT
+        END IF
+      END DO
 
-      if (aerIndex <0) then
+      IF ( aerIndex < 0 ) THEN
          Error_Status = FAILURE
          WRITE(Message, &
                '("Invalid aerosol type name ",a,", not exist in specified aerosol coefficient file")') &
-               trim(adjustl(Aerosol_name))
+               TRIM(ADJUSTL( Aerosol_Name ))
          CALL Display_Message(ROUTINE_NAME, Message, Error_Status )
          RETURN
-      endif
+      END IF
 
    END FUNCTION AerosolCoeff_typeName_to_index
 
@@ -798,12 +798,11 @@ CONTAINS
 !-------------------------------------------------------------------------------
       TYPE(AerosolCoeff_type) ,INTENT(IN) :: AerosolCoeff
       INTEGER                 ,INTENT(IN) :: Aerosol_ID
-      character(:), allocatable           :: Aerosol_Name
-
-      integer :: aerIndex
+      CHARACTER(:), ALLOCATABLE           :: Aerosol_Name
+      INTEGER :: aerIndex
 
       aerIndex = AerosolCoeff_typeID_to_index( AerosolCoeff, Aerosol_ID )
-      Aerosol_Name = trim(adjustl(AerosolCoeff%Type_Name( aerIndex )))
+      Aerosol_Name = TRIM(ADJUSTL(AerosolCoeff%Type_Name( aerIndex )))
 
    END FUNCTION AerosolCoeff_typeID_to_name
 
@@ -838,8 +837,8 @@ CONTAINS
 !-------------------------------------------------------------------------------
    FUNCTION AerosolCoeff_n_aerosol_categories( AerosolCoeff ) RESULT( n_types )
 !-------------------------------------------------------------------------------
-      TYPE(AerosolCoeff_type) ,INTENT(IN) :: AerosolCoeff
-      integer                             :: n_types
+      TYPE(AerosolCoeff_type), INTENT(IN) :: AerosolCoeff
+      INTEGER                             :: n_types
 
       n_types = AerosolCoeff%n_Types
 

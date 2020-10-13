@@ -180,9 +180,11 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_netCDF_InquireFile( &
+!                        Aerosol_Model, &
 !                        Filename, &
 !                        n_Wavelengths    = n_Wavelengths   , &
 !                        n_Radii          = n_Radii         , &
+!                        n_Sigma          = n_Sigma         , &
 !                        n_Types          = n_Types         , &
 !                        n_RH             = n_RH            , &
 !                        n_Legendre_Terms = n_Legendre_Terms, &
@@ -194,6 +196,13 @@ CONTAINS
 !                        Comment          = Comment           )
 !
 ! INPUTS:
+!       Aerosol_Model:      Character string specifying the name of the
+!                           AerosolCoeff model.
+!                           UNITS:      N/A
+!                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
 !       Filename:           Character string specifying the name of the
 !                           AerosolCoeff data file to inquire.
 !                           UNITS:      N/A
@@ -210,6 +219,13 @@ CONTAINS
 !                           ATTRIBUTES: INTENT(IN)
 !
 !       n_Radii:            The number of discrete effective radii for
+!                           scatterers in the LUT. Must be > 0.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN)
+!
+!       n_Sigma:            The number of mode radius standard deviation for
 !                           scatterers in the LUT. Must be > 0.
 !                           UNITS:      N/A
 !                           TYPE:       INTEGER
@@ -458,10 +474,6 @@ CONTAINS
       CALL Inquire_Cleanup(); RETURN
     END IF
 
-    ! Add scheme
-    AerosolCoeff%Scheme = Aerosol_Model
-
-
     ! Close the file
     NF90_Status = NF90_CLOSE( FileId )
     Close_File = .FALSE.
@@ -508,6 +520,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_netCDF_WriteFile( &
+!                        Aerosol_Model, &
 !                        Filename, &
 !                        AerosolCoeff, &
 !                        Quiet   = Quiet  , &
@@ -516,6 +529,13 @@ CONTAINS
 !                        Comment = Comment  )
 !
 ! INPUTS:
+!       Aerosol_Model:  Character string specifying the name of the
+!                       AerosolCoeff model.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+
 !       Filename:       Character string specifying the name of the
 !                       AerosolCoeff data file to write.
 !                       UNITS:      N/A
@@ -621,53 +641,26 @@ CONTAINS
 
 
     ! Create the output file
-    IF ( Aerosol_Model == "GOCART" ) THEN
-      err_stat = CreateFile( &
-                   Filename                              , &  ! Input
-                   AerosolCoeff%n_Wavelengths            , &  ! Input
-                   AerosolCoeff%n_Radii                  , &  ! Input
-                   AerosolCoeff%n_Sigma                  , &  ! Input
-                   AerosolCoeff%n_Types                  , &  ! Input
-                   AerosolCoeff%n_RH                     , &  ! Input
-                   AerosolCoeff%n_Legendre_Terms         , &  ! Input
-                   AerosolCoeff%n_Phase_Elements         , &  ! Input
-                   FileId                                , &  ! Output
-                   !Scheme      = AerosolCoeff%Scheme     , &  ! Optional input
-                   Version     = AerosolCoeff%Version    , &  ! Optional input
-                   Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
-                   Title       = Title                   , &  ! Optional input
-                   History     = History                 , &  ! Optional input
-                   Comment     = Comment                   )  ! Optional input
-      IF ( err_stat /= SUCCESS ) THEN
-        msg = 'Error creating output file '//TRIM(Filename)
-        CALL Write_Cleanup(); RETURN
-      END IF
-    ELSEIF ( Aerosol_Model == "CMAQ" ) THEN
-      err_stat = CreateFile( &
-                   Filename                              , &  ! Input
-                   AerosolCoeff%n_Wavelengths            , &  ! Input
-                   AerosolCoeff%n_Radii                  , &  ! Input
-                   AerosolCoeff%n_Sigma                  , &  ! Input
-                   AerosolCoeff%n_Types                  , &  ! Input
-                   AerosolCoeff%n_RH                     , &  ! Input
-                   AerosolCoeff%n_Legendre_Terms         , &  ! Input
-                   AerosolCoeff%n_Phase_Elements         , &  ! Input
-                   FileId                                , &  ! Output
-                   !Scheme      = AerosolCoeff%Scheme     , &  ! Optional input
-                   Version     = AerosolCoeff%Version    , &  ! Optional input
-                   Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
-                   Title       = Title                   , &  ! Optional input
-                   History     = History                 , &  ! Optional input
-                   Comment     = Comment                   )  ! Optional input
-      IF ( err_stat /= SUCCESS ) THEN
-        msg = 'Error creating output file '//TRIM(Filename)
-        CALL Write_Cleanup(); RETURN
-      END IF
-    ELSE
-      msg = 'AerosolCoeff_netCDF_WriteFile: Invalid scheme of aerosol coefficient'// &
-            TRIM(NF90_STRERROR( NF90_Status ))
-      CALL Write_Cleanup(); RETURN
+    err_stat = CreateFile( &
+                 Filename                              , &  ! Input
+                 AerosolCoeff%n_Wavelengths            , &  ! Input
+                 AerosolCoeff%n_Radii                  , &  ! Input
+                 AerosolCoeff%n_Sigma                  , &  ! Input
+                 AerosolCoeff%n_Types                  , &  ! Input
+                 AerosolCoeff%n_RH                     , &  ! Input
+                 AerosolCoeff%n_Legendre_Terms         , &  ! Input
+                 AerosolCoeff%n_Phase_Elements         , &  ! Input
+                 FileId                                , &  ! Output
+                 Version     = AerosolCoeff%Version    , &  ! Optional input
+                 Data_Source = AerosolCoeff%Data_Source, &  ! Optional input
+                 Title       = Title                   , &  ! Optional input
+                 History     = History                 , &  ! Optional input
+                 Comment     = Comment                   )  ! Optional input
+    IF ( err_stat /= SUCCESS ) THEN
+       msg = 'Error creating output file '//TRIM(Filename)
+       CALL Write_Cleanup(); RETURN
     END IF
+
     ! ...Close the file if any error from here on
     Close_File = .TRUE.
 
@@ -725,20 +718,18 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Write_Cleanup(); RETURN
     END IF
-    ! ...Rsig variable for CMAQ
-    IF ( Aerosol_Model == "CMAQ" ) THEN
-      NF90_Status = NF90_INQ_VARID( FileId,REFF_VARNAME,VarId )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Write_Cleanup(); RETURN
-      END IF
-      NF90_Status = NF90_PUT_VAR( FileId,VarID,AerosolCoeff%Rsig )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error writing '//RSIG_VARNAME//' to '//TRIM(Filename)//&
-              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Write_Cleanup(); RETURN
-      END IF
+    ! ...Rsig variable
+    NF90_Status = NF90_INQ_VARID( FileId,RSIG_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_PUT_VAR( FileId,VarID,AerosolCoeff%Rsig )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error writing '//RSIG_VARNAME//' to '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Write_Cleanup(); RETURN
     END IF
     ! ...RH variable
     NF90_Status = NF90_INQ_VARID( FileId,RH_VARNAME,VarId )
@@ -849,6 +840,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_netCDF_ReadFile( &
+!                        Aerosol_Model    , &
 !                        Filename         , &
 !                        AerosolCoeff     , &
 !                        Quiet   = Quiet  , &
@@ -857,6 +849,13 @@ CONTAINS
 !                        Comment = Comment  )
 !
 ! INPUTS:
+!       Aerosol_Model:  Character string specifying the name of the
+!                       AerosolCoeff model.
+!                       UNITS:      N/A
+!                       TYPE:       CHARACTER(*)
+!                       DIMENSION:  Scalar
+!                       ATTRIBUTES: INTENT(IN)
+
 !       Filename:       Character string specifying the name of the
 !                       AerosolCoeff data file to write.
 !                       UNITS:      N/A
@@ -1026,7 +1025,7 @@ CONTAINS
       CALL Read_Cleanup(); RETURN
     END IF
     ! Assign scheme based on Aerosol_Model
-    AerosolCoeff%Scheme = Aerosol_Model
+    AerosolCoeff%Scheme = TRIM(Aerosol_Model)
 
     ! Read the AerosolCoeff data
     ! ...Type variable
@@ -1081,20 +1080,18 @@ CONTAINS
             ' - '//TRIM(NF90_STRERROR( NF90_Status ))
       CALL Read_Cleanup(); RETURN
     END IF
-    ! ...Rsig variable for CMAQ
-    IF ( Aerosol_Model == 'CMAQ') THEN
-      NF90_Status = NF90_INQ_VARID( FileId,RSIG_VARNAME,VarId )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
-              ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Read_Cleanup(); RETURN
-      END IF
-      NF90_Status = NF90_GET_VAR( FileId,VarID,AerosolCoeff%Rsig )
-      IF ( NF90_Status /= NF90_NOERR ) THEN
-        msg = 'Error reading '//RSIG_VARNAME//' from '//TRIM(Filename)//&
-              ' - '//TRIM(NF90_STRERROR( NF90_Status ))
-        CALL Read_Cleanup(); RETURN
-      END IF
+    ! ...Rsig variable 
+    NF90_Status = NF90_INQ_VARID( FileId,RSIG_VARNAME,VarId )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error inquiring '//TRIM(Filename)//' for '//RSIG_VARNAME//&
+            ' variable ID - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
+    END IF
+    NF90_Status = NF90_GET_VAR( FileId,VarID,AerosolCoeff%Rsig )
+    IF ( NF90_Status /= NF90_NOERR ) THEN
+      msg = 'Error reading '//RSIG_VARNAME//' from '//TRIM(Filename)//&
+            ' - '//TRIM(NF90_STRERROR( NF90_Status ))
+      CALL Read_Cleanup(); RETURN
     END IF
     ! ...RH variable
     NF90_Status = NF90_INQ_VARID( FileId,RH_VARNAME,VarId )
