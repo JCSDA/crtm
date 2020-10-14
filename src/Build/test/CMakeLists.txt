@@ -367,30 +367,38 @@ foreach(regtype IN LISTS TLAD_types)
   endforeach()
 endforeach()
 
-return()
-
 ##=================================================================================
 #forward and k_matrix regression tests
-#foreach(regtype IN LISTS regression_types)
-#  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
-#  foreach(testtype IN LISTS common_tests)
-#    string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
-#    if (isregtype AND istesttype)
-#       continue() #skip Aircraft type for k_Matrix
-#    endif()
-#    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-#                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-#                            LIBS    crtm
-#                            NOINSTALL)
-#
-#    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-#
-#          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-#                            COMMAND "test_${regtype}_test_${testtype}"
-#                            ARGS    "${sensor_id}")
-#    endforeach()
-#  endforeach()
-#endforeach()
+foreach(regtype IN LISTS regression_types)
+  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
+  foreach(testtype IN LISTS common_tests)
+    string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+
+		set(TARGET test_${regtype}_test_${testtype})
+    set(SOURCE $ENV{CRTM_SOURCE_ROOT}/Build/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+		message("TARGET:" ${TARGET})
+		message("SOURCE:" ${SOURCE})
+
+		add_executable(${TARGET} ${SOURCE})
+
+		target_link_libraries( ${TARGET}
+		                       ${CRTM} 
+													 ${NETCDF_LIBRARIES} 
+													 ${OpenMP_Fortran_LIBRARIES})
+		#had to specifically include the "include" directory for CRTM, probably a better way to do this:
+		target_include_directories(${TARGET} PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
+
+    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+					set(TESTNAME test_${regtype}_${testtype}_${sensor_id})
+					message ("SID: " ${sensor_id} " " ${TESTNAME} " " ${TARGET})
+					add_test (NAME ${TESTNAME}  COMMAND $<TARGET_FILE:${TARGET}> ${sensor_id})
+
+    endforeach()
+  endforeach()
+endforeach()
 
 
 #### start add_executable block (this compiles) ####
