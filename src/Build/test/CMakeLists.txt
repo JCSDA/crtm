@@ -1,10 +1,40 @@
-# (C) Copyright 2017-2018 UCAR.
-#
-# This software is licensed under the terms of the Apache Licence Version 2.0
-# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
-# macro to create a symlink from src to dst
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#
+#  CMakeLists.txt 
+#
+#  Description:
+#  ============
+#  Creates the makefile for the CRTM TL/AD unit tests.
+#  The original code was written for CRTM REL-2.4 .
+#
+#  Record of Revisions:
+#  ====================
+#
+#  Author:             Date:            Description:
+#  =======             =====            ============
+#  Patrick Stegmann    2020-10-10       Original Code
+#  Patrick Stegmann    2020-10-13       PR#109 Bug Fixes
+#                                       Linking OMP, netCDF, 
+#                                       and libgfortran on macOS
+#
+#
+
+##################
+## Project Setup
+##################
+
+cmake_minimum_required (VERSION 3.5)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+project("TL_test" Fortran)
+enable_language (C Fortran)
+
+# Add our local modlues to the module path
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+
+##############
+# MACROS
+##############
 
 function(CREATE_SYMLINK src dst)
     foreach (FILENAME ${ARGN})
@@ -24,241 +54,100 @@ function(CREATE_SYMLINK_FILENAME src dst)
         endforeach(FILENAME)
 endfunction(CREATE_SYMLINK_FILENAME)
 
-# Create Data directory for test input config and symlink all files
-list( APPEND crtm_test_input
-      testinput/single_profile.yaml
-)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/adjoint)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/tangent_linear)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/k_matrix)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/forward)
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/unit)
-CREATE_SYMLINK( ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${crtm_test_input} )
+##############
+# LIBRARIES
+##############
 
-# Add files to cmake resources
-#add_resources( TARGET crtm_test_scripts
-#                       SOURCES_PACK
-#                       ${crtm_test_input}
-#                     )
+if(APPLE)
+  set(CMAKE_C_COMPILER "/usr/local/Cellar/gcc/10.2.0/bin/gcc-10")
+  set(CMAKE_Fortran_COMPILER "/usr/local/Cellar/gcc/10.2.0/bin/gfortran-10")
+  set(OPENMP_LIBRARIES "/usr/local/Cellar/libomp/10.0.1/lib")
+  set(OPENMP_INCLUDES "/usr/local/Cellar/libomp/10.0.1/include")
+endif()
 
-# Create Data directory for test data and symlink files
-#list( APPEND crtm_test_data
-#			  Data/single_profile.nc4
-#)
-return()
+OPTION (USE_OPENMP "Use OpenMP to enamble <omp.h>" ON)
+INCLUDE(${CMAKE_MODULE_PATH}/SetParallelizationLibrary.cmake)
 
-# Create list of sensor ids for testing
-list( APPEND Simple_Sensor_Ids
-        atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
-)
+# Find OpenMP
+if(APPLE AND USE_OPENMP)
+  set(OpenMP_C "${CMAKE_C_COMPILER}")
+  set(OpenMP_C_FLAGS "-fopenmp -Wno-unused-command-line-argument")
+  set(OpenMP_Fortran "${CMAKE_Fortran_COMPILER}")
+  set(OpenMP_Fortran_FLAGS "-fopenmp -Wno-unused-command-line-argument")
+endif()
 
-list( APPEND ScatteringSwitch_Sensor_Ids
-        atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
-)
+if(USE_OPENMP)
+  FIND_package(OpenMP_Fortran REQUIRED)
+endif(USE_OPENMP)
 
-list( APPEND SOI_Sensor_Ids
-        atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
-)
-
-list( APPEND VerticalCoordinates_Sensor_Ids
-        atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
-)
-
-list( APPEND SSU_Sensor_Ids
-				ssu_n06
-				ssu_n14
-)
-
-list( APPEND ClearSky_Sensor_Ids
-        atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
-)
-
-# Create list of sensor ids for testing
-list( APPEND AOD_Sensor_Ids
-				cris399_npp
-			  v.abi_gr
-				airs_aqua
-)
-
-# Create list of sensor ids for testing
-list( APPEND Zeeman_Sensor_Ids
-			ssmis_f20
-			ssmis_f19
-			ssmis_f18
-			ssmis_f17
-			ssmis_f16
-)
-
-
-list( APPEND ChannelSubset_Sensor_Ids
-			iasi_metop-b
-)
-
-list( APPEND Aircraft_Sensor_Ids
-			crisB1_npp
-)
-
-list (APPEND common_tests
-		 Simple
-		 AOD
-		 Zeeman
-		 ChannelSubset
- 		 ClearSky
-		 Aircraft
-		 ScatteringSwitch
-		 SOI
-		 SSU
-		 VerticalCoordinates
-)
-
-
-list (APPEND regression_types
-		 forward
-		 k_matrix
-)
-
-list (APPEND TLAD_types
-		 adjoint
-		 tangent_linear
-)
-
-list (APPEND TLAD_tests
-		 Simple
- 		 ClearSky
-)
-
-
-#####################################################################
-
-#ecbuild_add_test( TARGET  test_check_crtm
-#                  SOURCES mains/application/check_crtm.F90
-#                  ARGS    "testinput/single_profile.yaml"
-#                  LIBS    crtm )
-
-#ecbuild_add_test( TARGET  test_check_crtm_random
-#                  SOURCES mains/application/check_crtm_random_profiles.F90
-#                  ARGS    "testinput/single_profile.yaml"
-#                  LIBS    crtm )
-
-#---------------------------------------------------------------------------------
-#unit tests
-
-#first upper level Unit_Test
-
-#implementation of Patrick's modified TL convergence test.
-add_executable (
-    TARGET  "TL_TEST"
-    SOURCES mains/unit/Unit_Test/test_TL.f90
-		LIBS 		crtm
-		NOINSTALL 
-		)
-add_test (
-		TARGET "Unit_TL_TEST"
-		COMMAND "TL_TEST" 
-    )
-
-#code dependencies are currently too complex for me to build 
-#
-#file(GLOB_RECURSE SRC_FILES mains/unit/AtmScatter/AerosolOpticalDepth/Unit_Test/Modules/*.f90)
-#add_executable( TARGET  "Test_CRTM_AOD_FWD"
-#									      SOURCES ${SRC_FILES}
-#												LIBS    crtm
-#											  NOINSTALL)
-#add_test( TARGET  "Unit_AOD_FWD"
-#									COMMAND "Test_CRTM_AOD_FWD")
-
-#this fails/crashes due to some issues with allocatable requirements in the READ rtsolution
-#need to understand better what needs to be tested and how to breakout these tests
-#into smaller assertion tests.  probably should test stand-alone against older code base
-#see if some requirement changed in RTsolution?
-
-#add_executable( TARGET  "Test_RTSolution"
-#									      SOURCES "mains/unit/RTSolution/Test_RTSolution/Test_RTSolution.f90"
-#												LIBS    crtm
-#											  NOINSTALL)
-#add_test( TARGET  "Unit_RTSolution"
-#									COMMAND "Test_RTSolution")
-#
-
-#this one fails currently due to the availability of only BE input files.
-#todo: convert to LE
-#depends on: ecmwf_5k_*bin files located in testinput
-#add_executable( TARGET  "Test_CRTM"
-#                        SOURCES "mains/unit/Unit_Test/Test_CRTM.f90"
-#                        LIBS    crtm
-#                        NOINSTALL)											
-#add_test( TARGET  "Unit_Test_1"
-#									COMMAND "Test_CRTM")
+if (OPENMP_FOUND)
+	  message("OPENMP_INCLUDES:" ${OPENMP_INCLUDES})
+    message("OpenMP_Fortran_FLAGS:" ${OpenMP_Fortran_FLAGS})
+    include_directories("${OPENMP_INCLUDES}")
+    link_directories("${OPENMP_LIBRARIES}")
+    set (CMAKE_C_FLAGS "${OpenMP_C_FLAGS}")
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
+endif(OPENMP_FOUND)
 
 
 
-#=================================================================================
-#forward and k_matrix regression tests
-foreach(regtype IN LISTS regression_types)
-  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
-  foreach(testtype IN LISTS common_tests)
-    string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
- 
-    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  
-  				add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
-    endforeach()
-  endforeach() 
-endforeach()
+## Searching the CRTM library
+find_library(CRTM
+	     NAMES libcrtm.a libcrtm.so crtm CRTM_Module
+	     HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/lib")
 
-#---------------------------------------------------------------------------------
-#TLAD Regression tests
-foreach(regtype IN LISTS TLAD_types)
-  foreach(testtype IN LISTS TLAD_tests)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
-  
-    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  				add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
-    endforeach()
-  endforeach() 
-endforeach()
+if(NOT CRTM)
+	message(FATAL_ERROR "CRTM library not found!")
+endif()
+
+message(${CRTM})
+
+find_package (NetCDF REQUIRED COMPONENTS C Fortran)
+
+include_directories(${NETCDF_INCLUDES})
+
+find_library(NETCDF_LIBRARIES
+		NAMES netcdff) 
+	
+if(NOT NETCDF_LIBRARIES)
+	message(FATAL_ERROR "netCDF library not found!")
+endif()
+
+message(${NETCDF_LIBRARIES})
+
+#find_library(GFORTRAN_LIBRARY 
+#		NAMES libgfortran.a libgfortran.so libgfortran libgfortran.3 libgfortran.3.dylib gfortran
+#		HINTS "/usr/local/Cellar/gcc/10.2.0/lib/gcc/10/" )
+
+#if(NOT GFORTRAN_LIBRARY)
+#	message(FATAL_ERROR "libgfortran not found!")
+#endif()
 
 
+#find_library(QUADMATH_LIBRARY
+#		NAMES libquadmath.a
+#		HINTS "/usr/local/Cellar/gcc/10.2.0/lib/gcc/10/" )
 
+#if(NOT QUADMATH_LIBRARY)
+#	message(FATAL_ERROR "libquadmath not found!")
+#endif()
 
-#####################################################################
-# Files for CRTM tests
-#####################################################################
+#link coefficient files into testinput/  modified from JCSDA/crtm CmakeLists.txt 
+set(UFO_COEFFICIENT_SRC_DIRS AerosolCoeff/${COEFFICIENT_ENDIAN_DIR}
+                             CloudCoeff/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/IR_Ice/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/IR_Land/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/IR_Snow/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/IR_Water/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/MW_Water/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/VIS_Ice/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/VIS_Land/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/VIS_Snow/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             EmisCoeff/VIS_Water/SEcategory/${COEFFICIENT_ENDIAN_DIR}
+                             SpcCoeff/${COEFFICIENT_ENDIAN_DIR}
+                             TauCoeff/ODAS/${COEFFICIENT_ENDIAN_DIR}
+                             TauCoeff/ODPS/${COEFFICIENT_ENDIAN_DIR})
 
 list( APPEND crtm_test_input
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_atmosphereccol.bin
@@ -346,8 +235,95 @@ SpcCoeff/Little_Endian/ssu_n11.SpcCoeff.bin
 SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
 )
 
-# Symlink all CRTM files
-CREATE_SYMLINK_FILENAME( ${crtm_SOURCE_DIR}/fix
+# Symlink all CRTM files (creates links in testinput, may want to modify to Data to be consistent with other projects)
+CREATE_SYMLINK_FILENAME( $ENV{CRTM_FIXFILE_ROOT}
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
+
+#start add_executable block (this compiles)
+
+add_executable(TEST_TL mains/unit/Unit_Test/test_TL.f90)
+set_target_properties(TEST_TL PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mains/unit/Unit_Test")
+target_link_libraries(TEST_TL 
+                      ${CRTM} 
+											${NETCDF_LIBRARIES} 
+											${OpenMP_Fortran_LIBRARIES})
+target_include_directories(TEST_TL PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
+
+#end add_executable block 
+
+#start add_test block
+
+enable_testing ()
+add_test (NAME Mytest1 COMMAND $<TARGET_FILE:TEST_TL>)
+
+#end add_test block
+
+return()
+################
+# Functions
+################
+
+
+## OS-independent name-mangling to connect Fortran test functions
+## to the main.c driver executable.
+function (mangle_fortran_name CNAME FNAME)
+    set (TMP)
+    if (WIN32)
+        string (TOUPPER "${FNAME}" TMP)
+    else ()
+        string (TOLOWER "${FNAME}_" TMP)
+    endif ()
+    set (${CNAME} ${TMP} PARENT_SCOPE)
+endfunction ()
+
+## Mangling Fortran file name lists.
+function (mangle_fortran_filename_list MANGLED)
+    set (TMP)
+    foreach (TFILE ${ARGN})
+        string (REGEX REPLACE ".f90$" "" TESTNAME ${TFILE})
+        mangle_fortran_name (C_TESTNAME ${TESTNAME})
+        list (APPEND TMP ${C_TESTNAME})
+    endforeach ()
+    set (${MANGLED} ${TMP} PARENT_SCOPE)
+endfunction()
+
+## Modified function to add a Fortran test.
+function (add_fortran_test_executable TARGET)
+    set (TEST_FILES ${ARGN})
+    mangle_fortran_filename_list (TEST_FILES_MANGLED ${TEST_FILES})
+
+    create_test_sourcelist (_ main.c ${TEST_FILES_MANGLED})
+
+    add_library (${TARGET}_fortran ${TEST_FILES})
+    add_executable (${TARGET} main.c)
+    target_link_libraries (${TARGET} ${TARGET}_fortran)
+#    target_link_libraries (${TARGET} ${QUADMATH_LIBRARY})
+		message("everlong: " "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include")
+    target_include_directories(${TARGET}_fortran PUBLIC "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include")
+
+    target_link_libraries(${TARGET}_fortran
+                        ${CRTM} 
+			${NETCDF_LIBRARIES} 
+			${OpenMP_Fortran_LIBRARIES})
+
+    set (INDEX 0)
+    list (LENGTH TEST_FILES LEN)
+    while (${LEN} GREATER ${INDEX})
+        list (GET TEST_FILES ${INDEX} TEST_FILE)
+        list (GET TEST_FILES_MANGLED ${INDEX} TEST_FILE_MANGLED)
+        add_test (
+            NAME ${TEST_FILE}
+            COMMAND $<TARGET_FILE:${TARGET}> ${TEST_FILE_MANGLED})
+        math (EXPR INDEX "${INDEX} + 1")
+    endwhile ()
+endfunction ()
+#add_subdirectory(mains/unit/Unit_Test)
+## Adding Fortran test source code.
+
+add_fortran_test_executable (
+    TL_TEST
+    test_TL.f90
+		)
+
 

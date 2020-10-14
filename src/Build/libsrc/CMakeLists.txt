@@ -6,6 +6,7 @@ list( APPEND crtm_src_files
   ASvar_Define.f90
   AerosolCoeff_Binary_IO.f90
   AerosolCoeff_Define.f90
+  AerosolCoeff_netCDF_IO.f90
   Azimuth_Emissivity_F6_Module.f90
   Azimuth_Emissivity_Module.f90
   Binary_File_Utility.f90
@@ -81,6 +82,7 @@ list( APPEND crtm_src_files
   CSvar_Define.f90
   CloudCoeff_Binary_IO.f90
   CloudCoeff_Define.f90
+	CloudCoeff_netCDF_IO.f90
   Common_RTSolution.f90
   Compare_Float_Numbers.f90
   DateTime_Utility.f90
