@@ -133,106 +133,94 @@ message(${NETCDF_LIBRARIES})
 #	message(FATAL_ERROR "libquadmath not found!")
 #endif()
 
-#link coefficient files into testinput/  modified from JCSDA/crtm CmakeLists.txt 
-set(UFO_COEFFICIENT_SRC_DIRS AerosolCoeff/${COEFFICIENT_ENDIAN_DIR}
-                             CloudCoeff/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/IR_Ice/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/IR_Land/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/IR_Snow/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/IR_Water/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/MW_Water/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/VIS_Ice/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/VIS_Land/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/VIS_Snow/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             EmisCoeff/VIS_Water/SEcategory/${COEFFICIENT_ENDIAN_DIR}
-                             SpcCoeff/${COEFFICIENT_ENDIAN_DIR}
-                             TauCoeff/ODAS/${COEFFICIENT_ENDIAN_DIR}
-                             TauCoeff/ODPS/${COEFFICIENT_ENDIAN_DIR})
+#need to automatically choose coefficients based on library endian type
+
+set(ENDIAN_TYPE "Little_Endian") #Little_Endian #Big_Endian (#netCDF not supported yet)
 
 list( APPEND crtm_test_input
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_atmosphereccol.bin
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_surfaceccol.bin
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_geometryccol.bin
-AerosolCoeff/Little_Endian/AerosolCoeff.bin
-CloudCoeff/Little_Endian/CloudCoeff.bin
-EmisCoeff/MW_Water/Little_Endian/FASTEM6.MWwater.EmisCoeff.bin
-EmisCoeff/IR_Ice/SEcategory/Little_Endian/NPOESS.IRice.EmisCoeff.bin
-EmisCoeff/IR_Land/SEcategory/Little_Endian/NPOESS.IRland.EmisCoeff.bin
-EmisCoeff/IR_Snow/SEcategory/Little_Endian/NPOESS.IRsnow.EmisCoeff.bin
-EmisCoeff/VIS_Ice/SEcategory/Little_Endian/NPOESS.VISice.EmisCoeff.bin
-EmisCoeff/VIS_Land/SEcategory/Little_Endian/NPOESS.VISland.EmisCoeff.bin
-EmisCoeff/VIS_Snow/SEcategory/Little_Endian/NPOESS.VISsnow.EmisCoeff.bin
-EmisCoeff/VIS_Water/SEcategory/Little_Endian/NPOESS.VISwater.EmisCoeff.bin
-EmisCoeff/IR_Water/Little_Endian/Nalli.IRwater.EmisCoeff.bin
-EmisCoeff/IR_Land/SEcategory/Little_Endian/USGS.IRland.EmisCoeff.bin
-EmisCoeff/VIS_Land/SEcategory/Little_Endian/USGS.VISland.EmisCoeff.bin
-SpcCoeff/Little_Endian/hirs4_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/hirs4_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/amsua_n19.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/amsua_n19.TauCoeff.bin
-SpcCoeff/Little_Endian/amsua_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/amsua_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/gmi_gpm.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/gmi_gpm.TauCoeff.bin
-SpcCoeff/Little_Endian/seviri_m08.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/seviri_m08.TauCoeff.bin
-SpcCoeff/Little_Endian/cris-fsr_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/cris-fsr_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/iasi_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/iasi_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/iasi_metop-b.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/iasi_metop-b.TauCoeff.bin
-SpcCoeff/Little_Endian/mhs_n19.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/mhs_n19.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD1_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD1_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD2_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD2_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD3_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD3_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD4_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD4_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/airs_aqua.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/airs_aqua.TauCoeff.bin
-SpcCoeff/Little_Endian/modis_aqua.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/modis_aqua.TauCoeff.bin
-SpcCoeff/Little_Endian/cris399_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/cris399_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/crisB1_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/crisB1_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/atms_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/atms_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/v.viirs-m_npp.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/v.viirs-m_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/v.abi_gr.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/v.abi_gr.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f20.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f19.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f18.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f17.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f16.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f20.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f19.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f18.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f17.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f16.TauCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f20.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f18.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f19.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f16.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f17.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n06.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n07.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n08.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n09.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n11.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n14.TauCoeff.bin
-SpcCoeff/Little_Endian/ssu_n06.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n07.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n08.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n09.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n11.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
+AerosolCoeff/${ENDIAN_TYPE}/AerosolCoeff.bin
+CloudCoeff/${ENDIAN_TYPE}/CloudCoeff.bin
+EmisCoeff/MW_Water/${ENDIAN_TYPE}/FASTEM6.MWwater.EmisCoeff.bin
+EmisCoeff/IR_Ice/SEcategory/${ENDIAN_TYPE}/NPOESS.IRice.EmisCoeff.bin
+EmisCoeff/IR_Land/SEcategory/${ENDIAN_TYPE}/NPOESS.IRland.EmisCoeff.bin
+EmisCoeff/IR_Snow/SEcategory/${ENDIAN_TYPE}/NPOESS.IRsnow.EmisCoeff.bin
+EmisCoeff/VIS_Ice/SEcategory/${ENDIAN_TYPE}/NPOESS.VISice.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/${ENDIAN_TYPE}/NPOESS.VISland.EmisCoeff.bin
+EmisCoeff/VIS_Snow/SEcategory/${ENDIAN_TYPE}/NPOESS.VISsnow.EmisCoeff.bin
+EmisCoeff/VIS_Water/SEcategory/${ENDIAN_TYPE}/NPOESS.VISwater.EmisCoeff.bin
+EmisCoeff/IR_Water/${ENDIAN_TYPE}/Nalli.IRwater.EmisCoeff.bin
+EmisCoeff/IR_Land/SEcategory/${ENDIAN_TYPE}/USGS.IRland.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/${ENDIAN_TYPE}/USGS.VISland.EmisCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/hirs4_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/hirs4_metop-a.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/amsua_n19.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/amsua_n19.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/amsua_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/amsua_metop-a.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/gmi_gpm.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/gmi_gpm.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/seviri_m08.SpcCoeff.bin
+TauCoeff/ODAS/${ENDIAN_TYPE}/seviri_m08.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/cris-fsr_npp.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/cris-fsr_npp.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/iasi_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/iasi_metop-a.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/iasi_metop-b.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/iasi_metop-b.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/mhs_n19.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/mhs_n19.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/sndrD1_g15.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/sndrD1_g15.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/sndrD2_g15.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/sndrD2_g15.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/sndrD3_g15.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/sndrD3_g15.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/sndrD4_g15.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/sndrD4_g15.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/airs_aqua.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/airs_aqua.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/modis_aqua.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/modis_aqua.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/cris399_npp.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/cris399_npp.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/crisB1_npp.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/crisB1_npp.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/atms_npp.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/atms_npp.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/v.viirs-m_npp.SpcCoeff.bin
+TauCoeff/ODAS/${ENDIAN_TYPE}/v.viirs-m_npp.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/v.abi_gr.SpcCoeff.bin
+TauCoeff/ODAS/${ENDIAN_TYPE}/v.abi_gr.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/zssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/zssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/zssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/zssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/zssmis_f16.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssmis_f16.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssmis_f20.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssmis_f18.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssmis_f19.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssmis_f16.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssmis_f17.SpcCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n06.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n07.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n08.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n09.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n11.TauCoeff.bin
+TauCoeff/ODPS/${ENDIAN_TYPE}/ssu_n14.TauCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n06.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n07.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n08.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n09.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n11.SpcCoeff.bin
+SpcCoeff/${ENDIAN_TYPE}/ssu_n14.SpcCoeff.bin
 )
 
 # Symlink all CRTM files (creates links in testinput, may want to modify to Data to be consistent with other projects)
@@ -240,6 +228,170 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 CREATE_SYMLINK_FILENAME( $ENV{CRTM_FIXFILE_ROOT}
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/adjoint)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/tangent_linear)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/k_matrix)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/forward)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/unit)
+
+# Create list of sensor ids for testing
+list( APPEND Simple_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND ScatteringSwitch_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND SOI_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND VerticalCoordinates_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND SSU_Sensor_Ids
+        ssu_n06
+        ssu_n14
+)
+
+list( APPEND ClearSky_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+# Create list of sensor ids for testing
+list( APPEND AOD_Sensor_Ids
+        cris399_npp
+        v.abi_gr
+        airs_aqua
+)
+
+# Create list of sensor ids for testing
+list( APPEND Zeeman_Sensor_Ids
+      ssmis_f20
+      ssmis_f19
+      ssmis_f18
+      ssmis_f17
+      ssmis_f16
+)
+
+
+list( APPEND ChannelSubset_Sensor_Ids
+      iasi_metop-b
+)
+
+list( APPEND Aircraft_Sensor_Ids
+      crisB1_npp
+)
+
+list (APPEND common_tests
+     Simple
+     AOD
+     Zeeman
+     ChannelSubset
+     ClearSky
+     Aircraft
+     ScatteringSwitch
+     SOI
+     SSU
+     VerticalCoordinates
+)
+
+
+list (APPEND regression_types
+     forward
+     k_matrix
+)
+
+list (APPEND TLAD_types
+     adjoint
+     tangent_linear
+)
+
+list (APPEND TLAD_tests
+     Simple
+     ClearSky
+)
+
+
+
+#---------------------------------------------------------------------------------
+enable_testing ()
+#TLAD Regression tests
+foreach(regtype IN LISTS TLAD_types)
+  foreach(testtype IN LISTS TLAD_tests)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+
+		set(TARGET test_${regtype}_test_${testtype})
+#    set(SOURCE ${CMAKE_BINARY_DIR}/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+    set(SOURCE $ENV{CRTM_SOURCE_ROOT}/Build/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+		message("TARGET:" ${TARGET})
+		message("SOURCE:" ${SOURCE})
+
+		add_executable(${TARGET} ${SOURCE})
+
+#		set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY )
+
+		target_link_libraries( ${TARGET}
+		                       ${CRTM} 
+													 ${NETCDF_LIBRARIES} 
+													 ${OpenMP_Fortran_LIBRARIES})
+		#had to specifically include the "include" directory for CRTM, probably a better way to do this:
+		target_include_directories(${TARGET} PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
+
+    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+					set(TESTNAME test_${regtype}_${testtype}_${sensor_id})
+					message ("SID: " ${sensor_id} " " ${TESTNAME} " " ${TARGET})
+					add_test (NAME ${TESTNAME}  COMMAND $<TARGET_FILE:${TARGET}> ${sensor_id})
+    endforeach()
+  endforeach()
+endforeach()
+
+return()
+
+##=================================================================================
+#forward and k_matrix regression tests
+#foreach(regtype IN LISTS regression_types)
+#  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
+#  foreach(testtype IN LISTS common_tests)
+#    string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
+#    if (isregtype AND istesttype)
+#       continue() #skip Aircraft type for k_Matrix
+#    endif()
+#    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+#                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+#                            LIBS    crtm
+#                            NOINSTALL)
+#
+#    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+#
+#          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+#                            COMMAND "test_${regtype}_test_${testtype}"
+#                            ARGS    "${sensor_id}")
+#    endforeach()
+#  endforeach()
+#endforeach()
+
 
 #### start add_executable block (this compiles) ####
 
@@ -259,7 +411,7 @@ target_include_directories(TEST_TL PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.
 
 #### start add_test block ####
 
-enable_testing ()
+
 add_test (NAME Mytest1 COMMAND $<TARGET_FILE:TEST_TL>)
 
 #### end add_test block ####
@@ -269,71 +421,5 @@ return()
 
 
 
-
-################
-# Functions
-################
-
-
-## OS-independent name-mangling to connect Fortran test functions
-## to the main.c driver executable.
-function (mangle_fortran_name CNAME FNAME)
-    set (TMP)
-    if (WIN32)
-        string (TOUPPER "${FNAME}" TMP)
-    else ()
-        string (TOLOWER "${FNAME}_" TMP)
-    endif ()
-    set (${CNAME} ${TMP} PARENT_SCOPE)
-endfunction ()
-
-## Mangling Fortran file name lists.
-function (mangle_fortran_filename_list MANGLED)
-    set (TMP)
-    foreach (TFILE ${ARGN})
-        string (REGEX REPLACE ".f90$" "" TESTNAME ${TFILE})
-        mangle_fortran_name (C_TESTNAME ${TESTNAME})
-        list (APPEND TMP ${C_TESTNAME})
-    endforeach ()
-    set (${MANGLED} ${TMP} PARENT_SCOPE)
-endfunction()
-
-## Modified function to add a Fortran test.
-function (add_fortran_test_executable TARGET)
-    set (TEST_FILES ${ARGN})
-    mangle_fortran_filename_list (TEST_FILES_MANGLED ${TEST_FILES})
-
-    create_test_sourcelist (_ main.c ${TEST_FILES_MANGLED})
-
-    add_library (${TARGET}_fortran ${TEST_FILES})
-    add_executable (${TARGET} main.c)
-    target_link_libraries (${TARGET} ${TARGET}_fortran)
-#    target_link_libraries (${TARGET} ${QUADMATH_LIBRARY})
-		message("everlong: " "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include")
-    target_include_directories(${TARGET}_fortran PUBLIC "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include")
-
-    target_link_libraries(${TARGET}_fortran
-                        ${CRTM} 
-			${NETCDF_LIBRARIES} 
-			${OpenMP_Fortran_LIBRARIES})
-
-    set (INDEX 0)
-    list (LENGTH TEST_FILES LEN)
-    while (${LEN} GREATER ${INDEX})
-        list (GET TEST_FILES ${INDEX} TEST_FILE)
-        list (GET TEST_FILES_MANGLED ${INDEX} TEST_FILE_MANGLED)
-        add_test (
-            NAME ${TEST_FILE}
-            COMMAND $<TARGET_FILE:${TARGET}> ${TEST_FILE_MANGLED})
-        math (EXPR INDEX "${INDEX} + 1")
-    endwhile ()
-endfunction ()
-#add_subdirectory(mains/unit/Unit_Test)
-## Adding Fortran test source code.
-
-add_fortran_test_executable (
-    TL_TEST
-    test_TL.f90
-		)
 
 
