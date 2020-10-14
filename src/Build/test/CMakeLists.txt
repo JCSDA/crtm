@@ -236,30 +236,40 @@ SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
 )
 
 # Symlink all CRTM files (creates links in testinput, may want to modify to Data to be consistent with other projects)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 CREATE_SYMLINK_FILENAME( $ENV{CRTM_FIXFILE_ROOT}
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
 
-#start add_executable block (this compiles)
+#### start add_executable block (this compiles) ####
 
 add_executable(TEST_TL mains/unit/Unit_Test/test_TL.f90)
+
 set_target_properties(TEST_TL PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mains/unit/Unit_Test")
+
 target_link_libraries(TEST_TL 
                       ${CRTM} 
 											${NETCDF_LIBRARIES} 
 											${OpenMP_Fortran_LIBRARIES})
+#had to specifically include the "include" directory for CRTM, probably a better way to do this:
 target_include_directories(TEST_TL PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
 
-#end add_executable block 
+#### end add_executable block ####
 
-#start add_test block
+
+#### start add_test block ####
 
 enable_testing ()
 add_test (NAME Mytest1 COMMAND $<TARGET_FILE:TEST_TL>)
 
-#end add_test block
+#### end add_test block ####
 
+#STOP HERE FOR NOW
 return()
+
+
+
+
 ################
 # Functions
 ################
