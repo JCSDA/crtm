@@ -39,15 +39,16 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/unit)
 CREATE_SYMLINK( ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${crtm_test_input} )
 
 # Add files to cmake resources
-ecbuild_add_resources( TARGET crtm_test_scripts
-                       SOURCES_PACK
-                       ${crtm_test_input}
-                     )
+#add_resources( TARGET crtm_test_scripts
+#                       SOURCES_PACK
+#                       ${crtm_test_input}
+#                     )
 
 # Create Data directory for test data and symlink files
-list( APPEND crtm_test_data
-			  Data/single_profile.nc4
-)
+#list( APPEND crtm_test_data
+#			  Data/single_profile.nc4
+#)
+return()
 
 # Create list of sensor ids for testing
 list( APPEND Simple_Sensor_Ids
@@ -163,13 +164,13 @@ list (APPEND TLAD_tests
 #first upper level Unit_Test
 
 #implementation of Patrick's modified TL convergence test.
-ecbuild_add_executable (
+add_executable (
     TARGET  "TL_TEST"
     SOURCES mains/unit/Unit_Test/test_TL.f90
 		LIBS 		crtm
 		NOINSTALL 
 		)
-ecbuild_add_test (
+add_test (
 		TARGET "Unit_TL_TEST"
 		COMMAND "TL_TEST" 
     )
@@ -177,11 +178,11 @@ ecbuild_add_test (
 #code dependencies are currently too complex for me to build 
 #
 #file(GLOB_RECURSE SRC_FILES mains/unit/AtmScatter/AerosolOpticalDepth/Unit_Test/Modules/*.f90)
-#ecbuild_add_executable( TARGET  "Test_CRTM_AOD_FWD"
+#add_executable( TARGET  "Test_CRTM_AOD_FWD"
 #									      SOURCES ${SRC_FILES}
 #												LIBS    crtm
 #											  NOINSTALL)
-#ecbuild_add_test( TARGET  "Unit_AOD_FWD"
+#add_test( TARGET  "Unit_AOD_FWD"
 #									COMMAND "Test_CRTM_AOD_FWD")
 
 #this fails/crashes due to some issues with allocatable requirements in the READ rtsolution
@@ -189,22 +190,22 @@ ecbuild_add_test (
 #into smaller assertion tests.  probably should test stand-alone against older code base
 #see if some requirement changed in RTsolution?
 
-#ecbuild_add_executable( TARGET  "Test_RTSolution"
+#add_executable( TARGET  "Test_RTSolution"
 #									      SOURCES "mains/unit/RTSolution/Test_RTSolution/Test_RTSolution.f90"
 #												LIBS    crtm
 #											  NOINSTALL)
-#ecbuild_add_test( TARGET  "Unit_RTSolution"
+#add_test( TARGET  "Unit_RTSolution"
 #									COMMAND "Test_RTSolution")
 #
 
 #this one fails currently due to the availability of only BE input files.
 #todo: convert to LE
 #depends on: ecmwf_5k_*bin files located in testinput
-#ecbuild_add_executable( TARGET  "Test_CRTM"
+#add_executable( TARGET  "Test_CRTM"
 #                        SOURCES "mains/unit/Unit_Test/Test_CRTM.f90"
 #                        LIBS    crtm
 #                        NOINSTALL)											
-#ecbuild_add_test( TARGET  "Unit_Test_1"
+#add_test( TARGET  "Unit_Test_1"
 #									COMMAND "Test_CRTM")
 
 
@@ -218,14 +219,14 @@ foreach(regtype IN LISTS regression_types)
 		if (isregtype AND istesttype)
 			 continue() #skip Aircraft type for k_Matrix
 		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+	  add_executable( TARGET  "test_${regtype}_test_${testtype}"
   													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
   													LIBS    crtm
   													NOINSTALL)
  
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+  				add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
   													ARGS    "${sensor_id}")
     endforeach()
@@ -239,13 +240,13 @@ foreach(regtype IN LISTS TLAD_types)
 		if (isregtype AND istesttype)
 			 continue() #skip Aircraft type for k_Matrix
 		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+	  add_executable( TARGET  "test_${regtype}_test_${testtype}"
   													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
   													LIBS    crtm
   													NOINSTALL)
   
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+  				add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
   													ARGS    "${sensor_id}")
     endforeach()
