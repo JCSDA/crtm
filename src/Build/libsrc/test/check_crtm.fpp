@@ -67,7 +67,7 @@ PROGRAM check_crtm
   ! Aerosol/Cloud coefficient scheme
   CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART'
   !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
-  CHARACTER(*), PARAMETER :: Cloud_Model   = 'GOCART'
+  CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
 
   ! Directory location of results for comparison [NOT USED YET]
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/'
