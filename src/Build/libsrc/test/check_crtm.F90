@@ -54,7 +54,7 @@ PROGRAM check_crtm
   !
   ! Format of aerosol/cloud coefficient
   !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
-  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+!  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
 
   ! Directory location of coefficients
 #ifdef LITTLE_ENDIAN
@@ -73,10 +73,6 @@ PROGRAM check_crtm
   CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART'
   !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
   CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
-
-  ! Aerosol/Cloud coefficient scheme 
-  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM_v2.3'
-  CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM_v2.3'
 
   ! Directory location of results for comparison [NOT USED YET]
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/'
