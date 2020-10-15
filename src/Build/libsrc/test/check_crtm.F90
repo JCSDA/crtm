@@ -30,6 +30,7 @@
 !  7 = Insoluble
 !  8 = dust-like
 
+
 PROGRAM check_crtm
 
   ! ============================================================================
@@ -51,6 +52,10 @@ PROGRAM check_crtm
   ! ============================================================================
   ! STEP 2. **** SET UP SOME PARAMETERS FOR THE CRTM RUN ****
   !
+  ! Format of aerosol/cloud coefficient
+  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
+  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+
   ! Directory location of coefficients
 #ifdef LITTLE_ENDIAN
   CHARACTER(*), PARAMETER :: ENDIAN_TYPE='little_endian'
@@ -68,6 +73,10 @@ PROGRAM check_crtm
   CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART'
   !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
   CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
+
+  ! Aerosol/Cloud coefficient scheme 
+  CHARACTER(*), PARAMETER :: Aerosol_Model = 'CRTM_v2.3'
+  CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM_v2.3'
 
   ! Directory location of results for comparison [NOT USED YET]
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/'
@@ -88,8 +97,6 @@ PROGRAM check_crtm
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
   ! ============================================================================
-
-
 
   ! ---------
   ! Variables
@@ -117,7 +124,6 @@ PROGRAM check_crtm
   TYPE(CRTM_Surface_type)                 :: sfc(N_PROFILES)
   TYPE(CRTM_RTSolution_type), ALLOCATABLE :: rts(:,:)
 
-
   ! 3c. Define the K-MATRIX variables
   ! ---------------------------------
   TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: atm_K(:,:)
@@ -142,15 +148,20 @@ PROGRAM check_crtm
   ! 4a. Initialise all the sensors at once
   ! --------------------------------------
   !...Aerosol and cloud coefficient information
-  !.....Cloud
+
   IF ( Coeff_Format == 'Binary' ) THEN
+    AerosolCoeff_Format = 'Binary'
+    AerosolCoeff_File   = 'AerosolCoeff.bin'
     CloudCoeff_Format   = 'Binary'
     CloudCoeff_File     = 'CloudCoeff.bin'
+  ! if netCDF I/O
   ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+    AerosolCoeff_Format = 'netCDF'
+    AerosolCoeff_File   = 'AerosolCoeff.nc4'
     CloudCoeff_Format   = 'netCDF'
     CloudCoeff_File     = 'CloudCoeff.nc4'
   ELSE
-    message = 'Cloud coefficient format is not supported'
+    message = 'Aerosol/Cloud coefficient format is not supported'
     CALL Display_Message( PROGRAM_NAME, message, FAILURE )
     STOP
   END IF
@@ -216,7 +227,6 @@ PROGRAM check_crtm
   ! ----------------------
   Sensor_Loop: DO n = 1, N_SENSORS
 
-
     ! ==========================================================================
     ! STEP 5. **** ALLOCATE STRUCTURE ARRAYS ****
     !
@@ -224,7 +234,6 @@ PROGRAM check_crtm
     !     for the current sensor
     ! ------------------------------------
     n_channels = CRTM_ChannelInfo_n_Channels(chinfo(n))
-
 
     ! 5b. Allocate the ARRAYS
     ! -----------------------
@@ -260,9 +269,6 @@ PROGRAM check_crtm
       STOP
     END IF
     ! ==========================================================================
-
-
-
 
     ! ==========================================================================
     ! STEP 6. **** ASSIGN INPUT DATA ****
@@ -319,9 +325,6 @@ PROGRAM check_crtm
     rts_K%Radiance               = ZERO
     rts_K%Brightness_Temperature = ONE
     ! ==========================================================================
-
-
-
 
     ! ==========================================================================
     ! STEP 8. **** CALL THE CRTM FUNCTIONS FOR THE CURRENT SENSOR ****
@@ -396,8 +399,6 @@ PROGRAM check_crtm
     ! ==========================================================================
 
   END DO Sensor_Loop
-
-
 
 
   ! ==========================================================================
@@ -537,7 +538,6 @@ CONTAINS
         atm(1)%Cloud(nc)%Water_Content(k1:k2)    = 5.0_fp  ! kg/m^2
       END DO
     END IF
-
 
     ! Aerosol data. Three aerosol types can be loaded:
     !   Dust, Sulphate, and Sea Salt SSCM3
@@ -839,7 +839,6 @@ CONTAINS
         3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp, &
         3.300e+02_fp,3.300e+02_fp,3.300e+02_fp,3.300e+02_fp /)
     END IF
-
 
     ! Cloud data
     IF ( atm(2)%n_Clouds > 0 ) THEN
