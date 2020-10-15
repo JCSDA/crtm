@@ -145,6 +145,7 @@ case ${FILE_TYPE} in
 esac
 # ...Define the sensor independent coefficient files.
 COMMON_COEFF_FILES="AerosolCoeff.${FILE_EXT} \
+AerosolCoeff.CMAQ.${FILE_EXT}
 IR.CloudCoeff.${FILE_EXT} \
 MW.CloudCoeff.${FILE_EXT} \
 CloudCoeff.${FILE_EXT} \
