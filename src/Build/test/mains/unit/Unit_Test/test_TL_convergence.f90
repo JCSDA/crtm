@@ -1,26 +1,26 @@
 !
-! test_TL.f90
+! test_TL_convergence
 !
 ! Program to provide a (relatively) simple example of how
 ! to test the CRTM tangent-linear function.
-!
-! This test simply checks if the ratio between a perturbed
-! and unperturbed nonlinear CRTM Forward calculation on the
-! one hand, and the Tangent-Linear operator on the other 
-! fall below a certain threshold TOLERANCE.
-! The perturbation variable is called `Perturbation` and is
-! currently set at 10% of the Temperature at Layer 92.
+! This code checks the convergence between the tangent-linear
+! operator and the nonlinear CRTM Forward function when 
+! the magnitude of the atmospheric input state perturbation
+! is step-wise reduced.
+! The convergence should be monotonous, which it isn't right.
+! For this reason the test in its current state will fai. 
 !
 ! Copyright Patrick Stegmann, 2020
 !
-PROGRAM test_TL
+
+PROGRAM test_TL_convergence
 
   ! ============================================================================
   ! **** ENVIRONMENT SETUP FOR RTM USAGE ****
   !
   ! Module usage
   USE CRTM_Module
-  USE UnitTest_Define, ONLY: UnitTest_IsEqualWithin
+  !USE UnitTest_Define, ONLY: UnitTest_IsEqualWithin
   ! Disable all implicit typing
   IMPLICIT NONE
   ! ============================================================================
@@ -29,9 +29,9 @@ PROGRAM test_TL
   ! ----------
   ! Parameters
   ! ----------
-  CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'test_TL'
-  CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = './testinput/'
+  CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'test_TL_convergence'
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/unit/'
+  CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = './testinput/'
 
   ! ============================================================================
   ! 0. **** SOME SET UP PARAMETERS FOR THIS EXAMPLE ****
@@ -62,13 +62,14 @@ PROGRAM test_TL
   INTEGER :: Allocate_Status
   INTEGER :: n_Channels
   INTEGER :: l, m
-  INTEGER :: testresult
+  INTEGER :: ii
+  INTEGER :: testresult 
   ! Declarations for Jacobian comparisons
   INTEGER :: n_la, n_ma
   INTEGER :: n_ls, n_ms
   CHARACTER(256) :: atmk_File, sfck_File
   REAL(fp) :: Perturbation
-  REAL(fp) :: Ratio
+  REAL(fp) :: Ratio_new, Ratio_old
   REAL(fp), PARAMETER :: TOLERANCE = 0.1_fp
 
 
@@ -214,77 +215,97 @@ PROGRAM test_TL
   ! ---------------------------------------
   CALL CRTM_Atmosphere_Zero( Atmosphere_TL )
   CALL CRTM_Surface_Zero( Surface_TL )
-  !Atmosphere_TL(1)%Temperature = Perturbation
-  Perturbation = Atm(1)%Temperature(92)*0.1_fp
-  !Atmosphere_TL = Atm 
-  !Surface_TL = Sfc 
-  Atmosphere_TL(1)%Temperature(92) = Perturbation
+
+  OPEN(444,FILE='convergence.txt',STATUS='UNKNOWN')
+  
+  testresult = 0
+  Ratio_old = 100.0_fp 
+
+  convergence_loop: DO ii = 0, 20
+
+    Perturbation = Atm(1)%Temperature(92)*0.1_fp/(2.0_fp**ii)
+
+    Atmosphere_TL(1)%Temperature(92) = Perturbation
 
 
-  ! ============================================================================
-
-
-
-
-  ! ============================================================================
-  ! 6. **** CALL THE CRTM TANGENT-LINEAR MODEL ****
-  !
-  Error_Status = CRTM_Tangent_Linear( Atm , &
-                                    Sfc , &
-                                    Atmosphere_TL , &
-                                    Surface_TL , &
-                                    Geometry , &
-                                    ChannelInfo , &
-                                    RTSolution , &
-                                    RTSolution_TL  )
-  IF ( Error_Status /= SUCCESS ) THEN
-   Message = 'Error in CRTM Tangent-linear Model'
-   CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-   STOP 1
-  END IF
-
-  WRITE(*,*) 'Tangent-linear Result: ', RTSolution_TL(5,1)%Radiance
-
-  ! ============================================================================
+    ! ============================================================================
 
 
 
-  ! ============================================================================
-  ! 6. **** CALL THE CRTM FORWARD MODEL ****
-  !
-  Error_Status = CRTM_Forward( Atm         , &
-                                Sfc         , &
-                                Geometry    , &
-                                ChannelInfo , &
-                                RTSolution  )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error in CRTM Forward Model'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    STOP 1
-  END IF
-  ! ============================================================================
 
-  Atm(1)%Temperature(92) = Atm(1)%Temperature(92) + Perturbation
+    ! ============================================================================
+    ! 6. **** CALL THE CRTM TANGENT-LINEAR MODEL ****
+    !
+    Error_Status = CRTM_Tangent_Linear( Atm , &
+                                      Sfc , &
+                                      Atmosphere_TL , &
+                                      Surface_TL , &
+                                      Geometry , &
+                                      ChannelInfo , &
+                                      RTSolution , &
+                                      RTSolution_TL  )
+    IF ( Error_Status /= SUCCESS ) THEN
+     Message = 'Error in CRTM Tangent-linear Model'
+     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+     STOP 1
+    END IF
 
-  ! ============================================================================
-  ! 6. **** CALL THE PERTURBED CRTM FORWARD MODEL ****
-  !
-  Error_Status = CRTM_Forward( Atm         , &
-                                Sfc         , &
-                                Geometry    , &
-                                ChannelInfo , &
-                                RTSolution_Perturb  )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error in perturbed CRTM Forward Model'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    STOP 1
-  END IF
-  ! ============================================================================
+    !WRITE(*,*) 'Tangent-linear Result: ', RTSolution_TL(5,1)%Radiance
 
-  WRITE(*,*) 'Nonlinear Perturbation: ', ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance )
-  Ratio = ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance ) &
-               / RTSolution_TL(5,1)%Radiance
-  WRITE(*,*) 'Ratio: ', Ratio
+    ! ============================================================================
+
+
+
+    ! ============================================================================
+    ! 6. **** CALL THE CRTM FORWARD MODEL ****
+    !
+    Error_Status = CRTM_Forward( Atm         , &
+                                  Sfc         , &
+                                  Geometry    , &
+                                  ChannelInfo , &
+                                  RTSolution  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error in CRTM Forward Model'
+      CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+      STOP 1
+    END IF
+    ! ============================================================================
+
+    Atm(1)%Temperature(92) = Atm(1)%Temperature(92) + Perturbation
+
+    ! ============================================================================
+    ! 6. **** CALL THE PERTURBED CRTM FORWARD MODEL ****
+    !
+    Error_Status = CRTM_Forward( Atm         , &
+                                  Sfc         , &
+                                  Geometry    , &
+                                  ChannelInfo , &
+                                  RTSolution_Perturb  )
+    IF ( Error_Status /= SUCCESS ) THEN
+      Message = 'Error in perturbed CRTM Forward Model'
+      CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+      STOP 1
+    END IF
+    ! ============================================================================
+
+    !WRITE(*,*) 'Nonlinear Perturbation: ', ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance )
+    Ratio_new = ONE - ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance ) &
+                 / RTSolution_TL(5,1)%Radiance
+    !WRITE(*,*) 'Ratio: ', Ratio
+    WRITE(444,*) Perturbation, ABS(Ratio_new)  
+    ! Compare the ratio from the previous iteration with the current one.
+    WRITE(*,*) ABS(Ratio_new), ABS(Ratio_old)
+    IF ( ABS(Ratio_new) > ABS(Ratio_old) ) THEN
+      WRITE(*,*) 'Test failed!'
+      testresult = 1
+    ELSE IF (Ratio_new > ONE) THEN
+      testresult = 1
+    END IF  
+
+    ! Reassign Ratio for next iteration.
+    Ratio_old = Ratio_new 
+
+  END DO convergence_loop
 
   ! ============================================================================
   ! 8. **** DESTROY THE CRTM ****
@@ -299,7 +320,7 @@ PROGRAM test_TL
   ! ============================================================================
 
 
-
+  CLOSE(444)
 
   
 
@@ -320,17 +341,18 @@ PROGRAM test_TL
   DEALLOCATE(RTSolution, RTSolution_TL, &
              STAT = Allocate_Status)
   ! ============================================================================
-  IF(ONE - Ratio < TOLERANCE) THEN
+  IF( ( testresult == 0 ) .AND. ( Ratio_old < TOLERANCE ) ) THEN
     testresult = 0
     STOP 0
   ELSE
     testresult = 1
     STOP 1
   END IF
- 
+
+
 CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
 
-END PROGRAM test_TL
+END PROGRAM test_TL_convergence

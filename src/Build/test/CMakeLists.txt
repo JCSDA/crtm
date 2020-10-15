@@ -400,13 +400,11 @@ foreach(regtype IN LISTS regression_types)
   endforeach()
 endforeach()
 
-
+# manually adding unit tests for now
 #### start add_executable block (this compiles) ####
 
 add_executable(TEST_TL mains/unit/Unit_Test/test_TL.f90)
-
 set_target_properties(TEST_TL PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mains/unit/Unit_Test")
-
 target_link_libraries(TEST_TL 
                       ${CRTM} 
 											${NETCDF_LIBRARIES} 
@@ -414,13 +412,34 @@ target_link_libraries(TEST_TL
 #had to specifically include the "include" directory for CRTM, probably a better way to do this:
 target_include_directories(TEST_TL PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
 
+
+add_executable(TEST_TL_CONVERGENCE mains/unit/Unit_Test/test_TL_convergence.f90)
+set_target_properties(TEST_TL_CONVERGENCE PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mains/unit/Unit_Test")
+target_link_libraries(TEST_TL_CONVERGENCE 
+                      ${CRTM} 
+											${NETCDF_LIBRARIES} 
+											${OpenMP_Fortran_LIBRARIES})
+#had to specifically include the "include" directory for CRTM, probably a better way to do this:
+target_include_directories(TEST_TL_CONVERGENCE PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
+
+add_executable(TEST_AD mains/unit/Unit_Test/test_AD.f90)
+set_target_properties(TEST_AD PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/mains/unit/Unit_Test")
+target_link_libraries(TEST_AD 
+                      ${CRTM} 
+											${NETCDF_LIBRARIES} 
+											${OpenMP_Fortran_LIBRARIES})
+#had to specifically include the "include" directory for CRTM, probably a better way to do this:
+target_include_directories(TEST_AD PRIVATE $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/include)
+
 #### end add_executable block ####
 
 
 #### start add_test block ####
 
 
-add_test (NAME Mytest1 COMMAND $<TARGET_FILE:TEST_TL>)
+add_test (NAME test_TL COMMAND $<TARGET_FILE:TEST_TL>)
+add_test (NAME test_TL_convergence COMMAND $<TARGET_FILE:TEST_TL_CONVERGENCE>)
+add_test (NAME test_AD COMMAND $<TARGET_FILE:TEST_AD>)
 
 #### end add_test block ####
 
