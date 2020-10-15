@@ -108,7 +108,6 @@
     ! Aerosol data. Three aerosol types can be loaded:
     !   Dust, Sulphate, and Sea Salt SSCM3
     Load_Aerosol_Data_1: IF ( atm(1)%n_Aerosols > 0 ) THEN
-
       atm(1)%Aerosol(1)%Type = DUST_AEROSOL
       atm(1)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
@@ -152,7 +151,7 @@
         9.900895E-07_fp, 3.987399E-08_fp, 6.786932E-10_fp, 4.291151E-12_fp, 8.785440E-15_fp/)
         
       IF ( atm(1)%n_Aerosols > 1 ) THEN
-        atm(1)%Aerosol(2)%Type = SULFATE_AEROSOL
+        atm(1)%Aerosol(2)%Type = DUST_AEROSOL
         atm(1)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -196,7 +195,7 @@
       END IF
       
       IF ( atm(1)%n_Aerosols > 2 ) THEN
-        atm(1)%Aerosol(3)%Type = SEASALT_SSCM3_AEROSOL
+        atm(1)%Aerosol(3)%Type = DUST_AEROSOL
         atm(1)%Aerosol(3)%Effective_Radius = & ! microns
         (/7.600000E+00_fp, 7.600000E+00_fp, &
           7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, 7.600000E+00_fp, &
@@ -356,7 +355,7 @@
     !   Sea Sat SSAM, Sea Salt SSCM1, and Sea Salt SSCM2
     Load_Aerosol_Data_2: IF ( atm(2)%n_Aerosols > 0 ) THEN
     
-      atm(2)%Aerosol(1)%Type = SEASALT_SSAM_AEROSOL
+      atm(2)%Aerosol(1)%Type = DUST_AEROSOL
       atm(2)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &
         0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -399,7 +398,7 @@
         9.678320E-04_fp, 9.171414E-04_fp, 8.337592E-04_fp, 7.173667E-04_fp, 5.757384E-04_fp/)
         
       IF ( atm(2)%n_Aerosols > 1 ) THEN
-        atm(2)%Aerosol(2)%Type = SEASALT_SSCM1_AEROSOL
+        atm(2)%Aerosol(2)%Type = DUST_AEROSOL
         atm(2)%Aerosol(2)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &
@@ -443,7 +442,7 @@
       END IF
       
       IF ( atm(2)%n_Aerosols > 2 ) THEN
-        atm(2)%Aerosol(3)%Type = SEASALT_SSCM2_AEROSOL
+        atm(2)%Aerosol(3)%Type = DUST_AEROSOL
         atm(2)%Aerosol(3)%Effective_Radius = & ! microns
         (/0.000000E+00_fp, 0.000000E+00_fp, &
           0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, 0.000000E+00_fp, &

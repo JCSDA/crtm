@@ -101,7 +101,6 @@ PROGRAM test_AOD
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -126,7 +125,6 @@ PROGRAM test_AOD
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -138,7 +136,6 @@ PROGRAM test_AOD
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere forward structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ...K-matrix variables
@@ -146,7 +143,6 @@ PROGRAM test_AOD
   IF ( ANY(.NOT. CRTM_RTSolution_Associated(RTSolution_K)) ) THEN
     Message = 'Error allocating CRTM RTSolution K-matrix structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! The OUTPUT structures
@@ -155,7 +151,6 @@ PROGRAM test_AOD
   IF ( ANY(.NOT. CRTM_RTSolution_Associated(RTSolution)) ) THEN
     Message = 'Error allocating CRTM RTSolution forward structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ...K-matrix variables
@@ -163,7 +158,6 @@ PROGRAM test_AOD
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_K)) ) THEN
     Message = 'Error allocating CRTM Atmosphere K-matrix structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -210,7 +204,6 @@ PROGRAM test_AOD
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM AOD K-Matrix function'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -235,25 +228,6 @@ PROGRAM test_AOD
   END DO
   ! ============================================================================
 
-
-
-
-  ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
-
-
-
-
   ! ============================================================================
   ! 9. **** COMPARE Atmosphere_K RESULTS TO SAVED VALUES ****
   !
@@ -272,7 +246,6 @@ PROGRAM test_AOD
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -285,7 +258,6 @@ PROGRAM test_AOD
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -294,7 +266,6 @@ PROGRAM test_AOD
   IF ( n_l /= n_Channels .OR. n_m /= N_PROFILES ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -304,7 +275,6 @@ PROGRAM test_AOD
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -316,21 +286,28 @@ PROGRAM test_AOD
   ELSE
     Message = 'Atmosphere_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Atmosphere_K results to file
     atmk_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Atmosphere.bin'
     Error_Status = CRTM_Atmosphere_WriteFile( atmk_file, Atmosphere_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
     STOP 1
   END IF
   ! ============================================================================
 
-
-
+  ! ============================================================================
+  ! 8. **** DESTROY THE CRTM ****
+  !
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
+  ! ============================================================================
 
   ! ============================================================================
   ! 10. **** CLEAN UP ****
@@ -353,6 +330,5 @@ PROGRAM test_AOD
 CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM test_AOD
