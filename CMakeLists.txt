@@ -22,6 +22,7 @@ find_package( NetCDF REQUIRED COMPONENTS Fortran )
 
 ## Sources
 add_subdirectory( libsrc )
+add_subdirectory( test )
 
 ## Install coefficients to build and install tree
 #

@@ -99,6 +99,7 @@ list( APPEND crtm_src_files
   LSEatlas_Define.f90
   Large_Scale_Correction_Module.f90
   Liu.f90
+  RSS_Emissivity_Model.f90
   MWwaterCoeff_Define.f90
   MWwaterLUT_Define.f90
   Message_Handler.f90

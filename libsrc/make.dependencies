@@ -54,7 +54,8 @@ CRTM_MW_Ice_SfcOptics.o : CRTM_MW_Ice_SfcOptics.f90 CRTM_MW_Snow_SfcOptics.o NES
 CRTM_MW_Land_SfcOptics.o : CRTM_MW_Land_SfcOptics.f90 NESDIS_LandEM_Module.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_MW_Snow_SfcOptics.o : CRTM_MW_Snow_SfcOptics.f90 NESDIS_ATMS_SnowEM_Module.o NESDIS_SSMIS_SnowEM_Module.o NESDIS_MHS_SnowEM_Module.o NESDIS_AMSRE_SNOWEM_Module.o NESDIS_SSMI_SnowEM_Module.o NESDIS_AMSU_SnowEM_Module.o NESDIS_LandEM_Module.o CRTM_SensorInfo.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_MWwaterCoeff.o : CRTM_MWwaterCoeff.f90 MWwaterCoeff_Define.o Message_Handler.o 
-CRTM_MW_Water_SfcOptics.o : CRTM_MW_Water_SfcOptics.f90 CRTM_MWwaterCoeff.o CRTM_FastemX.o CRTM_Fastem1.o CRTM_LowFrequency_MWSSEM.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
+RSS_Emissivity_Model.o : RSS_Emissivity_Model.f90 Type_Kinds.o  
+CRTM_MW_Water_SfcOptics.o : CRTM_MW_Water_SfcOptics.f90 CRTM_MWwaterCoeff.o RSS_Emissivity_Model.o CRTM_FastemX.o CRTM_Fastem1.o CRTM_LowFrequency_MWSSEM.o CRTM_SfcOptics_Define.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_NLTECorrection.o : CRTM_NLTECorrection.f90 NLTE_Predictor_Define.o NLTE_Parameters.o NLTECoeff_Define.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Type_Kinds.o 
 CRTM_Options_Define.o : CRTM_Options_Define.f90 CRTM_CloudCover_Define.o Zeeman_Input_Define.o SSU_Input_Define.o CRTM_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_Parameters.o : CRTM_Parameters.f90 Type_Kinds.o 
