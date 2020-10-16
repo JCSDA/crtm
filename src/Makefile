@@ -34,7 +34,7 @@ create_links: create_coeff_links
 	@cd $(BUILD_DIR)/$(LIBSRC_DIR) && \
 	  echo "Creating source code links in directory `pwd`" && \
 	  echo && \
-	  $(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(SRC_FILES) $(INC_FILES) $(MAKE_INC_FILES) || exit 1
+	  $(LINK_SCRIPT) $(CRTM_SOURCE_ROOT) $(FPP_FILES) $(SRC_FILES) $(INC_FILES) $(MAKE_INC_FILES) || exit 1
 	@echo
 	@echo "Returning to directory `pwd`"
 	@echo
