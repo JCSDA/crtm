@@ -1,6 +1,60 @@
-Release Notes: CRTM library v2.3.0
+Release Notes: CRTM library v2.4.0-alpha
 
-$Revision$
+v2.4.0-alpha - released October 16, 2020
+ * New Features:
+   1. Support for netCDF4 file format reading: CloudCoeff.nc4 and AerosolCoeff.nc4
+   2. OpenMP optimization support (see setup/ifort.setup, for example), optimizes profile loop only.  
+      - `export OMP_NUM_THREADS=4`  is default in .setup files.
+   3. Experimental Cloud Coefficient tables (see `fix/CloudCoeff`)
+      - Expanded effective radius (10 mm) table to support largest particle sizes in
+        binary and netcdf4 formats.
+      - *Penn State University contributed tables for closer alignment with common
+        cloud microphysical packages: WSM-6, Thompson, GFDL. (netCDF4 format only)
+        [not included in v2.4.0-alpha]
+   4. Added various regression and unit tests, see `README.md`.
+   5. Updated: CMAQ-based (v4.x) Aerosols and Radiance/AOD simulation capability
+      - See check_crtm.F90 for how to switch between GOCART (default) and CMAQ
+   6. *Finalize CrIS Non-LTE correction validation [not available in alpha release]
+   7. Setting the `atmosphere%cloud_fraction=ZERO` now removes cloud contributions to 
+      radiance and brightness temperature calculations (but not aerosol contribution).
+   8. Improved loop-level performance: 4 to 5 times native improvement by optimizing loops.
+   9. Various minor bug fixes relating to uninitialized variables, improper zeroing, etc.
+
+ * New/Updated Coefficients:
+   1.  Earth Observing Nanosatellite-Microwave: eon_mw.v1
+   2.  Sentinel-3A Sea and Land Surface Temperature Radiometer: slstr_sentinel3a
+   3.  Meteosat-11 SEVIRI: seviri_m11
+   4.  New coefficient for ABI_G17, and updated IDs from ABI_GR to ABI_G16
+   5.  New coefficients for Metop-C sensors: AVHRR3_Metop-C, IASI(b1,b2,b3)_Metop-C,
+       IASI300_Metop-C, IASI316_Metop-C, IASI616_Metop-C
+   6.  L-Band sensors at 1.413 GHz: SMAP and SMOS (V, H, 3rd, 4th Stokes)
+   7.  Tempest-D_cubesat: 5 microwave bands at 87, 164, 173, 178, and 181 GHz
+   8.  Updated for a shifted WV band SRF of MI-L_COMS.v2
+   8.  Antenna-pattern corrected AMSUA-Metop-C tranmittance coefficients.  
+   9.  EON-MW, GOES 17 ABI update for 81K fix, FY4-GIIRS
+   10. *JPSS-2 VIIRS, GEOKOMPSAT-2A AMI, Metop-SG-A1 MWS [not available in alpha release]
+
+ * Integrated Bug fixes:
+   1. Bug in CRTM_CloudCover_Define.f90, fixing “Intent(in)” to “Intent(in out)” error
+      for using gfortran compiler.
+   2. Bug in CRTM_CloudCover_Define.f90, when using the “Maximum-Random” scheme to
+      calculate Total Cloud Cover.
+   3. Bug in ATMS_SnowEM_module, commented out uninitialized (also unused) variables
+      and calculations.
+   4. Fix a CRTM_AtmOptics_type uninitialized error in CRTM_AtmOptics_Define.f90.
+   5. Update the libsrc/make.dependencies file for using make -j option.
+   6. Fix a bug in Common_RTSolution.f90, for calculating surface emissivity Jacobian.
+   7. Setting the `atmosphere%cloud_fraction=ZERO` now removes cloudy radiances, previously
+      it would default to a fully cloudy radiance.  Enables smooth behavior from 1 to 0.
+   8. NESDIS_ATMS_SnowEM_Module.f90 fix for bad input brightness temperatures, fails gracefully
+      down to an empirical formula.  See code.
+   9. OpenMP, ONLY because OpenMP fixed a bug whereby GeometryInfo used settings from one 
+      profile in the next profile
+      - separated pointer nullification for OpenMP support. (e.g., `NULLIFY(PAFV)`)
+  10. CRTM_MW_Ice_SfcOptics.f90, CRTM_MW_Snow_SfcOptics.f90 modified to allows channel-subsetting of 
+      microwave radiances: ensures that the correct channels are passing to the NESDIS Ice and Snow 
+      emissivity subroutines when only a subset of channels is available
+
 
 v2.3.0 - released November 21, 2017
 
@@ -10,7 +64,7 @@ v2.3.0 - released November 21, 2017
      3. Improve surface reflectance in radiative transfer calculation for Microwave under
         scattering condition.
      4. Add ATMS SeaIce emissivity module.
-     5. Fix the simulation near 3.9 mscron by adding solar contribution in ADA_Module.
+     5. Fix the simulation near 3.9 micron by adding solar contribution in ADA_Module.
      6. Updates of CRTM Coefficients for ABI_GOES-R, AHI_Himawari-8.
      7. Updates of CRTM antenna correction coefficients for MHS_N19/Metop-a.
      8. Update AIRS coefficients for including NLTE correction.
@@ -32,8 +86,4 @@ v2.3.0 - released November 21, 2017
    radiance, which utilizes Fortran class function, and now CRTM will support the
    new compiler with class function, such as ifort version (14.0+, 15.0+, 16.0+),
    gfortran version (gcc 4.8.5, 4.9, 5.4, 6.4, 7.2), pgi/17.3, ftn/2.3.0.
-
- * Compute resource information
- 
-     N/A. This is a library used in the GSI.
 
