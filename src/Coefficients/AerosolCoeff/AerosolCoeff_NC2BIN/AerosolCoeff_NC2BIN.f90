@@ -40,7 +40,7 @@ PROGRAM AerosolCoeff_NC2BIN
                         'from netCDF to Binary format.', &
                         '$Revision$')
   ! Get the Aerosol_Model
-    WRITE(*,FMT='(/5x,"Enter the aerosol model (GOCART or CMAQ) : ")', ADVANCE='NO')
+  WRITE(*,FMT='(/5x,"Enter the aerosol model (GOCART or CMAQ) : ")', ADVANCE='NO')
   READ(*,'(a)') Aerosol_Model
   Aerosol_Model = ADJUSTL(Aerosol_Model)
   ! Get the filenames
