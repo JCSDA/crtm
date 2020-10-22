@@ -104,7 +104,7 @@ But after a clean clone of the development repository, none of the links to sour
 Configuration
 -------------
 
-At the top level (`CRTM_dev/`), the `configuration` directory contains the various compiler-specific configuration files.
+At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
   ls  configuration/
   ftn.setup                 ftn.setup.csh
@@ -278,7 +278,7 @@ The `--prefix` switch sets the installation directory, make sure you have write 
 
 You can override this by setting a different install directory as follows:  
   `   ./configure --prefix=<install directory>`  
-For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., CRTM_dev/src/Build/crtm_v2.4.0-alpha/).
+For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.0-alpha/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 
@@ -314,8 +314,8 @@ Known Issues
 Troubleshooting
 ---------------
 <pre>
-Installing <path>/CRTM_dev based scripts...
-  crtm_install_scripts.sh(INFORMATION): CRTM root directory is CRTM_dev
+Installing <path>/crtm based scripts...
+  crtm_install_scripts.sh(INFORMATION): CRTM root directory is crtm
   crtm_install_scripts.sh(INFORMATION): /bin exists...
   crtm_install_scripts.sh(INFORMATION): Your $PATH does NOT contain /bin...
   crtm_install_scripts.sh(INFORMATION): Creating a crtmrc file with $PATH modification. For a permanent change modify your .bash_profile (or similar) file.
@@ -332,6 +332,18 @@ configure: error: Fortran compiler cannot create executables
 Bash users, type `export | grep "FC"`, it should be set to the name of a compiler, e.g., `declare -x FC="ifort"`.  next simply type `ifort` (or whatever FC is trying to use)  at the command prompt to see if it's accessible.   If it says `command not found`, then you're missing the path to your compiler.  This could be a `module` command that needs to be run, or a valid compiler needs to be installed.  This varies based on operating system. 
 
 
+<pre>
+When issuing the `make` command in src/ :
 
+File Type_Kinds.f90 not found in CRTM_Module.F90 hierarchy.
+File File_Utility.f90 not found in CRTM_Module.F90 hierarchy.
+<...> dozens of similar lines <...>
+File FitCoeff_WriteFile.inc not found in CRTM_Module.F90 hierarchy.
+File FitCoeff_Equal.inc not found in CRTM_Module.F90 hierarchy.
+
+Returning to directory <directory>/crtm/src
+</pre>
+You forgot to `. ./Set_CRTM_Environment.sh` in the crtm/ directory, paying close attention to that leading `. `.
+Then `cd src/` and `make`.
 
 
