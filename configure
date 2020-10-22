@@ -585,7 +585,7 @@ PACKAGE_STRING='CRTM v2.3.0'
 PACKAGE_BUGREPORT='ncep.list.emc.jcsda_crtm.support@noaa.gov'
 PACKAGE_URL=''
 
-ac_unique_file="libsrc/CRTM_Module.F90"
+ac_unique_file="libsrc/CRTM_Module.fpp"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 FPPFLAGS
@@ -1766,7 +1766,7 @@ $as_echo "$as_me: CRTM v2.3.0" >&6;}
 
 
 # Define the configuration files
-ac_config_files="$ac_config_files Makefile libsrc/Makefile"
+ac_config_files="$ac_config_files Makefile libsrc/Makefile test/Makefile"
 
 
 
@@ -3427,7 +3427,7 @@ do
   case $ac_config_target in
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "libsrc/Makefile") CONFIG_FILES="$CONFIG_FILES libsrc/Makefile" ;;
-    "libsrc/test/Makefile") CONFIG_FILES="$CONFIG_FILES libsrc/test/Makefile" ;;
+    "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

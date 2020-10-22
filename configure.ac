@@ -15,7 +15,7 @@ AC_CONFIG_SRCDIR([libsrc/CRTM_Module.fpp])
 
 
 # Define the configuration files
-AC_CONFIG_FILES([Makefile libsrc/Makefile libsrc/test/Makefile])
+AC_CONFIG_FILES([Makefile libsrc/Makefile test/Makefile])
 
 
 # Check for programs

@@ -16,6 +16,7 @@ installdir = $(prefix)/$(distdir)
 
 # Tool-specific substitution variables
 FC      = @FC@
+#FCFLAGS = @FCFLAGS@ -c -qopt-report-phase=vec -qopt-report-annotate=text
 FCFLAGS = @FCFLAGS@ -c
 AR      = @AR@
 ARFLAGS = @ARFLAGS@
@@ -47,7 +48,7 @@ distclean:
 	-rm Makefile >/dev/null 2>&1
 
 check: library
-	cd test && $(MAKE) $@
+	cd ../test/ && $(MAKE) $@
 
 # ...Gnu-style installation
 install:
