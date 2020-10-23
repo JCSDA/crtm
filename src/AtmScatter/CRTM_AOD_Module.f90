@@ -8,7 +8,9 @@
 ! CREATION HISTORY:
 !       Written by:     Quanhua Liu, 29-Jun-2010
 !                       Quanhua.Liu@noaa.gov
-!
+!       Modified by     Yingtao Ma, 2020/6/11
+!                       yingtao.ma@noaa.gov
+!                       Implemented CMAQ aerosol
 
 MODULE CRTM_AOD_Module
 
@@ -42,7 +44,7 @@ MODULE CRTM_AOD_Module
   USE ASvar_Define, ONLY: ASvar_type, &
                           ASvar_Associated, &
                           ASvar_Destroy   , &
-                          ASvar_Create    
+                          ASvar_Create
 
 
   ! -----------------------
@@ -62,13 +64,12 @@ MODULE CRTM_AOD_Module
   PUBLIC :: CRTM_AOD_AD
   PUBLIC :: CRTM_AOD_K
 
-
   ! -----------------
   ! Module parameters
   ! -----------------
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
- 
+
 
 CONTAINS
 
@@ -139,12 +140,12 @@ CONTAINS
   FUNCTION CRTM_AOD( &
     Atmosphere , &  ! Input, M
     ChannelInfo, &  ! Input, M
-    RTSolution , &  ! Output, L x M 
+    RTSolution , &  ! Output, L x M
     Options    ) &  ! Optional input, M
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)     ! M
-    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! n_Sensors 
+    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! n_Sensors
     TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)   ! L x M
     TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)        ! M
     ! Function result
@@ -160,7 +161,7 @@ CONTAINS
     INTEGER :: m, n_Profiles
     INTEGER :: ln
     ! Component variables
-    TYPE(CRTM_AtmOptics_type) :: AtmOptics 
+    TYPE(CRTM_AtmOptics_type) :: AtmOptics
     TYPE(ASVar_type) :: ASvar
 
 
@@ -208,7 +209,7 @@ CONTAINS
       END IF
     END IF
 
-    
+
     ! Check the RTSolution structure has been allocated
     IF ( ANY(.NOT. CRTM_RTSolution_Associated(RTSolution)) ) THEN
       Error_Status = FAILURE
@@ -222,18 +223,18 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-    
-    
+
+
       ! Check the aerosol coeff. data for cases with aerosols
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE                                                                 
-         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
-                &"for the aerosol case profile #",i0)' ) m                                      
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                      
-         RETURN                                                                                 
+         Error_Status = FAILURE
+         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
+                &"for the aerosol case profile #",i0)' ) m
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+         RETURN
       END IF
 
-      
+
       ! Check the optional Options structure argument
       Check_Input = .TRUE.
       IF (Options_Present) THEN
@@ -260,10 +261,10 @@ CONTAINS
         Error_Status=FAILURE
         WRITE( Message,'("Number of RTSolution layers < Atmosphere for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-        RETURN      
+        RETURN
       END IF
-      
-      
+
+
       ! Allocate AtmOptics based on Atmosphere dimension
       CALL CRTM_AtmOptics_Create( AtmOptics, &
                                   Atmosphere(m)%n_Layers, &
@@ -294,7 +295,7 @@ CONTAINS
       ! -----------
       ! Initialise channel counter for channel(l)/sensor(n) count
       ln = 0
-      
+
       Sensor_Loop: DO n = 1, n_Sensors
 
         ! Shorter name
@@ -305,7 +306,7 @@ CONTAINS
         ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
-         
+
           ! Channel setup
           ! ...Skip channel if requested
           IF ( .NOT. ChannelInfo(n)%Process_Channel(l) ) CYCLE Channel_Loop
@@ -316,10 +317,10 @@ CONTAINS
           ! ...Assign sensor+channel information to output
           RTSolution(ln,m)%Sensor_Id        = ChannelInfo(n)%Sensor_Id
           RTSolution(ln,m)%WMO_Satellite_Id = ChannelInfo(n)%WMO_Satellite_Id
-          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id   
+          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id
           RTSolution(ln,m)%Sensor_Channel   = ChannelInfo(n)%Sensor_Channel(l)
 
-          
+
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
 
@@ -340,14 +341,13 @@ CONTAINS
             END IF
           END IF
 
-
           ! Save the nadir optical depth
           RTSolution(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics%Optical_Depth
 
         END DO Channel_Loop
 
       END DO Sensor_Loop
-      
+
 
       ! Deallocate local sensor independent data structures
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
@@ -439,14 +439,14 @@ CONTAINS
     Atmosphere   , &  ! Input, M
     Atmosphere_TL, &  ! Input, M
     ChannelInfo  , &  ! Input, M
-    RTSolution   , &  ! Output, L x M 
-    RTSolution_TL, &  ! Output, L x M 
+    RTSolution   , &  ! Output, L x M
+    RTSolution_TL, &  ! Output, L x M
     Options      ) &  ! Optional FWD input, M
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)      ! M
     TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere_TL(:)   ! M
-    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)     ! n_Sensors 
+    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)     ! n_Sensors
     TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)    ! L x M
     TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution_TL(:,:) ! L x M
     TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)         ! M
@@ -514,7 +514,7 @@ CONTAINS
       END IF
     END IF
 
-    
+
     ! Check the RTSolution structures have been allocated
     IF ( ANY(.NOT. CRTM_RTSolution_Associated(RTSolution)) .OR. &
          ANY(.NOT. CRTM_RTSolution_Associated(RTSolution_TL)) ) THEN
@@ -529,18 +529,18 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-    
-    
+
+
       ! Check the aerosol coeff. data for cases with aerosols
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE                                                                 
-         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
-                &"for the aerosol case profile #",i0)' ) m                                      
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                      
-         RETURN                                                                                 
+         Error_Status = FAILURE
+         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
+                &"for the aerosol case profile #",i0)' ) m
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+         RETURN
       END IF
 
-      
+
       ! Check the optional Options structure argument
       Check_Input = .TRUE.
       IF (Options_Present) THEN
@@ -565,9 +565,9 @@ CONTAINS
         Error_Status=FAILURE
         WRITE( Message,'("Number of RTSolution layers < Atmosphere for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-        RETURN      
+        RETURN
       END IF
-      
+
 
       ! Allocate AtmOptics based on Atmosphere dimensions
       CALL CRTM_AtmOptics_Create( AtmOptics, &
@@ -605,7 +605,7 @@ CONTAINS
       ! -----------
       ! Initialise channel counter for channel(l)/sensor(n) count
       ln = 0
-      
+
       Sensor_Loop: DO n = 1, n_Sensors
 
         ! Shorter name
@@ -616,7 +616,7 @@ CONTAINS
         ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
-         
+
           ! Channel setup
           ! ...Skip channel if requested
           IF ( .NOT. ChannelInfo(n)%Process_Channel(l) ) CYCLE Channel_Loop
@@ -627,14 +627,14 @@ CONTAINS
           ! ...Assign sensor+channel information to output
           RTSolution(ln,m)%Sensor_Id        = ChannelInfo(n)%Sensor_Id
           RTSolution(ln,m)%WMO_Satellite_Id = ChannelInfo(n)%WMO_Satellite_Id
-          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id   
+          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id
           RTSolution(ln,m)%Sensor_Channel   = ChannelInfo(n)%Sensor_Channel(l)
-          RTSolution_TL(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id       
+          RTSolution_TL(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id
           RTSolution_TL(ln,m)%WMO_Satellite_Id = RTSolution(ln,m)%WMO_Satellite_Id
-          RTSolution_TL(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id   
-          RTSolution_TL(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel  
+          RTSolution_TL(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id
+          RTSolution_TL(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel
 
-          
+
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
           CALL CRTM_AtmOptics_Zero( AtmOptics_TL )
@@ -648,12 +648,12 @@ CONTAINS
                                                       AtmOptics    , &  ! In/Output
                                                       ASVar          )  ! Internal variable output
             Status_TL = CRTM_Compute_AerosolScatter_TL( Atmosphere(m)   , &  ! FWD Input
-                                                        AtmOptics       , &  ! FWD Input 
+                                                        AtmOptics       , &  ! FWD Input
                                                         Atmosphere_TL(m), &  ! TL  Input
                                                         SensorIndex     , &  ! Input
                                                         ChannelIndex    , &  ! Input
-                                                        AtmOptics_TL    , &  ! TL  Output  
-                                                        ASVar             )  ! Internal variable 
+                                                        AtmOptics_TL    , &  ! TL  Output
+                                                        ASVar             )  ! Internal variable
             IF ( Status_FWD /= SUCCESS .OR. Status_TL /= SUCCESS) THEN
               Error_Status = FAILURE
               WRITE( Message,'("Error computing AerosolScatter for ",a,&
@@ -668,11 +668,11 @@ CONTAINS
           ! Save the nadir optical depths
           RTSolution(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics%Optical_Depth
           RTSolution_TL(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics_TL%Optical_Depth
-        
+
         END DO Channel_Loop
 
       END DO Sensor_Loop
-      
+
 
       ! Deallocate local sensor independent data structures
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
@@ -771,8 +771,8 @@ CONTAINS
     Atmosphere   , &  ! Input, M
     RTSolution_AD, &  ! Input, M
     ChannelInfo  , &  ! Input, M
-    RTSolution   , &  ! Output, L x M 
-    Atmosphere_AD, &  ! Output, L x M 
+    RTSolution   , &  ! Output, L x M
+    Atmosphere_AD, &  ! Output, L x M
     Options      ) &  ! Optional input, M
   RESULT( Error_Status )
     ! Arguments
@@ -847,7 +847,7 @@ CONTAINS
       END IF
     END IF
 
-    
+
     ! Check the RTSolution structures have been allocated
     IF ( ANY(.NOT. CRTM_RTSolution_Associated(RTSolution)) .OR. &
          ANY(.NOT. CRTM_RTSolution_Associated(RTSolution_AD)) ) THEN
@@ -862,18 +862,18 @@ CONTAINS
     ! PROFILE LOOP
     ! ------------
     Profile_Loop: DO m = 1, n_Profiles
-    
-    
+
+
       ! Check the aerosol coeff. data for cases with aerosols
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE                                                                 
-         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &   
-                &"for the aerosol case profile #",i0)' ) m                                      
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )                      
-         RETURN                                                                                 
+         Error_Status = FAILURE
+         WRITE( Message,'("The AerosolCoeff data must be loaded (with CRTM_Init routine) ", &
+                &"for the aerosol case profile #",i0)' ) m
+         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+         RETURN
       END IF
 
-      
+
       ! Check the optional Options structure argument
       Check_Input = .TRUE.
       IF (Options_Present) THEN
@@ -898,9 +898,9 @@ CONTAINS
         Error_Status=FAILURE
         WRITE( Message,'("Number of RTSolution layers < Atmosphere for profile #",i0)' ) m
         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-        RETURN      
+        RETURN
       END IF
-      
+
 
       ! Allocate AtmOptics based on Atmosphere dimensions
       CALL CRTM_AtmOptics_Create( AtmOptics, &
@@ -937,11 +937,11 @@ CONTAINS
       ! ...Climatology
       Atmosphere_AD(m)%Climatology = Atmosphere(m)%Climatology
       ! ...Absorber info
-      Atmosphere_AD(m)%Absorber_Id    = Atmosphere(m)%Absorber_Id   
+      Atmosphere_AD(m)%Absorber_Id    = Atmosphere(m)%Absorber_Id
       Atmosphere_AD(m)%Absorber_Units = Atmosphere(m)%Absorber_Units
       ! ...Aerosol info
       DO na = 1, Atmosphere(m)%n_Aerosols
-        Atmosphere_AD(m)%Aerosol(na)%Type = Atmosphere(m)%Aerosol(na)%Type      
+        Atmosphere_AD(m)%Aerosol(na)%Type = Atmosphere(m)%Aerosol(na)%Type
       END DO
 
 
@@ -950,7 +950,7 @@ CONTAINS
       ! -----------
       ! Initialise channel counter for sensor(n)/channel(l) count
       ln = 0
-    
+
       Sensor_Loop: DO n = 1, n_Sensors
 
 
@@ -962,7 +962,7 @@ CONTAINS
         ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
-         
+
           ! Channel setup
           ! ...Skip channel if requested
           IF ( .NOT. ChannelInfo(n)%Process_Channel(l) ) CYCLE Channel_Loop
@@ -973,14 +973,14 @@ CONTAINS
           ! ...Assign sensor+channel information to output
           RTSolution(ln,m)%Sensor_Id        = ChannelInfo(n)%Sensor_Id
           RTSolution(ln,m)%WMO_Satellite_Id = ChannelInfo(n)%WMO_Satellite_Id
-          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id   
+          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id
           RTSolution(ln,m)%Sensor_Channel   = ChannelInfo(n)%Sensor_Channel(l)
-          RTSolution_AD(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id       
+          RTSolution_AD(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id
           RTSolution_AD(ln,m)%WMO_Satellite_Id = RTSolution(ln,m)%WMO_Satellite_Id
-          RTSolution_AD(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id   
-          RTSolution_AD(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel  
+          RTSolution_AD(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id
+          RTSolution_AD(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel
 
-          
+
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
           CALL CRTM_AtmOptics_Zero( AtmOptics_AD )
@@ -1014,11 +1014,11 @@ CONTAINS
 
           ! Save the nadir optical depths
           RTSolution(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics%Optical_Depth
-         
+
         END DO Channel_Loop
 
       END DO Sensor_Loop
-      
+
 
       ! Deallocate local sensor independent data structures
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
@@ -1072,7 +1072,7 @@ CONTAINS
 !                       ATTRIBUTES: INTENT(IN)
 !
 ! OUTPUTS:
-!       RTSolution:     Structure containing the layer aerosol optical 
+!       RTSolution:     Structure containing the layer aerosol optical
 !                       depth profile for the given inputs.
 !                       UNITS:      N/A
 !                       TYPE:       CRTM_RTSolution_type
@@ -1118,14 +1118,14 @@ CONTAINS
     Atmosphere  , &  ! Input, M
     RTSolution_K, &  ! Input, M
     ChannelInfo , &  ! Input, M
-    RTSolution  , &  ! Output, L x M 
-    Atmosphere_K, &  ! Output, L x M 
+    RTSolution  , &  ! Output, L x M
+    Atmosphere_K, &  ! Output, L x M
     Options     ) &  ! Optional input, M
   RESULT( Error_Status )
     ! Arguments
     TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)      ! M
     TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution_K(:,:)  ! L x M
-    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)     ! n_Sensors 
+    TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)     ! n_Sensors
     TYPE(CRTM_RTSolution_type),        INTENT(IN OUT) :: RTSolution(:,:)    ! L x M
     TYPE(CRTM_Atmosphere_type),        INTENT(IN OUT) :: Atmosphere_K(:,:)  ! L x M
     TYPE(CRTM_Options_type), OPTIONAL, INTENT(IN)     :: Options(:)         ! M
@@ -1224,8 +1224,8 @@ CONTAINS
          CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
          RETURN
       END IF
-      
-      
+
+
       ! Check the optional Options structure argument
       Check_Input = .TRUE.
       IF (Options_Present) THEN
@@ -1290,7 +1290,7 @@ CONTAINS
       ! -----------
       ! Initialise channel counter for sensor(n)/channel(l) count
       ln = 0
-    
+
       Sensor_Loop: DO n = 1, n_Sensors
 
 
@@ -1302,7 +1302,7 @@ CONTAINS
         ! CHANNEL LOOP
         ! ------------
         Channel_Loop: DO l = 1, ChannelInfo(n)%n_Channels
-         
+
           ! Channel setup
           ! ...Skip channel if requested
           IF ( .NOT. ChannelInfo(n)%Process_Channel(l) ) CYCLE Channel_Loop
@@ -1313,26 +1313,26 @@ CONTAINS
           ! ...Assign sensor+channel information to output
           RTSolution(ln,m)%Sensor_Id        = ChannelInfo(n)%Sensor_Id
           RTSolution(ln,m)%WMO_Satellite_Id = ChannelInfo(n)%WMO_Satellite_Id
-          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id   
+          RTSolution(ln,m)%WMO_Sensor_Id    = ChannelInfo(n)%WMO_Sensor_Id
           RTSolution(ln,m)%Sensor_Channel   = ChannelInfo(n)%Sensor_Channel(l)
-          RTSolution_K(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id       
+          RTSolution_K(ln,m)%Sensor_Id        = RTSolution(ln,m)%Sensor_Id
           RTSolution_K(ln,m)%WMO_Satellite_Id = RTSolution(ln,m)%WMO_Satellite_Id
-          RTSolution_K(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id   
-          RTSolution_K(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel  
+          RTSolution_K(ln,m)%WMO_Sensor_Id    = RTSolution(ln,m)%WMO_Sensor_Id
+          RTSolution_K(ln,m)%Sensor_Channel   = RTSolution(ln,m)%Sensor_Channel
 
 
           ! Copy over atmosphere info to k-matrix output
           ! ...Climatology
           Atmosphere_K(ln,m)%Climatology = Atmosphere(m)%Climatology
           ! ...Absorber info
-          Atmosphere_K(ln,m)%Absorber_Id    = Atmosphere(m)%Absorber_Id   
+          Atmosphere_K(ln,m)%Absorber_Id    = Atmosphere(m)%Absorber_Id
           Atmosphere_K(ln,m)%Absorber_Units = Atmosphere(m)%Absorber_Units
           ! ...Aerosol info
           DO na = 1, Atmosphere(m)%n_Aerosols
-            Atmosphere_K(ln,m)%Aerosol(na)%Type = Atmosphere(m)%Aerosol(na)%Type      
+            Atmosphere_K(ln,m)%Aerosol(na)%Type = Atmosphere(m)%Aerosol(na)%Type
           END DO
 
-          
+
           ! Initialisations
           CALL CRTM_AtmOptics_Zero( AtmOptics )
           CALL CRTM_AtmOptics_Zero( AtmOptics_K )
@@ -1366,17 +1366,16 @@ CONTAINS
 
           ! Save the nadir optical depths
           RTSolution(ln,m)%Layer_Optical_Depth(1:Atmosphere(m)%n_Layers) = AtmOptics%Optical_Depth
-         
+
         END DO Channel_Loop
 
       END DO Sensor_Loop
-      
+
 
       ! Deallocate local sensor independent data structures
       CALL CRTM_AtmOptics_Destroy( AtmOptics )
       CALL CRTM_AtmOptics_Destroy( AtmOptics_K )
 
     END DO Profile_Loop
-
-  END FUNCTION CRTM_AOD_K
+   END FUNCTION CRTM_AOD_K
 END MODULE CRTM_AOD_Module
