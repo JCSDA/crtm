@@ -6,7 +6,8 @@ Preamble
 
 CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)  
 
-Created on October 7, 2020  
+Created on October  7, 2020  
+Updated on October 23, 2020
 
 This is a fully functional release of CRTM v2.4.0.  
 
@@ -17,6 +18,22 @@ Basic requirements:
 (2) A netCDF4 / HDF5 library.   
 (3) A linux, macOS, or unix-style environment.  This has not been tested under any Windows Fortran environments.
 (4) Bash shell is preferred. 
+
+=========================================================
+
+**Important Note**: If reading this, you're cloning the CRTM development repository.  The development repository is structured in a way that makes it less user friendly, but more amenable to development and testing.
+
+**JEDI NOTE** This develop branch is also designed to work directly in a JEDI container or JEDI environment. If you're doing JEDI things, you're probably in the right spot. However, you can stop reading right now and have a look at the README_JEDI.md file.   
+
+If you're looking for an older version of CRTM (v2.3.0 or older) you should obtain the appropriate tarball from
+https://ftp.emc.ncep.noaa.gov/jcsda/CRTM/
+
+If you're looking for version 2.4.0 or newer in a structure similar to older CRTM tarball releases, you should check out the appropriate release/ branch.
+git branch --remote | grep "release/" to see a list OR you may checkout the appropriate tag on the master branch and build it yourself. 
+
+Finally, you may follow the instructions here to build a "latest" release based on the most recent developments.
+
+=========================================================
 
 Contents
 ========
@@ -44,10 +61,12 @@ The CRTM **development** repository directory structure looks like:
 
 <pre>
  .
-  ├── LICENSE
+  ├── LICENSE  (CC0 license)
+	├── COPYING  (CC0 legal document)
   ├── NOTES
-  ├── README.md
+  ├── README.md 
   ├── Set_CRTM_Environment.sh
+  ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -57,8 +76,6 @@ The CRTM **development** repository directory structure looks like:
   │   ├── SpcCoeff/
   │   └── TauCoeff/
   ├── scripts/
-  │   ├── idl/
-  │   ├── ruby/
   │   └── shell/
   ├── <b>src/</b>
   │   ├── Ancillary/
@@ -69,7 +86,7 @@ The CRTM **development** repository directory structure looks like:
   │   ├── Atmosphere/
   │   ├── <b>Build/</b>
 	│   │   └── <b>libsrc/</b>
-	│   │       └── <b>test/</b>
+	│   │       └── <b>test/</b>
   │   ├── CRTM_Utility/
   │   ├── ChannelInfo/
   │   ├── Coefficients/
@@ -103,6 +120,7 @@ But after a clean clone of the development repository, none of the links to sour
 
 Configuration
 -------------
+By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Data.sh script. 
 
 At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
@@ -125,8 +143,7 @@ To use these files to define the CRTM build environment, you should source them.
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
-
-    . configuration/gfortran-debug.setup
+		. configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
@@ -138,6 +155,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
+sh Get_CRTM_Binary_Data.sh
 cd src/
 cd Build/
 make clean  
@@ -290,7 +308,7 @@ example, for the Intel ifort compiler:
   ./configure --prefix=${PWD} \
                 --disable-big-endian \
                 FC="ifort" \
-                FCFLAGS="-O3 -openmp -g -traceback" 
+                FCFLAGS="-O3 -qopenmp -g -traceback"  
 </pre>
 This overrides the FC and FCFLAGS variables that were set by "sourcing" the `configuration/` file earlier, it is strongly recommended that you use the provided configuration files since they contain flags that have been added after substantial debugging and testing.
 
@@ -302,14 +320,12 @@ CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.
 
 If you have problems building the library please include the generated "config.log" file in your email correspondence.
 
-
-
 Known Issues
 ------------
 
-(1) Transmitance Coefficient generation codes included in src/ are not functional.  Contact CRTM support above for details.  
-(2) No testing was done on PGI compilers.  
-(3) Compiler setup files do not contain "generic" ways to point to netCDF libraries - you need to edit those files and ensure that the paths point to the correct place.
+(1) Any "Transmitance Coefficient" generation codes included in src/ are not functional.  Contact CRTM support above for details.  
+(2) No testing was done on PGI, XLF, or other less popular compilers.  
+(3) Compiler setup files do not contain "generic" ways to point to netCDF libraries - you need to edit those files and ensure that the paths point to the correct place.  This is the netCDF life.  Note: Building inside of a JEDI environment (e.g., singularity container) using ecbuild makes this part much easier. 
 
 Troubleshooting
 ---------------
