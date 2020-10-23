@@ -45,7 +45,6 @@ list( APPEND crtm_src_files
 			Coefficients/AerosolCoeff/AerosolCoeff_netCDF_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Binary_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Define.f90
-			Coefficients/CloudCoeff/CloudCoeff_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_netCDF_IO.f90
 			Coefficients/CRTM_AerosolCoeff.f90
 			Coefficients/CRTM_CloudCoeff.f90

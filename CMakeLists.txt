@@ -20,18 +20,10 @@ include(GNUInstallDirs)
 find_package( OpenMP COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
 
-################################################################################
-# Sources
-################################################################################
-
-set( CRTM_LINKER_LANGUAGE Fortran )
-
+## Sources
 add_subdirectory(src)
 
-################################################################################
-# Finalise configuration
-################################################################################
-
+## Finalise configuration
 # prepares a tar.gz of the sources and/or binaries
 ecbuild_install_project( NAME crtm )
 
