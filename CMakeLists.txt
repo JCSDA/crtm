@@ -22,6 +22,7 @@ find_package( NetCDF REQUIRED COMPONENTS Fortran )
 
 ## Sources
 add_subdirectory(src)
+add_subdirectory(test)
 
 ## Finalise configuration
 # prepares a tar.gz of the sources and/or binaries
