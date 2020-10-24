@@ -23,18 +23,6 @@ find_package( NetCDF REQUIRED COMPONENTS Fortran )
 ## Sources
 add_subdirectory(src)
 add_subdirectory(test)
-# download binary data make the fix/ directory super hacky, needs to be better
-message("TTT1: ${CMAKE_CURRENT_SOURCE_DIR}")
-execute_process (
-    COMMAND bash -c "sh ${CMAKE_CURRENT_SOURCE_DIR}/Get_CRTM_Binary_Files.sh"
-    ARGUMENTS "jedi"
-    OUTPUT_VARIABLE outVar
-)
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/fix")
-    execute_process (
-        COMMAND bash -c "mv fix/ ${CMAKE_CURRENT_SOURCE_DIR}/."
-    )
-endif()
 
 ## Finalise configuration
 # prepares a tar.gz of the sources and/or binaries
