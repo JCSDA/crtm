@@ -1253,6 +1253,7 @@ CONTAINS
           ! Compute the surface optics
           Error_Status = Compute_MW_Water_SfcOptics_TL( &
                            SfcOptics   , &  ! Input
+                           Surface     , &  ! Input
                            Surface_TL  , &  ! Input
                            GeometryInfo, &  ! Input
                            SensorIndex , &  ! Input
@@ -2032,6 +2033,7 @@ CONTAINS
                            GeometryInfo, &  ! Input
                            SensorIndex , &  ! Input
                            ChannelIndex, &  ! Input
+                           Surface     , &  ! Input
                            Surface_AD  , &  ! Output
                            iVar%MWWSOV   )  ! Internal variable input
           IF ( Error_Status /= SUCCESS ) THEN
