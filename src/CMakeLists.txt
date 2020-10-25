@@ -42,10 +42,8 @@ list( APPEND crtm_src_files
 			Coefficients/ACCoeff/ACCoeff_Define.f90
 			Coefficients/AerosolCoeff/AerosolCoeff_Binary_IO.f90
 			Coefficients/AerosolCoeff/AerosolCoeff_Define.f90
-			Coefficients/AerosolCoeff/AerosolCoeff_netCDF_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Binary_IO.f90
 			Coefficients/CloudCoeff/CloudCoeff_Define.f90
-			Coefficients/CloudCoeff/CloudCoeff_netCDF_IO.f90
 			Coefficients/CRTM_AerosolCoeff.f90
 			Coefficients/CRTM_CloudCoeff.f90
 			Coefficients/CRTM_IRiceCoeff.f90
@@ -108,7 +106,7 @@ list( APPEND crtm_src_files
 			Options/CRTM_Options_Define.f90
 			Options/SSU_Input/SSU_Input_Define.f90
 			Options/Zeeman_Input/Zeeman_Input_Define.f90
-			RTSolution/ADA/ADA_Module.f90
+      RTSolution/ADA/ADA_Module.f90
 			RTSolution/Common_RTSolution.f90
 			RTSolution/CRTM_RTSolution_Define.f90
 			RTSolution/CRTM_RTSolution.f90
@@ -142,6 +140,7 @@ list( APPEND crtm_src_files
 			SfcOptics/MW_Water/FASTEM_MWSSEM/Small_Scale_Correction_Module.f90
 			SfcOptics/MW_Water/Fresnel/Fresnel.f90
 			SfcOptics/MW_Water/LowFrequency_MWSSEM/CRTM_LowFrequency_MWSSEM.f90
+			SfcOptics/MW_Water/LowFrequency_MWSSEM/RSS_Emissivity_Model.f90
 			SfcOptics/MW_Water/Ocean_Permittivity/Ellison.f90
 			SfcOptics/MW_Water/Ocean_Permittivity/Guillou.f90
 			SfcOptics/MW_Water/Ocean_Permittivity/Liu.f90
