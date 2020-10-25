@@ -195,6 +195,7 @@ ecbuild_add_executable (
 ecbuild_add_test (
 		TARGET "Unit_TL_TEST"
 		COMMAND "TL_TEST" 
+                TEST_DEPENDS get_crtm_coeffs
     )
 
 #code dependencies are currently too complex for me to build 
@@ -250,7 +251,8 @@ foreach(regtype IN LISTS regression_types)
   
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+  													ARGS    "${sensor_id}"
+													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()
@@ -270,7 +272,8 @@ foreach(regtype IN LISTS TLAD_types)
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+  													ARGS    "${sensor_id}"
+													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()
