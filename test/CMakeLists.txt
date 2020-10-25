@@ -38,6 +38,29 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/forward)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/unit)
 CREATE_SYMLINK( ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${crtm_test_input} )
 
+
+if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES})
+    set(LOCAL_PATH_JEDI_TESTFILES "$ENV{LOCAL_PATH_JEDI_TESTFILES}")
+endif()
+
+set( REPO_VERSION crtm/2.3.0 )
+# If local path to testfiles is defined don't download
+if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
+  set( CRTM_COEFFS_PATH ${LOCAL_PATH_JEDI_TESTFILES}/${REPO_VERSION} )
+  message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${LOCAL_PATH_JEDI_TESTFILES}")
+# Download CRTM coefficients
+else()
+  set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION} CACHE PATH "path for CRTM coefficients")
+  file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
+  set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com )
+  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/${REPO_VERSION} to ${CRTM_COEFFS_PATH}")
+  ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
+                              NAMES    crtm_coefficients.tar.gz
+                              DIRNAME  ${REPO_VERSION}
+                              DIRLOCAL ${CRTM_COEFFS_PATH}
+                              EXTRACT )
+endif()
+
 # Add files to cmake resources
 ecbuild_add_resources( TARGET crtm_test_scripts
                        SOURCES_PACK
@@ -172,6 +195,7 @@ ecbuild_add_executable (
 ecbuild_add_test (
 		TARGET "Unit_TL_TEST"
 		COMMAND "TL_TEST" 
+                TEST_DEPENDS get_crtm_coeffs
     )
 
 #code dependencies are currently too complex for me to build 
@@ -227,7 +251,8 @@ foreach(regtype IN LISTS regression_types)
   
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+  													ARGS    "${sensor_id}"
+													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()
@@ -247,7 +272,8 @@ foreach(regtype IN LISTS TLAD_types)
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+  													ARGS    "${sensor_id}"
+													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()
@@ -346,7 +372,6 @@ SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
 )
 
 # Symlink all CRTM files
-CREATE_SYMLINK_FILENAME( ${crtm_SOURCE_DIR}/fix
+CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
-
