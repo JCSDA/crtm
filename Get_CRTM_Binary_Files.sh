@@ -1,27 +1,14 @@
-
-
-if [ -z $1 ]
-then
-		tarball="crtm_full"
-elif [ -n $1 ]
-then
-		tarball="crtm_jedi"
-fi
-
-if [ -d "fix/" ]; then
-		echo "fix/ directory exists"
-else
-		if test -f "crtm_coefficients.tar.gz"; then
-				echo "crtm_coefficients.tar.gz exists."
+if test -f "fix_crtm-internal_develop_2.tgz"; then
+		if [ -d "fix/" ]; then #fix directory exists
+				echo "fix/ exists, doing nothing."
 		else
-				echo 
-				case $tarball in
-						"crtm_jedi") wget https://jedi-test-files.s3.amazonaws.com/crtm/2.3.0/crtm_coefficients.tar.gz ;; 
-						"crtm_full") wget ftp://ftp.ucar.edu/pub/cpaess/bjohns/crtm_coefficients.tar.gz ;;
-						*) echo "Sorry, I can not get fixfiles for you!";;
-				esac
-		fi
-		# fix directory does not exist but the tar file does:
-		mkdir fix
-		tar -zxvf crtm_coefficients.tar.gz fix/.
+				#untar the file and move directory to fix
+				tar -zxvf fix_crtm-internal_develop_2.tgz
+				mv fix_crtm-internal_develop fix
+		fi 
+else
+    #download, untar, move
+		wget -q ftp://ftp.ucar.edu/pub/cpaess/bjohns/fix_crtm-internal_develop_2.tgz #full set of CRTM binary files
+		tar -zxvf fix_crtm-internal_develop_2.tgz
+		mv fix_crtm-internal_develop fix
 fi
