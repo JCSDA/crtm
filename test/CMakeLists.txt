@@ -50,7 +50,7 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
   message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${LOCAL_PATH_JEDI_TESTFILES}")
 # Download CRTM coefficients
 else()
-  set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION} CACHE PATH "path for CRTM coefficients")
+  set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
   set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com )
   message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/${REPO_VERSION} to ${CRTM_COEFFS_PATH}")
