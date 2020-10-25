@@ -24,11 +24,6 @@ function(CREATE_SYMLINK_FILENAME src dst)
         endforeach(FILENAME)
 endfunction(CREATE_SYMLINK_FILENAME)
 
-# Create Data directory for test input config and symlink all files
-#list( APPEND crtm_test_input
-#      testinput/single_profile.yaml
-#)
-
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/adjoint)
@@ -70,96 +65,96 @@ ecbuild_add_resources( TARGET crtm_test_scripts
 # Create list of sensor ids for testing
 list( APPEND Simple_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND ScatteringSwitch_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND SOI_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND VerticalCoordinates_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND SSU_Sensor_Ids
-				ssu_n06
-				ssu_n14
+        ssu_n06
+        ssu_n14
 )
 
 list( APPEND ClearSky_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 # Create list of sensor ids for testing
 list( APPEND AOD_Sensor_Ids
-				cris399_npp
-			  v.abi_gr
-				airs_aqua
+        cris399_npp
+        v.abi_gr
+        airs_aqua
 )
 
 # Create list of sensor ids for testing
 list( APPEND Zeeman_Sensor_Ids
-			ssmis_f20
-			ssmis_f19
-			ssmis_f18
-			ssmis_f17
-			ssmis_f16
+      ssmis_f20
+      ssmis_f19
+      ssmis_f18
+      ssmis_f17
+      ssmis_f16
 )
 
 
 list( APPEND ChannelSubset_Sensor_Ids
-			iasi_metop-b
+      iasi_metop-b
 )
 
 list( APPEND Aircraft_Sensor_Ids
-			crisB1_npp
+      crisB1_npp
 )
 
 list (APPEND common_tests
-		 Simple
-		 AOD
-		 Zeeman
-		 ChannelSubset
- 		 ClearSky
-		 Aircraft
-		 ScatteringSwitch
-		 SOI
-		 SSU
-		 VerticalCoordinates
+     Simple
+     AOD
+     Zeeman
+     ChannelSubset
+     ClearSky
+     Aircraft
+     ScatteringSwitch
+     SOI
+     SSU
+     VerticalCoordinates
 )
 
 
 list (APPEND regression_types
-		 forward
-		 k_matrix
+     forward
+     k_matrix
 )
 
 list (APPEND TLAD_types
-		 adjoint
-		 tangent_linear
+     adjoint
+     tangent_linear
 )
 
 list (APPEND TLAD_tests
-		 Simple
- 		 ClearSky
+     Simple
+     ClearSky
 )
 
 
@@ -168,11 +163,13 @@ list (APPEND TLAD_tests
 ecbuild_add_test( TARGET  test_check_crtm
                   SOURCES mains/application/check_crtm.F90
                   ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
                   LIBS    crtm )
 
 ecbuild_add_test( TARGET  test_check_crtm_random
                   SOURCES mains/application/check_crtm_random_profiles.F90
                   ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
                   LIBS    crtm )
 
 #---------------------------------------------------------------------------------
@@ -184,12 +181,13 @@ ecbuild_add_test( TARGET  test_check_crtm_random
 ecbuild_add_executable (
     TARGET  "TL_TEST"
     SOURCES mains/unit/Unit_Test/test_TL.f90
-		LIBS 		crtm
-		NOINSTALL 
-		)
+    LIBS    crtm
+    NOINSTALL 
+    )
 ecbuild_add_test (
-		TARGET "Unit_TL_TEST"
-		COMMAND "TL_TEST" 
+    TARGET "Unit_TL_TEST"
+    COMMAND "TL_TEST"
+    OMP     $ENV{OMP_NUM_THREADS}
     )
 
 #=================================================================================
@@ -198,19 +196,20 @@ foreach(regtype IN LISTS regression_types)
   string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
   foreach(testtype IN LISTS common_tests)
     string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
  
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}")
     endforeach()
   endforeach() 
 endforeach()
@@ -219,18 +218,19 @@ endforeach()
 #TLAD Regression tests
 foreach(regtype IN LISTS TLAD_types)
   foreach(testtype IN LISTS TLAD_tests)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
   
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}")
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}")
     endforeach()
   endforeach() 
 endforeach()

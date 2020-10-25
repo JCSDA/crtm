@@ -20,7 +20,7 @@ set( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -D_REAL8_ -ffree-line-length-no
 # RELEASE FLAGS
 ####################################################################
 
-set( CMAKE_Fortran_FLAGS_RELEASE "-O3 -funroll-all-loops -finline-functions ")
+set( CMAKE_Fortran_FLAGS_RELEASE "-O3 -funroll-all-loops -fopenmp -finline-functions ")
 
 ####################################################################
 # DEBUG FLAGS
@@ -38,7 +38,7 @@ set( CMAKE_Fortran_FLAGS_BIT     "-O2 -funroll-all-loops -finline-functions" )
 # LINK FLAGS
 ####################################################################
 
-set( CMAKE_Fortran_LINK_FLAGS    "" )
+set( CMAKE_Fortran_LINK_FLAGS    "-fopenmp" )
 
 ####################################################################
 
