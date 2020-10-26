@@ -1,4 +1,4 @@
-filename="crtm_coefficients.tar.gz"
+filename="crtm_coefficients.tar.gz" #rel 2.3_jedi files
 
 if test -f "$filename"; then
     if [ -d "fix/" ]; then #fix directory exists

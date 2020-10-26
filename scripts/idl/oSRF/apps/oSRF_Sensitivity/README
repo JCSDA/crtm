@@ -1,7 +1,0 @@
-The main two files are
-  osrf_sensitivity.pro
-and
-  osrf_plot_dtb_stats.pro
-where the latter plots the results of the former.
-
-All the other files contain support procedures.

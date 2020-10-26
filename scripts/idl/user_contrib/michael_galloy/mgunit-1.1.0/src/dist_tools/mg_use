@@ -1,2 +1,0 @@
-#!/bin/sh
-idl -IDL_STARTUP '' -IDL_QUIET 1 -quiet -e mg_use_wrapper -args $@
