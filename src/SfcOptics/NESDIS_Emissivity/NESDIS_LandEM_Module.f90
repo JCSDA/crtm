@@ -1,15 +1,3 @@
-!
-! NESDIS_LandEM_Module
-!
-! Module containing the NESDIS microwave land emissivity model
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., 01-Jun-2005
-!                       Banghua.Yan@noaa.gov
-!                       Fuzhong Weng, NOAA/NESDIS/ORA,
-!                       Fuzhong.Weng@noaa.gov
-!
 
 MODULE NESDIS_LandEM_Module
  
@@ -66,109 +54,7 @@ MODULE NESDIS_LandEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       NESDIS_LandEM
-!
-! PURPOSE:
-!       Subroutine to simulate microwave emissivity over land conditions.
-!
-! REFERENCES:
-!       Weng, F., B. Yan, and N. Grody, 2001: "A microwave land emissivity model",
-!         J. Geophys. Res., 106, 20, 115-20, 123
-!
-! CALLING SEQUENCE:
-!       CALL NESDIS_LandEM(Angle,                 &   ! Input
-!                          Frequency,             &   ! Input
-!                          Soil_Moisture_Content, &   ! Input
-!                          Vegetation_Fraction,   &   ! Input
-!                          Soil_Temperature,      &   ! Input
-!                          Land_Temperature,      &   ! Input
-!                          Snow_Depth,            &   ! Input
-!                          Emissivity_H,          &   ! Output
-!                          Emissivity_V)              ! Output
-!
-! INPUT ARGUMENTS:
-!         Angle:                   The angle values in degree.
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Soil_Moisture_Content:   The volumetric water content of the soil (0:1).
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Vegetation_Fraction:     The vegetation fraction of the surface (0:1).
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Soil_Temperature:        The soil temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Land_Temperature:        The land surface temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Snow_Depth:              The snow depth.
-!                                  UNITS:      mm
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-!         Emissivity_H:            The surface emissivity at a horizontal
-!                                  polarization.
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL(fp)
-!                                  DIMENSION:  Scalar
-!
-!
-! INTERNAL ARGUMENTS:
-!       theta       -  local zenith angle in radian
-!       rhob        -  bulk volume density of the soil (1.18-1.12)
-!       rhos        -  density of the solids (2.65 g.cm^3 for solid soil material)
-!       sand        -  sand fraction (sand + clay = 1.0)
-!       clay        -  clay fraction
-!       lai         -  leaf area index (eg. lai = 4.0 for corn leaves)
-!       sigma       -  surface roughness formed between medium 1 and 2,
-!                      expressed as the standard deviation of roughtness height (mm)
-!       leaf_thick  --  leaf thickness (mm)
-!       rad         -  radius of dense medium scatterers (mm)
-!       va          -  fraction volume of dense medium scatterers(0.0 - 1.0)
-!       ep          -  dielectric constant of ice or sand particles, complex value
-!                               (e.g, 3.0+i0.0)
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., 16-May-2005
-!                       Banghua.Yan@noaa.gov
-!                       Fuzhong Weng, NOAA/NESDIS/ORA,
-!                       Fuzhong.Weng@noaa.gov
-!
-!------------------------------------------------------------------------------------------------------------
 
   SUBROUTINE NESDIS_LandEM(Angle,                 &   ! Input
                            Frequency,             &   ! Input
@@ -208,17 +94,14 @@ CONTAINS
     REAL(fp), PARAMETER, dimension(0:9) :: rhob_soil = (/ 1.48_fp,     &
                           1.68_fp, 1.27_fp, 1.21_fp, 1.48_fp, 1.31_fp, &
                           1.32_fp, 1.40_fp, 1.54_fp, 1.68_fp /)
-! Specific Density
     REAL(fp), PARAMETER, dimension(0:13) :: veg_rho  = (/ 0.33_fp,     &
                           0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
                           0.25_fp, 0.25_fp, 0.40_fp, 0.40_fp, 0.40_fp, &
                           0.40_fp, 0.33_fp, 0.33_fp            /)
-! MGE
     REAL(fp), PARAMETER, dimension(0:13) :: veg_mge  = (/ 0.50_fp,     &
                           0.45_fp, 0.45_fp, 0.45_fp, 0.40_fp, 0.40_fp, &
                           0.30_fp, 0.35_fp, 0.30_fp, 0.30_fp, 0.40_fp, &
                           0.30_fp, 0.50_fp, 0.40_fp            /)
-! LAI
     REAL(fp), PARAMETER, dimension(0:13) :: lai_min  = (/ 0.52_fp,     &
                           3.08_fp, 1.85_fp, 2.80_fp, 5.00_fp, 1.00_fp, &
                           0.50_fp, 0.52_fp, 0.60_fp, 0.50_fp, 0.60_fp, &
@@ -227,7 +110,6 @@ CONTAINS
                           6.48_fp, 3.31_fp, 5.50_fp, 6.40_fp, 5.16_fp, &
                           3.66_fp, 2.90_fp, 2.60_fp, 3.66_fp, 2.60_fp, &
                           0.75_fp, 5.68_fp, 0.01_fp            /)
-! Leaf_thickness
     REAL(fp), PARAMETER, dimension(0:13) :: leaf_th  = (/ 0.07_fp,     &
                           0.18_fp, 0.18_fp, 0.18_fp, 0.18_fp, 0.18_fp, &
                           0.12_fp, 0.12_fp, 0.12_fp, 0.12_fp, 0.12_fp, &
@@ -322,9 +204,6 @@ CONTAINS
       ! Limit for vegetation fraction
       veg_frac = MAX(MIN(veg_frac,ONE),ZERO)
 
-!     lai = THREE*veg_frac + POINT5
-!     mge = POINT5*veg_frac
-!     leaf_thick = 0.07_fp
       mu  = COS(theta)
       sigma = POINT5
     
@@ -353,42 +232,11 @@ CONTAINS
 
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
 
 
 
 subroutine SnowEM_Default(frequency,ts, depth,Emissivity_V,Emissivity_H)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .
-!   prgmmr:  Banghua Yan and Fuzhong Weng               org: nesdis              date: 2005-12-01
-!
-! abstract: preliminary estimate of snow emissivity using  surface temperature and snow depth
-!
-! input argument list:
-!
-!      ts         -  surface temperature
-!      frequency   -  frequency (ghz)
-!
-! output argument list:
-!
-!      Emissivity_V         -  snow emissivty at V-POL
-!      Emissivity_H         -  snow emissivty at H-POL
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!------------------------------------------------------------------------------------------------------------
 
   ! Arguments
   REAL(fp) :: frequency,ts, depth,Emissivity_V,Emissivity_H
@@ -468,41 +316,6 @@ end subroutine SnowEM_Default
 subroutine Canopy_Optic(vlai,frequency,theta,esv,d,gv,gh,&
                         ssalb_v,ssalb_h,tau_v, tau_h)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    canopy_optic compute optic parameters for canopy
-!
-!   prgmmr:  Fuzhong Weng and Banghua Yan                org: nesdis              date: 2000-11-28
-!
-! abstract: compute optic parameters for canopy
-!
-! program history log:
-!
-! input argument list:
-!
-!      lai         -  leaf area index
-!      frequency   -  frequency (ghz)
-!      theta       -  incident angle
-!      esv         -  leaf dielectric constant
-!      d           -  leaf thickness (mm)
-!
-! output argument list:
-!
-!      gv           -  asymmetry factor for v pol
-!      gh           -  asymmetry factor for h pol
-!      ssalb_v      -  single scattering albedo at v. polarization
-!      ssalb_h      -  single scattering albedo at h. polarization
-!      tau_v        -  optical depth at v. polarization
-!      tau_h        -  optical depth at h. polarization
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!------------------------------------------------------------------------------------------------------------
 
   REAL(fp) :: frequency,theta,d,vlai,ssalb_v,ssalb_h,tau_v,tau_h,gv, gh, mu
   COMPLEX(fp) :: ix,k0,kz0,kz1,rhc,rvc,esv,expval1,factt,factrvc,factrhc
@@ -544,47 +357,6 @@ end subroutine Canopy_Optic
 
 subroutine Snow_Optic(frequency,a,h,f,ep_real,ep_imag,gv,gh, ssalb_v,ssalb_h,tau_v,tau_h)
 
-!-------------------------------------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    landem      comput optic parameters for snow
-!
-!   prgmmr: Fuzhong Weng and Banghua Yan                 org: nesdis              date: 2000-11-28
-!
-! abstract: compute optic parameters for snow
-!
-! program history log:
-!
-! input argument list:
-!
-!      theta        -  local zenith angle (degree)
-!      frequency    -  frequency (ghz)
-!      ep_real      -  real part of dielectric constant of particles
-!      ep_imag      -  imaginary part of dielectric constant of particles
-!      a            -  particle radiu (mm)
-!      h            -  snow depth(mm)
-!      f            -  fraction volume of snow (0.0 - 1.0)
-!
-! output argument list:
-!
-!       ssalb       -  single scattering albedo
-!       tau         -  optical depth
-!       g           -  asymmetry factor
-!
-!   important internal variables:
-!
-!       ks          -  scattering coeffcient (/mm)
-!       ka          -  absorption coeffient (/mm)
-!       kp          -  eigenvalue of two-stream approximation
-!       y           -  = yr+iyi
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: yr,yi,ep_real,ep_imag
   REAL(fp) :: frequency,a,h,f,ssalb_v,ssalb_h,tau_v,tau_h,gv,gh,k
@@ -630,47 +402,6 @@ end subroutine Snow_Optic
 
 subroutine Soil_Diel(freq,t_soil,vmc,rhob,rhos,sand,clay,esm)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    Soil_Diel   calculate the dielectric properties of soil
-!
-!   prgmmr: Fuzhong Weng and Banghua Yan                 org: nesdis              date: 2000-11-28
-!
-! abstract: compute the dilectric constant of the bare soil
-!
-! program history log:
-!
-! input argument list:
-!
-!      theta        -  local zenith angle (degree)
-!      frequency    -  frequency (ghz)
-!      t_soil       -  soil temperature
-!      vmc          -  volumetric moisture content (demensionless)
-!      rhob         -  bulk volume density of the soil (1.18-1.12)
-!      rhos         -  density of the solids (2.65 g.cm^3 for
-!                       solid soil material)
-!      sand         -  sand fraction (sand + clay = 1.0)
-!      clay         -  clay fraction
-!
-! output argument list:
-!
-!      esm          -  dielectric constant for bare soil
-!
-! important internal variables:
-!
-!      esof         -  the permittivity of free space
-!      eswo         -  static dieletric constant
-!      tauw         -  relaxation time of water
-!      s            -  salinity
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: f,tauw,freq,t_soil,vmc,rhob,rhos,sand,clay
   REAL(fp) :: alpha,beta,ess,rhoef,t,eswi,eswo
@@ -712,49 +443,6 @@ end subroutine Soil_Diel
 
 subroutine Snow_Diel(frequency,ep_real,ep_imag,rad,frac,ep_eff)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    Snow_Diel   compute dielectric constant of snow
-!
-!   prgmmr: Fuzhong Weng and Banghua Yan                 org: nesdis              date: 2000-11-28
-!
-! abstract: compute dielectric constant of snow
-!
-!
-! program history log:
-!
-! input argument list:
-!
-!       frequency   -  frequency (ghz)
-!       ep_real     -  real part of dielectric constant of particle
-!       ep_imag     -  imaginary part of dielectric constant of particle
-!       rad         -  particle radiu (mm)
-!       frac        -  fraction volume of snow (0.0 - 1.0)
-!
-! output argument list:
-!
-!       ep_eff      -  dielectric constant of the dense medium
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: ep_imag,ep_real
   REAL(fp) :: frequency,rad,frac,k0,yr,yi
@@ -779,41 +467,6 @@ end subroutine Snow_Diel
 
 subroutine Canopy_Diel(frequency,mg,esv,rhoveg)
 
-!----------------------------------------------------------------------------------
-!
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:   canopy_diel compute the dielectric constant of the vegetation canopy
-!
-!   prgmmr:  Fuzhong Weng and Banghua Yan                org: nesdis              date: 2000-11-28
-!
-! abstract: compute the dielectric constant of the vegetation canopy geomatrical optics approximation
-!
-!           for vegetation canopy work for horizontal leaves
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency    -  frequency (ghz)
-!      mg           -  gravimetric water content
-!
-! output argument list:
-!
-!      esv          -  dielectric constant of leaves
-!
-! remarks:
-!
-! references:
-!
-!     ulaby and el-rayer, 1987: microwave dielectric spectrum of vegetation part ii,
-!           dual-dispersion model, ieee trans geosci. remote sensing, 25, 550-557
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: frequency,  mg, en, vf, vb
   REAL(fp) :: rhoveg, vmv
@@ -837,36 +490,6 @@ end subroutine Canopy_Diel
 
 subroutine Reflectance(em1, em2, theta_i, theta_t, rv, rh)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    Reflectance compute the surface reflectivity
-!
-!   prgmmr:                  org: nesdis              date: 2000-11-28
-!
-! abstract: compute the surface reflectivety using fresnel equations
-!    for a rough surface having a standard deviation of height of sigma
-!
-! program history log:
-!
-! input argument list:
-!      theta_i      -  incident angle (degree)
-!      theta_t      -  transmitted angle (degree)
-!      em1          -  dielectric constant of the medium 1
-!      em2          -  dielectric constant of the medium 2
-!
-! output argument list:
-!
-!      rv           -  reflectivity at vertical polarization
-!      rh           -  reflectivity at horizontal polarization
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: theta_i, theta_t
   REAL(fp) :: rh, rv,cos_i,cos_t
@@ -891,37 +514,6 @@ end subroutine Reflectance
 
 subroutine Transmittance(em1,em2,theta_i,theta_t,tv,th)
 
-!----------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    Transmittance    calculate Transmittance
-!
-!   prgmmr:  Banghua Yan and Fuzhong Weng               org: nesdis              date: 2000-11-28
-!
-! abstract: compute Transmittance
-!
-! program history log:
-!
-! input argument list:
-!
-!      theta        -  local zenith angle (degree)
-!      theta_i      -  incident angle (degree)
-!      theta_t      -  transmitted angle (degree)
-!      em1          -  dielectric constant of the medium 1
-!      em2          -  dielectric constant of the medium 2
-!
-! output argument list:
-!
-!      tv           -  transmisivity at vertical polarization
-!      th           -  transmisivity at horizontal polarization
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------
 
   REAL(fp) :: theta_i, theta_t
   REAL(fp) :: th, tv, rr, cos_i,cos_t
@@ -947,54 +539,6 @@ end subroutine Transmittance
 
 subroutine Roughness_Reflectance(frequency,sigma,rv,rh)
 
-!-------------------------------------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    rought_reflectance    calculate surface relectivity
-!
-!   prgmmr: Banghua Yan and Fuzhong Weng                 org: nesdis              date: 2000-11-28
-!
-! abstract: compute the surface reflectivety for a rough surface having a standard devoation of height of sigma
-!
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency    -  frequency (ghz)
-!
-!      theta        -  local zenith angle (degree) (currently, not used here)
-!
-!      sigma        -  standard deviation of rough surface height
-!
-!                      smooth surface:0.38, medium: 1.10, rough:2.15 cm
-!
-!    internal variables
-!
-!
-! output argument list:
-!
-!      rv            -  reflectivity at vertical polarization
-!      rh            -  reflectivity at horizontal polarization
-!
-!
-!   important internal variables:
-!
-!      k0           -  a propagation constant or wavenumber in a free space
-!
-! remarks:
-!
-! references:
-!
-!   wang, j. and b. j. choudhury, 1992: passive microwave radiation from soil: examples...
-!    passive microwave remote sensing of .. ed. b. j. choudhury, etal vsp.
-!    also wang and choudhury (1982)
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!-------------------------------------------------------------------------------------------------------------
 
   REAL(fp) :: frequency
   REAL(fp) :: q, rh, rv, rh_s, rv_s, sigma
@@ -1011,62 +555,6 @@ end subroutine Roughness_Reflectance
 subroutine Two_Stream_Solution(mu,gv,gh,ssalb_h,ssalb_v,tau_h,tau_v, &
       r21_h,r21_v,r23_h,r23_v,t21_v,t21_h,esv,esh,frequency,t_soil,t_skin)
 
-!-------------------------------------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    two_stream_solution
-!
-!   prgmmr: Banghua Yan and Fuzhong Weng                 org: nesdis              date: 2000-11-28
-!
-! abstract: two stream solution
-!         Updated with the more accurate formula of total upwelling radiance emanating from the surface.
-!
-! REFERENCES:
-!       Weng, F., B. Yan, and N. Grody, 2001: "A microwave land emissivity model", J. Geophys. Res., 106,
-!                                             20, 115-20, 123
-!   version: beta
-!
-! program history log:
-!
-! input argument list:
-!
-!      b            -  scattering layer temperature (k)         (gdas)   (not used here)
-!      mu           -  cos(theta)
-!      gv           -  asymmetry factor for v pol
-!      gh           -  asymmetry factor for h pol
-!      ssalb_v      -  single scattering albedo at v. polarization
-!      ssalb_h      -  single scattering albedo at h. polarization
-!      tau_v        -  optical depth at v. polarization
-!      tau_h        -  optical depth at h. polarization
-!      r12_v        -  reflectivity at vertical polarization   (not used here)
-!      r12_h        -  reflectivity at horizontal polarization (not used here)
-!      r21_v        -  reflectivity at vertical polarization
-!      r21_h        -  reflectivity at horizontal polarization
-!      r23_v        -  reflectivity at vertical polarization
-!      r23_h        -  reflectivity at horizontal polarization
-!      t21_v        -  transmisivity at vertical polarization
-!      t21_h        -  transmisivity at horizontal polarization
-!      t12_v        -  transmisivity at vertical polarization   (not used here)
-!      t12_h        -  transmisivity at horizontal polarization (not used here)
-!      Frequency    -  frequency
-!      t_soil       -  soil temperature
-!      t_skin       -  land surface temperature
-!
-! output argument list:
-!
-!       esh         -  emissivity for horizontal polarization
-!       esv         -  emissivity for vertical polarization
-!
-! Local variables:
-!       gsect0, gsect1_h, gsect1_v, gsect2_h, gsect2_v
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!-------------------------------------------------------------------------------------------------------------
 
   REAL(fp) :: mu, gv, gh, ssalb_h, ssalb_v, tau_h,tau_v,                 &
               r21_h, r21_v, r23_h, r23_v, t21_v, t21_h, esv, esh

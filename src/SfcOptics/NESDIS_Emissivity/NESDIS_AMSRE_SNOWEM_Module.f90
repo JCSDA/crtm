@@ -1,21 +1,3 @@
-!
-! NESDIS_AMSRE_SNOWEM_Module
-!
-! Module containing the AMSR-E microwave snow emissivity model
-!
-! References:
-!       Yan,B., F.Weng and K.Okamoto,2004: "A microwave snow emissivity model",
-!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
-!         24-27 February, 2004, Rome, Italy.
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 26-May-2005, banghua.yan@noaa.gov
-!                       Fuzhong Weng, fuzhong.weng@noaa.gov
-!
-!       Modified by:    Banghua Yan, 10-Sep-2005
-!                       Quanhua Liu, quanhua.liu@noaa.gov
-!                       Yong Han, yong.han@noaa.gov
-!
 
 MODULE NESDIS_AMSRE_SNOWEM_Module
 
@@ -46,144 +28,7 @@ MODULE NESDIS_AMSRE_SNOWEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! NAME:
-!       NESDIS_AMSRE_SNOW
-!
-! PURPOSE:
-!       Subroutine to simulate microwave emissivity over snow conditions from AMSRE measurements
-!
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
-!
-! CATEGORY:
-!       CRTM : Surface : MW SNOW EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL NESDIS_AMSRE_SNOW
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         User_Angle               The angle value user defines (in degree).
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         TV[1:6]                  AMSRE V-POL Brightness temperatures at six frequencies.
-!
-!         tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
-!         tv(2):                                                      10.65 GHz
-!         tv(3):                                                      18.7  GHz
-!         tv(4):                                                      23.8  GHz
-!         tv(5):                                                      36.5  GHz
-!         tv(6):                                                      89    GHz
-!
-!         TH[1:6]                  AMSRE H-POL Brightness temperatures at six frequencies.
-!
-!         th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
-!         th(2):                                                        10.65 GHz
-!         th(3):                                                        18.7  GHz
-!         th(4):                                                        23.8  GHz
-!         th(5):                                                        36.5  GHz
-!         th(6):                                                        89    GHz
-!
-!         Ts                       The surface temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Tsnow                    The snow temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! OUTPUT ARGUMENTS:
-!
-!         Emissivity_H:            The surface emissivity at a horizontal polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! INTERNAL ARGUMENTS:
-!
-!         Satellite_Angle          The angle values of AMSRE measurements (in degree).
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!
-! CALLS:
-!
-!       AMSRE_Snow_TB   : Subroutine to calculate the snow microwave emissivity from AMSRE TB
-!
-!       AMSRE_Snow_TBTS : Subroutine to calculate the snow microwave emissivity from AMSRE TB & TS
-!
-!
-! PROGRAM HISTORY LOG:
-!   2004-09-20  yan,b -  implement the algorithm for snow emissivity
-!   2005-05-29  yan,b -  modify the code for CRTM
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!------------------------------------------------------------------------------------------------------------
 
  subroutine NESDIS_AMSRE_SNOW(Frequency,                              & ! INPUT
                               User_Angle,                             & ! INPUT
@@ -201,8 +46,6 @@ real(fp)              :: Ts,Tsnow,Frequency,User_Angle,em_vector(2),tv(nch),th(n
 real(fp)              :: esh1,esv1,esh2,esv2,desh,desv,dem
 real(fp), intent(out) :: Emissivity_V,Emissivity_H
 
-!  Initialization
-! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
    em_vector(:) = HUGE(em_vector)
 
    Emissivity_H = 0.82_fp
@@ -219,7 +62,6 @@ do ich =1, nch
 enddo
 
 
-! EMISSIVITY AT SATELLITE'S MEASUREMENT ANGLE
 
 if (Tsnow .le. 100.0_fp .or. Tsnow .ge. 280.0_fp) Tsnow = Ts
 
@@ -236,7 +78,6 @@ ENDIF
 
 
 
-! Get the emissivity angle dependence
 
   call NESDIS_LandEM(Satellite_Angle,Frequency,0.0_fp,0.0_fp,Ts,Tsnow,0.0_fp,9,13,10.0_fp,esh1,esv1)
 
@@ -248,7 +89,6 @@ ENDIF
 
   dem = ( desh + desv ) * 0.5_fp
 
-! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
 
@@ -264,67 +104,10 @@ ENDIF
  end subroutine NESDIS_AMSRE_SNOW
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
  subroutine AMSRE_Snow_TB(frequency,theta,tv,th,em_vector)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity between 5.0 and 150 GHz from AMSR-E Measurements over snow conditions
-!
-! Input argument list:
-!
-!    tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
-!    tv(2):                                                      10.65 GHz
-!    tv(3):                                                      18.7  GHz
-!    tv(4):                                                      23.8  GHz
-!    tv(5):                                                      36.5  GHz
-!    tv(6):                                                     89    GHz
 
-!    th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
-!    th(2):                                                        10.65 GHz
-!    th(3):                                                        18.7  GHz
-!    th(4):                                                        23.8  GHz
-!    th(5):                                                       36.5  GHz
-!    th(6):                                                       89    GHz
-!
-!
-!    frequency: frequency in GHz
-!
-!    theta  : local zenith angle in degree  (55.0 for AMSR-E)
-!
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity
-!    em_vector(2) : vertically polarization emissivity
-!
-! Optional output argument lists:
-!
-!   ntype         : snow type
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
   integer, parameter :: nch = 7, ncoe = 6
   real(fp)   :: frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
@@ -351,7 +134,6 @@ ENDIF
  data (coeh(k),k=51,57) / 1.258819e-001, 1.196912e-004,-1.814465e-003, 8.010936e-003,-8.648453e-003, 1.040926e-003, 4.490778e-003/
 
 
-!flat tb spectra
 data (coefv(k),k=1,7)  /  8.219503e-001, 2.766497e-003,-9.911774e-004, 3.003414e-003,-4.972361e-003,-2.045928e-004, 1.008243e-003/
 data (coefv(k),k=11,17) /  7.804756e-001,-1.381776e-003, 3.396505e-003, 2.925542e-003,-4.738939e-003,-3.922246e-004, 9.632953e-004/
 data (coefv(k),k=21,27) /  7.235172e-001,-1.210548e-003,-8.104717e-004, 7.129067e-003,-4.618963e-003,-3.342331e-004, 8.263457e-004/
@@ -369,7 +151,6 @@ data (coefh(k),k=51,57) /  4.933417e-002,-6.050295e-004, 1.081823e-003, 5.377281
 
 
 
-! Initialization
 
   freq = FREQUENCY_AMSRE
 
@@ -426,13 +207,11 @@ else
 endif
 
 
-! Extrapolate emissivity at 150 GHz based upon various spectrum table
 
 
   call snowemiss_extrapolate(ev,eh,theta,ntype)
 
 
-! Interpolate emissivity at a certain frequency
 
   do ich=1,nch
 
@@ -479,60 +258,7 @@ endif
 
  subroutine AMSRE_Snow_TBTS(frequency,theta,tv,th,tskin,tsnow,em_vector)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity between 5.0 and 150 GHz from AMSR-E Measurements and surface
-!
-! temperatures over snow conditions
-!
-! Input argument list:
-!
-!    tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
-!    tv(2):                                                      10.65 GHz
-!    tv(3):                                                      18.7  GHz
-!    tv(4):                                                      23.8  GHz
-!    tv(5):                                                      36.5  GHz
-!    tv(6):                                                     89    GHz
 
-!    th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
-!    th(2):                                                        10.65 GHz
-!    th(3):                                                        18.7  GHz
-!    th(4):                                                        23.8  GHz
-!    th(5):                                                       36.5  GHz
-!    th(6):                                                       89    GHz
-!
-!
-!    tskin  : skin temperature  in K
-!    tsnow   : snow temperature
-!    frequency: frequency in GHz
-!    theta  : local zenith angle in degree  (55.0 for AMSR-E)
-!
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity
-!    em_vector(2) : vertically polarization emissivity
-!
-! Optional Output argument lists:
-!
-!    ntype        : snow types
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
  integer, parameter :: nch = 7, ncoe = 7
  real(fp)       :: ts,tskin,tsnow,ff,frequency,theta,em_vector(*),tv(*),th(*),freq(nch)
@@ -572,7 +298,6 @@ endif
                 1.110360e-003, 4.976426e-003,-4.513022e-003/
 
 
-!flat spectra
 
 data (coefv(k),k=1,8)  /  9.673542e-001, 3.773050e-003, 2.982933e-004,-1.310547e-004,&
                -6.547618e-005, 1.993083e-004, 4.588706e-005,-3.980700e-003/
@@ -603,7 +328,6 @@ data (coefh(k),k=51,58) /  9.785329e-001, 2.094819e-005, 5.368748e-005, 1.133703
 
 
 
-! Initialization
 
   ev = 0.9
   eh = 0.9
@@ -676,7 +400,6 @@ else
 endif
 
 
-! Quality control
 
   do ich=1,nch-1
 
@@ -685,13 +408,11 @@ endif
  enddo
 
 
-! Extrapolate emissivity at 150 GHz based upon various spectrum table
 
 
   call snowemiss_extrapolate(ev,eh,theta,ntype)
 
 
-! Interpolate emissivity at a certain frequency
 
 
   do ich=1,nch
@@ -741,53 +462,7 @@ endif
 
 subroutine snowemiss_extrapolate(ev,eh,theta,ntype)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity at a given frequency based upon various sea ice emissivity look-up tables
-!
-! Input argument list:
-!
-!    ev(1): V-POL emissivity  at 6.925 GHz
-!    ev(2):                      10.65 GHz
-!    ev(3):                      18.7  GHz
-!    ev(4):                      23.8  GHz
-!    ev(5):                      36.5  GHz
-!    ev(6):                      89    GHz
 
-!    eh(1): H-POL emissivity at 6.925 GHz
-!    eh(2):                     10.65 GHz
-!    eh(3):                     18.7  GHz
-!    eh(4):                     23.8  GHz
-!    eh(5):                     36.5  GHz
-!    eh(6):                     89    GHz
-!
-!    frequency: frequency in GHz
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity at a given frequency
-!    em_vector(2) : vertically polarization emissivity
-!
-! Optional Output argument lists:
-!
-!    ntype        : snow types
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
 integer, parameter :: nch = 7,nt=16
 real(fp)     :: ev(*), eh(*)
@@ -796,7 +471,6 @@ real(fp)     :: emiss(nch-1),theta,angle,cons,sins
 real(fp)     :: delt0,delt_l,delt_h,delt_all,dmin
 integer  :: ich,ip,ntype
 
-! Sixteen candidate snow emissivity spectra
 
   freq = FREQUENCY_AMSRE
 
@@ -864,9 +538,7 @@ do ich = 1, nch-1
 
 enddo
 
-! Find a spectrum
 
-! INitialization
 
 delt_l   = 0.0
 
@@ -876,7 +548,6 @@ dmin = 0.05
 
 delt0 = 10.0
 
-! Initialization of ntype
 
   ntype = 3
 
@@ -915,7 +586,6 @@ ev(nch) = ev(nch-1) - (ev_tab(ntype,nch-1) - ev_tab(ntype,nch))
 eh(nch) = eh(nch-1) - (eh_tab(ntype,nch-1) - eh_tab(ntype,nch))
 
 
-! quality control
 
   do ich =1, nch
 

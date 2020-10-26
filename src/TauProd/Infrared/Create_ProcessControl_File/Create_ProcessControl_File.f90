@@ -1,133 +1,3 @@
-!------------------------------------------------------------------------------
-! NAME:
-!       Create_ProcessControl_File
-!
-! PURPOSE:
-!       Program to create a generic Process Control file (profile and molecule
-!       set independent) for the transmittance production software given an
-!       input list of netCDF SRF data files.
-!
-! CATEGORY:
-!       Transmittance Production
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:                Module containing definitions for kinds
-!                                  of variable types.
-!
-!       File_Utility:              Module containing generic file utility routines
-!
-!       Message_Handler:             Module to define simple error codes and
-!                                  handle error conditions
-!                                  USEs: FILE_UTILITY module
-!
-!       SensorInfo_Define:         Module defining the SensorInfo data
-!                                  structure and containing routines to
-!                                  manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!
-!       SensorInfo_LinkedList:     Module defining the SensorInfo Linked
-!                                  List data structure and containing
-!                                  routines to manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!                                        SENSORINFO_DEFINE module
-!
-!       SensorInfo_IO:             Module continaing routines to read and
-!                                  write ASCII SensorInfo format files.
-!                                  USEs: TYPE_KINDS module
-!                                        FILE_UTILITY module
-!                                        ERROR_HANDLER module
-!                                        SENSORINFO_DEFINE module
-!
-!       SRF_Define:                Module defining the SRF data structure and
-!                                  containing routines to manipulate it.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!
-!       SRF_netCDF_IO:             Module containing routines to read and write
-!                                  netCDF SRF format files.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!                                        SRF_DEFINE module
-!                                        NETCDF module
-!                                        NETCDF_UTILITY module
-!
-!       ProcessControl_Define:     Module containing the ProcessControl
-!                                  data type definition and routines to
-!                                  manipulate the structure.
-!                                  USEs: TYPE_KINDS module
-!                                        ERROR_HANDLER module
-!
-!       ProcessControl_IO:         Module containing routines to read and write
-!                                  ASCII Process Control files.
-!                                  USEs: TYPE_KINDS module
-!                                        FILE_UTILITY module
-!                                        ERROR_HANDLER module
-!                                        PROCESSCONTROL_DEFINE module
-!
-!       Tau_Production_Parameters: Module defining parameters used in the LBL
-!                                  transmittance production runs
-!                                  USEs: TYPE_KINDS module
-!                                        LBLRTM_PARAMETERS module
-!
-!       Tau_Production_Utility:    Module continaing utility routines for the LBL
-!                                  transmittance production runs.
-!                                  USEs: TYPE_KINDS module
-!                                        FILE_UTILITY module
-!                                        ERROR_HANDLER module
-!                                        COMPARE_FLOAT_NUMBERS module
-!                                        TRANSMITTANCE_PRODUCTION_PARAMETERS module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       Input:  - SensorInfo file.
-!               - netCDF format SRF data file(s).
-!
-!       Output: ASCII ProcessControl file.
-!
-! SIDE EFFECTS:
-!       If the ProcessControl file already exists, it is overwritten.
-!
-! RESTRICTIONS:
-!       The maximum number of input SRF files that can be processed
-!       is limited to 100.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
-!                       paul.vandelst@ssec.wisc.edu
-!
-!  Copyright (C) 2002 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!------------------------------------------------------------------------------
 
 PROGRAM Create_ProcessControl_File
 
@@ -516,19 +386,7 @@ PROGRAM Create_ProcessControl_File
     ! Read the frequency data
     ! -----------------------
 
-!    Error_Status = Inquire_SRF_netCDF( TRIM( Available_SRF_Filename(n) ), &
-!                                       n_Points        = n_SRF_Frequencies, &
-!                                       Begin_Frequency = Begin_SRF_Frequency, &
-!                                       End_Frequency   = End_SRF_Frequency    )
  
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( PROGRAM_NAME, &
-!                            'Error inquiring the netCDF SRF file '//&
-!                            TRIM( Available_SRF_Filename(n) )//&
-!                            ' for frequency information.', &
-!                            Error_Status )
-!      STOP
-!    END IF
 
     Error_Status = oSRF_File_Read( &                    
                      oSRF_File(n)    , &                
@@ -570,7 +428,6 @@ PROGRAM Create_ProcessControl_File
                REAL( n_SRF_Frequencies(ch) - 1, fp_kind )
 
       ! -- Compute the frequency interval index
-!      Idx = Compute_dF_Index( dF )
 
       ! -- Is it valid?
       IF ( .NOT. Compare_Float( dF, FREQUENCY_INTERVAL(dF_Index), ULP = 10000 ) ) THEN
@@ -769,31 +626,13 @@ PROGRAM Create_ProcessControl_File
   ! Output some data
   ! ----------------
 
-!  WRITE( *, '( /5x, "SRF data file Process Control data:" )' )
 
-!  DO i = 1, ProcessControl%n_Files
 
-!    WRITE( *, '( 5x, a )' ) ProcessControl%File_Prefix( i )
-!    n = ProcessControl%Channel_Index(2,i) - ProcessControl%Channel_Index(1,i) + 1
-!    WRITE( *, '( 10x, "Number of channels: ", i4 )' ) n
-!    WRITE( *, '( 10x, "Channel indices:    ", i4, 2x, i4 )' ) &
-!              ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i) 
 
-!    WRITE( *, '( 10x, "Frequency interval index: ", i1 )' ) &
-!              ProcessControl%dF_Index(i)
-!    WRITE( *, '( 10x, "Frequency interval:       ", f6.4 )' ) &
-!              FREQUENCY_INTERVAL( ProcessControl%dF_Index(i) )
 
-!    DO l = ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i)
 
-!      WRITE( *, '( 15x, "CH: ", i4, ",    B1,B2: ",i3,1x,i3,",    FI:", i3 )' ) &
-!                ProcessControl%List(l)%Channel, &
-!                ProcessControl%List(l)%Begin_LBLband, ProcessControl%List(l)%End_LBLband, &
-!                ProcessControl%List(l)%File_Index
 
-!    END DO
 
-!  END DO
 
   CALL oSRF_File_Destroy( oSRF_File )
   DEALLOCATE(oSRF_File, STAT = Allocate_Status )

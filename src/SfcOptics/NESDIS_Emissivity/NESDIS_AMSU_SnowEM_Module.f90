@@ -1,18 +1,3 @@
-!
-! NESDIS_AMSU_SnowEM_Module
-!
-! Module containing the AMSU microwave snow emissivity model
-!
-! References:
-!       Yan,B., F.Weng, and K.Okamoto, 2004, A microwave snow emissivity model,
-!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
-!         24-27 February, 2004, Rome, Italy.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 03-Jun-2005, banghua.yan@noaa.gov
-!                       Fuzhong Weng, fuzhong.weng@noaa.gov
-!
 
 MODULE NESDIS_AMSU_SnowEM_Module
 
@@ -43,206 +28,7 @@ MODULE NESDIS_AMSU_SnowEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! NAME:
-!       NESDIS_AMSU_SNOWEM
-!
-! PURPOSE:
-!       Subroutine to simulate microwave emissivity over snow conditions from AMSU measurements at window
-!       channels.
-!
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
-!
-! CATEGORY:
-!       CRTM : Surface : MW SNOWEM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL NESDIS_AMSU_SNOWEM
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!         Satellite_Angle          The local zenith angle in degree for AMSU measurements.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         User_Angle               The local angle value in degree user defines.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!
-!         Tba                      BRIGHTNESS TEMPERATURES AT FOUR AMSU-A WINDOW CHANNELS
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION   4*1 SCALAR
-!
-!                        WHICH ARE
-!                                  tba[1] = TB at 23.8 GHz
-!                                  tba[2] = TB at: 31.4 GHz
-!                                  tba[3] = TB at 50.3 GHz
-!                                  tba[4] = TB at 89 GHz
-!
-!         Tbb                      BRIGHTNESS TEMPERATURES AT TWO AMSU-B WINDOW CHANNELS
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION   2*1 SCALAR
-!
-!                         WHICH ARE
-!
-!                                  tbb[1] = TB at 89 GHz
-!                                  tbb[2] = TB at 150 GHz
-!
-!
-!         Ts = Land_Temperature:        The land surface temperature.
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!         Snow_Depth:              The snow depth.
-!                                  UNITS:      mm
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! **** IMPORTANT NOTES ****
-!
-!        When one variable among  Tba[], Tbb[] and Ts are not available, set -999.0
-!
-!
-!
-!
-! OUTPUT ARGUMENTS:
-!
-!         Emissivity_H:            The surface emissivity at a horizontal polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! IINTERNAL ARGUMENTS:
-!
-!       input_type (specific option index = 1 ~ 7):
-!
-!         input_type = 1 :  AMSU-A & B window channels of Tb and Ts are available (call AMSU_ABTs)
-!
-!         input_type = 2 :  AMSU-A window channels of Tb and Ts are available     (call AMSU_ATs)
-!
-!         input_type = 3 :  AMSU-A & B window channels of Tb are available        (call AMSU_AB)
-!
-!         input_type = 4 :  AMSU-A window channels of Tb are available            (call AMSU_amsua)
-!
-!         input_type = 5 :  AMSU-B window channels of Tb and Ts are available     (call AMSU_BTs)
-!
-!         input_type = 6 :  AMSU-B window channels of Tb are available            (call AMSU_amsub)
-!
-!         input_type = 7 :  snow depth and Ts are available                       (call ALandEM_Snow)
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!
-!       snow_type  -  snow type (not output here)
-!                     1 : Wet Snow
-!                     2 : Grass_after_Snow
-!                     3 : RS_Snow (A)
-!                     4 : Powder Snow
-!                     5 : RS_Snow (B)
-!                     6 : RS_Snow (C)
-!                     7 : RS_Snow (D)
-!                     8 : Thin Crust Snow
-!                     9 : RS_Snow (E)
-!                     10: Bottom Crust Snow (A)
-!                     11: Shallow Snow
-!                     12: Deep Snow
-!                     13: Crust Snow
-!                     14: Medium Snow
-!                     15: Bottom Crust Snow (B)
-!                     16: Thick Crust Snow
-!                    999: AMSU measurements are not available or over non-snow conditions
-!
-! CALLS:
-!       AMSU_ABTs          : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB and Ts
-!
-!       AMSU_ATs           : Subroutine to calculate the microwave snow emissivity from AMSU-A TB and Ts
-!
-!       AMSU_AB            : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB
-!
-!       AMSU_amsua         : Subroutine to calculate the microwave snow emissivity from AMSU-A TB
-!
-!       AMSU_BTs           : Subroutine to calculate the microwave snow emissivity from AMSU-B TB and Ts
-!
-!       AMSU_amsub         : Subroutine to calculate the microwave snow emissivity from AMSU-B TB
-!
-!       AMSU_ALandEM_Snow  : Subroutine to calculate the microwave snow emissivity from Ts and Snow Depth
-!
-!       em_initialization  : Subroutine to initialization snow emissivity
-!
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output SensorData argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (03-June-2005)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!------------------------------------------------------------------------------------------------------------
 
 subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  ! INPUT
                                User_Angle,                                  &  ! INPUT
@@ -284,7 +70,6 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
 
 
-! Initialization
 
   call em_initialization(frequency,em_vector)
 
@@ -299,13 +84,10 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
   end do
 
 
-! Read AMSU & Ts data and set available option
 
-! Get five AMSU-A/B window measurements
 
   tb(1) = tba(1); tb(2) = tba(2); tb(3) = tba(3); tb(4) = tba(4); tb(5) = tbb(2)
 
-! Check available data
 
   if((Ts <= 150.0_fp) .or. (Ts >= 290.0_fp) ) then
 
@@ -345,7 +127,6 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   end if
 
-! Check input type and call a specific Option/subroutine
 
   do np = 1, nalg
 
@@ -359,7 +140,6 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   end do
 
-! GET EMISSIVITY AT SATELLITE'S ZENITH ANGLE
 
   GET_option: SELECT CASE (input_type)
 
@@ -393,7 +173,6 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 
   END SELECT GET_option
 
-! Get the emissivity angle dependence
 
   call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Ts,0.0_fp,9,13,2.0_fp,esh1,esv1)
 
@@ -404,7 +183,6 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
   desv = esv1 - esv2
 
   dem = ( desh + desv ) * 0.5_fp
-! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
 
@@ -422,50 +200,10 @@ subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  !
 end subroutine NESDIS_AMSU_SNOWEM
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
 
 
 subroutine em_initialization(frequency,em_vector)
 
-!----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:   AMSU-A/B snow emissivity initialization
-!
-!   prgmmr:  Banghua Yan                org: nesdis              date: 2003-08-18
-!
-! abstract: AMSU-A/B snow emissivity initialization
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency   - frequency in GHz
-!
-! output argument list:
-!
-!     em_vector[1] and [2]  -  initial emissivity at two polarizations.
-!
-! important internal variables:
-!
-!      freq[1~10]  - ten frequencies for sixteen snow types of emissivity
-!      em[1~16,*]  - sixteen snow emissivity spectra
-!      snow_type   - snow type
-!                    where it is initialized to as the type 4,i.e, Powder Snow
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------------------------------!
 
   integer ::  nch,ncand
   Parameter(nch = 10,ncand=16)
@@ -476,7 +214,6 @@ subroutine em_initialization(frequency,em_vector)
 
   ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
   emissivity = HUGE(emissivity)
-! Sixteen candidate snow emissivity spectra
 
   em(1, 1: N_FREQUENCY) = WET_SNOW_EMISS(1:N_FREQUENCY)
   em(2, 1: N_FREQUENCY) = GRASS_AFTER_SNOW_EMISS(1:N_FREQUENCY)
@@ -498,12 +235,7 @@ subroutine em_initialization(frequency,em_vector)
 
   freq = FREQUENCY_DEFAULT
 
-! Initialization for emissivity at certain frequency
-!    In case of no any inputs available for various options
-!    A constant snow type & snow emissivity spectrum is assumed
-!                    (e.g., powder) snow_type = 4
 
-! Specify snow emissivity at required frequency
   do ich = 2, nch
      if(frequency <  freq(1))   exit
      if(frequency >= freq(nch)) exit
@@ -514,7 +246,6 @@ subroutine em_initialization(frequency,em_vector)
      end if
   end do
 
-! Extrapolate to lower frequencies than 4.9GHz
   if (frequency <= freq(1)) then
      kratio = (em(4,2) - em(4,1))/(freq(2) - freq(1))
      bconst = em(4,1) - kratio*freq(1)
@@ -524,7 +255,6 @@ subroutine em_initialization(frequency,em_vector)
   end if
 
 
-! Assume emissivity = constant at frequencies >= 150 GHz
   if (frequency >= freq(nch)) emissivity = em(4,nch)
   em_vector(1) = emissivity
   em_vector(2) = emissivity
@@ -536,50 +266,6 @@ end subroutine em_initialization
 
 subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
 
-!----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:  determine snow_type and calculate emissivity
-!
-!   prgmmr:Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract: 1. Find one snow emissivity spectrum to mimic the emission
-!              property of the realistic snow condition using a set of
-!              discrminators
-!           2. Interpolate/extrapolate emissivity at a required frequency
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency        - frequency in GHz
-!      discriminators   - emissivity discriminators at five AMSU-A & B window
-!                         channels
-!            discriminator[1]   :  emissivity discriminator at 23.8 GHz
-!            discriminator[2]   :  emissivity discriminator at 31.4 GHz
-!            discriminator[3]   :  emissivity discriminator at 50.3 GHz
-!            discriminator[4]   :  emissivity discriminator at 89   GHz
-!            discriminator[5]   :  emissivity discriminator at 150  GHz
-!
-!       Note: discriminator(1) and discriminator(3) are missing value in
-!            'AMSU-B & Ts','AMUS-B' and 'MODL' options., which are defined to as -999.9,
-! output argument list:
-!
-!     emissivity  -  weighted emissivity from both V- and H- Pols.
-!     snow_type             - snow type
-!
-! important internal variables:
-!
-!     freq[1 ~ 10]  -  ten frequencies for sixteen snow types of emissivity
-!     em[1~16,*]    -  sixteen snow emissivity spectra
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: ncand = 16,nch =10
   integer:: ich,ichmin,ichmax,i,k,snow_type
@@ -588,7 +274,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
   real(fp)   :: frequency,freq(nch),emissivity,discriminator(*),emis(nch)
   real(fp)   :: cor_factor,adjust_check,kratio, bconst
 
-! Sixteen candidate snow emissivity spectra
 
   em(1, 1: N_FREQUENCY) = WET_SNOW_EMISS(1:N_FREQUENCY)
   em(2, 1: N_FREQUENCY) = GRASS_AFTER_SNOW_EMISS(1:N_FREQUENCY)
@@ -612,7 +297,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
 
 
 
-! Adjust unreasonable discriminator
   if (discriminator(4) > discriminator(2))    &
        discriminator(4) = discriminator(2) +(discriminator(5) - discriminator(2))*  &
        (150.0_fp - 89.0_fp)/(150.0_fp - 31.4_fp)
@@ -623,7 +307,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
        (discriminator(4) - discriminator(2))*(89.0_fp - 50.3_fp) &
        / (89.0_fp - 31.4_fp)
 
-! Find a snow emissivity spectrum
   if(snow_type .eq. -999) then
      demmin0 = 10.0_fp
      do k = 1, ncand
@@ -647,7 +330,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      end do
   end if
 
-! Shift snow emissivity according to discriminator at 31.4 GHz
   cor_factor = discriminator(2) - em(snow_type,6)
   do ich = 1, nch
      emis(ich) = em(snow_type,ich) + cor_factor
@@ -655,7 +337,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      if(emis(ich) .lt. 0.3_fp) emis(ich) = 0.3_fp
   end do
 
-! Emisivity data quality control
   adjust_check = zero
   do ich = 5, 9
      if (ich .le. 7) then
@@ -681,7 +362,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      if (discriminator(3) /= -999.9_fp) then
         emis(7) = discriminator(3)
      else
-!       In case of missing the emissivity discriminator at 50.3 GHz
         emis(7) = emis(6) + (89.0_fp - 50.3_fp) * &
              (discriminator(4) - emis(6))/(89.0_fp - 31.4_fp)
      end if
@@ -690,7 +370,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      emis(10) = discriminator(5)
   end if
 
-! Estimate snow emissivity at a required frequency
   do i = 2, nch
      if(frequency <  freq(1))   exit
      if(frequency >= freq(nch)) exit
@@ -701,7 +380,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      end if
   end do
 
-! Extrapolate to lower frequencies than 4.9GHz
   if (frequency <= freq(1)) then
      kratio = (emis(2) - emis(1))/(freq(2) - freq(1))
      bconst = emis(1) - kratio*freq(1)
@@ -710,7 +388,6 @@ subroutine  em_interpolate(frequency,discriminator,emissivity,snow_type)
      if(emissivity <= 0.8_fp) emissivity = 0.8_fp
   end if
 
-! Assume emissivity = constant at frequencies >= 150 GHz
   if (frequency >= freq(nch)) emissivity = emis(nch)
 
   return
@@ -719,53 +396,6 @@ end subroutine em_interpolate
 
 subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
 
-!----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr:Banghua Yan                  org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at a required frequency with respect to secenery ABTs
-!
-! program history log:
-!
-! input argument list:
-!
-!     frequency        -  frequency in GHz
-!     theta            -  local zenith angle (currently, not used here)
-!     tb[1] ~ tb[5]    -  brightness temperature at five AMSU window channels:
-!                              tb[1] : 23.8 GHz
-!                              tb[2] : 31.4 GHz
-!                              tb[3] : 50.3 GHz
-!                              tb[4] : 89.0 GHz
-!                              tb[5] : 150  GHz
-!
-! output argument list:
-!
-!      em_vector[1] and [2]  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!      snow_type        -  snow type
-!
-! important internal variables:
-!
-!     nind           -  number of threshold in decision trees
-!                          to identify each snow type  ( = 6)
-!     em(1~16,*)     -  sixteen snow emissivity spectra
-!     DI_coe         -  coefficients to generate six discriminators to describe
-!                       the overall emissivity variability within a wider frequency range
-!     threshold      -  thresholds in decision trees to identify snow types
-!     index_in       -  six indices to discriminate snow type
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: ncand = 16,nch =10,nthresh=38
   integer,parameter:: nind=6,ncoe=8,nLIcoe=6,nHIcoe=12
@@ -783,7 +413,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
 
   data  nmodel/5,10,13,16,18,24,30,31,32,33,34,35,36,37,38/
 
-! Fitting coefficients for five discriminators
   DI_coe(1,0:ncoe-1) = (/ &
        3.285557e-002_fp,  2.677179e-005_fp,  &
        4.553101e-003_fp,  5.639352e-005_fp,  &
@@ -810,13 +439,11 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
        5.495115e-004_fp, -5.871732e-004_fp,  &
        4.517280e-003_fp,  7.204695e-004_fp/)
 
-! Fitting coefficients for emissivity index at 31.4 GHz
   LI_coe = (/ &
        7.963632e-001_fp,  7.215580e-003_fp,  &
        -2.015921e-005_fp, -1.508286e-003_fp,  &
        1.731405e-005_fp, -4.105358e-003_fp/)
 
-! Fitting coefficients for emissivity index at 150 GHz
   HI_coe = (/ &
        1.012160e+000_fp,  6.100397e-003_fp, &
        -1.774347e-005_fp, -4.028211e-003_fp, &
@@ -825,11 +452,7 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
        8.072756e-006_fp,  3.529615e-003_fp, &
        1.955293e-006_fp, -4.942230e-003_fp/)
 
-! Six thresholds for sixteen candidate snow types
-! Note: some snow type contains several possible
-!      selections for six thresholds
 
-!1 Wet Snow
   threshold(1,1:6) = (/0.88_fp,0.86_fp,-999.9_fp,&
        0.01_fp,0.01_fp,200._fp/)
   threshold(2,1:6) = (/0.88_fp,0.85_fp,-999.9_fp,&
@@ -841,7 +464,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(5,1:6) = (/0.92_fp,0.85_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!2 Grass_after_Snow
   threshold(6,1:6) = (/0.84_fp,0.83_fp,-999.9_fp,&
        0.08_fp,0.10_fp,195._fp/)
   threshold(7,1:6) = (/0.85_fp,0.85_fp,-999.9_fp,&
@@ -853,7 +475,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(10,1:6) = (/0.90_fp,0.81_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,195._fp/)
 
-!3 RS_Snow (A)
   threshold(11,1:6) = (/0.80_fp,0.76_fp,-999.9_fp,&
        0.05_fp,-999.9_fp,185._fp/)
   threshold(12,1:6) = (/0.82_fp,0.78_fp,-999.9_fp,&
@@ -861,7 +482,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(13,1:6) = (/0.90_fp,0.76_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,180._fp/)
 
-!4 Powder  Snow
   threshold(14,1:6) = (/0.89_fp,0.73_fp,-999.9_fp,&
        0.20_fp,-999.9_fp,-999.9_fp/)
   threshold(15,1:6) = (/0.89_fp,0.75_fp,-999.9_fp,&
@@ -869,13 +489,11 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(16,1:6) = (/0.93_fp,0.72_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!5 RS_Snow (B)
   threshold(17,1:6) = (/0.82_fp,0.70_fp,-999.9_fp,&
        0.20_fp,-999.9_fp,160._fp/)
   threshold(18,1:6) = (/0.83_fp,0.70_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,160._fp/)
 
-!6 RS_Snow (C)
   threshold(19,1:6) = (/0.75_fp,0.76_fp,-999.9_fp,&
        0.08_fp,-999.9_fp,172._fp/)
   threshold(20,1:6) = (/0.77_fp,0.72_fp,-999.9_fp,&
@@ -889,7 +507,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(24,1:6) = (/0.82_fp,0.73_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,170._fp/)
 
-!7 RS_Snow (D)
   threshold(25,1:6) = (/0.75_fp,0.70_fp,-999.9_fp,&
        0.15_fp,0.25_fp,167._fp/)
   threshold(26,1:6) = (/0.77_fp,0.76_fp,-999.9_fp,&
@@ -904,42 +521,31 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   threshold(30,1:6) = (/0.82_fp,0.69_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!8 Thin Crust Snow
   threshold(31,1:6) = (/0.88_fp,0.58_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!9 RS_Snow (E)
   threshold(32,1:6) = (/0.73_fp,0.67_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!10 Bottom Crust Snow (A)
   threshold(33,1:6) = (/0.83_fp,0.66_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!11 Shallow Snow
   threshold(34,1:6) = (/0.82_fp,0.60_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!12 Deep Snow
   threshold(35,1:6) = (/0.77_fp,0.60_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!13 Crust Snow
   threshold(36,1:6) = (/0.77_fp,0.7_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!14 Medium Snow
   threshold(37,1:6) = (/-999.9_fp,0.55_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!15 Bottom Crust Snow(B)
   threshold(38,1:6) = (/0.74_fp,-999.9_fp,-999.9_fp,&
        -999.9_fp,-999.9_fp,-999.9_fp/)
 
-!16 Thick Crust Snow
-! lowest priority: No constraints
 
-! Sixteen candidate snow emissivity spectra
 
   em(1, 1: N_FREQUENCY) = WET_SNOW_EMISS(1:N_FREQUENCY)
   em(2, 1: N_FREQUENCY) = GRASS_AFTER_SNOW_EMISS(1:N_FREQUENCY)
@@ -962,7 +568,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   freq = FREQUENCY_DEFAULT
 
 
-!***  DEFINE SIX DISCRIMINATORS
 
   dtb(1) = tb(1) - tb(2)
   dtb(2) = tb(2) - tb(4)
@@ -991,7 +596,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
      DI(num) = DI(num) +  DI_coe(num,ncoe-1)*ts
   end do
 
-!*** DEFINE FIVE INDIES
   !HI = DI(0) - DI(3)
   DS1 = DI(1) + DI(2)
   DS2 = DI(4) + DI(5)
@@ -1004,16 +608,12 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
   index_in(5) = DS3
   index_in(6) = tb150
 
-!*** IDENTIFY SNOW TYPE
 
 
-! Initialization
   md0 = 1
   snow_type = ncand
   pick_status = .false.
 
-! Pick one snow type
-! Check all possible selections for six thresholds for each snow type
   do i = 1, ncand - 1
      md1 = nmodel(i)
      do j = md0, md1
@@ -1023,7 +623,6 @@ subroutine AMSU_ABTs(frequency,tb,ts,snow_type,em_vector)
         end do
         CALL six_indices(nind,index_in,threshold0,tindex)
 
-! Corrections
         if((i == 5)  .and. (index_in(2) >  0.75_fp)) tindex(2) = .false.
         if((i == 5)  .and. (index_in(4) >  0.20_fp)                        &
              .and. (index_in(1) >  0.88_fp)) tindex(1) = .false.
@@ -1062,39 +661,6 @@ end subroutine AMSU_ABTs
 
 subroutine six_indices(nind,index_in,threshold,tindex)
 
-!----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!
-! program history log:
-!
-! input argument list:
-!
-!      nind        -  Number of threshold in decision trees
-!                     to identify each snow type  ( = 6)
-!      index_in    -  six indices to discriminate snow type
-!      threshold   -  Thresholds in decision trees to identify snow types
-!
-! output argument list:
-!
-!      tindex      - state vaiable to show surface snow emissivity feature
-!              tindex[ ] = .T.: snow emissivity feature matches the
-!                                corresponding threshold for certain snow type
-!              tindex[ ] = .F.: snow emissivity feature doesn't match the
-!                                corresponding threshold for certain snow type
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------------------------------!
 
   integer ::  i,nind
   real(fp)    ::  index_in(*),threshold(*)
@@ -1119,47 +685,6 @@ end subroutine six_indices
 
 subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
 
-!----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at required frequency with respect to option AMSUAB
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency    -  frequency in GHz
-!      theta        -  local zenith angle (not used here)
-!      tb[1]~tb[5]  -  brightness temperature at five AMSU-A & B window channels:
-!                              tb[1] : 23.8 GHz
-!                              tb[2] : 31.4 GHz
-!                              tb[3] : 50.3 GHz
-!                              tb[4] : 89   GHz
-!                              tb[5] : 150  GHz
-!
-! output argument list:
-!
-!     em_vector[1] and [2] - emissivity at two polarizations.
-!                            set esv = esh here and will be updated
-!     snow_type       - snow type (reference [2])
-!
-! important internal variables:
-!
-!     coe    - fitting coefficients to estimate discriminator at 23.8 ~ 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!----------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: nch =10,nwch = 5,ncoe = 10
   real(fp)    :: tb(*),frequency
@@ -1169,28 +694,24 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
 
   save coe
 
-! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
   coe(1:7) = (/&
        -1.326040e+000_fp,  2.475904e-002_fp, &
        -5.741361e-005_fp, -1.889650e-002_fp, &
        6.177911e-005_fp,  1.451121e-002_fp, &
        -4.925512e-005_fp/)
 
-! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
   coe(12:18) = (/ &
        -1.250541e+000_fp,  1.911161e-002_fp, &
        -5.460238e-005_fp, -1.266388e-002_fp, &
        5.745064e-005_fp,  1.313985e-002_fp, &
        -4.574811e-005_fp/)
 
-! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
   coe(23:29) = (/  &
        -1.246754e+000_fp,  2.368658e-002_fp, &
        -8.061774e-005_fp, -3.206323e-002_fp, &
        1.148107e-004_fp,  2.688353e-002_fp, &
        -7.358356e-005_fp/)
 
-! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
   coe(34:42) = (/ &
        -1.278780e+000_fp,  1.625141e-002_fp, &
        -4.764536e-005_fp, -1.475181e-002_fp, &
@@ -1198,7 +719,6 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
        -4.154825e-005_fp,  7.703879e-003_fp, &
        -6.351148e-006_fp/)
 
-! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb5
   coe(45:55) = (/&
      -1.691077e+000_fp,  3.352403e-002_fp, &
      -7.310338e-005_fp, -4.396138e-002_fp, &
@@ -1207,9 +727,7 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
      -2.139023e-005_fp, -2.257991e-003_fp, &
      1.269419e-005_fp/)
 
-! save coe
 
-! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
      discriminator(ich) = coe(1+(ich-1)*11)
      if (ich .le. 3) nvalid_ch = 3
@@ -1220,8 +738,6 @@ subroutine AMSU_AB(frequency,tb,snow_type,em_vector)
              coe((ich-1)*11 + 2*i+1)*tb(i)*tb(i)
      end do
   end do
-!  Identify one snow emissivity spectrum and interpolate/extrapolate emissivity
-!  at a required frequency
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
 
   em_vector(1) = emissivity
@@ -1233,46 +749,6 @@ end subroutine AMSU_AB
 
 subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
 
-!-----------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr:Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at required frequency with respect to secenery AMSUAB
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency        -  frequency in GHz
-!      theta            -  local zenith angle (not used here)
-!      ts               -  surface temperature
-!      tba[1] ~ tba[4]  -  brightness temperature at five AMSU-A window channels:
-!                              tba[1] : 23.8 GHz
-!                              tba[2] : 31.4 GHz
-!                              tba[3] : 50.3 GHz
-!                              tba[4] : 89   GHz
-! output argument list:
-!
-!     em_vector[1] and [2]  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!     snow_type        -  snow type (reference [2])
-!
-! important internal variables:
-!
-!     coe      - fitting coefficients to estimate discriminator at 23.8 ~ 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!-----------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: nch =10,nwch = 5,ncoe = 9
   real(fp)    :: tba(*)
@@ -1282,26 +758,22 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
 
   save coe
 
-! Fitting Coefficients at 23.8 GHz: Using Tb1, Tb2 and Ts
   coe(1:6) = (/ &
        8.210105e-001_fp,  1.216432e-002_fp,  &
        -2.113875e-005_fp, -6.416648e-003_fp, &
        1.809047e-005_fp, -4.206605e-003_fp /)
 
-! Fitting Coefficients at 31.4 GHz: Using Tb1, Tb2 and Ts
   coe(11:16) = (/ &
        7.963632e-001_fp,  7.215580e-003_fp,  &
        -2.015921e-005_fp, -1.508286e-003_fp,  &
        1.731405e-005_fp, -4.105358e-003_fp /)
 
-! Fitting Coefficients at 50.3 GHz: Using Tb1, Tb2, Tb3 and Ts
   coe(21:28) = (/ &
        1.724160e+000_fp,  5.556665e-003_fp, &
        -2.915872e-005_fp, -1.146713e-002_fp, &
        4.724243e-005_fp,  3.851791e-003_fp, &
        -5.581535e-008_fp, -5.413451e-003_fp /)
 
-! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4 and Ts
   coe(31:40) = (/ &
        9.962065e-001_fp,  1.584161e-004_fp, &
        -3.988934e-006_fp,  3.427638e-003_fp, &
@@ -1309,7 +781,6 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
        1.115315e-006_fp,  9.440962e-004_fp, &
        9.711384e-006_fp, -4.259102e-003_fp /)
 
-! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4 and Ts
   coe(41:50) = (/ &
        -5.244422e-002_fp,  2.025879e-002_fp,  &
        -3.739231e-005_fp, -2.922355e-002_fp, &
@@ -1317,9 +788,7 @@ subroutine AMSU_ATs(frequency,tba,ts,snow_type,em_vector)
        -3.757061e-005_fp,  6.434187e-003_fp, &
        6.190403e-007_fp, -2.944785e-003_fp/)
 
-! save coe
 
-! Calculate emissivity discriminators at five AMSU window channels
   DO ich = 1, nwch
      discriminator(ich) = coe(1+(ich-1)*10)
      if (ich .le. 2) nvalid_ch = 2
@@ -1343,46 +812,6 @@ end subroutine AMSU_ATs
 
 subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
 
-!------------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at required frequency with respect to secenery AMSUA
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency      -  frequency in GHz
-!      theta          -  local zenith angle (not used here)
-!      tba[1]~tba[4]  -  brightness temperature at five AMSU-A window channels:
-!                            tba[1] : 23.8 GHz
-!                            tba[2] : 31.4 GHz
-!                            tba[3] : 50.3 GHz
-!                            tba[4] : 89   GHz
-!
-! output argument list:
-!
-!     em_vector(1) and (2)  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!     snow_type        -  snow type
-!
-! important internal variables:
-!
-!     coe      - fitting coefficients to estimate discriminator at 23.8 ~ 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!--------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: nch =10,nwch = 5,ncoe = 8
   real(fp)    :: tba(*)
@@ -1391,40 +820,33 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
   real(fp)  :: coe(50)
   save coe
 
-! Fitting Coefficients at 23.8 GHz: Using Tb1 ~ Tb3
   coe(1:7) = (/ &
        -1.326040e+000_fp,  2.475904e-002_fp, -5.741361e-005_fp, &
        -1.889650e-002_fp,  6.177911e-005_fp,  1.451121e-002_fp, &
        -4.925512e-005_fp/)
 
-! Fitting Coefficients at 31.4 GHz: Using Tb1 ~ Tb3
   coe(11:17) = (/ &
        -1.250541e+000_fp,  1.911161e-002_fp, -5.460238e-005_fp, &
        -1.266388e-002_fp,  5.745064e-005_fp,  1.313985e-002_fp, &
        -4.574811e-005_fp/)
 
-! Fitting Coefficients at 50.3 GHz: Using Tb1 ~ Tb3
   coe(21:27) = (/ &
        -1.246754e+000_fp,  2.368658e-002_fp, -8.061774e-005_fp, &
        -3.206323e-002_fp,  1.148107e-004_fp,  2.688353e-002_fp, &
        -7.358356e-005_fp/)
 
-! Fitting Coefficients at 89 GHz: Using Tb1 ~ Tb4
   coe(31:39) = (/ &
        -1.278780e+000_fp, 1.625141e-002_fp, -4.764536e-005_fp, &
        -1.475181e-002_fp, 5.107766e-005_fp,  1.083021e-002_fp, &
        -4.154825e-005_fp,  7.703879e-003_fp, -6.351148e-006_fp/)
 
-! Fitting Coefficients at 150 GHz: Using Tb1 ~ Tb4
   coe(41:49) = (/ &
        -1.624857e+000_fp, 3.138243e-002_fp, -6.757028e-005_fp, &
        -4.178496e-002_fp, 9.691893e-005_fp,  2.165964e-002_fp, &
        -6.702349e-005_fp, 1.111658e-002_fp, -1.050708e-005_fp/)
 
-! save coe
 
 
-! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
      discriminator(ich) = coe(1+(ich-1)*10)
      if (ich .le. 2) nvalid_ch = 3
@@ -1435,13 +857,11 @@ subroutine AMSU_amsua(frequency,tba,snow_type,em_vector)
      end do
   end do
 
-! Quality Control
   if(discriminator(4) .gt. discriminator(2))   &
        discriminator(4) = discriminator(2) + (150.0_fp - 89.0_fp)*  &
        (discriminator(5) - discriminator(2))/ &
        (150.0_fp - 31.4_fp)
 
-! Quality control at 50.3 GHz
   if((discriminator(3) .gt. discriminator(2)) .or.  &
        (discriminator(3) .lt. discriminator(4)))      &
        discriminator(3) = discriminator(2) + (89.0_fp - 50.3_fp)*   &
@@ -1458,45 +878,6 @@ end subroutine AMSU_amsua
 
 subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
 
-!-------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at required frequency with respect to secenery BTs
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency        -  frequency in GHz
-!      theta            -  local zenith angle (not used here)
-!      ts               -  surface temperature in degree
-!      tbb[1] ~ tbb[2]  -  brightness temperature at five AMSU-B window channels:
-!                              tbb[1] : 89  GHz
-!                              tbb[2] : 150 GHz
-!
-! output argument list:
-!
-!     em_vector(1) and (2)  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!     snow_type        -  snow type
-!
-! important internal variables:
-!
-!     coe      - fitting coefficients to estimate discriminator at 31.4 ~ 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!-------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: nch =10,nwch = 3,ncoe = 5
   real(fp)    :: tbb(*)
@@ -1505,18 +886,13 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
   real(fp)  :: coe(nch*(ncoe+1))
   save coe
 
-! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5 and Ts
   coe(1:6) = (/ 3.110967e-001_fp,  1.100175e-002_fp, -1.677626e-005_fp,    &
        -4.020427e-003_fp,  9.242240e-006_fp, -2.363207e-003_fp/)
-! Fitting Coefficients at 89 GHz: Using Tb4, Tb5 and Ts
   coe(11:16) = (/  1.148098e+000_fp,  1.452926e-003_fp,  1.037081e-005_fp, &
        1.340696e-003_fp, -5.185640e-006_fp, -4.546382e-003_fp /)
-! Fitting Coefficients at 150 GHz: Using Tb4, Tb5 and Ts
   coe(21:26) = (/ 1.165323e+000_fp, -1.030435e-003_fp,  4.828009e-006_fp,  &
        4.851731e-003_fp, -2.588049e-006_fp, -4.990193e-003_fp/)
-! save coe
 
-! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
      ed0(ich) = coe(1+(ich-1)*10)
      nvalid_ch = 2
@@ -1527,15 +903,11 @@ subroutine AMSU_BTs(frequency,tbb,ts,snow_type,em_vector)
      ed0(ich) = ed0(ich) + coe( (ich-1)*10 + (nvalid_ch+1)*2 )*ts
   end do
 
-! Quality control
   if(ed0(2) .gt. ed0(1))     &
        ed0(2) = ed0(1) + (150.0_fp - 89.0_fp)*(ed0(3) - ed0(1)) / &
        (150.0_fp - 31.4_fp)
 
-! Match the format of the input variable
-! Missing value at 23.8 GHz
   discriminator(1) = -999.9_fp;  discriminator(2) = ed0(1)
-! Missing value at 50.3 GHz
   discriminator(3) = -999.9_fp; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
 
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
@@ -1550,43 +922,6 @@ end subroutine AMSU_BTs
 subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
 
 
-!-------------------------------------------------------------------------------------------------------!
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!  emissivity at required frequency with respect to secenery AMSUB
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency        -  frequency in GHz
-!      theta            -  local zenith angle (not used here)
-!      tbb[1] ~ tbb[2]  -  brightness temperature at five AMSU-B window channels:
-!                              tbb[1] : 89  GHz
-!                              tbb[2] : 150 GHz
-!
-! output argument list:
-!     em_vector(1) and (2)  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!     snow_type        -  snow type (reference [2])
-!
-! important internal variables:
-!
-!     coe    - fitting coefficients to estimate discriminator at 31.4 ~ 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!-------------------------------------------------------------------------------------------------------!
 
   integer,parameter:: nch =10,nwch = 3,ncoe = 4
   real(fp)    :: tbb(*)
@@ -1595,18 +930,13 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
   real(fp)  :: coe(50)
   save coe
 
-! Fitting Coefficients at 31.4 GHz: Using Tb4, Tb5
   coe(1:5) = (/-4.015636e-001_fp,9.297894e-003_fp, -1.305068e-005_fp, &
        3.717131e-004_fp, -4.364877e-006_fp/)
-! Fitting Coefficients at 89 GHz: Using Tb4, Tb5
   coe(11:15) = (/-2.229547e-001_fp, -1.828402e-003_fp,1.754807e-005_fp, &
        9.793681e-003_fp, -3.137189e-005_fp/)
-! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
   coe(21:25) = (/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
        1.413038e-002_fp,-3.133239e-005_fp/)
-! save coe
 
-! Calculate emissivity discriminators at five AMSU window channels
   do ich = 1, nwch
      ed0(ich) = coe(1+(ich-1)*10)
      nvalid_ch = 2
@@ -1616,15 +946,11 @@ subroutine AMSU_amsub(frequency,tbb,snow_type,em_vector)
      end do
   end do
 
-! Quality Control
   if(ed0(2) .gt. ed0(1))     &
        ed0(2) = ed0(1) + (150.0_fp - 89.0_fp) * &
        (ed0(3) - ed0(1))/(150.0_fp - 31.4_fp)
 
-! Match the format of the input variable
-! Missing value at 23.8 GHz
   discriminator(1) = -999.9_fp; discriminator(2) = ed0(1)
-! Missing value at 50.3 GHz
   discriminator(3) = -999.9_fp; discriminator(4) = ed0(2); discriminator(5) = ed0(3)
 
   call em_interpolate(frequency,discriminator,emissivity,snow_type)
@@ -1639,48 +965,6 @@ end subroutine AMSU_amsub
 subroutine AMSU_ALandEM_Snow(theta,frequency,snow_depth,ts,snow_type,em_vector)
 
 
-!------------------------------------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity at required frequency with respect to option MODL
-!   using the NESDIS_LandEM and a bias correction algorithm, where the original NESDIS_LandEM with a
-!   bias correction algorithm is referred to as value-added NESDIS_LandEM or AlandEM.
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency        -  frequency in GHz
-!      theta            -  local zenith angle in degree
-!      snow_depth       -  snow depth in mm
-!      ts           -  surface temperature
-!
-! output argument list:
-!
-!     em_vector(1) and (2)  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!       snow_type        -  snow type
-!
-! important internal variables:
-!
-!    esv_3w and esh_3w   -  initial emissivity discriminator at two polarizations
-!                           at three AMSU window channels computed using NESDIS_LandEM
-!    esv_3w[1] and esh_3w[1] : 31.4 GHz
-!    esv_3w[2] and esh_3w[2] : 89   GHz
-!    esv_3w[3] and esh_3w[3] : 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!------------------------------------------------------------------------------------------------------------
 
   integer :: nw_ind
   parameter(nw_ind=3)
@@ -1719,47 +1003,6 @@ end subroutine AMSU_ALandEM_Snow
 subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type)
 
 
-!------------------------------------------------------------------------------------------------------------
-!$$$  subprogram documentation block
-!
-! subprogram:
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2003-08-18
-!
-! abstract:
-!         Calculate the emissivity discriminators and interpolate/extrapolate
-!
-!  emissivity at required frequency with respect to secenery MODL
-!
-! program history log:
-!
-! input argument list:
-!
-!      frequency   -  frequency in GHz
-!      theta       -  local zenith angle in degree
-!      depth       -  snow depth in mm
-!      ts          -  surface temperature
-!
-! output argument list:
-!
-!     em_vector(1) and (2)  -  emissivity at two polarizations.
-!                              set esv = esh here and will be updated
-!     snow_type        -  snow type
-!
-! important internal variables:
-!
-!     dem_coe  -  fitting coefficients to compute discriminator correction value
-!              dem_coe[1,*]   : 31.4 GHz
-!              dem_coe[2,*]   : 89   GHz
-!              dem_coe[3,*]   : 150  GHz
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!------------------------------------------------------------------------------------------------------------
 
   integer,parameter:: nch=10,nw_3=3
 
@@ -1798,7 +1041,6 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
        -6.305717e-008_Double, -1.221087e+000_Double/)
 
 
-!
 
   deg2rad = 3.14159_fp*pi/180.0_fp
 
@@ -1830,15 +1072,12 @@ subroutine ems_adjust(theta,frequency,depth,ts,esv_3w,esh_3w,em_vector,snow_type
 
   emmod(3) = emmod(3) + dem(3)
 
-! Match the format of the input variable
 
-! Missing value at 23.8 GHz
 
   discriminator(1) = -999.9_fp
 
   discriminator(2) = emmod(1)
 
-! Missing value at 50.3 GHz
 
   discriminator(3) = -999.9_fp
 

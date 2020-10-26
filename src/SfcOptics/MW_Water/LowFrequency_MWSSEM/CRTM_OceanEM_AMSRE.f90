@@ -1,41 +1,3 @@
-!
-!-------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       CRTM_OCEANEM_AMSRE
-!
-! PURPOSE:
-!       This module computes ocean emissivity and its jacobian over water. 
-!                                                                               
-! Method:                                                                       
-!                                                                               
-! History:   
-!                                                                   
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CREATION HISTORY:
-!
-!   2007-03-31?  Created for CRTM
-!               by:     Masahiro Kazumori, JCSDA,     Masahiro.Kazumori@noaa.gov 
-!                       Quanhua Liu, QSS Group Inc.,     Quanhua.Liu@noaa.gov 
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!M-
-!------------------------------------------------------------------------------------------------------------
 
 MODULE CRTM_OCEANEM_AMSRE
 
@@ -999,101 +961,19 @@ DATA (sdd(40,j),j=1,100) / &
 
 CONTAINS
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 
-!-------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       OCEANEM_AMSRE
-!
-! PURPOSE:
-!       Subroutine to compute ocean emissivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL OCEANEM_AMSRE
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!         Sat_Zenith_Angle         The angle values in degree
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         Surface_Temperature      Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Wind_Speed               Ocean surface wind speed
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Emissivity:              The surface emissivity at vertical and horizontal polarizations.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  ONE
-!
-!
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!M-
-!------------------------------------------------------------------------------------------------------------
-!
   SUBROUTINE OCEANEM_AMSRE(Frequency,                                         & ! INPUT
                            Sat_Zenith_Angle,                                  & ! INPUT
                            Surface_Temperature,                               & ! INPUT
                            Wind_Speed,                                        & ! INPUT
                            Emissivity)                                          ! OUTPUT
-!------------------------------------------------------------------------------------------------------------
-!
   IMPLICIT NONE
 
-!
-! Declare passed variables.
-!
   REAL( fp ), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
   REAL( fp ), INTENT( IN ) ::  Surface_Temperature, Wind_Speed
   REAL( fp ), INTENT( OUT ) :: Emissivity(4)
 
-!
-! Declare local variables
-!
   INTEGER i,j,k
 
   REAL(fp) frequency_sdd(100),wind_speed_sdd(40)
@@ -1146,9 +1026,6 @@ CONTAINS
   sdd_intrp = x1 * y1 * sdd(Index_x,Index_y) + x1 * y2 * sdd(Index_x,Index_y+1) + &
               x2 * y1 * sdd(Index_x+1,Index_y) + x2 * y2 * sdd(Index_x+1,Index_y+1)
 
-!
-!---- Permittivity Calculation
-!
   IF ( freq < MODEL_LIMIT(1) ) THEN
     CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
   ELSE
@@ -1158,24 +1035,15 @@ CONTAINS
   csl2 = csl*csl
 
 
-!
-!---- Fresnel reflectivity Calculation
-!
   call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
 
 
-!
-!---- Foam reflectivity Calculation
-!
 
   Fv=Compute_Fv(satellite_zenith)
   Rv_Foam = Coeff_Foam(5)
   Fh=Compute_Fh(satellite_zenith)
   Rh_Foam = ONE + Coeff_Foam(9)*Fh
 
-!
-!---- Foam Coverage Calculation
-!
 
   IF ( wind < MODEL_LIMIT(2) ) THEN
      Foam_Coverage = ZERO
@@ -1184,9 +1052,6 @@ CONTAINS
   END IF
 
 
-!
-!---- Small Scale Correction Calculation
-!
   IF ( freq > MODEL_LIMIT(3) ) THEN
     Rv_Small = exp( - sdd_intrp * csl2)
     Rh_Small = exp( - sdd_intrp * csl2)
@@ -1196,32 +1061,20 @@ CONTAINS
   END IF
 
 
-!
-!---- Modified Fresnel reflectivity Calculation
-!
   Rv_modified_fresnel = Rv_Fresnel * Rv_Small
   Rh_modified_fresnel = Rh_Fresnel * Rh_Small
 
 
-!
-!---- Large Scale Correction Calculation
-!
   Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
             Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
   Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
             Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
 
 
-!
-!---- Foam Clear Reflectivity Calculation
-!
   Rv_Clear = Rv_modified_fresnel + Rv_Large 
   Rh_Clear = Rh_modified_fresnel + Rh_Large 
 
 
-!
-!---- Emissivity Calculation
-!
   Emissivity(1) = ONE - ( ONE - Foam_Coverage )* Rv_Clear - Foam_Coverage * Rv_Foam
   Emissivity(2) = ONE - ( ONE - Foam_Coverage )* Rh_Clear - Foam_Coverage * Rh_Foam
 
@@ -1230,76 +1083,6 @@ CONTAINS
 
 
  END SUBROUTINE OCEANEM_AMSRE
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       OCEANEM_AMSRE_TL
-!
-! PURPOSE:
-!       Subroutine to compute ocean emissivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL OCEANEM_AMSRE_TL
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Sat_Zenith_Angle         The angle values in degree
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         Surface_Temperature      Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Surface_Temperature_tl   Ocean surface temperature tangent liner
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Wind_Speed               Ocean surface wind speed
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Wind_Speed_tl            Ocean surface wind speed tangent liner
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Emissivity_tl            The surface emissivity tangent liner at vertical and horizontal polarizations.
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  ONE
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!M-
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE OCEANEM_AMSRE_TL(Frequency,                                         & ! INPUT
                               Sat_Zenith_Angle,                                  & ! INPUT
                               Surface_Temperature,                               & ! INPUT
@@ -1307,20 +1090,12 @@ CONTAINS
                               Wind_Speed,                                        & ! INPUT
                               Wind_Speed_tl,                                     & ! INPUT
                               Emissivity_tl)                                       ! OUTPUT)
-!------------------------------------------------------------------------------------------------------------
-!
   IMPLICIT NONE
 
-!
-! Declare passed variables.
-!
   REAL( fp ), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
   REAL( fp ), INTENT( IN ) ::  Surface_Temperature,Surface_Temperature_tl, Wind_Speed,Wind_Speed_tl
   REAL( fp ), INTENT( OUT ) ::  Emissivity_tl(4)
 
-!
-! Declare local variables
-!
   INTEGER i,j
 
   REAL(fp) frequency_sdd(100),wind_speed_sdd(40)
@@ -1399,9 +1174,6 @@ CONTAINS
                  x2_tl * y1 * sdd(Index_x+1,Index_y) + x2_tl * y2 * sdd(Index_x+1,Index_y+1)
 
 
-!
-!---- Permittivity Calculation
-!
   IF ( freq < MODEL_LIMIT(1) ) THEN
     CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
     CALL Compute_Guillou_eps_ocean_TL(sst,sst_tl,salinity,freq,eps_ocean,eps_ocean_tl)
@@ -1413,17 +1185,10 @@ CONTAINS
   csl2 = csl*csl
 
 
-!
-!---- Fresnel reflectivity Calculation
-!
   call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
   call FRESNEL_TL(eps_ocean,eps_ocean_tl,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_tl,Rh_Fresnel_tl)
 
 
-!
-!---- Foam reflectivity Calculation
-!
-!
   Fv=Compute_Fv(satellite_zenith)
   Rv_Foam = Coeff_Foam(5)
   Rv_Foam_tl =  ZERO
@@ -1432,9 +1197,6 @@ CONTAINS
   Rh_Foam_tl =  ZERO
 
 
-!
-!---- Foam Coverage Calculation
-!
   IF ( wind < MODEL_LIMIT(2) ) THEN
      Foam_Coverage = ZERO
      Foam_Coverage_tl = ZERO
@@ -1443,9 +1205,6 @@ CONTAINS
      Foam_Coverage_tl = Coeff_Foam(11) * Coeff_Foam(10)*wind**(Coeff_Foam(10) - ONE) * wind_tl
   END IF
 
-!
-!---- Small Scale Correction Calculation
-!
   IF ( freq > MODEL_LIMIT(3) ) THEN
     Rv_Small = exp( - sdd_intrp * csl2)
     Rh_Small = exp( - sdd_intrp * csl2)
@@ -1459,18 +1218,12 @@ CONTAINS
   END IF
 
 
-!
-!---- Modified Fresnel reflectivity Calculation
-!
   Rv_modified_fresnel = Rv_Fresnel * Rv_Small
   Rh_modified_fresnel = Rh_Fresnel * Rh_Small
 
   Rv_modified_fresnel_tl = Rv_Fresnel_tl * Rv_Small + Rv_Fresnel * Rv_Small_tl
   Rh_modified_fresnel_tl = Rh_Fresnel_tl * Rh_Small + Rh_Fresnel * Rh_Small_tl
 
-!
-!---- Large Scale Correction Calculation
-!
   Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
             Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
   Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
@@ -1481,17 +1234,11 @@ CONTAINS
   Rh_Large_tl = wind_tl * ( Coeff(4) + Coeff(5) * satellite_zenith + &
                 Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
 
-!
-!---- Foam Clear Reflectivity Calculation
-!
   Rv_Clear = Rv_modified_fresnel + Rv_Large
   Rh_Clear = Rh_modified_fresnel + Rh_Large
   Rv_Clear_tl = Rv_modified_fresnel_tl + Rv_Large_tl
   Rh_Clear_tl = Rh_modified_fresnel_tl + Rh_Large_tl
 
-!
-!---- Emissivity Calculation
-!
   Emissivity_tl(1) =  - ( - Foam_Coverage_tl )* Rv_Clear  - &
                         ( ONE - Foam_Coverage )* Rv_Clear_tl - &
                         Foam_Coverage_tl * Rv_Foam - Foam_Coverage * Rv_Foam_tl
@@ -1504,75 +1251,6 @@ CONTAINS
 
 
  END SUBROUTINE OCEANEM_AMSRE_TL
-!
-!
-!!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       OCEANEM_AMSRE_AD
-!
-! PURPOSE:
-!       Subroutine to compute ocean emissivity adjont
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL OCEANEM_AMSRE_AD
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Sat_Zenith_Angle         The angle values in degree
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         Surface_Temperature      Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Wind_Speed               Ocean surface wind speed
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_ad            The surface emissivity adjoint at vertical and horizontal polarizations.
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  ONE
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Surface_Temperature_ad   Ocean surface temperature adjoint
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Wind_Speed_ad            Ocean surface wind speed adjoint
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE OCEANEM_AMSRE_AD(Frequency,                                         & ! INPUT
                               Sat_Zenith_Angle,                                  & ! INPUT
                               Surface_Temperature,                               & ! INPUT
@@ -1580,18 +1258,12 @@ CONTAINS
                               Wind_Speed,                                        & ! INPUT
                               Wind_Speed_ad,                                     & ! INPUT/OUTPUT
                               Emissivity_ad)                                       ! INPUT)
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
-! Declare passed variables.
-!
   REAL( fp ), INTENT( IN ) ::  Frequency, Sat_Zenith_Angle
   REAL( fp ), INTENT( IN ) ::  Surface_Temperature,Wind_Speed
   REAL( fp ), INTENT( IN OUT ) ::  Surface_Temperature_ad,Wind_Speed_ad
   REAL( fp ), INTENT( IN ) ::  Emissivity_ad(4)
 
-!
-! Declare local variables
-!
   INTEGER i,j
 
   REAL(fp) frequency_sdd(100),wind_speed_sdd(40)
@@ -1631,7 +1303,6 @@ CONTAINS
   REAL(fp) :: wind_index
   INTEGER Index_x,Index_y
 
-! Initialization
   wind_ad = ZERO
   sst_ad = ZERO
   x1_ad = ZERO
@@ -1659,11 +1330,6 @@ CONTAINS
   Surface_Temperature_ad = ZERO
   Wind_Speed_ad = ZERO
 
-!-----------------------------
-!
-!---- START Forward model ----
-!
-!-----------------------------
   DO i = 1,40  ! Wind speed
     wind_speed_sdd(i) = POINT_5 + (real(i) - ONE) * POINT_5
   END DO
@@ -1694,9 +1360,6 @@ CONTAINS
   sdd_intrp = x1 * y1 * sdd(Index_x,Index_y) + x1 * y2 * sdd(Index_x,Index_y+1) + &
               x2 * y1 * sdd(Index_x+1,Index_y) + x2 * y2 * sdd(Index_x+1,Index_y+1)
 
-!
-!---- Permittivity Calculation
-!
   IF( freq < MODEL_LIMIT(1) ) THEN
     CALL Compute_Guillou_eps_ocean(sst,salinity,freq,eps_ocean)
   ELSE
@@ -1706,24 +1369,15 @@ CONTAINS
   csl2 = csl*csl
 
 
-!
-!---- Fresnel reflectivity Calculation
-!
   call FRESNEL(eps_ocean,csl,Rv_Fresnel,Rh_Fresnel)
 
 
-!
-!---- Foam reflectivity Calculation
-!
 
   Fv=Compute_Fv(satellite_zenith)
   Rv_Foam = Coeff_Foam(5)
   Fh=Compute_Fh(satellite_zenith)
   Rh_Foam = ONE + Coeff_Foam(9)*Fh
 
-!
-!---- Foam Coverage Calculation
-!
   IF ( wind < MODEL_LIMIT(2) ) THEN
      Foam_Coverage = ZERO
   ELSE
@@ -1731,9 +1385,6 @@ CONTAINS
   END IF
 
 
-!
-!---- Small Scale Correction Calculation
-!
   IF ( freq > MODEL_LIMIT(3) ) THEN
     Rv_Small = exp( - sdd_intrp * csl2)
     Rh_Small = exp( - sdd_intrp * csl2)
@@ -1743,38 +1394,20 @@ CONTAINS
   END IF
 
 
-!
-!---- Modified Fresnel reflectivity Calculation
-!
   Rv_modified_fresnel = Rv_Fresnel * Rv_Small
   Rh_modified_fresnel = Rh_Fresnel * Rh_Small
 
 
-!
-!---- Large Scale Correction Calculation
-!
   Rv_Large = wind * ( Coeff(1) + Coeff(2) * satellite_zenith + &
             Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
   Rh_Large = wind * ( Coeff(4) + Coeff(5) * satellite_zenith + &
             Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)
 
 
-!
-!---- Foam Clear Reflectivity Calculation
-!
   Rv_Clear = Rv_modified_fresnel + Rv_Large 
   Rh_Clear = Rh_modified_fresnel + Rh_Large 
 
 
-!-----------------------------
-!
-!---- START Adjoint model ----
-!
-!-----------------------------
-!
-!
-!---- Emissivity Calculation
-!
    Foam_Coverage_ad =  + (Rh_Clear - Rh_Foam ) * Emissivity_ad(2)
    Rh_Clear_ad      =  - ( ONE - Foam_Coverage ) * Emissivity_ad(2)
    Rh_Foam_ad       =  - Foam_Coverage * Emissivity_ad(2)
@@ -1784,36 +1417,24 @@ CONTAINS
    Rv_Foam_ad       =  - Foam_Coverage * Emissivity_ad(1)
 
 
-!
-!---- Foam Clear Reflectivity Calculation
-!
    Rh_modified_fresnel_ad = Rh_Clear_ad
    Rh_Large_ad            = Rh_Clear_ad
    Rv_modified_fresnel_ad = Rv_Clear_ad
    Rv_Large_ad            = Rv_Clear_ad
 
 
-!
-!---- Large Scale Correction Calculation
-!
    wind_ad = ( Coeff(4) + Coeff(5) * satellite_zenith + &
                Coeff(6) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)*Rh_Large_ad
    wind_ad = wind_ad + ( Coeff(1) + Coeff(2) * satellite_zenith + &
                Coeff(3) * satellite_zenith*satellite_zenith ) * freq/(Coeff(7) + Coeff(8)*freq)*Rv_Large_ad
 
 
-!
-!---- Modified Fresnel reflectivity Calculation
-!
    Rh_Fresnel_ad = Rh_Small   * Rh_modified_fresnel_ad
    Rh_Small_ad   = Rh_Fresnel * Rh_modified_fresnel_ad
    Rv_Fresnel_ad = Rv_Small   * Rv_modified_fresnel_ad
    Rv_Small_ad   = Rv_Fresnel * Rv_modified_fresnel_ad
 
 
-!
-!---- Small Scale Correction Calculation
-!
   IF ( freq > MODEL_LIMIT(3) ) THEN  
    sdd_intrp_ad = - csl2 * exp( - sdd_intrp * csl2) * Rh_Small_ad
    sdd_intrp_ad = sdd_intrp_ad  -csl2  * exp( - sdd_intrp * csl2)  * Rv_Small_ad
@@ -1822,22 +1443,13 @@ CONTAINS
   END IF
    
 
-!
-!---- Foam Coverage Calculation
-!
    IF(wind >= MODEL_LIMIT(2) ) THEN
      wind_ad = wind_ad + (Coeff_Foam(11) * Coeff_Foam(10)*wind**(Coeff_Foam(11) - ONE) ) * Foam_Coverage_ad
    END IF
 
-!
-!---- Fresnel reflectivity Calculation
-!
   call FRESNEL_AD(eps_ocean,eps_ocean_ad,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_ad,Rh_Fresnel_ad)
 
 
-!
-!---- Permittivity Calculation
-!
   IF( freq < MODEL_LIMIT(1) ) THEN
     CALL Compute_Guillou_eps_ocean_AD(sst,sst_ad,salinity,freq,eps_ocean,eps_ocean_ad)
   ELSE
@@ -1860,69 +1472,10 @@ CONTAINS
 
 END SUBROUTINE OCEANEM_AMSRE_AD
 
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE Compute_Ellison_eps_ocean(SST, & ! Input, Water temperature in Kelvin
                                        S, & ! Input, Salinity in parts per thousand
                                        f, & ! Input, Frequency in GHz
                                        eps_ocean) ! Output, permitivity
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
   REAL( fp ), INTENT( IN ) :: SST, S, F
   COMPLEX( fp ), INTENT( OUT ) :: eps_ocean
@@ -1975,82 +1528,12 @@ END SUBROUTINE OCEANEM_AMSRE_AD
 
   RETURN
  END SUBROUTINE Compute_Ellison_eps_ocean
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean_TL
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean_TL
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         SST_tl                   Sea Surface Temperature tangent liner
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_tl             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE Compute_Ellison_eps_ocean_TL(SST, & ! Input, Water temperature in Kelvin
                                           SST_tl, & 
                                           S, & ! Input, Salinity in parts per thousand
                                           f, & ! Input, Frequency in GHz
                                           eps_ocean, & ! Output, permitivity
                                           eps_ocean_tl) ! Output
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
   REAL( fp ), INTENT( IN ) :: SST, SST_tl, S, F
   COMPLEX( fp ), INTENT( OUT ) :: eps_ocean,eps_ocean_tl
@@ -2134,81 +1617,12 @@ END SUBROUTINE OCEANEM_AMSRE_AD
   RETURN
 
  END SUBROUTINE Compute_Ellison_eps_ocean_TL
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Ellison_eps_ocean_AD
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Ellison_eps_ocean_AD
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_ad             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         SST_ad                   Sea Surface Temperature adjoint
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!
-!  Ellison, W. J. et al. (2003) A comparison of ocean emissivity models using the Advanced Microwave Sounding Unit,
-!                               the Special Sensor Microwave Imager, the TRMM Microwave Imager, and 
-!                               airborne radiometer observations. Journal of Geophysical Research, 108, 4663
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
 SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kelvin
                                         SST_ad, & 
                                         S, & ! Input, Salinity in parts per thousand
                                         f, & ! Input, Frequency in GHz
                                         eps_ocean, & ! Output, permitivity
                                         eps_ocean_ad)
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
   REAL( fp ), INTENT( IN ) :: SST, S, F
   COMPLEX( fp ), INTENT( OUT ) :: eps_ocean
@@ -2226,7 +1640,6 @@ SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kel
   REAL( fp ) :: perm_imag1_ad,perm_imag2_ad,sigma_ad,perm_imag3_ad
   REAL( fp ) :: perm_Real_ad,perm_imag_ad
 
-! Initialize
 
   t_ad = ZERO
   t_sq_ad = ZERO
@@ -2247,7 +1660,6 @@ SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kel
   perm_Real_ad = ZERO
   perm_imag_ad = ZERO
 
-!----------- forward
 
   !-----------------------------------------------------
   ! Calculate permittivity using double-debye formula
@@ -2285,7 +1697,6 @@ SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kel
     eps_ocean = cmplx(perm_Real,perm_imag,fp)
 
 
-!----------- adjoint
 
     perm_Real_ad =  real( eps_ocean_ad )
     perm_imag_ad =  -aimag( eps_ocean_ad )
@@ -2349,70 +1760,10 @@ SUBROUTINE Compute_Ellison_eps_ocean_AD(SST, & ! Input, Water temperature in Kel
   RETURN
 
 END SUBROUTINE Compute_Ellison_eps_ocean_AD
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE Compute_Guillou_eps_ocean(SST,     & ! Input, Water temperature in Kelvin
                                        S,       & ! Input, Salinity in parts per thousand
                                        f,       & ! Input, Frequency in GHz
                                        eps_ocean) ! Output, permitivity
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
   REAL( fp ), INTENT( IN ) :: SST, S, F
   COMPLEX( fp ), INTENT( OUT ) :: eps_ocean
@@ -2457,80 +1808,12 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
 
   RETURN
  END SUBROUTINE Compute_Guillou_eps_ocean
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean_TL
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean_TL
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         SST_tl                   Sea Surface Temperature tangent liner
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_tl             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE Compute_Guillou_eps_ocean_TL(SST, &    ! Input, Water temperature in Kelvin
                                           SST_tl, & ! Input
                                           S, &      ! Input, Salinity in parts per thousand
                                           f, &      ! Input, Frequency in GHz
                                           eps_ocean, &  ! Output, permitivity
                                           eps_ocean_tl) ! Output
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
   REAL( fp ), INTENT( IN ) :: SST, SST_tl, S, F
   COMPLEX( fp ), INTENT( OUT ) :: eps_ocean,eps_ocean_tl
@@ -2616,79 +1899,12 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
 
   RETURN
  END SUBROUTINE Compute_Guillou_eps_ocean_TL
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Compute_Guillou_eps_ocean_AD
-!
-! PURPOSE:
-!       Subroutine to compute ocean permittivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Guillou_eps_ocean_AD
-!
-! INPUT ARGUMENTS:
-!
-!         SST                      Sea Surface Temperature
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         S                        Salinity
-!                                  UNITS:      parts per thousand
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean_ad             Ocean permittivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         SST_ad                   Sea Surface Temperature adjoint
-!                                  UNITS:      Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         eps_ocean                Ocean permittivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! Reference:
-!   
-!  Guillou, C. et al. (1998) Impact of new permittivity measurements on sea surface emissivity modeling in 
-!                            microwaves. Radio Science, Volume 33, Number 3, Pages 649-667
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE Compute_Guillou_eps_ocean_AD(SST, & ! Input, Water temperature in Kelvin
                                           SST_ad, &
                                           S, & ! Input, Salinity in parts per thousand
                                           f, & ! Input, Frequency in GHz
                                           eps_ocean, & ! Output, permitivity
                                           eps_ocean_ad) 
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
 
   REAL( fp ), INTENT( IN ) :: SST, S, F
@@ -2701,8 +1917,6 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
   REAL(fp) eps_real,eps_imag,mu,epss,epsinf
   REAL(fp) t_ad,c1_ad,c2_ad,sigma_ad,a1_ad,a2_ad,b1_ad,b2_ad,tau_ad,eps0_ad
   REAL(fp) eps_real_ad,eps_imag_ad,epsinf_ad
-!
-! Initialize
  t_ad = ZERO
  c1_ad = ZERO
  c2_ad = ZERO
@@ -2718,7 +1932,6 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
  epsinf_ad = ZERO
 
 
-!  Forward
   t = SST - Kelvin2Celsius
   mu = f * GHz2Hz  ! Herz
 
@@ -2753,7 +1966,6 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
   eps_ocean = cmplx(eps_real,eps_imag,fp)
 
 
-!  Adjoint
   eps_real_ad = real(eps_ocean_ad)
   eps_imag_ad = -aimag(eps_ocean_ad)
 
@@ -2817,61 +2029,7 @@ END SUBROUTINE Compute_Ellison_eps_ocean_AD
   RETURN
 
  END SUBROUTINE Compute_Guillou_eps_ocean_AD
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
 SUBROUTINE FRESNEL(e,csl,Rv_Fresnel,Rh_Fresnel)
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
 
   COMPLEX( fp ),INTENT ( IN )  :: e
@@ -2896,75 +2054,7 @@ SUBROUTINE FRESNEL(e,csl,Rv_Fresnel,Rh_Fresnel)
   RETURN
 
 END SUBROUTINE FRESNEL
-!
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL_TL
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity tangent liner
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL_TL
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         e_tl                     Emissivity tangent liner
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rv_Fresnel_tl            Reflectivity tangent liner for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel_tl            Reflectivity tangent liner for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
 SUBROUTINE FRESNEL_TL(e,e_tl,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_tl,Rh_Fresnel_tl)
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
 
   COMPLEX( fp ),INTENT ( IN )  :: e
@@ -3010,75 +2100,7 @@ SUBROUTINE FRESNEL_TL(e,e_tl,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_tl,Rh_Fresnel_
   RETURN
 
 END SUBROUTINE FRESNEL_TL
-!
-!------------------------------------------------------------------------------------------------------------
-!M+
-! NAME:
-!       FRESNEL_AD
-!
-! PURPOSE:
-!       Subroutine to compute Fresnel reflectivity adjoint
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL FRESNEL_AD
-!
-! INPUT ARGUMENTS:
-!
-!         e                        Emissivity
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-!         csl                      Cosine of incidence angle
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rv_Fresnel_ad            Reflectivity adjoint for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel_ad            Reflectivity adjoint for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-! 
-!         Rv_Fresnel               Reflectivity for Vertical polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Rh_Fresnel               Reflectivity for Horizontal polarization
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         e_ad                     Emissivity adjoint
-!                                  UNITS:      N/A
-!                                  TYPE:       COMPLEX( fp )
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!       None
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!------------------------------------------------------------------------------------------------------------
   SUBROUTINE FRESNEL_AD(e,e_ad,csl,Rv_Fresnel,Rh_Fresnel,Rv_Fresnel_ad,Rh_Fresnel_ad)
-!------------------------------------------------------------------------------------------------------------
   IMPLICIT NONE
 
   COMPLEX( fp ),INTENT ( IN )  :: e
@@ -3094,7 +2116,6 @@ END SUBROUTINE FRESNEL_TL
   COMPLEX( fp ) perm1_ad,perm2_ad,Rvv_ad,Rhh_ad
 
 
-! ---- forward
 
     perm1          = sqrt(e - ONE+csl*csl)
     perm2          = e* csl
@@ -3109,7 +2130,6 @@ END SUBROUTINE FRESNEL_TL
     imag_Rhh = aimag(Rhh)
     Rh_Fresnel = real_Rhh * real_Rhh + imag_Rhh * imag_Rhh
 
-! ---- adjoint
     Rh_Fresnel_real_ad = Rh_Fresnel_ad * TWO * real_Rhh
     Rh_Fresnel_imag_ad = Rh_Fresnel_ad * TWO * imag_Rhh
 
@@ -3132,10 +2152,6 @@ END SUBROUTINE FRESNEL_TL
   RETURN
 
 END SUBROUTINE FRESNEL_AD
-!
-!
-!
-!------------------------------------------------------------------------------------------------------------
 FUNCTION Compute_Fv(z) RESULT(Fv)
   IMPLICIT NONE
   REAL(fp), INTENT(IN) :: z ! Satellite zenith angle
@@ -3144,9 +2160,7 @@ FUNCTION Compute_Fv(z) RESULT(Fv)
   Fv = ONE + z*(Coeff_Foam(1)+ z*(Coeff_Foam(2) + z*Coeff_Foam(3))) + Coeff_Foam(4)*z**10
 
 END FUNCTION Compute_Fv
-!------------------------------------------------------------------------------------------------------------
 
-!------------------------------------------------------------------------------------------------------------
 FUNCTION Compute_Fh(z) RESULT(Fh)
   IMPLICIT NONE
   REAL(fp), INTENT(IN) :: z ! Satellite zenith angle
@@ -3155,8 +2169,6 @@ FUNCTION Compute_Fh(z) RESULT(Fh)
   Fh = ONE + z*(Coeff_Foam(6) +  z*(Coeff_Foam(7) + z*Coeff_Foam(8)))
 
 END FUNCTION Compute_Fh
-!------------------------------------------------------------------------------------------------------------
-!
 
 
 END MODULE CRTM_OCEANEM_AMSRE

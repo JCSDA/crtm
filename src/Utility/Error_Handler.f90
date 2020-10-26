@@ -1,27 +1,3 @@
-!
-!  Error_Handler
-!
-!  Module to define simple error/exit codes and output messages.
-!
-!
-!  Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
-!                  paul.vandelst@ssec.wisc.edu
-!
-!  Copyright (C) 2000, 2006 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 MODULE Error_Handler
 
@@ -79,49 +55,6 @@ MODULE Error_Handler
 
 CONTAINS
 
-!
-!  Display_Message
-!
-!  RECURSIVE subroutine to display messages.
-!
-!  This routine calls itself if the optional argument Message_Log 
-!  is passed and an error occurs opening the output log file.
-!
-!  CALLING SEQUENCE:
-!    CALL Display_Message( Routine_Name, &
-!                          Message,      &
-!                          Error_State,  &
-!                          Message_Log = Message_Log )
-!
-!  INPUT ARGUMENTS:
-!    Routine_Name: Name of the routine in which the message originated.
-!                  UNITS:      N/A
-!                  TYPE:       CHARACTER(*)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(IN)
-!
-!    Message:      Message text
-!                  UNITS:      N/A
-!                  TYPE:       CHARACTER(*)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(IN)
-!
-!    Error_State:  Flag corresponding to one of the defined error states.
-!                  If not, the error state is set to UNDEFINED.
-!                  UNITS:      N/A
-!                  TYPE:       INTEGER
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(IN)
-!
-!  OPTIONAL INPUT ARGUMENTS:
-!    Message_Log:  Character string specifying a filename in which any
-!                  messages will be logged. If not specified, or if an
-!                  error occurs opening the log file, the default action
-!                  is to output messages to the screen.
-!                  UNITS:      N/A
-!                  TYPE:       CHARACTER(*)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(IN), OPTIONAL
 
   RECURSIVE SUBROUTINE Display_Message ( Routine_Name, &
                                          Message,      &
@@ -180,45 +113,6 @@ CONTAINS
   END SUBROUTINE Display_Message
 
 
-!  Open_Message_Log
-!
-!  Function to open the message log file.
-!
-!  CALLING SEQUENCE:
-!    Error_Status =  open_Message_Log( Message_Log, &  ! Input
-!                                      File_ID      )  ! Output
-!
-!  INPUTS:
-!    Message_Log:  Character string specifying the filename to open.
-!                  UNITS:      N/A
-!                  TYPE:       CHARACTER(*)
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(IN)
-!
-!  OUTPUTS:
-!    File_ID:      Logical unit number associated with the
-!                  Message_Log file.
-!                  Return value is undefined if an error occurs.
-!                  UNITS:      None
-!                  TYPE:       INTEGER
-!                  DIMENSION:  Scalar
-!                  ATTRIBUTES: INTENT(OUT)
-!
-!  FUNCTION RESULT:
-!    Error_Status: The return value is an integer defining the error status.
-!                  The error codes are defined in this ERROR_HANDLER module.
-!                  If == SUCCESS the Message_Log file was successfully opened.
-!                     == FAILURE an unrecoverable error occurred.
-!                  UNITS:      N/A
-!                  TYPE:       INTEGER
-!                  DIMENSION:  Scalar
-!
-!  SIDE EFFECTS:
-!    The file is opened for SEQUENTIAL, FORMATTED access with
-!    UNKNOWN status, position of APPEND, and action of READWRITE.
-!
-!    Hopefully all of these options will not cause an existing file
-!    to be inadvertantly overwritten.
 
   FUNCTION Open_Message_Log( Message_Log, File_ID ) RESULT( Error_Status )
 

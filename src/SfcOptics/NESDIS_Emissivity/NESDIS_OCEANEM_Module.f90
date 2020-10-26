@@ -1,31 +1,3 @@
-!
-! NESDIS_OCEANEM_Module
-!
-! Module containing the microwave open ocean emissivity model
-!
-! References:
-!       Hollinger, J.P., 1971, Passive microwave measurements of sea surface roughness,
-!         IEEE Transactions on Geoscience Electronics, GE-9(3), 165-169.
-!
-!       Klein,L.A., and C.T.Swift, 1977, An improved model for the dielectric constant
-!         of sea water at microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111.
-!
-!       Stogryn,A., 1972, The emissivity of sea foam at microwave frequencies,
-!         J. Geophys. Res., 77, 1658-1666.
-!
-!       Yan.B. and F.Weng, 2005, Application of AMSR-E measurements for tropical cyclone
-!         studies, Part I: Retrieval of sea surface temperature and wind speed,
-!         submitted to JGR, 2005
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 30-May-2005, banghua.yan@noaa.gov
-!                       Fuzhong Weng, fuzhong.weng@noaa.gov
-!
-!       Modified by:    Banghua Yan, 10-Sep-2005
-!                       Quanhua Liu, quanhua.liu@noaa.gov
-!                       Yong Han, yong.han@noaa.gov
-!
 
 MODULE NESDIS_OCEANEM_Module
 
@@ -67,171 +39,7 @@ MODULE NESDIS_OCEANEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! NAME:
-!       NESDIS_OCeanEM
-!
-! PURPOSE:
-!       Subroutine to simulate microwave open ocean emissivity
-!
-! REFERENCES:
-!
-!   [1] Hollinger, J. P., Passive microwave measurements of sea surface roughness, IEEE Transactions on
-!       Geoscience Electronics, GE-9(3), 165-169, 1971.
-!
-!   [2] Klein, L.A., and C.T. Swift, An improved model for the dielectric constant of sea water at
-!       microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111, 1977.
-!
-!   [3] Stogryn, A., The emissivity of sea foam at microwave frequencies, J. Geophys. Res., 77,
-!       1658-1666, 1972.
-!
-!   [4] Yan. B. and F. Weng, Application of AMSR-E measurements for tropical cyclone studies,
-!       Part I: Retrieval of sea surface temperature and wind speed, submitted to JGR, 2005
-!
-! CATEGORY:
-!       CRTM : Surface : MW OPEN OCEAN EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL NESDIS_OCeanEM
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!         Angle                    The angle values in degree
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         SST                      Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!        Salinity                  Sea water salinity (1/thousand)
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         wind                     Ocean surface wind speed
-!                                  UNITS:      m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!  INTERNAL ARGUMENTS:
-!
-!         foam                     Foam fraction
-!                                  UNITS:
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         g,tr                     Emperical functions for wind induced
-!                                  UNITS:
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         f                        Frequency
-!                                  UNITS:      Hz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! OUTPUT ARGUMENTS:
-!
-!         Emissivity_H:            The surface emissivity at a horizontal polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         EH_dSST:                 Sensitivity of Emissivity_H to SST.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      1/Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         EH_dSSW:                 Sensitivity of Emissivity_H to wind.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      1/m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         EV_dSST:                 Sensitivity of Emissivity_V to SST.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      1/Kelvin
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         EV_dSSW:                 Sensitivity of Emissivity_V to wind.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      1/m/s
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-! CALLS:
-!
-!       EPSP    : Function to calculate the real part of the dielectric constant for saline water
-!
-!       EPSPP   : Function to calculate the imaginery part of the dielectric constant for saline water
-!
-!      OceanEM_TL_SSTW : Subroutine to calculate sensitivities of Emissivity_H and Emissivity_V to SST and SSW
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!------------------------------------------------------------------------------------------------------------
 
      subroutine NESDIS_OCeanEM(Frequency,                                       & ! INPUT
                                Angle,                                           & ! INPUT
@@ -254,7 +62,6 @@ CONTAINS
 
         complex mu, eps, aid1,aid2,aid3,cang,rh,rv
 
-!       Initialization
 
 
         IF (SST .LT. SST_min .OR. SST .GE. SST_max) SST = 300.0
@@ -271,7 +78,6 @@ CONTAINS
 
         cang = cmplx(theta)
 
-!       complex dielectric properties of saline water
 
         eps=cmplx (EPSP(SST,Salinity,f),-EPSPP(SST,Salinity,f))
 
@@ -299,13 +105,11 @@ CONTAINS
 
         endif
 
-!       correction for wind induced foam free sea surface
 
         if(foam .lt. zero) foam = zero
 
         if(foam .gt. one)  foam = one
 
-!       emperical functions for wind induced reflection changes for hp
 
         g = 1.0_fp - 1.748e-3*Angle-7.336e-5*Angle**2+1.044e-7*Angle**3
 
@@ -319,7 +123,6 @@ CONTAINS
 
         Emissivity_H =1.0_fp- (1.0_fp-foam)*rclear-foam*rfoam
 
-!       emperical functions for wind induced reflection changes for vp
 
         g  = 1.0_fp - 9.946e-4*Angle+3.218e-5*Angle**2 -1.187e-6*Angle**3+7.e-20*Angle**10
 
@@ -342,7 +145,6 @@ CONTAINS
         if(Emissivity_V .lt. zero) Emissivity_V = zero
 
 
-! Calculate EH_dSST, EH_dSSW, EV_dSST, EV_dSSW
 
 
         CALL OceanEM_TL_SSTW(Angle,Frequency,SST,wind,Salinity,EH_dSST, EH_dSSW, EV_dSST, EV_dSSW)
@@ -352,58 +154,10 @@ CONTAINS
 
         end subroutine NESDIS_OCeanEM
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 
 real function EPSP (t1,s,f)
 
-!-------------------------------------------------------------------------------------------------------------
-! PURPOSE:
-!       Subroutine to calculates the real part of the dielectric constant for saline water
-!
-! REFERENCES:
-!
-!
-!   Klein, L.A., and C.T. Swift, An improved model for the dielectric constant of sea water at microwave
-!   frequencies, IEEE J. Oceanic Eng., OE-2, 104-111, 1977.
-!
-!
-! INPUT ARGUMENTS:
-!
-!         f                       Frequency in Hz
-!
-!
-!         t1                       Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!
-!         s                        Sea water salinity (1/thousand)
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!  INTERNAL ARGUMENTS:
-!
-!         t                       Ocean surface temperature in degrees celsius
-!
-! OUTPUT ARGUMENTS:
-!
-!         EPSP:            the real part of the dielectric constant for saline water
-!
-! CREATION HISTORY:
-!       Written by:
-!
-!       Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!       and     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov
-!
-!------------------------------------------------------------------------------------------------------------
 
   real(fp) f,t1,t,t2,eswi,eswo,a,b,esw,tswo,tsw,s
 
@@ -429,47 +183,6 @@ real function EPSP (t1,s,f)
 
  real function EPSPP (t1,s,f)
 
-!-------------------------------------------------------------------------------------------------------------
-! PURPOSE:
-!       Subroutine to calculates the imaginary  part of the dielectric constant for saline water
-!
-! REFERENCES:
-!
-!
-!   Klein, L.A., and C.T. Swift, An improved model for the dielectric constant of sea water at
-!   microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111, 1977.
-!
-!
-! INPUT ARGUMENTS:
-!
-!         f                       Frequency in Hz
-!
-!
-!         t1                       Ocean surface temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!
-!         s                        Sea water salinity (1/thousand)
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!  INTERNAL ARGUMENTS:
-!
-!         t                       Ocean surface temperature in degrees celsius
-!
-! OUTPUT ARGUMENTS:
-!
-!         EPSPP:            the imaginary part of the dielectric constant for saline water
-!
-! CREATION HISTORY:
-!       Written by:
-!
-!       Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!       and     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov
-!
-!------------------------------------------------------------------------------------------------------------
 
   real(fp) s,f,t1,t,t2,eswi,eo,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw
 
@@ -513,78 +226,6 @@ real function EPSP (t1,s,f)
 
  subroutine OceanEM_TL_SSTW(degre,frequency,sst,wind,Salinity,deh_dt,deh_dw,dev_dt,dev_dw)
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! Program function: compute sensitivities of ev and eh to sst and ssw
-!
-!                         (i.e., dev_dsst, dev_dssw,deh_dsst,deh_dssw)
-!
-!
-! Programmer:
-!
-!     Banghua Yan                                                    ORG: NESDIS            date: 12/29/2004
-!
-!
-! Abstract:compute oceanic emissivity at two polarizations
-!
-!       References:
-!
-!       (1) Yan. B. and F. Weng, Application of AMSR-E measurements for tropical cyclone studies,
-!
-!           Part I: Retrieval of sea surface temperature and wind speed, submitted to JGR, 2005
-!
-!       (2) Klein, L.A., and C.T. Swift, 1977: An improved model for the dielectric constant of
-!
-!           sea water at microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111.
-!
-!       (3) Stogryn, A., 1972: The emissivity of sea foam at microwave frequencies, J. Geophys. Res.,
-!
-!            77, 1658-1666.
-!
-!       (4) Hollinger, J. P., 1971: Passive microwave measurements of sea surface roughness.
-!
-!            IEEE Transactions on Geoscience Electronics, GE-9(3), 165-169.
-!
-!
-! Input argument list:
-!
-!         degre    :  incident angle in degree
-!
-!         sst      : temperature (K)
-!
-!         Salinity : sea water salinity (1/thousand)
-!
-!         frequency: (GHz)
-!
-!         wind     : wind speed (m/s)
-!
-!
-! Output argument list:
-!
-!        deh_dt    : sensitivity of eh to sst
-!
-!        deh_dw    : sensitivity of eh to ssw
-!
-!        dev_dt    : sensitivity of ev to sst
-!
-!        dev_dw    : sensitivity of ev to ssw
-!
-!
-!
-! Internal argument list:
-!
-!         angle    :  incident angle in radian
-!
-!         foam     : foam fraction
-!
-!         g,tr     : emperical functions for wind induced changes in reflection coefficient
-!
-!         f        : frequency in Hz
-!
-!         rh       :  surface reflectance in horizontally polarized state
-!
-!         rv       :                         vertically   ..
-!-------------------------------------------------------------------
 
         real(fp) ::  frequency,Salinity,t,degre,angle, wind
 
@@ -599,7 +240,6 @@ real function EPSP (t1,s,f)
         complex aid2h,aid3h,aid2v,aid3v
 
 
-! Inializations
 
         mu = cmplx (one,zero)
 
@@ -611,7 +251,6 @@ real function EPSP (t1,s,f)
 
         t = sst
 
-! Calculate constants for given sst, ssw and f
 
 
         eps=cmplx(EPSP(sst,Salinity,f),-EPSPP(sst,Salinity,f))
@@ -646,7 +285,6 @@ real function EPSP (t1,s,f)
        endif
 
 
-!       correction for wind induced foam free sea surface
 
         if(foam .lt. zero) then
 
@@ -659,7 +297,6 @@ real function EPSP (t1,s,f)
 
 
 
-! H components: deh_dt,deh_dw
 
 
         g = 1.0_fp - 1.748e-3*degre-7.336e-5*degre**2+ 1.044e-7*degre**3
@@ -680,7 +317,6 @@ real function EPSP (t1,s,f)
 
         drh_dt = -mu*mu*ccos(cang)*deps_dt/(aid3h*aid3h*aid1)
 
-!        drclear_dt = cabs(2.0_fp*rh*drh_dt) + tr/t/t
 
         drclear_dt = 2.0_fp*( dble(rh)*dble(drh_dt) + aimag(rh)*aimag(drh_dt) ) + tr/t/t
 
@@ -690,7 +326,6 @@ real function EPSP (t1,s,f)
 
         deh_dw = (rclear - rfoam)*dfoam_dw -  (1.0-foam)*drclear_dw
 
-!V components: dev_dt,dev_dw
 
         g  = 1.0_fp - 9.946e-4*degre+3.218e-5*degre**2 -1.187e-6*degre**3+7.e-20*degre**10
 
@@ -726,47 +361,6 @@ real function EPSP (t1,s,f)
 
         real function depsp_dt (t1,s,f)
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! Programmer:
-!
-!     Banghua Yan                                                          ORG: NESDIS    date: 12/29/2004
-!
-!
-! Abstract:calculates the sensitivity of epsp to sst
-!
-!          where epsp is the real part of the dielectric constant for saline water
-!
-!       References:
-!
-!    (1) Yan. B. and F. Weng, Application of AMSR-E measurements for tropical cyclone studies,
-!
-!        Part I: Retrieval of sea surface temperature and wind speed, submitted to JGR, 2005
-!
-!    (2) Klein, L.A., and C.T. Swift, 1977: An improved model for the dielectric constant of
-!
-!        sea water at microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111.
-!
-!    (3) Ulaby, F.T., Moore, R.K., and Fung, A.K.,1986: Microwave remote sensing, active and passive, III,
-!
-!        From theory to applications, p.2024-2025.
-!
-!
-! Input argument list:
-!
-!
-!         t1       : temperature (K)
-!
-!         s        : sea water salinity (1/thousand)
-!
-!         f        : (Hz)
-!
-!
-! Output argument list:
-!
-!        depsp_dt  : sensitivity of epsp to sst
-!
-!----------------------------------------------------------------------------------------------------------
 
       real(fp) ::  s,f,t1,t,eswi,eswo,a,b,esw,tswo,tsw
 
@@ -814,44 +408,6 @@ real function EPSP (t1,s,f)
 
       real function depspp_dt (t1,s,f)
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng                      ORG: NESDIS                date: 12/29/2004
-!
-! Abstract:compute calculates depspp_dt
-!
-!          where epspp is the imaginair part  of the dielectric constant for saline water
-!
-!       References:
-!
-!    (1) Yan. B. and F. Weng, Application of AMSR-E measurements for tropical cyclone studies,
-!
-!        Part I: Retrieval of sea surface temperature and wind speed, submitted to JGR, 2005
-!
-!    (2) Klein, L.A., and C.T. Swift, 1977: An improved model for the dielectric constant of
-!
-!        sea water at microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111.
-!
-!    (3) Ulaby, F.T., Moore, R.K., and Fung, A.K.,1986: Microwave remote sensing, active and passive, III,
-!
-!        From theory to applications, p.2024-2025.
-!
-! Input argument list:
-!
-!
-!         t1       : temperature (K)
-!
-!         s        : sea water salinity (1/thousand)
-!
-!         f        : (Hz)
-!
-! Output argument list:
-!
-!
-!      depspp_dt   : sensitivity of epspp to sst
-!----------------------------------------------------------------------------------------------------------
 
       real(fp) ::  s,f,t1,t,t2,eswi,eo,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw,epspp
 

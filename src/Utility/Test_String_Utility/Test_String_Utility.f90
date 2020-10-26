@@ -1,56 +1,3 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Test_String_Utility
-!
-! PURPOSE:
-!       Program to test the routines in the String_Utility module
-!
-! CATEGORY:
-!       Utility
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       String_Utility:  Module containing string utility routines.
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Dec-2000
-!                       paul.vandelst@ssec.wisc.edu
-!
-!  Copyright (C) 2000, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Test_String_Utility
 
@@ -166,24 +113,4 @@ PROGRAM Test_String_Utility
 END PROGRAM Test_String_Utility
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Test_String_Utility.f90,v 1.4 2004/11/30 18:57:19 paulv Exp $
-!
-! $Date: 2004/11/30 18:57:19 $
-!
-! $Revision: 1.4 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Test_String_Utility.f90,v $
-! Revision 1.4  2004/11/30 18:57:19  paulv
-! - Added program header.
-!
-!
-!
 

@@ -1,51 +1,3 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       Rosenkranz03_Coefficients
-!
-! PURPOSE:
-!       Module containing line and coefficient data for microwave attenuation
-!       calculations according to the Rosenkranz LBL code.
-!
-! CATEGORY:
-!       LBL : Microwave
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE Rosenkranz03_Coefficients
-!
-! MODULES:
-!       Type_Kinds:         Module containing definitions for kinds
-!                           of variable types.
-!
-! CREATION HISTORY:
-!       This data has been transposed from FORTRAN-77 data statements
-!       from P.Rosenkranz's source codes files
-!         o2abs.for
-!         abh2o.for
-!
-!       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
-!                       paul.vandelst@ssec.wisc.edu
-!
-!  Copyright (C) 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 
 MODULE Rosenkranz03_Coefficients
@@ -356,27 +308,3 @@ MODULE Rosenkranz03_Coefficients
 END MODULE Rosenkranz03_Coefficients
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Rosenkranz03_Coefficients.f90,v 1.2 2004/12/16 19:03:55 paulv Exp $
-!
-! $Date: 2004/12/16 19:03:55 $
-!
-! $Revision: 1.2 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Rosenkranz03_Coefficients.f90,v $
-! Revision 1.2  2004/12/16 19:03:55  paulv
-! - Added separate parameters for 0.8 and 0.9 exponents.
-!
-! Revision 1.1  2004/11/15 21:19:24  paulv
-! Initial checkin.
-!
-!
-!
-!
