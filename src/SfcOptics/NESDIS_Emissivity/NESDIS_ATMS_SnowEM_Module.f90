@@ -1,95 +1,3 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       NESDIS_ATMS_SnowEM_Module
-!
-! PURPOSE:
-!       Module containing the snow-typing algorithms. A general interface is used to call one of the
-!       snow-typing algorithms in !terms of the input arguments. This Module is used together with
-!       NESDIS_SnowEM_ATMS_Parameters Module to implement the library-based snow emissivity  model.
-!
-! REFERENCES:
-!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
-!
-!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
-!
-! CATEGORY:
-!       Surface : MW Surface Snow Emissivity of ATMS
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!
-!       USE NESDIS_ATMS_SnowEM_Module
-!
-! MODULES:
-!       Type_Kinds:               Module containing definitions for kinds of variable types
-!
-!       NESDIS_LandEM_Module:     Module containing the microwave land emissivity model
-!
-!       NESDIS_SnowEM_Parameters: Module containing the predefined microwave snow emissivity spectra
-!
-! CONTAINS:
-!
-! PUBLIC SUNPROGRAMS:
-!
-!       NESDIS_ATMS_SNOWEM:       Subroutine to calculate the microwave snow emissivity from ATMS
-!
-!
-! PRIVATE SUBPROGRAMS:
-!       These subroutines are used to determine the snow types from the brightness temperatures(TB)
-!       of five ATMS window channels( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz, 165.5 GHz) and/or
-!       surface temperature plus snow depth. The five channels are further divided into two
-!       groups: Group-1 ( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz) and Group-2 (88.2 GHz, 165.5GHz),
-!       corresponding to the window channels of AMSU-A and AMSU-B, respectively.
-!       Different combinations of available ATMS window-channel and surface observations result
-!       in differenet snow-typing algotrithms:
-!
-!       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels
-!       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels
-!       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels
-!       ATMS_SNOW_ByTBTs_A    : by ATMS TBs of Group-1 channels and surface temperature
-!       ATMS_SNOW_ByTBTs_B    : by ATMS TBs of Group-2 channels and surface temperature
-!       ATMS_SNOW_ByTBTs      : by the TBs  of all the five ATMS channels and surface temperature (regression-based)
-!       ATMS_SNOW_ByTBTs_D    : by the TBs  of all the five ATMS channels and surface temperature (diagnosis-based)
-!       ATMS_SNOW_ByTypes     : bydefault surface type (4)
-!       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values
-!       em_initialization     : Subroutine to initialization snow emissivity
-!       em_interpolate        : Subroutine to perform frequency interpolation of snow emissivity
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Ming Chen, IMSG Inc., Banghua.Yan@noaa.gov (04-28-2012)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!  Copyright (C) 2012 Fuzhong Weng and Ming Chen
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE NESDIS_ATMS_SnowEM_Module
 
@@ -99,7 +7,6 @@ MODULE NESDIS_ATMS_SnowEM_Module
   USE NESDIS_SnowEM_Parameters  
   IMPLICIT NONE
 
-! Visibilities
   PRIVATE
   PUBLIC  :: NESDIS_ATMS_SNOWEM
 
@@ -262,17 +169,6 @@ CONTAINS
    !  Copyright (C) 2005 Fuzhong Weng and Ming Chen
    !  Copyright (C) 2019 James Rosinski
    !
-   !  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-   !  General Public License as published by the Free Software Foundation; either version 2 of the License,
-   !  or (at your option) any later version.
-   !
-   !  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-   !  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-   !  License for more details.
-   !
-   !  You should have received a copy of the GNU General Public License along with this program; if not, write
-   !  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   !
    !------------------------------------------------------------------------------------------------------------
 
 
@@ -301,7 +197,6 @@ CONTAINS
      LOGICAL  :: VALID_SNOW_DEPTH
      INTEGER  :: input_type
 
-!JR change to run-time setting for OMP
      Ts = 273.15   ! default skin-surface temperature
      Snow_Type = 4 ! default snow type
      VALID_SNOW_DEPTH = .FALSE.
@@ -565,21 +460,16 @@ CONTAINS
    !*** adjustment from the library values
      emw=em(windex,snow_type)
      X=1.0_fp/emw
-!JR Tb(3) is undefined (~-3.e38) for some UFO tests. If SIGFPE trapping is enabled, log of a negative
-!JR number will generate NaN and possibly an abort. Thus the following change. Y(3) is never referenced 
-!JR so this mod does not impact the solution. Though Tb(3) is referenced so that may not be a good thing
      Y((/1,2,4,5/)) = log(Tb((/1,2,4,5/))/(Ts*emw((/1,2,4,5/))))
      IF(frequency > 100.0_fp) THEN
        XX=DOT_PRODUCT(X((/1,2,4,5/)),X((/1,2,4,5/)))
        XY=DOT_PRODUCT(X((/1,2,4,5/)),Y((/1,2,4,5/)))
        del=XY/XX
-!JR Hopefully Tb(3) = -3.e38 is OK here
        deltb=Tb(3)-Tb(5)
      ELSE
        XX=DOT_PRODUCT(X((/1,2,4/)),X((/1,2,4/)))
        XY=DOT_PRODUCT(X((/1,2,4/)),Y((/1,2,4/)))
        del=XY/XX
-!JR Hopefully Tb(3) = -3.e38 is OK here
        deltb=Tb(3)-Tb(4)
      ENDIF
 
@@ -911,7 +801,6 @@ CONTAINS
    ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
      coe(21:25) = (/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
           1.413038e-002_fp,-3.133239e-005_fp/)
-!    SAVE coe
 
    ! Calculate emissivity discriminators at five ATMS window channels
      DO ich = 1, nwch

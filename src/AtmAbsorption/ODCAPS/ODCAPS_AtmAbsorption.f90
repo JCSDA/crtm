@@ -1,119 +1,3 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       ODCAPS_AtmAbsorption
-!
-! PURPOSE:
-!       Module containing routines to compute the optical depth profile
-!       due to gaseous absorption.
-!
-! CATEGORY:
-!       CRTM : Gas Absorption
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE ODCAPS_AtmAbsorption
-!
-! MODULES:
-!       Type_Kinds:                      Module containing definitions for kinds
-!                                        of variable types.
-!
-!       Message_Handler:                   Module to define simple error codes and
-!                                        handle error conditions
-!                                        USEs: FILE_UTILITY module
-!
-!       CRTM_Parameters:                 Module of parameter definitions for the CRTM.
-!                                        USEs: TYPE_KINDS module
-!
-!       ODCAPS_TauCoeff:                 Module containing the shared CRTM gas
-!                                        absorption coefficients (ODCAPS_TauCoeff)
-!                                        and their load/destruction routines. 
-!                                        USEs TYPE_KINDS module
-!                                             Message_Handler module
-!                                              ODCAPS_DEFINE module
-!                                              ODCAPS_BINARY_IO module
-!                                             CRTM_PARAMETERS module
-!
-!       CRTM_GeometryInfo_Define:        Module defining the CRTM GeometryInfo
-!                                        structure and containing routines to 
-!                                        manipulate it.
-!                                        USEs: TYPE_KINDS module
-!                                              Message_Handler module
-!
-!       ODCAPS_Predictor_Define:       Module defining the ODCAPS_Predictor
-!                                        structure and containing routines to 
-!                                        manipulate it.
-!                                        USEs: TYPE_KINDS module
-!                                              Message_Handler module
-!
-!
-!       ODCAPS_Predictor:    Module containing the routines to compute
-!                                        the predictor profiles for the CRTM gas
-!                                        absorption model.
-!                                        USEs: TYPE_KINDS module
-!                                              Message_Handler module
-!                                              CRTM_PARAMETERS module
-!                                              CRTM_ATMOSPHERE_DEFINE module
-!                                              ODCAPS_Predictor_DEFINE module
-!
-!       CRTM_Interpolation:             Module containing routines for profile interpolation
-!
-! CONTAINS:
-!       PUBLIC subprograms
-!       ------------------
-!       Compute_AtmAbsorption:     SUBROUTINE to calculate the layer optical
-!                                        depths due to gaseous absorption for a given
-!                                        input atmospheric profile for a single channel.
-!
-!       Compute_AtmAbsorption_TL:  SUBROUTINE to calculate the tangent-linear
-!                                        layer optical depths due to gaseous absorption
-!                                        for a given input atmospheric profile for a
-!                                        single channel.
-!
-!       Compute_AtmAbsorption_AD:  SUBROUTINE to calculate the layer optical depths
-!                                        adjoint due to gaseous absorption for a given
-!                                        input atmospheric profile for a single channel.
-!
-!       PRIVATE subprograms
-!       -------------------
-!       None.
-!
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 24-May-2006
-!                       Yong.Chen@noaa.gov
-!
-!  Copyright (C) 2006 Yong Chen
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE ODCAPS_AtmAbsorption
 
@@ -193,10 +77,8 @@ MODULE ODCAPS_AtmAbsorption
   !INTEGER, PRIVATE, PARAMETER :: SET = 1
 
   ! -- The maximum number of subset  
-!  INTEGER, PRIVATE, PARAMETER :: MAX_N_SUBSETS = 7
 
   ! -- The maximum number of layers for ODCAPS 
-!  INTEGER, PRIVATE, PARAMETER :: MAX_N_ODCAPS_LAYERS = 100   
 
   ! ------------------------------------------
   ! Structure definition to hold forward model
@@ -208,13 +90,6 @@ MODULE ODCAPS_AtmAbsorption
 
 CONTAINS
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
  
   !#------------------------------------------------------------------------------#
   !#       Subroutine to calculate the layer optical depths due to gaseous	  #
@@ -297,7 +172,6 @@ CONTAINS
     I = Channel_Subset_Position 
 
     idx = MINLOC(ABS(TC%Sensor_Channel - TC%ODCAPS_Subset(M)%Channel_Index(I) ), DIM =1 )
-!    write(65,*) 'Subset_Index: ', M, ', Subset_Position: ', I, ', Channel location:', idx
 
     J = idx    !TC%Sensor_Channel( TC%ODCAPS_Subset(M)%Channel_Index(I) )
 
@@ -1109,14 +983,9 @@ CONTAINS
     IF ( Cal_Sun ) THEN
        
        ! For Subset 1-3
-!       IF ( M < 4 ) THEN 
       	  
-!	 Predictor%Surf_To_Space_Optical_Depth = KZ * &
-!	    Predictor%Secant_Source_Zenith(Predictor%n_Layers) &
-!	    * Predictor%Sun_Fudge / Predictor%Secant_Sensor_Zenith( Predictor%n_Layers )
 
        ! For Subset 4-7
-!       ELSE
        IF (M >= 4 ) THEN 
 	 Predictor%Surf_To_Space_Optical_Depth = KZ * XZ
        ENDIF	 
@@ -1257,7 +1126,6 @@ CONTAINS
   !    Calc OPTRAN water 					     
        CALL Compute_WOPTRAN_Optics_TL(Sensor_Index, IH2O, Predictor, Predictor_TL, &
                                              KW, KW_TL )
-!       KW_TL = ZERO				     		     
 
     ELSE							     
        LH2O=.TRUE.						     
@@ -1357,7 +1225,6 @@ CONTAINS
             KFIX_TL = KFIXX_TL * Predictor%Fix_Amount_Multiplier( K )  &
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
  
-!            KFIX_TL = ZERO
 	    KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
  
                      
@@ -1400,7 +1267,6 @@ CONTAINS
         	      + TC%ODCAPS_Subset(M)%C(24,K,I) * Predictor_TL%Predictor_Subset(M,24,K) &
         	      + TC%ODCAPS_Subset(M)%C(25,K,I) * Predictor_TL%Predictor_Subset(M,25,K) &
         	      + TC%ODCAPS_Subset(M)%C(26,K,I) * Predictor_TL%Predictor_Subset(M,26,K) )
-!              KW_TL( K ) = ZERO
 
               IF ( KW( K ) < ZERO ) THEN
 	        KW( K ) = ZERO 
@@ -1425,7 +1291,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(30,K,I) * Predictor_TL%Predictor_Subset(M,30,K) &   
         	   + TC%ODCAPS_Subset(M)%C(31,K,I) * Predictor_TL%Predictor_Subset(M,31,K) )  
 
-!            KOZO_TL = ZERO
  
             IF ( KOZO < ZERO ) THEN
                KOZO = ZERO
@@ -1466,7 +1331,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(5,K,I) * Predictor_TL%Predictor_Subset(M,5,K) &
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_TL%Predictor_Subset(M,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_TL%Predictor_Subset(M,7,K) )
-!            KCON_TL = ZERO
 
             IF ( KCON < ZERO ) THEN		   
                KCON = ZERO				   
@@ -1504,7 +1368,6 @@ CONTAINS
 
             KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
 
-!            KFIX_TL = ZERO			
 		    
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
@@ -1622,7 +1485,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_TL%Predictor_Subset(M,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_TL%Predictor_Subset(M,7,K) )
  
-!            KCON_TL = ZERO				   
 
             IF ( KCON < ZERO ) THEN		   
                KCON = ZERO				   
@@ -1659,7 +1521,6 @@ CONTAINS
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
 
             KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
-!            KFIX_TL = ZERO     
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
                KFIX_TL = ZERO			
@@ -1694,7 +1555,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(23,K,I) * Predictor_TL%Predictor_Subset(M,23,K) &   
         	   + TC%ODCAPS_Subset(M)%C(24,K,I) * Predictor_TL%Predictor_Subset(M,24,K) )   
 
-!            KMET_TL = ZERO
  
              IF ( KMET < ZERO ) THEN
                 KMET = ZERO
@@ -1773,7 +1633,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(5,K,I) * Predictor_Subset_TL(M-3,5,K) &
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_Subset_TL(M-3,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_Subset_TL(M-3,7,K) )
-!            KCON_TL = ZERO
             IF ( KCON < ZERO ) THEN		   
                KCON_TL = ZERO				   
                KCON = ZERO				   
@@ -1815,7 +1674,6 @@ CONTAINS
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
 
             KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
-!            KFIX_TL = ZERO
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
                KFIX_TL = ZERO			
@@ -1854,7 +1712,6 @@ CONTAINS
         	  + TC%ODCAPS_Subset(M)%C(28,K,I) * Predictor_Subset_TL(M-3,28,K) & 
         	  + TC%ODCAPS_Subset(M)%C(29,K,I) * Predictor_Subset_TL(M-3,29,K) ) 
 
-!            KCO_TL = ZERO		  
 
             IF ( KCO < ZERO ) THEN	  
                KCO = ZERO		  
@@ -1958,7 +1815,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(5,K,I) * Predictor_Subset_TL(M-3,5,K) &
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_Subset_TL(M-3,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_Subset_TL(M-3,7,K) )
-!            KCON_TL = ZERO	
             IF ( KCON < ZERO ) THEN		   
                KCON = ZERO				   
                KCON_TL = ZERO				   
@@ -2000,7 +1856,6 @@ CONTAINS
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
             
 	    KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
-!            KFIX_TL = ZERO		    
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
                KFIX_TL = ZERO			
@@ -2081,7 +1936,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(5,K,I) * Predictor_Subset_TL(M-3,5,K) &
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_Subset_TL(M-3,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_Subset_TL(M-3,7,K) )
-!            KCON_TL = ZERO	
             IF ( KCON < ZERO ) THEN		   
                KCON = ZERO				   
                KCON_TL = ZERO				   
@@ -2117,7 +1971,6 @@ CONTAINS
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
 
 	    KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
-!            KFIX_TL = ZERO
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
                KFIX_TL = ZERO			
@@ -2206,7 +2059,6 @@ CONTAINS
         	   + TC%ODCAPS_Subset(M)%C(5,K,I) * Predictor_Subset_TL(M-3,5,K) &
         	   + TC%ODCAPS_Subset(M)%C(6,K,I) * Predictor_Subset_TL(M-3,6,K) &
         	   + TC%ODCAPS_Subset(M)%C(7,K,I) * Predictor_Subset_TL(M-3,7,K) )
-!            KCON_TL = ZERO
             IF ( KCON < ZERO ) THEN		   
                KCON = ZERO				   
                KCON_TL = ZERO				   
@@ -2242,7 +2094,6 @@ CONTAINS
                     + KFIXX * Predictor_TL%Fix_Amount_Multiplier( K )
 
             KFIX = KFIXX * Predictor%Fix_Amount_Multiplier( K )
-!            KFIX_TL = ZERO
             IF ( KFIX < ZERO ) THEN	     
                KFIX = ZERO			
                KFIX_TL = ZERO			
@@ -2343,7 +2194,6 @@ CONTAINS
                    + DKCO2X * Predictor_TL%CO2_Multiplier( K )  
 	    
   	  DKCO2 = DKCO2X * Predictor%CO2_Multiplier( K ) 
-!          DKCO2_TL = ZERO
        ELSE
  	  DKCO2 = ZERO
  	  DKCO2_TL = ZERO
@@ -2368,7 +2218,6 @@ CONTAINS
                    + DKSO2X * Predictor_TL%SO2_Multiplier( K )  
 
           DKSO2 = DKSO2X * Predictor%SO2_Multiplier( K ) 
-!          DKSO2_TL = ZERO
        ELSE
           DKSO2 = ZERO
           DKSO2_TL = ZERO
@@ -2393,7 +2242,6 @@ CONTAINS
                     + DKHNO3X * Predictor_TL%HNO3_Multiplier( K )  
 
  	  DKHNO3 = DKHNO3X * Predictor%HNO3_Multiplier( K )
-! 	  DKHNO3_TL = ZERO
        ELSE
  	  DKHNO3 = ZERO
  	  DKHNO3_TL = ZERO
@@ -2424,7 +2272,6 @@ CONTAINS
                     + DKN2OX * Predictor_TL%N2O_Multiplier( K )
 		     
 	   DKN2O = DKN2OX * Predictor%N2O_Multiplier( K ) 
-! 	   DKN2O_TL = ZERO
  	ELSE
  	   DKN2O = ZERO
  	   DKN2O_TL = ZERO
@@ -2439,7 +2286,6 @@ CONTAINS
  	   DK = -0.999 * KFIX
 	   DK_TL = -0.999 * KFIX_TL
  	ENDIF						      
-! 	DK_TL = ZERO						      
 
  	KLAYER = KCON + KFIX + KW( K ) + KOZO + KCO + KMET + DK	      
  	KLAYER_TL = KCON_TL + KFIX_TL + KW_TL( K ) + KOZO_TL + KCO_TL + KMET_TL + DK_TL	      
@@ -2466,32 +2312,9 @@ CONTAINS
     IF ( Cal_Sun ) THEN
        
        ! For Subset 1-3
-!       IF ( M < 4 ) THEN 
       	  
-!	 Predictor%Surf_To_Space_Optical_Depth = KZ * &
-!	    Predictor%Secant_Source_Zenith(Predictor%n_Layers) &
-!	    * Predictor%Sun_Fudge / Predictor%Secant_Sensor_Zenith( Predictor%n_Layers )
-!      Predictor_TL%Surf_To_Space_Optical_Depth = &
-!        Predictor_TL%LTS_Optical_Depth( Predictor%n_Layers ) &			          
-!	* Predictor%Secant_Source_Zenith(Predictor%n_Layers) &			          
-!	* Predictor%Sun_Fudge &
-!	/ Predictor%Secant_Sensor_Zenith( Predictor%n_Layers ) &
-!        + Predictor%LTS_Optical_Depth( Predictor%n_Layers )&			          
-!	* Predictor_TL%Secant_Source_Zenith(Predictor%n_Layers) &			          
-!	* Predictor%Sun_Fudge &
-!	/ Predictor%Secant_Sensor_Zenith( Predictor%n_Layers ) &  
-!	+ Predictor%LTS_Optical_Depth( Predictor%n_Layers )&			          
-!	* Predictor%Secant_Source_Zenith(Predictor%n_Layers) &			          
-!	* Predictor_TL%Sun_Fudge &
-!	/ Predictor%Secant_Sensor_Zenith( Predictor%n_Layers ) &  
-!        - Predictor%LTS_Optical_Depth( Predictor%n_Layers ) &			          
-!	* Predictor%Secant_Source_Zenith(Predictor%n_Layers) &			          
-!	* Predictor%Sun_Fudge &
-!        * Predictor_TL%Secant_Sensor_Zenith( Predictor%n_Layers ) &
-!	/ (Predictor%Secant_Sensor_Zenith( Predictor%n_Layers ))**TWO 
 
         ! For Subset 4-7
-!       ELSE
         IF ( M >= 4) THEN
 	 Predictor_TL%Surf_To_Space_Optical_Depth = KZ_TL * XZ + KZ * XZ_TL
         ENDIF	 
@@ -3391,22 +3214,13 @@ CONTAINS
     END DO Layer_Loop
     
   
-!    IF ( Cal_Sun ) THEN
        
        ! For Subset 1-3
-!       IF ( M < 4 ) THEN 
       	  
-!	 Predictor%Surf_To_Space_Optical_Depth = KZ * &
-!	    Predictor%Secant_Source_Zenith(Predictor%n_Layers) &
-!	    * Predictor%Sun_Fudge / Predictor%Secant_Sensor_Zenith( Predictor%n_Layers )
 
        ! For Subset 4-7
-!       ELSE
          
-!	 Predictor%Surf_To_Space_Optical_Depth = KZ(K) * XZ
-!       ENDIF	 
         
-!    ENDIF	
 
     KZ_AD( : )     = ZERO
     KLAYER_AD( : ) = ZERO
@@ -3462,12 +3276,6 @@ CONTAINS
 	KCO_AD(K)  = KLAYER_AD(K)
 	KMET_AD(K) = KLAYER_AD(K)
 	DK_AD(K)   = KLAYER_AD(K)
-!	KFIX_AD(K) = ZERO
-!	KW_AD( K ) = ZERO
-!	KOZO_AD(K) = ZERO
-!	KCO_AD(K)  = ZERO
-!	KMET_AD(K) = ZERO
-!	DK_AD(K)   = ZERO
 
         KLAYER_AD(K) = ZERO
 	
@@ -3482,10 +3290,6 @@ CONTAINS
 
 	DK_AD(K) = ZERO
 	
-!	DKCO2_AD(K)  = ZERO 
-!	DKSO2_AD(K)  = ZERO 
-!	DKHNO3_AD(K) = ZERO 
-!	DKN2O_AD(K)  = ZERO 
 	
   !	----------------------------
   !	Calc change in total optical
@@ -3650,7 +3454,6 @@ CONTAINS
  	       KFIX_AD(K) = ZERO			
             ENDIF				
             
-!	    KFIX_AD(K) = ZERO
 
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
@@ -3684,7 +3487,6 @@ CONTAINS
                 KCON_AD(K) = ZERO				   
             ENDIF					   
 
-!            KCON_AD(K) = ZERO
 	    
             Predictor_AD%Predictor_Subset(M,1,K) = Predictor_AD%Predictor_Subset(M,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K) 
@@ -3788,7 +3590,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -3820,7 +3621,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_AD%Predictor_Subset(M,1,K) = Predictor_AD%Predictor_Subset(M,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_AD%Predictor_Subset(M,2,K) = Predictor_AD%Predictor_Subset(M,2,K) + &
@@ -3851,8 +3651,6 @@ CONTAINS
        !    Not an OPTRAN water channel
               IF ( KW( K ) < ZERO ) THEN
  	         KW_AD( K ) = ZERO
-!              ELSE IF( KW( K ) > TEN ) THEN
-!                 KW_AD( K ) = ZERO
 	      ENDIF
 	      
 	      Predictor_AD%Predictor_Subset(M,25,K) = Predictor_AD%Predictor_Subset(M,25,K) + &
@@ -3889,7 +3687,6 @@ CONTAINS
              ELSEIF ( KMET(K) > TEN ) THEN
                 KMET_AD(K) = ZERO
              ENDIF
-!            KMET_AD(K) = ZERO
 
             Predictor_AD%Predictor_Subset(M,16,K) = Predictor_AD%Predictor_Subset(M,16,K) + &
 	                   TC%Tuning_Multiple(6,J) * TC%ODCAPS_Subset(M)%C(16,K,I) * KMET_AD(K)
@@ -3919,7 +3716,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -3950,7 +3746,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_AD%Predictor_Subset(M,1,K) = Predictor_AD%Predictor_Subset(M,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_AD%Predictor_Subset(M,2,K) = Predictor_AD%Predictor_Subset(M,2,K) + &
@@ -4040,7 +3835,6 @@ CONTAINS
             ELSEIF ( KCO(K) > TEN ) THEN 
                KCO_AD(K) = ZERO		  
             ENDIF
-!            KCO_AD(K) = ZERO		  
 	    			  
 	    Predictor_Subset_AD(M-3,19,K) = Predictor_Subset_AD(M-3,19,K) + &				 
             		   TC%Tuning_Multiple(5,J) * TC%ODCAPS_Subset(M)%C(19,K,I) * KCO_AD( K )	 
@@ -4074,7 +3868,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -4112,7 +3905,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_Subset_AD(M-3,1,K) = Predictor_Subset_AD(M-3,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_Subset_AD(M-3,2,K) = Predictor_Subset_AD(M-3,2,K) + &
@@ -4180,7 +3972,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -4218,7 +4009,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_Subset_AD(M-3,1,K) = Predictor_Subset_AD(M-3,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_Subset_AD(M-3,2,K) = Predictor_Subset_AD(M-3,2,K) + &
@@ -4293,7 +4083,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -4325,7 +4114,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_Subset_AD(M-3,1,K) = Predictor_Subset_AD(M-3,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_Subset_AD(M-3,2,K) = Predictor_Subset_AD(M-3,2,K) + &
@@ -4413,7 +4201,6 @@ CONTAINS
             ELSE IF ( KFIX(K) > TEN ) THEN      
  	       KFIX_AD(K) = ZERO			
             ENDIF				
-!            KFIX_AD(K) = ZERO
 	    KFIXX_AD(K) = KFIX_AD(K) * Predictor%Fix_Amount_Multiplier( K )
 	    Predictor_AD%Fix_Amount_Multiplier( K ) = Predictor_AD%Fix_Amount_Multiplier( K ) + &
 	                                                  KFIXX(K) * KFIX_AD(K)
@@ -4444,7 +4231,6 @@ CONTAINS
             ELSE IF ( KCON(K) > TEN ) THEN 		   
                 KCON_AD(K) = ZERO				   
             ENDIF					   
-!            KCON_AD(K) = ZERO
             Predictor_Subset_AD(M-3,1,K) = Predictor_Subset_AD(M-3,1,K) + &
                           TC%Tuning_Multiple(3,J) * TC%ODCAPS_Subset(M)%C(1,K,I) * KCON_AD(K)
             Predictor_Subset_AD(M-3,2,K) = Predictor_Subset_AD(M-3,2,K) + &
@@ -4466,7 +4252,6 @@ CONTAINS
     END DO Adjoint_Layer_Loop
     
     IF ( Cal_Sun ) THEN
-!      Predictor_AD%Sun_Fudge = Predictor_AD%Sun_Fudge + XZ_AD
       XZ_AD = ZERO
       Predictor_AD%TraceGas_Predictors_Sun = Predictor_AD%TraceGas_Predictors_Sun &
                      + TraceGas_Predictors_AD
@@ -4652,8 +4437,6 @@ CONTAINS
         KWOP(LOP) = KWOPP(LOP) / Predictor%Water_OPTRAN_Scaling(LOP)
 
         KWOP_TL(LOP) = KWOPP_TL(LOP) / Predictor%Water_OPTRAN_Scaling(LOP)  !&
-!	             - KWOPP(LOP) * Predictor_TL%Water_OPTRAN_Scaling(LOP) &
-!		       / (Predictor%Water_OPTRAN_Scaling(LOP))**TWO
         
     
     !  Check for negative value
@@ -4834,9 +4617,6 @@ CONTAINS
          
 	KWOPP_AD(LOP) = KWOP_AD(LOP) / Predictor%Water_OPTRAN_Scaling(LOP)
 	
-!	Predictor_AD%Water_OPTRAN_Scaling(LOP) = Predictor_AD%Water_OPTRAN_Scaling(LOP)  &
-!	                -  KWOPP(LOP) * KWOP_AD(LOP) &
-!		         / (Predictor%Water_OPTRAN_Scaling(LOP))**TWO
 	
 	
 	Predictor_AD%Optran_Water_Predictors(1,LOP) = Predictor_AD%Optran_Water_Predictors(1,LOP) + &
@@ -4908,7 +4688,6 @@ CONTAINS
     DO k = 1, n_Layers_usr
        AtmAbsorption%Optical_Depth(k) = path_usr(k) - path_usr(k-1)
     ENDDO
-!   Change to the same as OPTRAN algorithm 08/17/06
     AtmAbsorption%Optical_Depth = AtmAbsorption%Optical_Depth / Predictor%Secant_Sensor_Zenith(1)
      
   END SUBROUTINE ToUserOpticalDepth
@@ -4949,7 +4728,6 @@ CONTAINS
     DO k = 1, n_Layers_usr
       AtmAbsorption_TL%Optical_Depth(k) = path_usr_TL(k) - path_usr_TL(k-1)
     ENDDO
-!   Change to the same as OPTRAN algorithm 08/17/06
     AtmAbsorption_TL%Optical_Depth = AtmAbsorption_TL%Optical_Depth / Predictor%Secant_Sensor_Zenith(1)
     
   END SUBROUTINE ToUserOpticalDepth_TL
@@ -4979,7 +4757,6 @@ CONTAINS
     path_ODCAPS_AD = ZERO
     path_usr_AD   = ZERO
 
-!   Change to the same as OPTRAN algorithm 08/17/06
     AtmAbsorption_AD%Optical_Depth = AtmAbsorption_AD%Optical_Depth / Predictor%Secant_Sensor_Zenith(1)
     
     DO k = n_Layers_usr, 1, -1
@@ -5010,76 +4787,7 @@ CONTAINS
 
   END SUBROUTINE ToUserOpticalDepth_AD
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_AtmAbsorption
-!
-! PURPOSE:
-!       SUBROUTINE to calculate the layer optical depths due to gaseous
-!       absorption for a given input atmospheric profile for a single
-!       channel.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption ( Sensor_Index,             &  ! Input 
-!                                    Channel_Index,            &  ! Input, scalar                  
-!                                    Predictor ,               &  ! Input                        
-!                                    AtmAbsorption,            &  ! In/Output 
-!                                    AAVariables    )  ! Internal variable output     
-! INPUT ARGUMENTS:
-!       Sensor_Index:    Sensor index id. This is a unique index associated
-!                        with a (supported) algorithm ID used to determine the 
-!                        algorithm.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Channel_Index:   Channel index id. This is a unique index associated
-!                        with a (supported) sensor channel used to access the
-!                        shared coefficient data.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:       Structure containing the integrated absorber and
-!                        predictor profile data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-! OUTPUT ARGUMENTS:
-!        AtmAbsorption:  Upon OUTPUT, this structure contains valid optical
-!                        depth profile data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!       AAVariables:     Structure containing internal variables required for
-!                        subsequent tangent-linear or adjoint model calls.
-!                        The contents of this structure are NOT accessible
-!                        outside of the ODCAPS_AtmAbsorption module.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(AAVariables_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the AtmAbsorption argument is IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
   SUBROUTINE Compute_AtmAbsorption(Sensor_Index,  &  ! Input
                                    Channel_Index, &  ! Input, scalar        
                                    Predictor,     &  ! Input                            
@@ -5134,7 +4842,6 @@ CONTAINS
  
     i = TC%Channel_Subset_Index( Channel_Index )
     j = TC%Channel_Subset_Position( Channel_Index )
-!    write(65, '(3I5)') Channel_Index, i, j
     
     INONLTE = TC%Channel_NON_LTE( Channel_Index )
     Do_Sun_Calc = 1
@@ -5179,7 +4886,6 @@ CONTAINS
 
     ENDIF
 
-!    write(64,'(I5, 4x, E14.8)') Channel_Index, exp(-Predictor%LTS_Optical_Depth( Predictor%n_Layers )) 
     !#--------------------------------------------------------------------------#
     !#     -- Interpolate optical depth profile on user pressure grids --       #
     !#--------------------------------------------------------------------------#
@@ -5190,77 +4896,6 @@ CONTAINS
    
   END SUBROUTINE Compute_AtmAbsorption
   
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Compute_AtmAbsorption_TL
-!
-! PURPOSE:
-!       SUBROUTINE to calculate the tangent-linear layer optical depths due
-!       to gaseous absorption for a given input atmospheric profile for a
-!       single channel.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption_TL( Sensor_Index,             &  ! Input, scalar
-!                                      Channel_Index,            &  ! Input                             
-!                                      Predictor,                &  ! FWD Input                  
-!                                      Predictor_TL,             &  ! TL Input                   
-!                                      AtmAbsorption_TL,         &  ! In/Output 
-!                                      AAVariables       )  ! Internal variable input    
-! INPUT ARGUMENTS:
-!       Sensor_Index:       Sensor index id. This is a unique index associated
-!                           with a (supported) algorithm ID used to determine the 
-!                           algorithm.
-!                           UNITS:	N/A
-!                           TYPE:	INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Channel_Index:      Channel index id. This is a unique index associated
-!                           with a (supported) sensor channel used to access
-!                           the shared coefficient data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:          Structure containing the integrated absorber and
-!                           predictor profile data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor_TL:       Structure containing the tangent-linear integrated
-!                           absorber and predictor profile data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       AAVariables:        Structure containing internal variables required for
-!                           subsequent tangent-linear or adjoint model calls.
-!                           The contents of this structure are NOT accessible
-!                           outside of the ODCAPS_AtmAbsorption module.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(AAVariables_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!        AtmAbsorption_TL:  AtmAbsorption structure containing the
-!                           tangent-linear gaseous absorption data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output AtmAbsorption_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument may be defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!------------------------------------------------------------------------------
   SUBROUTINE Compute_AtmAbsorption_TL( Sensor_Index,         &  ! Input
                                        Channel_Index,        &  ! Input, scalar     
                                        Predictor,            &  ! Input, scalar     
@@ -5362,77 +4997,6 @@ CONTAINS
 
   END SUBROUTINE Compute_AtmAbsorption_TL
 
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_AtmAbsorption_AD
-!
-! PURPOSE:
-!       SUBROUTINE to calculate the layer optical depths adjoint due
-!       to gaseous absorption for a given input atmospheric profile for a
-!       single channel.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_AtmAbsorption_AD(       Sensor_Index,             &  ! Input, scalar
-!                                            Channel_Index,            &  ! Input                        
-!                                            Predictor,                &  ! Input                        
-!                                            AtmAbsorption_AD,         &  ! AD  Input                   
-!                                            Predictor_AD,             &   ! In/Output                    
-!                                            AAVariables       )  ! Internal variable input     
-! INPUT ARGUMENTS:
-!       Sensor_Index:       Sensor index id. This is a unique index associated
-!                           with a (supported) algorithm ID used to determine the 
-!                           algorithm.
-!                           UNITS:	N/A
-!                           TYPE:	INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Channel_Index:      Channel index id. This is a unique index associated
-!                           with a (supported) sensor channel used to access
-!                           the shared coefficient data.
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:          Structure containing the integrated absorber and
-!                           predictor profile data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       AtmAbsorption_AD:   Structure containing the computed adjoint
-!                           optical depth profile data.
-!                           Set to zero upon output.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_AtmAbsorption_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-!       AAVariables:        Structure containing internal variables required for
-!                           subsequent tangent-linear or adjoint model calls.
-!                           The contents of this structure are NOT accessible
-!                           outside of the ODCAPS_AtmAbsorption module.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(AAVariables_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!       Predictor_AD:       Structure containing the adjoint integrated
-!                           absorber and predictor profile data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! SIDE EFFECTS:
-!       Components of the AtmAbsorption_AD structure argument are modified
-!       in this SUBROUTINE.
-!
-!------------------------------------------------------------------------------
   SUBROUTINE Compute_AtmAbsorption_AD( Sensor_Index,     &  ! Input
                                        Channel_Index,    &  ! Input                 
                                        Predictor,        &  ! Input             

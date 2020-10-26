@@ -1,13 +1,3 @@
-!
-! NESDIS_SEAICE_PHYEM_MODULE
-!
-! Module containing the NESDIS microwave seaice emissivity physical model
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 13-Jun-2005, banghua.yan@noaa.gov
-!                       Fuzhong Weng, fuzhong.weng@noaa.gov
-!
 
 MODULE NESDIS_SEAICE_PHYEM_MODULE
 
@@ -43,108 +33,6 @@ CONTAINS
                                 Emissivity_H,                                              &  ! OUTPUT
                                 Emissivity_V)                                                 ! OUPTUT
 
-!-------------------------------------------------------------------------------------------------------------
-!
-! NAME:
-!       NESDIS_SIce_Phy_EM
-!
-! PURPOSE:
-!       Subroutine to simulate microwave sea ice emissivity
-!
-! REFERENCES:
-!
-! Ulaby, F.T., R. K., Moore, and A. K., Fung, Microwave remote sensing: active and passive, III,
-! from theory to Applications, 2020-2025, Artech House Publishers, 1990.
-!
-! CATEGORY:
-!       CRTM : Surface : MW SEA ICE EM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL NESDIS_SIce_Phy_EM
-!
-! INPUT ARGUMENTS:
-!
-!         Frequency                Frequency User defines
-!                                  This is the "I" dimension
-!                                  UNITS:      GHz
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!         Angle                    The angle values in degree
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      Degrees
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Rank-1, (I)
-!
-!         Ts_ice                   Sea ice temperature
-!                                  UNITS:      Kelvin, K
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!        Salinity                  Sea water salinity (1/thousand)
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-!  INTERNAL ARGUMENTS:
-!
-!         theta                    viewing zenith angle
-!                                  UNITS:  radian
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!
-! OUTPUT ARGUMENTS:
-!
-!         Emissivity_H:            The surface emissivity at a horizontal polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-!
-!         Emissivity_V:            The surface emissivity at a vertical polarization.
-!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
-!                                  **       OF THIS STRUCTURE          **
-!                                  UNITS:      N/A
-!                                  TYPE:       REAL( fp )
-!                                  DIMENSION:  Scalar
-! CALLS:
-!
-!       permitivity    : Function to calculate the dielectric constant of saline water
-!
-!reflection_coefficient: Function to calculate the surface reflection coefficient using Fresnel equations
-!
-! RESTRICTIONS:
-!       None.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
-!
-!
-!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
-!
-!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
-!
-!  This program is free software; you can redistribute it and/or modify it under the terms of the GNU
-!  General Public License as published by the Free Software Foundation; either version 2 of the License,
-!  or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-!  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-!  License for more details.
-!
-!  You should have received a copy of the GNU General Public License along with this program; if not, write
-!  to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!
-!------------------------------------------------------------------------------------------------------------
 
 
      real(fp) ::  Angle,theta, Ts_ice, Salinity
@@ -192,40 +80,6 @@ CONTAINS
 
      subroutine permitivity(itype, temp, s, f, e_real, e_img)
 
-!--------------------------------------------------------------------------------------------------
-!   prgmmr:  Fuzhong Weng and Banghua Yan                org: nesdis              date: 2005-06-13
-!
-!   abstract: this function calculates the dielectric constant of saline water
-!
-!    Reference:
-!
-!    Microwave remote sensing by Ulaby et al (1984)  pp 2022
-!
-!    Concepts:
-!          saline water: water containing dissolved salts. The salinity of a solution
-!                        is defined as the total mass of solid salt in grams dissolved
-!                        in one kilogram of solution
-!          sea ice     : a heterogeneous mixture of liquid-brine inclusions and air
-!                        pockets interspersed within the ice medium
-!          brine inclusions: containing salt and water, exercise a strong influence
-!                        on the complex dielectric constant of the mixture due to their
-!                        high complex-dielectric constant when compred to that of ice
-!    Input variables:
-!          itype: 1 --- saline (salt) water
-!                 2 --- sea ice with mixtures like brine, pure ice and air
-!          default: pure water
-!
-!          temp   : water temperature (K)
-!          s      : salinty of sea ice water
-!          f      : frequency (Hz)
-!
-!    Output variables:
-!         e_real  : real part of complex dielectric constant of sea ice/water
-!         e_img   : imaginery part ..
-!    Code histry:
-!       Code generated: Fuzhong Weng
-!       Added brine component: Banghua Yan (09/09/2003)
-!------------------------------------------------------------------------------
 
      real(fp) ::  eo, esw, eswo, a, tswo, tsw, b, sswo, c,d, fi, ssw
      real(fp) ::  temp,t, t2, t3, s2, s3, epsp, epspp
@@ -261,7 +115,6 @@ CONTAINS
 
    CASE (1)
 
-! saline water
 
       s2 = s*s
       s3 = s**3
@@ -290,7 +143,6 @@ Case (2) ! sea ice
       eice = cmplx(3.15_fp, -0.001_fp,fp)
       eair = cmplx(1.0_fp, 0.0_fp,fp)
 
-! brine volume fraction: vb
 
       if (t .le. -8.2) then
           vb = 0.001*s*(-43.795/t + 1.189)
@@ -304,7 +156,6 @@ Case (2) ! sea ice
         endif
       endif
 
-!salinity of liquid brine
 
       if (t .le. -36.8) then
          sb = 508.18 + 14.535*t + 0.2018*t2
@@ -319,7 +170,6 @@ Case (2) ! sea ice
             if(t .gt. -2.0) sb = 1.725 - 18.756*(-2.0) - 0.3964*(-2.0)*(-2.0)
       endif
 
-! Normality of brine solution: nb
 
       nb  = sb*(1.707*0.01 + 1.205*1.0E-5*sb+4.058E-9*sb*sb)
       d  = 25.0 - t
@@ -342,14 +192,12 @@ Case (2) ! sea ice
       eb_imag = epspp + sigma/(2.0 * pi * eo * f)
       ebrine=cmplx(eb_real,-eb_imag,fp)
 
-! density of sea ice
 
     den_sice = 0.87
     if(t .lt. -18.0) den_sice = 0.77
     den_ice   = 0.917 - 1.403e-4*t
     den_brine = 1.0 + 0.0008*sb
 
-!Ice volume fraction
     vi = (den_sice - vb*den_brine)/den_ice
     if ((vi+vb) .gt. 1.0) vi = 1.0 - vb
     if (vi .lt. 0.0) vi = 0.0
@@ -386,24 +234,6 @@ end subroutine permitivity
 
 
      SUBROUTINE reflection_coefficient(em1, em2, cos_theta_i, cos_theta_t, rv, rh)
-!--------------------------------------------------------------------------------------------------
-!   prgmmr:  Fuzhong Weng and Banghua Yan                org: nesdis              date: 2005-06-13
-!
-!   abstract: this function calculates the surface reflection coefficient using Fresnel equations
-!
-!    Input Variables
-!
-!      cos_theta_i        ----  cosine incident angle (degree)
-!      cos_theta_t        ----  cosine_transmitted angle (degree)
-!      em1                ----  dielectric constant of the medium 1
-!      em2                ----  dielectric constant of the medium 2
-!
-!    Output Variables
-!
-!      rv                 ----  reflection coefficient at vertical polarization
-!      rh                 ----  reflection coefficient at horizontal polarization
-!
-!-----------------------------------------------------------------------------------------------
 
     COMPLEX(fp) :: rh, rv,cos_theta_i,cos_theta_t
 

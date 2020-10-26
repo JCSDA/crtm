@@ -1,164 +1,3 @@
-!------------------------------------------------------------------------------
-!P+
-! NAME:
-!       Generate_CRTM_Stats
-!
-! PURPOSE:
-!       Program to generate profile set statistics for the Community Radiative
-!       Transfer Model (CRTM). 
-!
-! CATEGORY:
-!       CRTM
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! MODULES:
-!       Type_Kinds:             Module containing definitions for kinds
-!                               of variable types.
-!
-!       File_Utility:           Module containing generic file utility routines
-!
-!       Message_Handler:        Module to define simple error codes and
-!                               handle error conditions
-!                               USEs: FILE_UTILITY module
-!
-!       CRTM_Atmosphere_Define: Module defining the AtmProfile data structure
-!                               and containing routines to manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!
-!
-!       SensorInfo_Define:      Module defining the SensorInfo data structure and
-!                               containing routines to manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
-!
-!       SensorInfo_LinkedList:  Module defining the SensorInfo Linked List
-!                               data structure and containing routines to
-!                               manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!                                     SENSORINFO_DEFINE module
-!
-!       SensorInfo_IO:          Module continaing routines to read and write ASCII
-!                               SensorInfo format files.
-!                               USEs: TYPE_KINDS module
-!                                     FILE_UTILITY module
-!                                     ERROR_HANDLER module
-!                                     SENSORINFO_DEFINE module
-!
-!       TauProfile_Define:      Module defining the TauProfile data structure
-!                               and containing routines to manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!
-!       TauProfile_netCDF_IO:   Module containing routines to read and write
-!                               TauProfile netCDF format files.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!                                     TAUPROFILE_DEFINE module
-!                                     NETCDF module
-!                                     NETCDF_UTILITY module
-!
-!       CRTMstats_Define:      Module defining the pCRTMstats data structure
-!                               and containing routines to manipulate it.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!
-!       CRTMstats_netCDF_IO:   Module containing routines to read and write
-!                               pCRTMstats netCDF format files.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!                                     RTMSTATS_DEFINE module
-!                                     NETCDF module
-!                                     NETCDF_UTILITY module
-!
-!       Initialize:             Module for pCRTM initialisation.
-!                               USEs: ERROR_HANDLER module
-!                                     SPECTRAL_COEFFICIENTS module
-!                                     TRANSMITTANCE_COEFFICIENTS module
-!
-!       Parameters:             Module to hold CRTM parameter constants.
-!                               USEs: TYPE_KINDS module
-!
-!       Forward_Model:          Module containing the CRTM forward model
-!                               function.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!                                     PARAMETERS module
-!                                     SPECTRAL_COEFFICIENTS module
-!                                     ABSORBER_PROFILE module
-!                                     PREDICTORS module
-!                                     TRANSMITTANCE module
-!                                     RADIANCE module
-!
-!       Spectral_Coefficients:  Module containing the pCRTM spectral
-!                               coefficients.
-!                               USEs: TYPE_KINDS module
-!                                     ERROR_HANDLER module
-!                                     PARAMETERS module
-!                                     SPCCOEFF_DEFINE module
-!                                     SPCCOEFF_BINARY_IO module
-!
-!       Radiance:              Module containing the pCRTM radiative
-!                              transfer routines.
-!                              USEs: TYPE_KINDS module
-!                                    PARAMETERS module
-!                                    SPECTRAL_COEFFICIENTS module
-!                                    SENSOR_PLANCK_ROUTINES module
-!
-! CONTAINS:
-!       None.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       Input: - ASCII format SensorInfo file
-!              - netCDF format AtmProfile file
-!              - ASCII format list file of profiles to process
-!              - Binary format SpcCoeff file } As part of
-!              - Binary format TauCoeff file } the pCRTM
-!
-!       Output: - netCDF format pCRTMstats file.
-!
-! SIDE EFFECTS:
-!       If the output file already exists, it is overwritten.
-!
-! RESTRICTIONS:
-!       Processing ois performed only if all the mandatory input
-!       files are present.
-!
-! CREATION HISTORY:
-!       Written by:     Paul van Delst, CIMSS/SSEC 20-Jun-2003
-!                       paul.vandelst@ssec.wisc.edu
-!       Modified by:    David Groff, SAIC 03-May-2007
-!
-!  Copyright (C) 2003, 2004 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!P-
-!------------------------------------------------------------------------------
 
 PROGRAM Generate_CRTM_Stats
 
@@ -169,7 +8,6 @@ PROGRAM Generate_CRTM_Stats
 
  
   USE File_Utility
-!  USE List_File_Utility
   
   USE Type_Kinds                
   USE Message_Handler,           ONLY: SUCCESS, WARNING, Display_Message
@@ -583,8 +421,6 @@ PROGRAM Generate_CRTM_Stats
                                                     n_Channels   = n_Channels,           &
                                                     n_Angles     = n_Angles              )
                                                     !ID_Tag  = LBL_Profile_ID_Tag,        &
-!                                                    History = History,                   &
-!                                                    Comment = Comment                    )
     IF ( Error_Status /= SUCCESS ) THEN 
       CALL Display_Message( PROGRAM_NAME, &
                             'Error Inquiring TauProfile structure dimensions.', & 
@@ -652,8 +488,6 @@ PROGRAM Generate_CRTM_Stats
                                                      Angle_List   = Angle_List  ,         &  
                                                      Profile_List = Profile_List)!,         &  
                                                      !ID_Tag  = LBL_Profile_ID_Tag,        &
-!                                                     History = History,                   &
-!                                                     Comment = Comment                    )
     IF ( Error_Status /= SUCCESS ) THEN 
        CALL Display_Message( PROGRAM_NAME, &
                              'Error Inquiring TauProfile metadata.', & 
@@ -818,34 +652,6 @@ PROGRAM Generate_CRTM_Stats
 
         ! Read TauProfile_File and assign data to rank-1 array holding Tau -> H20
         !Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
-!                                                    Channel_List(l),             &
-!                                                    Angle_List(i),               &
-!                                                    Profile_List(m),             &    
-!                                                    TAU_WET_INDEX,               &
-!                                                    Tau_WET, Quiet=1             )
-!        IF ( Error_Status /= SUCCESS ) THEN 
-!           CALL Display_Message( PROGRAM_NAME, &
-!                                'Error reading TauProfile_File (H2O).', & 
-!                                 Error_Status )
-!          STOP
-!        END IF
-!        
-!        ! Filter unphysical transmittances
-!        Tau_WET = Filter_Transmittance(Tau_WET,n_Layers)
-!        
-!        ! Read TauProfile_File and assign data to rank-1 array holding Tau -> OZO
-!        Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
-!                                                    Channel_List(l),             &
-!                                                    Angle_List(i),               &
-!                                                    Profile_List(m),             &    
-!                                                    TAU_OZO_INDEX,               &
-!                                                    Tau_OZO, Quiet=1             )
-!        IF ( Error_Status /= SUCCESS ) THEN 
-!           CALL Display_Message( PROGRAM_NAME, &
-!                                'Error reading TauProfile_File (OZO).', & 
-!                                 Error_Status )
-!          STOP
-!        END IF
         
         ! Filter unphysical transmittances
         !Tau_OZO = Filter_Transmittance(Tau_OZO,n_Layers)
@@ -974,8 +780,6 @@ PROGRAM Generate_CRTM_Stats
         
         !PRINT *, (LBL_Transmittance - CRTM_Transmittance), k, l, m
         !CRTMstats%REG_BT(l, i, m, 1) = CRTMSolution(l,m,i)%Brightness_Temperature
-!        CRTMstats%LBL_BT(l, i, m, 1) =  LBLSolution(l,m)%Brightness_Temperature
-!        
         ! Deallocate Tau
         DEALLOCATE(    Tau,                   &
                        Tau_ALL,               &
@@ -1250,78 +1054,3 @@ CONTAINS
         
 END PROGRAM Generate_CRTM_Stats
   
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: Generate_CRTM_Stats.f90,v 1.5 2006/11/27 14:38:15 dgroff Exp $
-!
-! $Date: 2006/11/27 14:38:15 $
-!
-! $Revision: 1.5 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Generate_CRTM_Stats.f90,v $
-! Revision 1.5  2006/11/27 14:38:15  dgroff
-! The bottom three layers are now included in the total transmittance calculations.
-!
-! Revision 1.4  2006/11/21 23:41:09  dgroff
-! The CRTM_Compute_Optical_Depth module no longer exist and needed to be
-! removed from the list of modules being used in the program.
-!
-! Revision 1.3  2006/11/21 18:12:51  dgroff
-! The surface structure has been filled to set the
-! SfcOptics%Surface_Temperature equal to the
-! Atmospheric temperature in the bottom layer.
-!
-! Revision 1.2  2006/10/27 18:12:15  dgroff
-! The SfcOptics%Surface_Temperature has been set equal to the temperature of the lowest layer.
-! Additions were also made in order to write TOA transmittance data to the CRTMstats netcdf files.
-!
-! Revision 2.4  2006/05/02 14:58:35  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 2.3  2005/02/07 17:40:35  paulv
-! - Updated onscreen output from RTM to pCRTM.
-!
-! Revision 2.2  2005/01/07 18:43:40  paulv
-! - Catagory change to pCRTM.
-!
-! Revision 2.1  2005/01/06 18:48:49  paulv
-! - Modified filename to include "upwelling" prefix.
-!
-! Revision 2.0  2004/10/06 15:57:31  paulv
-! - Removed RTMarg use. Replaced with individual allocated arrays for RTM inputs.
-! - Now using new Fortran-95 utility modules.
-!
-! Revision 1.6  2004/03/29 18:05:17  paulv
-! - Added default solar reflectivity.
-! - Corrected bug in call to forward model due to solar transmittance argument.
-!
-! Revision 1.5  2004/02/13 17:15:21  paulv
-! - Added RTMstats initialisation call(!)
-! - Added TauProfile history and comment attributes to the output RTMstats file.
-! - Corrected bugs in passing arguments to the Compute_Radiance subroutine.
-! - No longer include the maximum angle in the computations.
-!
-! Revision 1.4  2004/02/12 17:28:35  paulv
-! - Stats no longer include the largest angle in the calcs.
-! - Corrected a bug in saving the total transmittance.
-!
-! Revision 1.3  2004/01/28 21:41:32  paulv
-! - Using the RTMstats modules to collect and output the statistics.
-!
-! Revision 1.2  2003/12/05 22:38:02  paulv
-! - Continuing updates. Not completed.
-!
-! Revision 1.1  2003/06/20 22:00:00  paulv
-! Initial checkin. Incomplete.
-!
-! Revision 2.1  2003/05/16 18:46:57  paulv
-! - New version.
-!
-!
-!

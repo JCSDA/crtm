@@ -1,119 +1,3 @@
-!------------------------------------------------------------------------------
-!M+
-! NAME:
-!       ODCAPS_Predictor
-!
-! PURPOSE:
-!       Module continaing routines to compute the Optical Depth Combining Absorber
-!       and Pressure Space (ODCAPS) predictors for the gas absorption model.
-!
-! CATEGORY:
-!       CRTM : Gas Absorption : Predictor
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       USE ODCAPS_Predictor
-!
-! MODULES:
-!       Type_Kinds:                 Module containing definitions for kinds
-!                                   of variable types.
-!
-!       Message_Handler:              Module to define simple error codes and
-!                                   handle error conditions
-!                                   USEs: FILE_UTILITY module
-!
-!       CRTM_Parameters:            Module of parameter definitions for the CRTM.
-!                                   USEs: TYPE_KINDS module
-!
-!       CRTM_GeometryInfo:          Module to convert the surface solar zenith
-!                                   angle SZA into the local solar angle 
-!                                   at altitude ALT, and convert the AIRS satellite 
-!                                   viewing angle into the local path angle.
-!                                   USEs: TYPE_KINDS module
-!                                         CRTM_Parameters module
-!
-!
-!       ODCAPS_Predictor_Define:  Module defining the ODCAPS_Predictor
-!                                   structure and containing routines to 
-!                                   manipulate it.
-!                                   USEs: TYPE_KINDS module
-!                                         Message_Handler module
-!
-!
-! CONTAINS:
-!       Private subprograms
-!       ------------------
-!   Compute_Predictors_Subset:         Subroutine to calculate the gas absorption
-!   				       model predictors for subset.
-!
-!   Compute_Predictors_Subset_TL:      Subroutine to calculate the gas absorption
-!   				       model tangent-linear predictors.
-!
-!   Compute_Predictors_Subset_AD:      Subroutine to calculate the adjoint gas
-!   				       absorption model predictors.
-!
-!   Compute_TraceGas_Predictors:       Subroutine to calculate the trace gas absorption
-!   				       model predictors.
-!
-!   Compute_TraceGas_Predictors_TL:    Subroutine to calculate the trace gas absorption
-!   				       model tangent-linear predictors.
-!
-!   Compute_TraceGas_Predictors_AD:    Subroutine to calculate the adjoint trace gas
-!   				       absorption model predictors.
-!
-!   Compute_WOPTRAN_Predictors:        Subroutine to calculate the water vapor absorption
-!   				       model predictors for OPTRAN.
-!
-!   Compute_WOPTRAN_Predictors_TL:     Subroutine to calculate the water vapor absorption
-!   				       model tangent-linear predictors for OPTRAN.
-!
-!   Compute_WOPTRAN_Predictors_AD:     Subroutine to calculate the adjoint water vapor
-!   				       absorption model predictors for OPTRAN.
-!
-!   Compute_Non_LTE_Predictors:        Subroutine to calculate the water vapor absorption
-!   				       model predictors for OPTRAN.
-!
-!   Compute_Non_LTE_Predictors_TL:     Subroutine to calculate the water vapor absorption
-!   				       model tangent-linear predictors for OPTRAN.
-!
-!   Compute_Non_LTE_Predictors_AD:     Subroutine to calculate the adjoint water vapor
-!   				       absorption model predictors for OPTRAN.
-!
-! INCLUDE FILES:
-!       None.
-!
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! FILES ACCESSED:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 24-May-2006
-!                       Yong.Chen@noaa.gov
-!
-!  Copyright (C) 2006 Yong Chen
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!------------------------------------------------------------------------------
 
 MODULE ODCAPS_Predictor
 
@@ -203,92 +87,11 @@ MODULE ODCAPS_Predictor
   REAL( fp ), PRIVATE, PARAMETER :: KMOLE  = 6.022045E+26_fp ! 1000 * Avagadro's Number
 
   REAL( fp ), PRIVATE, PARAMETER :: MAX_SATELLITE_VIEW_ANGLE = 53.0_fp ! max satellite view angle 
-!  REAL( fp ), PRIVATE, PARAMETER :: Satellite_Height_default = 800.0_fp  ! airs_aqua height 705 km, iasi_metop-a 837 km
 
 CONTAINS
   
    
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!--------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Compute_Predictors_Subset
-!
-! PURPOSE:
-!       Subroutine to calculate the gas absorption model predictors.
-!
-! CATEGORY:
-!       CRTM : Gas Absorption : Predictor
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors_Subset (Sensor_Index,           &  ! Input
-!                                       Set_Index,              &  ! Input
-!                                       Calc_Sun_Angle_Secant,  &  ! Optional Input! 
-!                                       Predictor)            ! In/Output
-!
-! INPUT ARGUMENTS:
-!       Sensor_Index:   Sensor index id. This is a unique index associated     
-!                       with a (supported) algorithm ID used to determine the  
-!                       algorithm.					       
-!                       UNITS:      N/A 				       
-!                       TYPE:	    INTEGER				       
-!                       DIMENSION:  Scalar				       
-!                       ATTRIBUTES: INTENT(IN)				       
-!
-!       Set_Index:      The subset index for the predictors 
-!                       UNITS:      N/A
-!                       TYPE:       INTEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN )
-!
-!       Predictor:  On INPUT, this structure contains the integrated
-!                       absorber amounts.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE( ODCAPS_Predictor_type )
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN OUT )
-!
-!
-! OPTIONAL INPUT ARGUMENTS:
-! Calc_Sun_Angle_Secant:If present, the solar part of predictors are calculated.
-!                       This prevents recalculation of the subset 1-3 predictors
-!                       is only the view angle has changed, and recalculation the
-!                       subset 4-7 predictors by using the effect source view zenith 
-!                       UNITS:      N/A
-!                       TYPE:       INETEGER
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       Predictor:  On OUTPUT, this structure contains the predictors for
-!                       the integrated absorber amounts.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE( ODCAPS_Predictor_type )
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! SIDE EFFECTS:
-!       Note that the argument, Predictor, is used as both input and
-!       output and has its INTENT declared accordingly as IN OUT.
-!
-! RESTRICTIONS:
-!       None.
-!
-!S-
-!--------------------------------------------------------------------------------
   SUBROUTINE  Compute_Predictors_Subset( Sensor_Index,           &  ! Input
                                          Set_Index,              &  ! Input
                                          Predictor,          &  ! In/Output
@@ -591,13 +394,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset2(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset2(2,L) = Predictor_Subset2(1,L)*A_W/TJUNKS
-!            Predictor_Subset2(3,L) = WJUNKA/TR
-!            Predictor_Subset2(4,L) = Predictor_Subset2(3,L)*A_W
-!            Predictor_Subset2(5,L) = Predictor_Subset2(1,L)*A_W
-!            Predictor_Subset2(6,L) = Predictor_Subset2(1,L)/TJUNKS
-!            Predictor_Subset2(7,L) = WJUNKA
  
             Predictor_Subset2(1,L) = WJUNKA/TJUNKS
             Predictor_Subset2(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -656,13 +452,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset3(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset3(2,L) = Predictor_Subset3(1,L)*A_W/TJUNKS
-!            Predictor_Subset3(3,L) = WJUNKA/TR
-!            Predictor_Subset3(4,L) = Predictor_Subset3(3,L)*A_W
-!            Predictor_Subset3(5,L) = Predictor_Subset3(1,L)*A_W
-!            Predictor_Subset3(6,L) = Predictor_Subset3(1,L)/TJUNKS
-!            Predictor_Subset3(7,L) = WJUNKA
 
             Predictor_Subset3(1,L) = WJUNKA/TJUNKS
             Predictor_Subset3(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -720,13 +509,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset4(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset4(2,L) = Predictor_Subset4(1,L)*A_W/TJUNKS
-!            Predictor_Subset4(3,L) = WJUNKA/TR
-!            Predictor_Subset4(4,L) = Predictor_Subset4(3,L)*A_W
-!            Predictor_Subset4(5,L) = Predictor_Subset4(1,L)*A_W
-!            Predictor_Subset4(6,L) = Predictor_Subset4(1,L)/TJUNKS
-!            Predictor_Subset4(7,L) = WJUNKA
 
             Predictor_Subset4(1,L) = WJUNKA/TJUNKS
             Predictor_Subset4(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -800,13 +582,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset5(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset5(2,L) = Predictor_Subset5(1,L)*A_W/TJUNKS
-!            Predictor_Subset5(3,L) = WJUNKA/TR
-!            Predictor_Subset5(4,L) = Predictor_Subset5(3,L)*A_W
-!            Predictor_Subset5(5,L) = Predictor_Subset5(1,L)*A_W
-!            Predictor_Subset5(6,L) = Predictor_Subset5(1,L)/TJUNKS
-!            Predictor_Subset5(7,L) = WJUNKA
 
             Predictor_Subset5(1,L) = WJUNKA/TJUNKS
             Predictor_Subset5(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -853,13 +628,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset6(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset6(2,L) = Predictor_Subset6(1,L)*A_W/TJUNKS
-!            Predictor_Subset6(3,L) = WJUNKA/TR
-!            Predictor_Subset6(4,L) = Predictor_Subset6(3,L)*A_W
-!            Predictor_Subset6(5,L) = Predictor_Subset6(1,L)*A_W
-!            Predictor_Subset6(6,L) = Predictor_Subset6(1,L)/TJUNKS
-!            Predictor_Subset6(7,L) = WJUNKA
 
             Predictor_Subset6(1,L) = WJUNKA/TJUNKS
             Predictor_Subset6(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -907,13 +675,6 @@ CONTAINS
          !  ---------------			      
          !  Water continuum (for FWO, FOW, FMW, FCOW)
          !  ---------------
-!            Predictor_Subset7(1,L) = WJUNKA/TJUNKS
-!            Predictor_Subset7(2,L) = Predictor_Subset7(1,L)*A_W/TJUNKS
-!            Predictor_Subset7(3,L) = WJUNKA/TR
-!            Predictor_Subset7(4,L) = Predictor_Subset7(3,L)*A_W
-!            Predictor_Subset7(5,L) = Predictor_Subset7(1,L)*A_W
-!            Predictor_Subset7(6,L) = Predictor_Subset7(1,L)/TJUNKS
-!            Predictor_Subset7(7,L) = WJUNKA
 
             Predictor_Subset7(1,L) = WJUNKA/TJUNKS
             Predictor_Subset7(2,L) = WJUNKA/TJUNKS * A_W/TJUNKS
@@ -1186,11 +947,9 @@ CONTAINS
  
       !	 Total secant
 	   SECANG(L) = Predictor%Secant_Source_Zenith(L)
-!	   SECANG_TL(L) = Predictor_TL%Secant_Source_Zenith(L)
  	   Cal_Sun = .TRUE.
 	 ELSE
 	   SECANG(L) = Predictor%Secant_Sensor_Zenith(L)
-!	   SECANG_TL(L) = Predictor_TL%Secant_Sensor_Zenith(L)
 	   Cal_Sun = .FALSE. 
 	 END IF
 	 
@@ -1263,11 +1022,9 @@ CONTAINS
          OJUNKZ = OJUNKA/XZ_O
          OJUNKX = SECANG(L)*XZ_O
 
-!        OJUNKA_TL = SECANG_TL(L) * A_O + SECANG(L) * A_O_TL
          OJUNKA_TL = SECANG(L) * A_O_TL
          OJUNKR_TL = POINT_5 * OJUNKA**(-POINT_5) * OJUNKA_TL
          OJUNKZ_TL = OJUNKA_TL / XZ_O - OJUNKA * XZ_O_TL / XZ_O**TWO
-!        OJUNKX_TL = SECANG_TL(L) * XZ_O + SECANG(L) * XZ_O_TL
          OJUNKX_TL = SECANG(L) * XZ_O_TL
 
       !  -----
@@ -1279,7 +1036,6 @@ CONTAINS
          WJUNKZ = WJUNKA*A_W/AZ_W
          WJUNK4 = SQRT( WJUNKR )
 
-!        WJUNKA_TL = SECANG_TL(L) * A_W + SECANG(L) * A_W_TL
          WJUNKA_TL = SECANG(L) * A_W_TL
          WJUNKR_TL = POINT_5 * WJUNKA**(-POINT_5) * WJUNKA_TL  
          WJUNKS_TL = TWO * WJUNKA_TL * WJUNKA
@@ -1295,7 +1051,6 @@ CONTAINS
          CJUNKS = CJUNKA*CJUNKA   
          CJUNKZ = CJUNKA*A_C/AZ_C 
       
-!        CJUNKA_TL = SECANG_TL(L) * A_C + SECANG(L) * A_C_TL  
          CJUNKA_TL = SECANG(L) * A_C_TL  
          CJUNKR_TL = POINT_5 * CJUNKA**(-POINT_5) * CJUNKA_TL  
          CJUNKS_TL = TWO * CJUNKA_TL * CJUNKA   
@@ -1308,10 +1063,8 @@ CONTAINS
          MJUNKR = SQRT(MJUNKA)   
          MJUNKZ = SECANG(L)*AZ_M 
 
-!        MJUNKA_TL = SECANG_TL(L) * A_M +  SECANG(L) * A_M_TL   
          MJUNKA_TL = SECANG(L) * A_M_TL   
          MJUNKR_TL = POINT_5 * MJUNKA**(-POINT_5) * MJUNKA_TL    
-!        MJUNKZ_TL = SECANG_TL(L) * AZ_M + SECANG(L) * AZ_M_TL
          MJUNKZ_TL = SECANG(L) * AZ_M_TL
 	 
       !  ----------------------
@@ -1338,19 +1091,12 @@ CONTAINS
          !  ----------------
          !   Fixed (for FWO)
          !  ----------------
-!           Predictor_Subset1_TL( 8,L) = SECANG_TL(L)
-!           Predictor_Subset1_TL( 9,L) = TWO * SECANG_TL(L)* SECANG(L) 
-!           Predictor_Subset1_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset1_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset1_TL( 8,L) = ZERO
             Predictor_Subset1_TL( 9,L) = ZERO
             Predictor_Subset1_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset1_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset1_TL(12,L) = TR_TL
             Predictor_Subset1_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset1_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset1_TL(15,L) = SECANG_TL(L) * TRZ / TR + SECANG(L) * TRZ_TL / TR &
-!	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
             Predictor_Subset1_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset1_TL(15,L) = SECANG(L) * TRZ_TL / TR &
 	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
@@ -1407,19 +1153,12 @@ CONTAINS
          !  ----------------
          !   Fixed (for FOW)
          !  ----------------
-!           Predictor_Subset2_TL( 8,L) = SECANG_TL(L)
-!           Predictor_Subset2_TL( 9,L) = TWO * SECANG_TL(L)* SECANG(L) 
-!           Predictor_Subset2_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset2_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset2_TL( 8,L) = ZERO
             Predictor_Subset2_TL( 9,L) = ZERO
             Predictor_Subset2_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset2_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset2_TL(12,L) = TR_TL
             Predictor_Subset2_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset2_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset2_TL(15,L) = SECANG_TL(L) * TRZ / TR + SECANG(L) * TRZ_TL / TR &
-!	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
             Predictor_Subset2_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset2_TL(15,L) = SECANG(L) * TRZ_TL / TR &
 	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
@@ -1438,8 +1177,6 @@ CONTAINS
             Predictor_Subset2_TL(23,L) = OJUNKZ_TL * AZ_O + OJUNKZ * AZ_O_TL
             Predictor_Subset2_TL(24,L) = OJUNKA_TL * SQRT( OJUNKX ) &
 	                               + OJUNKA * POINT_5 * OJUNKX**(-POINT_5) * OJUNKX_TL 
-!           Predictor_Subset2_TL(25,L) = OJUNKA_TL * TAZ_O * SECANG(L) + OJUNKA * TAZ_O_TL * SECANG(L) &
-!	                               + OJUNKA * TAZ_O * SECANG_TL(L) 
             Predictor_Subset2_TL(25,L) = OJUNKA_TL * TAZ_O * SECANG(L) + OJUNKA * TAZ_O_TL * SECANG(L)  
 
          !  ----------------
@@ -1479,19 +1216,12 @@ CONTAINS
          !  ----------------
          !   Fixed (for FMW)
          !  ----------------
-!           Predictor_Subset3_TL( 8,L) = SECANG_TL(L)
-!           Predictor_Subset3_TL( 9,L) = TWO * SECANG_TL(L)* SECANG(L) 
-!           Predictor_Subset3_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset3_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset3_TL( 8,L) = ZERO
             Predictor_Subset3_TL( 9,L) = ZERO 
             Predictor_Subset3_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset3_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset3_TL(12,L) = TR_TL
             Predictor_Subset3_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset3_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset3_TL(15,L) = SECANG_TL(L) * TRZ / TR + SECANG(L) * TRZ_TL / TR &
-!	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
             Predictor_Subset3_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset3_TL(15,L) = SECANG(L) * TRZ_TL / TR &
 	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
@@ -1503,11 +1233,9 @@ CONTAINS
             Predictor_Subset3_TL(17,L) = MJUNKR_TL
             Predictor_Subset3_TL(18,L) = MJUNKA_TL * DT + MJUNKA * DT_TL
             Predictor_Subset3_TL(19,L) = TWO * MJUNKA_TL * MJUNKA
-!           Predictor_Subset3_TL(20,L) = MJUNKA_TL * SECANG(L) + MJUNKA * SECANG_TL(L)
             Predictor_Subset3_TL(20,L) = MJUNKA_TL * SECANG(L)
             Predictor_Subset3_TL(21,L) = MJUNKZ_TL
             Predictor_Subset3_TL(22,L) = A_M_TL * DT + A_M * DT_TL  
-!           Predictor_Subset3_TL(23,L) = TAZ_M_TL * SECANG(L) + TAZ_M * SECANG_TL(L) 
             Predictor_Subset3_TL(23,L) = TAZ_M_TL * SECANG(L) 
             Predictor_Subset3_TL(24,L) = POINT_5 * MJUNKZ**(-POINT_5) * MJUNKZ_TL 
 
@@ -1548,21 +1276,12 @@ CONTAINS
          !  ----------------
          !   Fixed (for FCOW)
          !  ----------------
-!           Predictor_Subset4_TL( 8,L) = SECANG_TL(L) 
-!           Predictor_Subset4_TL( 9,L) = TWO * SECANG_TL(L) * SECANG(L) 
-!           Predictor_Subset4_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset4_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset4_TL( 8,L) = ZERO 
             Predictor_Subset4_TL( 9,L) = ZERO 
             Predictor_Subset4_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset4_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset4_TL(12,L) = TR_TL
             Predictor_Subset4_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset4_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset4_TL(15,L) = TWO * SECANG_TL(L) * SECANG(L) * TRZ + SECANG(L) * SECANG(L) * TRZ_TL 
-!           Predictor_Subset4_TL(16,L) = TWO * SECANG_TL(L) * SECANG(L) * TR + SECANG(L) * SECANG(L) * TR_TL
-!           Predictor_Subset4_TL(17,L) = THREE * SECANG(L) *SECANG(L) * SECANG_TL(L) 
-!           Predictor_Subset4_TL(18,L) = POINT_5 * SECANG(L)**(-POINT_5) * SECANG_TL(L)  
             Predictor_Subset4_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset4_TL(15,L) = SECANG(L) * SECANG(L) * TRZ_TL 
             Predictor_Subset4_TL(16,L) = SECANG(L) * SECANG(L) * TR_TL
@@ -1581,8 +1300,6 @@ CONTAINS
             Predictor_Subset4_TL(25,L) = POINT_5 * CJUNKR**(-POINT_5) * CJUNKR_TL 
             Predictor_Subset4_TL(26,L) = CJUNKZ_TL / CJUNKR - CJUNKZ * CJUNKR_TL / CJUNKR**TWO
             Predictor_Subset4_TL(27,L) = A_C_TL
-!           Predictor_Subset4_TL(28,L) = CJUNKA_TL * SECANG(L) + CJUNKA * SECANG_TL(L) 
-!           Predictor_Subset4_TL(29,L) = CJUNKR_TL * SECANG(L) + CJUNKR * SECANG_TL(L) 
             Predictor_Subset4_TL(28,L) = CJUNKA_TL * SECANG(L)  
             Predictor_Subset4_TL(29,L) = CJUNKR_TL * SECANG(L)  
 	    
@@ -1604,15 +1321,10 @@ CONTAINS
             Predictor_Subset4_TL(38,L) = WJUNKR_TL * DT + WJUNKR * DT_TL
             Predictor_Subset4_TL(39,L) = WJUNK4_TL
             Predictor_Subset4_TL(40,L) = WJUNKZ_TL
-!           Predictor_Subset4_TL(41,L) = WJUNKA_TL * SECANG(L) + WJUNKA * SECANG_TL(L) 
             Predictor_Subset4_TL(41,L) = WJUNKA_TL * SECANG(L)  
             Predictor_Subset4_TL(42,L) = WJUNKS_TL * WJUNKA + WJUNKS * WJUNKA_TL
-!           Predictor_Subset4_TL(43,L) = WJUNKA_TL* AZ_C * SECANG(L) + WJUNKA * AZ_C_TL * SECANG(L) &
-!	                               + WJUNKA * AZ_C * SECANG_TL(L)
             Predictor_Subset4_TL(43,L) = WJUNKA_TL* AZ_C * SECANG(L) + WJUNKA * AZ_C_TL * SECANG(L)  
             Predictor_Subset4_TL(44,L) = WJUNKZ_TL / WJUNKR - WJUNKZ * WJUNKR_TL / WJUNKR**TWO
-!           Predictor_Subset4_TL(45,L) = WJUNKA_TL* DT * SECANG(L) + WJUNKA * DT_TL * SECANG(L) &
-!	                               + WJUNKA * DT * SECANG_TL(L) 
             Predictor_Subset4_TL(45,L) = WJUNKA_TL* DT * SECANG(L) + WJUNKA * DT_TL * SECANG(L)  
 	    
 	    IF( .NOT. Cal_Sun) THEN
@@ -1639,21 +1351,12 @@ CONTAINS
          !  ----------------
          !   Fixed for FWO sun bfsw = set5
          !  ----------------
-!           Predictor_Subset5_TL( 8,L) = SECANG_TL(L) 
-!           Predictor_Subset5_TL( 9,L) = TWO * SECANG_TL(L) * SECANG(L) 
-!           Predictor_Subset5_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset5_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset5_TL( 8,L) = ZERO 
             Predictor_Subset5_TL( 9,L) = ZERO 
             Predictor_Subset5_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset5_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset5_TL(12,L) = TR_TL
             Predictor_Subset5_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset5_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset5_TL(15,L) = SECANG_TL(L) * TRZ / TR + SECANG(L) * TRZ_TL / TR &
-!	                               - SECANG(L) * TRZ * TR_TL / TR**TWO
-!           Predictor_Subset5_TL(16,L) = TWO * SECANG_TL(L) * SECANG(L) * TR + SECANG(L) * SECANG(L) * TR_TL
-!           Predictor_Subset5_TL(17,L) = POINT_5 * SECANG(L)**(-POINT_5) * SECANG_TL(L)  
             Predictor_Subset5_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset5_TL(15,L) = SECANG(L) * TRZ_TL / TR - SECANG(L) * TRZ * TR_TL / TR**TWO
             Predictor_Subset5_TL(16,L) = SECANG(L) * SECANG(L) * TR_TL
@@ -1696,18 +1399,12 @@ CONTAINS
          !  ----------------
          !   Fixed for FWO sun mfmw = set6 
          !  ----------------
-!           Predictor_Subset6_TL( 8,L) = SECANG_TL(L)
-!           Predictor_Subset6_TL( 9,L) = TWO * SECANG_TL(L)* SECANG(L) 
-!           Predictor_Subset6_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset6_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset6_TL( 8,L) = ZERO
             Predictor_Subset6_TL( 9,L) = ZERO 
             Predictor_Subset6_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset6_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset6_TL(12,L) = TR_TL
             Predictor_Subset6_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset6_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset6_TL(15,L) = POINT_5 * SECANG(L)**(-POINT_5) * SECANG_TL(L)   
             Predictor_Subset6_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset6_TL(15,L) = ZERO   
 
@@ -1721,7 +1418,6 @@ CONTAINS
             Predictor_Subset6_TL(20,L) = WJUNKA_TL * WJUNKR * DT + WJUNKA * WJUNKR_TL * DT &
 	                               + WJUNKA * WJUNKR * DT_TL
             Predictor_Subset6_TL(21,L) = WJUNKA_TL * WJUNKS + WJUNKA * WJUNKS_TL
-!           Predictor_Subset6_TL(22,L) = WJUNKA_TL * SECANG(L) + WJUNKA * SECANG_TL(L) 
             Predictor_Subset6_TL(22,L) = WJUNKA_TL * SECANG(L)
 
          !  ----------------
@@ -1753,18 +1449,12 @@ CONTAINS
          !  ----------------
          !   Fixed for FWO sun mfbw = set7 
          !  ----------------
-!           Predictor_Subset7_TL( 8,L) = SECANG_TL(L)
-!           Predictor_Subset7_TL( 9,L) = TWO * SECANG_TL(L)* SECANG(L) 
-!           Predictor_Subset7_TL(10,L) = SECANG_TL(L) * TR + SECANG(L) * TR_TL
-!           Predictor_Subset7_TL(11,L) = SECANG_TL(L) * TJUNKS + SECANG(L) * TJUNKS_TL
             Predictor_Subset7_TL( 8,L) = ZERO
             Predictor_Subset7_TL( 9,L) = ZERO 
             Predictor_Subset7_TL(10,L) = SECANG(L) * TR_TL
             Predictor_Subset7_TL(11,L) = SECANG(L) * TJUNKS_TL
             Predictor_Subset7_TL(12,L) = TR_TL
             Predictor_Subset7_TL(13,L) = TJUNKS_TL
-!           Predictor_Subset7_TL(14,L) = SECANG_TL(L) * TRZ + SECANG(L) * TRZ_TL
-!           Predictor_Subset7_TL(15,L) = POINT_5 * SECANG(L)**(-POINT_5) * SECANG_TL(L)   
             Predictor_Subset7_TL(14,L) = SECANG(L) * TRZ_TL
             Predictor_Subset7_TL(15,L) = ZERO   
  
@@ -1778,7 +1468,6 @@ CONTAINS
             Predictor_Subset7_TL(20,L) = WJUNKA_TL * WJUNKR * DT + WJUNKA * WJUNKR_TL * DT &
 	                               + WJUNKA * WJUNKR * DT_TL
             Predictor_Subset7_TL(21,L) = WJUNKA_TL * WJUNKS + WJUNKA * WJUNKS_TL
-!           Predictor_Subset7_TL(22,L) = WJUNKA_TL * SECANG(L) + WJUNKA * SECANG_TL(L) 
             Predictor_Subset7_TL(22,L) = WJUNKA_TL * SECANG(L)  
             Predictor_Subset7_TL(23,L) = WJUNKZ_TL
             Predictor_Subset7_TL(24,L) = WJUNKZ_TL * WJUNKR + WJUNKZ * WJUNKR_TL
@@ -2153,10 +1842,6 @@ CONTAINS
          !  ----------------
          !   Fixed (for FWO)
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset1_AD( 8,L) &
-!                         + TWO * Predictor_Subset1_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset1_AD(10,L) * TR(L) + Predictor_Subset1_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset1_AD(14,L) * TRZ(L) + Predictor_Subset1_AD(15,L)* TRZ(L) / TR(L)   
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset1_AD(10,L) &
                      + Predictor_Subset1_AD(12,L) - SECANG(L) * TRZ(L) * Predictor_Subset1_AD(15,L)/ TR(L)**TWO
             TJUNKS_AD(L) = TJUNKS_AD(L) + SECANG(L) * Predictor_Subset1_AD(11,L) + Predictor_Subset1_AD(13,L) 
@@ -2243,14 +1928,9 @@ CONTAINS
 	    
 	    TAZ_O_AD(L) = TAZ_O_AD(L) + OJUNKA(L) * Predictor_Subset2_AD(25,L) * SECANG(L)
 	    
-!	    SECANG_AD(L) = SECANG_AD(L) + OJUNKA(L) * TAZ_O(L)* Predictor_Subset2_AD(25,L)
          !  ----------------
          !   Fixed (for FWO) 
          !  ----------------
-!           SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset2_AD( 8,L) &
-!                         + TWO * Predictor_Subset2_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset2_AD(10,L) * TR(L) + Predictor_Subset2_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset2_AD(14,L) * TRZ(L) + Predictor_Subset2_AD(15,L)* TRZ(L) / TR(L)
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset2_AD(10,L) &
                      + Predictor_Subset2_AD(12,L) - SECANG(L) * TRZ(L) * Predictor_Subset2_AD(15,L)/ TR(L)**TWO
@@ -2330,16 +2010,10 @@ CONTAINS
 	    
 	    TAZ_M_AD(L) = TAZ_M_AD(L) + Predictor_Subset3_AD(23,L) * SECANG(L)
 	    
-!	    SECANG_AD(L) = SECANG_AD(L)	+ MJUNKA(L) * Predictor_Subset3_AD(20,L)  &  
-!	                 + TAZ_M(L) * Predictor_Subset3_AD(23,L)
 			   
          !  ----------------
          !   Fixed (for FMW) 
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset3_AD( 8,L) &
-!                         + TWO * Predictor_Subset3_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset3_AD(10,L) * TR(L) + Predictor_Subset3_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset3_AD(14,L) * TRZ(L) + Predictor_Subset3_AD(15,L)* TRZ(L) / TR(L)
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset3_AD(10,L) &
                      + Predictor_Subset3_AD(12,L) - SECANG(L) * TRZ(L) * Predictor_Subset3_AD(15,L)/ TR(L)**TWO
@@ -2403,9 +2077,6 @@ CONTAINS
             
 	    A_W_AD(L) = A_W_AD(L) + Predictor_Subset4_AD(34,L)
 	    
-!	    SECANG_AD(L) = SECANG_AD(L) +  WJUNKA(L) *  Predictor_Subset4_AD(41,L) &
-!	                 + WJUNKA(L) * AZ_C(L) * Predictor_Subset4_AD(43,L) &       	                    
-! 	                 + WJUNKA(L) * DT(L) * Predictor_Subset4_AD(45,L)
 	    
 	    AZ_C_AD(L) = AZ_C_AD(L) + WJUNKA(L) * Predictor_Subset4_AD(43,L) * SECANG(L)		
 
@@ -2436,20 +2107,10 @@ CONTAINS
 		     
             A_C_AD(L) = A_C_AD(L) + Predictor_Subset4_AD(27,L)
 	    
-!	    SECANG_AD(L) = SECANG_AD(L)	+ CJUNKA(L) * Predictor_Subset4_AD(28,L) &
-!	                 + CJUNKR(L) * Predictor_Subset4_AD(29,L) 	     
 	    
          !  ----------------
          !   Fixed (for FCOW) 
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset4_AD( 8,L) &
-!                         + TWO * Predictor_Subset4_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset4_AD(10,L) * TR(L) + Predictor_Subset4_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset4_AD(14,L) * TRZ(L) &
-!			 + TWO * Predictor_Subset4_AD(15,L)* SECANG(L) * TRZ(L) &
-!			 + TWO * Predictor_Subset4_AD(16,L)* SECANG(L) * TR(L) &
-!			 + THREE * SECANG(L) *SECANG(L) * Predictor_Subset4_AD(17,L) &
-!			 + POINT_5 * SECANG(L)**(-POINT_5) * Predictor_Subset4_AD(18,L)     
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset4_AD(10,L) &
                      + Predictor_Subset4_AD(12,L) + SECANG(L) * SECANG(L) *  Predictor_Subset4_AD(16,L)
@@ -2506,13 +2167,6 @@ CONTAINS
          !  ----------------
          !   Fixed  FWO sun bfsw = set5  
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset5_AD( 8,L) &
-!                         + TWO * Predictor_Subset5_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset5_AD(10,L) * TR(L) + Predictor_Subset5_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset5_AD(14,L) * TRZ(L) &
-!			 + Predictor_Subset5_AD(15,L) * TRZ(L) / TR(L) &
-!  			 + TWO * Predictor_Subset5_AD(16,L)* SECANG(L) * TR(L) &
-! 			 + POINT_5 * SECANG(L)**(-POINT_5) * Predictor_Subset5_AD(17,L)     
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset5_AD(10,L) &
                      + Predictor_Subset5_AD(12,L) &
@@ -2576,16 +2230,10 @@ CONTAINS
 	    DT_AD(L) = DT_AD(L) + WJUNKA(L) * Predictor_Subset6_AD(18,L) &
 	             + WJUNKA(L) * WJUNKR(L) * Predictor_Subset6_AD(20,L) 
 	    
-!	    SECANG_AD(L) = SECANG_AD(L) + WJUNKA(L) * Predictor_Subset6_AD(22,L)
          
 	 !  ----------------
          !   Fixed  FWO sun mfmw = set6   
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset6_AD( 8,L) &
-!                         + TWO * Predictor_Subset6_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset6_AD(10,L) * TR(L) + Predictor_Subset6_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset6_AD(14,L) * TRZ(L) &
-!			 + POINT_5 * SECANG(L)**(-POINT_5) * Predictor_Subset6_AD(15,L)     
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset6_AD(10,L) &
                      + Predictor_Subset6_AD(12,L)  
@@ -2660,16 +2308,10 @@ CONTAINS
 		      
 	    A_W_AD(L) = A_W_AD(L) + WJUNKA(L) * Predictor_Subset7_AD(27,L)
 	    
-!	    SECANG_AD(L) = SECANG_AD(L) + WJUNKA(L) * Predictor_Subset7_AD(22,L)
          
 	 !  ----------------
          !   Fixed  FWO sun  mfbw = set7   
          !  ----------------
-!            SECANG_AD(L) = SECANG_AD(L) + Predictor_Subset7_AD( 8,L) &
-!                         + TWO * Predictor_Subset7_AD( 9,L) * SECANG(L) &
-!                         + Predictor_Subset7_AD(10,L) * TR(L) + Predictor_Subset7_AD(11,L) * TJUNKS(L)  &
-!                         + Predictor_Subset7_AD(14,L) * TRZ(L) &
-!			 + POINT_5 * SECANG(L)**(-POINT_5) * Predictor_Subset7_AD(15,L)     
 			    
             TR_AD(L) = TR_AD(L) + SECANG(L) * Predictor_Subset7_AD(10,L) &
                      + Predictor_Subset7_AD(12,L)  
@@ -2706,7 +2348,6 @@ CONTAINS
       !  ------- 	       
          AZ_M_AD(L) = AZ_M_AD(L) + SECANG(L) * MJUNKZ_AD(L)
  	 MJUNKA_AD(L) = MJUNKA_AD(L) + POINT_5 * MJUNKA(L)**(-POINT_5) * MJUNKR_AD(L)
-!	 SECANG_AD(L) = SECANG_AD(L) + MJUNKA_AD(L) * A_M(L) + MJUNKZ_AD(L) * AZ_M(L)
 	 A_M_AD(L) = A_M_AD(L) + SECANG(L) * MJUNKA_AD(L)
 	 MJUNKZ_AD(L) = ZERO
 	 MJUNKR_AD(L) = ZERO
@@ -2719,7 +2360,6 @@ CONTAINS
 		      + POINT_5 * CJUNKA(L)**(-POINT_5) * CJUNKR_AD(L)
 	 A_C_AD(L) = A_C_AD(L) + CJUNKA(L) * CJUNKZ_AD(L) / AZ_C(L) + SECANG(L) * CJUNKA_AD(L)
 	 AZ_C_AD(L) = AZ_C_AD(L) - CJUNKA(L) * A_C(L) * CJUNKZ_AD(L)  / AZ_C(L)**TWO 
-! 	 SECANG_AD(L) = SECANG_AD(L) + CJUNKA_AD(L) * A_C(L)  
          CJUNKZ_AD(L) = ZERO
 	 CJUNKS_AD(L) = ZERO
 	 CJUNKR_AD(L) = ZERO
@@ -2739,7 +2379,6 @@ CONTAINS
 	 WJUNKS_AD(L) = ZERO
 	 WJUNKR_AD(L) = ZERO
 	 WJUNKA_AD(L) = ZERO
-!	 SECANG_AD(L) = SECANG_AD(L) + WJUNKA_AD(L) * A_W(L) 
 
        !  -----
        !  Ozone
@@ -2749,7 +2388,6 @@ CONTAINS
          XZ_O_AD(L) = XZ_O_AD(L) + SECANG(L) *	OJUNKX_AD(L) &
 	            - OJUNKA(L) * OJUNKZ_AD(L) / XZ_O(L)**TWO
          A_O_AD(L) = A_O_AD(L) + SECANG(L) * OJUNKA_AD(L)
-!	 SECANG_AD(L) = SECANG_AD(L) + OJUNKA_AD(L) * A_O(L)
          OJUNKX_AD(L) = ZERO
 	 OJUNKZ_AD(L) = ZERO
 	 OJUNKR_AD(L) = ZERO
@@ -2834,14 +2472,8 @@ CONTAINS
 	 WZREF_AD(L) = ZERO
 	 A_W_AD(L) = ZERO			 
  
-!         IF ( PRESENT (Calc_Sun_Angle_Secant) .AND. & 
-!	      Predictor%Calc_Sun_Angle_Secant) THEN
  
       !	 Total secant
-!           Predictor_AD%Secant_Source_Zenith(L) = Predictor_AD%Secant_Source_Zenith(L) + SECANG_AD(L)
-! 	 ELSE
-!           Predictor_AD%Secant_Sensor_Zenith(L) = Predictor_AD%Secant_Sensor_Zenith(L) + SECANG_AD(L)
-! 	 END IF
  	 
 	 Predictor_AD%Temperature(L) = Predictor_AD%Temperature(L) &
 	             + TR_AD(L) / TC%Ref_Profile_Data(4,L) + DT_AD(L)	
@@ -2936,7 +2568,6 @@ CONTAINS
     LOGICAL :: Cal_Sun
     TYPE( ODCAPS_TauCoeff_type ), POINTER  ::  TC => NULL()
 
-!    TC => TauCoeff%ODCAPS(TauCoeff%Sensor_LoIndex(Sensor_Index))
     TC => ODCAPS_TC(Sensor_Index)
  
     Cal_Sun = .True.
@@ -3030,11 +2661,9 @@ CONTAINS
  
     !  Total secant					    
     	 SECANG(L) = Predictor%Secant_Source_Zenith(L)
-!	 SECANG_TL(L) = Predictor_TL%Secant_Source_Zenith(L) 
     	 Cal_Sun = .TRUE.				    
        ELSE						    
     	 SECANG(L) = Predictor%Secant_Sensor_Zenith(L) 
-!    	 SECANG_TL(L) = Predictor_TL%Secant_Sensor_Zenith(L) 
     	 Cal_Sun = .FALSE. 				    
        END IF						    
        
@@ -3047,17 +2676,11 @@ CONTAINS
     !  trace gas perturbation predictors			  
     !  ---------------  					  
     !  The first 4 trace predictors are used by all trace gases   
-!      TraceGas_Predictors_TL(1,L) = SECANG_TL(L) 					  
        TraceGas_Predictors_TL(1,L) = ZERO 					  
        TraceGas_Predictors_TL(2,L) = TR_TL						  
-!      TraceGas_Predictors_TL(3,L) = SECANG_TL(L) * TR + TR_TL * SECANG(L) 				  
-!      TraceGas_Predictors_TL(4,L) = SECANG_TL(L) * TJUNKS + TJUNKS_TL * SECANG(L)				  
        TraceGas_Predictors_TL(3,L) = TR_TL * SECANG(L) 				  
        TraceGas_Predictors_TL(4,L) = TJUNKS_TL * SECANG(L)				  
     !  The last 3 trace predictors are only used by N2O 	  
-!      TraceGas_Predictors_TL(5,L) = TWO * SECANG(L) * SECANG_TL(L) 			  
-!      TraceGas_Predictors_TL(6,L) = ZERO  					  
-!      TraceGas_Predictors_TL(7,L) = POINT_5 * (SECANG(L)**(-POINT_5)) * SECANG_TL(L)				  
        TraceGas_Predictors_TL(5,L) = ZERO 			  
        TraceGas_Predictors_TL(6,L) = ZERO  					  
        TraceGas_Predictors_TL(7,L) = ZERO				  
@@ -3137,11 +2760,6 @@ CONTAINS
 	 TraceGas_Predictors_AD(:, L) = Predictor_AD%TraceGas_Predictors_Sun(:, L)  
        ENDIF
        
-!       SECANG_AD(L) = POINT_5 * (SECANG(L)**(-POINT_5)) * TraceGas_Predictors_AD(7,L) &
-!                      + TWO * SECANG(L) * TraceGas_Predictors_AD(5,L) &
-!		      + TJUNKS * TraceGas_Predictors_AD(4,L) &
-!                      + TR * TraceGas_Predictors_AD(3,L) &
-!		      + TraceGas_Predictors_AD(1,L)
        TJUNKS_AD = SECANG(L) * TraceGas_Predictors_AD(4,L)
        
        TR_AD = TWO * TR * TJUNKS_AD + TraceGas_Predictors_AD(2,L) &
@@ -3154,11 +2772,6 @@ CONTAINS
        TR_AD = ZERO	
        TraceGas_Predictors_AD(:,L) = ZERO       
        
-!       IF ( Cal_Sun ) THEN
-!          Predictor_AD%Secant_Source_Zenith(L) = Predictor_AD%Secant_Source_Zenith(L) + SECANG_AD(L)     
-!       ELSE
-!          Predictor_AD%Secant_Sensor_Zenith(L) = Predictor_AD%Secant_Sensor_Zenith(L) + SECANG_AD(L)
-!       ENDIF
        	      
     END DO Layer_Loop
     
@@ -3481,8 +3094,6 @@ CONTAINS
 
    !  Layer amount*angle
       WAANG(L) = Predictor%Absorber(L, H2O_Index) * Predictor%Secant_Sensor_Zenith(L)
-!      WAANG_TL(L) = Predictor_TL%Absorber(L, H2O_Index) * Predictor%Secant_Sensor_Zenith(L) &
-!                  + Predictor%Absorber(L, H2O_Index) * Predictor_TL%Secant_Sensor_Zenith(L)
       WAANG_TL(L) = Predictor_TL%Absorber(L, H2O_Index) * Predictor%Secant_Sensor_Zenith(L)  
     
    !  Center-of-layer-to-space amount*angle
@@ -3554,11 +3165,6 @@ CONTAINS
           Optran_Water_Predictors_TL(4,L) = POINT_5 * (POP**(-POINT_5)) * POP_TL 
           Optran_Water_Predictors_TL(5,L) = TWO*TOP*TOP_TL      
           Optran_Water_Predictors_TL(6,L) = POP_TL*TOP + POP*TOP_TL       
-!          Optran_Water_Predictors_TL(7,L) = DA*( Predictor_TL%Secant_Sensor_Zenith(LU)   &
-!	                                       - Predictor_TL%Secant_Sensor_Zenith(LL) ) &
-!		                                 + Predictor_TL%Secant_Sensor_Zenith(LL) &
-!					    + DA_TL*( Predictor%Secant_Sensor_Zenith(LU) &
-!	                                           -  Predictor%Secant_Sensor_Zenith(LL))	        
           Optran_Water_Predictors_TL(7,L) = DA_TL*( Predictor%Secant_Sensor_Zenith(LU) &
 	                                           -  Predictor%Secant_Sensor_Zenith(LL))	        
           Optran_Water_Predictors_TL(8,L) = ( DA*( PZ_TL(LU) - PZ_TL(LL) ) + PZ_TL(LL) &
@@ -3789,10 +3395,6 @@ CONTAINS
     		                    / TC%ODCAPS_ODAS%Water_ProfAve(3,L) 
 	  PZ_AD(LU) = PZ_AD(LU) + DA * Optran_Water_Predictors_AD(8,L) / TC%ODCAPS_ODAS%Water_ProfAve(3,L)
 
-!	  Predictor_AD%Secant_Sensor_Zenith(LL) = Predictor_AD%Secant_Sensor_Zenith(LL) &
-!	              + Optran_Water_Predictors_AD(7,L) - DA * Optran_Water_Predictors_AD(7,L)
-!	  Predictor_AD%Secant_Sensor_Zenith(LU) = Predictor_AD%Secant_Sensor_Zenith(LU) &
-!	              + DA * Optran_Water_Predictors_AD(7,L)
 
           Predictor_AD%Temperature(LL) = Predictor_AD%Temperature(LL) &
 	             + TOP_AD * (ONE - DA) / TC%ODCAPS_ODAS%Water_ProfAve(2,L)
@@ -3826,8 +3428,6 @@ CONTAINS
 	 Predictor_AD%Absorber(L, H2O_Index) = Predictor_AD%Absorber(L, H2O_Index) & 	 
 	           + WAANG_AD(L) * Predictor%Secant_Sensor_Zenith(L)
 		   
-!	 Predictor_AD%Secant_Sensor_Zenith(L) = Predictor_AD%Secant_Sensor_Zenith(L) &
-!	           + WAANG_AD(L) * Predictor%Absorber(L, H2O_Index) 
          
 
 	 TZ_AD(L) = ZERO
@@ -3922,15 +3522,6 @@ CONTAINS
                  + Predictor_TL%Temperature(5) ) / FIVE
 	       
     Non_LTE_Predictors_TL(1) = ZERO
-!    Non_LTE_Predictors_TL(2) = Predictor_TL%Source_COS_Layer1
-!    Non_LTE_Predictors_TL(3) = TWO * Predictor%Source_COS_Layer1 &
-!                             * Predictor_TL%Source_COS_Layer1
-!    Non_LTE_Predictors_TL(4) = Predictor_TL%Source_COS_Layer1 &
-!                             * Predictor%Secant_Sensor_Zenith(1) &
-!			     + Predictor_TL%Secant_Sensor_Zenith(1) &
-!			     * Predictor%Source_COS_Layer1 
-!    Non_LTE_Predictors_TL(5) = Predictor_TL%Source_COS_Layer1 * Temp_ave &
-!                             + Predictor%Source_COS_Layer1 * Temp_ave_TL
     Non_LTE_Predictors_TL(2) = ZERO
     Non_LTE_Predictors_TL(3) = ZERO 
     Non_LTE_Predictors_TL(4) = ZERO 
@@ -3976,14 +3567,7 @@ CONTAINS
 
     Temp_ave_AD =  Predictor%Source_COS_Layer1 * Non_LTE_Predictors_AD(5) 
     
-!    Predictor_AD%Source_COS_Layer1 = Predictor_AD%Source_COS_Layer1    &
-!            +                                         Non_LTE_Predictors_AD(2) &
-!	    + TWO * Predictor%Source_COS_Layer1 * Non_LTE_Predictors_AD(3) &
-!	    + Predictor%Secant_Sensor_Zenith(1) * Non_LTE_Predictors_AD(4) &
-!	    +                              Temp_ave * Non_LTE_Predictors_AD(5)
 	    
-!    Predictor_AD%Secant_Sensor_Zenith(1) =  Predictor_AD%Secant_Sensor_Zenith(1) &
-!            + Predictor%Source_COS_Layer1 * Non_LTE_Predictors_AD(4)
      
     Predictor_AD%Temperature(1) = Predictor_AD%Temperature(1) + Temp_ave_AD / FIVE
     Predictor_AD%Temperature(2) = Predictor_AD%Temperature(2) + Temp_ave_AD / FIVE
@@ -4167,7 +3751,6 @@ CONTAINS
     ENDIF
 
     ! -- water vapor
-!    GOTO 1111
     IF( Atmosphere%Absorber_Units(H2O_Index) == MASS_MIXING_RATIO_UNITS  )THEN
       
       Error_Status = MR_to_PPMV (Atmosphere%Absorber(1:n_Layers_usr, H2O_Index), &
@@ -4285,19 +3868,9 @@ CONTAINS
 
     ENDDO
     
-!    1111 CONTINUE 
 
-!    DO j = 1, n_Absorbers  ! j - ODCAPS absorber index
 
-!      CALL Interpolate_Profile( &
-!                  Predictor%Index_Interpolation(1:n_Layers, :), &
-!                  Atmosphere%Absorber(1:n_Layers_usr, j), &
-!                  Atmosphere%Pressure(1:n_Layers_usr), &
-!                  Predictor%Layer_Pressure(1:n_Layers), &
-!                  Predictor%Absorber(1:n_Layers, j) )
-!    END DO
     ! The input gas must have CH4 and CO for ODCAPS
-!    Predictor%Absorber(1:n_Layers, 1:n_Absorbers) = Atmosphere%Absorber(1:n_Layers, :)
     Predictor%n_Absorbers = n_Absorbers
 
 
@@ -4513,7 +4086,6 @@ CONTAINS
       N2O_Index = MINLOC( ABS( Atmosphere%Absorber_ID - N2O_ID ), DIM = 1 ) 
     ENDIF
 
-!    GOTO 1111
     ! -- water vapor
     IF( Atmosphere%Absorber_Units(H2O_Index) == MASS_MIXING_RATIO_UNITS  )THEN
       
@@ -4603,8 +4175,6 @@ CONTAINS
 	                 ( G0 * m_air / R0 * Predictor%Layer_Pressure(k) ) &
 			 - delp * Predictor%Temperature(k) * m_air_TL &
 			 /( G0 * m_air**TWO / R0 * Predictor%Layer_Pressure(k) )
-!      Altitude_TL( j ) =  Altitude_TL( j -1 ) - delp * Predictor%Temperature(k) * m_air_TL &
-!			 /( G0 * m_air**TWO / R0 * Predictor%Layer_Pressure(k) )
       			 
     ENDDO    
     
@@ -4619,7 +4189,6 @@ CONTAINS
  
      
     ! -- water vapor
-!    tempzero_TL = ZERO
     Error_Status =  PPMV_to_KMOL_TL( Predictor%Layer_Pressure(1:n_Layers), &       	     
 		  		     Predictor%Temperature(1:n_Layers), &    	     
 		  		     Delta_Z(1:n_Layers), &	        	     
@@ -4724,9 +4293,6 @@ CONTAINS
     
      
     ! ODCAPS Secant Zenith for different altitude
-!    CALL Compute_Secant_Zenith_TL( GeometryInfo,     &  ! Input
-!                                   Predictor,    &  ! Input
-!                                   Predictor_TL )   ! In/Output
 
     ! ODCAPS Fix and Trace Gas Multipliers
     CALL Fix_And_Trace_Gas_Multi_TL( Sensor_Index,    &  ! Input
@@ -4873,7 +4439,6 @@ CONTAINS
       N2O_Index = MINLOC( ABS( Atmosphere%Absorber_ID - N2O_ID ), DIM = 1 ) 
     ENDIF
     ! Forward Model
-!    GOTO 1111
     ! -- water vapor
     IF( Atmosphere%Absorber_Units(H2O_Index) == MASS_MIXING_RATIO_UNITS  )THEN
       
@@ -4962,7 +4527,6 @@ CONTAINS
 
     ENDDO
 
-!    1111 CONTINUE
     
 
     ! Adjoint Model
@@ -4972,9 +4536,6 @@ CONTAINS
                                      Predictor,   &  ! Input
                                      Predictor_AD)   ! In/Output
     ! ODCAPS Secant Zenith for different altitude
-!    CALL Compute_Secant_Zenith_AD( GeometryInfo,     &  ! Input
-!                                   Predictor,    &  ! Input
-!                                   Predictor_AD )   ! In/Output
     
 
     IF ( CO_Index == 0 .AND. CH4_Index == 0 ) THEN
@@ -5017,7 +4578,6 @@ CONTAINS
     Delta_Z_AD(:) = ZERO
     vj_AD(:,:) = ZERO
     vm_H2O_AD(:) = ZERO
-!    tempzero_AD(:) = ZERO
     
     !-- Other gases
     DO j = 1, n_Absorbers  ! j - ODCAPS absorber index
@@ -5082,7 +4642,6 @@ CONTAINS
       RETURN
     END IF
 
-!    tempzero_AD = ZERO
     
     Altitude_AD( : ) = ZERO
     m_air_AD(:) = ZERO
@@ -5157,7 +4716,6 @@ CONTAINS
       RETURN                                                                        
     ENDIF
 
-!    1112 CONTINUE
 
     IF( CO_Index == 0  ) CO_Amount_AD(1:n_Layers)   = ZERO
     IF( CH4_Index == 0 ) CH4_Amount_AD(1:n_Layers)  = ZERO
@@ -5309,8 +4867,6 @@ CONTAINS
         DO L = 1, Predictor%n_Layers
 	  CALL VACONV( SVA, SATELLITE_HEIGHT, &
 	               Predictor%Altitude(L),  EVA )
-!          Predictor%Secant_Sensor_Zenith( L ) = ONE / COS( EVA )
-!       Change to the same as OPTRAN algorithm 08/17/06
           Predictor%Secant_Sensor_Zenith( L ) =  GeometryInfo%Secant_Sensor_Zenith 
         ENDDO
 
@@ -5429,8 +4985,6 @@ CONTAINS
         DO L = 1, Predictor%n_Layers
 	  CALL VACONV_TL( SVA, SATELLITE_HEIGHT, &
 	         Predictor%Altitude(L), Predictor_TL%Altitude(L), EVA, EVA_TL)
-!          Predictor_TL%Secant_Sensor_Zenith( L ) = SIN( EVA) * EVA_TL / (COS( EVA ))**TWO
-!       Change to the same as OPTRAN algorithm 08/17/06
           Predictor_TL%Secant_Sensor_Zenith( L ) = ZERO
         ENDDO
 
@@ -5783,8 +5337,6 @@ CONTAINS
 	            ( TC%Fix_Gases_Adjustment(L)*GSCAL )
 	 
 	 Predictor_TL%Fix_Amount_Multiplier( L ) = A_F_TL
-!	 Predictor_TL%Fix_Amount_Multiplier( L ) = ZERO
-!         A_F_TL = ZERO
       
       !  CO2 mult=1 when prof amount = 1.03 * ref amount
 	 Predictor_TL%CO2_Multiplier( L ) = 33.3333_fp * ( Predictor_TL%CO2_Amount(L) &
@@ -5923,8 +5475,6 @@ CONTAINS
 		 
 	 A_F_AD = A_F_AD - 33.3333_fp * Predictor_AD%CO2_Multiplier( L )  
          
-!	 A_F_AD(L) = ZERO
-!	 Predictor_AD%Fix_Amount_Multiplier( L ) = ZERO
 	 
          A_F_AD = A_F_AD + Predictor_AD%Fix_Amount_Multiplier( L )
 
@@ -5945,78 +5495,6 @@ CONTAINS
   END SUBROUTINE Fix_And_Trace_Gas_Multi_AD
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                        ## PUBLIC MODULE ROUTINES ##                        ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors
-!
-! PURPOSE:
-!       SUBROUTINE to set-up the Predictor_type data structure for a
-!       supplied atmospheric profile in preparation for multi-channel
-!       gas absorption optical depth computations via the
-!       Compute_Predictor SUBROUTINE.
-!
-! CALLING SEQUENCE:
-!        CALL Compute_Predictors( Sensor_Index,             &  ! Input 
-!                                 Atmosphere,               &  ! Input                                         
-!                                 GeometryInfo,             &  ! Input                           
-!                                 Predictor,                &  ! Output                  
-!                                 APVariables   )  ! Internal variable output     
-!
-! INPUT ARGUMENTS:
-!       Atmosphere:      CRTM_Atmosphere structure containing the atmospheric
-!                        profile data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_Atmosphere_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:    CRTM_GeometryInfo structure containing the 
-!                        view geometry information.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-!       Sensor_Index:    Sensor index id. This is a unique index associated
-!                        with a (supported) algorithm ID used to determine the 
-!                        algorithm.
-!                        UNITS:      N/A
-!                        TYPE:       INTEGER
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN)
-!
-! OUTPUT ARGUMENTS:
-!        Predictor:  Predictor structure containing the
-!                        gaseous absorption data.
-!                        UNITS:      N/A
-!                        TYPE:       TYPE(Predictor_type)
-!                        DIMENSION:  Scalar
-!                        ATTRIBUTES: INTENT(IN OUT)
-!
-!       APVariables:    Structure containing internal variables required for
-!                       subsequent tangent-linear or adjoint model calls.
-!                       The contents of this structure are NOT accessible
-!                       outside of the ODCAPS_Predictor module.
-!                       UNITS:      N/A
-!                       TYPE:       TYPE(APVariables_type)
-!                       DIMENSION:  Scalar
-!                       ATTRIBUTES: INTENT(OUT)
-!
-!
-! COMMENTS:
-!       Note the INTENT on the output Predictor argument is IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
   SUBROUTINE Compute_Predictors( Sensor_Index,  &  ! Input 	    		
                                  Atmosphere,    &  ! Input
                                  GeometryInfo,  &  ! Input 	     
@@ -6119,86 +5597,6 @@ CONTAINS
   
   END SUBROUTINE Compute_Predictors
  
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors_TL
-!
-! PURPOSE:
-!       SUBROUTINE to set-up the Predictor_type data structure for a
-!       supplied atmospheric profile in preparation for multi-channel
-!       gas absorption tangent-linear optical depth computations via the
-!       Compute_Predictor_TL SUBROUTINE.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors_TL( Sensor_Index,             &  ! Input  
-!                                   Atmosphere,               &  ! Input                                           
-!                                   Predictor,                &  ! Input                                     
-!                                   Atmosphere_TL,            &  ! Input                             
-!                                   GeometryInfo,             &  ! Input                             
-!                                   Predictor_TL,             &  ! Output  
-!                                   APVariables    )  ! Internal variable input     
-! INPUT ARGUMENTS:
-!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
-!                           state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:      Predictor structure containing the integrated
-!                           absorber and gas absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Atmosphere_TL:      CRTM Atmosphere structure containing the tangent-linear
-!                           atmospheric state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       GeometryInfo:       CRTM_GeometryInfo structure containing the 
-!                           view geometry information.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Sensor_Index:       Sensor index id. This is a unique index associated
-!                           with a (supported) algorithm ID used to determine the 
-!                           algorithm.
-!                           UNITS:	N/A
-!                           TYPE:	INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       APVariables:       Structure containing internal variables required for
-!                          subsequent tangent-linear or adjoint model calls.
-!                          The contents of this structure are NOT accessible
-!                          outside of the ODCAPS_Predictor module.
-!                          UNITS:      N/A
-!                          TYPE:       APVariables_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!        Predictor_TL:  Predictor structure containing the
-!                           tangent-linear integrated absorber and gas
-!                           absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! COMMENTS:
-!       Note the INTENT on the output Predictor_TL argument is IN OUT rather
-!       than just OUT. This is necessary because the argument is defined
-!       upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
   SUBROUTINE Compute_Predictors_TL( Sensor_Index,        &  ! Input	      
                                     Atmosphere,	         &  ! Input	    		  
                                     Predictor,           &  ! Input	      
@@ -6300,100 +5698,6 @@ CONTAINS
 
   END SUBROUTINE Compute_Predictors_TL 
 
-!--------------------------------------------------------------------------------
-!
-! NAME:
-!       Compute_Predictors_AD
-!
-! PURPOSE:
-!       SUBROUTINE to perform the adjoint of the set-up of the
-!       Predictor_type data structure for a supplied atmospheric
-!       profile after multi-channel gas absorption adjoint optical depth
-!       computations via the Compute_Predictor_AD SUBROUTINE.
-!
-! CALLING SEQUENCE:
-!       CALL Compute_Predictors_AD( Sensor_Index,             &  ! Input!                                                       
-!                                   Atmosphere,               &  ! Input
-!                                   Predictor,                &  ! Input                                   
-!                                   Predictor_AD,             &  ! Input                               
-!                                   GeometryInfo,             &  ! Input                              
-!                                   Atmosphere_AD,            &  ! Output 
-!                                   APVariables    )  ! Internal variable input     
-! INPUT ARGUMENTS:
-!       Atmosphere:         CRTM_Atmosphere structure containing the atmospheric
-!                           state data.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor:      Predictor structure containing the integrated
-!                           absorber and gas absoprtion model predictor profiles.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_OPTRAN_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Predictor_AD:   Predictor_AD structure containing the
-!                           adjoint integrated absorber and gas absoprtion model
-!                           predictor profiles.
-!                           **NOTE: On EXIT from this SUBROUTINE, the contents of
-!                                   this structure are set to zero.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(Predictor_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-!       GeometryInfo:       CRTM_GeometryInfo structure containing the 
-!                           view geometry information.
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_GeometryInfo_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       Sensor_Index:       Sensor index id. This is a unique index associated
-!                           with a (supported) algorithm ID used to determine the 
-!                           algorithm.
-!                           UNITS:	N/A
-!                           TYPE:	INTEGER
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN)
-!
-!       APVariables:       Structure containing internal variables required for
-!                          subsequent tangent-linear or adjoint model calls.
-!                          The contents of this structure are NOT accessible
-!                          outside of the ODCAPS_Predictor module.
-!                          UNITS:      N/A
-!                          TYPE:       APVariables_type
-!                          DIMENSION:  Scalar
-!                          ATTRIBUTES: INTENT(OUT)
-!
-! OUTPUT ARGUMENTS:
-!       Atmosphere_AD:      CRTM Atmosphere structure containing the adjoint
-!                           atmospheric state data.
-!                           **NOTE: On ENTRY to this SUBROUTINE, the contents of
-!                                   this structure should be defined (e.g.
-!                                   initialized to some value based on the
-!                                   position of this SUBROUTINE in the call chain.)
-!                           UNITS:      N/A
-!                           TYPE:       TYPE(CRTM_Atmosphere_type)
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT(IN OUT)
-!
-! SIDE EFFECTS:
-!       The contents of the input Predictor_AD structure argument are set
-!       to zero before exiting this routine.
-!
-! COMMENTS:
-!       - Note the INTENT on the input Predictor_AD argument is IN OUT rather
-!         than just OUT. This is because the structure components are set to zero
-!         before exiting this routine.
-!
-!       - Note the INTENT on the output Atmosphere_AD argument is IN OUT rather
-!         than just OUT. This is necessary because the argument is defined
-!         upon input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-!--------------------------------------------------------------------------------
   SUBROUTINE Compute_Predictors_AD( Sensor_Index,        &  ! Input                          
                                     Atmosphere,          &  ! Input          
                                     Predictor,           &  ! Input                  

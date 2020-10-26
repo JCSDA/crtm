@@ -1,58 +1,3 @@
-!--------------------------------------------------------------------------------
-!M+
-! NAME:
-!       MONORTM_Input
-!
-! PURPOSE:
-!       Module containing routines for creating MONORTM input files.
-!
-! CATEGORY:
-!       MONORTM
-!
-! LANGUAGE:
-!       Fortran-90
-!
-! CALLING SEQUENCE:
-!       USE MONORTM_input
-!
-! MODULES:
-!       Type_Kinds:         Module with data type kind definitions.
-!
-!       File_Utility:       Module containing generic file utility routines
-!
-!       Message_Handler:    Module containing error handling definitions and
-!                           routines.
-!                           USEs: FILE_UTILITY module
-!
-! CONTAINS:
-!       
-! EXTERNALS:
-!       None.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:   Paul van Delst, CIMSS/SSEC, 23-Jan-2000
-!                     paul.vandelst@ssec.wisc.edu
-!
-!  Copyright (C) 2000 Paul van Delst
-!
-!  This program is free software; you can redistribute it and/or
-!  modify it under the terms of the GNU General Public License
-!  as published by the Free Software Foundation; either version 2
-!  of the License, or (at your option) any later version.
-!
-!  This program is distributed in the hope that it will be useful,
-!  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!  GNU General Public License for more details.
-!
-!  You should have received a copy of the GNU General Public License
-!  along with this program; if not, write to the Free Software
-!  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-!M-
-!--------------------------------------------------------------------------------
 
 MODULE MONORTM_Input
 
@@ -79,7 +24,6 @@ MODULE MONORTM_Input
   ! ----------
 
   PRIVATE
-!  PUBLIC :: create_MONORTM_tape7
   PUBLIC :: create_MONORTM_TAPE5
 
 
@@ -119,7 +63,6 @@ MODULE MONORTM_Input
     REAL( fp_kind ) :: earth_radius
     REAL( fp_kind ) :: altitude_of_space
     REAL( fp_kind ) :: average_frequency
-!    REAL( fp_kind ) :: co2ppmv
     REAL( fp_kind ) :: reference_latitude
   END TYPE LBLATM_Flags_type
 
@@ -263,424 +206,6 @@ MODULE MONORTM_Input
   LOGICAL, PRIVATE :: no_placeholder
 
 CONTAINS
-!--------------------------------------------------------------------------------
-!S+
-! NAME:
-!       create_MONORTM_TAPE5
-!
-! PURPOSE:
-!       Function to create an input TAPE5 file for MONORTM
-!
-! CATEGORY:
-!       MONORTM
-!
-! LANGUAGE:
-!       Fortran-90
-!
-! CALLING SEQUENCE:
-!       result = create_MONORTM_TAPE5( &
-!                  pressure, &                                    ! Input
-!                  temperature, &                                 ! Input
-!                  absorber_amount, &                             ! Input
-!                  absorber_units, &                              ! Input
-!                  absorber_id, &                                 ! Input
-!                  surface_altitude, &                            ! Input
-!                  begin_frequency, &                             ! Input
-!                  end_frequency, &                               ! Input
-!
-!                  absorber_format      = absorber_format, &      ! Optional input
-!                  co2ppmv              = co2ppmv, &              ! Optional input
-!                  boundary_temperature = boundary_temperature, & ! Optional input
-!                  climatology_model    = climatology_model, &    ! Optional input
-!                  downwelling          = downwelling, &          ! Optional input
-!                  zenith_angle         = zenith_angle, &         ! Optional input
-!                  observer_pressure    = observer_pressure, &    ! Optional input
-!                  boundary_pressure    = boundary_pressure, &    ! Optional input
-!                  layer_boundaries     = layer_boundaries, &     ! Optional input
-!                  continuum_option     = continuum_option, &     ! Optional input
-!                  continuum_scale      = continuum_scale, &      ! Optional input
-!                  merge_option         = merge_option, &         ! Optional input
-!                  xsection_option      = xsection_option, &      ! Optional input
-!                  xsection_name        = xsection_name, &        ! Optional input
-!                  xsection_pressure    = xsection_pressure, &    ! Optional input
-!                  xsection_amount      = xsection_amount, &      ! Optional input
-!                  xsection_units       = xsection_units, &       ! Optional input
-!                  header               = header, &               ! Optional input
-!                  filename             = filename, &             ! Optional input
-!                  message_log          = message_log )           ! Optional input
-!
-! INPUTS:
-!       pressure:           Pressure levels.
-!                           UNITS:      hectoPascals (hPa)
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Rank-1, K
-!                                       1 < K <= MAX_PROFILE_LEVELS
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       temperature:        Temperature values at specified pressures.
-!                           UNITS:      Kelvin
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Rank-1, K
-!                                       1 < K <= MAX_PROFILE_LEVELS
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       absorber_amount:    Absorber amounts to use in the MONORTM calculation.
-!                           The array should have dimensions 
-!                           of K x J where
-!                             K == number of atmospheric profile levels, and
-!                             J == number of absorbers.
-!                           UNITS:      User defined (see ABSORBER_UNITS)
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Rank-2, K x J
-!                                       1 < K <= MAX_PROFILE_LEVELS
-!                                       1 <= J <= MAX_N_ABSORBERS
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       absorber_units:     String vector of flags to indicate the units of the
-!                           absorber amounts. The flag values correspond to
-!                           those used by MONORTM and are:
-!                             'A':     Volume mixing ratio (ppmv)
-!                             'B':     Number density (cm^-3)
-!                             'C':     Mass mixing ratio (gm/kg)
-!                             'D':     Mass density (gm/m^3)
-!                             'E':     Partial pressure (mb)
-!                             'F':     Dew point temperature (Td in K))     - H2O only
-!                             'G':      "    "        "      (Td in deg. C) - H2O only
-!                             'H':     Relative humidity (RH in %)          - H2O only
-!                             '1'-'6': Default to specified model atmosphere
-!                           UNITS:      N/A
-!                           TYPE:       CHARACTER( 1 )
-!                           DIMENSION:  Rank-1, J
-!                                       1 <= J <= MAX_N_ABSORBERS
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       absorber_id:        Molecular ID of the absorber amounts. These values
-!                           correspond to the HITRAN/MONORTM molecular species
-!                           numbers:
-!                             1: H2O       9: SO2      17: HI       25: H2O2
-!                             2: CO2      10: NO2      18: ClO      26: C2H2
-!                             3: O3       11: NH3      19: OCS      27: C2H6
-!                             4: N2O      12: HNO3     20: H2CO     28: PH3
-!                             5: CO       13: OH       21: HOCl     29: COF2
-!                             6: CH4      14: HF       22: N2       30: SF6
-!                             7: O2       15: HCl      23: HCN      31: H2S
-!                             8: NO       16: HBr      24: CH3Cl    32: HCOOH
-!                           UNITS:      N/A
-!                           TYPE:       INTEGER
-!                           DIMENSION:  Rank-1, J
-!                                       1 <= J <= MAX_N_ABSORBERS
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       surface_altitude:   Surface altitude
-!                           UNITS:      Kilometres (km)
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       begin_frequency:    Frequency at which to begin the calculation
-!                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-!       end_frequency:      Frequency at which to end the calculation
-!                           UNITS:      Inverse centimetres (cm^-1)
-!                           TYPE:       REAL( fp_kind )
-!                           DIMENSION:  Scalar
-!                           ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUTS:
-!       calculation_flags:     Set this 
-!       absorber_format:       Set this argument to define the write format
-!                              of the absorber amounts in the output file.
-!                              Valid values are:
-!                                0 = Output format is es10.3, " X.XXXe+XX"  (default)
-!                                1 = Output format is es15.8, " X.XXXXXXXXe+XX"
-!                              If not specified, the default value is 0.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       co2ppmv:               Set this argument to the carbon dioxide 
-!                              concentration. This value is used at EVERY
-!                              level in the atmosphere (assumes well mixed gas).
-!                              If not specified, the default value used is
-!                              380ppmv.
-!                              UNITS:      Parts-per-million by volume (ppmv)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       boundary_temperature:  Set this argument to the boundary temperature.
-!                              If not specified the defaults are:
-!                                For uplooking calculations   = cosmic background T
-!                                For downlooking calculations = surface air T.
-!                              UNITS:      Kelvin
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       climatology_model:     Set this argument to a value for the climato-
-!                              logical model to use for those molecules and
-!                              layers where data is not available/provided.
-!                              Valid values are:
-!                                  1 = Tropical
-!                                  2 = Midlatitude summer
-!                                  3 = Midlatitude winter
-!                                  4 = Subarctic summer
-!                                  5 = Subarctic winter
-!                                  6 = US Standard Atmosphere (default )
-!                              If not specified and required, or if user input
-!                              is invalid, the default is 6 - the US Standard
-!                              Atmosphere.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       downwelling:           Set this argument to a value of 1 to perform a
-!                              downwelling/uplooking calculation. If not set,
-!                              upwelling/downlooking is assumed (i.e. downwelling=0).
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       zenith_angle:          Set this argument to the zenith view angle
-!                              If not set a default value of 0.0 degrees is used.
-!                              The diagrams below show how the zenith angle, Z, is
-!                              interpreted for the up- and downwelling cases:
-!
-!                                upwelling/downlooking    downwelling/uplooking
-!
-!                                        |                     zenith   view
-!                                      -OAO-                      |      /
-!                                        |\                       |     /
-!                                        |Z\                      |    /
-!                                        |  \                     |   /
-!                                        |   \                    |  /
-!                                        |    \                   |Z/
-!                                        |     \                  |/
-!                                        |      \               -OVO-
-!                                     --------------          --------------
-!                                        ^       ^
-!                                      nadir    view
-!
-!                              UNITS:      degrees
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       observer_pressure:     Set this argument to the pressure of the observer.
-!                              If not set, the value is obtained from the input
-!                              pressure based on the view geometry (i.e. up- or
-!                              downwelling).
-!                              UNITS:      hectoPascals (hPa)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       boundary_pressure:     Set this argument to the pressure of the boundary
-!                              viewed by the observer. If not set, the value is
-!                              obtained from the input pressure based on the view
-!                              geometry (i.e. up- or downwelling).
-!                              UNITS:      hectoPascals (hPa)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       layer_boundaries:      Set this argument to an array of layer pressure
-!                              boundaries defining the MONORTM calculation layers.
-!                              Note that the supplied values have precedence over
-!                              the observer and boundary pressures, if supplied.
-!                              If not supplied, the input pressure levels are used
-!                              if their dimension is <= MAX_LAYER_BOUNDARIES. If
-!                              otherwise, an error is generated.
-!                              UNITS:      hectoPascals (hPa)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Rank-1, Kc
-!                                          1 < Kc <= MAX_LAYER_BOUNDARIES
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       continuum_option:      Set this argument to the MONORTM continuum option.
-!                              Valid values are:
-!                                0 = no continua
-!
-!                                1 = all continua calculated (default )
-!
-!                                2 = H2O self not calculated. 
-!                                    All others calculated.
-!                                3 = H2O foreign not calculated.
-!                                    All others calculated.
-!                                4 = H2O self and foreign not calculated.
-!                                    All others calculated.
-!                                5 = Rayleigh extinction not calculated.
-!                                    All other continua calculated.
-!                                6 = Individual continua scale factors input.
-!                                    Requires specification of the continuum_flags
-!                                    argument
-!                              If not specified, the default value is 1. If a value
-!                              of 6 is specified, the CONTINUUM_SCALE argument *must*
-!                              be specified.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       continuum_scale:       Set this argument to a 7-element array containing the
-!                              multiplicative scale factors for:
-!                                H2O self-broadened continuum absorption,
-!                                H2O foreign-broadened continuum absorption,
-!                                CO2 continuum absorption,
-!                                O3 continuum absorption,
-!                                O2 continuum absorption,
-!                                N2 continuum absorption, and
-!                                Rayleigh extinction
-!                              respectively. These data are not used unless the 
-!                              CONTINUUM_OPTION argument is specified and has a
-!                              value of 6.
-!                              UNITS:      N/A
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  7
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       merge_option:          Set this argument to the MONORTM merge option.
-!                              See the MONORTM instructions for valid values.
-!                              If not specified, the default value is 0.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       xsection_option:       Set this argument to include cross-section 
-!                              molecule data. Valid values are:
-!                                0 = no X-section data (default )
-!                                1 = use standard X-section profile(s). The
-!                                    optional argument XSECTION_NAME *must*
-!                                    be supplied.
-!                                2 = use user input profile(s). The optional
-!                                    arguments XSECTION_NAME, XSECTION_PRESSURE,
-!                                    XSECTION_AMOUNT and XSECTION_UNITS *must*
-!                                    be specified.
-!                              If not specified, the default value is 0.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER
-!                              DIMENSION:  Scalar
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       xsection_name:         Set this argument to a string vector containing 
-!                              the names of the X-section molecules to include.
-!                              Valid availble names are listed in the FSCDXS
-!                              file. This argument *must* be specified if the
-!                              value of XSECTION_OPTION is 1 or 2.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER( 10 )
-!                              DIMENSION:  Rank-1, Jxs
-!                                          1 <= Jxs <= MAX_N_XS_ABSORBERS
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       xsection_pressure:     Set this argument to the pressure levels of
-!                              the input X-section absorber profiles. This
-!                              argument *must* be specified is the value of
-!                              XSECTION_OPTION is 2.
-!                              UNITS:      hectoPascals (hPa)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Rank-1, Kxs
-!                                          1 < Kxs <= MAX_PROFILE_LEVELS
-!                              ATTRIBUTES: OPTIONAL, INTENT( IN )
-!
-!       xsection_amount:       X-section absorber amounts to use in the MONORTM
-!                              calculation. The array should have dimensions
-!                              of Kxs x Jxs where
-!                                Kxs == number of X-section profile levels, and
-!                                Jxs == number of X-section absorbers.
-!                              This argument *must* be specified is the value
-!                              of XSECTION_OPTION is 2.
-!                              UNITS:      User defined (see ABSORBER_UNITS)
-!                              TYPE:       REAL( fp_kind )
-!                              DIMENSION:  Rank-2, Kxs x Jxs
-!                                          1 < Kxs <= MAX_PROFILE_LEVELS
-!                                          1 <= Jxs <= MAX_N_XS_ABSORBERS
-!                              ATTRIBUTES: INTENT( IN )
-!
-!       xsection_units:        String vector of flags to indicate the units of the
-!                              X-section absorber amounts. The flag values correspond
-!                              to those used by MONORTM and are:
-!                                'A':     Volume mixing ratio (ppmv)
-!                                '1':     Default to global model atmosphere
-!                              This argument *must* be specified is the value
-!                              of XSECTION_OPTION is 2.
-!                              UNITS:      N/A
-!                              TYPE:       CHARACTER( 1 )
-!                              DIMENSION:  Rank-1, Jxs
-!                                          1 <= Jxs <= MAX_N_XS_ABSORBERS
-!                              ATTRIBUTES: INTENT( IN )
-!
-!       header:                Set this argument to an identifier string that
-!                              is used in the TAPE5 file. If not set then the
-!                              default value is:
-!                              'MONORTM TAPE5. Created on YYYY/MM/DD at HH:MM:SS'
-!                              Units:     None
-!                              Type:      Character
-!                              Dimension: Scalar. Max. length is 78 characters.
-!
-!       filename:              Set this argument to a string or string variable
-!                              to be used as the output TAPE5 filename. If not 
-!                              set the output filename is:
-!                              'tape5.rdk'.
-!                              Units:     None
-!                              Type:      Character
-!                              Dimension: Scalar. Max. length is 78 characters.
-!
-!       message_log:           Set this argument to a string or string variable
-!                              to be used as the output log filename for any
-!                              error messages. If not set errors are output
-!                              to standard output.
-!                              Units:     None
-!                              Type:      Character
-!                              Dimension: Scalar.
-!
-!
-! FUNCTION RESULT:
-!       The function returns a scalar long integer value result.
-!         == SUCCESS   => normal completion
-!         == FAILURE   => error occurred
-!
-! MODULES:
-!       Type_Kinds:     Module with data type kind definitions.
-!
-!       Message_Handler:Module containing error handling definitions and
-!                       routines.
-!
-! CONTAINS:
-!       compute_calculation_levels: Function to compute default calculation
-!                                   level altitudes for MONORTM TAPE5 files.
-!       
-! EXTERNALS:
-!       get_lun:        Function for allocating free logical unit
-!                       numbers for file access.
-!
-! COMMON BLOCKS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!        - Maximum number of input profile levels is 3400. This is an MONORTM
-!          requirement and may change.
-!        - Maximum number of calculation levels is 200. This is an MONORTM
-!          requirement and may change.
-!        - Input data must be in ASCENDING HEIGHT order, that is:
-!          pressure(1), temperature(1), etc. == surface
-!          pressure(L), temperature(L), etc. == top of profile
-!
-! CREATION HISTORY:
-!       Written by:   Paul van Delst, CIMSS/SSEC, 23-Jan-2000
-!                     paul.vandelst@ssec.wisc.edu
-!S-
-!--------------------------------------------------------------------------------
 
   FUNCTION create_MONORTM_TAPE5( pressure,             &  ! Input
                                 temperature,          &  ! Input
@@ -1266,26 +791,6 @@ logical :: terminator
     ! Continuum option
     ! ----------------
 
-!    ! -- Define default
-!    user_continuum_option = DEFAULT_CONTINUUM_OPTION
-!
-!    ! -- Check keyword
-!    IF ( PRESENT( continuum_option ) ) THEN
-!
-!      ! -- Is specified option valid?
-!      IF ( continuum_option < MIN_CONTINUUM_OPTION .OR. &
-!           continuum_option > MAX_CONTINUUM_OPTION      ) THEN
-!        WRITE( message, '( "Invalid CONTINUUM_OPTION input. Using value of ", i1 )' ) &
-!                        user_continuum_option
-!        CALL display_message( ROUTINE_NAME, &
-!                              message, &
-!                              INFORMATION, &
-!                              message_log = message_log )
-!      ELSE
-!        user_continuum_option = continuum_option
-!      END IF
-!
-!    END IF
 
 
 
@@ -1318,13 +823,6 @@ logical :: terminator
     ! Merge option
     ! ------------
 
-!    ! -- Define default
-!    user_merge_option = DEFAULT_MERGE_OPTION
-!
-!    ! -- Check keyword
-!    IF ( PRESENT( merge_option ) ) THEN
-!      user_merge_option = ABS( merge_option )
-!    END IF
 
 
 
@@ -1332,27 +830,6 @@ logical :: terminator
     ! X-section molecule option
     ! -------------------------
 
-!    ! -- Define default
-!    user_xsection_option = DEFAULT_XSECTION_OPTION
-!    use_xsections        = DEFAULT_XSECTION_OPTION
-!
-!    ! -- Check keyword
-!    IF ( PRESENT( xsection_option ) ) THEN
-!
-!      ! -- Is specified option valid?
-!      IF ( xsection_option < MIN_XSECTION_OPTION .OR. &
-!           xsection_option > MAX_XSECTION_OPTION      ) THEN
-!        WRITE( message, '( "Invalid XSECTION_OPTION input. Using value of ", i1 )' ) &
-!                        use_xsections
-!        CALL display_message( ROUTINE_NAME, &
-!                              TRIM( message ), &
-!                              INFORMATION, &
-!                              message_log = message_log )
-!      ELSE
-!        use_xsections = xsection_option
-!      END IF
-!
-!    END IF
 
 
 
@@ -1661,16 +1138,6 @@ logical :: terminator
     ! -----------------------------
 
     record_number = '1.3'
-!
-!    IF ( no_placeholder ) THEN
-!      WRITE( file_id, FMT    = '( 2( f10.3 ) )', &
-!                      IOSTAT = io_status         ) &
-!                      begin_frequency, end_frequency
-!    ELSE
-!      ! -- Write place holder
-!      WRITE( file_id, FMT    = '( "  UUUU.UUU  VVVV.VVV" )', &
-!                      IOSTAT = io_status ) 
-!    END IF
 
     IF ( io_status /= 0 ) GOTO 1000
 
@@ -1767,7 +1234,6 @@ logical :: terminator
 
                                              absorber_format = absorber_format, &  ! Optional input
                                              altitude_flag   = altitude_flag,   &  ! Optional input
-!                                             altitude        = altitude,        &  ! Optional input
                                              message_log     = message_log )       ! Error messaging
 
     IF ( error_status /= SUCCESS ) THEN
@@ -1891,15 +1357,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                            Check_Absorber_Units                            ==
-!==                                                                            ==
-!==         Function to check the validity of the absorber unit flags          ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Check_Absorber_Units( absorber_units,  &  ! Input
                                  absorber_number, &  ! Input
@@ -2031,15 +1488,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                              Check_Frequency                               ==
-!==                                                                            ==
-!==          Function to check the validity of the input frequencies           ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Check_Frequency( begin_frequency, &  ! Input
                             end_frequency,   &  ! Input
@@ -2168,15 +1616,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                              Write_Record_1p2                              ==
-!==                                                                            ==
-!==                         Function to write Record 1.2                       ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_1p2( file_id,           &  ! Input
                              Calculation_Flags, &  ! Input
@@ -2222,20 +1661,6 @@ logical :: terminator
     ! ---------------------------------
 
    ! WRITE( file_id, FMT    = '(" HI=",i1," F4=",i1," CN=",i1," AE=",i1," EM=",i1, &
-!                              &" SC=",i1," FI=",i1," PL=",i1," TS=",i1," AM=",i1, &
-!                              &" M=",i2.2," LA=",i1," OD=",i1," XS=",i1,1x,i4,1x,i4)', &
-!                    IOSTAT = io_status ) Calculation_Flags
-!
-!    IF ( io_status /= 0 ) THEN
-!      error_status = FAILURE
-!      WRITE( message, '( "Error writing Record 1.2. IOSTAT = ", i5 )' ) io_status
-!      CALL display_message( ROUTINE_NAME, &
-!                            TRIM( message ), &
-!                            error_status, &
-!                            message_log = message_log )
-!      CLOSE( file_id )
-!      RETURN
-!    END IF
 
 
     ! ----
@@ -2250,15 +1675,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                              Write_Record_3p1                              ==
-!==                                                                            ==
-!==          Function to write Record 3.1, LBLATM calculation flags            ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_3p1( file_id,       &  ! Input
                              LBLATM_Flags,  &  ! Input
@@ -2353,15 +1769,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                              Write_Record_3p2                              ==
-!==                                                                            ==
-!==                         Function to write Record 3.2                       ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_3p2( file_id,        &  ! Input
 
@@ -2587,15 +1994,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                              Write_Record_3p3B                             ==
-!==                                                                            ==
-!==                         Function to write Record 3.3B                      ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_3p3B ( file_id,          &  ! Input
                                layer_boundaries, &  ! Input
@@ -2723,15 +2121,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                           Write_Record_3p4_to_3p6                          ==
-!==                                                                            ==
-!==    Function to write Record 3.4, 3.5, 3.6.1 to 3.6.N - the profile data    ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_3p4_to_3p6 ( file_id,           &  ! Input
                                      n_molecules,       &  ! Input
@@ -3045,15 +2434,6 @@ logical :: terminator
 
 
 
-!================================================================================
-!================================================================================
-!==                                                                            ==
-!==                           Write_Record_3p7_to_3p8                          ==
-!==                                                                            ==
-!==      Function to write Record 3.7 to 3.8 - the X-section profile data      ==
-!==                                                                            ==
-!================================================================================
-!================================================================================
 
   FUNCTION Write_Record_3p7_to_3p8 ( file_id,           &  ! Input
                                      xs_profile_flag,   &  ! Input
@@ -3298,60 +2678,3 @@ logical :: terminator
 END MODULE MONORTM_Input
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-! $Id: MONORTM_Input.f90 655 2007-05-29 22:07:15Z paul.vandelst@noaa.gov $
-!
-! $Date: 2006/07/26 21:43:58 $
-!
-! $Revision: 655 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: MONORTM_Input.f90,v $
-! Revision 2.7  2006/07/26 21:43:58  wd20pd
-! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
-! in documentaiton blocks.
-!
-! Revision 2.6  2006/07/25 19:33:58  paulv
-! - Updated to use new Utility modules.
-! - Cosmetic changes to structure parameter declarations.
-!
-! Revision 2.5  2003/12/01 17:55:22  paulv
-! - Added optional Placeholder argument to Write_Record_3p2() function call
-!   to allow zenith angle specification to be replaced with "AAA.AAA" for
-!   use in transmittance production.
-!
-! Revision 2.4  2003/07/21 21:08:49  paulv
-! - Corrected a bug in the definition of the absorber names array. The number
-!   of absorber name definitions was different from the specified dimension.
-!   PGI compiler did not flag error, IBM compiler issued conformance error
-!   message.
-!
-! Revision 2.3  2002/06/05 18:53:58  paulv
-! - Removed MESSAGE as a module variable and placed definitions in each
-!   module subprogram.
-!
-! Revision 2.2  2002/04/26 13:26:22  paulv
-! - Changed default calculation flag values for CONTINUUM, EMIT, and MERGE_FLAG.
-! - Added PLACEHOLDER and NO_TERMINATOR optional inputs.
-!
-! Revision 2.1  2002/04/24 22:33:09  paulv
-! - New version.
-! - Added derived types for the calculation and LBLATM flags.
-! - Split out a lot of the record writes into separate functions.
-! - Added X-section capability.
-!
-! Revision 1.2  2002/04/16 22:30:31  paulv
-! - Update to synchronise repository.
-!
-! Revision 1.1  2002/04/16 18:51:54  paulv
-! Initial checkin.
-!
-!
-!
-!
