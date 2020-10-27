@@ -13,11 +13,11 @@ SRC_FILE=$(EXE_FILE).f90
 OBJ_FILE=${SRC_FILE:.f90=.o}
 
 # Tool-specific substitution variables
-FC       = ifort
-FCFLAGS  = -I.. -convert big_endian -O3 -fp-model source -e08 -free -qopenmp -assume byterecl,realloc_lhs -c
+FC       = gfortran
+FCFLAGS  = -I.. -fconvert=big-endian -O3 -fimplicit-none -ffree-form -fno-second-underscore -frecord-marker=4 -funroll-loops -fopenmp -Wall -Wconversion -mieee-fp -fbounds-check -std=f2008 -c
 FPPFLAGS = 
-LDFLAGS  = -L.. -qopenmp
-LIBS     = -l$(tarname)   -L /opt/netcdf4/4.6.2-intel-18.0.3/lib -lnetcdf -lnetcdff   -L /opt/hdf5/1.8.21-intel-18.0.3/lib -lhdf5   -g -fpp -traceback -check bounds   -I /opt/netcdf4/4.6.2-intel-18.0.3/include   -I /opt/hdf5/1.8.21-intel-18.0.3/include 
+LDFLAGS  = -L.. -fopenmp
+LIBS     = -l$(tarname)   -L /usr/local//lib -lnetcdf -lnetcdff   -L /usr/local//lib -lhdf5   -I /usr/local//include   -I /usr/local//include 
 
 # Colours for test result output
 GREEN=\033[1;32m
