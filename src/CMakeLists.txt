@@ -142,10 +142,6 @@ list( APPEND crtm_src_files
 			SfcOptics/MW_Water/FASTEM_MWSSEM/Small_Scale_Correction_Module.f90
 			SfcOptics/MW_Water/Fresnel/Fresnel.f90
 			SfcOptics/MW_Water/LowFrequency_MWSSEM/CRTM_LowFrequency_MWSSEM.f90
-<<<<<<< variant A
-			SfcOptics/MW_Water/LowFrequency_MWSSEM/RSS_Emissivity_Model.f90
->>>>>>> variant B
-======= end
 			SfcOptics/MW_Water/Ocean_Permittivity/Ellison.f90
 			SfcOptics/MW_Water/Ocean_Permittivity/Guillou.f90
 			SfcOptics/MW_Water/Ocean_Permittivity/Liu.f90

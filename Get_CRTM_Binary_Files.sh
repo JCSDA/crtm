@@ -1,4 +1,4 @@
-filename="fix_crtm-internal_develop_2.tgz" #rel 2.4.0 files
+filename="fix_REL-2.4.0.tgz" #rel 2.4.0 files
 
 if test -f "$filename"; then
     if [ -d "fix/" ]; then #fix directory exists

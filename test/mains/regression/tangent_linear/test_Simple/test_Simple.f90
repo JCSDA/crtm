@@ -314,10 +314,6 @@ PROGRAM test_Simple
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary RTSolution_TL save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-<<<<<<< variant A
-    call exit(1)
->>>>>>> variant B
-======= end
     END IF
     STOP 1
   END IF
