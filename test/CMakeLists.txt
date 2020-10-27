@@ -52,11 +52,11 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
 else()
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com )
-  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/${REPO_VERSION} to ${CRTM_COEFFS_PATH}")
+  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/dataset/147_miesch )
+  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/file to ${CRTM_COEFFS_PATH}")
   ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
-                              NAMES    crtm_coefficients.tar.gz
-                              DIRNAME  ${REPO_VERSION}
+                              NAMES    crtm_coefficients.tar.gz:dedd4b5ac0172934b90748b63ad62199
+                              DIRNAME  file
                               DIRLOCAL ${CRTM_COEFFS_PATH}
                               EXTRACT )
 endif()
