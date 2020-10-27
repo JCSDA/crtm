@@ -7,7 +7,7 @@ if test -f "$filename"; then
         #untar the file and move directory to fix
 				mkdir fix/
         tar -zxvf $filename --directory fix/
-				echo "fix/ directory created from existing $filename file."
+				echo "fix/ directory created from existing ${filename} file."
     fi 
 else
     #download, untar, move
