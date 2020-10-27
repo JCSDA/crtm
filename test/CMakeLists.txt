@@ -93,6 +93,7 @@ endif(OPENMP_FOUND)
 
 
 ## Searching the CRTM library
+message ("Searching for libcrtm.a in $ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/lib")
 find_library(CRTM
 	     NAMES libcrtm.a libcrtm.so crtm CRTM_Module
 	     HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/lib")
@@ -344,7 +345,7 @@ foreach(regtype IN LISTS TLAD_types)
 
 		set(TARGET test_${regtype}_test_${testtype})
 #    set(SOURCE ${CMAKE_BINARY_DIR}/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
-    set(SOURCE $ENV{CRTM_SOURCE_ROOT}/Build/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+    set(SOURCE $ENV{CRTM_ROOT}/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
 		message("TARGET:" ${TARGET})
 		message("SOURCE:" ${SOURCE})
 
@@ -378,7 +379,7 @@ foreach(regtype IN LISTS regression_types)
     endif()
 
 		set(TARGET test_${regtype}_test_${testtype})
-    set(SOURCE $ENV{CRTM_SOURCE_ROOT}/Build/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
+    set(SOURCE $ENV{CRTM_ROOT}/test/mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90)
 		message("TARGET:" ${TARGET})
 		message("SOURCE:" ${SOURCE})
 

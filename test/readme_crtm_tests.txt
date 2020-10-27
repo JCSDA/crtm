@@ -25,7 +25,7 @@ Instructions:
   Tests do not have to have a success metric, but it's nice to have in order to test for failure.
   STOP 0 and STOP 1 signal ctest for success or failure, respectively.  Any "failure" messages or "error" messages should have a STOP 1 following it.
 	Any existing STOP should be converted to a STOP 1 as well.   
-
+	At time of writing, the last two tests fail on purpose (test_AD, test_TL_convergence)
 
 Prerequisites:
 

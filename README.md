@@ -265,10 +265,15 @@ make distclean
 </pre>
 
 
+(optional) "Regression, Application, and Unit Testing"
+---------------------------------------
+In the `test/` directory, you'll find aseries of cmake enabled tests.  Read the included readme_crtm_tests.txt for details.
+These tests are still under development.  Please report any issues.
+
 (optional) "Build Release" Setup and Configuration:
 --------------------------------------------------
 
-Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
+Within the `src/Build` directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
 (1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.   
 (2) The `Makefile.in` file, which contains instructions on how executing the `configure` script will generate `Makefile` in libsrc and test subdirectories.  
 
