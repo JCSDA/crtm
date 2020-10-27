@@ -1,0 +1,280 @@
+\chapter{Valid Sensor Identifiers}
+%=================================
+\label{sec:sensor_id}
+
+This section contains a table detailing the instruments for which there are CRTM coefficients. For most sensors there are transmittance coefficient (\texttt{TauCoeff}) datafiles for both the Optical Depth in Absorber Space (ODAS; also known as Compact-OPTRAN) and Optical Depth in Pressure Space (ODPS) transmittance algorithms. All visible and SSU channels have only ODAS coefficients.
+
+\clearpage
+\begin{center}
+\begin{longtable}{c c c c}
+  \caption[CRTM sensor identifiers and the availability of ODAS or ODPS TauCoeff files]{CRTM sensor identifiers and the availability of ODAS or ODPS TauCoeff files}
+  \label{tab:sensor_id} \\
+
+  % Header for first page
+  \hline\hline \\[-2ex]
+    \multicolumn{1}{c}{\sffamily\textbf{Instrument}} &
+    \multicolumn{1}{c}{\sffamily\textbf{Sensor Id}} &
+    \multicolumn{1}{c}{\sffamily\textbf{ODAS available}} &
+    \multicolumn{1}{c}{\sffamily\textbf{ODPS available}} \\[0.5ex] \hline
+    \\[-1.8ex]
+  \endfirsthead
+
+  % Header for the remaing page(s) of the table
+  \multicolumn{4}{c}{\sffamily\textbf{{\tablename} \thetable{}} -- Continued} \\[0.5ex]
+  \hline\hline \\[-2ex]
+      \multicolumn{1}{c}{\sffamily\textbf{Instrument}} &
+      \multicolumn{1}{c}{\sffamily\textbf{Sensor Id}} &
+      \multicolumn{1}{c}{\sffamily\textbf{ODAS available}} &
+      \multicolumn{1}{c}{\sffamily\textbf{ODPS available}} \\[0.5ex] \hline
+      \\[-1.8ex]
+  \endhead
+  
+  %This is the footer for all pages except the last page of the table...
+  \hline\hline 
+    \multicolumn{4}{l}{{Continued on Next Page\ldots}} \\
+  \endfoot
+  
+  %This is the footer for the last page of the table...
+  \\[-1.8ex] \hline \hline
+  \endlastfoot
+  
+  % Now the data
+  Envisat AATSR                      & \texttt{aatsr\_envisat}      &  yes     &  yes       \\
+  GOES-R ABI                         & \texttt{abi\_gr}             &  yes     &  yes       \\
+  Aqua AIRS (281ch. subset)          & \texttt{airs281\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS (324ch. subset)          & \texttt{airs324\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS (all channels)           & \texttt{airs2378\_aqua}      &  yes     &  yes       \\
+  Aqua AIRS Module-1a                & \texttt{airsM1a\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-1b                & \texttt{airsM1b\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-2a                & \texttt{airsM2a\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-2b                & \texttt{airsM2b\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-3                 & \texttt{airsM3\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-4a                & \texttt{airsM4a\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-4b                & \texttt{airsM4b\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-4c                & \texttt{airsM4c\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-4d                & \texttt{airsM4d\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-5                 & \texttt{airsM5\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-6                 & \texttt{airsM6\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-7                 & \texttt{airsM7\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-8                 & \texttt{airsM8\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-9                 & \texttt{airsM9\_aqua}        &  yes     &  yes       \\
+  Aqua AIRS Module-10                & \texttt{airsM10\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-11                & \texttt{airsM11\_aqua}       &  yes     &  yes       \\
+  Aqua AIRS Module-12                & \texttt{airsM12\_aqua}       &  yes     &  yes       \\
+  Aqua AMSR-E                        & \texttt{amsre\_aqua}         &  yes     &  yes       \\
+  GCOM-W1 AMSR-2                     & \texttt{amsr2\_gcom-w1}      &  yes     &  yes       \\
+  Aqua AMSU-A                        & \texttt{amsua\_aqua}         &  yes     &  yes       \\
+  NOAA-15 AMSU-A                     & \texttt{amsua\_n15}          &  yes     &  yes       \\
+  NOAA-16 AMSU-A                     & \texttt{amsua\_n16}          &  yes     &  yes       \\
+  NOAA-17 AMSU-A                     & \texttt{amsua\_n17}          &  yes     &  yes       \\
+  NOAA-18 AMSU-A                     & \texttt{amsua\_n18}          &  yes     &  yes       \\
+  NOAA-19 AMSU-A                     & \texttt{amsua\_n19}          &  yes     &  yes       \\
+  MetOp-A AMSU-A                     & \texttt{amsua\_metop-a}      &  yes     &  yes       \\
+  MetOp-B AMSU-A                     & \texttt{amsua\_metop-b}      &  yes     &  yes       \\
+  MetOp-C AMSU-A                     & \texttt{amsua\_metop-c}      &  yes     &  yes       \\
+  NOAA-15 AMSU-B                     & \texttt{amsub\_n15}          &  yes     &  yes       \\
+  NOAA-16 AMSU-B                     & \texttt{amsub\_n16}          &  yes     &  yes       \\
+  NOAA-17 AMSU-B                     & \texttt{amsub\_n17}          &  yes     &  yes       \\
+  NPP ATMS                           & \texttt{atms\_npp}           &  yes     &  yes       \\
+  ERS-1 ATSR                         & \texttt{atsr1\_ers1}         &  yes     &  yes       \\
+  ERS-2 ATSR                         & \texttt{atsr2\_ers2}         &  yes     &  yes       \\
+  TIROS-N AVHRR/2                    & \texttt{avhrr2\_tirosn}      &  yes     &  yes       \\
+  NOAA-06 AVHRR/2                    & \texttt{avhrr2\_n06}         &  yes     &  yes       \\
+  NOAA-07 AVHRR/2                    & \texttt{avhrr2\_n07}         &  yes     &  yes       \\
+  NOAA-08 AVHRR/2                    & \texttt{avhrr2\_n08}         &  yes     &  yes       \\
+  NOAA-09 AVHRR/2                    & \texttt{avhrr2\_n09}         &  yes     &  yes       \\
+  NOAA-10 AVHRR/2                    & \texttt{avhrr2\_n10}         &  yes     &  yes       \\
+  NOAA-11 AVHRR/2                    & \texttt{avhrr2\_n11}         &  yes     &  yes       \\
+  NOAA-12 AVHRR/2                    & \texttt{avhrr2\_n12}         &  yes     &  yes       \\
+  NOAA-14 AVHRR/2                    & \texttt{avhrr2\_n14}         &  yes     &  yes       \\
+  NOAA-15 AVHRR/3                    & \texttt{avhrr3\_n15}         &  yes     &  yes       \\
+  NOAA-16 AVHRR/3                    & \texttt{avhrr3\_n16}         &  yes     &  yes       \\
+  NOAA-17 AVHRR/3                    & \texttt{avhrr3\_n17}         &  yes     &  yes       \\
+  NOAA-18 AVHRR/3                    & \texttt{avhrr3\_n18}         &  yes     &  yes       \\
+  NOAA-19 AVHRR/3                    & \texttt{avhrr3\_n19}         &  yes     &  yes       \\
+  MetOp-A AVHRR/3                    & \texttt{avhrr3\_metop-a}     &  yes     &  yes       \\
+  MetOp-B AVHRR/3                    & \texttt{avhrr3\_metop-b}     &  yes     &  yes       \\
+  NPP CrIS (374ch. subset)           & \texttt{cris374\_npp}        &  yes     &  yes       \\
+  NPP CrIS (399ch. subset)           & \texttt{cris399\_npp}        &  yes     &  yes       \\
+  NPP CrIS (all channels)            & \texttt{cris1305\_npp}       &  yes     &  yes       \\
+  NPP CrIS Band 1                    & \texttt{crisB1\_npp}         &  yes     &  yes       \\
+  NPP CrIS Band 2                    & \texttt{crisB2\_npp}         &  yes     &  yes       \\
+  NPP CrIS Band 3                    & \texttt{crisB3\_npp}         &  yes     &  yes       \\
+  GPM GMI                            & \texttt{gmi\_gpm}            &  yes     &  yes       \\
+  TIROS-N HIRS/2                     & \texttt{hirs2\_tirosn}       &  yes     &  yes       \\
+  NOAA-06 HIRS/2                     & \texttt{hirs2\_n06}          &  yes     &  yes       \\
+  NOAA-07 HIRS/2                     & \texttt{hirs2\_n07}          &  yes     &  yes       \\
+  NOAA-08 HIRS/2                     & \texttt{hirs2\_n08}          &  yes     &  yes       \\
+  NOAA-09 HIRS/2                     & \texttt{hirs2\_n09}          &  yes     &  yes       \\
+  NOAA-10 HIRS/2                     & \texttt{hirs2\_n10}          &  yes     &  yes       \\
+  NOAA-11 HIRS/2                     & \texttt{hirs2\_n11}          &  yes     &  yes       \\
+  NOAA-12 HIRS/2                     & \texttt{hirs2\_n12}          &  yes     &  yes       \\
+  NOAA-14 HIRS/2                     & \texttt{hirs2\_n14}          &  yes     &  yes       \\
+  NOAA-15 HIRS/3                     & \texttt{hirs3\_n15}          &  yes     &  yes       \\
+  NOAA-16 HIRS/3                     & \texttt{hirs3\_n16}          &  yes     &  yes       \\
+  NOAA-17 HIRS/3                     & \texttt{hirs3\_n17}          &  yes     &  yes       \\
+  NOAA-18 HIRS/4                     & \texttt{hirs4\_n18}          &  yes     &  yes       \\
+  NOAA-19 HIRS/4                     & \texttt{hirs4\_n19}          &  yes     &  yes       \\
+  MetOp-A HIRS/4                     & \texttt{hirs4\_metop-a}      &  yes     &  yes       \\
+  MetOp-B HIRS/4                     & \texttt{hirs4\_metop-b}      &  yes     &  yes       \\
+  Aqua HSB                           & \texttt{hsb\_aqua}           &  yes     &  yes       \\
+  MetOp-A IASI (300ch. subset)       & \texttt{iasi300\_metop-a}    &  yes     &  yes       \\
+  MetOp-A IASI (316ch. subset)       & \texttt{iasi316\_metop-a}    &  yes     &  yes       \\
+  MetOp-A IASI (616ch. subset)       & \texttt{iasi616\_metop-a}    &  yes     &  yes       \\
+  MetOp-A IASI (all channels)        & \texttt{iasi8461\_metop-a}   &  yes     &  yes       \\
+  MetOp-A IASI Band 1                & \texttt{iasiB1\_metop-a}     &  yes     &  yes       \\
+  MetOp-A IASI Band 2                & \texttt{iasiB2\_metop-a}     &  yes     &  yes       \\
+  MetOp-A IASI Band 3                & \texttt{iasiB3\_metop-a}     &  yes     &  yes       \\
+  MetOp-B IASI (300ch. subset)       & \texttt{iasi300\_metop-b}    &  yes     &  yes       \\
+  MetOp-B IASI (316ch. subset)       & \texttt{iasi316\_metop-b}    &  yes     &  yes       \\
+  MetOp-B IASI (616ch. subset)       & \texttt{iasi616\_metop-b}    &  yes     &  yes       \\
+  MetOp-B IASI (all channels)        & \texttt{iasi8461\_metop-b}   &  yes     &  yes       \\
+  MetOp-B IASI Band 1                & \texttt{iasiB1\_metop-b}     &  yes     &  yes       \\
+  MetOp-B IASI Band 2                & \texttt{iasiB2\_metop-b}     &  yes     &  yes       \\
+  MetOp-B IASI Band 3                & \texttt{iasiB3\_metop-b}     &  yes     &  yes       \\
+  GOES-08 Imager                     & \texttt{imgr\_g08}           &  yes     &  yes       \\
+  GOES-09 Imager                     & \texttt{imgr\_g09}           &  yes     &  yes       \\
+  GOES-10 Imager                     & \texttt{imgr\_g10}           &  yes     &  yes       \\
+  GOES-11 Imager                     & \texttt{imgr\_g11}           &  yes     &  yes       \\
+  GOES-12 Imager                     & \texttt{imgr\_g12}           &  yes     &  yes       \\
+  GOES-13 Imager                     & \texttt{imgr\_g13}           &  yes     &  yes       \\
+  GOES-14 Imager                     & \texttt{imgr\_g14}           &  yes     &  yes       \\
+  GOES-15 Imager                     & \texttt{imgr\_g15}           &  yes     &  yes       \\
+  MTSAT-1R Imager                    & \texttt{imgr\_mt1r}          &  yes     &  yes       \\
+  MTSAT-2 Imager                     & \texttt{imgr\_mt2}           &  yes     &  yes       \\
+  Fengyun-3a IRAS                    & \texttt{iras\_fy3a}          &  yes     &  yes       \\
+  Fengyun-3b IRAS                    & \texttt{iras\_fy3b}          &  yes     &  yes       \\
+  Megha-Tropiques MADRAS             & \texttt{madras\_meghat}      &  yes     &  yes       \\
+  Fengyun-3a MERSI                   & \texttt{mersi\_fy3a}         &  yes     &  yes       \\
+  NOAA-18 MHS                        & \texttt{mhs\_n18}            &  yes     &  yes       \\
+  NOAA-19 MHS                        & \texttt{mhs\_n19}            &  yes     &  yes       \\
+  MetOp-A MHS                        & \texttt{mhs\_metop-a}        &  yes     &  yes       \\
+  MetOp-B MHS                        & \texttt{mhs\_metop-b}        &  yes     &  yes       \\
+  MetOp-C MHS                        & \texttt{mhs\_metop-c}        &  yes     &  yes       \\
+  COMS-1 MI (low patch)              & \texttt{mi-l\_coms}          &  yes     &  yes       \\
+  COMS-1 MI (medium patch)           & \texttt{mi-m\_coms}          &  yes     &  yes       \\
+  Aqua MODIS                         & \texttt{modis\_aqua}         &  yes     &  yes       \\
+  Terra MODIS                        & \texttt{modis\_terra}        &  yes     &  yes       \\
+  TIROS-N MSU                        & \texttt{msu\_tirosn}         &  yes     &  yes       \\
+  NOAA-06 MSU                        & \texttt{msu\_n06}            &  yes     &  yes       \\
+  NOAA-07 MSU                        & \texttt{msu\_n07}            &  yes     &  yes       \\
+  NOAA-08 MSU                        & \texttt{msu\_n08}            &  yes     &  yes       \\
+  NOAA-09 MSU                        & \texttt{msu\_n09}            &  yes     &  yes       \\
+  NOAA-10 MSU                        & \texttt{msu\_n10}            &  yes     &  yes       \\
+  NOAA-11 MSU                        & \texttt{msu\_n11}            &  yes     &  yes       \\
+  NOAA-12 MSU                        & \texttt{msu\_n12}            &  yes     &  yes       \\
+  NOAA-14 MSU                        & \texttt{msu\_n14}            &  yes     &  yes       \\
+  Meteosat-3 MVIRI (backup)          & \texttt{mviriBKUP\_m03}      &  no      &  yes       \\
+  Meteosat-4 MVIRI (backup)          & \texttt{mviriBKUP\_m04}      &  no      &  yes       \\
+  Meteosat-5 MVIRI (backup)          & \texttt{mviriBKUP\_m05}      &  no      &  yes       \\
+  Meteosat-6 MVIRI (backup)          & \texttt{mviriBKUP\_m06}      &  no      &  yes       \\
+  Meteosat-7 MVIRI (backup)          & \texttt{mviriBKUP\_m07}      &  no      &  yes       \\
+  Meteosat-3 MVIRI (nominal)         & \texttt{mviriNOM\_m03}       &  no      &  yes       \\
+  Meteosat-4 MVIRI (nominal)         & \texttt{mviriNOM\_m04}       &  no      &  yes       \\
+  Meteosat-5 MVIRI (nominal)         & \texttt{mviriNOM\_m05}       &  no      &  yes       \\
+  Meteosat-6 MVIRI (nominal)         & \texttt{mviriNOM\_m06}       &  no      &  yes       \\
+  Meteosat-7 MVIRI (nominal)         & \texttt{mviriNOM\_m07}       &  no      &  yes       \\
+  Fengyun-3a MWHS                    & \texttt{mwhs\_fy3a}          &  yes     &  yes       \\
+  Fengyun-3b MWHS                    & \texttt{mwhs\_fy3b}          &  yes     &  yes       \\
+  Fengyun-3a MWRI                    & \texttt{mwri\_fy3a}          &  yes     &  yes       \\
+  Fengyun-3b MWRI                    & \texttt{mwri\_fy3b}          &  yes     &  yes       \\
+  Fengyun-3a MWTS                    & \texttt{mwts\_fy3a}          &  yes     &  yes       \\
+  Fengyun-3b MWTS                    & \texttt{mwts\_fy3b}          &  yes     &  yes       \\
+  Megha-Tropiques SAPHIR             & \texttt{saphir\_meghat}      &  yes     &  yes       \\
+  Meteosat-08 SEVIRI                 & \texttt{seviri\_m08}         &  yes     &  yes       \\
+  Meteosat-09 SEVIRI                 & \texttt{seviri\_m09}         &  yes     &  yes       \\
+  Meteosat-10 SEVIRI                 & \texttt{seviri\_m10}         &  yes     &  yes       \\
+  GOES-10 Sounder (Detector 1)       & \texttt{sndrD1\_g10}         &  yes     &  yes       \\
+  GOES-10 Sounder (Detector 2)       & \texttt{sndrD2\_g10}         &  yes     &  yes       \\
+  GOES-10 Sounder (Detector 3)       & \texttt{sndrD3\_g10}         &  yes     &  yes       \\
+  GOES-10 Sounder (Detector 4)       & \texttt{sndrD4\_g10}         &  yes     &  yes       \\
+  GOES-11 Sounder (Detector 1)       & \texttt{sndrD1\_g11}         &  yes     &  yes       \\
+  GOES-11 Sounder (Detector 2)       & \texttt{sndrD2\_g11}         &  yes     &  yes       \\
+  GOES-11 Sounder (Detector 3)       & \texttt{sndrD3\_g11}         &  yes     &  yes       \\
+  GOES-11 Sounder (Detector 4)       & \texttt{sndrD4\_g11}         &  yes     &  yes       \\
+  GOES-12 Sounder (Detector 1)       & \texttt{sndrD1\_g12}         &  yes     &  yes       \\
+  GOES-12 Sounder (Detector 2)       & \texttt{sndrD2\_g12}         &  yes     &  yes       \\
+  GOES-12 Sounder (Detector 3)       & \texttt{sndrD3\_g12}         &  yes     &  yes       \\
+  GOES-12 Sounder (Detector 4)       & \texttt{sndrD4\_g12}         &  yes     &  yes       \\
+  GOES-13 Sounder (Detector 1)       & \texttt{sndrD1\_g13}         &  yes     &  yes       \\
+  GOES-13 Sounder (Detector 2)       & \texttt{sndrD2\_g13}         &  yes     &  yes       \\
+  GOES-13 Sounder (Detector 3)       & \texttt{sndrD3\_g13}         &  yes     &  yes       \\
+  GOES-13 Sounder (Detector 4)       & \texttt{sndrD4\_g13}         &  yes     &  yes       \\
+  GOES-14 Sounder (Detector 1)       & \texttt{sndrD1\_g14}         &  yes     &  yes       \\
+  GOES-14 Sounder (Detector 2)       & \texttt{sndrD2\_g14}         &  yes     &  yes       \\
+  GOES-14 Sounder (Detector 3)       & \texttt{sndrD3\_g14}         &  yes     &  yes       \\
+  GOES-14 Sounder (Detector 4)       & \texttt{sndrD4\_g14}         &  yes     &  yes       \\
+  GOES-15 Sounder (Detector 1)       & \texttt{sndrD1\_g15}         &  yes     &  yes       \\
+  GOES-15 Sounder (Detector 2)       & \texttt{sndrD2\_g15}         &  yes     &  yes       \\
+  GOES-15 Sounder (Detector 3)       & \texttt{sndrD3\_g15}         &  yes     &  yes       \\
+  GOES-15 Sounder (Detector 4)       & \texttt{sndrD4\_g15}         &  yes     &  yes       \\
+  GOES-08 Sounder                    & \texttt{sndr\_g08}           &  yes     &  yes       \\
+  GOES-09 Sounder                    & \texttt{sndr\_g09}           &  yes     &  yes       \\
+  GOES-10 Sounder                    & \texttt{sndr\_g10}           &  yes     &  yes       \\
+  GOES-11 Sounder                    & \texttt{sndr\_g11}           &  yes     &  yes       \\
+  GOES-12 Sounder                    & \texttt{sndr\_g12}           &  yes     &  yes       \\
+  GOES-13 Sounder                    & \texttt{sndr\_g13}           &  yes     &  yes       \\
+  GOES-14 Sounder                    & \texttt{sndr\_g14}           &  yes     &  yes       \\
+  GOES-15 Sounder                    & \texttt{sndr\_g15}           &  yes     &  yes       \\
+  DMSP-08 SSM/I                      & \texttt{ssmi\_f08}           &  yes     &  yes       \\
+  DMSP-10 SSM/I                      & \texttt{ssmi\_f10}           &  yes     &  yes       \\
+  DMSP-11 SSM/I                      & \texttt{ssmi\_f11}           &  yes     &  yes       \\
+  DMSP-13 SSM/I                      & \texttt{ssmi\_f13}           &  yes     &  yes       \\
+  DMSP-14 SSM/I                      & \texttt{ssmi\_f14}           &  yes     &  yes       \\
+  DMSP-15 SSM/I                      & \texttt{ssmi\_f15}           &  yes     &  yes       \\
+  DMSP-16 SSMIS                      & \texttt{ssmis\_f16}          &  yes     &  yes       \\
+  DMSP-17 SSMIS                      & \texttt{ssmis\_f17}          &  yes     &  yes       \\
+  DMSP-18 SSMIS                      & \texttt{ssmis\_f18}          &  yes     &  yes       \\
+  DMSP-19 SSMIS                      & \texttt{ssmis\_f19}          &  yes     &  yes       \\
+  DMSP-20 SSMIS                      & \texttt{ssmis\_f20}          &  yes     &  yes       \\
+  DMSP-13 SSM/T-1                    & \texttt{ssmt1\_f13}          &  yes     &  yes       \\
+  DMSP-15 SSM/T-1                    & \texttt{ssmt1\_f15}          &  yes     &  yes       \\
+  DMSP-14 SSM/T-2                    & \texttt{ssmt2\_f14}          &  yes     &  yes       \\
+  DMSP-15 SSM/T-2                    & \texttt{ssmt2\_f15}          &  yes     &  yes       \\
+  TIROS-N SSU                        & \texttt{ssu\_tirosn}         &  yes     &  yes       \\ 
+  NOAA-06 SSU                        & \texttt{ssu\_n06}            &  yes     &  yes       \\
+  NOAA-07 SSU                        & \texttt{ssu\_n07}            &  yes     &  yes       \\
+  NOAA-08 SSU                        & \texttt{ssu\_n08}            &  yes     &  yes       \\
+  NOAA-09 SSU                        & \texttt{ssu\_n09}            &  yes     &  yes       \\
+  NOAA-11 SSU                        & \texttt{ssu\_n11}            &  yes     &  yes       \\
+  NOAA-14 SSU                        & \texttt{ssu\_n14}            &  yes     &  yes       \\
+  TRMM TMI                           & \texttt{tmi\_trmm}           &  yes     &  yes       \\
+  GOES-R ABI (visible)               & \texttt{v.abi\_gr}           &  yes     &  no        \\
+  NOAA-15 AVHRR/3 (visible)          & \texttt{v.avhrr3\_n15}       &  yes     &  no        \\
+  NOAA-16 AVHRR/3 (visible)          & \texttt{v.avhrr3\_n16}       &  yes     &  no        \\
+  NOAA-17 AVHRR/3 (visible)          & \texttt{v.avhrr3\_n17}       &  yes     &  no        \\
+  NOAA-18 AVHRR/3 (visible)          & \texttt{v.avhrr3\_n18}       &  yes     &  no        \\
+  NOAA-19 AVHRR/3 (visible)          & \texttt{v.avhrr3\_n19}       &  yes     &  no        \\
+  MetOp-A AVHRR/3 (visible)          & \texttt{v.avhrr3\_metop-a}   &  yes     &  no        \\
+  MetOp-B AVHRR/3 (visible)          & \texttt{v.avhrr3\_metop-b}   &  yes     &  no        \\
+  GOES-11 Imager (visible)           & \texttt{v.imgr\_g11}         &  yes     &  no        \\
+  GOES-12 Imager (visible)           & \texttt{v.imgr\_g12}         &  yes     &  no        \\
+  GOES-13 Imager (visible)           & \texttt{v.imgr\_g13}         &  yes     &  no        \\
+  GOES-14 Imager (visible)           & \texttt{v.imgr\_g14}         &  yes     &  no        \\
+  GOES-15 Imager (visible)           & \texttt{v.imgr\_g15}         &  yes     &  no        \\
+  MTSAT-2 Imager (visible)           & \texttt{v.imgr\_mt2}         &  yes     &  no        \\
+  Aqua MODIS (visible)               & \texttt{v.modis\_aqua}       &  yes     &  no        \\
+  Terra MODIS (visible)              & \texttt{v.modis\_terra}      &  yes     &  no        \\
+  Meteosat-08 SEVIRI (visible)       & \texttt{v.seviri\_m08}       &  yes     &  no        \\
+  Meteosat-09 SEVIRI (visible)       & \texttt{v.seviri\_m09}       &  yes     &  no        \\
+  Meteosat-10 SEVIRI (visible)       & \texttt{v.seviri\_m10}       &  yes     &  no        \\
+  NPP VIIRS Imager, HiRes (visible)  & \texttt{v.viirs-i\_npp}      &  yes     &  no        \\
+  NPP VIIRS Imager, ModRes (visible) & \texttt{v.viirs-m\_npp}      &  yes     &  no        \\
+  GOES-4 VAS                         & \texttt{vas\_g04}            &  no      &  yes       \\
+  GOES-5 VAS                         & \texttt{vas\_g05}            &  no      &  yes       \\
+  GOES-6 VAS                         & \texttt{vas\_g06}            &  no      &  yes       \\
+  GOES-7 VAS                         & \texttt{vas\_g07}            &  no      &  yes       \\
+  NPP VIIRS Imager, HiRes            & \texttt{viirs-i\_npp}        &  yes     &  yes       \\
+  NPP VIIRS Imager, ModRes           & \texttt{viirs-m\_npp}        &  yes     &  yes       \\
+  Fengyun-3a VIRR                    & \texttt{virr\_fy3a}          &  yes     &  yes       \\
+  GMS-5 VISSR (Detector A)           & \texttt{vissrDetA\_gms5}     &  yes     &  yes       \\
+  GMS-5 VISSR (Detector B)           & \texttt{vissrDetB\_gms5}     &  no      &  yes       \\
+  Kalpana-1 VHRR                     & \texttt{vhrr\_kalpana1}      &  yes     &  yes       \\
+  ITOS VTPR-S1                       & \texttt{vtprS1\_itos}        &  yes     &  yes       \\
+  ITOS VTPR-S2                       & \texttt{vtprS2\_itos}        &  yes     &  yes       \\
+  ITOS VTPR-S3                       & \texttt{vtprS3\_itos}        &  yes     &  yes       \\
+  ITOS VTPR-S4                       & \texttt{vtprS4\_itos}        &  yes     &  yes       \\
+  Coriolis WindSat                   & \texttt{windsat\_coriolis}   &  yes     &  yes       \\
+
+\end{longtable}
+\end{center}

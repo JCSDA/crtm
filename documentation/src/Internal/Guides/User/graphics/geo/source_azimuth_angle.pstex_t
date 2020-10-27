@@ -1,0 +1,29 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/geo/source_azimuth_angle.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(4729,3369)(2268,-4711)
+\put(6113,-1486){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Horizontal projection}%
+}}}}
+\put(6113,-1711){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}of direct line}%
+}}}}
+\put(6113,-1936){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}from source}%
+}}}}
+\put(2476,-4336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}West}%
+}}}}
+\put(6526,-4336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}East}%
+}}}}
+\put(4603,-3451){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\phi_\odot$}%
+}}}}
+\put(4501,-4711){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}FOV}%
+}}}}
+\put(4501,-1711){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}North}%
+}}}}
+\end{picture}%

@@ -1,0 +1,270 @@
+\section{CloudScatter Profile Results}
+%=====================================
+
+\subsection{CloudScatter Forward Model Profile Results}
+%------------------------------------------------------
+The forward model test results are shown separately for the microwave and infrared cloud optical property LUT interpolation. The microwave interpolation is done at different dimensionalities dependeing on the cloud type. The infrared interpolation is always two-dimensional.
+
+No significant timing differences are seen in the forward model test since the number of calculations is the same, just that some of them are being retained in the \texttt{csi} structure as shown in figure \ref{fig:CSVariables_structure}.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw}} &  76&96 & 578&58   & &    53&13 & 571&72 \vspace{0.5em}\\
+    &\texttt{interp\_3d}                             &  26&10 & 214&69   & &    26&90 & 210&44 \\
+    &\texttt{find\_random\_index}                    & 136&65 &   0&00   & &   141&96 &   0&00 \\
+    &\texttt{lpoly}                                  &  20&74 &  96&16   & &    17&99 &  91&97 \\
+    &\texttt{interp\_2d}                             &  24&73 &  56&77   & &    23&12 &  56&60 \\
+    &\texttt{interp\_1d}                             &   2&74 &   0&00   & &     2&74 &   0&00 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Forward model profile results for the \texttt{Get\_Cloud\_Opt\_MW} subroutine. All times in seconds.}
+  \label{tab:fwd_cs_test_get_cloud_opt_mw_gfortran}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir}} & 31&69 & 189&73   & &  23&17 & 186&95 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                             & 30&76 &  70&61   & &  28&76 &  70&40 \\
+    &\texttt{find\_random\_index}                    & 47&62 &   0&00   & &  49&47 &   0&00 \\
+    &\texttt{lpoly}                                  &  7&23 &  33&51   & &   6&27 &  32&05 \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Forward model profile results for the \texttt{Get\_Cloud\_Opt\_IR} subroutine. All times in seconds.}
+  \label{tab:fwd_cs_test_get_cloud_opt_ir_gfortran}
+\end{table}
+
+                
+  
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw}} & 463&88 & 4633&15   & &   399&15 & 4664&71 \vspace{0.5em}\\
+    &\texttt{interp\_3d}                             & 412&34 & 2133&74   & &   390&48 & 2148&70 \\
+    &\texttt{interp\_2d}                             & 383&67 &  498&79   & &   375&41 &  512&72 \\
+    &\texttt{lpoly}                                  & 165&98 &  598&86   & &   168&51 &  600&09 \\
+    &\texttt{find\_random\_index}                    & 432&79 &    0&00   & &   461&62 &    0&00 \\
+    &\texttt{interp\_1d}                             &   6&98 &    0&00   & &     7&18 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Forward model profile results for the \texttt{Get\_Cloud\_Opt\_MW} subroutine. All times in seconds.}
+  \label{tab:fwd_cs_test_get_cloud_opt_mw_ibm}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir}} & 186&83 & 1514&98   & &  164&67 & 1533&38 \vspace{0.5em}\\
+    &\texttt{interp\_2d}                             & 477&22 &  620&41   & &  466&94 &  637&73 \\
+    &\texttt{lpoly}                                  &  57&84 &  208&69   & &   58&72 &  209&12 \\
+    &\texttt{find\_random\_index}                    & 150&82 &    0&00   & &  160&87 &    0&00 \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Forward model profile results for the \texttt{Get\_Cloud\_Opt\_IR} subroutine. All times in seconds.}
+  \label{tab:fwd_cs_test_get_cloud_opt_ir_ibm}
+\end{table}
+
+
+\subsection{CloudScatter Tangent-Linear Model Profile Results}
+%-------------------------------------------------------------
+As with the forward model, the tangent-linear test results are shown separately for the microwave and infrared cloud optical property LUT interpolation.
+
+Here we begin to see significant differences in the routine timings between the Baseline and Modified test runs. Because the forward model interpolation parameters are reused rather than recalculated in the Modified runs, the time required for the \texttt{find\_random\_index} and \texttt{lpoly} routines do not contribute. Looking at the ``self'' value for the main routines, we see the Modified times are about 3x faster.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw\_tl}} & 305&41 & 1483&90   & &   72&45 & 1280&26 \vspace{0.5em}\\
+    &\texttt{interp\_3d\_tl}                             &  60&03 &  754&44   & &   58&53 &  794&87 \\
+    &\texttt{interp\_2d\_tl}                             &  53&45 &  184&56   & &   53&27 &  199&80 \\
+    &\texttt{lpoly\_tl}                                  &  34&28 &  149&79   & &   31&44 &  142&35 \\
+    &\texttt{find\_random\_index}                        & 140&22 &    0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{lpoly}                                      &  19&41 &   87&73   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Tangent-linear model profile results for the \texttt{Get\_Cloud\_Opt\_MW\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_cs_test_get_cloud_opt_mw_gfortran}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir\_tl}} & 117&27 & 447&04   & &   27&28 & 375&34 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_tl}                             &  66&63 & 230&07   & &   66&26 & 248&52 \\
+    &\texttt{lpoly\_tl}                                  &  11&94 &  52&20   & &   10&96 &  49&61 \\
+    &\texttt{find\_random\_index}                        &  48&87 &   0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{lpoly}                                      &   6&76 &  30&57   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Tangent-linear model profile results for the \texttt{Get\_Cloud\_Opt\_IR\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_cs_test_get_cloud_opt_ir_gfortran}
+\end{table}
+
+
+  
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw\_tl}} & 3886&24 & 15048&05   & &    859&30 & 13631&37 \vspace{0.5em}\\
+    &\texttt{interp\_3d\_tl}                             & 1031&52 &  8794&58   & &   1026&03 &  8634&92 \\
+    &\texttt{interp\_2d\_tl}                             &  950&29 &  1838&77   & &    899&37 &  1836&93 \\
+    &\texttt{lpoly\_tl}                                  &  193&76 &  1038&94   & &    197&15 &  1036&98 \\
+    &\texttt{lpoly}                                      &  164&58 &   603&85   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                        &  431&76 &     0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Tangent-linear model profile results for the \texttt{Get\_Cloud\_Opt\_MW\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_cs_test_get_cloud_opt_mw_ibm}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir\_tl}} & 1466&88 & 4324&64   & &    352&51 & 3833&52 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_tl}                             & 1184&62 & 2292&19   & &   1118&65 & 2284&80 \\
+    &\texttt{lpoly\_tl}                                  &   67&52 &  362&05   & &     68&70 &  361&37 \\
+    &\texttt{lpoly}                                      &   57&35 &  210&43   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                        &  150&46 &    0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Tangent-linear model profile results for the \texttt{Get\_Cloud\_Opt\_IR\_TL} subroutine. All times in seconds.}
+  \label{tab:tl_cs_test_get_cloud_opt_ir_ibm}
+\end{table}
+
+
+
+\subsection{CloudScatter Adjoint Model Profile Results}
+%------------------------------------------------------
+As with the other models, the adjoint test results are shown separately for the microwave and infrared cloud optical property LUT interpolation.
+
+Here again we see significant differences in the routine timings between the Baseline and Modified test runs. Because the forward model interpolation parameters are reused rather than recalculated in the Modified runs, the time required for the \texttt{find\_random\_index} and \texttt{lpoly} routines do not contribute. Looking at the ``self'' value for the main routines, we see the Modified times are about 3-4x faster. A word of caution though: the test duration itself is quite short so the speedup factor should be regarded as a very rough guide. The main point is that the modifications do not make the code any slower.
+
+
+% Linux test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw\_ad}} & 36&90 & 187&22   & &   10&22 & 187&56 \vspace{0.5em}\\
+    &\texttt{interp\_3d\_ad}                             &  8&70 &  98&79   & &    8&79 & 120&22 \\
+    &\texttt{interp\_2d\_ad}                             &  7&82 &  23&92   & &    8&81 &  29&42 \\
+    &\texttt{find\_random\_index}                        & 16&61 &   0&00   & &    \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{lpoly\_ad}                                  &  2&72 &  13&54   & &    2&87 &  15&18 \\
+    &\texttt{lpoly}                                      &  2&25 &  10&33   & &    \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Adjoint model profile results for the \texttt{Get\_Cloud\_Opt\_MW\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_cs_test_get_cloud_opt_mw_gfortran}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir\_ad}} & 16&04 & 60&53   & &    4&31 & 59&33 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_ad}                             &  9&74 & 29&82   & &   10&96 & 36&60 \\
+    &\texttt{lpoly\_ad}                                  &  1&66 &  8&25   & &    1&75 &  9&24 \\
+    &\texttt{find\_random\_index}                        &  5&79 &  0&00   & &                 \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{lpoly}                                      &  0&79 &  3&60   & &                 \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{gfortran CloudScatter Adjoint model profile results for the \texttt{Get\_Cloud\_Opt\_IR\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_cs_test_get_cloud_opt_ir_gfortran}
+\end{table}
+
+  
+% IBM test
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_mw\_ad}} & 509&93 & 1842&51   & &   101&19 & 1708&72 \vspace{0.5em}\\
+    &\texttt{interp\_3d\_ad}                             & 126&71 & 1091&69   & &   119&90 & 1100&07 \\
+    &\texttt{interp\_2d\_ad}                             & 112&66 &  239&15   & &   116&78 &  239&04 \\
+    &\texttt{lpoly\_ad}                                  &  13&81 &  104&49   & &    13&17 &  106&08 \\
+    &\texttt{lpoly}                                      &  19&90 &   69&37   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                        &  51&25 &    0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Adjoint model profile results for the \texttt{Get\_Cloud\_Opt\_MW\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_cs_test_get_cloud_opt_mw_ibm}
+\end{table}
+
+               
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{p{0.25cm} p{3.55cm} *{2}{r@{.}l} c *{2}{r@{.}l}}
+    \hline
+                    &                    & \multicolumn{4}{c}{\textbf{Baseline}} & \hspace{1.0em} & \multicolumn{4}{c}{\textbf{Modified}} \\
+    \multicolumn{2}{c}{\textbf{Routine}} & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} & & \multicolumn{2}{c}{\textbf{self}} & \multicolumn{2}{c}{\textbf{called}} \\
+    \hline\hline
+    \multicolumn{2}{l}{\texttt{get\_cloud\_opt\_ir\_ad}} & 137&81 & 564&33   & &    40&58 & 519&93 \vspace{0.5em}\\
+    &\texttt{interp\_2d\_ad}                             & 140&44 & 298&13   & &   145&25 & 297&33 \\
+    &\texttt{lpoly\_ad}                                  &   8&42 &  63&68   & &     8&01 &  64&56 \\
+    &\texttt{lpoly}                                      &   6&94 &  24&17   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    &\texttt{find\_random\_index}                        &  17&86 &   0&00   & &   \multicolumn{2}{c}{-} & \multicolumn{2}{c}{-} \\
+    \hline
+  \end{tabular}
+  \caption{IBM CloudScatter Adjoint model profile results for the \texttt{Get\_Cloud\_Opt\_IR\_AD} subroutine. All times in seconds.}
+  \label{tab:ad_cs_test_get_cloud_opt_ir_ibm}
+\end{table}
+

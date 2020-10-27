@@ -1,0 +1,209 @@
+\section{Interface Description}
+%==============================
+The model is called from the \texttt{Compute\_MW\_SfcOptics()} functions in the \texttt{CRTM\_MW\_Water\_SfcOptics} module. The main source module is \texttt{CRTM\_LowFrequency\_MWSSEM} and it contains the public entities shown in table \ref{tab:main_procedures_list}. Note that the internal variable structure is usable but not accessible outside the \texttt{CRTM\_LowFrequency\_MWSSEM} module.
+\begin{table}[htp]
+  \centering
+  \begin{tabular}{|c|c|}
+    \hline
+    \textbf{Name} & \textbf{Description} \\
+    \hline\hline
+    \multicolumn{2}{|c|}{\textbf{Data types}}\\
+    \hline
+    \texttt{iVar\_type}               & Internal variable struture \\
+    \hline
+    \multicolumn{2}{|c|}{\textbf{Subroutines}}\\
+    \hline
+    \texttt{LowFrequency\_MWSSEM}     & Forward model \\
+    \texttt{LowFrequency\_MWSSEM\_TL} & Tangent-linear model \\
+    \texttt{LowFrequency\_MWSSEM\_AD} & Adjoint model \\
+    \hline
+  \end{tabular}
+  \caption{List of public procedures in the \texttt{CRTM\_LowFrequency\_MWSSEM} module}
+  \label{tab:main_procedures_list}
+\end{table}
+
+The interface and argument descriptions for the forward model are shown in figure \ref{fig:fwd_interface}.
+
+The interface and argument descriptions for the tangent-linear model are shown in figure \ref{fig:tl_interface}. Note that the ``internal variable'' argument, \texttt{iVar}, is now an input as this structure contains intermediate forward model variables computed within the forward model. Also note that there are no frequency and zenith angle tangent-linear inputs. This model does not compute sensitivities of the emissivity to those quantities.
+
+The interface and argument descriptions for the adjoint model are shown in figure \ref{fig:ad_interface}. As with the tangent-linear interface, the internal variable argument, \texttt{iVar}, is an input. Note that if an argument is an input in the tangent-linear model, its corresponding adjoint argument is an output. Similarly, adjoint input arguments correspond with forward model output arguments. Note that although the adjoint emissivity is an input to the model, upon exiting the adjoint subroutine it is set to zero.
+
+The temperature, salinity, and wind speed adjoints are all summed over the number of Stokes vector components as shown below,
+\begin{eqnarray*}
+  \textrm{Temperature\_AD} &=& \sum^{N}_i \frac{\partial e_i}{\partial T}\\
+  \textrm{Salinity\_AD}    &=& \sum^{N}_i \frac{\partial e_i}{\partial S}\\
+  \textrm{Wind\_Speed\_AD} &=& \sum^{N}_i \frac{\partial e_i}{\partial W}
+\end{eqnarray*}
+where $N$ is the number of Stokes vector components. Currently, this is fixed at 2 (vertical and horizontal polarisations only).
+ 
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  SUBROUTINE LowFrequency_MWSSEM( Frequency   , &  ! Input
+                                  Zenith_Angle, &  ! Input
+                                  Temperature , &  ! Input
+                                  Salinity    , &  ! Input
+                                  Wind_Speed  , &  ! Input
+                                  Emissivity  , &  ! Output
+                                  iVar          )  ! Internal variable output
+    REAL(fp),        INTENT(IN)     :: Frequency
+    REAL(fp),        INTENT(IN)     :: Zenith_Angle
+    REAL(fp),        INTENT(IN)     :: Temperature
+    REAL(fp),        INTENT(IN)     :: Salinity
+    REAL(fp),        INTENT(IN)     :: Wind_Speed
+    REAL(fp),        INTENT(OUT)    :: Emissivity(:)
+    TYPE(iVar_type), INTENT(IN OUT) :: iVar
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Units}   & \textbf{Intent} \\
+      \hline\hline
+      Frequency          & Microwave frequency                    & GHz              & IN      \\
+      \hline
+                         & Satellite zenith angle                 &                  &         \\
+      \rb{Zenith\_Angle} & at the sea surface                     & \rb{Degrees}     & \rb{IN} \\ 
+      \hline
+      Temperature        & Sea surface temperature                & Kelvin           & IN      \\
+      \hline
+      Salinity           & Salinity of sea water                  & \textperthousand & IN      \\
+      \hline
+      Wind\_Speed        & Sea surface wind speed                 & m.s$^{-1}$       & IN      \\
+      \hline
+                         & The surface emissivity at vertical     &                  &         \\
+      \rb{Emissivity}    & and horizontal polarizations           & \rb{N/A}         & \rb{OUT}\\
+      \hline
+                         & Structure containing internal          &                  &         \\
+      iVar               & variables required for subsequent      & N/A              & OUT     \\
+                         & tangent-linear or adjoint model calls. &                  &         \\
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{Forward model interface and argument description for the low frequency microwave sea surface emissivity model.}
+  \label{fig:fwd_interface}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  SUBROUTINE LowFrequency_MWSSEM_TL( Frequency     , &  ! Input
+                                     Zenith_Angle  , &  ! Input
+                                     Temperature   , &  ! FWD Input
+                                     Salinity      , &  ! FWD Input
+                                     Wind_Speed    , &  ! FWD Input
+                                     Temperature_TL, &  ! TL  Input
+                                     Salinity_TL   , &  ! TL  Input
+                                     Wind_Speed_TL , &  ! TL  Input
+                                     Emissivity_TL , &  ! TL  Output
+                                     iVar            )  ! Internal variable input
+    REAL(fp),        INTENT(IN)  :: Frequency
+    REAL(fp),        INTENT(IN)  :: Zenith_Angle
+    REAL(fp),        INTENT(IN)  :: Temperature
+    REAL(fp),        INTENT(IN)  :: Salinity
+    REAL(fp),        INTENT(IN)  :: Wind_Speed
+    REAL(fp),        INTENT(IN)  :: Temperature_TL
+    REAL(fp),        INTENT(IN)  :: Salinity_TL
+    REAL(fp),        INTENT(IN)  :: Wind_Speed_TL
+    REAL(fp),        INTENT(OUT) :: Emissivity_TL(:)
+    TYPE(iVar_type), INTENT(IN)  :: iVar
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Units}   & \textbf{Intent} \\
+      \hline\hline
+      Frequency          & Microwave frequency                    & GHz              & IN      \\
+      \hline
+                         & Satellite zenith angle                 &                  &         \\
+      \rb{Zenith\_Angle} & at the sea surface                     & \rb{Degrees}     & \rb{IN} \\ 
+      \hline
+      Temperature        & Sea surface temperature                & Kelvin           & IN      \\
+      \hline
+      Salinity           & Salinity of sea water                  & \textperthousand & IN      \\
+      \hline
+      Wind\_Speed        & Sea surface wind speed                 & m.s$^{-1}$       & IN      \\
+      \hline
+      Temperature\_TL    & Sea surface temperature perturbation   & Kelvin           & IN      \\
+      \hline
+      Salinity\_TL       & Salinity of sea water perturbation     & \textperthousand & IN      \\
+      \hline
+      Wind\_Speed\_TL    & Sea surface wind speed perturbation    & m.s$^{-1}$       & IN      \\
+      \hline
+                         & The surface emissivity perturbation at &                  &         \\
+      \rb{Emissivity\_TL}& vertical and horizontal polarizations  & \rb{N/A}         & \rb{OUT}\\
+      \hline
+                         & Structure containing internal            &                &         \\
+      \rb{iVar}          & variables. Output from the forward model.& \rb{N/A}       & \rb{IN} \\ 
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{Tangent-linear model interface and argument description for the low frequency microwave sea surface emissivity model.}
+  \label{fig:tl_interface}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{ttfamily}
+      \begin{verbatim}
+  SUBROUTINE LowFrequency_MWSSEM_AD( Frequency     , &  ! Input
+                                     Zenith_Angle  , &  ! Input
+                                     Temperature   , &  ! FWD Input
+                                     Salinity      , &  ! FWD Input
+                                     Wind_Speed    , &  ! FWD Input
+                                     Emissivity_AD , &  ! AD  Input
+                                     Temperature_AD, &  ! AD  Output
+                                     Salinity_AD   , &  ! AD  Output
+                                     Wind_Speed_AD , &  ! AD  Output
+                                     iVar            )  ! Internal variable input
+    REAL(fp),        INTENT(IN)     :: Frequency
+    REAL(fp),        INTENT(IN)     :: Zenith_Angle
+    REAL(fp),        INTENT(IN)     :: Temperature
+    REAL(fp),        INTENT(IN)     :: Salinity
+    REAL(fp),        INTENT(IN)     :: Wind_Speed
+    REAL(fp),        INTENT(IN OUT) :: Emissivity_AD(:)
+    REAL(fp),        INTENT(IN OUT) :: Temperature_AD
+    REAL(fp),        INTENT(IN OUT) :: Salinity_AD
+    REAL(fp),        INTENT(IN OUT) :: Wind_Speed_AD
+    TYPE(iVar_type), INTENT(IN)     :: iVar
+      \end{verbatim}
+    \end{ttfamily}
+    \centering
+    \begin{tabular}{c|c|c|c}
+      \textbf{Argument} & \textbf{Description}                    & \textbf{Units}   & \textbf{Intent} \\
+      \hline\hline
+      Frequency          & Microwave frequency                    & GHz              & IN      \\
+      \hline
+                         & Satellite zenith angle                 &                  &         \\
+      \rb{Zenith\_Angle} & at the sea surface                     & \rb{Degrees}     & \rb{IN} \\ 
+      \hline
+      Temperature        & Sea surface temperature                & Kelvin           & IN      \\
+      \hline
+      Salinity           & Salinity of sea water                  & \textperthousand & IN      \\
+      \hline
+      Wind\_Speed        & Sea surface wind speed                 & m.s$^{-1}$       & IN      \\
+      \hline
+                         & The surface emissivity adjoint at      &                  &         \\
+      \rb{Emissivity\_AD}& vertical and horizontal polarizations  & \rb{N/A}         & \rb{IN OUT}\\
+      \hline
+      Temperature\_AD    & Sea surface temperature adjoint        & (Kelvin)$^{-1}$  & IN OUT \\
+      \hline
+      Salinity\_AD       & Salinity of sea water adjoint          & (\textperthousand)$^{-1}$ & IN OUT  \\
+      \hline
+      Wind\_Speed\_AD    & Sea surface wind speed adjoint         & (m.s$^{-1}$)$^{-1}$       & IN OUT  \\
+      \hline
+                         & Structure containing internal variables. &                &         \\
+      \rb{iVar}          & Output from the forward model.           & \rb{N/A}       & \rb{IN} \\ 
+    \end{tabular}
+  \end{minipage}
+  }
+  \caption{Adjoint model interface and argument description for the low frequency microwave sea surface emissivity model.}
+  \label{fig:ad_interface}
+\end{figure}

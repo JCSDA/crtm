@@ -1,0 +1,39 @@
+\subsection{\texttt{CRTM\_Atmosphere\_IsValid} interface}
+  \label{sec:CRTM_Atmosphere_IsValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Atmosphere_IsValid
+ 
+  PURPOSE:
+        Non-pure function to perform some simple validity checks on a
+        CRTM Atmosphere object.
+ 
+        If invalid data is found, a message is printed to stdout.
+ 
+  CALLING SEQUENCE:
+        result = CRTM_Atmosphere_IsValid( Atm )
+ 
+          or
+ 
+        IF ( CRTM_Atmosphere_IsValid( Atm ) ) THEN....
+ 
+  OBJECTS:
+        Atm:       CRTM Atmosphere object which is to have its
+                   contents checked.
+                   UNITS:      N/A
+                   TYPE:       CRTM_Atmosphere_type
+                   DIMENSION:  Scalar
+                   ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        result:    Logical variable indicating whether or not the input
+                   passed the check.
+                   If == .FALSE., Atmosphere object is unused or contains
+                                  invalid data.
+                      == .TRUE.,  Atmosphere object can be used in CRTM.
+                   UNITS:      N/A
+                   TYPE:       LOGICAL
+                   DIMENSION:  Scalar
+ 
+  \end{alltt}

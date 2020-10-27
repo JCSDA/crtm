@@ -1,0 +1,95 @@
+\chapter{Migration Path from REL-2.0.x to REL-2.1}
+%=================================================
+\label{chapter:migration_path}
+
+This section details the user code changes that need to be made to migrate from using CRTM v2.0.x to v2.1. It is assumed that you've read chapter \ref{chapter:use} and aware of the various other changes to the CRTM that can (will?) cause differences in any before/after result comparisons.
+
+
+\section{CRTM Initialisation: Emissivity/Reflectivity model datafile arguments}
+%==============================================================================
+New, \emph{optional}, arguments have been added to the CRTM initialisation function to allow different data files (referred to as ``\f{EmisCoeff}'' files) for the various emissivity/reflectivity models to be loaded during initialisation.
+
+
+\subsection{Old v2.0.x Calling Syntax}
+%-------------------------------------
+In the v2.0.x CRTM the only emissivity/reflectivity model data loaded during initialisation was that for the infrared sea surface emissivity model (IRSSEM). The v2.0.x CRTM initialisation function used a generic name, ``\f{EmisCoeff.bin}'', as the data file to load. Generally this file was symbolically linked to a specific dataset file (for the Nalli or Wu-Smith model). Alternatively, you could specify the actual file name via the optional \f{EmisCoeff\_File} argument. To load the supplied Nalli emissivity model dataset, the v2.0.x CRTM initialisation called looked like,
+
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo, &
+                        \textcolor{red}{EmisCoeff_File = 'Nalli.IRwater.EmisCoeff.bin'} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+
+\subsection{New v2.1 Calling Syntax}
+%-----------------------------------
+Now, in v2.1, emissivity/reflectivity model datafiles are loaded for each spectral type (infrared, microwave, and visible) as well as each main surface type (land, water, snow, and ice). This was done to get set up for planned future changes and updates to the emissivity and reflectivity models for various spectral regions and surface types. because of the need for separate arguments for the different cases, the use of the generic \f{EmisCoeff\_File} argument to refer to the IRSSEM data is deprecated in favour of the specific \f{IRwaterCoeff\_File} optional argument\footnote{The \f{EmisCoeff\_File} argument is deprecated, but still available. However, it will be removed in a future release.}. The equivalent v2.1 initialisation call is now,
+
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo, &
+                        \textcolor{red}{IRwaterCoeff_File = 'Nalli.IRwater.EmisCoeff.bin'} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Note that the Nalli model is the default so the above call is equivalent to not specifying the \f{IRwaterCoeff\_File} argument at all.
+
+In general you can rely on the default data files loaded. See table \ref{tab:emiscoeff_file_choices} for a list of available data files where different data are available and you have a choice to specify something other than the default. See the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} documentation for a complete list of optional arguments to specify the various \f{EmisCoeff} datafiles.
+
+
+\section{CRTM Surface: Infrared/Visible Land surface type specification}
+%=======================================================================
+The v2.1 updates to the land surface type specifications, along with examples of how to use them, are described in detail in section \ref{sec:fill_step-surface}. As such, in this section we'll simply mention the changes you need to make to your CRTM calling code to replicate the same functionality.
+
+
+\subsection{Old v2.0.x Assignment Syntax}
+%----------------------------------------
+In v2.0.x, when specifying land surface types in the \hyperref[sec:surface_structure]{\Surface} structure, a number of parameterised values were made available for assignment. For example, one could do something like,
+
+\begin{alltt}
+  TYPE(CRTM_Surface_type) :: sfc(2)
+  ...
+  ! Assign tundra land surface subtype in v2.0.x CRTM
+  sfc(1)%\textcolor{red}{Land_Type} = TUNDRA\end{alltt}
+
+where the \f{TUNDRA} was made available and referenced a particular reflectivity spectrum. This approach is possible only when a single land surface classification scheme is used. In the case of the v2.0.x CRTM that was the NPOESS classification. In v2.1 additional land surface classifications, such as USGS and IGBP, are available so a simple parameter to reference a reflectivity spectrum index becomes more difficult to maintain.
+
+
+\subsection{New v2.1 Assignment Syntax}
+%--------------------------------------
+Rather than parameterise all the land surface subtypes for all the available classifications, what you need to do is to refer to the particular table defining the subtypes for the land surface classification scheme you are using and select the \f{numerical value} for the subtype you want.
+
+So, in v2.1, the equivalent assignment for the above tundra land surface subtype would begin by referrring to the NPOESS classification subtype table, table \ref{tab:npoess_surface_type_classifications}, find the tundra entry, and use the associated ``classification index'' (in this case \f{10}) in the surface structure assignment,
+
+\begin{alltt}
+  TYPE(CRTM_Surface_type) :: sfc(2)
+  ...
+  ! Assign tundra land surface subtype for NPOESS classification in v2.1 CRTM
+  sfc(1)%\textcolor{red}{Land_Type} = 10\end{alltt}
+
+
+\section{CRTM Surface: Microwave Land surface type specification}
+%================================================================
+The v2.1 updates to the land surface type specifications for use with the microwave land surface emissivity model involve the specification of the soil and vegetation types as well as the leaf area index (LAI). The available soil and vegetation types, along with examples of how to use them, are described in detail in section \ref{sec:fill_step-surface}.
+
+\subsection{Old v2.0.x Assignment Syntax}
+%----------------------------------------
+In v2.0.x, there was no means to specify the soil type, vegetation type, or LAI as they were not used in the microwave land emissivity algorithm.
+
+
+\subsection{New v2.1 Assignment Syntax}
+%--------------------------------------
+New components were added to the \hyperref[sec:surface_structure]{\Surface} structure to allow specification of the soil type, vegetation type, and LAI. The structure is initialised to default values so \emph{not} specifying values is equivalent to the following,
+
+\begin{alltt}
+  ! Default values for new inputs to microwave land surface emissivity algorithm
+  sfc(1)%\textcolor{red}{LAI}             = 3.5_fp
+  sfc(1)%\textcolor{red}{Soil_Type}       = 1
+  sfc(1)%\textcolor{red}{Vegetation_Type} = 1\end{alltt}
+
+See tables \ref{tab:gfs_soil_type_classifications} and \ref{tab:gfs_vegetation_type_classifications} for the valid soil and vegetation types accepted by the CRTM v2.1.

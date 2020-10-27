@@ -1,0 +1,9 @@
+*.log
+*.err
+*.out
+*~
+*.o
+*.mod
+*.x
+log
+.DS_Store

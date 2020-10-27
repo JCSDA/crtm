@@ -1,0 +1,175 @@
+\section{AVHRR infrared channel band correction coefficients}
+%============================================================
+\label{app:band_correction_coefficients}
+To account for broadband channel polychromaticity in Planck calculations in the CRTM, we assume the true temperature, $T$, is related to a channel (or effective) temperature, $T_{eff}$, via a simple polynomial relationship,
+\begin{equation}
+  \sum_{i=0}^{N} a_i\cdot T^{i} = \dfrac{c_1\nu_o^3}{\ln\left[ \dfrac{c_2\nu_o}{R(T)}+1 \right]} = T_{eff}
+  \label{eqn:regression_relation}
+\end{equation}
+Here the $a$ values are the ``band correction'' coefficients, $\nu_o$ is the channel central frequency determined from the first moment of the defined spectral response, $\Phi(\nu)$,
+\begin{equation}
+  \nu_o = \dfrac{\int\limits_{\nu_1}^{\nu_2}\nu\Phi(\nu)d\nu}{\int\limits_{\nu_1}^{\nu_2}\Phi(\nu)d\nu}
+\end{equation}
+and $R(T)$ is the channel blackbody radiance determined by convolving the monochromatic Planck radiance with the spectral response,
+\begin{equation}
+  R(T) = \dfrac{\int\limits_{\nu_1}^{\nu_2}B(T,\nu)\Phi(\nu)d\nu}{\int\limits_{\nu_1}^{\nu_2}\Phi(\nu)d\nu}
+\end{equation}
+Solving equation \ref{eqn:regression_relation} then yields the $a$ coefficients. For the CRTM, we use a simple linear fit ($N=1$) for a temperature range of 180-340K to yield two band correction coefficients for each channel.
+
+The central frequencies and band correction coefficients presented in this appendix were derived using the official AVHRR SRFs from the NESDIS/STAR website \citep{NESDIS_AVHRR_SRFs} and their various derived interpolates, and the current SRF used in the CRTM processing.
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{\nu_o}} & \multicolumn{2}{c}{\textbfm{a_0}} & \multicolumn{2}{c}{\textbfm{a_1}} \\
+    \rb{\textbf{SRF Type}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{(\invcm)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K/K)} \\
+    \hline\hline
+              &  3B & 2696&4477 & 2&017304 & 0&996841 \\ 
+    Spline5   &  4  &  918&1333 & 0&467188 & 0&998382 \\ 
+              &  5  &  835&8874 & 0&246714 & 0&999068 \vspace{0.75em}\\ 
+              &  3B & 2696&4512 & 2&018046 & 0&996840 \\ 
+    Linear    &  4  &  918&1346 & 0&467384 & 0&998382 \\ 
+              &  5  &  835&8893 & 0&246845 & 0&999067 \vspace{0.75em}\\ 
+              &  3B & 2696&4445 & 2&016995 & 0&996841 \\ 
+    Spline0.1 &  4  &  918&1323 & 0&467111 & 0&998383 \\ 
+              &  5  &  835&8863 & 0&246661 & 0&999068 \vspace{0.75em}\\ 
+              &  3B & 2696&4503 & 2&017781 & 0&996840 \\ 
+    Spline20  &  4  &  918&1342 & 0&467313 & 0&998382 \\ 
+              &  5  &  835&8887 & 0&246798 & 0&999067 \vspace{0.75em}\\
+              &  3B & 2696&4440 & 2&017148 & 0&996841 \\ 
+    Original  &  4  &  918&1322 & 0&467111 & 0&998383 \\ 
+              &  5  &  835&8863 & 0&246651 & 0&999068 \vspace{0.75em}\\ 
+              &  3B & 2696&6687 & 1&937532 & 0&997018 \\
+    Current   &  4  &  918&1837 & 0&463810 & 0&998394 \\
+              &  5  &  835&9503 & 0&246092 & 0&999070 \\
+    \hline
+  \end{tabular}
+  \caption{Central frequencies and band correction coefficients for the NOAA-16 AVHRR.}
+  \label{tab:avhrr3_n16.bc}
+\end{table}
+
+\begin{table}[Ht]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{\nu_o}} & \multicolumn{2}{c}{\textbfm{a_0}} & \multicolumn{2}{c}{\textbfm{a_1}} \\
+    \rb{\textbf{SRF Type}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{(\invcm)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K/K)} \\
+    \hline\hline
+              &  3B & 2670&7506 & 1&725340 & 0&997705 \\ 
+    Spline5   &  4  &  926&9926 & 0&380521 & 0&998693 \\ 
+              &  5  &  839&3402 & 0&227473 & 0&999145 \vspace{0.75em}\\
+              &  3B & 2670&7541 & 1&726104 & 0&997704 \\ 
+    Linear    &  4  &  926&9938 & 0&380728 & 0&998693 \\ 
+              &  5  &  839&3410 & 0&227614 & 0&999144 \vspace{0.75em}\\
+              &  3B & 2670&7480 & 1&725069 & 0&997705 \\ 
+    Spline0.1 &  4  &  926&9916 & 0&380443 & 0&998694 \\ 
+              &  5  &  839&3395 & 0&227420 & 0&999145 \vspace{0.75em}\\
+              &  3B & 2670&7532 & 1&725820 & 0&997704 \\ 
+    Spline20  &  4  &  926&9935 & 0&380653 & 0&998693 \\ 
+              &  5  &  839&3408 & 0&227563 & 0&999144 \vspace{0.75em}\\
+              &  3B & 2670&7480 & 1&725070 & 0&997705 \\ 
+    Original  &  4  &  926&9916 & 0&380444 & 0&998694 \\ 
+              &  5  &  839&3394 & 0&227421 & 0&999145 \vspace{0.75em}\\ 
+              &  3B & 2670&8000 & 1&725090 & 0&997705 \\ 
+    Current   &  4  &  927&0426 & 0&380562 & 0&998693 \\ 
+              &  5  &  839&3913 & 0&227577 & 0&999144 \\ 
+    \hline
+  \end{tabular}
+  \caption{Central frequencies and band correction coefficients for the NOAA-17 AVHRR.}
+  \label{tab:avhrr3_n17.bc}
+\end{table}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{\nu_o}} & \multicolumn{2}{c}{\textbfm{a_0}} & \multicolumn{2}{c}{\textbfm{a_1}} \\
+    \rb{\textbf{SRF Type}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{(\invcm)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K/K)} \\
+    \hline\hline
+              &  3B & 2663&0046 & 1&762539 & 0&997675 \\ 
+    Spline5   &  4  &  927&5976 & 0&374180 & 0&998715 \\ 
+              &  5  &  833&2219 & 0&240701 & 0&999089 \vspace{0.75em}\\ 
+              &  3B & 2663&0082 & 1&763299 & 0&997674 \\ 
+    Linear    &  4  &  927&5987 & 0&374387 & 0&998714 \\ 
+              &  5  &  833&2228 & 0&240837 & 0&999089 \vspace{0.75em}\\ 
+              &  3B & 2663&0019 & 1&762274 & 0&997675 \\ 
+    Spline0.1 &  4  &  927&5967 & 0&374101 & 0&998715 \\ 
+              &  5  &  833&2213 & 0&240650 & 0&999089 \vspace{0.75em}\\ 
+              &  3B & 2663&0072 & 1&763015 & 0&997674 \\ 
+    Spline20  &  4  &  927&5984 & 0&374312 & 0&998714 \\ 
+              &  5  &  833&2226 & 0&240787 & 0&999089 \vspace{0.75em}\\
+              &  3B & 2663&0020 & 1&762273 & 0&997675 \\ 
+    Original  &  4  &  927&5965 & 0&374105 & 0&998715 \\ 
+              &  5  &  833&2212 & 0&240652 & 0&999089 \vspace{0.75em}\\ 
+              &  3B & 2663&0040 & 1&762689 & 0&997675 \\
+    Current   &  4  &  927&5991 & 0&374231 & 0&998715 \\
+              &  5  &  833&2215 & 0&240707 & 0&999089 \\
+    \hline
+  \end{tabular}
+  \caption{Central frequencies and band correction coefficients for the NOAA-18 AVHRR.}
+  \label{tab:avhrr3_n18.bc}
+\end{table}
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{\nu_o}} & \multicolumn{2}{c}{\textbfm{a_0}} & \multicolumn{2}{c}{\textbfm{a_1}} \\
+    \rb{\textbf{SRF Type}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{(\invcm)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K/K)} \\
+    \hline\hline
+              &  3B & 2689&9372 & 2&128139 & 0&997208 \\ 
+    Spline5   &  4  &  926&1051 & 0&386193 & 0&998672 \\ 
+              &  5  &  837&0500 & 0&228639 & 0&999139 \vspace{0.75em}\\ 
+              &  3B & 2689&9409 & 2&128900 & 0&997207 \\ 
+    Linear    &  4  &  926&1064 & 0&386395 & 0&998671 \\ 
+              &  5  &  837&0512 & 0&228773 & 0&999138 \vspace{0.75em}\\ 
+              &  3B & 2689&9344 & 2&127868 & 0&997208 \\ 
+    Spline0.1 &  4  &  926&1041 & 0&386115 & 0&998672 \\ 
+              &  5  &  837&0492 & 0&228588 & 0&999139 \vspace{0.75em}\\ 
+              &  3B & 2689&9399 & 2&128616 & 0&997207 \\ 
+    Spline20  &  4  &  926&1060 & 0&386321 & 0&998671 \\ 
+              &  5  &  837&0508 & 0&228724 & 0&999138 \vspace{0.75em}\\ 
+              &  3B & 2689&9344 & 2&127864 & 0&997208 \\ 
+    Original  &  4  &  926&1042 & 0&386114 & 0&998672 \\ 
+              &  5  &  837&0493 & 0&228586 & 0&999139 \vspace{0.75em}\\ 
+              &  3B & 2689&8937 & 2&132029 & 0&997199 \\ 
+    Current   &  4  &  926&1043 & 0&386139 & 0&998672 \\ 
+              &  5  &  837&0496 & 0&228604 & 0&999139 \\ 
+    \hline
+  \end{tabular}
+  \caption{Central frequencies and band correction coefficients for the MetOp-A AVHRR.}
+  \label{tab:avhrr3_metop-a.bc}
+\end{table}
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{l c *{3}{r@{.}l}}
+    \hline
+    \multicolumn{2}{c}{ } & \multicolumn{2}{c}{\textbfm{\nu_o}} & \multicolumn{2}{c}{\textbfm{a_0}} & \multicolumn{2}{c}{\textbfm{a_1}} \\
+    \rb{\textbf{SRF Type}} & \rb{\textbf{Channel}} & \multicolumn{2}{c}{(\invcm)} & \multicolumn{2}{c}{(K)} & \multicolumn{2}{c}{(K/K)} \\
+    \hline\hline
+              &  3B & 2671&6600 & 1&707423 & 0&997730 \\ 
+    Spline5   &  4  &  927&8568 & 0&381393 & 0&998691 \\ 
+              &  5  &  831&1863 & 0&229017 & 0&999131 \vspace{0.75em}\\ 
+              &  3B & 2671&6637 & 1&708188 & 0&997729 \\ 
+    Linear    &  4  &  927&8581 & 0&381600 & 0&998690 \\ 
+              &  5  &  831&1874 & 0&229155 & 0&999131 \vspace{0.75em}\\ 
+              &  3B & 2671&6574 & 1&707165 & 0&997730 \\ 
+    Spline0.1 &  4  &  927&8559 & 0&381316 & 0&998691 \\ 
+              &  5  &  831&1855 & 0&228965 & 0&999131 \vspace{0.75em}\\ 
+              &  3B & 2671&6627 & 1&707900 & 0&997730 \\ 
+    Spline20  &  4  &  927&8577 & 0&381524 & 0&998690 \\ 
+              &  5  &  831&1871 & 0&229105 & 0&999131 \vspace{0.75em}\\ 
+              &  3B & 2671&6575 & 1&707159 & 0&997730 \\ 
+    Original  &  4  &  927&8558 & 0&381317 & 0&998691 \\ 
+              &  5  &  831&1851 & 0&228967 & 0&999131\vspace{0.75em}\\ 
+              &  3B & 2671&6600 & 1&707423 & 0&997730 \\ 
+    Current   &  4  &  927&8568 & 0&381393 & 0&998691 \\ 
+              &  5  &  831&1863 & 0&229017 & 0&999131 \\ 
+    \hline
+  \end{tabular}
+  \caption{Central frequencies and band correction coefficients for the NOAA-19 AVHRR.}
+  \label{tab:avhrr3_metop-a.bc}
+\end{table}

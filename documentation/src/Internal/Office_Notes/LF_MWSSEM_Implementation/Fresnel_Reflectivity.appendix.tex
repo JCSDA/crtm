@@ -1,0 +1,62 @@
+\section{Fresnel Reflectivity Derivation}
+%========================================
+\label{sec:fresnel_equations}
+This section merely derives the Fresnel reflectivity equations used in the CRTM microwave sea surface emissivity from the more typical equations.
+
+As defined in section 1.5.2 in \citet{BornWolf_1999}, the complex amplitudes of the reflected waves parallel (vertical) and perpendicular (horizontal) to the plane of incidence of an air/ocean water interface are given by,
+\begin{equation}
+  R_{\parallel} = \frac{n_{2}\cos\theta_{i} - n_{1}\cos\theta_{t}}{n_{2}\cos\theta_{i} + n_{1}\cos\theta_{t}}.A_{\parallel}
+  \label{eqn:Rv_amplitude}
+\end{equation}
+and
+\begin{equation}
+  R_{\perp} = \frac{n_{1}\cos\theta_{i} - n_{2}\cos\theta_{t}}{n_{1}\cos\theta_{i} + n_{2}\cos\theta_{t}}.A_{\perp}
+  \label{eqn:Rh_amplitude}
+\end{equation}
+where $n_{1}$ and $n_{2}$ are the refractive indices of air and ocean water respectively, $\theta_{i}$ and $\theta_{t}$ the angles of incidence and transmission respectively, and $A$ represents the complex amplitude of the incident wave. Additionally, the reflectivity is given by the ratio,
+\begin{equation}
+  r = \frac{|R|^{2}}{|A|^{2}}
+  \label{eqn:reflectivity}
+\end{equation}
+
+The refractive index of a medium can be expressed via Maxwell's formula,
+\begin{equation*}
+  n = \sqrt{\epsilon\mu}
+\end{equation*}
+where we can assume the magnetic permeability of ocean water is unity, such that
+\begin{equation}
+  n_{2} = \sqrt{\epsilon}
+  \label{eqn:maxwells}
+\end{equation}
+Setting the refractive index of air to a value of 1.0, we can use equation \ref{eqn:maxwells} in Snell's law to obtain a substitution for $\cos\theta_{t}$,
+\begin{eqnarray}
+  \sqrt{\epsilon}\,\sin\theta_{t}  &=& \sin\theta_{i}\nonumber\\
+  \textrm{i.e. }\sin^{2}\theta_{t} &=& \frac{\sin^{2}\theta_{i}}{\epsilon}\nonumber\\
+  \cos^{2}\theta_{t}               &=& 1 - \frac{1 - \cos^{2}\theta_{i}}{\epsilon}\nonumber\\
+                                   &=& \frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}\nonumber\\
+  \therefore\:\cos\theta_{t}       &=& \sqrt{\frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}}
+  \label{eqn:cost_substitution}
+\end{eqnarray}
+Substituting equations \ref{eqn:maxwells} and \ref{eqn:cost_substitution} into equation \ref{eqn:Rv_amplitude} and multiplying by $\sqrt{\epsilon}/\sqrt{\epsilon}$ we get,
+\begin{eqnarray}
+  R_{\parallel} &=& \frac{\sqrt{\epsilon}\,\cos\theta_{i} - \sqrt{\displaystyle\frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}}}{\sqrt{\epsilon}\,\cos\theta_{i} + \sqrt{\displaystyle\frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}}}.\frac{\sqrt{\epsilon}}{\sqrt{\epsilon}}.A_{\parallel}\nonumber\\\nonumber\\
+                &=& \frac{\epsilon\,\cos\theta_{i} - \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}{\epsilon\,\cos\theta_{i} + \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}.A_{\parallel}
+  \label{eqn:Rv_amplitude2}
+\end{eqnarray}
+with the reflectivity given by equation \ref{eqn:reflectivity}
+\begin{equation}
+  r_{\parallel} = \left|\frac{\epsilon\,\cos\theta_{i} - \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}{\epsilon\,\cos\theta_{i} + \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}\right|^{2}
+  \label{eqn:Rv_reflectivity}
+\end{equation}
+Similarly for the equation \ref{eqn:Rh_amplitude},
+\begin{eqnarray}
+  R_{\perp} &=& \frac{\cos\theta_{i} - \sqrt{\epsilon}\,\sqrt{\displaystyle\frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}}}{\cos\theta_{i} + \sqrt{\epsilon}\,\sqrt{\displaystyle\frac{\epsilon - 1 + \cos^{2}\theta_{i}}{\epsilon}}}.A_{\perp}\nonumber\\\nonumber\\
+                &=& \frac{\cos\theta_{i} - \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}{\cos\theta_{i} + \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}.A_{\perp}
+  \label{eqn:Rh_amplitude2}
+\end{eqnarray}
+with reflectivity,
+\begin{equation}
+  r_{\perp} = \left|\frac{\cos\theta_{i} - \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}{\cos\theta_{i} + \sqrt{\epsilon - 1 + \cos^{2}\theta_{i}}}\right|^{2}
+  \label{eqn:Rh_reflectivity}
+\end{equation}
+
