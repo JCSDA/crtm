@@ -1,0 +1,246 @@
+\subsection{\texttt{CRTM\_Init} interface}
+  \label{sec:CRTM_Init_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Init
+ 
+  PURPOSE:
+        Function to initialise the CRTM.
+ 
+  CALLING SEQUENCE:
+        Error_Status = CRTM_Init( Sensor_ID  , &
+                                  ChannelInfo, &
+                                  CloudCoeff_File    = CloudCoeff_File   , &
+                                  AerosolCoeff_File  = AerosolCoeff_File , &
+                                  Load_CloudCoeff    = Load_CloudCoeff   , &
+                                  Load_AerosolCoeff  = Load_AerosolCoeff , &
+                                  IRwaterCoeff_File  = IRwaterCoeff_File , &
+                                  IRlandCoeff_File   = IRlandCoeff_File  , &
+                                  IRsnowCoeff_File   = IRsnowCoeff_File  , &
+                                  IRiceCoeff_File    = IRiceCoeff_File   , &
+                                  VISwaterCoeff_File = VISwaterCoeff_File, &
+                                  VISlandCoeff_File  = VISlandCoeff_File , &
+                                  VISsnowCoeff_File  = VISsnowCoeff_File , &
+                                  VISiceCoeff_File   = VISiceCoeff_File  , &
+                                  MWwaterCoeff_File  = MWwaterCoeff_File , &
+                                  File_Path          = File_Path         , &
+                                  Quiet              = Quiet             , &
+                                  Process_ID         = Process_ID        , &
+                                  Output_Process_ID  = Output_Process_ID   )
+ 
+  INPUTS:
+        Sensor_ID:          List of the sensor IDs (e.g. hirs3_n17, amsua_n18,
+                            ssmis_f16, etc) with which the CRTM is to be
+                            initialised. These sensor ids are used to construct
+                            the sensor specific SpcCoeff and TauCoeff filenames
+                            containing the necessary coefficient data, i.e.
+                              <Sensor_ID>.SpcCoeff.bin
+                            and
+                              <Sensor_ID>.TauCoeff.bin
+                            for each sensor Id in the list.
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Rank-1 (n_Sensors)
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  OUTPUTS:
+        ChannelInfo:        ChannelInfo structure array populated based on
+                            the contents of the coefficient files and the
+                            user inputs.
+                            UNITS:      N/A
+                            TYPE:       CRTM_ChannelInfo_type
+                            DIMENSION:  Same as input Sensor_Id argument
+                            ATTRIBUTES: INTENT(OUT)
+ 
+  OPTIONAL INPUTS:
+        CloudCoeff_File:    Name of the data file containing the cloud optical
+                            properties data for scattering calculations.
+                            Available datafiles:
+                            - CloudCoeff.bin  [DEFAULT]
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        AerosolCoeff_File:  Name of the data file containing the aerosol optical
+                            properties data for scattering calculations.
+                            Available datafiles:
+                            - AerosolCoeff.bin  [DEFAULT]
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Load_CloudCoeff:    Set this logical argument for not loading the CloudCoeff data
+                            to save memory space under the clear conditions
+                            If == .FALSE., the CloudCoeff data will not be loaded;
+                               == .TRUE.,  the CloudCoeff data will be loaded.
+                            If not specified, default is .TRUE. (will be loaded)
+                            UNITS:      N/A
+                            TYPE:       LOGICAL
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Load_AerosolCoeff:  Set this logical argument for not loading the AerosolCoeff data
+                            to save memory space under the clear conditions
+                            If == .FALSE., the AerosolCoeff data will not be loaded;
+                               == .TRUE.,  the AerosolCoeff data will be loaded.
+                            If not specified, default is .TRUE. (will be loaded)
+                            UNITS:      N/A
+                            TYPE:       LOGICAL
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        MWwaterCoeff_File:  Name of the data file containing the coefficient
+                            data for the microwave water emissivity model.
+                            Available datafiles:
+                            - FASTEM5.MWwater.EmisCoeff.bin  [DEFAULT]
+                            - FASTEM4.MWwater.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        IRwaterCoeff_File:  Name of the data file containing the coefficient
+                            data for the infrared water emissivity model.
+                            Available datafiles:
+                            - Nalli.IRwater.EmisCoeff.bin  [DEFAULT]
+                            - WuSmith.IRwater.EmisCoeff.bin
+                            If not specified the Nalli datafile is read.
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        IRlandCoeff_File:   Name of the data file containing the coefficient
+                            data for the infrared land emissivity model.
+                            Available datafiles:
+                            - NPOESS.IRland.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.IRland.EmisCoeff.bin
+                            - USGS.IRland.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        IRsnowCoeff_File:   Name of the data file containing the coefficient
+                            data for the infrared snow emissivity model.
+                            Available datafiles:
+                            - NPOESS.IRsnow.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.IRsnow.EmisCoeff.bin
+                            - USGS.IRsnow.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        IRiceCoeff_File:    Name of the data file containing the coefficient
+                            data for the infrared ice emissivity model.
+                            Available datafiles:
+                            - NPOESS.IRice.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.IRice.EmisCoeff.bin
+                            - USGS.IRice.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        VISwaterCoeff_File: Name of the data file containing the coefficient
+                            data for the visible water emissivity model.
+                            Available datafiles:
+                            - NPOESS.VISwater.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.VISwater.EmisCoeff.bin
+                            - USGS.VISwater.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        VISlandCoeff_File:  Name of the data file containing the coefficient
+                            data for the visible land emissivity model.
+                            Available datafiles:
+                            - NPOESS.VISland.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.VISland.EmisCoeff.bin
+                            - USGS.VISland.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        VISsnowCoeff_File:  Name of the data file containing the coefficient
+                            data for the visible snow emissivity model.
+                            Available datafiles:
+                            - NPOESS.VISsnow.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.VISsnow.EmisCoeff.bin
+                            - USGS.VISsnow.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        VISiceCoeff_File:   Name of the data file containing the coefficient
+                            data for the visible ice emissivity model.
+                            Available datafiles:
+                            - NPOESS.VISice.EmisCoeff.bin  [DEFAULT]
+                            - IGBP.VISice.EmisCoeff.bin
+                            - USGS.VISice.EmisCoeff.bin
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        File_Path:          Character string specifying a file path for the
+                            input data files. If not specified, the current
+                            directory is the default.
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Quiet:              Set this logical argument to suppress INFORMATION
+                            messages being printed to stdout
+                            If == .FALSE., INFORMATION messages are OUTPUT [DEFAULT].
+                               == .TRUE.,  INFORMATION messages are SUPPRESSED.
+                            If not specified, default is .FALSE.
+                            UNITS:      N/A
+                            TYPE:       LOGICAL
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Process_ID:         Set this argument to the MPI process ID that this
+                            function call is running under. This value is used
+                            solely for controlling INFORMATION message output.
+                            If MPI is not being used, ignore this argument.
+                            This argument is ignored if the Quiet argument is set.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+        Output_Process_ID:  Set this argument to the MPI process ID in which
+                            all INFORMATION messages are to be output. If
+                            the passed Process_ID value agrees with this value
+                            the INFORMATION messages are output.
+                            This argument is ignored if the Quiet argument
+                            is set.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+                            ATTRIBUTES: INTENT(IN), OPTIONAL
+ 
+  FUNCTION RESULT:
+        Error_Status:       The return value is an integer defining the error
+                            status. The error codes are defined in the
+                            Message_Handler module.
+                            If == SUCCESS the CRTM initialisation was successful
+                               == FAILURE an unrecoverable error occurred.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Scalar
+ 
+  SIDE EFFECTS:
+        All public data arrays accessed by this module and its dependencies
+        are overwritten.
+ 
+  \end{alltt}

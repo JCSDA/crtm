@@ -1,0 +1,29 @@
+\subsection{\texttt{LBLRTM\_Fhdr\_IsValid} interface}
+  \label{sec:LBLRTM_Fhdr_IsValid_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Fhdr_IsValid
+ 
+  PURPOSE:
+        Elemental function to test if the LBLRTM_Fhdr object contains
+        valid data.
+ 
+  CALLING SEQUENCE:
+        Status = LBLRTM_Fhdr_IsValid( LBLRTM_Fhdr )
+ 
+  OBJECTS:
+        LBLRTM_Fhdr:   Instance which is to have its status tested.
+                       UNITS:      N/A
+                       TYPE:       LBLRTM_Fhdr_type
+                       DIMENSION:  Scalar or any rank
+                       ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Status:        The return value is a logical value indicating
+                       if the object contains valid data.
+                       UNITS:      N/A
+                       TYPE:       LOGICAL
+                       DIMENSION:  Same as input
+ 
+  \end{alltt}

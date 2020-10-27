@@ -1,0 +1,27 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/geo/sensor_azimuth_angle.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(4442,3360)(2268,-4786)
+\put(5851,-1561){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Sub-satellite}%
+}}}}
+\put(5851,-1786){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}point}%
+}}}}
+\put(2476,-4336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}West}%
+}}}}
+\put(6526,-4336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}East}%
+}}}}
+\put(4501,-1636){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}North}%
+}}}}
+\put(4501,-4786){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}FOV}%
+}}}}
+\put(4603,-3451){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}$\phi_A$}%
+}}}}
+\end{picture}%

@@ -1,0 +1,73 @@
+\begin{picture}(0,0)%
+\includegraphics{graphics/lblrtm_format.pstex}%
+\end{picture}%
+\setlength{\unitlength}{3947sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(8424,8124)(1039,-7573)
+\put(2701,-1186){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Single panel}%
+}}}}
+\put(2701,-1426){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral data}%
+}}}}
+\put(2701,-736){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(2701,-3136){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Single panel}%
+}}}}
+\put(2701,-3376){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral data}%
+}}}}
+\put(2701,-2686){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(2701,-5986){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Single panel}%
+}}}}
+\put(2701,-6226){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral data}%
+}}}}
+\put(2701,-5536){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(7801,-736){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(7576,-1186){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Double}%
+}}}}
+\put(7576,-1411){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral}%
+}}}}
+\put(8026,-1186){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}panel}%
+}}}}
+\put(8026,-1411){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}data}%
+}}}}
+\put(7801,-2686){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(7576,-3136){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Double}%
+}}}}
+\put(7576,-3361){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral}%
+}}}}
+\put(8026,-3136){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}panel}%
+}}}}
+\put(8026,-3361){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}data}%
+}}}}
+\put(7801,-5536){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Panel header (\texttt{Phdr})}%
+}}}}
+\put(7576,-5986){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}Double}%
+}}}}
+\put(7576,-6211){\makebox(0,0)[rb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}spectral}%
+}}}}
+\put(8026,-5986){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}panel}%
+}}}}
+\put(8026,-6211){\makebox(0,0)[lb]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}data}%
+}}}}
+\put(7801, 14){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}File header (\texttt{Fhdr})}%
+}}}}
+\put(7801,-7336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}End-of-layer marker}%
+}}}}
+\put(2701, 14){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}File header (\texttt{Fhdr})}%
+}}}}
+\put(2701,-7336){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}End-of-layer marker}%
+}}}}
+\put(5251,-1111){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\texttt{Panel}}%
+}}}}
+\put(5251,239){\makebox(0,0)[b]{\smash{{\SetFigFont{12}{14.4}{\sfdefault}{\mddefault}{\updefault}{\color[rgb]{0,0,0}\texttt{Layer}}%
+}}}}
+\end{picture}%

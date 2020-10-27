@@ -1,0 +1,29 @@
+\subsection{\texttt{.Compare.} interface}
+  \label{sec:.Compare._interface}
+  \begin{alltt}
+ 
+  NAME:
+    .Compare.
+ 
+  PURPOSE:
+    Operator method to compare two CloudCover objects.
+ 
+    This procedure performs similarly to the == operator, but is non-elemental
+    to allow for informational output when a difference is found between the
+    two objects being compared.
+ 
+    Mostly used for debugging.
+ 
+  CALLING SEQUENCE:
+    IF ( x .Compare. y ) THEN
+      ...
+    END IF
+ 
+  OBJECTS:
+    x, y:      The cloud cover objects to compare.
+               UNITS:      N/A
+               CLASS:      CRTM_CloudCover_type
+               DIMENSION:  Scalar
+               ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

@@ -1,0 +1,46 @@
+\subsection{\texttt{LBLRTM\_Panel\_Create} interface}
+  \label{sec:LBLRTM_Panel_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_Panel_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of an LBLRTM_Panel object.
+ 
+  CALLING SEQUENCE:
+        CALL LBLRTM_Panel_Create( LBLRTM_Panel, &
+                                  LBLRTM_PHdr , &
+                                  n_Spectra   , &
+                                  Err_Msg = Err_Msg )
+ 
+  OBJECTS:
+        LBLRTM_Panel:       LBLRTM_Panel object structure.
+                            UNITS:      N/A
+                            TYPE:       LBLRTM_Panel_type
+                            DIMENSION:  Scalar or any rank
+                            ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        LBLRTM_Phdr:        LBLRTM_Phdr object for the current panel.
+                            UNITS:      N/A
+                            TYPE:       LBLRTM_Phdr_type
+                            DIMENSION:  Conformable with LBLRTM_Panel
+                            ATTRIBUTES: INTENT(IN)
+ 
+        n_Spectra:          Number of spectra (or "panels").
+                            Must be > 0.
+                            UNITS:      N/A
+                            TYPE:       INTEGER
+                            DIMENSION:  Conformable with LBLRTM_Panel
+                            ATTRIBUTES: INTENT(IN)
+ 
+  OPTIONAL OUTPUTS:
+        Err_Msg:            String containing error message text if allocation
+                            failde.
+                            UNITS:      N/A
+                            TYPE:       CHARACTER(*)
+                            DIMENSION:  Conformable with LBLRTM_Panel
+                            ATTRIBUTES: INTENT(OUT), OPTIONAL
+ 
+  \end{alltt}

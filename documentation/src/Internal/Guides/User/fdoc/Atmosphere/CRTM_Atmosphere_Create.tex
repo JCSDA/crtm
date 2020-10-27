@@ -1,0 +1,54 @@
+\subsection{\texttt{CRTM\_Atmosphere\_Create} interface}
+  \label{sec:CRTM_Atmosphere_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Atmosphere_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of the CRTM Atmosphere object.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Atmosphere_Create( Atm        , &
+                                     n_Layers   , &
+                                     n_Absorbers, &
+                                     n_Clouds   , &
+                                     n_Aerosols   )
+ 
+  OBJECTS:
+        Atm:          Atmosphere structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Atmosphere_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        n_Layers:     Number of layers dimension.
+                      Must be > 0.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as atmosphere object
+                      ATTRIBUTES: INTENT(IN)
+ 
+        n_Absorbers:  Number of absorbers dimension.
+                      Must be > 0.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as atmosphere object
+                      ATTRIBUTES: INTENT(IN)
+ 
+        n_Clouds:     Number of clouds dimension.
+                      Can be = 0 (i.e. clear sky).
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as atmosphere object
+                      ATTRIBUTES: INTENT(IN)
+ 
+        n_Aerosols:   Number of aerosols dimension.
+                      Can be = 0 (i.e. no aerosols).
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as atmosphere object
+                      ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

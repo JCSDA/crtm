@@ -1,0 +1,155 @@
+\chapter{Introduction}
+%=====================
+
+
+\section{Components}
+%===================
+\label{sec:components}
+
+The LBLRTM I/O library is constructed around five data constructs, described in table \ref{tab:component_definitions}:
+\begin{table}[htp]
+  \centering
+  \caption{The data constructs of the LBLRTM I/O library}
+  \begin{tabular}{p{2.5cm} p{12cm}}
+    \hline\\[-0.1cm]
+    \sffamily\textbf{Component Name} & \sffamily\textbf{Description} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{Fhdr}  & The file header construct that is present at the start of each layer of data. \\\\
+    \texttt{Phdr}  & This is the panel header construct that is present at the start of each ``chunk'' of data (usually referred to as a ``panel''. See following.) \\\\
+    \texttt{Panel} & This construct corresponds to a ``chunk'' of spectral data. An LBLRTM datafile is referred to as being a single- or double-panel file. The former means a single spectral quantity is present (e.g. optical depth), and the latter means that two spectral quantities are present (e.g. radiance and transmittances). \\\\
+    \texttt{Layer} & This construct contains spectral data for the entire frequency range of an LBLRTM calculation for a single layer. The concept ``layer'' can correspond to the spectral data for individual atmospheric layers of the input profile, or to the final result for an entire atmosphere. \\\\
+    \texttt{File}  & This contruct is true to its name. It corresponds to an entire datafile of data which may consist of a single layer or multiple layers, and for single- or double-panel spectral data. \\
+  \hline
+  \end{tabular}
+  \label{tab:component_definitions}
+\end{table}
+
+Each component has a definition module to define the object and some basic methods to manipulate it, and an I/O module to read and write instances of the objects from/to file.
+
+Two components -- the file header and panel header -- are standalone, but the others contain other components, i.e. the panel object contains panel headers; the layer object contains file headers; and the file object contains layers. A schematic illustration of how the actual LBLRTM datafile format relates to the component definitions is shown in figure \ref{fig:lblrtm_format}.
+
+Note, however, that when an LBLRTM file is read, the individual panel ``chunks'' of spectral data are concatenated into a single spectrum. Thus the \Panel{} object itself is only used when reading from an LBLRTM file and is not used in the \File{} or \Layer{} objects.
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/lblrtm_format.pstex_t}
+  \caption{Schematic illustration of the LBLRTM single- and double-panel datafile format. A datafile can contain one, or multiple, layers of data.}
+  \label{fig:lblrtm_format}
+\end{figure}
+
+
+
+\section{Conventions}
+%====================
+\label{sec:conventions}
+The following are conventions that have been adhered to in the current release of the LBLRTM I/O library. They are guidelines intended to make understanding the code at a glance easier, to provide a recognisable ``look and feel'', and to minimise name space clashes.
+
+
+
+\subsection{Naming of Objects and Instances of Objects}
+%------------------------------------------------------
+
+The object\footnote{The terms ``derived type'' and ``structure'' can also be used as the code is not yet fully OO - that's for future updates.} naming convention adopted for use in the LBLRTM I/O library is, 
+
+\hspace{0.4cm}\f{LBLRTM\_}\textit{name}\f{\_type} 
+
+where \textit{name} is an identifier for the particular component (e.g. panel header, layer, file, etc as listed in table \ref{tab:component_definitions}). All object type names are suffixed with ``\f{\_type}''. The ``\f{LBLRTM\_}'' prefix is to define a namespace to minimise name clashes. An instance of a object is then referred to via its \textit{name}, or some sort of derivate of its \textit{name}. Some object declarations examples are,
+
+\begin{alltt}
+  TYPE(\hyperref[fig:LBLRTM_File_type_structure]{LBLRTM_File_type}) :: sp_file, dp_file
+  TYPE(\hyperref[fig:LBLRTM_Layer_type_structure]{LBLRTM_Layer_type}) :: layer\end{alltt}
+
+
+
+\subsection{Naming of Definition Modules}
+%----------------------------------------
+
+Modules containing object definitions are termed \textit{definition modules}. These modules contain the actual object definitions as well as various utility procedures that operate on the object. The naming convention adopted for definition modules in the LBLRTM I/O library is, 
+
+\hspace{0.4cm}\f{LBLRTM\_}\textit{name}\f{\_Define} 
+
+where all definition module names are suffixed with ``\f{\_Define}''. The actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
+
+
+
+\subsection{Naming of I/O Modules}
+%---------------------------------
+
+Modules containing all the object I/O procedures are termed, surprise, surprise, \textit{I/O modules}. These modules contain function to read and write LBLRTM format datafiles. The naming convention adopted for I/O modules in the LBLRTM I/O library is, 
+
+\hspace{0.4cm}\f{LBLRTM\_}\textit{name}\f{\_IO} 
+
+where all I/O module names are suffixed with ``\f{\_IO}''. As with the definition modules, the actual source code files for these modules have the same name with a ``\f{.f90}'' suffix.
+
+
+
+\subsection{Standard Definition Module Procedures}
+%-------------------------------------------------
+
+The definition modules for the user-accessible objects (for practical purposes just \File, although \Layer, \Fhdr, \Panel, and \Phdr are accessible for now) contain a standard set of procedures for use with the object being defined. The naming convention for these procedures is,
+
+\hspace{0.4cm}\f{LBLRTM\_}\textit{name}\f{\_}\textit{action}
+
+where the available default actions for each procedure are listed in table \ref{tab:definition_module_default_procedures}. This is not an exhaustive list but procedures for the actions listed in table \ref{tab:definition_module_default_procedures} are generally going to be present.
+
+The exception is that the objects with no allocatable components do not have a creation procedure.
+
+\begin{table}[htp]
+  \centering
+  \caption{Default action procedures available in object definition modules. $^{\dagger}$Procedures not available for the \Fhdr{} and \Phdr{} objects. $^{\ddagger}$Procedure available only for the \Layer{} object.}
+  \begin{tabular}{p{2.5cm} p{3.5cm} p{8.5cm}}
+    \hline\\[-0.1cm]
+    \sffamily\textbf{Action} & \sffamily\textbf{Type} & \sffamily\textbf{Description} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{OPERATOR(==)}             & Elemental function   & Tests the equality of two structures. \\
+    \texttt{OPERATOR(/=)}             & Elemental function   & Tests the inequality of two structures. \\
+    \texttt{Associated}$^{\dagger}$   & Elemental function   & Tests if the object components have been allocated. \\
+    \texttt{Create}$^{\dagger}$       & Elemental subroutine & Allocates any allocatable object components. \\
+    \texttt{Destroy}                  & Elemental subroutine & Reinitialises an object. \\
+    \texttt{DefineVersion}            & Subroutine           & Returns the module version information. \\
+    \texttt{Frequency}$^{\ddagger}$   & Subroutine           & Compute and return the spectral frequency grid. \\
+    \texttt{Inspect}                  & Subroutine           & Displays object contents to \texttt{stdout}. \\
+    \texttt{IsValid}                  & Elemental function   & Tests if the object contains valid data. \\
+    \texttt{SetValid}                 & Elemental subroutine & Flags the object as containing valid data. \\
+  \hline
+  \end{tabular}
+  \label{tab:definition_module_default_procedures}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \caption{Default action procedures available in object I/O modules.}
+  \begin{tabular}{p{2.5cm} p{3.5cm} p{8.5cm}}
+    \hline\\[-0.1cm]
+    \sffamily\textbf{Action} & \sffamily\textbf{Type} & \sffamily\textbf{Description} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{IOVersion} & Subroutine  & Returns the module version information. \\
+    \texttt{Read}      & Function    & Loads an instance of an object with data read from file. \\
+    \texttt{Write}     & Function    & Write an instance of an object to file. \\
+  \hline
+  \end{tabular}
+  \label{tab:io_module_default_procedures}
+\end{table}
+
+Some examples of these procedure names are,
+
+\begin{alltt}
+  \hyperref[sec:LBLRTM_File_Associated_interface]{LBLRTM_File_Associated}
+  \hyperref[sec:LBLRTM_File_IsValid_interface]{LBLRTM_File_IsValid}
+  \hyperref[sec:LBLRTM_Layer_Destroy_interface]{LBLRTM_Layer_Destroy}
+  \hyperref[sec:LBLRTM_Layer_Frequency_interface]{LBLRTM_Layer_Frequency}
+  \hyperref[sec:LBLRTM_File_Inspect_interface]{LBLRTM_File_Inspect}\end{alltt}
+
+The relational operators, \f{==} and \f{/=}, are implemented via overloaded \f{Equal} and \f{NotEqual} action procedures respectively, as is shown below for the \File{} structure,
+
+\begin{alltt}
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE LBLRTM_File_Equal
+  END INTERFACE OPERATOR(==)
+
+  INTERFACE OPERATOR(/=)
+    MODULE PROCEDURE LBLRTM_File_NotEqual
+  END INTERFACE OPERATOR(/=)\end{alltt}
+
+For a complete list of the definition and I/O module procedures for use with the available objects, see appendix \ref{app:object_and_interface_definition}.
+

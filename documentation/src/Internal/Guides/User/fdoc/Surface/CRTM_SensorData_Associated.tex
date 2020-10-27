@@ -1,0 +1,32 @@
+\subsection{\texttt{CRTM\_SensorData\_Associated} interface}
+  \label{sec:CRTM_SensorData_Associated_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_SensorData_Associated
+ 
+  PURPOSE:
+        Elemental function to test the status of the allocatable components
+        of a CRTM SensorData object.
+ 
+  CALLING SEQUENCE:
+        Status = CRTM_SensorData_Associated( SensorData )
+ 
+  OBJECTS:
+        SensorData:  SensorData structure which is to have its member's
+                     status tested.
+                     UNITS:      N/A
+                     TYPE:       CRTM_SensorData_type
+                     DIMENSION:  Scalar or any rank
+                     ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        Status:      The return value is a logical value indicating the
+                     status of the SensorData members.
+                       .TRUE.  - if the array components are allocated.
+                       .FALSE. - if the array components are not allocated.
+                     UNITS:      N/A
+                     TYPE:       LOGICAL
+                     DIMENSION:  Same as input SensorData argument
+ 
+  \end{alltt}

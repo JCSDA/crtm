@@ -1,0 +1,54 @@
+% The generic preamble
+\input{preamble}
+
+% Define included documents
+\includeonly{Change_History,Introduction,Repository_Organisation,Build_Conventions,Commit_Log_Messages}
+
+% Generic fixed font command
+\newcommand{\f}[1]{\texttt{#1}}
+\newcommand{\subversion}{\href{http://subversion.tigris.org/}{subversion}}
+\newcommand{\trac}{\href{http://trac.edgewall.org/}{\textsf{trac}}}
+
+% Title info
+\title{Subversion Repository and trac SCM Guide}
+\author{Paul van Delst\email{paul.vandelst@noaa.gov}\\JCSDA/EMC/SAIC}
+\date{August, 2009}
+
+
+%-------------------------------------------------------------------------------
+%                            Ze document begins...
+%-------------------------------------------------------------------------------
+\begin{document}
+\maketitle
+
+% The front matter
+%=================
+\include{Change_History}
+\setcounter{page}{1}
+\pagenumbering{roman}
+  \tableofcontents\newpage
+  \listoffigures\newpage
+  \listoftables\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% Include all the sections
+%=========================
+\include{Introduction}
+\include{Repository_Organisation}
+\include{Build_Conventions}
+\include{Commit_Log_Messages}
+
+% The references section
+%=======================
+\clearpage
+\bibliographystyle{plainnat}
+\bibliography{bibliography}
+
+% The apendices section
+%======================
+\begin{appendix}
+\end{appendix}
+
+\end{document}
+

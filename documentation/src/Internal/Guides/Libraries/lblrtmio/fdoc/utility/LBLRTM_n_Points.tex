@@ -1,0 +1,52 @@
+\subsection{\texttt{LBLRTM\_n\_Points} interface}
+  \label{sec:LBLRTM_n_Points_interface}
+  \begin{alltt}
+ 
+  NAME:
+        LBLRTM_n_Points
+ 
+  PURPOSE:
+        Pure function to compute the number of points in an LBLRTM spectrum.
+ 
+  CALLING SEQUENCE:
+        n_Points = LBLRTM_n_Points( f1, f2, df )
+ 
+  INPUTS:
+        f1:        Beginning frequency of the spectral data.
+                   UNITS:      cm^-1
+                   TYPE:       REAL(DP)
+                   DIMENSION:  Scalar
+                   ATTRIBUTES: INTENT(IN)
+ 
+        f2:        Ending frequency of the spectral data.
+                   UNITS:      cm^-1
+                   TYPE:       REAL(DP)
+                   DIMENSION:  Scalar
+                   ATTRIBUTES: INTENT(IN)
+ 
+        df:        Frequency spacing of the spectral data.
+                   The value of the data type kind, FP, is can
+                   indicate either single or double precision
+                   depending on how the Type_Kinds.fpp module was
+                   preprocessed for compilation.
+                   UNITS:      cm^-1
+                   TYPE:       REAL(FP)
+                   DIMENSION:  Scalar
+                   ATTRIBUTES: INTENT(IN)
+ 
+  FUNCTION RESULT:
+        n_Points:  The return value is an integer containing the
+                   number of points in the spectrum.
+                   UNITS:      N/A
+                   TYPE:       INTEGER
+                   DIMENSION:  Scalar
+ 
+  PROCEDURE:
+        The number of points is calculated from the begin and end frequencies,
+        f1 and f2, and the frequency interval, df, by:
+ 
+                    ( f2 - f1        )
+          n = FLOOR (--------- + 1.5 )
+                    (   df           )
+ 
+  \end{alltt}

@@ -1,0 +1,31 @@
+\subsection{\texttt{CRTM\_Options\_Create} interface}
+  \label{sec:CRTM_Options_Create_interface}
+  \begin{alltt}
+ 
+  NAME:
+        CRTM_Options_Create
+ 
+  PURPOSE:
+        Elemental subroutine to create an instance of the CRTM Options object.
+ 
+  CALLING SEQUENCE:
+        CALL CRTM_Options_Create( Options, n_Channels )
+ 
+  OBJECTS:
+        Options:      Options structure.
+                      UNITS:      N/A
+                      TYPE:       CRTM_Options_type
+                      DIMENSION:  Scalar or any rank
+                      ATTRIBUTES: INTENT(OUT)
+ 
+  INPUTS:
+        n_Channels:   Number of channels for which there is Options data.
+                      Must be > 0.
+                      This dimension only applies to the emissivity-related
+                      components.
+                      UNITS:      N/A
+                      TYPE:       INTEGER
+                      DIMENSION:  Same as Options object
+                      ATTRIBUTES: INTENT(IN)
+ 
+  \end{alltt}

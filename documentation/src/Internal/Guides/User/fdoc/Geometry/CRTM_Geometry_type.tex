@@ -1,0 +1,34 @@
+\begin{figure}[htp]
+  \centering
+  \doublebox{
+  \begin{minipage}[b]{6.5in}
+    \begin{alltt}
+  TYPE :: CRTM_Geometry_type
+    ! Allocation indicator
+    LOGICAL :: Is_Allocated = .FALSE.
+    ! Field of view index (1-nFOV)
+    INTEGER  :: iFOV = 0
+    ! Earth location
+    REAL(fp) :: Longitude        = ZERO
+    REAL(fp) :: Latitude         = ZERO
+    REAL(fp) :: Surface_Altitude = ZERO
+    ! Sensor angle information
+    REAL(fp) :: Sensor_Scan_Angle    = ZERO
+    REAL(fp) :: Sensor_Zenith_Angle  = ZERO
+    REAL(fp) :: Sensor_Azimuth_Angle = 999.9_fp  ! Invalid marker
+    ! Source angle information
+    REAL(fp) :: Source_Zenith_Angle  = 100.0_fp  ! Below horizon
+    REAL(fp) :: Source_Azimuth_Angle = ZERO
+    ! Flux angle information
+    REAL(fp) :: Flux_Zenith_Angle = DIFFUSIVITY_ANGLE
+    ! Date for geometry calculations
+    INTEGER :: Year  = 2001
+    INTEGER :: Month = 1
+    INTEGER :: Day   = 1
+  END TYPE CRTM_Geometry_type
+    \end{alltt}
+  \end{minipage}
+  }
+  \caption{CRTM\_Geometry\_type structure definition.}
+  \label{fig:CRTM_Geometry_type_structure}
+\end{figure}

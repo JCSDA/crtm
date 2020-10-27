@@ -1,0 +1,1762 @@
+\chapter{How to use the CRTM library}
+%====================================
+%====================================
+\label{chapter:use}
+
+This section will hopefully get you started using the CRTM library as quickly as possible. Refer to the following sections for more information about the structures and interfaces.
+
+There are many variations in what information is known ahead of time (and by ``ahead of time'' we mean at compile-time of your code), so we'll approach this via examples where pretty much all the dimensional information is unknown. It's a little more effort to set up, but makes for more flexible applications. Of course, for simplicity, one can choose to hardwire dimensions (e.g. number of profiles, number of sensors, etc) in their calling code. It is left as an exercise to the reader to tailor calls to the CRTM in their application code according to their particular needs.
+
+With regards to sensor identification, the CRTM uses a character string -- refered to as the \f{Sensor\_Id} -- to distinguish sensors and platforms. The lists of currently supported sensors, along with their associated \f{Sensor\_Id}'s, are shown in appendix \ref{sec:sensor_id}.
+
+
+\newcounter{example}[section]
+
+
+
+\section{Access the CRTM module}
+%===============================
+\label{sec:access_step}
+
+All of the CRTM user procedures, parameters, and derived data type definitions are accessible via the container module \f{CRTM\_Module}. Thus, one needs to put the following statement in any calling program, module or procedure,
+
+\qquad\f{USE CRTM\_Module}
+
+Once you become familiar with the components of the CRTM you require, you can also specify an \f{ONLY} clause with the \f{USE} statement,
+
+\qquad\f{USE CRTM\_Module}[\f{, ONLY:}\textit{only-list}]
+
+where \textit{only-list} is a list of the symbols you want to ``import'' from \f{CRTM\_Module}. This latter form is the preferred style for self-documenting your code; e.g. when you give the code to someone else, they will be able to identify from which module various symbols in your code originate.
+
+
+
+\section{Declare the CRTM structures}
+%====================================
+\label{sec:declare_step}
+
+To compute satellite radiances you need to declare structures for the following information,\vspace{-2ex}
+
+\begin{enumerate}
+  \item Atmospheric profile data such as pressure, temperature, absorber amounts, clouds, aerosols, etc. Handled using the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure.
+  \item Surface data such as type of surface, temperature, surface type specific parameters etc. Handled using the \hyperref[sec:surface_structure]{\Surface} structure.
+  \item Geometry information such as sensor scan angle, zenith angle, etc. Handled using the \hyperref[sec:geometry_structure]{\Geometry} structure.
+  \item Instrument information, particularly which instrument(s), or sensor(s)\footnote{The terms ``instrument'' and ``sensor'' are used interchangeably in this document.}, you want to simulate. Handled using the \hyperref[sec:channelinfo_structure]{\ChannelInfo} structure.
+  \item Results of the radiative transfer calculation. Handled using the \hyperref[sec:rtsolution_structure]{\RTSolution} structure.
+  \item Optional inputs. Handled using the \hyperref[sec:options_structure]{\Options} structure.
+\end{enumerate}
+
+Let's look at the general case where we want to construct CRTM calls where \emph{all} of the relevant dimensions can be dynamically set. So, first define some variables to hold the dimension values,
+
+\begin{alltt}
+  ! Dimension variable
+  INTEGER :: n_channels  ! l = 1, ... , L
+  INTEGER :: n_profiles  ! m = 1, ... , M
+  INTEGER :: n_sensors   ! n = 1, ... , N\end{alltt}
+
+For this general case, all of the CRTM structure array definitions will be allocatable. The forward model declarations would look something like,
+
+\begin{alltt}
+  ! Processing parameters
+  CHARACTER(20)               , ALLOCATABLE :: sensor_id(:)  ! N
+  TYPE(\hyperref[fig:CRTM_ChannelInfo_type_structure]{CRTM_ChannelInfo_type}) , ALLOCATABLE :: chinfo(:)     ! N
+  TYPE(\hyperref[fig:CRTM_Geometry_type_structure]{CRTM_Geometry_type})    , ALLOCATABLE :: geo(:)        ! M
+  TYPE(\hyperref[fig:CRTM_Options_type_structure]{CRTM_Options_type})     , ALLOCATABLE :: opt(:)        ! M
+  ! Forward declarations
+  TYPE(\hyperref[fig:CRTM_Atmosphere_type_structure]{CRTM_Atmosphere_type})  , ALLOCATABLE :: atm(:)        ! M
+  TYPE(\hyperref[fig:CRTM_Surface_type_structure]{CRTM_Surface_type})     , ALLOCATABLE :: sfc(:)        ! M
+  TYPE(\hyperref[fig:CRTM_RTSolution_type_structure]{CRTM_RTSolution_type})  , ALLOCATABLE :: rts(:,:)      ! L x M\end{alltt}
+
+If you are also interested in calling the K-matrix model, you will also need the following declarations,
+
+\begin{alltt}
+  ! K-Matrix declarations
+  TYPE(\hyperref[fig:CRTM_Atmosphere_type_structure]{CRTM_Atmosphere_type})  , ALLOCATABLE :: atm_K(:,:)  ! L x M
+  TYPE(\hyperref[fig:CRTM_Surface_type_structure]{CRTM_Surface_type})     , ALLOCATABLE :: sfc_K(:,:)  ! L x M
+  TYPE(\hyperref[fig:CRTM_RTSolution_type_structure]{CRTM_RTSolution_type})  , ALLOCATABLE :: rts_K(:,:)  ! L x M\end{alltt}
+
+
+
+\section{Initialise the CRTM}
+%============================
+\label{sec:init_step}
+
+The CRTM is initialised by calling the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function. This loads all the various coefficient data used by CRTM components into memory for later use. The CRTM initialisation is profile independent, so we're only dealing with sensor information here. As such, we have to allocate the \f{sensor\_id} and \f{chinfo} arrays to handle the number of sensors we want to process. Most users set this value to one (i.e. process a single sensor for each CRTM initialisation) but for this example we'll set it to \emph{six} and use the various MetOp-A sensors: AMSU-A, MHS, HIRS/4, IASI, and AVHRR/3. Why not five? Keep reading...
+
+The array allocations would look like,
+\begin{alltt}
+  INTEGER :: alloc_stat
+  ....
+  ! Allocate sensor arrays
+  n_sensors = 6
+  ALLOCATE( sensor_id(n_sensors), &
+            chinfo(n_sensors), &
+            STAT = alloc_stat )
+  IF ( alloc_stat /= 0 ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Referring to appendix \ref{sec:sensor_id}, we can now fill the \f{sensor\_id} array with the sensor identifiers that the CRTM understands,
+\begin{alltt}
+  sensor_id = (/ 'amsua_metop-a'   , &
+                 'mhs_metop-a'     , &
+                 'hirs4_metop-a'   , &
+                 'iasi_metop-a'    , &
+                 'avhrr3_metop-a'  , &
+                 'v.avhrr3_metop-a' /)\end{alltt}
+
+Note the last sensor identifier with the ``\f{v.}'' prefix -- indicating a visible wavelength sensor. Currently the CRTM treats visible channels as a separate instrument from infrared channels in those cases where the same sensor has both.\footnote{It is a lower priority, but this will likely be changed in future CRTM releases as it exposes a wee bit too much of the internal CRTM plumbing to the user.} This is why the five sensors required six sensor identifiers.
+
+Now that we have our input \f{sensor\_id} array defined, we can call the CRTM initialisation function,
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Here we see for the first time how the main CRTM functions let you know if they were successful. As you can see the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function result is an error status that is checked against a parameterised integer error code, \f{SUCCESS}. The function result should \emph{not} be tested against the actual value of the error code, just its parameterised name. Other available error code parameters are \f{FAILURE}, \f{WARNING}, and \f{INFORMATION} -- although the latter is never used as a function result.
+
+The \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function called shown above illustrates the simplest call interface assuming the default value for all the optional arguments. Some examples of the use of these optional arguments are shown below.
+
+
+\subsection{Where are the coefficient data files?}
+%-------------------------------------------------
+The default setup for the CRTM initialisation function is that all of the coefficient data files reside in the directory from which the calling program was invoked.
+
+That situation is rarely the case. To get the CRTM initialisation to use a different location for the coefficient files, you use the optional \f{File\_Path} argument. For example, let's assume that all the required datafiles reside in the subdirectory \f{./coeff\_data}. The initialisation call would look like,
+
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo, &
+                        \textcolor{red}{File_Path = './coeff_data'} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+
+\subsection{No clouds or aerosols?}
+%----------------------------------
+If you know ahead of time that your CRTM usage will not require the computation of cloud and/or aerosol scattering quantities, you can use the optional \f{Load\_CloudCoeff} and \f{Load\_AerosolCoeff} logical arguments to the \hyperref[sec:CRTM_Init_interface]{\f{CRTM\_Init()}} function to prevent the cloud and/or aerosol optical properties look-up tables (LUTs) being read in. For example, the syntax to load the cloud, but not the aerosol, LUTs would be something like,
+
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo, &
+                        \textcolor{red}{Load_CloudCoeff   = .TRUE.}, &
+                        \textcolor{red}{Load_AerosolCoeff = .FALSE.} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+
+\subsection{What surface emissivity model?}
+%------------------------------------------
+\label{sec:init_step-surface_emissivity_model}
+The data required for some of the surface emissivity models are also loaded via files (in others the data are hard-coded into the source modules.) Table \ref{tab:emiscoeff_file_choices} shows the choices available during initialisation for setting up the surface emissivity models.
+
+\begin{table}[htp]
+  \centering
+  \caption{Choices available for setup of the various emissivity/reflectivity models during CRTM initialisation. $^{\dagger}$Default file loaded if optional argument not specified. $^{\ddagger}$The same classification scheme file should be loaded for both the infrared and visible land surface emissivity model.}
+  \begin{tabular}{p{4cm} c r}
+    \hline\\[-0.1cm]
+    \tblhd{Emissivity or Reflectivity Model} & \tblhd{Optional argument} & \tblhd{Available files} \\
+    \hline\hline\\[-0.2cm]
+                                          &                         & \f{NPOESS.IRland.EmisCoeff.bin}$^{\dagger}$   \\
+    \sffamily{Infrared Land}$^{\ddagger}$ &  \f{IRlandCoeff\_File}  & \f{USGS.IRland.EmisCoeff.bin}                 \\
+                                          &                         & \f{IGBP.IRland.EmisCoeff.bin}                 \\[0.3cm]
+                                          &                              & \f{Nalli.IRwater.EmisCoeff.bin}$^{\dagger}$   \\
+    \rb{\sffamily{Infrared Water}}        &  \rb{\f{IRwaterCoeff\_File}} & \f{WuSmith.IRwater.EmisCoeff.bin}             \\[0.3cm]
+                                          &                              & \f{FASTEM5.MWwater.EmisCoeff.bin}$^{\dagger}$ \\
+    \rb{\sffamily{Microwave Water}}       &  \rb{\f{MWwaterCoeff\_File}} & \f{FASTEM4.MWwater.EmisCoeff.bin}             \\[0.3cm]
+                                          &                         & \f{NPOESS.VISland.EmisCoeff.bin}$^{\dagger}$  \\
+    \sffamily{Visible Land}$^{\ddagger}$  &  \f{VISlandCoeff\_File} & \f{USGS.VISland.EmisCoeff.bin}                \\
+                                          &                         & \f{IGBP.VISland.EmisCoeff.bin}                \\
+  \hline
+  \end{tabular}
+  \label{tab:emiscoeff_file_choices}
+\end{table}
+
+An example of specifying different data files for all the models listed in table \ref{tab:emiscoeff_file_choices}  is shown below,
+
+\begin{alltt}
+  INTEGER :: err_stat
+  ....
+  err_stat = \hyperref[sec:CRTM_Init_interface]{CRTM_Init}( sensor_id, chinfo, &
+                        \textcolor{red}{IRlandCoeff_File  = 'IGBP.IRland.EmisCoeff.bin'}, &
+                        \textcolor{red}{IRwaterCoeff_File = 'WuSmith.IRwater.EmisCoeff.bin'}, &
+                        \textcolor{red}{MWwaterCoeff_File = 'FASTEM4.MWwater.EmisCoeff.bin'}, &
+                        \textcolor{red}{VISlandCoeff_File = 'IGBP.VISland.EmisCoeff.bin'} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+It must be pointed out that you should specify the same classification file for the infrared and visible land surface emissivity models. For example, do not initialise the infrared land model with the USGS file and the visible land model with the IGBP file. This is because the allowed surface types are now stored in the file and mixing the allowable surface types could cause unexpected results. See section \ref{sec:fill_step} below regarding the specification of the surface type via the \hyperref[sec:surface_structure]{\Surface} structure.
+
+
+\subsection{I don't want to process all of the channels!}
+%--------------------------------------------------------
+\label{sec:init_step-channel_subset}
+Prior to v2.1, once the CRTM was initialised for a sensor, the calculations were performed for \emph{all} of the channels of that sensor. There is now a capability to dynamically select the channels to process. This is done after a CRTM initialisation has occurred but is mentioned here as the \hyperref[fig:CRTM_ChannelInfo_type_structure]{\ChannelInfo} structure is modified to achieve this.
+
+A new series of functions that operate on the \hyperref[fig:CRTM_ChannelInfo_type_structure]{\ChannelInfo} structure have been included that allow you to select the channel to process. For example, let's say you only want to process channels 1000-1100 of hte MetOp-A IASI instrument in our example. This can be achieved via a call to the \hyperref[sec:CRTM_ChannelInfo_Subset_interface]{\f{CRTM\_ChannelInfo\_Subset}} function,
+
+\begin{alltt}
+  INTEGER :: i
+  ....
+  ! Specify an IASI channel subset for processing example
+  err_stat = \hyperref[sec:CRTM_ChannelInfo_Subset_interface]{CRTM_ChannelInfo_Subset}( chinfo(4), &
+                                      \textcolor{red}{Channel_Subset = (/(i,i=1000,1100)/)} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+where the \f{chinfo(4)} references the \hyperref[fig:CRTM_ChannelInfo_type_structure]{\ChannelInfo} structure for IASI from the initialisation.
+
+And one more example for subsetting AMSU-A (i.e. \f{chinfo(1)}) where we only want to process channels 5-8,
+
+\begin{alltt}
+  ! Specify an AMSU-A channel subset for processing example
+  err_stat = \hyperref[sec:CRTM_ChannelInfo_Subset_interface]{CRTM_ChannelInfo_Subset}( chinfo(1), &
+                                      \textcolor{red}{Channel_Subset = (/5,6,7,8/)} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+You can call this function as many times as you like with different channel sets for different sensors. If you \emph{do} want to process all the sensors channels after selecting a subset, you can easily go back to all-channel processing by using the optional \f{Reset} logical argument,
+
+\begin{alltt}
+  ! Reset back to all-channel processing
+  err_stat = \hyperref[sec:CRTM_ChannelInfo_Subset_interface]{CRTM_ChannelInfo_Subset}( chinfo(1), &
+                                      \textcolor{red}{Reset = .TRUE.} )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+The \f{Reset} argument overrides any channel subset specification.
+
+One more thing: because the total number of channels to be processed can now vary dynamically, there is also a ``channel counter'' function to determine how many channels will be processed. It is an elemental\footnote{An elemental procedure may be called with scalar arguments or conformable array arguments of any rank.} function so you can call it for a single \hyperref[fig:CRTM_ChannelInfo_type_structure]{\ChannelInfo} entry,
+
+\begin{alltt}
+  ! Count the number of IASI channels to be processed
+  n_Channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(4) )\end{alltt}
+
+or you can call it for all the sensors defined in the \hyperref[fig:CRTM_ChannelInfo_type_structure]{\ChannelInfo} array \f{chinfo},
+
+\begin{alltt}
+  ! Count the number of ALL the channels to be processed
+  n_Total_Channels = SUM(\hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo ))\end{alltt}
+
+
+
+\section{Allocate the CRTM arrays}
+%=================================
+\label{sec:alloc_array_step}
+
+The first step is to allocate all of the structure arrays to the required size. For our example, let's assume we'll be processing sets of 50 atmospheric profiles, and return to some of the other structure arrays defined in section \ref{sec:declare_step},
+\begin{alltt}
+  INTEGER :: alloc_stat
+  ....
+  ! Allocate profile-only arrays
+  n_profiles = 50
+  ALLOCATE( geo(n_profiles), &
+            opt(n_profiles), &
+            atm(n_profiles), &
+            sfc(n_profiles), &
+            STAT = alloc_stat )
+  IF ( alloc_stat /= 0 ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+But what about the \hyperref[fig:CRTM_RTSolution_type_structure]{\RTSolution} structure array, \f{rts}, which has the dimensions \f{n\_channels} $\times$ \f{n\_profiles}? Or the K-matrix arrays \f{atm\_K}, \f{sfc\_K}, and \f{rts\_K}? How many channels should be used in their allocation?
+
+The answer is simple, even if mildly unsatisfying: while there is nothing to preclude you from allocating the channel-dependent structure arrays for \emph{all} the channels ......  the number of channels for the \f{rts} allocation should be for a single sensor. Why? Well, primarily because it is unlikely that the data in the other input structure arrays can (should?) be considered the same for the other sensors -- even if they are on the same platform. The simplest example is the \hyperref[fig:CRTM_Geometry_type_structure]{\Geometry} structure array, \f{geo}, where the sensor scan geometry is going to be quite different for different sensors on the same platform. Similarly for the \hyperref[fig:CRTM_Surface_type_structure]{\Surface} structure array, \f{sfc}, where different sensor field-of-view (FOV) geometries will lead to different surface properties.
+
+So now we introduce a channel-dependence to the usage of the CRTM input structure arrays. Starting with their allocation, let's put these in a loop over sensor, and use the \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{\f{CRTM\_ChannelInfo\_n\_Channels}} from the previous section,
+\begin{alltt}
+  INTEGER :: n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+
+    ! Allocate channel-dependent arrays
+    ALLOCATE( rts(n_channels, n_profiles)  , &
+              atm_K(n_channels, n_profiles), &
+              sfc_K(n_channels, n_profiles), &
+              rts_K(n_channels, n_profiles), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+  END DO Sensor_Loop\end{alltt}
+
+
+
+\section{Create the CRTM structures}
+%===================================
+\label{sec:alloc_structure_step}
+
+Now we need to create instances of the various CRTM structures where necessary to hold the input or output data.
+
+Subroutines are used to perform the necessary creation of the CRTM structures by allocating the internal components. The procedure naming convention is \f{CRTM\_}\textit{object}\f{\_Create} where, for typical usage, the CRTM structures that need to be allocated are the \hyperref[sec:atmosphere_structure]{\Atmosphere}, \hyperref[sec:rtsolution_structure]{\RTSolution} and, if used, \hyperref[sec:options_structure]{\Options} structures. Potentially, the \hyperref[sec:sensordata_structure]{\SensorData} component of the \hyperref[sec:surface_structure]{\Surface} structure may also need to be allocated to allow for input of sensor observations for some of the NESDIS microwave surface emissivity models.
+
+The \f{CRTM\_}\textit{object}\f{\_Create} procedures are always elemental and can be invoked for scalar or conformable arrays arguments.
+
+
+\subsection{Allocation of the Atmosphere structures}
+%---------------------------------------------------
+First, we'll allocate the atmosphere structures to the required dimensions. For simplicity, let's assume that the number of layers, gaseous absorbers, clouds, and aerosols are the same for all the profiles. The creation of the forward atmosphere structures is done like so,
+
+\begin{alltt}
+  INTEGER :: n_layers, n_absorbers
+  INTEGER :: n_clouds, n_aerosols
+  ....
+  ! Some default dimensions
+  n_layers    = 64
+  n_absorbers = 2
+  n_clouds    = 1
+  n_aerosols  = 2
+
+  ! Allocate the forward atmosphere structures
+  CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( atm        , &
+                               n_layers   , &
+                               n_absorbers, &
+                               n_clouds   , &
+                               n_aerosols   )
+  ! Check they were created successfully
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( atm )) ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+and the K-matrix structures can be allocated by looping over all profiles,
+
+\begin{alltt}
+  INTEGER :: m
+  ....
+  ! Allocate the K-matrix atmosphere structures
+  DO m = 1, n_profiles
+    CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( atm_k(:,m) , &
+                                 n_layers   , &
+                                 n_absorbers, &
+                                 n_clouds   , &
+                                 n_aerosols   )
+    ! Check they were created successfully
+    IF ( ANY(.NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( atm_k(:,m) )) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO\end{alltt}
+
+The \hyperref[sec:CRTM_Atmosphere_Create_interface]{\f{CRTM\_Atmosphere\_Create}} function is defined as elemental so the profile loop is not strictly needed. The above K-matrix creation example is equivalent to
+
+\begin{alltt}
+  ! Allocate the K-matrix atmosphere structures
+  CALL \hyperref[sec:CRTM_Atmosphere_Create_interface]{CRTM_Atmosphere_Create}( atm_k      , &
+                               n_layers   , &
+                               n_absorbers, &
+                               n_clouds   , &
+                               n_aerosols   )
+  ! Check they were created successfully
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_Atmosphere_Associated_interface]{CRTM_Atmosphere_Associated}( atm_k )) ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Note that for the ODAS algorithm the allowed number of absorbers is \emph{at most} two: that of \water{} and \ozone{}. For the ODPS algorithm \carbondioxide{} can also be specified. For the infrared hyperspectral sensors (AIRS, IASI, and CrIS) the trace gases \methane{}, \nitrousoxide{}, and \carbonmonoxide{} can also be specified as absorbers.
+
+
+\subsection{Allocation of the RTSolution structure}
+%--------------------------------------------------
+To return additional information used in the radiative transfer calculations, such as upwelling radiance and layer optical depth profiles, the \hyperref[sec:atmosphere_structure]{\RTSolution} structure must be allocated to the number of atmospheric layers used,
+
+\begin{alltt}
+  ! Allocate the RTSolution structure
+  CALL \hyperref[sec:CRTM_RTSolution_Create_interface]{CRTM_RTSolution_Create}( rts     , &
+                               n_layers  )
+  ! Check they were created successfully
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_RTSolution_Associated_interface]{CRTM_RTSolution_Associated}( rts )) ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Note that internal checks are performed in the CRTM to determine if the \hyperref[sec:atmosphere_structure]{\RTSolution} structure has been allocated before its array components are accessed. Thus, if the additional information is not required, the \hyperref[sec:atmosphere_structure]{\RTSolution} structure does not need to be allocated. Also, the extra information returned is only applicable to the forward model, not any of the tangent-linear, adjoint, or K-matrix models.
+
+
+\subsection{Allocation of the Options structure}
+%-----------------------------------------------
+\label{sec:alloc_structure_step:options}
+If user-supplied surface emissivity data is to be used, then the options structure must first be allocated to the necessary number of channels:
+
+\begin{alltt}
+  ! Allocate the options structures
+  CALL \hyperref[sec:CRTM_Options_Create_interface]{CRTM_Options_Create}( opt       , &
+                            n_channels  )
+  ! Check they were created successfully
+  IF ( ANY(.NOT. \hyperref[sec:CRTM_Options_Associated_interface]{CRTM_Options_Associated}( opt )) ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+If no emissivities are to be input, the options structure does not need to be allocated.
+
+
+
+\section{Fill the CRTM input structures with data}
+%=================================================
+\label{sec:fill_step}
+
+This step simply entails filling the input \hyperref[sec:atmosphere_structure]{\Atmosphere} (including \hyperref[sec:cloud_structure]{\Cloud} and \hyperref[sec:aerosol_structure]{\Aerosol}), \hyperref[sec:surface_structure]{\Surface}, \hyperref[sec:geometry_structure]{\Geometry}, and, if used,  \hyperref[sec:options_structure]{\Options} structures with the required information. Sound simple? Read on...
+
+
+\subsection{Filling the Atmosphere structure with data}
+%------------------------------------------------------
+
+The elements of the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure, and their description, are shown in table \ref{tab:atmosphere_structure}. The modifiers such as ``\f{(}1:\textit{J}\f{)}'' and ``\f{(}1:\textit{nA}\f{)}'' are an indication of the allocatable range of the components. Similar descriptions of the \hyperref[sec:cloud_structure]{\Cloud} and \hyperref[sec:aerosol_structure]{\Aerosol} structures are show in tables \ref{tab:cloud_structure} and \ref{tab:aerosol_structure} respectively.
+
+
+% Atmosphere structure description table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Atmosphere{} structure component description.}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \f{n\_Layers}    & Number of atmospheric layers, \textit{K} & N/A & N/A \\
+    \f{n\_Absorbers} & Number of gaseous absorbers, \textit{J}  & N/A & N/A \\
+    \f{n\_Clouds}    & Number of clouds, \textit{nC}            & N/A & N/A \\
+    \f{n\_Aerosols}  & Number of aerosol species, \textit{nA}   & N/A & N/A \\[0.3cm]
+
+    \f{Climatology} & Climatology model associated with the profile. See table \ref{tab:climatology}. & N/A & \f{US\_STANDARD\_ATMOSPHERE} \\[0.6cm]
+
+    \f{Absorber\_ID(}1:\textit{J}\f{)}    & Absorber identifiers. See table \ref{tab:absorber_id}.                       & N/A & N/A \\
+    \f{Absorber\_Units(}1:\textit{J}\f{)} & Absorber concentration unit identifiers. See table \ref{tab:absorber_units}. & N/A & N/A \\[0.6cm]
+
+    \f{Level\_Pressure(}0:\textit{K}\f{)}       & \emph{Level} pressure profile        & hPa      & N/A \\
+    \f{Pressure(}1:\textit{K}\f{)}              & Layer pressure profile               & hPa      & N/A \\
+    \f{Temperature(}1:\textit{K}\f{)}           & Layer temperature profile            & Kelvin   & N/A \\
+    \f{Absorber(}1:\textit{K},1:\textit{J}\f{)} & Layer absorber concentraton profiles & Variable & N/A \\[0.3cm]
+
+    \f{Cloud(}1:\textit{nC}\f{)}   & Clouds associated with the profile         & N/A & N/A  \\
+    \f{Aerosol(}1:\textit{nA}\f{)} & Aerosol species associatedwith the profile & N/A & N/A  \\
+    \hline
+  \end{tabular}
+  \label{tab:atmosphere_structure}
+\end{table}
+
+
+% Cloud structure description table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Cloud{} structure component description.}
+  \begin{tabular}{l p{8cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \f{n\_Layers}    & Number of atmospheric layers, \textit{K} & N/A & N/A \\[0.3cm]
+
+    \f{Type} & The supported cloud type. See table \ref{tab:cloud_type}. & N/A & \f{INVALID\_CLOUD} \\[0.3cm]
+
+    \f{Effective\_Radius(}1:\textit{K}\f{)} & Cloud particle effective radius profile  & \micron     & N/A \\
+    \f{Water\_Content(}1:\textit{K}\f{)}    & Cloud water content profile              & kg.m$^{-2}$ & N/A \\
+    \hline
+  \end{tabular}
+  \label{tab:cloud_structure}
+\end{table}
+
+
+% Aerosol structure description table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Aerosol{} structure component description.}
+  \begin{tabular}{l p{8cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \f{n\_Layers}    & Number of atmospheric layers, \textit{K} & N/A & N/A \\[0.3cm]
+
+    \f{Type} & The supported aerosol type. See table \ref{tab:aerosol_type}. & N/A & \f{INVALID\_AEROSOL} \\[0.3cm]
+
+    \f{Effective\_Radius(}1:\textit{K}\f{)} & Aerosol particle effective radius profile  & \micron  & N/A \\
+    \f{Concentration(}1:\textit{K}\f{)}     & Aerosol concentration profile              & kg.m$^{-2}$ & N/A \\
+    \hline
+  \end{tabular}
+  \label{tab:aerosol_structure}
+\end{table}
+
+
+% Climatology table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Climatology} definitions. The same set as defined for LBLRTM is used.}
+  \begin{tabular}{c l}
+    \hline\\[-0.1cm]
+    \tblhd{Climatology Type} & \tblhd{Parameter} \\
+    \hline\hline\\[-0.2cm]
+             Tropical          &  \texttt{TROPICAL}\\
+        Midlatitude summer     &  \texttt{MIDLATITUDE\_SUMMER}\\
+        Midlatitude winter     &  \texttt{MIDLATITUDE\_WINTER}\\
+         Subarctic summer      &  \texttt{SUBARCTIC\_SUMMER}\\
+         Subarctic winter      &  \texttt{SUBARCTIC\_WINTER}\\
+     U.S. Standard Atmosphere  &  \texttt{US\_STANDARD\_ATMOSPHERE}\\
+    \hline
+  \end{tabular}
+  \label{tab:climatology}
+\end{table}
+
+
+% Absorber id table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_ID} definitions. The same molecule set as defined for HITRAN is used.}
+  \begin{tabular}{ c l c c l c c l }
+    \hline\\[-0.1cm]
+    \tblhd{Molecule} & \tblhd{Parameter} & \hspace{0.5cm} & \tblhd{Molecule} & \tblhd{Parameter} & \hspace{0.5cm} & \tblhd{Molecule} & \tblhd{Parameter}\\
+    \hline\hline\\[-0.2cm]
+     \water           & \texttt{H2O\_ID}  & \hspace{0.5cm}  &   OH                & \texttt{OH\_ID}   & \hspace{0.5cm} & H\subscript{2}O\subscript{2} & \texttt{H2O2\_ID}  \\
+     \carbondioxide   & \texttt{CO2\_ID}  & \hspace{0.5cm}  &   HF                & \texttt{HF\_ID}   & \hspace{0.5cm} & C\subscript{2}H\subscript{2} & \texttt{C2H2\_ID}  \\
+     \ozone           & \texttt{O3\_ID}   & \hspace{0.5cm}  &   HCl               & \texttt{HCl\_ID}  & \hspace{0.5cm} & C\subscript{2}H\subscript{6} & \texttt{C2H6\_ID}  \\
+     \nitrousoxide    & \texttt{N2O\_ID}  & \hspace{0.5cm}  &   HBr               & \texttt{HBr\_ID}  & \hspace{0.5cm} & PH\subscript{3}              & \texttt{PH3\_ID}   \\
+     \carbonmonoxide  & \texttt{CO\_ID}   & \hspace{0.5cm}  &   HI                & \texttt{HI\_ID}   & \hspace{0.5cm} & COF\subscript{2}             & \texttt{COF2\_ID}  \\
+     \methane         & \texttt{CH4\_ID}  & \hspace{0.5cm}  &   ClO               & \texttt{ClO\_ID}  & \hspace{0.5cm} & SF\subscript{6}              & \texttt{SF6\_ID}   \\
+     O\subscript{2}   & \texttt{O2\_ID}   & \hspace{0.5cm}  &   OCS               & \texttt{OCS\_ID}  & \hspace{0.5cm} & H\subscript{2}S              & \texttt{H2S\_ID}   \\
+     NO               & \texttt{NO\_ID}   & \hspace{0.5cm}  &   H\subscript{2}CO  & \texttt{H2CO\_ID} & \hspace{0.5cm} & HCOOH                        & \texttt{HCOOH\_ID} \\
+     SO\subscript{2}  & \texttt{SO2\_ID}  & \hspace{0.5cm}  &   HOCl              & \texttt{HOCl\_ID} & \hspace{0.5cm} &                                                   \\
+     NO\subscript{2}  & \texttt{NO2\_ID}  & \hspace{0.5cm}  &   N\subscript{2}    & \texttt{N2\_ID}   & \hspace{0.5cm} &                                                   \\
+     NH\subscript{3}  & \texttt{NH3\_ID}  & \hspace{0.5cm}  &   HCN               & \texttt{HCN\_ID}  & \hspace{0.5cm} &                                                   \\
+     HNO\subscript{3} & \texttt{HNO3\_ID} & \hspace{0.5cm}  &   CH\subscript{3}l  & \texttt{CH3l\_ID} & \hspace{0.5cm} &                                                   \\
+    \hline
+  \end{tabular}
+  \label{tab:absorber_id}
+\end{table}
+
+
+% Absorber units table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Atmosphere{} structure valid \texttt{Absorber\_Units} definitions. The same set as defined for LBLRTM is used.}
+  \begin{tabular}{c l}
+    \hline\\[-0.1cm]
+    \tblhd{Absorber Units} & \tblhd{Parameter} \\
+    \hline\hline\\[-0.2cm]
+     Volume mixing ratio, ppmv                       & \texttt{VOLUME\_MIXING\_RATIO\_UNITS} \\
+     Number density, cm$^{-3}$                       & \texttt{NUMBER\_DENSITY\_UNITS} \\
+     Mass mixing ratio, g/kg                         & \texttt{MASS\_MIXING\_RATIO\_UNITS} \\
+     Mass density, g.m$^{-3}$                        & \texttt{MASS\_DENSITY\_UNITS} \\
+     Partial pressure, hPa                           & \texttt{PARTIAL\_PRESSURE\_UNITS} \\
+     Dewpoint temperature, K  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_K\_UNITS} \\
+     Dewpoint temperature, C  \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{DEWPOINT\_TEMPERATURE\_C\_UNITS} \\
+     Relative humidity, \%    \textbf{(H$\mathbf{_2}$O ONLY)} & \texttt{RELATIVE\_HUMIDITY\_UNITS} \\
+     Specific amount, g/g                            & \texttt{SPECIFIC\_AMOUNT\_UNITS} \\
+     Integrated path, mm                             & \texttt{INTEGRATED\_PATH\_UNITS} \\
+    \hline
+  \end{tabular}
+  \label{tab:absorber_units}
+\end{table}
+
+
+% Cloud type table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Cloud{} structure valid \texttt{Type} definitions.}
+  \begin{tabular}{cc l}
+    \hline\\[-0.1cm]
+    \tblhd{Cloud Type} & \hspace{0.5cm} & \tblhd{Parameter} \\
+    \hline\hline\\[-0.2cm]
+     Water   & \hspace{0.5cm} & \texttt{WATER\_CLOUD}\\
+     Ice     & \hspace{0.5cm} & \texttt{ICE\_CLOUD}\\
+     Rain    & \hspace{0.5cm} & \texttt{RAIN\_CLOUD}\\
+     Snow    & \hspace{0.5cm} & \texttt{SNOW\_CLOUD}\\
+     Graupel & \hspace{0.5cm} & \texttt{GRAUPEL\_CLOUD}\\
+     Hail    & \hspace{0.5cm} & \texttt{HAIL\_CLOUD}\\
+    \hline
+  \end{tabular}
+  \label{tab:cloud_type}
+\end{table}
+
+
+% Aerosol type table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Aerosol{} structure valid \texttt{Type} definitions and effective radii, based on the GOCART model. SSAM $\equiv$ Sea Salt Accumulation Mode, SSCM $\equiv$ Sea Salt Coarse Mode.}
+  \begin{tabular}{c l r@{ - }l}
+    \hline\\[-0.1cm]
+    \tblhd{Aerosol Type} & \tblhd{Parameter}  & \multicolumn{2}{c}{$r_{eff}$ \tblhd{Range} (\micron)} \\
+    \hline\hline\\[-0.2cm]
+    Dust           & \texttt{DUST\_AEROSOL}            & 0.01  & 8 \\
+    Sea salt SSAM  & \texttt{SEASALT\_SSAM\_AEROSOL}   & 0.3   & 1.45 \\
+    Sea salt SSCM1 & \texttt{SEASALT\_SSCM1\_AEROSOL}  & 1.0   & 4.8  \\
+    Sea salt SSCM2 & \texttt{SEASALT\_SSCM2\_AEROSOL}  & 3.25  & 17.3 \\
+    Sea salt SSCM3 & \texttt{SEASALT\_SSCM3\_AEROSOL}  & 7.5   & 89\\
+    Organic carbon & \texttt{ORGANIC\_CARBON\_AEROSOL} & 0.09  & 0.21 \\
+    Black carbon   & \texttt{BLACK\_CARBON\_AEROSOL}   & 0.036 & 0.074 \\
+    Sulfate        & \texttt{SULFATE\_AEROSOL}         & 0.24  & 0.8 \\
+    \hline
+  \end{tabular}
+  \label{tab:aerosol_type}
+\end{table}
+
+Some issues to mention with populating the \hyperref[sec:atmosphere_structure]{\Atmosphere} structure
+
+\begin{itemize}
+  \item In the CRTM, all profile layering is from top-of-atmosphere (TOA) to surface (SFC). So, for an atmospheric profile layered as $k = 1,2,...,K$, layer 1 is the TOA layer and layer $K$ is the SFC layer.
+  \item \emph{Both} the level and layer pressure profiles must be specified.
+  \item The absorber profile data units \emph{must} be mass mixing ratio for water vapour and volume mixing ratio (ppmv) for other absorbers. The \f{Absorber\_Units} component is not yet utilised to allow conversion of different user-supplied concentration units.
+  \item The \f{Absorber\_Id} array must be set to the correct absorber identifiers (see table \ref{tab:absorber_id}) to allow the software to find a particular absorber. There is no necessary order in specifying the concentration profiles for different gaseous absorbers.
+\end{itemize}
+
+An example of assigning values to an \hyperref[sec:atmosphere_structure]{\Atmosphere} structure is shown below, adapted and abridged from one of the test/example programs supplied with the CRTM,
+
+\begin{alltt}
+  ! ...Profile and absorber definitions
+  atm(1)%\textcolor{red}{Climatology}         = US_STANDARD_ATMOSPHERE
+  atm(1)%\textcolor{red}{Absorber_Id(1:2)}    = (/ H2O_ID                 , O3_ID /)
+  atm(1)%\textcolor{red}{Absorber_Units(1:2)} = (/ MASS_MIXING_RATIO_UNITS, VOLUME_MIXING_RATIO_UNITS /)
+
+  ! ...Profile data
+  atm(1)%\textcolor{red}{Level_Pressure} = &
+  (/ 0.714_fp, 0.975_fp, .... , 1070.917_fp, 1100.000_fp /)
+
+  atm(1)%\textcolor{red}{Pressure} = &
+  (/ 0.838_fp, 1.129_fp, .... , 1056.510_fp, 1085.394_fp /)
+
+  atm(1)%\textcolor{red}{Temperature} = &
+  (/ 256.186_fp, 252.608_fp, .... , 273.356_fp, 273.356_fp /)
+
+  atm(1)%\textcolor{red}{Absorber(:,1)} = &
+  (/ 4.187e-03_fp, 4.401e-03_fp, .... , 3.172_fp, 3.087_fp /)
+
+  atm(1)%\textcolor{red}{Absorber(:,2)} = &
+  (/ 3.035_fp, 3.943_fp, .... , 1.428e-02_fp, 1.428e-02_fp /)
+
+  ! ...Load CO2 absorber data if there are three absorrbers
+  IF ( atm(1)%n_Absorbers > 2 ) THEN
+    atm(1)%\textcolor{red}{Absorber_Id(3)}    = CO2_ID
+    atm(1)%\textcolor{red}{Absorber_Units(3)} = VOLUME_MIXING_RATIO_UNITS
+    atm(1)%\textcolor{red}{Absorber(:,3)}     = 380.0_fp
+  END IF\end{alltt}
+
+The allowable definitions of the \f{Climatology}, \f{Absorber\_Id}, and \f{Absorber\_Units} components are shown in tables \ref{tab:climatology}, \ref{tab:absorber_id}, and \ref{tab:absorber_units} respectively. Even though the \f{Absorber\_Units} component is not currently used in the v2.1 CRTM it is recommended that it still be set in \hyperref[sec:atmosphere_structure]{\Atmosphere} structures to accommodate future CRTM versions that do utilise it.
+
+
+The cloud and aerosol data for a given atmospheric profile are specified via the contained \hyperref[sec:cloud_structure]{\Cloud} and \hyperref[sec:aerosol_structure]{\Aerosol} structure arrays. Continuing with the example assignment, we could do the following for our single cloud,
+
+\begin{alltt}
+  INTEGER :: k1, k2
+  ....
+  ! Assign cloud data
+  k1 = 55  ! Begin cloud layer
+  k2 = 62  ! End cloud layer
+  atm(1)%\textcolor{red}{Cloud(1)}%\textcolor{magenta}{Type} = WATER_CLOUD
+
+  atm(1)%\textcolor{red}{Cloud(1)}%\textcolor{magenta}{Effective_Radius(k1:k2)} = &
+    (/ 20.14_fp, 19.75_fp, .... , 12.49_fp, 11.17_fp /)  ! microns
+  atm(1)%\textcolor{red}{Cloud(1)}%\textcolor{magenta}{Water_Content(k1:k2)}    = &
+    (/ 5.09_fp, 3.027_fp, .... , 1.56_fp, 2.01_fp /)     ! kg/m^2\end{alltt}
+
+and for our multiple aerosols,
+
+\begin{alltt}
+  ! Assign aerosol data
+  ! ...First aerosol
+  k1 = 21  ! Begin aerosol layer
+  k2 = 64  ! End aerosol layer
+  atm(1)%\textcolor{red}{Aerosol(1)}%\textcolor{magenta}{Type} = DUST_AEROSOL
+
+  atm(1)%\textcolor{red}{Aerosol(1)}%\textcolor{magenta}{Effective_Radius(k1:k2)} = &
+    (/7.340409e-16_fp, 1.037097e-15_fp, .... , 2.971053e-03_fp, 8.218245e-04_fp/) ! microns
+  atm(1)%\textcolor{red}{Aerosol(1)}%\textcolor{magenta}{Concentration(k1:k2)} = &
+    (/2.458105E-18_fp, 1.983430E-16_fp, .... , 7.418821E-05_fp, 1.172680E-05_fp/) ! kg/m^2
+
+  ! ...Second aerosol
+  k1 = 48  ! Begin aerosol layer
+  k2 = 64  ! End aerosol layer
+  atm(1)%\textcolor{red}{Aerosol(2)}%\textcolor{magenta}{Type} = SULFATE_AEROSOL
+
+  atm(1)%\textcolor{red}{Aerosol(2)}%\textcolor{magenta}{Effective_Radius(k1:k2)} = &
+    (/3.060238E-01_fp, 3.652677E-01_fp, .... , 5.570077E-01_fp, 3.828734E-01_fp/) ! microns
+  atm(1)%\textcolor{red}{Aerosol(2)}%\textcolor{magenta}{Concentration(k1:k2)} = &
+    (/2.609907E-05_fp, 2.031620E-05_fp, .... , 1.095622E-04_fp, 7.116027E-05_fp/) ! kg/m^2\end{alltt}
+
+The allowable definitions of the cloud and aerosol type components are shown in tables \ref{tab:cloud_type} and \ref{tab:aerosol_type} respectively. Currently these are the only cloud and aerosol types supported by the CRTM. Future planned enhancements are to support multiple aerosol type classifications (e.g. from the GOCART\footnote{Goddard Chemistry Aerosol Radiation and Transport} and CMAQ\footnote{Community Multiscale Air Quality} models).
+
+One final note regarding clouds and aerosols (although we'll use just clouds as an example here). Let's assume for a given atmospheric profile we have cloud data specifying a water cloud near the surface (say from layers 60--64) and the same type of cloud higher in the troposphere (say from layers 52--57). You could define this as a \emph{single} cloud like so,
+\begin{alltt}
+  ! Assign multiple level cloud data in a single cloud structure
+  atm(1)%Cloud(\textcolor{red}{1})%Type = WATER_CLOUD
+  k1 = 52  ! Begin cloud layer 1
+  k2 = 57  ! End cloud layer 1
+  atm(1)%Cloud(\textcolor{red}{1})%Effective_Radius(k1:k2) = ....
+  atm(1)%Cloud(\textcolor{red}{1})%Water_Content(k1:k2)    = ....
+  k1 = 60  ! Begin cloud layer 2
+  k2 = 64  ! End cloud layer 2
+  atm(1)%Cloud(\textcolor{red}{1})%Effective_Radius(k1:k2) = ....
+  atm(1)%Cloud(\textcolor{red}{1})%Water_Content(k1:k2)    = ....\end{alltt}
+or you could define it in \emph{separate} cloud structures like so,
+\begin{alltt}
+  ! Assign multiple level cloud data in separate cloud structures
+  k1 = 52  ! Begin cloud 1 layer
+  k2 = 57  ! End cloud 1 layer
+  atm(1)%Cloud(\textcolor{red}{1})%Type = WATER_CLOUD
+  atm(1)%Cloud(\textcolor{red}{1})%Effective_Radius(k1:k2) = ....
+  atm(1)%Cloud(\textcolor{red}{1})%Water_Content(k1:k2)    = ....
+  k1 = 60  ! Begin cloud 2 layer
+  k2 = 64  ! End cloud 2 layer
+  atm(1)%Cloud(\textcolor{red}{2})%Type = WATER_CLOUD
+  atm(1)%Cloud(\textcolor{red}{2})%Effective_Radius(k1:k2) = ....
+  atm(1)%Cloud(\textcolor{red}{2})%Water_Content(k1:k2)    = ....\end{alltt}
+That is, for the same type of cloud there is no difference between specifying multiple layers in a single structure, or specifying multiple structures that contain a single layer. The two ``styles'' of definition are equivalent. Similarly for aerosols.
+
+
+
+\subsection{Filling the Surface structure with data}
+%---------------------------------------------------
+\label{sec:fill_step-surface}
+The \hyperref[sec:surface_structure]{\Surface} structure is designed around four main surface types: Land, Water, Snow, and Ice. As you can see in table \ref{tab:surface_structure}, for each of these main surface types there are components that define the surface characteristics. This division of surface types and the required surface characteristics are based upon the way surface emissivity and reflectivity models have been constructed in the past. It is also complicated by the fact that for the different spectral regions that the CRTM models -- infrared, microwave, and visible -- the surface emissivity and reflectivity modeling has to be handled differently as different processes are more important in different spectral regions. As such, it is important that users understand what needs to set in a \hyperref[sec:surface_structure]{\Surface} structure for a given surface type and spectral region. We will also assume that a \hyperref[sec:surface_structure]{\Surface} structure corresponds to a sensor field-of-view (FOV).
+
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Surface{} structure component description.}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{Land\_Coverage}  & Fraction of the FOV that is land surface  & N/A & 0.0 \\
+    \texttt{Water\_Coverage} & Fraction of the FOV that is water surface & N/A & 0.0 \\
+    \texttt{Snow\_Coverage}  & Fraction of the FOV that is snow surface  & N/A & 0.0 \\
+    \texttt{Ice\_Coverage}   & Fraction of the FOV that is ice surface   & N/A & 0.0 \\[0.3cm]
+
+    \texttt{Land\_Type}              & Land surface type                       & N/A         & 1     \\
+    \texttt{Land\_Temperature}       & Land surface temperature                & Kelvin      & 283.0 \\
+    \texttt{Soil\_Moisture\_Content} & Volumetric water content of the soil    & g.cm$^{-3}$ & 0.05  \\
+    \texttt{Canopy\_Water\_Content}  & Gravimetric water content of the canopy & g.cm$^{-3}$ & 0.05  \\
+    \texttt{Vegetation\_Fraction}    & Vegetation fraction of the surface      & \%          & 0.3   \\
+    \texttt{Soil\_Temperature}       & Soil temperature                        & Kelvin      & 283.0 \\
+    \texttt{LAI}                     & Leaf area index                         & m$^2$/m$^2$ & 3.5   \\
+    \texttt{Soil\_Type}              & Soil type                               & N/A         & 1     \\
+    \texttt{Vegetation\_Type}        & Vegetation type                         & N/A         & 1     \\[0.3cm]
+
+    \texttt{Water\_Type}        & Water surface type        & N/A              & 1     \\
+    \texttt{Water\_Temperature} & Water surface temperature & Kelvin           & 283.0 \\
+    \texttt{Wind\_Speed}        & Surface wind speed        & m.s$^{-1}$       & 5.0   \\
+    \texttt{Wind\_Direction}    & Surface wind direction    & deg. E from N    & 0.0   \\
+    \texttt{Salinity}           & Water salinity            & \textperthousand & 33.0  \\[0.3cm]
+
+    \texttt{Snow\_Type}        & Snow surface type        & N/A        & 1     \\
+    \texttt{Snow\_Temperature} & Snow surface temperature & Kelvin     & 263.0 \\
+    \texttt{Snow\_Depth}       & Snow depth               & mm         & 50.0  \\
+    \texttt{Snow\_Density}     & Snow density             & g.m$^{-3}$ & 0.2   \\
+    \texttt{Snow\_Grain\_Size} & Snow grain size          & mm         & 2.0   \\[0.3cm]
+
+    \texttt{Ice\_Type}        & Ice surface type                            & N/A        & 1     \\
+    \texttt{Ice\_Temperature} & Ice surface temperature                     & Kelvin     & 263.0 \\
+    \texttt{Ice\_Thickness}   & Thickness of ice                            & mm         & 10.0  \\
+    \texttt{Ice\_Density}     & Density of ice                              & g.m$^{-3}$ & 0.9   \\
+    \texttt{Ice\_Roughness}   & Measure of the surface roughness of the ice & N/A        & 0.0   \\[0.3cm]
+
+    \texttt{SensorData} & Satellite sensor data required for empirical microwave snow and ice emissivity algorithms & N/A & N/A \\
+    \hline
+  \end{tabular}
+  \label{tab:surface_structure}
+\end{table}
+
+The specification of the actual physical surface characteristics in a \hyperref[sec:surface_structure]{\Surface} structure (e.g. temperature, wind speed, soil moisture, etc) is relatively straightforward and won't be covered in detail here. What we'll look into are those items that are specific (or peculiar?) to the CRTM implementation of emissivity and reflectivity models and how they influence the definition of the \hyperref[sec:surface_structure]{\Surface} structure.
+
+The first thing to address are the coverage fractions. The CRTM allows the specification of a combination of the main surface types. Let's say we have a FOV that consists of 10\% land, 50\% water, 25\% snow, and 15\% ice. The specification of these fractions in the surface structure would look like so:
+\begin{alltt}
+  ! Assign main surface type coverage fractions
+  sfc(1)%\textcolor{red}{Land_Coverage}  = 0.1_fp
+  sfc(1)%\textcolor{red}{Water_Coverage} = 0.5_fp
+  sfc(1)%\textcolor{red}{Snow_Coverage}  = 0.25_fp
+  sfc(1)%\textcolor{red}{Ice_Coverage}   = 0.15_fp\end{alltt}
+Whatever the surface coverage combination, the sum of the coverage fractions \emph{must} add up to 1.0. Otherwise the CRTM will issue an error message and return with a \f{FAILURE} error status.
+
+Now we'll look at the specification of the subtypes of the main surface types, with a particular focus on the land surface subtypes. Table \ref{tab:valid_surface_types_for_categories} shows the number of valid surface subtypes available for the different surface and spectral categories in v2.1. As can be seen for land surfaces, some care is required to ensure correct specification of the subtype specification(s). The situation is much simpler for the other surface types (water, snow and ice) and, for microwave sensors, is simplified further since no subtype even need be defined due to the surface optics models used.
+
+\begin{table}[htp]
+  \centering
+  \caption{Number of valid surface types available for the different surface and spectral categories. $^a$Same IR and VIS reflectivity source, NPOESS. $^b$Surface type reflectivities mapped from NPOESS classification. $^c$Different land classifications for IR and VIS defined at CRTM initialisation. $^d$These are specified separately from the generic surface type in the input \Surface structure and are used to index arrays containing various physical quantities for the soil/vegetation type -- \textbf{both} must be specified.}
+  \begin{tabular}{c c c c c}
+    \hline\\[-0.1cm]
+    \tblhd{Spectral category} & \tblhd{Land}$^c$ & \tblhd{Water} & \tblhd{Snow} & \tblhd{Ice} \\
+    \hline\hline\\[-0.2cm]
+                                          & NPOESS(20)$^a$          &                &             &             \\
+    \sffamily{Infrared}                   & USGS(27)$^{a,b}$        & CRTM(1)        & CRTM(2)$^a$ & CRTM(1)$^a$ \\
+                                          & IGBP(20)$^{a,b}$        &                &             &             \\[0.3cm]
+    \multirow{2}{*}{\sffamily{Microwave}} & Soil type(9)$^d$        & Parameterized  & Empirical   & Empirical   \\
+                                          & Vegetation type(13)$^4$ & physical model & model       & model       \\[0.3cm]
+                                          & NPOESS(20)$^a$          &                &             &             \\
+    \sffamily{Visible}                    & USGS(27)$^{a,b}$        & CRTM(1)        & CRTM(2)$^a$ & CRTM(1)$^a$ \\
+                                          & IGBP(20)$^{a,b}$        &                &             &             \\
+  \hline
+  \end{tabular}
+  \label{tab:valid_surface_types_for_categories}
+\end{table}
+
+
+
+\subsubsection{Land surface subtypes for infrared and visible sensors}
+%.....................................................................
+
+In the v2.0.x CRTM releases, there was only one allowable set of surface subtypes allowed. For the land surface type in the infrared and visible spectral regions, that was the NPOESS\footnote{National Polar-orbiting Operational Environmental Satellite System. Now called the Joint Polar Satellite System, or JPSS.} set. However, different land surface classification schemes (USGS\footnote{U.S. Geological Survey} and IGBP\footnote{International Geosphere-Biosphere Programme}) were being used in various applications that called the CRTM, requiring users to generate a mapping from their surface classification scheme to that of the CRTM (i.e. the NPOESS classification). In an effort to simplify the use of different land subtype classification systems with the CRTM, separate datafiles contining the reflectivity data for the different classification schemes are now provided (see section \ref{sec:init_step} regarding the use of these data files during CRTM initialisation). Thus you need only initialise the CRTM with the data files for your land subtype classification scheme of choice to use that scheme.
+
+The downside of this change is that parameterised values of the surface subtypes can no longer be used since, depending on how the CRTM was initialised, the same parameterised value can be used as an index for different classification schemes -- in which the index may not exist, or -- even worse --refer to a different land subtype giving a plausibly wrong result. Thus, you should study the allowable subtype index values for the NPOESS, USGS, and IGBP classifications schemes shown in tables \ref{tab:npoess_surface_type_classifications}, \ref{tab:usgs_surface_type_classifications}, and \ref{tab:igbp_surface_type_classifications} respectively to ensure you are selecting the correct land subtype.
+
+\begin{table}[htp]
+  \centering
+  \caption{Surface type names and their index value for the NPOESS land surface classification scheme. Applicable for infrared and visible spectral regions only.}
+  \begin{tabular}{p{7cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{2}{c}{\tblhd{NPOESS Classification Scheme}} \\
+    \sffamily{Surface Type Name} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    compacted soil             &  1  \\
+    tilled soil                &  2  \\
+    sand                       &  3  \\
+    rock                       &  4  \\
+    irrigated low vegetation   &  5  \\
+    meadow grass               &  6  \\
+    scrub                      &  7  \\
+    broadleaf forest           &  8  \\
+    pine forest                &  9  \\
+    tundra                     & 10  \\
+    grass soil                 & 11  \\
+    broadleaf pine forest      & 12  \\
+    grass scrub                & 13  \\
+    soil grass scrub           & 14  \\
+    urban concrete             & 15  \\
+    pine brush                 & 16  \\
+    broadleaf brush            & 17  \\
+    wet soil                   & 18  \\
+    scrub soil                 & 19  \\
+    broadleaf70 pine30         & 20  \\
+    \hline
+  \end{tabular}
+  \label{tab:npoess_surface_type_classifications}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \caption{Surface type names and their index value for the USGS land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 16 and 24) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
+  \begin{tabular}{p{7cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{2}{c}{\tblhd{USGS Classification Scheme}} \\
+    \sffamily{Surface Type Name} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    urban and built-up land                      &  1  \\
+    dryland cropland and pasture                 &  2  \\
+    irrigated cropland and pasture               &  3  \\
+    mixed dryland/irrigated cropland and pasture &  4  \\
+    cropland/grassland mosaic                    &  5  \\
+    cropland/woodland mosaic                     &  6  \\
+    grassland                                    &  7  \\
+    shrubland                                    &  8  \\
+    mixed shrubland/grassland                    &  9  \\
+    savanna                                      & 10  \\
+    deciduous broadleaf forest                   & 11  \\
+    deciduous needleleaf forest                  & 12  \\
+    evergreen broadleaf forest                   & 13  \\
+    evergreen needleleaf forest                  & 14  \\
+    mixed forest                                 & 15  \\
+    water bodies \textbf{(empty)}                & 16  \\
+    herbaceous wetland                           & 17  \\
+    wooded wetland                               & 18  \\
+    barren or sparsely vegetated                 & 19  \\
+    herbaceous tundra                            & 20  \\
+    wooded tundra                                & 21  \\
+    mixed tundra                                 & 22  \\
+    bare ground tundra                           & 23  \\
+    snow or ice \textbf{(empty)}                 & 24  \\
+    playa                                        & 25  \\
+    lava                                         & 26  \\
+    white sand                                   & 27  \\
+    \hline
+  \end{tabular}
+  \label{tab:usgs_surface_type_classifications}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \caption{Surface type names and their index value for the IGBP land surface classification scheme. Note that the ``non-land'' surface types in the context of the CRTM (water, snow, or ice at indices 15 and 17) are still included but are empty entries in the reflectivity database. Applicable for infrared and visible spectral regions only.}
+  \begin{tabular}{p{7cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{2}{c}{\tblhd{IGBP Classification Scheme}} \\
+    \sffamily{Surface Type Name} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    evergreen needleleaf forest         &  1 \\
+    evergreen broadleaf forest          &  2 \\
+    deciduous needleleaf forest         &  3 \\
+    deciduous broadleaf forest          &  4 \\
+    mixed forests                       &  5 \\
+    closed shrublands                   &  6 \\
+    open shrublands                     &  7 \\
+    woody savannas                      &  8 \\
+    savannas                            &  9 \\
+    grasslands                          & 10 \\
+    permanent wetlands                  & 11 \\
+    croplands                           & 12 \\
+    urban and built-up                  & 13 \\
+    cropland/natural vegetation mosaic  & 14 \\
+    snow and ice \textbf{(empty)}       & 15 \\
+    barren or sparsely vegetated        & 16 \\
+    water \textbf{(empty)}              & 17 \\
+    wooded tundra                       & 18 \\
+    mixed tundra                        & 19 \\
+    bare ground tundra                  & 20 \\
+    \hline
+  \end{tabular}
+  \label{tab:igbp_surface_type_classifications}
+\end{table}
+
+As an example, if the CRTM was initialised with the NPOESS classification data and the surface type was considered ``urban'', consultation of table \ref{tab:npoess_surface_type_classifications} would yield the following assignment,
+
+\begin{alltt}
+  ! Assign urban land surface subtype for NPOESS classification
+  sfc(1)%\textcolor{red}{Land_Type} = 15\end{alltt}
+
+Similarly, if the CRTM was initialised with the USGS classification data, the same assignment would be (see table \ref{tab:usgs_surface_type_classifications})
+
+\begin{alltt}
+  ! Assign urban land surface subtype for USGS classification
+  sfc(1)%\textcolor{red}{Land_Type} = 1\end{alltt}
+
+For completeness, here is the same for the IGBP classification (see table \ref{tab:igbp_surface_type_classifications})
+
+\begin{alltt}
+  ! Assign urban land surface subtype for IGBP classification
+  sfc(1)%\textcolor{red}{Land_Type} = 13\end{alltt}
+
+
+
+\subsubsection{Land surface subtypes for microwave sensors}
+%..........................................................
+
+For the land surface/microwave spectral region case, the situation is a little different. The emissivity model uses specification of the soil and vegetation type to drive the calculation; that is, \emph{both} must be specified. The valid soil and vegetation types in this case are defined by their definitions in the NCEP Global Forecast System (GFS) and are shown in tables \ref{tab:gfs_soil_type_classifications} and \ref{tab:gfs_vegetation_type_classifications} respectively.
+
+\begin{table}[htp]
+  \centering
+  \caption{Soil type textures and descriptions, along with their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
+  \begin{tabular}{p{3.5cm} p{3.5cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{3}{c}{\tblhd{GFS Soil Type Classification Scheme}} \\
+    \sffamily{Texture} & \sffamily{Description} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    coarse           &  loamy sand      &  1 \\
+    medium           &  silty clay loam &  2 \\
+    fine             &  light clay      &  3 \\
+    coarse-medium    &  sandy loam      &  4 \\
+    coarse-fine      &  sandy clay      &  5 \\
+    medium-fine      &  clay loam       &  6 \\
+    coarse-med-fine  &  sandy clay loam &  7 \\
+    organic          &  farmland        &  8 \\
+    glacial land ice &  ice over land   &  9 \\
+    \hline
+  \end{tabular}
+  \label{tab:gfs_soil_type_classifications}
+\end{table}
+
+\begin{table}[htp]
+  \centering
+  \caption{Vegetation type names and their index value for the GFS classification scheme. Applicable for the microwave spectral regions only.}
+  \begin{tabular}{p{7cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{2}{c}{\tblhd{GFS Vegetation Type Classification Scheme}} \\
+    \sffamily{Vegetation Type} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    broadleaf-evergreen (tropical forest)         &  1 \\
+    broad-deciduous trees                         &  2 \\
+    broadleaf and needleleaf trees (mixed forest) &  3 \\
+    needleleaf-evergreen trees                    &  4 \\
+    needleleaf-deciduous trees (larch)            &  5 \\
+    broadleaf trees with ground cover (savanna)   &  6 \\
+    ground cover only (perennial)                 &  7 \\
+    broad leaf shrubs w/ ground cover             &  8 \\
+    broadleaf shrubs with bare soil               &  9 \\
+    dwarf trees \& shrubs w/ground cover (tundra) & 10 \\
+    bare soil                                     & 11 \\
+    cultivations                                  & 12 \\
+    glacial                                       & 13 \\
+    \hline
+  \end{tabular}
+  \label{tab:gfs_vegetation_type_classifications}
+\end{table}
+
+An example of assigning these two types for use with the microwave land emissivity model would be,
+
+\begin{alltt}
+  ! Assign farmland soil and vegetation types for
+  ! the microwave land emissivity model
+  sfc(1)%\textcolor{red}{Soil_Type}       = 8
+  sfc(1)%\textcolor{red}{Vegetation_Type} = 12\end{alltt}
+
+
+
+\subsubsection{Water, snow, and ice surface subtypes for infrared and visible sensors}
+%.....................................................................................
+
+The situation for the water, snow, and ice surface subtypes in the infrared and visible spectral regions is much simpler. There are only at most two variations for these main surface types and, for ice, there is only one. Table \ref{tab:ir-vis_water-snow-ice_type_classifications} lists the available subtype indices in these cases.
+
+\begin{table}[htp]
+  \centering
+  \caption{Water, snow, and ice surface subtypes and their index value. Applicable for infrared and visible spectral regions only.}
+  \begin{tabular}{p{3.5cm} p{3.5cm} c}
+    \hline\\[-0.1cm]
+    \multicolumn{3}{c}{\tblhd{IR/VIS Water, Snow, and Ice Classification Scheme}} \\
+    \sffamily{Surface Type} & \sffamily{Description} & \sffamily{Classification Index}  \\
+    \hline\hline\\[-0.2cm]
+    Water                 &  sea water &  1 \\[0.3cm]
+    \multirow{2}{*}{Snow} &  old snow  &  1 \\
+                          &  new snow  &  2 \\[0.3cm]
+    Ice                   &  new ice   &  1 \\
+    \hline
+  \end{tabular}
+  \label{tab:ir-vis_water-snow-ice_type_classifications}
+\end{table}
+
+An example of assigning these types for use with the infrared or visible water, snow, or ice emissivity models would be,
+
+\begin{alltt}
+  ! Assign water, snow and ice types for the
+  ! infrared and visible emissivity models
+  sfc(1)%\textcolor{red}{Water_Type} = 1  ! Sea water
+  sfc(1)%\textcolor{red}{Snow_Type}  = 2  ! New snow
+  sfc(1)%\textcolor{red}{Ice_Type}   = 1  ! New ice\end{alltt}
+
+
+
+\subsubsection{Water, snow, and ice surface subtypes for microwave sensors}
+%..........................................................................
+
+The specification of the water, snow, and ice surface subtypes is not necessary in the microwave spectral region. Consultation of table \ref{tab:valid_surface_types_for_categories} reveals why: for the water case, the emissivity model is a parameterised physical model and for the snow and ice surfaces the CRTM uses empirical models. In fact, in the latter case, the snow and ice subtypes are actually \emph{output} from the models.
+
+
+
+\subsubsection{Specification of SensorData for microwave snow and ice emissivity models}
+%.......................................................................................
+
+Recall from table \ref{tab:valid_surface_types_for_categories} that the snow and ice emissivity models for microwave sensors are empirical, i.e. they use input sensor measurements to estimate the snow and/or ice emissivities for particular sensors\footnote{Supplied by NESDIS/STAR for use in the CRTM}. To supply the brightness temperatures used by the empirical emissivity model, the \hyperref[sec:sensordata_structure]{\SensorData} structure component of the main \hyperref[sec:surface_structure]{\Surface} structure is used. The components of the \hyperref[sec:sensordata_structure]{\SensorData} structure are shown in table \ref{tab:sensordata_structure} where the modifier ``\f{(}1:\textit{L}\f{)}'' is the indication of the allocatable range of those components.
+
+% SensorData component description table
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \SensorData{} structure component description.}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \f{n\_Channels}                       & Number of sensor channels, \f{L}                         & N/A    & 0 \\
+    \f{Sensor\_Id}                        & The sensor id                                            & N/A    & empty string \\
+    \f{WMO\_Satellite\_Id}                & The WMO satellite Id                                     & N/A    & \f{INVALID\_WMO\_SATELLITE\_ID} \\
+    \f{WMO\_Sensor\_Id}                   & The WMO sensor Id                                        & N/A    & \f{INVALID\_WMO\_SENSOR\_ID} \\
+    \f{Sensor\_Channel(}1:\textit{L}\f{)} & The channel numbers                                      & N/A    & N/A \\
+    \f{Tb(}1:\textit{L}\f{)}              & The brightness temperature measurements for each channel & Kelvin & N/A \\
+    \hline
+  \end{tabular}
+  \label{tab:sensordata_structure}
+\end{table}
+
+The values of the WMO satellite and sensor identifiers are those defined in the WMO Common Code Tables C-5 and C-8 respectively.\footnote{See \href{http://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI2/VolumeI.2.html}{http://www.wmo.int/pages/prog/www/WMOCodes/WMO306\_vI2/VolumeI.2.html} to access the WMO Part C Common Code Tables in various languages.} The WMO sensor identifier is used to select the particular sensor algorithm so you should endeavour to correctly specify it in the \hyperref[sec:sensordata_structure]{\SensorData} structure. If an unrecognised WMO identifier is encountered then, for snow surfaces, a default physical model is used. For ice surfaces the default is to use a fixed emissivity of 0.92.
+
+The sensors for which empirical snow and ice emissivity models exist, along with their WMO sensor identifiers, are shown in table \ref{tab:mw_sensors_empirical_emissivity}
+
+\begin{table}[htp]
+  \centering
+  \caption{Microwave sensors and their associated WMO sensor identifiers for which the CRTM has empirical snow and ice emissivity models.}
+  \begin{tabular}{c c c c c c c c}
+    \hline\\[-0.1cm]
+    \tblhd{Sensor} & \tblhd{WMO Sensor Id} & \hspace{0.5cm} & \tblhd{Sensor} & \tblhd{WMO Sensor Id} & \hspace{0.5cm} & \tblhd{Sensor} & \tblhd{WMO Sensor Id} \\
+    \hline\hline\\[-0.2cm]
+    AMSR-E & 345 & & AMSU-B & 574 & & SSMIS & 908 \\           
+    AMSU-A & 570 & & MHS    & 203 & & SSM/I & 905 \\        
+    \hline
+  \end{tabular}
+  \label{tab:mw_sensors_empirical_emissivity}
+\end{table}
+
+Using the sensor-loop example of section \ref{sec:alloc_array_step}, an example of specifying the brightness temperature data for the NOAA-19 AMSU-A to use for its empirical snow or ice emissivity module would be,
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels for the SensorData structure for current sensor
+    n_channels = chinfo(n)%n_Channels
+    ....
+    ! Allocate the SensorData structure for this sensor to use its empirical emissivity model
+    CALL \hyperref[sec:CRTM_SensorData_Create_interface]{CRTM_SensorData_Create}( sfc%\textcolor{red}{SensorData}, &
+                                 n_channels  )
+    ! Check they were created successfully
+    IF ( ANY(.NOT. \hyperref[sec:CRTM_SensorData_Associated_interface]{CRTM_SensorData_Associated}( sfc%\textcolor{red}{SensorData} )) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Specify the sensor identifiers for all the profiles
+    sfc%\textcolor{red}{SensorData}%\textcolor{magenta}{Sensor_Id}        = 'amsua_n19'
+    sfc%\textcolor{red}{SensorData}%\textcolor{magenta}{WMO_Satellite_Id} = 223  ! From Common Code Table C-5
+    sfc%\textcolor{red}{SensorData}%\textcolor{magenta}{WMO_Sensor_Id}    = 570  ! From Common Code Table C-8
+    ....
+    ! Specify the brightness temperature data for the various profiles/FOVs in the Sensordata structure
+    Profile_Loop: DO m = 1, n_profiles
+      sfc(m)%\textcolor{red}{SensorData}%\textcolor{magenta}{Tb} = \textrm{\textit{...assign appropriate data...}}
+    END DO Profile_Loop
+    ....
+  END DO Sensor_Loop\end{alltt}
+
+Note the use of the ``\f{n\_channels = chinfo(n)\%n\_Channels}'' statement. The empirical snow and ice models do not recognise the channel subsetting feature implemented in the CRTM (see section \ref{sec:init_step-channel_subset}) and thus, to correctly index the brightness temperature array, \emph{all} of a particular sensor's channels must be specified.
+
+
+
+\subsection{Filling the Geometry structure with data}
+%----------------------------------------------------
+
+Descriptions of the components of the \hyperref[sec:geometry_structure]{\Geometry} structure are shown in table \ref{tab:geometry_structure}. They are relatively self-explanatory, but visualisations of some of the angle descriptions are shown in figures \ref{fig:geo_sensor_scan_angle} to \ref{fig:geo_source_azimuth_angle}.
+
+The one note that should be made is that the sensor zenith ($\theta_Z$) and sensor scan ($\theta_S$) angles should be consistent. They are related by equation:
+
+\begin{equation}
+  \frac{\sin\theta_Z}{R+h} = \frac{\sin\theta_S}{R}
+  \label{eqn:sensor_zenith_scan_angle}
+\end{equation}
+
+with the quantity definitions shown in figure \ref{fig:geo_sensor_zenith_scan_angle}
+
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \Geometry{} structure component description.}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{iFOV}                    & The scan line FOV index & N/A & 0 \\
+    \texttt{Longitude}               & Earth longitude for FOV & deg. E (0$\rightarrow$360) & 0.0 \\
+    \texttt{Latitude}                & Earth latitude for FOV  & deg. N (-90$\rightarrow$+90) & 0.0 \\
+    \texttt{Surface\_Altitude}       & Altitude of the Earth's surface at the specified lon/lat location & metres (m) & 0.0 \\
+    \texttt{Sensor\_Scan\_Angle}     & The sensor scan angle from nadir. See fig.\ref{fig:geo_sensor_scan_angle} & degrees & 0.0 \\
+    \texttt{Sensor\_Zenith\_Angle}   & The sensor zenith angle of the FOV. See fig.\ref{fig:geo_sensor_zenith_angle} & degrees & 0.0 \\
+    \texttt{Sensor\_Azimuth\_Angle}  & The sensor azimuth angle is the angle subtended by the horizontal projection of a direct line from the satellite to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_sensor_azimuth_angle} & deg. from N & 999.9 \\
+    \texttt{Source\_Zenith\_Angle}   & The source zenith angle. The source is typically the Sun (IR/VIS) or Moon (MW/VIS) [only solar source valid in current release] See fig.\ref{fig:geo_source_zenith_angle} & degrees & 100.0 \\
+    \texttt{Source\_Azimuth\_Angle}  & The source azimuth angle is the angle subtended by the horizontal projection of a direct line from the source to the FOV and the North-South axis measured clockwise from North. See fig.\ref{fig:geo_source_azimuth_angle} & deg. from N & 0.0 \\
+    \texttt{Flux\_Zenith\_Angle}     & The zenith angle used to approximate downwelling flux transmissivity. If not set, the default value is that of the diffusivity approximation, such that $\sec(F) = 5/3$. Maximum allowed value is determined from $\sec(F) = 9/4$ & degrees & $cos^{-1}(3/5)$ \\
+    \texttt{Year}                    & The year in 4-digit format       & N/A & 2001 \\
+    \texttt{Month}                   & The month of year (1-12)         & N/A & 1 \\
+    \texttt{Day}                     & The day of month (1-28/29/30/31) & N/A & 1 \\
+    \hline
+  \end{tabular}
+  \label{tab:geometry_structure}
+\end{table}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/sensor_scan_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor scan angle component.}
+  \label{fig:geo_sensor_scan_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/sensor_zenith_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor zenith angle component.}
+  \label{fig:geo_sensor_zenith_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/sensor_azimuth_angle.pstex_t}
+  \caption{Definition of \Geometry{} sensor azimuth angle component.}
+  \label{fig:geo_sensor_azimuth_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/source_zenith_angle.pstex_t}
+  \caption{Definition of \Geometry{} source zenith angle component.}
+  \label{fig:geo_source_zenith_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/source_azimuth_angle.pstex_t}
+  \caption{Definition of \Geometry{} source azimuth angle component.}
+  \label{fig:geo_source_azimuth_angle}
+\end{figure}
+
+\begin{figure}[htp]
+  \centering
+  \input{graphics/geo/sensor_zenith_scan_angle.pstex_t}
+  \caption{Geometry definitions for equation \ref{eqn:sensor_zenith_scan_angle}.}
+  \label{fig:geo_sensor_zenith_scan_angle}
+\end{figure}
+
+
+
+
+\subsection{Filling the Options structure with data}
+%---------------------------------------------------
+\label{sec:fill_step-options}
+
+Descriptions of the components of the \hyperref[sec:options_structure]{\Options} structure are shown in table \ref{tab:options_structure}. If the \hyperref[sec:options_structure]{\Options} structure is not even specified in the CRTM function call (since it is itself an optional argument), the default values specified in table \ref{tab:options_structure} are used.
+
+For the allocatable components, the modifier ``\f{(}1:\textit{L}\f{)}'' is an indication of the range of the array indices. Note that if user-defined surface emissivities are not going to be used there is no need to allocate the internals of the \hyperref[sec:options_structure]{\Options} structure.
+
+\begin{longtable}{l p{8.5cm} c c}
+  \caption[CRTM \Options{} structure component description]{CRTM \Options{} structure component description}
+  \label{tab:options_structure} \\
+
+  % Header for first page
+  \hline \\[-0.1cm]
+    \multicolumn{1}{c}{\tblhd{Component}} &
+    \multicolumn{1}{c}{\tblhd{Description}} &
+    \multicolumn{1}{c}{\tblhd{Units}} &
+    \multicolumn{1}{c}{\tblhd{Default value}} \\
+    \hline\hline \\[-0.2cm]
+  \endfirsthead
+
+  % Header for the remaing page(s) of the table
+  \multicolumn{4}{c}{\tblhd{{\tablename} \thetable{}} -- Continued} \\[0.5ex]
+  \hline \\[-0.1cm]
+      \multicolumn{1}{c}{\tblhd{Component}} &
+      \multicolumn{1}{c}{\tblhd{Description}} &
+      \multicolumn{1}{c}{\tblhd{Units}} &
+      \multicolumn{1}{c}{\tblhd{Default value}} \\
+    \hline\hline \\[-0.2cm]
+  \endhead
+  
+  %This is the footer for all pages except the last page of the table...
+  \hline 
+    \multicolumn{4}{l}{\sffamily{Continued on Next Page\ldots}} \\
+  \endfoot
+  
+  %This is the footer for the last page of the table...
+  \\[-1.8ex] \hline
+  \endlastfoot
+  
+  % Now the data
+    \f{Check\_Input}                 & Logical switch to enable or disable input data checking. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: No input data check.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Input data \emph{is} checked.\\}
+     & N/A & \f{.TRUE. } \\
+    \f{Use\_Old\_MWSSEM}             & Logical switch to enable or disable the v2.0.x microwave sea surface emissivity model. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Use FASTEM5.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Use LFMWSSEM/FASTEM1.\\}
+     & N/A & \f{.FALSE. } \\
+    \f{Use\_Antenna\_Correction}     & Logical switch to enable or disable the application of the antenna correction for the AMSU-A, AMSU-B, and MHS sensors. Note that for this switch to be effective in the CRTM call, the FOV field of the input \Geometry{} structure must be set and the antenna correction coefficients must be present in the sensor \SpcCoeff{} datafile. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: No correction.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Apply antenna correction.\\}
+     & N/A & \f{.FALSE.} \\
+    \f{Apply\_NLTE\_Correction}      & Logical switch to enable or disable the application of the non-LTE radiance correction. Note that for this switch to be effective in the CRTM call, the non-LTE correction coefficients must be present in the sensor \SpcCoeff{} datafile. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: No correction.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Apply non-LTE correction.\\}
+     & N/A & \f{.TRUE.} \\
+    \f{RT\_Algorithm\_Id}            & Integer switch (using parameterised values) to select the scattering radiative transfer model. If:
+
+    \parbox{8cm}{\hspace{0.5cm}\f{RT\_ADA}: Use ADA algorithm.
+    
+                 \hspace{0.5cm}\f{RT\_SOI}: Use SOI algorithm.\\}
+     & N/A & \f{RT\_ADA} \\
+    \f{Aircraft\_Pressure}           & Real value specifying an aircraft flight level pressure. If:
+
+    \parbox{7cm}{\hspace{0.5cm}$<$\f{0.0}: Satellite simulation.
+    
+                 \hspace{0.5cm}$>$\f{0.0}: Aircraft simulation.\\}
+     & hPa & \f{-1.0} \\
+    \f{Use\_n\_Streams}              & Logical switch to enable or disable the use of a user-defined number of RT streams for scattering calculations. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Use internally calculated \f{n\_Streams}.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Use specified \f{n\_Streams}.\\}
+     & N/A & \f{.FALSE.} \\
+    \f{n\_Streams}                   & Number of streams to use for scattering calculations if the \f{Use\_n\_Streams} is set to \f{.TRUE.}. Valid values for \f{n\_Streams} are 2, 4, 6, 8, and 16. 
+     & N/A & \f{0} \\[1.1cm]
+    \f{Include\_Scattering}          & Logical switch to enable or disable scattering calculations for clouds and aerosols. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Only cloud and/or aerosol absorption is computed.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Cloud and/or aerosol absorption and scattering is computed.\\}
+     & N/A & \f{.TRUE.} \\
+    \f{n\_Channels}                  & Number of sensor channels, \textit{L}. & N/A & N/A \\[0.3cm]
+    \f{Channel}                      & Index into channel-specific components. & N/A & 0 \\[0.3cm]
+    \f{Use\_Emissivity}              & Logical switch to enable or disable the use of user-defined surface emissivity. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Calculate emissivity.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Use user-defined emissivity.\\}
+     & N/A & \f{.FALSE.} \\
+    \f{Emissivity(}1:\textit{L}\f{)} & Allocatable array containing the user-defined surface emissivity for each sensor channel. & N/A & N/A \\[0.8cm]
+    \f{Use\_Direct\_Reflectivity}   & Logical switch to enable or disable the use of user-defined reflectivity for downwelling source (e.g. solar). This switch is ignored unless the \f{Use\_Emissivity} switch is also set. If:
+
+    \parbox{7cm}{\hspace{0.5cm}\f{.FALSE.}: Calculate reflectivity.
+    
+                 \hspace{0.5cm}\f{.TRUE. }: Use user-defined reflectivity.\\}
+     & N/A & \f{.FALSE.} \\
+    \f{Direct\_Reflectivity(}1:\textit{L}\f{)} & Allocatable array containing the user-defined direct reflectivity for downwelling source for each sensor channel. & N/A & N/A \\[0.8cm]
+    \f{SSU}                          & Structure component containing optional SSU sensor-specific input. See section \ref{sec:ssu_input_structure}. & N/A & N/A \\[0.8cm]
+    \f{Zeeman}                       & Structure component containing optional input for those sensors where Zeeman-splitting is an issue for high-peaking channels. See section \ref{sec:zeeman_input_structure}. & N/A & N/A \\
+
+\end{longtable}
+
+
+Some examples of assigning values to an \hyperref[sec:options_structure]{\Options} structure are shown below.
+
+
+\subsubsection{Options influencing CRTM behaviour}
+%.................................................
+
+To check the validity of input data within the CRTM, you can set the \f{Check\_Input} logical component. Note that enabling this option could increase execution time.
+
+\begin{alltt}
+  ! Check the input for profile #1...
+  opt(1)%\textcolor{red}{Check_Input} = .TRUE.
+  ! ...but not for profile #2
+  opt(2)%\textcolor{red}{Check_Input} = .FALSE.\end{alltt}
+
+The default microwave sea surface emissivity model implemented in this release is FASTEM5 (or FASTEM4 \hyperref[sec:init_step-surface_emissivity_model]{if you initialise the CRTM using the requisite file}). To switch back to the previous (i.e. ``old'') microwave sea surface emissivity model, a combination of the low-frequency model and FASTEM1, you can set the \f{Use\_Old\_MWSSEM} option,
+
+\begin{alltt}
+  ! Use the old microwave sea surface emissivity model (MWSSEM) for profile #2
+  opt(2)%\textcolor{red}{Use_Old_MWSSEM} = .TRUE.\end{alltt}
+
+The default radiative transfer algorithm used for scattering calculation is the Advanced Doubling-Adding (ADA) algorithm with the Matrix Operator Method (MOM) for calculating layer quantities. To select an alternative algorithm, you can set the \f{RT\_Algorithm\_Id} option. Currently this is done by specifying a parameterised value identifying the algorithm. For example, to select the Successive Order of Interation (SOI) algorithm, the option is set to the parameter \f{RT\_SOI},
+
+\begin{alltt}
+  ! Use the SOI algorithm for all scattering RT
+  opt%\textcolor{red}{RT_Algorithm_Id} = RT_SOI\end{alltt}
+
+To explicitly select the default RT algorithm, you can set the option to the parameter \f{RT\_ADA}. The use of a parameterised integer value rather than a logical switch is to accommodate the implementation of additional algorithms in future releases.
+
+If you wish to do simulations for aircraft instruments, you can enable this option by setting the aircraft flight level pressure,
+
+\begin{alltt}
+  ! Specify an aircraft flight level pressure for profile #1
+  opt(1)%\textcolor{red}{Aircraft_Pressure} = 325.0_fp\end{alltt}
+
+Of course, doing aircraft sensor simulations requires the various sensor and transmittance models coefficients to be available for your instrument. To get that process started, \href{mailto:ncep.list.emc.jcsda_crtm.support@noaa.gov}{contact CRTM Support}\footnote{We'll need instrument information, e.g. spectral response or instrument line functions, to generate the CRTM transmittance coefficient data files.}
+
+This release of the CRTM also allows you to turn off cloud and aerosol scattering, performing only the absorption calculations, via the \f{Include\_Scattering} option,
+
+\begin{alltt}
+  ! Only perform cloud/aerosol absorption calculations for profile #1...
+  opt(1)%\textcolor{red}{Include_Scattering} = .FALSE.\end{alltt}
+
+If you do require the scattering calculations to be done, you can now also specify the number of streams you wish to be used for the calculations via the \f{Use\_n\_Streams} and \f{n\_Streams} options,
+
+\begin{alltt}
+  ! ...and do 4-stream scattering calculations for profile #2
+  opt(2)%\textcolor{red}{Include_Scattering} = .TRUE.
+  opt(2)%\textcolor{red}{Use_n_Streams}      = .TRUE.
+  opt(2)%\textcolor{red}{n_Streams}          = 4\end{alltt}
+
+
+\subsubsection{Options for user-defined emissivities}
+%....................................................
+
+You can also specify emissivity spectra for each input profile. For simplicity the example shown below assigns fixed values for all channels allocated in the \hyperref[sec:options_structure]{\Options} structure,
+
+\begin{alltt}
+  ! Specify the use of user-defined emissivities...
+  opt%\textcolor{red}{Use_Emissivity} = .TRUE.
+  ! ...defining different "grey-body" fixed emissivities for each profile
+  opt(1)%\textcolor{red}{Emissivity} = 0.9525_fp
+  opt(2)%\textcolor{red}{Emissivity} = 0.8946_fp
+  \textrm{\textit{additional profiles...}}
+  \end{alltt}
+
+This setup, however, is problematical when you have multiple sensors (it's a actually an historical failure of the specification of the CRTM interface... but let's not go there.) Recall in section \ref{sec:alloc_array_step} that a loop over sensor was introduced to correctly allocate the channel-dependent arrays. This should be extended to the allocation of the \hyperref[sec:options_structure]{\Options} structure itself (see \ref{sec:alloc_structure_step:options}) to allow emissivity spectra to be specified for the different sensors. Extending the sensor-loop example of section \ref{sec:alloc_array_step} with the specification of user-defined emissivities, we could do something like:
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+    ....
+    ! Allocate the options structure for this sensor to specify emissivity
+    CALL \hyperref[sec:CRTM_Options_Create_interface]{CRTM_Options_Create}( opt       , &
+                              n_channels  )
+    ! Check they were created successfully
+    IF ( ANY(.NOT. \hyperref[sec:CRTM_Options_Associated_interface]{CRTM_Options_Associated}( opt )) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Specify the use of user-defined emissivities in the options structure
+    opt%\textcolor{red}{Use_Emissivity} = .TRUE.
+    Profile_Loop: DO m = 1, n_profiles
+      opt(m)%\textcolor{red}{Emissivity(1:n_channels)} = \textrm{\textit{...assign appropriate data...}}
+    END DO Profile_Loop
+    ....
+  END DO Sensor_Loop\end{alltt}
+
+
+\subsubsection{Options for SSU and Zeeman models}
+%................................................
+
+The \SSUInput{} and \ZeemanInput{} structures are included in the \Options{} input structure.
+
+The components of the \hyperref[sec:ssu_input_structure]{\SSUInput} data structure are shown in table \ref{tab:ssu_input_structure}.
+
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \SSUInput{} structure component description}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{Time}           & Time in decimal year corresponding to SSU observation. & N/A & 0.0 \\
+    \texttt{Cell\_Pressure} & The SSU \carbondioxide{} cell pressures. & hPa & 0.0 \\
+    \hline
+  \end{tabular}
+  \label{tab:ssu_input_structure}
+\end{table}
+
+The \hyperref[sec:ssu_input_structure]{\SSUInput} data structure itself is declared as \f{PRIVATE} (see figure \ref{fig:SSU_Input_type_structure}). As such, the only way to set values in, or get values from, the structure is via the \hyperref[sec:SSU_Input_SetValue_interface]{\texttt{SSU\_Input\_SetValue}} or \hyperref[sec:SSU_Input_GetValue_interface]{\texttt{SSU\_Input\_GetValue}} subroutines respectively.
+
+For example, to set the SSU instrument mission time, one would call the \hyperref[sec:SSU_Input_SetValue_interface]{\f{SSU\_Input\_SetValue}} subroutine like so,
+
+\begin{alltt}
+  ! Set the SSU input data in the options substructure
+  CALL \hyperref[sec:SSU_Input_SetValue_interface]{SSU_Input_SetValue}( opt%\textcolor{red}{SSU_Input}    , &  ! Object
+                           Time=mission_time  )  ! Optional input\end{alltt}
+
+where the local variable \f{mission\_time} contains the required time.
+
+The contents of the \hyperref[sec:zeeman_input_structure]{\ZeemanInput} data structure are shown in table \ref{tab:ssu_input_structure}. similarly to the \hyperref[sec:ssu_input_structure]{\SSUInput} data structure, the \hyperref[sec:zeeman_input_structure]{\ZeemanInput} data structure is also declared as \f{PRIVATE} and the corresponding \hyperref[sec:Zeeman_Input_SetValue_interface]{\texttt{Zeeman\_Input\_SetValue}} or \hyperref[sec:Zeeman_Input_GetValue_interface]{\texttt{Zeeman\_Input\_GetValue}} subroutines must be used to assign or retrieve values from the structure.
+
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \ZeemanInput{} structure component description}
+  \begin{tabular}{l p{7cm} c c}
+    \hline\\[-0.1cm]
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline\\[-0.2cm]
+    \texttt{Be}           & Earth magnetic field strength. & Gauss & 0.3 \\
+    \texttt{Cos\_ThetaB}  & Cosine of the angle between the Earth magnetic field and wave propagation direction. & N/A & 0.0 \\
+    \texttt{Cos\_PhiB}    & Cosine of the azimuth angle of the $\mathbf{B}_e$ vector in the $(\mathbf{v}, \mathbf{h}, \mathbf{k})$ coordinates system, where $\mathbf{v}$, $\mathbf{h}$ and $\mathbf{k}$ comprise a right-hand orthogonal system, similar to the $(\mathbf{x}, \mathbf{y}, \mathbf{z})$ Cartesian coordinates. The $\mathbf{h}$ vector is normal to the plane containing the $\mathbf{k}$ and $\mathbf{z}$ vectors, where $\mathbf{k}$ points to the wave propagation direction and $\mathbf{z}$ points to the zenith. $\mathbf{h} = (\mathbf{z} \times \mathbf{k})/|\mathbf{z} \times \mathbf{k}|$. The azimuth angle is the angle on the $(\mathbf{v}, \mathbf{h})$ plane from the positive $\mathbf{v}$ axis to the projected line of the $\mathbf{B}_e$ vector on this plane, positive counterclockwise. & N/A & 0.0 \\
+    \texttt{Doppler\_Shift}  & Doppler frequency shift caused by Earth-rotation (positive towards sensor). A zero value means no frequency shift. & KHz & 0.0 \\
+    \hline
+  \end{tabular}
+  \label{tab:zeeman_input_structure}
+\end{table}
+
+Setting the Earth's magnetic field strength and $\theta_B$ cosine in the \hyperref[sec:zeeman_input_structure]{\ZeemanInput} structure is done via the \hyperref[sec:Zeeman_Input_SetValue_interface]{\f{Zeeman\_Input\_SetValue}} subroutine like so,
+
+\begin{alltt}
+  ! Set the Zeeman input data in the options substructure
+  CALL \hyperref[sec:Zeeman_Input_SetValue_interface]{Zeeman_Input_SetValue}( opt%\textcolor{red}{Zeeman_Input}    , &  ! Object
+                              Field_Strength=Be   , &  ! Optional input
+                              Cos_ThetaB    =angle  )  ! Optional input\end{alltt}
+
+where, again, \f{Be} and \f{angle} are the local variables for the necessary data.
+
+
+
+\subsection{Initialising the K-matrix input and outputs}
+%-------------------------------------------------------
+\label{sec:fill_step-k_matrix}
+
+For the K-matrix structures, you should zero the K-matrix \emph{outputs}, \texttt{atm\_K} and \texttt{sfc\_K},
+
+\begin{alltt}
+  ! Zero the K-matrix OUTPUT structures
+  CALL \hyperref[sec:CRTM_Atmosphere_Zero_interface]{CRTM_Atmosphere_Zero}( atm_K )
+  CALL \hyperref[sec:CRTM_Surface_Zero_interface]{CRTM_Surface_Zero}( sfc_K )\end{alltt}
+
+and initialise the K-matrix \emph{input}, \texttt{rts\_K}, to provide you with the derivatives you want. For example, if you want the \texttt{atm\_K}, \texttt{sfc\_K} outputs to contain brightness temperature derivatives $\partial T_B/\partial x$, you should initialise \texttt{rts\_K} like so,
+
+\begin{alltt}
+  ! Initialise the K-Matrix INPUT to provide dTb/dx derivatives
+  rts_K%\textcolor{red}{Radiance} = \textcolor{magenta}{ZERO}
+  rts_K%\textcolor{red}{Brightness_Temperature} = \textcolor{magenta}{ONE}\end{alltt}
+
+Alternatively, if you want radiance derivatives returned in \texttt{atm\_K} and \texttt{sfc\_K}, the \texttt{rts\_K} structure should be initialised like so,
+
+\begin{alltt}
+  ! Initialise the K-Matrix INPUT to provide dR/dx derivatives
+  rts_K%\textcolor{red}{Radiance} = \textcolor{magenta}{ONE}
+  rts_K%\textcolor{red}{Brightness_Temperature} = \textcolor{magenta}{ZERO}\end{alltt}
+
+Note that, for visible channels, one should always set the K-Matrix input to provide $\partial R/\partial x$ derivatives since the generated brightness temperatures are for solar temperatures.
+
+
+
+\section{Call the required CRTM function}
+%========================================
+\label{sec:call_step}
+
+At this point, much of the preparatory heavy lifting has been done. The CRTM function calls themselves are quite simple. 
+
+
+\subsection{The CRTM Forward model}
+%----------------------------------
+The calling syntax for the CRTM forward model is,
+
+\begin{alltt}
+  err_stat = \hyperref[sec:CRTM_Forward_interface]{CRTM_Forward}( atm        , & ! Input
+                           sfc        , & ! Input
+                           geo        , & ! Input
+                           chInfo     , & ! Input
+                           rts        , & ! Output
+                           Options=opt  ) ! Optional input
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Let's also specify the forward model call in the context of the sensor-loop example of section \ref{sec:alloc_array_step}. It might look something like,
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+    ....
+    ! Allocate channel-dependent arrays
+    ALLOCATE( rts(n_channels, n_profiles), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Call the forward model, processing ALL profiles at once.
+    \textcolor{red}{err_stat = \hyperref[sec:CRTM_Forward_interface]{CRTM_Forward}( atm        , & ! Input
+                             sfc        , & ! Input
+                             geo        , & ! Input
+                             chinfo(n:n), & ! Input
+                             rts        , & ! Output
+                             Options=opt  ) ! Optional input}
+    IF ( err_stat /= SUCCESS ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Deallocate channel-dependent arrays
+    DEALLOCATE( rts, STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO Sensor_Loop\end{alltt}
+
+where we are procesing a single sensor at a time. Note the specification of the \hyperref[sec:channelinfo_structure]{\f{ChannelInfo}} argument, \f{chInfo(n:n)}. The use of the \f{(n:n)} modifier is required to ensure that a single element \emph{array} is passed in to the forward model. If one simply wrote \f{chInfo(n)}, this specifies a scalar and the calling code would not compile\footnote{If you think this quirk is annoying and should be corrected, please email CRTM Support with your vote! \href{mailto:ncep.list.emc.jcsda_crtm.support@noaa.gov}{ncep.list.emc.jcsda\_crtm.support@noaa.gov}}.
+
+
+\subsection{The CRTM K-Matrix model}
+%-----------------------------------
+The calling syntax for the CRTM K-matrix model is,
+
+\begin{alltt}
+  err_stat = \hyperref[sec:CRTM_K_Matrix_interface]{CRTM_K_Matrix}( atm        , & ! Forward  input
+                            sfc        , & ! Forward  input
+                            rts_K      , & ! K-matrix input
+                            geo        , & ! Input
+                            chinfo     , & ! Input
+                            atm_K      , & ! K-matrix output
+                            sfc_K      , & ! K-matrix output
+                            rts        , & ! Forward  output
+                            Options=opt  ) ! Optional input
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+Note that the K-matrix model also returns the forward model radiances.
+
+Similarly to the forward model example, let's recast the call within a sensor-loop,
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+    ....
+    ! Allocate channel-dependent arrays
+    ALLOCATE( rts(n_channels, n_profiles)  , &
+              atm_K(n_channels, n_profiles), &
+              sfc_K(n_channels, n_profiles), &
+              rts_K(n_channels, n_profiles), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Call the forward model, processing ALL profiles at once.
+    \textcolor{red}{err_stat = \hyperref[sec:CRTM_K_Matrix_interface]{CRTM_K_Matrix}( atm        , & ! Forward  input
+                              sfc        , & ! Forward  input
+                              rts_K      , & ! K-matrix input
+                              geo        , & ! Input
+                              chinfo(n:n), & ! Input
+                              atm_K      , & ! K-matrix output
+                              sfc_K      , & ! K-matrix output
+                              rts        , & ! Forward  output
+                              Options=opt  ) ! Optional input}
+    IF ( err_stat /= SUCCESS ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Deallocate channel-dependent arrays
+    DEALLOCATE( rts, atm_K, sfc_K, rts_K, &
+                STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO Sensor_Loop\end{alltt}
+
+
+\subsection{The CRTM Tangent-linear and Adjoint models}
+%------------------------------------------------------
+The \hyperref[sec:CRTM_Tangent_Linear_interface]{tangent-linear} and \hyperref[sec:CRTM_Adjoint_interface]{adjoint} models have similar call structures and will not be shown here. Refer to their interface descriptions for details.
+
+
+\subsection{The CRTM Aerosol Optical Depth (AOD) functions}
+%----------------------------------------------------------
+There is a separate module containing forward, tangent-linear, adjoint and K-matrix function to \emph{just} compute aerosol optical depths. The calling syntax for these functions are similar to the main function, but with fewer argument.
+
+The calling syntax for the CRTM forward AOD model is,
+
+\begin{alltt}
+  err_stat = \hyperref[sec:CRTM_AOD_interface]{CRTM_AOD}( atm        , & ! Input
+                       chInfo     , & ! Input
+                       rts        , & ! Output
+                       Options=opt  ) ! Optional input
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+A important note: the computed aerosol optical depth is stored in the \f{Layer\_Optical\_Depth} component of the \RTSolution{} output so you must allocate the internals of the \RTSolution{} structure. Using the call in the context of the sensor-loop example of section \ref{sec:alloc_array_step}, we would do,
+
+\begin{alltt}
+  INTEGER :: m, n
+  ....
+  Sensor_Loop: DO n = 1, n_sensors
+    ....
+    ! Get the number of channels to process for current sensor
+    n_channels = \hyperref[sec:CRTM_ChannelInfo_n_Channels_interface]{CRTM_ChannelInfo_n_Channels}( chinfo(n) )
+    ....
+    ! Allocate channel-dependent arrays
+    ALLOCATE( rts(n_channels, n_profiles), &
+              STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Allocate RTSolution structure to store optical depth output
+    \textcolor{red}{CALL CRTM_RTSolution_Create( rts, n_layers )}
+    IF ( .NOT. ALL(CRTM_RTSolution_Associated(rts)) ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ...
+    ! Call the forward AOD model, processing ALL profiles at once.
+    \textcolor{red}{err_stat = \hyperref[sec:CRTM_AOD_interface]{CRTM_AOD}( atm        , & ! Input
+                         chinfo(n:n), & ! Input
+                         rts        , & ! Output
+                         Options=opt  ) ! Optional input}
+    IF ( err_stat /= SUCCESS ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+    ....
+    ! Deallocate channel-dependent arrays
+    DEALLOCATE( rts, STAT = alloc_stat )
+    IF ( alloc_stat /= 0 ) THEN
+      \textrm{\textit{handle error...}}
+    END IF
+  END DO Sensor_Loop\end{alltt}
+
+The aerosol optical depth \hyperref[sec:CRTM_AOD_TL_interface]{tangent-linear}, \hyperref[sec:CRTM_AOD_AD_interface]{adjoint}, and \hyperref[sec:CRTM_AOD_K_interface]{K-matrix} functions have call structures similar to the main function and will not be shown here. Refer to their interface descriptions for details.
+
+
+
+\section{Inspect the CRTM output structures}
+%===========================================
+\label{sec:inspect_step}
+
+Regardless of whether you have called the forward or K-matrix model, you will want to have a look at the results in the \hyperref[sec:rtsolution_structure]{\RTSolution} structure. The components of this structure are shown in table \ref{tab:rtsolution_structure}. The modifier ``\f{(}1:\textit{K}\f{)}'' indicates the range of the allocatable components.
+
+\begin{table}[htp]
+  \centering
+  \caption{CRTM \RTSolution{} structure component description. $^\dagger$Only defined for \emph{forward} radiative transfer computations.}
+  \begin{tabular}{l p{5cm} c c}
+    \hline
+    \tblhd{Component} & \tblhd{Description} & \tblhd{Units} & \tblhd{Default value} \\
+    \hline\hline
+    \f{n\_Layers}                 & Number of atmospheric profile layers, \f{K}                        & N/A    & 0 \\
+    \f{Sensor\_Id}                & The sensor id string                                               & N/A    & empty string \\
+    \f{WMO\_Satellite\_Id}        & The WMO satellite Id                                               & N/A    & \f{INVALID\_WMO\_SATELLITE\_ID} \\
+    \f{WMO\_Sensor\_Id}           & The WMO sensor Id                                                  & N/A    & \f{INVALID\_WMO\_SENSOR\_ID} \\
+    \f{Sensor\_Channel}           & The channel number                                                 & N/A    & 0 \\
+    \f{RT\_Algorithm\_Name}       & Character string containing the name of the radiative transfer algorithm used. & N/A    & empty string \\
+    \f{SOD}$^\dagger$                       & The scattering optical depth                                       & N/A    & 0.0 \\
+    \f{Surface\_Emissivity}$^\dagger$       & The surface emissivity (computed or user-defined)                  & N/A    & 0.0 \\
+    \f{Up\_Radiance}$^\dagger$              & The atmospheric portion of the upwelling radiance                  & \radunit & 0.0 \\
+    \f{Down\_Radiance}$^\dagger$            & The atmospheric portion of the downwelling radiance                & \radunit & 0.0 \\
+    \f{Down\_Solar\_Radiance}$^\dagger$     & The downwelling direct solar radiance                              & \radunit & 0.0 \\
+    \f{Surface\_Planck\_Radiance}$^\dagger$ & The surface radiance                                               & \radunit & 0.0 \\
+    \f{Upwelling\_Radiance(}1:\textit{K}\f{)}$^\dagger$   & The upwelling radiance profile, including the reflected downwelling and surface contributions. & \radunit & N/A \\
+    \f{Layer\_Optical\_Depth(}1:\textit{K}\f{)}$^\dagger$ & The layer optical depth profile                                    & N/A      & N/A \\       
+    \f{Radiance}                  & The sensor radiance                                                & \radunit & 0.0 \\ 
+    \f{Brightness\_Temperature}   & The sensor brightness temperature                                  & Kelvin   & 0.0 \\   
+    \hline
+  \end{tabular}
+  \label{tab:rtsolution_structure}
+\end{table}
+
+Although most people are interested in using the radiance or brightness temperature component, you can dump the entire contents of the \hyperref[sec:rtsolution_structure]{\RTSolution} structure directly to screen using the \hyperref[sec:CRTM_RTSolution_Inspect_interface]{\f{CRTM\_RTSolution\_Inspect}} procedure,
+
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_RTSolution_Inspect_interface]{CRTM_RTSolution_Inspect}(rts_K)\end{alltt}
+
+
+
+\section{Destroy the CRTM and cleanup}
+%=====================================
+\label{sec:destroy_step}
+
+The last step is to cleanup. This involves calling the CRTM destruction function
+
+\begin{alltt}
+  err_stat = \hyperref[sec:CRTM_Destroy_interface]{CRTM_Destroy}( chinfo )
+  IF ( err_stat /= SUCCESS ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+to deallocate all the shared coefficient data that was read during the intialisation step.
+
+Note that one can also call the individual CRTM structure subroutines as well to deallocate the internals of the various structure arrays that were created in section \ref{sec:alloc_structure_step}. The cleanup mirrors that of the create step:
+
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_Options_Destroy_interface]{CRTM_Options_Destroy}(opt)
+  CALL \hyperref[sec:CRTM_RTSolution_Destroy_interface]{CRTM_RTSolution_Destroy}(rts)
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}(atm)\end{alltt}
+
+If you also have K-matrix structures, you also call the destruction subroutines for htem too:
+
+\begin{alltt}
+  CALL \hyperref[sec:CRTM_RTSolution_Destroy_interface]{CRTM_RTSolution_Destroy}(rts_K)
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}(atm_K)\end{alltt}
+
+However, it should be pointed out that deallocating the structure arrays also deallocates the internals of each element of a structure. To use the \hyperref[sec:atmosphere_structure]{\Atmosphere} array, \f{atm}, as an example; doing the following,
+
+\begin{alltt}
+  DEALLOCATE( atm, STAT = alloc_stat )
+  IF ( alloc_stat /= 0 ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+  
+is equivalent to,
+
+\begin{alltt}
+  ! Deallocate the array element internals
+  CALL \hyperref[sec:CRTM_Atmosphere_Destroy_interface]{CRTM_Atmosphere_Destroy}(atm)
+  ! Deallocate the array itself
+  DEALLOCATE( atm, STAT = alloc_stat )
+  IF ( alloc_stat /= 0 ) THEN
+    \textrm{\textit{handle error...}}
+  END IF\end{alltt}
+
+since, in Fortran95+TR15581 and Fortran2003 the array deallocation will also deallocate any structure components that have an \f{ALLOCATABLE} attribute.
