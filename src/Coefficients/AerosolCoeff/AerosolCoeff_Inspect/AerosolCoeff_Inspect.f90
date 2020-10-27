@@ -28,7 +28,6 @@ PROGRAM AerosolCoeff_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AerosolCoeff_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

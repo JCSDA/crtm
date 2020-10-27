@@ -29,7 +29,6 @@ PROGRAM ByteSwap
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'ByteSwap'
   CHARACTER( * ), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
 

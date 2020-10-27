@@ -25,11 +25,12 @@ MODULE CRTM_CloudCover_Define
                                     OPERATOR(.EqualTo.), &
                                     Compares_Within_Tolerance
   USE CRTM_Parameters       , ONLY: ZERO, ONE, &
+                                    MIN_COVERAGE_THRESHOLD, &
                                     WATER_CONTENT_THRESHOLD
   USE CRTM_Atmosphere_Define, ONLY: CRTM_Atmosphere_type, &
                                     CRTM_Atmosphere_Associated
   USE CRTM_Cloud_Define     , ONLY: OPERATOR(==), &
-                                    OPERATOR(+), &
+                                    OPERATOR(+),  &
                                     CRTM_Cloud_type, &
                                     CRTM_Cloud_Associated, &
                                     CRTM_Cloud_Zero
@@ -456,7 +457,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                              
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD                                 
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -510,7 +510,7 @@ CONTAINS
 
     ! Add cloud scaling here!
     ! Partition all hydrometeors into cloudy column
-    IF (self%Total_Cloud_Cover > MIN_COVERAGE_THRESHOLD) then
+    IF (self%Total_Cloud_Cover > MIN_COVERAGE_THRESHOLD) THEN 
        DO n = 1, n_clouds 
           ! scaled cloud water content
           atm%Cloud(n)%Water_Content(1:n_layers) = atm%Cloud(n)%Water_Content(1:n_layers) / self%Total_Cloud_Cover 
@@ -550,11 +550,11 @@ CONTAINS
       prod(0)           = ONE
       self%iVar%prod(0) = prod(0)
       DO k = 1, n_layers
-        if (self%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) then   
-           prod(k) = prod(k-1) * (ONE - self%Cloud_Fraction(k))
-        else
+        IF (self%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) THEN
+            prod(k) = prod(k-1) * (ONE - self%Cloud_Fraction(k))
+        ELSE
            prod(k) = prod(k-1)
-        endif
+        ENDIF
         self%Cloud_Cover(k) = ONE - prod(k)
         self%iVar%prod(k)   = prod(k)  ! Save for TL/AD
       END DO
@@ -578,18 +578,23 @@ CONTAINS
 !   END SUBROUTINE Compute_MaxRan_Overlap
     SUBROUTINE Compute_MaxRan_Overlap()
     INTEGER  :: k
-    REAL(fp) :: prod, maxcov
+    REAL(fp) :: prod(n_layers), maxcov(n_layers)
 
-    prod                = ONE - self%Cloud_Fraction(1)
-    self%Cloud_Cover(1) = ONE - prod
-    self%iVar%prod(1)   = prod
-    self%iVar%maxcov(1) = ONE - self%Cloud_Fraction(1)
-    DO k= 2, n_layers
-       maxcov = (ONE - MAX(self%Cloud_Fraction(k-1), self%Cloud_Fraction(k)))
-       prod = prod * maxcov / (one - self%Cloud_Fraction(k-1))                                                    
-       self%iVar%maxcov(k) = maxcov 
-       self%iVar%prod(k)   = prod
-       self%Cloud_Cover(k) = ONE - prod
+    prod(1)             = ONE - self%Cloud_Fraction(1)
+    maxcov(1)           = ONE - self%Cloud_Fraction(1)
+    self%Cloud_Cover(1) = ONE - prod(1)
+    self%iVar%prod(1)   = prod(1)
+    self%iVar%maxcov(1) = maxcov(1)
+    DO k = 2, n_layers
+       maxcov(k) = (ONE - MAX(self%Cloud_Fraction(k-1), self%Cloud_Fraction(k)))
+       IF ( (self%iVar%prod(k-1) == ZERO) .and. (ONE - self%Cloud_Fraction(k-1) == ZERO) ) THEN
+          prod(k)  = maxcov(k)
+       ELSE
+          prod(k)  = prod(k-1) * (maxcov(k) / (ONE - self%Cloud_Fraction(k-1)))
+       ENDIF
+       self%iVar%maxcov(k) = maxcov(k)
+       self%iVar%prod(k)   = prod(k)
+       self%Cloud_Cover(k) = ONE - prod(k)
     ENDDO
     self%Total_Cloud_Cover = self%Cloud_Cover(n_layers)
     END SUBROUTINE Compute_MaxRan_Overlap
@@ -713,7 +718,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_TL'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                               
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD      
     ! Local variables
     CHARACTER(ML) :: err_msg
@@ -805,12 +809,12 @@ CONTAINS
       prod_TL    = ZERO
       prod_TL(0) = ZERO
       DO k = 1, n_layers
-        if (cc_FWD%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) then    
+        IF (cc_FWD%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) THEN    
            prod_TL(k) = (ONE - cc_FWD%Cloud_Fraction(k))*prod_TL(k-1) - & 
                          cc_FWD%iVar%prod(k-1)*self_TL%Cloud_Fraction(k)      
-        else
+        ELSE
            prod_TL(k) = prod_TL(k-1) 
-        endif
+        ENDIF
         self_TL%Cloud_Cover(k) = -prod_TL(k)
       END DO
       self_TL%Total_Cloud_Cover = self_TL%Cloud_Cover(n_layers)
@@ -854,26 +858,36 @@ CONTAINS
 !   END SUBROUTINE Compute_MaxRan_Overlap_TL
     SUBROUTINE Compute_MaxRan_Overlap_TL()
       INTEGER  :: k
-      REAL(fp) :: prod_TL
-      REAL(fp) :: maxcov_TL
+      REAL(fp) :: prod_TL(n_layers)
+      REAL(fp) :: maxcov_TL(n_layers)
 
-      ! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
-      maxcov_TL              = HUGE(maxcov_TL)
-      prod_TL                = -self_TL%Cloud_Fraction(1)
-      self_TL%Cloud_Cover(1) = -prod_TL
+      prod_TL(1)             = -self_TL%Cloud_Fraction(1)
+      maxcov_TL(1)           = -self_TL%Cloud_Fraction(1)
+      self_TL%Cloud_Cover(1) = -prod_TL(1)
       DO k = 2, n_layers
-         IF ((cc_FWD%Cloud_Fraction(k-1) > cc_FWD%Cloud_Fraction(k))) THEN
-            maxcov_TL = -self_TL%Cloud_Fraction(k-1)
-         ELSE IF ((cc_FWD%Cloud_Fraction(k-1) < cc_FWD%Cloud_Fraction(k))) THEN
-            maxcov_TL = -self_TL%Cloud_Fraction(k)
-         ELSE IF ((CC_FWD%Cloud_Fraction(k-1) == cc_FWD%Cloud_Fraction(k))) THEN
-            maxcov_TL = -self_TL%Cloud_Fraction(k)
+         IF (     (cc_FWD%Cloud_Fraction(k-1) >  cc_FWD%Cloud_Fraction(k))) THEN
+            maxcov_TL(k) = -self_TL%Cloud_Fraction(k-1)
+         ELSE
+            maxcov_TL(k) = -self_TL%Cloud_Fraction(k)
          ENDIF
-            prod_TL = prod_TL * cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1)) +  &
-              & self_TL%Cloud_Fraction(k-1) * cc_FWD%iVar%prod(k-1) * cc_FWD%iVar%maxcov(k) / &
-              & (one - cc_FWD%Cloud_Fraction(k-1)) ** 2 + &
-              & maxcov_TL * cc_FWD%iVar%prod(k-1) / (one -  cc_FWD%Cloud_Fraction(k-1))
-         self_TL%Cloud_Cover(k) = -prod_TL
+         IF ( (cc_FWD%iVar%prod(k-1) == ZERO) .and. (ONE - cc_FWD%Cloud_Fraction(k-1) == ZERO) ) THEN 
+            prod_TL(k)  = maxcov_TL(k)
+         ELSE
+        !>>orig
+        !    prod_TL(k) = prod_TL(k-1) * cc_FWD%iVar%maxcov(k) / (one -
+        !    cc_FWD%Cloud_Fraction(k-1)) +  &
+        !                 self_TL%Cloud_Fraction(k-1) * cc_FWD%iVar%prod(k-1) *
+        !                 cc_FWD%iVar%maxcov(k) / &
+        !                 (one - cc_FWD%Cloud_Fraction(k-1))**2 + &
+        !                 maxcov_TL(k) * cc_FWD%iVar%prod(k-1) / (one -
+        !                 cc_FWD%Cloud_Fraction(k-1))
+        !<<orig
+            prod_TL(k) = prod_TL(k-1) * (cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1))) +  &
+                         self_TL%Cloud_Fraction(k-1) * (cc_FWD%iVar%prod(k-1) / (one - cc_FWD%Cloud_Fraction(k-1))) * &
+                                                       (cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1))) + &
+                         maxcov_TL(k) * (cc_FWD%iVar%prod(k-1) / (one - cc_FWD%Cloud_Fraction(k-1)))
+        ENDIF
+         self_TL%Cloud_Cover(k) = -prod_TL(k)
       ENDDO
       self_TL%Total_Cloud_Cover = self_TL%Cloud_Cover(n_layers)
     END SUBROUTINE Compute_MaxRan_Overlap_TL
@@ -1010,7 +1024,6 @@ CONTAINS
     INTEGER :: err_stat
     ! Local parameters
     CHARACTER(*), PARAMETER :: PROCEDURE_NAME = 'CRTM_CloudCover_Define::Compute_CloudCover_AD'
-    REAL(fp),     PARAMETER :: MIN_COVERAGE_THRESHOLD = 1.0e-06_fp                           
     REAL(fp),     PARAMETER :: MAX_COVERAGE_THRESHOLD = ONE - MIN_COVERAGE_THRESHOLD
 
     ! Local variables
@@ -1018,7 +1031,7 @@ CONTAINS
     INTEGER :: n_layers
     INTEGER :: n_clouds
     INTEGER :: n      
-    REAL(fp):: sum_wc
+!!$    REAL(fp):: sum_wc
 
     ! Check inputs
     err_stat = SUCCESS
@@ -1052,13 +1065,13 @@ CONTAINS
     ! Add AD of cloud scaling here!
     ! Partition all hydrometeors into cloudy column
      IF (cc_FWD%Total_Cloud_Cover > MIN_COVERAGE_THRESHOLD) then
-
-       sum_wc = ZERO
-       DO n = 1, n_clouds
-          sum_wc = sum_wc  &
-                 + SUM(atm_AD%Cloud(n)%Water_Content(1:n_layers) * cc_FWD%iVar%wc(n,1:n_layers))
-       ENDDO
-       sum_wc = sum_wc / (cc_FWD%Total_Cloud_Cover**2)
+!!$
+!!$       sum_wc = ZERO
+!!$       DO n = 1, n_clouds
+!!$          sum_wc = sum_wc  &
+!!$                 + SUM(atm_AD%Cloud(n)%Water_Content(1:n_layers) * cc_FWD%iVar%wc(n,1:n_layers))
+!!$       ENDDO
+!!$       sum_wc = sum_wc / (cc_FWD%Total_Cloud_Cover**2)
 !>>test
 !      sum_wc = ZERO
 !      DO n = 1, n_clouds
@@ -1068,12 +1081,29 @@ CONTAINS
 !      ENDDO
 !<<test
 
-       self_AD%Total_Cloud_Cover = self_AD%Total_Cloud_Cover - sum_wc
+!      self_AD%Total_Cloud_Cover = self_AD%Total_Cloud_Cover - sum_wc
+!
+!       DO n = 1, n_clouds
+!         atm_AD%Cloud(n)%Water_Content(1:n_layers) = atm_AD%Cloud(n)%Water_Content(1:n_layers) &
+!                                          / cc_FWD%Total_Cloud_Cover
+!       ENDDO
 
+!>>test1
+       !** BTJ: this section of code comes from undocumented 2.3.1-beta release from Tong Zhu. 
+       !** the AD calculations for CloudCover need to be verified.  Previously it was the commented
+       !** section immediately above and the commented sum_wc lines several lines above.  
        DO n = 1, n_clouds
-         atm_AD%Cloud(n)%Water_Content(1:n_layers) = atm_AD%Cloud(n)%Water_Content(1:n_layers) &
-                                          / cc_FWD%Total_Cloud_Cover
+
+          self_AD%Total_Cloud_Cover = self_AD%Total_Cloud_Cover + &
+               SUM(-(atm_AD%Cloud(n)%Water_Content(1:n_layers) * cc_FWD%iVar%wc(n,1:n_layers)/ cc_FWD%Total_Cloud_Cover)) &
+                                                       / cc_FWD%Total_Cloud_Cover
+
+          atm_AD%Cloud(n)%Water_Content(1:n_layers) = atm_AD%Cloud(n)%Water_Content(1:n_layers) &
+                                           / cc_FWD%Total_Cloud_Cover
+
        ENDDO
+!<<test1
+
 
      END IF
 
@@ -1133,14 +1163,14 @@ CONTAINS
       DO k = n_layers, 1, -1
         prod_AD(k) = prod_AD(k) - self_AD%Cloud_Cover(k)
         self_AD%Cloud_Cover(k) = ZERO
-        if (cc_FWD%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) then    
+        IF (cc_FWD%Cloud_Fraction(k) > MIN_COVERAGE_THRESHOLD) THEN
            self_AD%Cloud_Fraction(k) = self_AD%Cloud_Fraction(k) - (cc_FWD%iVar%prod(k-1)*prod_AD(k))
            prod_AD(k-1) = prod_AD(k-1)+(ONE - cc_FWD%Cloud_Fraction(k))*prod_AD(k)
            prod_AD(k) = ZERO
-        else
+        ELSE
            prod_AD(k-1) = prod_AD(k-1)+ prod_AD(k)
            prod_AD(k) = ZERO 
-        endif
+        ENDIF
       END DO
       prod_AD(0) = ZERO
     END SUBROUTINE Compute_Random_Overlap_AD
@@ -1170,36 +1200,47 @@ CONTAINS
 !    END SUBROUTINE Compute_MaxRan_Overlap_AD
     SUBROUTINE Compute_MaxRan_Overlap_AD()
       INTEGER  :: k
-      REAL(fp) :: prod_AD
-      REAL(fp) :: maxcov_AD
-      prod_AD   = ZERO
-      maxcov_AD = ZERO
-      self_AD%Cloud_Cover(n_layers) = self_AD%Cloud_Cover(n_layers) + self_AD%Total_Cloud_Cover                                
-      self_AD%Total_Cloud_Cover = ZERO
+      REAL(fp) :: prod_AD(n_layers)
+      REAL(fp) :: maxcov_AD(n_layers)
+
+      prod_AD(:)   = ZERO
+      maxcov_AD(:) = ZERO
+      self_AD%Cloud_Cover(n_layers) = self_AD%Cloud_Cover(n_layers) + self_AD%Total_Cloud_Cover
+      self_AD%Total_Cloud_Cover     = ZERO
       DO k = n_layers, 2,  - 1
-        prod_AD = prod_AD - self_AD%Cloud_Cover(k)
+        prod_AD(k) = prod_AD(k) - self_AD%Cloud_Cover(k)
         self_AD%Cloud_Cover(k) = ZERO
-        self_AD%Cloud_Fraction(k-1) = self_AD%Cloud_Fraction(k-1) +      &
-                   & prod_AD * cc_FWD%iVar%prod(k-1) * cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1)) ** 2
-        maxcov_AD                   =      &
-                   & maxcov_AD + prod_AD * cc_FWD%iVar%prod(k-1) / (one - cc_FWD%Cloud_Fraction(k-1))
-        prod_AD                     =      &
-                   & prod_AD  * cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1))
-        IF ((cc_FWD%Cloud_Fraction(k-1) > cc_FWD%Cloud_Fraction(k))) THEN
-          self_AD%Cloud_Fraction(k-1) = self_AD%Cloud_Fraction(k-1) - maxcov_AD
-          maxcov_AD     = zero
-        ELSE IF ((cc_FWD%Cloud_Fraction(k-1) < cc_FWD%Cloud_Fraction(k))) THEN
-          self_AD%Cloud_Fraction(k) = self_AD%Cloud_Fraction(k) - maxcov_AD
-          maxcov_AD     = zero
-        ELSE IF ((cc_FWD%Cloud_Fraction(k-1) == cc_FWD%Cloud_Fraction(k))) THEN
-          self_AD%Cloud_Fraction(k) = self_AD%Cloud_Fraction(k) - maxcov_AD
-          maxcov_AD     = ZERO
+        IF ( (cc_FWD%iVar%prod(k-1) == ZERO) .and. (ONE - cc_FWD%Cloud_Fraction(k-1) == ZERO) ) THEN
+           maxcov_AD(k) = maxcov_AD(k) + prod_AD(k)
+        ELSE
+      !>>orig
+      !     prod_AD(k-1)                = prod_AD(k-1) + prod_AD(k) * cc_FWD%iVar%maxcov(k) / (one - cc_FWD%Cloud_Fraction(k-1))
+      !     self_AD%Cloud_Fraction(k-1) = self_AD%Cloud_Fraction(k-1) + prod_AD(k) * cc_FWD%iVar%prod(k-1) * cc_FWD%iVar%maxcov(k) &
+      !                                               / (one - cc_FWD%Cloud_Fraction(k-1))**2
+      !     maxcov_AD(k)                = maxcov_AD(k) + prod_AD(k) *
+      !     cc_FWD%iVar%prod(k-1) / (one - cc_FWD%Cloud_Fraction(k-1)) !<<orig
+           prod_AD(k-1)                = prod_AD(k-1) + prod_AD(k)  * (cc_FWD%iVar%maxcov(k) / &
+                                         (one - cc_FWD%Cloud_Fraction(k-1)))
+           self_AD%Cloud_Fraction(k-1) = self_AD%Cloud_Fraction(k-1) + prod_AD(k) * &
+                        (cc_FWD%iVar%prod(k-1)/(one - cc_FWD%Cloud_Fraction(k-1)))* &
+                        (cc_FWD%iVar%maxcov(k)/(one - cc_FWD%Cloud_Fraction(k-1)))
+           maxcov_AD(k)                = maxcov_AD(k) + prod_AD(k) * (cc_FWD%iVar%prod(k-1) / &
+                                         (one - cc_FWD%Cloud_Fraction(k-1)))
+        ENDIF
+        IF (     (cc_FWD%Cloud_Fraction(k-1) >  cc_FWD%Cloud_Fraction(k))) THEN
+          self_AD%Cloud_Fraction(k-1) = self_AD%Cloud_Fraction(k-1) - maxcov_AD(k)
+          maxcov_AD(k)     = zero
+        ELSE
+          self_AD%Cloud_Fraction(k) = self_AD%Cloud_Fraction(k) - maxcov_AD(k)
+          maxcov_AD(k)     = ZERO
         ENDIF
       ENDDO
-      prod_AD = prod_AD - maxcov_AD
+
+      prod_AD(1) = prod_AD(1) - self_AD%Cloud_Cover(1)
       self_AD%Cloud_Cover(1) = ZERO
-      self_AD%Cloud_Fraction(1) = self_AD%Cloud_Fraction(1) - prod_AD
-      prod_AD = ZERO
+      self_AD%Cloud_Fraction(1) = self_AD%Cloud_Fraction(1) - prod_AD(1) - maxcov_AD(1)
+      prod_AD(1) = ZERO
+      maxcov_AD(1) = ZERO
     END SUBROUTINE Compute_MaxRan_Overlap_AD
 
     SUBROUTINE Compute_Average_Overlap_AD()

@@ -1,3 +1,39 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Liebe89_Coefficients
+!
+! PURPOSE:
+!       Module containing line and coefficient data for microwave line-by-line
+!       transmittance calculations according to Liebe 89.
+!
+! CATEGORY:
+!       LBL : Microwave
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! CALLING SEQUENCE:
+!       USE Liebe89_Coefficients
+!
+! MODULES:
+!       type_kinds:         Module containing definitions for kinds
+!                           of variable types.
+!
+! CREATION HISTORY:
+!       This data has been transposed from FORTRAN-77 format include
+!       files written by:
+!         L. Phalippou 28-Jul-1992
+!         Peter Rayer UKMO
+!         Roger Saunders UKMO
+!
+!       Written by:     Paul van Delst, CIMSS/SSEC 21-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 
 MODULE Liebe89_Coefficients
@@ -254,3 +290,24 @@ MODULE Liebe89_Coefficients
 END MODULE Liebe89_Coefficients
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2002/05/14 23:33:52 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Liebe89_Coefficients.f90,v $
+! Revision 1.1  2002/05/14 23:33:52  paulv
+! - Initial checkin.
+! - Incomplete.
+!
+!
+!
+!

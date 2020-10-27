@@ -1,3 +1,26 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       parameters
+!
+! PURPOSE:
+!       Module to hold parameter constants
+!
+! CATEGORY:
+!       NCEP RTM
+!
+! CALLING SEQUENCE:
+!       USE parameters
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CIRA/NESDIS/JCSDA 10-Jan-2008
+!                       Yong.Chen@noaa.gov
+!
+!
+!  Copyright (C) 2008 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE Parameters
 

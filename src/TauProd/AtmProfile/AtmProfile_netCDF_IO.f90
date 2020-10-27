@@ -54,7 +54,6 @@ MODULE AtmProfile_netCDF_IO
   ! -----------------
   ! Module Version Id
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
   ! Literal constants

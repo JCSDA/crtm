@@ -30,7 +30,6 @@ PROGRAM Create_AerosolCoeff
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Create_AerosolCoeff'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: INPUT_FILENAME  = 'Aerosol_Optical_Properties_IR.dat'
   CHARACTER(*), PARAMETER :: OUTPUT_FILENAME = 'AerosolCoeff.nc'
   

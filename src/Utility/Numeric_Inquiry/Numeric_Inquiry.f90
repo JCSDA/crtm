@@ -21,7 +21,6 @@ PROGRAM Numeric_Inquiry
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Numeric_Inquiry'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   REAL(Single), PARAMETER :: SP_ONE = 1.0_Single
   REAL(Double), PARAMETER :: DP_ONE = 1.0_Double
@@ -212,7 +211,6 @@ END PROGRAM Numeric_Inquiry
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
 !
 ! $Date: 2004/08/31 19:25:54 $
 !

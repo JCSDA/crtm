@@ -1,3 +1,82 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       netCDF_Utility
+!
+! PURPOSE:
+!       Module containing utility routines for netCDF file access. This module
+!       also provides access to the Dimension, Attribute, and Variable module
+!       routines.
+!
+! CATEGORY:
+!       netCDF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE netCDF_Utility
+!
+! MODULES:
+!       Type_Kinds:                Module containing data type kind
+!                                  definitions.
+!
+!       Message_Handler:           Module to define error codes and handle
+!                                  error conditions
+!                                  USEs: FILE_UTILITY module
+!
+!       netcdf:                    Module supplied with the Fortran 90 version
+!                                  of the netCDF libraries (at least v3.5.0).
+!                                  See http://www.unidata.ucar.edu/packages/netcdf
+!
+!       netCDF_Dimension_Utility:  Module containing utility routines
+!                                  for netCDF file dimension access.
+!                                  USEs: TYPE_KINDS module
+!                                        Message_Handler module
+!                                        netcdf module
+!
+!       netCDF_Variable_Utility:   Module containing utility routines
+!                                  for netCDF file variable access.
+!                                  USEs: TYPE_KINDS module
+!                                        Message_Handler module
+!                                        netcdf module
+!
+!       netCDF_Attribute_Utility:  Module containing utility routines
+!                                  for netCDF file attribute access.
+!                                  USEs: TYPE_KINDS module
+!                                        Message_Handler module
+!                                        netcdf module
+!
+! CONTAINS:
+!       Remove_NULL_Characters:  Subroutine to remove NULL characters (ASCII 0)
+!                                from an input string. Strings retrieved from
+!                                netCDF files are terminated with the NULL
+!                                character (\0 in C).
+!
+!       Open_netCDF:             Function to open an existing netCDF data file.
+!                                This is simply a wrapper for NF90_OPEN so that
+!                                the netcdf library module is not required in
+!                                the user calling routine.
+!
+!       Close_netCDF:            Function to close an open netCDF data file.
+!                                This is simply a wrapper for NF90_CLOSE so
+!                                that the netcdf library module is not required
+!                                in the user calling routine.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:   Paul van Delst, CIMSS/SSEC, 20-Nov-2000
+!                     paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE netCDF_Utility
 
@@ -276,3 +355,65 @@ CONTAINS
 END MODULE netCDF_Utility
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/07/26 21:39:05 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: netCDF_Utility.f90,v $
+! Revision 1.2  2006/07/26 21:39:05  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
+! Revision 1.1  2006/06/08 21:47:55  wd20pd
+! Initial checkin.
+!
+! Revision 1.11  2006/05/02 16:58:03  dgroff
+! *** empty log message ***
+!
+! Revision 1.10  2005/01/11 18:50:21  paulv
+! - Updated header documentation.
+!
+! Revision 1.9  2004/12/29 21:03:45  paulv
+! - Removed unused variable declarations.
+!
+! Revision 1.8  2003/05/23 21:11:39  paulv
+! - Overloaded Remove_NULL_Characters() routine for use with scalar and rank-1
+!   arguments.
+!
+! Revision 1.7  2003/02/14 20:53:12  paulv
+! - All character arguments are now TRIMmed in the argument list.
+!
+! Revision 1.6  2003/02/12 20:08:01  paulv
+! - Added netCDF Attribute module to USE list.
+!
+! Revision 1.5  2002/12/23 21:16:50  paulv
+! - Added Put_netCDF_Variable() to PUBLIC list.
+!
+! Revision 1.4  2002/06/14 17:26:01  paulv
+! - Added WRITESHARE Mode to Open_netCDF() function.
+!
+! Revision 1.3  2002/06/07 14:47:00  paulv
+! - Altered Remove_Null_Characters() subroutine to clear the rest of the
+!   input string and exit when the _first_ null character is found.
+!
+! Revision 1.2  2002/06/07 14:33:59  paulv
+! - Added generic OPEN and CLOSE netCDF file functions
+! - Added Remove_Null_Characters() subroutine to strip out the null character
+!   padding that accompanies global attribute reads.
+!
+! Revision 1.1  2002/05/20 18:00:14  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

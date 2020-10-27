@@ -1,3 +1,96 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Combine_TauProfile_Data
+!
+! PURPOSE:
+!       Program to assemble individual TauProfile datafiles into a single
+!       datafile.
+!
+! CATEGORY:
+!       TauProfile
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       File_Utility:           Module containing generic file utility routines
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+!       SensorInfo_Define:      Module defining the SensorInfo data structure and
+!                               containing routines to manipulate it.
+!                               USEs: TYPE_KINDS module
+!                                     FILE_UTILITY module
+!                                     ERROR_HANDLER module
+!
+!       SensorInfo_LinkedList:  Module defining the SensorInfo Linked List
+!                               data structure and containing routines to
+!                               manipulate it.
+!                               USEs: TYPE_KINDS module
+!                                     ERROR_HANDLER module
+!                                     SENSORINFO_DEFINE module
+!
+!       SensorInfo_IO:          Module continaing routines to read and write ASCII
+!                               SensorInfo format files.
+!                               USEs: TYPE_KINDS module
+!                                     FILE_UTILITY module
+!                                     ERROR_HANDLER module
+!                                     SENSORINFO_DEFINE module
+!
+!       TauProfile_Define:      Module defining the TauProfile data structure
+!                               and containing routines to manipulate it.
+!                               USEs: TYPE_KINDS module
+!                                     ERROR_HANDLER module
+!
+!       TauProfile_netCDF_IO:   Module containing routines to read and write
+!                               netCDF format TauProfile files.
+!                               USEs: TYPE_KINDS module
+!                                     ERROR_HANDLER module
+!                                     TAUPROFILE_DEFINE module
+!                                     NETCDF module
+!                                     NETCDF_UTILITY module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  - SensorInfo file
+!               - TauProfile netCDF data files for each angle, profile and
+!                 molecule set.
+!
+!       Output: - TauProfile netCDF data file(s) combining all the angle, profile
+!                 and molecule set data.
+!
+! SIDE EFFECTS:
+!       Any output files that exist are overwritten.
+!
+! RESTRICTIONS:
+!       *ALL* of the required data must be present for the output file(s) to
+!       be successfully written.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 29-Mar-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Combine_TauProfile
 
@@ -31,7 +124,6 @@ PROGRAM Combine_TauProfile
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Combine_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Combine_TauProfile.f90,v 1.4 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -598,3 +690,35 @@ PROGRAM Combine_TauProfile
 END PROGRAM Combine_TauProfile
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.4 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Combine_TauProfile.f90,v $
+! Revision 1.4  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.3  2004/09/14 18:13:43  paulv
+! - Upgraded to Fortran-95
+! - Removed initialization functions.
+! - Replaced SensorInfo list initialization function with New_SensorInfo_List()
+!   function.
+!
+! Revision 1.2  2004/03/30 16:32:56  paulv
+! - Removed some debug statements.
+!
+! Revision 1.1  2004/03/30 16:31:03  paulv
+! Initial checkin.
+!
+!
+!
+!

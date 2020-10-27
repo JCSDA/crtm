@@ -39,7 +39,6 @@ MODULE MWLBL_Transmittance
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Literal constant
   REAL(fp), PARAMETER :: ZERO      =  0.0_fp
   REAL(fp), PARAMETER :: ONE       =  1.0_fp

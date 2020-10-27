@@ -32,7 +32,6 @@ PROGRAM SRF_NEW2OLD
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_NEW2OLD'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

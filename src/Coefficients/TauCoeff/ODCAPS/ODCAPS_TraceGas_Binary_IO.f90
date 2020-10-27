@@ -1,3 +1,74 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_TraceGas_Binary_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write Binary format
+!       ODCAPS_TraceGas files.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_TraceGas_Binary_IO
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       File_Utility:          Module containing generic file utility routines
+!
+!       Message_Handler:         Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       Binary_File_Utility:   Module containing utility routines for "Binary" 
+!                              format datafiles.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    Message_Handler module
+!
+!       ODCAPS_TraceGas_Define:Module defining the ODCAPS_TraceGas data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    Message_Handler module
+!
+! CONTAINS:
+!       Inquire_ODCAPS_TraceGas_Binary: Function to inquire a Binary format
+!                                       ODCAPS_TraceGas file.
+!
+!       Read_ODCAPS_TraceGas_Binary:    Function to read a Binary format
+!                                       ODCAPS_TraceGas file.
+!
+!       Write_ODCAPS_TraceGas_Binary:   Function to write a Binary format
+!                                       ODCAPS_TraceGas file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       User specified Binary format ODCAPS_TraceGas data files for both
+!       input and output.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 03-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_TraceGas_Binary_IO
 
@@ -52,7 +123,6 @@ MODULE ODCAPS_TraceGas_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ODCAPS_TraceGas_Binary_IO.f90,v 5.6 2006/05/03 18:15:01 Ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0

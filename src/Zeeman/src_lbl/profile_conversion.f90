@@ -1,3 +1,117 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       profile_conversion
+!
+! PURPOSE:
+!       Module containing functions and routines to allow for conversion of
+!       atmospheric profile concentration units.
+!
+! CATEGORY:
+!       Profile Conversion
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! CALLING SEQUENCE:
+!       USE profile_conversion
+!
+! MODULES:
+!       type_kinds:               Module containing definitions for kinds of
+!                                 variable types.
+!
+!       fundamental_constants:    Module containing definitions for some
+!                                 fundamental physical constants.
+!
+!       error_handler:            Module containing definitions of simple error
+!                                 codes and error handling routines.
+!
+! CONTAINS:
+!       mw_air:                      Function to calculate the water vapor weighted
+!                                    molecular weight of air.
+!
+!       density:                     Function calculate air density using the ideal
+!                                    gas law.
+!
+!       svp_water:                   Function to calculate the saturation vapor
+!                                    pressure over water.
+!
+!       svp_ice:                     Function to calculate the saturation vapor
+!                                    pressure over ice.
+!
+!       virtual_temperature:         Function to calculate the virtual temperature.
+!
+!       saturation_mixing_ratio:     Funciton calculate the saturation mixing ratio.
+!
+!       rh_to_mr:                    Function to convert water vapor amounts from
+!                                    relative humidity to mixing ratio.
+!
+!       mr_to_rh:                    Function to convert water vapor amounts from
+!                                    mixing ratio to relative humidity.
+!
+!       mr_to_ppmv:                  Function to convert gas amounts from mixing
+!                                    ratio to parts-per-million by volume.
+!
+!       ppmv_to_mr:                  Function to convert gas amounts from parts-per-
+!                                    million by volume to mixing ratio.
+!
+!       ppmv_to_pp:                  Function to convert gas amounts from parts-per-
+!                                    million by volume to partial pressure.
+!
+!       pp_to_ppmv:                  Function to convert gas amounts from partial
+!                                    pressure to parts-per-million by volume.
+!
+!       pressure_to_number_density:  Function to convert gas amounts from pressures
+!                                    in hectoPascals to molecules/m^3.
+!
+!       number_density_to_pressure:  Function to convert gas amounts from number
+!                                    densities in molecules/m^3 to hectoPascals.
+!
+!       ppmv_to_kmol_per_cm2:        Function to convert gas amounts from parts-per-
+!                                    million by volume to kilomoles per cm^2.
+!
+!       kmol_per_cm2_to_ppmv:        Function to convert gas amounts from kilomoles
+!                                    per cm^2 to parts-per-million by volume.
+!
+!       effective_layer_tp:          Function to calculate the effective (or density
+!                                    weighted) temperature and pressure for an
+!                                    atmospheric layer.
+!
+!       geopotential_height:         Function to calculate the geopotential height
+!                                    for an input profile.
+!
+!       create_sublevels:            Function to create the sublevels required to
+!                                    accurately integrate gas amounts within a layer.
+!
+!       integrate_sublevels:         Function to integrate the temperature and gas
+!                                    amounts to produce average layer values.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 01-May-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000, 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 
 MODULE profile_conversion
@@ -5019,3 +5133,187 @@ CONTAINS
 
 END MODULE profile_conversion
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2001/12/19 16:18:15 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: profile_conversion.f90,v $
+! Revision 1.6  2001/12/19 16:18:15  paulv
+! - Added ppmv<->number density conversion functions.
+! - Added ppmv<->ppv conversion factors
+! - Changed parameter named "SCALE" to "SCALE_FACTOR" in DENSITY funciton to
+!   avoid confusion with the SCALE intrinsic.
+! - Appended the kind type parameter, FP_KIND, to the coefficient definitions
+!   in the SVP_WATER and SVP_ICE functions.
+! - Added ICE_TEMPERATURE and MIN_PRESSURE optional arguments to the MR_TO_RH_SCALAR
+!   call in the MR_TO_RH_RANK1 function. Somehow, they got left out.
+! - Added SCALE_FACTOR parameter to MR_TO_PPMV and PPMV_TO_MR functions rather
+!   than using an inline magic number.
+! - Used ppmv<->ppv conversion factors rather than inline magic numbers in the
+!   PPMV_TO_PP and PP_TO_PPMV functions.
+! - Made sure that the N_PER_LAYER argument in CREATE_SUBLEVELS and INTEGRATE_SUBLEVLES
+!   was a valid selection. For CREATE_SUBLEVELS(), this simply involved modifying
+!   the valid number check to allow a value of 1 to be accepted. The INTEGRATE_SUBLEVELS()
+!   function also required a change in how the final numbers of layers is calculated.
+!   Previously, the code was:
+!
+!     n_layers = n_sublevels / n_per_layer
+!
+!   which, when n_per_layer = 1, produced a value of the number of original LEVELS
+!   not LAYERS. This was changed to:
+!
+!     IF ( n_per_layer > 1 ) THEN
+!       n_layers = n_sublevels / n_per_layer
+!     ELSE
+!       n_layers = n_sublevels - 1
+!     END IF
+!
+!   to produce the correct number of layers for n_per_layer = 1.
+!
+! ******************************* IMPORTANT *********************************
+! *************** CHANGES TO INTEGRATE_SUBLEVELS() INTERFACE ****************
+!
+! - Removed calls to MW_AIR() and DENSITY() in INTEGRATE_SUBLEVELS(). These
+!   were replaced by a single call to PRESS_TO_NUMBER_DENSITY(). The density
+!   weighting of the temperature profile is now performed using the density
+!   in molecules.m^-3 rather than kg.m^-3. THIS MEANS THAT THE SPECIFICATION
+!   OF THE WATER VAPOUR AMOUNT IS NO LONGER NEEDED AND HAS BEEN REMOVED FROM
+!   THE FUNCTION INTERFACE. This will cause problems for folks who have integrated
+!   this code into their own, but now the function will provide results even
+!   if water vapour data are not available.
+!
+! - The capability to return the integrated amounts in units of PPMV, rather
+!   than KMOL.CM^-2 has BEEN REMOVED. This conversion was only valid for the
+!   case where the number of sublayers was 1.
+!
+!   The column density, cd, (in kmol.cm^-2) for a given LAYER k, split into N(k)
+!   sublayers, is given by
+!
+!              __N(k)
+!             \                            p(i)
+!     cd(k) =  >  c . dz(i) . ppmv(i) . ----------     .....(1)
+!             /__                        R . T(i)
+!                i=1
+!
+!   where c is a constant, dz is the i'th sublayer's thickness and ppmv is a
+!   simple average of the values for the LEVELs above and below.
+!
+!   Now,
+!
+!        p       nd   <- number density (units e.g. molecules.cm^-3)
+!     ------- = ----
+!      R . T     Na   <- Avogadro's #
+!
+!   Substituting this into (1) gives,
+!
+!                   __N(k)
+!              c   \
+!     cd(k) = ----  >  dz(i) . ppmv(i) . nd(i)
+!              Na  /__
+!                     i=1
+!
+!   If we assume for this set of sublayers that the mixing ratio, ppmv, is
+!   constant (e.g. CO2 (mostly)), then,
+!
+!                         __N(k)
+!              c . ppmv  \
+!     cd(k) = ----------  >  dz(i) . nd(i)     .....(2)
+!                 Na     /__
+!                           i=1
+!
+!   So, from (2), it occurred to me that to be able to convert cd(k) from
+!   kmol.cm^-2 BACK to to ppmv for layer k, then
+!
+!      __N(k)                    __N(k)        __N(k)
+!     \                         \             \
+!      >  dz(i) . nd(i)    ==    >  dz(i)  .   >  nd(i)
+!     /__                       /__           /__
+!        i=1                       i=1           i=1
+!
+!   which is most decidedly NOT true. Unless, of course, N(k) = 1.  The
+!
+!   So, now the only option for integrated absorber amount output units
+!   is kmol.cm^-2.
+!
+! Revision 1.5  2001/12/13 15:58:43  paulv
+! - Made all module parameters explicitly private. This is not required as
+!   there is a "blanket" PRIVATE statement, but it makes me intent clear.
+! - Corrected bug in checking the value of RHOair_km1 in the GEOPOTENTIAL_HEIGHT
+!   and EFFECTIVE_LAYER_TP functions. The value of RHOair, rather than RHOair_km1,
+!   was being checked:
+!
+!   Context code:
+!     ! -- Air density
+!     RHOair_km1 = density_scalar( pressure( 1 ), &
+!                                  temperature( 1 ), &
+!                                  MWair, &
+!                                  message_log = message_log )
+!
+!   Old check:
+!     IF ( RHOair < ZERO ) THEN
+!       ...issue error message
+!
+!   New check
+!     IF ( RHOair_km1 < ZERO ) THEN
+!       ...issue error message
+!
+!   Some compilers didn't return an error as their default action is to
+!   initialise variable to zero (so RHOair < ZERO wouldn't return an error).
+!   Other compilers do not initialise by default so the incorrect test produced
+!   the error message. Classic example of cut-and-paste bug.
+!
+! Revision 1.4  2001/12/12 17:35:57  paulv
+! - Added PRESSURE_TO_NUMBER_DENSITY and NUMBER_DENSITY_TO_PRESSURE functions.
+! - Modified USE fundamental_constants statement to include the STANDARD_TEMPERATURE
+!   and LOSCHMIDT_CONSTANT values.
+! - Replaced some "amgic" numbers (scale factors) in functions with parameterised
+!   values. E.g. replaced 1000 scale factor with parameter G_TO_KG.
+!
+! Revision 1.3  2001/09/05 22:56:15  paulv
+! - Updated documentation.
+!
+! Revision 1.2  2001/09/05 15:09:43  paulv
+! - Changed USE, ONLY definitions to reflect changes in the TYPE_KINDS and
+!   FUNDAMENTAL_CONSTANTS modules. Only fp_kind is used from the TYPE_KINDS
+!   module and all the constants used from the FUNDAMENTAL_CONSTANTS module
+!   no longer have the "D_" prefix as all the constants are now Double.
+! - Input value check in p2k_scalar altered from:
+!     IF ( pressure    < TOLERANCE .OR. &
+!          temperature < TOLERANCE .OR. &
+!          delta_z     < TOLERANCE .OR. &
+!          ppmv        < ZERO      ) THEN
+!   to
+!     IF ( pressure       < TOLERANCE .OR. &
+!          temperature    < TOLERANCE .OR. &
+!          ABS( delta_z ) < TOLERANCE .OR. &
+!          ppmv           < ZERO           ) THEN
+!   This allows profile inputs of either direction (i.e. increasing or
+!   decreasing height) to be processed.
+! - Equation for conversion of ppmv to kmol.cm^-2 changed from
+!     kmol_per_cm2 = SCALE_FACTOR * pressure * delta_z * ppmv / &
+!     !              -----------------------
+!                     ( R0 * temperature )
+!   to
+!     kmol_per_cm2 = SCALE_FACTOR * pressure * ABS( delta_z ) * ppmv / &
+!     !              -----------------------
+!                     ( R0 * temperature )
+!   for the same reason.
+! - Added optional OUTPUT_UNITS argument to the INTEGRATE_SUBLEVELS function.
+!   This allows the user to select the output units as ppmv (default) or
+!   kmol.cm^-2. Previously, kmol.cm^-2 was the default which made for a
+!   relatively useless conversion as not many people use these units or are
+!   familiar with them.
+!
+! Revision 1.1  2001/01/23 20:11:52  paulv
+! Initial checkin.
+!
+!

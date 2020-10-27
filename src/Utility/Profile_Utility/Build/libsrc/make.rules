@@ -6,10 +6,13 @@
 #
 
 .SUFFIXES:
-.SUFFIXES: .fpp .f90 .o
+.SUFFIXES: .F90 .fpp .f90 .o
 .fpp.o:
-	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $<
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $(LIBS) $<
+
+.F90.o:
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(FPPFLAGS) $(LIBS) $<
 
 .f90.o:
-	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $<
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $(LIBS)$<
 

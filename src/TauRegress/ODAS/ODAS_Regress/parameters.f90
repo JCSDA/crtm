@@ -1,3 +1,66 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       parameters
+!
+! PURPOSE:
+!       Module to hold RT model parameter constants
+!
+! CATEGORY:
+!       NCEP RTM
+!
+! CALLING SEQUENCE:
+!       USE Parameters
+!
+! OUTPUTS:
+!
+!       Pseudo-parameters
+!       -----------------
+!
+!       These values are not parameters in the Fortran sense in that they are
+!       defined at run-time based on user inputs but once defined, they are
+!       (or should be) invariant.
+!
+!       MAX_N_CHANNELS:              INTEGER defining the maximum number of
+!                                    instrument channels. This defines the
+!                                    valid channels for the valid satellites
+!                                    that the user has selected.
+!                                    Upon RTM initialisation and destruction
+!                                    the value is set to -1.
+!                                    The value of MAX_N_CHANNELS can only be
+!                                    accessed through its own methods:
+!                                      - Set_Max_n_Channels()
+!                                      - Reset_Max_n_Channels()
+!                                      - Get_Max_n_Channels()
+!       
+!
+! MODULES:
+!       None.
+!
+! CONTAINS:
+!       None.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS@NOAA/NCEP 31-Jul-2000
+!                       pvandelst@ncep.noaa.gov
+!
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE Parameters
 
@@ -171,3 +234,95 @@ CONTAINS
 END MODULE Parameters
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2004/03/02 21:02:19 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: parameters.f90,v $
+! Revision 1.13  2004/03/02 21:02:19  paulv
+! - Renamed MAX_N_LAYER_FUNCTIONS parameter to MAX_N_ORDERS.
+! - Added a maximum secant flux angle parameter.
+!
+! Revision 1.12  2003/02/05 15:37:26  paulv
+! - Removed the definition for the maximum number of absorber layers. No
+!   longer needed in new algorithm
+! - Defined some literal constants for exponential and logarithmic limits.
+!
+! Revision 1.11  2003/02/05 15:06:18  paulv
+! - Updated the number of standard predictors.
+! - Added additional literal constant definitions.
+!
+! Revision 1.10  2002/10/04 21:08:24  paulv
+! - Updated the parameters
+!     MAX_N_PREDICTORS_USED
+!     MAX_N_STANDARD_PREDICTORS
+!   for the new algorithm.
+! - Added the parameter
+!     MAX_N_LAYER_FUNCTIONS
+!   for the new algorithm.
+!
+! Revision 1.9  2001/10/01 20:28:46  paulv
+! - Added "Name" to RCS keyword list.
+!
+! Revision 1.8  2001/08/31 21:09:45  paulv
+! - Added the secant of the maximum solar angle as a parameter. The secant
+!   value was calculated and expressed as an explicit number since Fortran 90
+!   does not allow intrinsics that have other than integer results in a
+!   parameter initialisation expression.
+! - Changed  MAX_SOLAR_ZENITH_ANGLE name to MAX_SOLAR_ANGLE.
+!
+! Revision 1.7  2001/08/16 16:44:14  paulv
+! - Updated documentation.
+! - Changed MAX_N_CHANNELS attributes from PUBLIC to PRIVATE, SAVE. The value
+!   of MAX_N_CHANNELS is now accessed via its public methods:
+!     set_max_n_channels
+!     reset_max_n_channels()
+!    get_max_n_channels()
+! - Added RESET_VALUE parameter.
+! - Removed POINT_333 parameter.
+!
+! Revision 1.6  2001/07/12 16:46:12  paulv
+! - Added PRIVATE statement to prevent definitions in module TYPE_KINDS
+!   being available outside the scope of this module.
+!
+! Revision 1.5  2001/05/29 17:42:55  paulv
+! - Now use TYPE_KINDS module parameter FP_KIND to set the floating point
+!   data type. All REAL declarations are now typed with FP_KIND.
+! - Added direction flags for transmittance calculation.
+!
+! Revision 1.4  2000/11/09 20:32:11  paulv
+! - Removed MAX_N_CHANNELS as a parameter. It is now a "pseudo" parameter
+!   in that it is determined by the number of channels for which coefficients
+!   are defined.
+! - Added some more numerical parameters.
+!
+! Revision 1.3  2000/08/31 19:36:33  paulv
+! - Added documentation delimiters.
+! - Updated documentation headers.
+!
+! Revision 1.2  2000/08/24 15:39:45  paulv
+! - Changed the parameter name that references how many predictors of the
+!   total set to use from MAX_N_PREDICTORS_TO_USE to MAX_N_PREDICTORS_USED.
+!   I felt this would clarify (for me at least) that while the maximum
+!   number of predictors is set, the number that is actually used can be
+!   less than that.
+! - Current maximum number of layers is 100. This is a temporary limit for
+!   testing purposes.
+! - The parameter RECIPROCAL_GRAVITY was removed from this module and placed
+!   in the ABSORBER_PROFILE module where it is used.
+!
+! Revision 1.1  2000/08/08 16:57:21  paulv
+! Initial checkin
+!
+!
+!
+!

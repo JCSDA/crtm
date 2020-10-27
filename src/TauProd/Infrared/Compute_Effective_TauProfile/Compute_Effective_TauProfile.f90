@@ -34,7 +34,6 @@ PROGRAM Compute_Effective_TauProfile
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compute_Effective_TauProfile'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Compute_Effective_TauProfile.f90,v 2.9 2006/08/18 19:55:59 wd20pd Exp $'
 
   REAL( fp_kind ), PARAMETER :: ZERO = 0.0_fp_kind
   REAL( fp_kind ), PARAMETER :: ONE  = 1.0_fp_kind

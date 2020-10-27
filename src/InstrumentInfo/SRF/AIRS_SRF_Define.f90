@@ -1,3 +1,45 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       AIRS_SRF_Define
+!
+! PURPOSE:
+!       Module defining the AIRS SRF data structure and containing routines
+!       to manipulate it.
+!
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! CALLING SEQUENCE:
+!       USE AIRS_SRF_Define
+!
+! MODULES:
+!
+! CONTAINS:
+!
+! EXTERNALS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None known
+!
+! RESTRICTIONS:
+!       None known
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 19-Nov-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE AIRS_SRF_Define
 
@@ -33,7 +75,6 @@ MODULE AIRS_SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

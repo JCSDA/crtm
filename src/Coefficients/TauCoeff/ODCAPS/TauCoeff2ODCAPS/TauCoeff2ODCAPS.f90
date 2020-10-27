@@ -37,7 +37,6 @@ PROGRAM TauCoeff2ODCAPS
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'TauCoeff2ODCAPS'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: TauCoeff2ODCAPS.f90 2170 2008-07-18 16:37:37Z paul.vandelst@noaa.gov $'
 
   ! The instrument types
   INTEGER, PARAMETER :: N_SENSOR_TYPES     = 4

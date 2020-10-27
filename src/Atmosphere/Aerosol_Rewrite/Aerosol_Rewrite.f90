@@ -1,3 +1,67 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Aerosol_Rewrite
+!
+! PURPOSE:
+!       Program to read the aerosol profile data file supplied by Clark Weaver
+!       and output it in the CRTM common Aerosol format.
+!
+! CATEGORY:
+!       CRTM : Atmosphere : I/O
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       Message_Handler:             Module to define simple error codes and
+!                                    handle error conditions
+!                                    USEs: FILE_UTILITY module
+!
+!       CRTM_Aerosol_Define:         Module defining the Aerosol data structure
+!                                    and containing routines to manipulate it.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!
+!       CRTM_Aerosol_Binary_IO:      Module containing routines to read and write
+!                                    Aerosol Binary format files.
+!                                    USEs: TYPE_KINDS module
+!                                          FILE_UTILITY module
+!                                          ERROR_HANDLER module
+!                                          BINARY_FILE_UTILITY module
+!                                          CRTM_AEROSOL_DEFINE module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  unformatted, sequential file provided by Clark
+!
+!       Output: Binary format Atmosphere file.
+!
+! SIDE EFFECTS:
+!       If the output file already exists, it is overwritten.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 17-Mar-2005
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2005 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Aerosol_Rewrite
 
@@ -27,7 +91,6 @@ PROGRAM Aerosol_Rewrite
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME   = 'Aerosol_Rewrite'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Aerosol_Rewrite.f90,v 1.2 2006/05/02 14:58:34 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -310,3 +373,29 @@ PROGRAM Aerosol_Rewrite
 END PROGRAM Aerosol_Rewrite
 
 
+<<<<<<< variant A
+>>>>>>> variant B
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/05/02 14:58:34 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Aerosol_Rewrite.f90,v $
+! Revision 1.2  2006/05/02 14:58:34  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.1  2005/03/28 16:20:20  paulv
+! Initial checkin.
+!
+!
+!
+!
+======= end

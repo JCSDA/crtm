@@ -29,7 +29,6 @@ PROGRAM Test_ChannelProperties
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Test_ChannelProperties'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Test_ChannelProperties.f90,v 1.4 2006/06/15 14:08:12 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: OUTPUT_FILE = 'L2.ChannelProperties.Test'
 
 

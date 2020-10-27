@@ -15,7 +15,6 @@ PROGRAM CloudCoeff_R2_to_R3
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CloudCoeff_R2_to_R3'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   INTEGER :: Error_Status
   CHARACTER(5000) :: Title, Comment

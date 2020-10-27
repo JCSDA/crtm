@@ -2,20 +2,22 @@ ACCoeff_Binary_IO.o : ACCoeff_Binary_IO.f90 ACCoeff_Define.o Binary_File_Utility
 ACCoeff_Define.o : ACCoeff_Define.f90 SensorInfo_Parameters.o Subset_Define.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 ADA_Module.o : ADA_Module.f90 CRTM_Utility.o Message_Handler.o Type_Kinds.o CRTM_Parameters.o RTV_Define.o 
 AerosolCoeff_Binary_IO.o : AerosolCoeff_Binary_IO.f90 AerosolCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
-AerosolCoeff_Define.o : AerosolCoeff_Define.f90 Spectral_Units_Conversion.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+AerosolCoeff_netCDF_IO.o : AerosolCoeff_netCDF_IO.f90 AerosolCoeff_Define.o Message_Handler.o File_Utility.o
+AerosolCoeff_Define.o : AerosolCoeff_Define.f90 Spectral_Units_Conversion.o String_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 AOvar_Define.o : AOvar_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 ASvar_Define.o : ASvar_Define.f90 CRTM_Interpolation.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Azimuth_Emissivity_F6_Module.o : Azimuth_Emissivity_F6_Module.f90 Search_Utility.o FitCoeff_Define.o Type_Kinds.o 
 Azimuth_Emissivity_Module.o : Azimuth_Emissivity_Module.f90 FitCoeff_Define.o Type_Kinds.o 
 Binary_File_Utility.o : Binary_File_Utility.f90 Endian_Utility.o Message_Handler.o File_Utility.o Type_Kinds.o 
-CloudCoeff_Binary_IO.o : CloudCoeff_Binary_IO.f90 CloudCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o 
+CloudCoeff_Binary_IO.o : CloudCoeff_Binary_IO.f90 CloudCoeff_Define.o Binary_File_Utility.o Message_Handler.o File_Utility.o
+CloudCoeff_netCDF_IO.o : CloudCoeff_netCDF_IO.f90 CloudCoeff_Define.o Message_Handler.o File_Utility.o 
 CloudCoeff_Define.o : CloudCoeff_Define.f90 Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Common_RTSolution.o : Common_RTSolution.f90 CRTM_RTSolution_Define.o CRTM_Utility.o CRTM_SfcOptics_Define.o CRTM_SfcOptics.o RTV_Define.o CRTM_AtmOptics.o CRTM_AtmOptics_Define.o CRTM_SpcCoeff.o CRTM_Planck_Functions.o CRTM_GeometryInfo_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o CRTM_Parameters.o Type_Kinds.o 
 Compare_Float_Numbers.o : Compare_Float_Numbers.f90 Type_Kinds.o 
 CRTM_Adjoint_Module.o : CRTM_Adjoint_Module.f90 RTV_Define.o ASvar_Define.o CSvar_Define.o AOvar_Define.o CRTM_CloudCover_Define.o CRTM_Planck_Functions.o NLTECoeff_Define.o ACCoeff_Define.o CRTM_NLTECorrection.o CRTM_AerosolCoeff.o CRTM_CloudCoeff.o CRTM_AncillaryInput_Define.o CRTM_MoleculeScatter.o CRTM_AntennaCorrection.o CRTM_RTSolution.o CRTM_SfcOptics.o CRTM_SfcOptics_Define.o CRTM_AtmOptics.o CRTM_CloudScatter.o CRTM_AerosolScatter.o CRTM_AtmOptics_Define.o CRTM_AtmAbsorption.o CRTM_Predictor.o CRTM_Predictor_Define.o CRTM_GeometryInfo.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
-CRTM_AerosolCoeff.o : CRTM_AerosolCoeff.f90 AerosolCoeff_Binary_IO.o AerosolCoeff_Define.o Message_Handler.o 
-CRTM_Aerosol_Define.o : CRTM_Aerosol_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
-CRTM_AerosolScatter.o : CRTM_AerosolScatter.f90 ASvar_Define.o CRTM_AtmOptics_Define.o CRTM_Interpolation.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_AerosolCoeff.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
+CRTM_AerosolCoeff.o : CRTM_AerosolCoeff.f90 AerosolCoeff_netCDF_IO.o AerosolCoeff_Binary_IO.o AerosolCoeff_Define.o Message_Handler.o 
+CRTM_Aerosol_Define.o : CRTM_Aerosol_Define.f90 CRTM_AerosolCoeff.o AerosolCoeff_Define.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
+CRTM_AerosolScatter.o : CRTM_AerosolScatter.f90 ASvar_Define.o CRTM_AtmOptics_Define.o CRTM_Interpolation.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_AerosolCoeff.o CRTM_SpcCoeff.o CRTM_Parameters.o String_Utility.o Message_Handler.o Type_Kinds.o 
 CRTM_AncillaryInput_Define.o : CRTM_AncillaryInput_Define.f90 Zeeman_Input_Define.o SSU_Input_Define.o 
 CRTM_AntennaCorrection.o : CRTM_AntennaCorrection.f90 CRTM_SpcCoeff.o CRTM_RTSolution_Define.o CRTM_GeometryInfo_Define.o CRTM_Parameters.o Type_Kinds.o 
 CRTM_AOD_Module.o : CRTM_AOD_Module.f90 ASvar_Define.o CRTM_AerosolCoeff.o CRTM_RTSolution_Define.o CRTM_AerosolScatter.o CRTM_AtmOptics_Define.o CRTM_Options_Define.o CRTM_ChannelInfo_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o 
@@ -25,7 +27,7 @@ CRTM_AtmOptics.o : CRTM_AtmOptics.f90 AOvar_Define.o CRTM_AtmOptics_Define.o CRT
 CRTM_Atmosphere_Define.o : CRTM_Atmosphere_Define.f90 CRTM_Aerosol_Define.o CRTM_Cloud_Define.o CRTM_Parameters.o Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_Atmosphere.o : CRTM_Atmosphere.f90 iAtm_Define.o CRTM_Model_Profiles.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
 CRTM_ChannelInfo_Define.o : CRTM_ChannelInfo_Define.f90 Sort_Utility.o SensorInfo_Parameters.o CRTM_Parameters.o File_Utility.o Message_Handler.o 
-CRTM_CloudCoeff.o : CRTM_CloudCoeff.f90 CloudCoeff_Binary_IO.o CloudCoeff_Define.o Message_Handler.o 
+CRTM_CloudCoeff.o : CRTM_CloudCoeff.f90 CloudCoeff_netCDF_IO.o CloudCoeff_Binary_IO.o CloudCoeff_Define.o Message_Handler.o 
 CRTM_CloudCover_Define.o : CRTM_CloudCover_Define.f90 CRTM_Cloud_Define.o CRTM_Atmosphere_Define.o CRTM_Parameters.o Compare_Float_Numbers.o Message_Handler.o File_Utility.o Type_Kinds.o 
 CRTM_Cloud_Define.o : CRTM_Cloud_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 CRTM_CloudScatter.o : CRTM_CloudScatter.f90 CSvar_Define.o CRTM_AtmOptics_Define.o CRTM_Interpolation.o CRTM_GeometryInfo_Define.o CRTM_Atmosphere_Define.o CRTM_CloudCoeff.o CRTM_SpcCoeff.o CRTM_Parameters.o Message_Handler.o Type_Kinds.o 
@@ -168,7 +170,7 @@ Type_Kinds.o : Type_Kinds.f90
 UnitTest_Define.o : UnitTest_Define.f90 Compare_Float_Numbers.o Type_Kinds.o 
 Zeeman_Input_Define.o : Zeeman_Input_Define.f90 Binary_File_Utility.o File_Utility.o Compare_Float_Numbers.o Message_Handler.o Type_Kinds.o 
 Zeeman_Utility.o : Zeeman_Utility.f90 File_Utility.o Message_Handler.o Type_Kinds.o 
-CRTM_Module.o : CRTM_Module.fpp CRTM_Version.inc CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
+CRTM_Module.o : CRTM_Module.F90 CRTM_Version.inc CRTM_AOD_Module.o CRTM_K_Matrix_Module.o CRTM_Adjoint_Module.o CRTM_Tangent_Linear_Module.o CRTM_Forward_Module.o CRTM_LifeCycle.o SensorInfo_Parameters.o CRTM_Parameters.o CRTM_IRlandCoeff.o CRTM_AncillaryInput_Define.o CRTM_Options_Define.o CRTM_RTSolution_Define.o CRTM_ChannelInfo_Define.o CRTM_Geometry_Define.o CRTM_Surface_Define.o CRTM_Atmosphere_Define.o Message_Handler.o File_Utility.o Type_Kinds.o 
 CRTM_Version.o : CRTM_Version.inc 
 FitCoeff_Destroy.o : FitCoeff_Destroy.inc 
 FitCoeff_Equal.o : FitCoeff_Equal.inc 

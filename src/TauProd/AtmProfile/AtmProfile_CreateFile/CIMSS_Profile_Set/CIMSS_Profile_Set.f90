@@ -1,3 +1,53 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CIMSS_Profile_Set
+!
+! PURPOSE:
+!       Module containing the CIMSS atmospheric profile dependent set data 
+!       definitions and access routines
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! CALLING SEQUENCE:
+!       USE CIMSS_Profile_Set
+!
+! MODULES:
+!       Type_Kinds:         Module containing definitions for kinds
+!                           of variable types.
+!
+!       Message_Handler:      Module to define simple error codes and
+!                           handle error conditions
+!                           USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Load_CIMSS_Profile: Function to load a requested atmospheric profile
+!                           from the CIMSS dependent set.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 12-Jul-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE CIMSS_Profile_Set
 
@@ -31,7 +81,6 @@ MODULE CIMSS_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! -- Private dimensions.
   ! -- Note the difference between N_PROFILE_MODEL_LEVELS and N_MODEL_LEVELS.
@@ -2191,3 +2240,42 @@ CONTAINS
 END MODULE CIMSS_Profile_Set
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: CIMSS_Profile_Set.f90,v $
+! Revision 2.3  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 2.2  2005/01/04 22:05:05  paulv
+! - Cosmetic changes only.
+!
+! Revision 2.1  2002/07/22 17:08:58  paulv
+! - Changed interface to use pointer arrays.
+!
+! Revision 1.4  2002/07/18 18:33:19  paulv
+! - Correced bug in temperature splicing code.
+!
+! Revision 1.3  2002/07/15 21:14:24  paulv
+! - Altered interface so that data is passed out in the argument list rather than
+!   via module shared data.
+!
+! Revision 1.2  2002/07/15 02:28:14  paulv
+! - Completed profile load.
+! - Added upper atmosphere splicing from Hal's code.
+!
+! Revision 1.1  2002/07/12 21:37:05  paulv
+! Initial checkin. Incomplete.
+!
+!
+!

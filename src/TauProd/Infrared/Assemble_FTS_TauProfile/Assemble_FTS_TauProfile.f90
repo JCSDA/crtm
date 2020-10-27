@@ -46,7 +46,6 @@ PROGRAM Assemble_FTS_TauProfile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Assemble_FTS_TauProfile'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER :: PATH = 'TauProfile_data/'
   INTEGER,      PARAMETER :: SET = 1
   

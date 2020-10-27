@@ -29,6 +29,126 @@ CONTAINS
 
 
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_AMSRE_SNOW
+!
+! PURPOSE:
+!       Subroutine to simulate microwave emissivity over snow conditions from AMSRE measurements
+!
+! REFERENCES:
+!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+!
+! CATEGORY:
+!       CRTM : Surface : MW SNOW EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL NESDIS_AMSRE_SNOW
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         User_Angle               The angle value user defines (in degree).
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         TV[1:6]                  AMSRE V-POL Brightness temperatures at six frequencies.
+!
+!         tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
+!         tv(2):                                                      10.65 GHz
+!         tv(3):                                                      18.7  GHz
+!         tv(4):                                                      23.8  GHz
+!         tv(5):                                                      36.5  GHz
+!         tv(6):                                                      89    GHz
+!
+!         TH[1:6]                  AMSRE H-POL Brightness temperatures at six frequencies.
+!
+!         th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
+!         th(2):                                                        10.65 GHz
+!         th(3):                                                        18.7  GHz
+!         th(4):                                                        23.8  GHz
+!         th(5):                                                        36.5  GHz
+!         th(6):                                                        89    GHz
+!
+!         Ts                       The surface temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Tsnow                    The snow temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! INTERNAL ARGUMENTS:
+!
+!         Satellite_Angle          The angle values of AMSRE measurements (in degree).
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!
+! CALLS:
+!
+!       AMSRE_Snow_TB   : Subroutine to calculate the snow microwave emissivity from AMSRE TB
+!
+!       AMSRE_Snow_TBTS : Subroutine to calculate the snow microwave emissivity from AMSRE TB & TS
+!
+!
+! PROGRAM HISTORY LOG:
+!   2004-09-20  yan,b -  implement the algorithm for snow emissivity
+!   2005-05-29  yan,b -  modify the code for CRTM
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
  subroutine NESDIS_AMSRE_SNOW(Frequency,                              & ! INPUT
                               User_Angle,                             & ! INPUT

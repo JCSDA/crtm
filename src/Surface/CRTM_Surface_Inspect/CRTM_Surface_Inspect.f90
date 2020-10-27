@@ -29,7 +29,6 @@ PROGRAM CRTM_Surface_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CRTM_Surface_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

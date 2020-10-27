@@ -1,3 +1,64 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       AIRS_SRF_netCDF_Reader
+!
+! PURPOSE:
+!       Module to provide read access to the AIRS SRF netCDF data file.
+!
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! CALLING SEQUENCE:
+!       USE AIRS_SRF
+!
+! MODULES:
+!       Type_Kinds:               Module containing definitions for kinds
+!                                 of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                                 handle error conditions
+!                                 USEs: FILE_UTILITY module
+!
+!       AIRS_SRF_Define:          Module defining the SRF data structure and
+!                                 containing routines to manipulate it.
+!                                 USEs: TYPE_KINDS module
+!                                       Message_Handler module
+!
+!       netcdf:                   Module supplied with the Fortran 90 version
+!                                 of the netCDF libraries (at least v3.5.0).
+!                                 See http://www.unidata.ucar.edu/packages/netcdf
+!
+!       netCDF_Utility:           Module containing utility routines for
+!                                 netCDF file access.
+!                                 USEs: NETCDF_DIMENSION_UTILITY module
+!                                       NETCDF_ATTRIBUTE_UTILITY module
+!                                       NETCDF_VARIABLE_UTILITY module
+!
+! CONTAINS:
+!       Inquire_AIRS_SRF_netCDF:  Function to inquire the netCDF AIRS SRF
+!                                 format file.
+!
+!       Read_AIRS_SRF_netCDF:     Function to extract SRF data from the AIRS
+!                                 SRF netCDF file.
+!
+! EXTERNALS:
+!       None.
+!
+! InetCDFLUDE FILES:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 19-Nov-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE AIRS_SRF_netCDF_Reader
 
@@ -38,7 +99,6 @@ MODULE AIRS_SRF_netCDF_Reader
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1

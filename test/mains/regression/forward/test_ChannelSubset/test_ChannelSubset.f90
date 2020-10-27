@@ -108,7 +108,6 @@ PROGRAM test_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -124,7 +123,6 @@ PROGRAM test_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error subsetting channels for '//TRIM(Sensor_Id)
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -152,7 +150,6 @@ PROGRAM test_ChannelSubset
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -162,7 +159,6 @@ PROGRAM test_ChannelSubset
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere structures'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -203,7 +199,6 @@ PROGRAM test_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM Forward Model'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -223,25 +218,6 @@ PROGRAM test_ChannelSubset
   END DO
   ! ============================================================================
 
-
-
-
-  ! ============================================================================
-  ! 7. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
-
-
-
-
   ! ============================================================================
   ! 8. **** COMPARE RTSolution RESULTS TO SAVED VALUES ****
   !
@@ -260,7 +236,6 @@ PROGRAM test_ChannelSubset
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating RTSolution save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -273,7 +248,6 @@ PROGRAM test_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring RTSolution save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -282,7 +256,6 @@ PROGRAM test_ChannelSubset
   IF ( n_l /= n_Channels .OR. n_m /= N_PROFILES ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -292,7 +265,6 @@ PROGRAM test_ChannelSubset
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating RTSolution saved data array'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -302,7 +274,6 @@ PROGRAM test_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading RTSolution save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -314,21 +285,29 @@ PROGRAM test_ChannelSubset
   ELSE
     Message = 'RTSolution results are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current RTSolution results to file
     rts_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.RTSolution.bin'
     Error_Status = CRTM_RTSolution_WriteFile( rts_File, RTSolution, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary RTSolution save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
     STOP 1
   END IF
   ! ============================================================================
 
 
-
+  ! ============================================================================
+  ! 7. **** DESTROY THE CRTM ****
+  !
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
+  ! ============================================================================
 
   ! ============================================================================
   ! 9. **** CLEAN UP ****
@@ -348,6 +327,5 @@ CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM test_ChannelSubset

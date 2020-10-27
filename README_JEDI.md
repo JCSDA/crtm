@@ -1,21 +1,20 @@
 README_JEDI.md
 
-Created on October  7, 2020  
-Updated on October 26, 2020
+Created October 23, 2020
+Updated October 27, 2020
+Released October 28, 2020
 
 The README.md file contains a lot of general information about this repository and the legacy build system based on autotools.
 
-CRTM v2.3_jedi  JEDI environment build instructions
+CRTM REL-2.4.0 JEDI environment build instructions
 =========================================================
 
 Preamble
 --------
 
-CRTM v2.3_jedi release (`tag: v2.3_jedi`)  
+CRTM v2.4.0 release (`REL-2.4.0`)  
 
-This is a fully functional release of CRTM v2.3_jedi.  
-
-"Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
+This is a fully functional release of CRTM v2.4.0. 
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
@@ -48,20 +47,20 @@ Contents
 
 
 Configuration, building, and testing the library
-================================================	
-JCSDA CRTM v2.3_jedi Build Instructions
-	
+================================================  
+JCSDA CRTM v2.4.x Build Instructions
+  
 The CRTM **development** repository directory structure looks like:
 
 <pre>
  .
   ├── LICENSE  (CC0 license)
-	├── COPYING  (CC0 legal document)
+  ├── COPYING  (CC0 legal document)
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
   ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory "manually")
-	├── CMakeLists.txt           (top-level configuration file for ecbuild)
+  ├── CMakeLists.txt           (top-level configuration file for ecbuild)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -112,22 +111,22 @@ Note By default, the "`fix/`" directory is not provided in the CRTM.  It is obta
 
 **Configuration**
     git clone https://github.com/JCSDA/crtm      (you've probably done this already)  
-		cd crtm/
-		git fetch
-		git pull
+    cd crtm/
+    git fetch
+    git pull
     sh Get_CRTM_Binary_Data.sh
 
 **Build Instructions**
 <pre>
     mkdir build
     cd build
-		ecbuild pathtocrtm  
+    ecbuild pathtocrtm  
 </pre>
 where `pathrocrtm` is where the `crtm/` diretory is located.  In this example if you're in the `crtm/build` directory, typing `ecbuild ..` will work.
 
 <pre>
     make -j8     (-j8 means 8 parallel make processes, adjust the number to your machine)
-		ctest
+    ctest
 </pre>
 This should compile all of the source codes, create a libcrtm.so file, compile the tests, and finally run the various ctests.  If you're making changes to code, simply running the make command will detect your code changes and rebuild everything for you.  
 
@@ -140,8 +139,8 @@ Uninstalling the library
 ------------------------
 
 To "uninstall" the library (assuming you haven't moved the installation directory contents somewhere else) you can type:
-	  cd build/
-		rm -rf *  (make sure you do this in the build/ directory where you ran `ecbuild`)
+    cd build/
+    rm -rf *  (make sure you do this in the build/ directory where you ran `ecbuild`)
 
 Cleaning Up
 -----------

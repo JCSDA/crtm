@@ -105,7 +105,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -129,7 +128,6 @@ PROGRAM test_Simple
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -140,7 +138,6 @@ PROGRAM test_Simple
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere FWD structures'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! The input TANGENT-LINEAR structure
@@ -148,7 +145,6 @@ PROGRAM test_Simple
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm_TL)) ) THEN
     Message = 'Error allocating CRTM Atmosphere TL structures'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -214,7 +210,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM Tangent-Linear Model'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -242,18 +237,6 @@ PROGRAM test_Simple
 
 
 
-  ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
 
 
 
@@ -276,7 +259,6 @@ PROGRAM test_Simple
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating RTSolution_TL save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -289,7 +271,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring RTSolution_TL save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -298,7 +279,6 @@ PROGRAM test_Simple
   IF ( n_l /= n_Channels .OR. n_m /= N_PROFILES ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -308,7 +288,6 @@ PROGRAM test_Simple
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating RTSolution_TL saved data array'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -318,7 +297,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading RTSolution_TL save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -330,21 +308,28 @@ PROGRAM test_Simple
   ELSE
     Message = 'RTSolution_TL results are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current RTSolution results to file
     rts_File = TRIM(Sensor_Id)//'.RTSolution_TL.bin'
     Error_Status = CRTM_RTSolution_WriteFile( rts_File, RTSolution_TL, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary RTSolution_TL save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
     STOP 1
   END IF
   ! ============================================================================
 
-
-
+  ! ============================================================================
+  ! 8. **** DESTROY THE CRTM ****
+  !
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
+  ! ============================================================================
 
   ! ============================================================================
   ! 10. **** CLEAN UP ****
@@ -365,6 +350,5 @@ CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM test_Simple

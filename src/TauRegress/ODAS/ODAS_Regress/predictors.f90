@@ -1,3 +1,77 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Predictors
+!
+! PURPOSE:
+!       Module containing routines to compute the predictor profiles for the
+!       transmittance calculation.
+!
+! CATEGORY:
+!       NCEP RTM
+!
+! CALLING SEQUENCE:
+!       USE Predictors
+!
+! OUTPUTS:
+!       None.
+!
+! MODULES:
+!       Type_Kinds:      Module containing data type kind definitions.
+!
+!       Parameters:      Module containing parameter definitions for the
+!                        RT model.
+!                        USEs: TYPE_KINDS module
+!
+!       Error_Handler:   Module to define error codes and handle error
+!                        conditions.
+!                        USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Compute_Predictors:             PUBLIC subroutine to calculate the
+!                                       predictor profiles.
+!
+!       Compute_Predictors_TL:          PUBLIC subroutine to calculate the 
+!                                       tangent-linear predictor profiles.
+!
+!       Compute_Predictors_AD:          PUBLIC subroutine to calculate the
+!                                       adjoint of the predictor profiles.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None known.
+!
+! RESTRICTIONS:
+!       None.
+!
+! COMMENTS:
+!       All of the array documentation lists the dimensions by a single letter.
+!       Throughout the RTM code these are:
+!         I: Array dimension is of I predictors (Istd and Iint are variants).
+!         J: Array dimension is of J absorbing species.
+!         K: Array dimension is of K atmospheric layers.
+!         L: Array dimension is of L spectral channels.
+!         M: Array dimension is of M profiles.
+!       Not all of these dimensions will appear in every module.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 11-Jul-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!       Updated predictor algorithm by Yoshihiko Tahara
+!                                      UCAR/JMA visiting scientent
+!                                      NOAA/NCEP/EMC
+!                                      Yoshihiko.Tahara@noaa.gov
+!
+!  Copyright (C) 2000, 2002 Paul van Delst, Yoshihiko Tahara
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE Predictors
 
@@ -1457,3 +1531,189 @@ goto 100
 END MODULE predictors
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2003/07/08 19:18:24 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: predictors.f90,v $
+! Revision 3.3  2003/07/08 19:18:24  paulv
+! - Fixed bug in initialising the Absorber_2(0) element (and it's TL and AD).
+!   In the past, all 0'th level values were initialised to zero, but this is
+!   no longer the case so
+!       Absorber_2( 0 ) = ZERO
+!     is changed to
+!       Absorber_2( 0 ) = Absorber(0) * Absorber(0)
+!   and
+!       Absorber_2_TL( 0 ) = TWO*Absorber(0) * Absorber_TL(0)
+! - The TL and AD form of Absorber_2 is now used in the integrated predictor
+!   routines to ensure that they are consistent with the FWD routine.
+! - Many changes made in an attempt to speed up the predictor routines:
+!     Compute_Int_Predictors_AD():
+!     ----------------------------
+!     o All the arrays are now accessed in ascending index order. Previously
+!       they were accessed in descending order based solely on the TL transpose
+!       equations
+!     o Predictor_AD argument is now INTENT( IN ) rather than INTENT( IN OUT )
+!       as they are no longer zeroed in the routines. Not zeroing out the
+!       Predictor_AD values after they were used saved time.
+!     o The local forward and adjoint variables are now being initialised only as
+!       necessary. Before the initialisations looked like:
+!         s( :, 0: )    = ZERO
+!         x_AD( :, 0: ) = ZERO
+!       and now the following is done:
+!         s( :, 0 )           = ZERO
+!         x_AD( :, n_Layers ) = ZERO
+!       This saves a lot of time as the entire profile does not have to be
+!       zeroed.
+!     o The initialisation for x_AD() works because rather than doing
+!         x_AD( i, k-1 ) = x_AD( i, k-1 ) + Predictor_AD( i, k )
+!       in the predictor adjoint summation loop, the following is done:
+!         x_AD( i, k-1 ) = Predictor_AD( i, k )
+!       since the "k-1"th x_AD value is only accumulated in the next k-iteration.
+!     o Added scalar variables to hold common multiplier and addition values
+!       for the intermediate sum adjoint calculation.
+!     o Rearranged the adjoint calculation for the multiplicative factors to
+!       do as much as possible in a single assignment to an array value.
+!     Compute_Std_Predictors_AD():
+!     ----------------------------
+!     o All the arrays are now accessed in ascending index order. Previously
+!       they were accessed in descending order based solely on the TL transpose
+!       equations. This sped up this routine by around 15% (depending on how
+!       the code is profiled.)
+!
+! Revision 3.2  2003/06/30 16:33:28  paulv
+! - Removed use of pointers in aliasing the predictor arrays for the standard
+!   and integrated computations. Now passing the actual array slices.
+! - Updated documentation.
+!
+! Revision 3.1  2003/02/05 15:05:30  paulv
+! - Corrected bug in standard predictor adjoint calculation.
+!
+! Revision 3.0  2003/02/04 21:14:56  paulv
+! - New release.
+!
+! Revision 2.11  2001/10/01 20:28:47  paulv
+! - Added "Name" to RCS keyword list.
+!
+! Revision 2.10  2001/08/16 16:45:05  paulv
+! - Updated documentation
+!
+! Revision 2.9  2001/07/12 18:22:33  paulv
+! - Added more robust code for calculating the powers of the inverse absorber
+!   amount. The squares, cubes and fourth powers of absorber amounts were
+!   causing floating point underflows which, when used in a denominator were
+!   greatly inflating any precision errors. So, the solution I adopted was,
+!   prior to each inverse calculation, to check the value of the absorber
+!   quantity (e.g. absorber**2, absorber**3, or absorber**4). If they are less
+!   than a tolerance value (defined using the EPSILON intrinsic) then their
+!   inverse is set to zero - as are any higher power inverses. This prevents
+!   too small values from being used.
+!   This is mostly a problem for water vapor near at the top of the defined
+!   atmosphere, although some low ozone values can be found (rarely).
+! - Changed all loop initialisation to vector expressions, e.g. from
+!     DO i = 1, n_predictors
+!       s( i )       = ZERO
+!       s_TL( i )    = ZERO
+!       x_TL( i, 0 ) = ZERO
+!     END DO
+!   to
+!     s( : )       = ZERO
+!     s_TL( : )    = ZERO
+!     x_TL( :, 0 ) = ZERO
+! - Corrected bug in definition of the intermediate summation array in
+!   COMPUTE_INT_PREDICTORS_AD from
+!     REAL( fp_kind ), DIMENSION( SIZE( predictor_AD, DIM=1 ), SIZE( pressure ) ) :: s
+!   to
+!     REAL( fp_kind ), DIMENSION( SIZE( predictor_AD, DIM=1 ), 0:SIZE( pressure ) ) :: s
+! - Added initialisation of absorber_2( 0 )
+!     absorber_2( 0 ) = ZERO
+!   in COMPUTE_INT_PREDICTORS_AD.
+! - Corrected bug in intermediate summation loop. The sums were being calculated
+!   like:
+!     DO k = 1, n_layers
+!       s( i, k ) = s( i, k ) + .......
+!   rather than:
+!     DO k = 1, n_layers
+!       s( i, k ) = s( i, k-1 ) + .......
+!   hence the need for the redefintion of s(K) to s(0:K).
+!
+! Revision 2.8  2001/05/29 17:51:34  paulv
+! - Corrected some documentation errors.
+!
+! Revision 2.7  2001/05/04 14:39:43  paulv
+! - Removed shared predictor arrays from module.
+! - Now use TYPE_KINDS module parameter FP_KIND to set the floating point
+!   data type.
+! - Added adjoint form of routines to module. Use of NO_STANDARD optional
+!   keyword in COMPUTE_PREDICTORS_AD has not yet been looked into.
+! - Changed names of PRIVATE integrated predictor routines from
+!   COMPUTE_STARD_PREDICTORS to COMPUTE_INT_PREDICTORS. The difference between
+!   "stard" and "std" is small enough to cause mild confusion when scanning
+!   the code.
+! - Changed references to parameter maximums to input array sizes, e.g.
+!     j_absorber_loop: DO j = 1, MAX_N_ABSORBERS
+!   becomes
+!     j_absorber_loop: DO j = 1, SIZE( absorber, DIM = 2 )
+! - Shortened variable names in standard predictor routines, e.g. p instead
+!   of pressure. These calcs are simple enough that short names are clear.
+! - ABSORBER arrays are now dimensioned as 0:K. This eliminates the
+!   need for using an ABSORBER_KM1 variable in computing the absorber layer
+!   difference, D_ABSORBER, and average, AVE_ABSORBER where the layer loop
+!   always goes from 1 -> n_layers.
+! - Simplified COMPUTE_INT_PREDICTORS_TL. This is a combination of the
+!   change in the absorber array dimensioning and just thinking about it
+!   for a while.
+! - Updated header documentation. Adjoint routines not yet fully documented.
+!
+! Revision 2.6  2001/04/03 20:02:56  paulv
+! - Commented out shared predictor data arrays. Predictor arrays are now
+!   passed arguments.
+! - Removed reference to profile number. Calls to routines are now a simgle
+!   profile passed per call.
+! - Removed planned allocation of predictor arrays.
+! - Correted bug in 1st and 2nd order predictor calculation.
+!
+! Revision 2.5  2001/01/24 20:14:21  paulv
+! - Latest test versions.
+!
+! Revision 2.4  2000/11/09 20:36:07  paulv
+! - Added tangent linear form of routines in this module.
+! - Changed names of PRIVATE routines used to compute predictors. The
+!   appearance of "standard" and "integrated" in routine names have been
+!   replaced with "std" and "stard" respectively.
+! - Initial setup in place for dynamic allocation of predictor arrays. These
+!   arrays are still statically allocated with parameterised dimensions.
+!
+! Revision 2.3  2000/08/31 19:36:33  paulv
+! - Added documentation delimiters.
+! - Updated documentation headers.
+!
+! Revision 2.2  2000/08/24 16:43:29  paulv
+! - Added optional NO_STANDARD argument to COMPUTE_PREDICTORS subprogram.
+!   Using this argument prevents the standard predictors (which are angle
+!   independent) from being recalculated when only the path angle has changed
+!   in the calling procedure.
+! - Updated module and subprogram documentation.
+!
+! Revision 2.1  2000/08/21 21:03:16  paulv
+! - Standard and integrated predictor sets calculated in separate
+!   functions.
+! - Predictor values saved in linear store. Simplifies application of
+!   predictors when calculating absorption coefficients.
+! - Wrapper function "compute_predictors" added to simplify predictor
+!   calculation.
+!
+! Revision 1.1  2000/08/08 16:34:17  paulv
+! Initial checkin
+!
+!
+!

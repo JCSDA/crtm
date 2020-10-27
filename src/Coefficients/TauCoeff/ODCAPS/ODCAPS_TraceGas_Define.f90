@@ -1,3 +1,126 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_TraceGas_Define
+!
+! PURPOSE:
+!       Module defining the ODCAPS trace gas data structure and containing routines to 
+!       manipulate it.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_TraceGas_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_ODCAPS_TraceGas:    Function to test the association status
+!                                      of the pointer members of a ODCAPS_TraceGas
+!                                      structure.
+!
+!       Destroy_ODCAPS_TraceGas:       Function to re-initialize a ODCAPS_TraceGas
+!                                      structure.
+!
+!       Allocate_ODCAPS_TraceGas:      Function to allocate the pointer members
+!                                      of a ODCAPS_TraceGas structure.
+!
+!       Assign_ODCAPS_TraceGas:        Function to copy a valid ODCAPS_TraceGas structure.
+!
+!
+!
+! DERIVED TYPES:
+!       ODCAPS_TraceGas_type:   Definition of the public ODCAPS_TraceGas data structure. Fields
+!                        are...
+!
+!         n_Layers:            Maximum layers for the aborber coefficients.
+!                              "Ilayers" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Predictors:        Number of predictors used in the
+!                              gas absorption regression.
+!                              "Iuse" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Channels:          Total number of spectral channels.
+!                              "L" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Absorber_ID:         A flag value used to identify the individual
+!                              or collective molecular species for which
+!                              the gas absorption coefficients were
+!                              generated.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar 
+!
+!         Channel_Index:       This is the sensor channel number associated
+!                              with the data in the coefficient file. Helps
+!                              in identifying channels where the numbers are
+!                              not contiguous (e.g. AIRS).
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Trace_Coeff:         Array containing the gas absorption
+!                              model coefficients.
+!                              UNITS:      Variable
+!                              TYPE:       REAL( Double )
+!                              DIMENSION:  Iuse x Ilayer x L
+!                              ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the ODCAPS_TraceGas_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user initialize,
+!       destroy, allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 03-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_TraceGas_Define
 
@@ -62,7 +185,6 @@ MODULE ODCAPS_TraceGas_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_TraceGas_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- ODCAPS_TraceGas valid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1

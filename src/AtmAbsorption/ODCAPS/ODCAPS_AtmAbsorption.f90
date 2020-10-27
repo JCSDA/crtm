@@ -1,3 +1,106 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_AtmAbsorption
+!
+! PURPOSE:
+!       Module containing routines to compute the optical depth profile
+!       due to gaseous absorption.
+!
+! CATEGORY:
+!       CRTM : Gas Absorption
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_AtmAbsorption
+!
+! MODULES:
+!       Type_Kinds:                      Module containing definitions for kinds
+!                                        of variable types.
+!
+!       Message_Handler:                   Module to define simple error codes and
+!                                        handle error conditions
+!                                        USEs: FILE_UTILITY module
+!
+!       CRTM_Parameters:                 Module of parameter definitions for the CRTM.
+!                                        USEs: TYPE_KINDS module
+!
+!       ODCAPS_TauCoeff:                 Module containing the shared CRTM gas
+!                                        absorption coefficients (ODCAPS_TauCoeff)
+!                                        and their load/destruction routines. 
+!                                        USEs TYPE_KINDS module
+!                                             Message_Handler module
+!                                              ODCAPS_DEFINE module
+!                                              ODCAPS_BINARY_IO module
+!                                             CRTM_PARAMETERS module
+!
+!       CRTM_GeometryInfo_Define:        Module defining the CRTM GeometryInfo
+!                                        structure and containing routines to 
+!                                        manipulate it.
+!                                        USEs: TYPE_KINDS module
+!                                              Message_Handler module
+!
+!       ODCAPS_Predictor_Define:       Module defining the ODCAPS_Predictor
+!                                        structure and containing routines to 
+!                                        manipulate it.
+!                                        USEs: TYPE_KINDS module
+!                                              Message_Handler module
+!
+!
+!       ODCAPS_Predictor:    Module containing the routines to compute
+!                                        the predictor profiles for the CRTM gas
+!                                        absorption model.
+!                                        USEs: TYPE_KINDS module
+!                                              Message_Handler module
+!                                              CRTM_PARAMETERS module
+!                                              CRTM_ATMOSPHERE_DEFINE module
+!                                              ODCAPS_Predictor_DEFINE module
+!
+!       CRTM_Interpolation:             Module containing routines for profile interpolation
+!
+! CONTAINS:
+!       PUBLIC subprograms
+!       ------------------
+!       Compute_AtmAbsorption:     SUBROUTINE to calculate the layer optical
+!                                        depths due to gaseous absorption for a given
+!                                        input atmospheric profile for a single channel.
+!
+!       Compute_AtmAbsorption_TL:  SUBROUTINE to calculate the tangent-linear
+!                                        layer optical depths due to gaseous absorption
+!                                        for a given input atmospheric profile for a
+!                                        single channel.
+!
+!       Compute_AtmAbsorption_AD:  SUBROUTINE to calculate the layer optical depths
+!                                        adjoint due to gaseous absorption for a given
+!                                        input atmospheric profile for a single channel.
+!
+!       PRIVATE subprograms
+!       -------------------
+!       None.
+!
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 24-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_AtmAbsorption
 
@@ -71,7 +174,6 @@ MODULE ODCAPS_AtmAbsorption
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_AtmAbsorption.f90,v 2.5 2006/05/24 16:19:28 ychen Exp $'
 
   ! -- Keyword set value
   !INTEGER, PRIVATE, PARAMETER :: SET = 1

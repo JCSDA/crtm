@@ -52,7 +52,6 @@ MODULE Apodisation_Utility
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! Literal constants

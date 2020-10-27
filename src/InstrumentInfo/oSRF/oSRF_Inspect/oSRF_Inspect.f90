@@ -29,7 +29,6 @@ PROGRAM oSRF_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'oSRF_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

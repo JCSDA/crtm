@@ -1,3 +1,58 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Test_Forward
+!
+! PURPOSE:
+!       Program to test the CRTM Forward code.
+!
+! CATEGORY:
+!       CRTM : Test : Forward
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:     Module containing definitions for kinds
+!                       of variable types.
+!
+!       Message_Handler:Module to define simple error codes and
+!                       handle error conditions
+!                       USEs: FILE_UTILITY module
+!
+!       CRTM_Module:    The main CRTM module.
+!
+!       CRTM_Atmosphere_Binary_IO: Module to read data into a CRTM_Atmosphere
+!                                  structure/array
+!
+!       CRTM_Surface_Binary_IO:    Module to read data into a CRTM_Surface
+!                                  structure/array
+!
+! CONTAINS:
+!       Print_ChannelInfo:  Subroutine to print the contents of the
+!                           ChannelInfo structure returned from the
+!                           initialisation.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 30-Jun-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Test_Forward
 
@@ -32,7 +87,6 @@ PROGRAM Test_Forward
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Forward'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Forward.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

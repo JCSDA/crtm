@@ -32,7 +32,6 @@ PROGRAM TauCoeff_Compare
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'TauCoeff_Compare'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! Allowable formats.
   ! Format codes MUST start at 1 and increment by 1.

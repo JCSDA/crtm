@@ -1,3 +1,73 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTM : CRTMstats_netCDF_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write CRTMstats netCDF 
+!       format files.
+!       
+! CATEGORY:
+!       CRTM : CRTMstats
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE CRTMstats_netCDF_IO
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       Message_Handler:       Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       CRTMstats_Define:     Module defining the CRTMstats data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    ERROR_HANDLER module
+!
+!       netcdf:                Module supplied with the Fortran 90 version 
+!                              of the netCDF libraries (at least v3.5.0).
+!                              See http://www.unidata.ucar.edu/packages/netcdf
+!
+!       netCDF_Utility:        Module containing utility routines for
+!                              netCDF file access.
+!                              USEs: NETCDF_DIMENSION_UTILITY module
+!                                    NETCDF_VARIABLE_UTILITY module
+!                                    NETCDF_ATTRIBUTE_UTILITY module
+!                                    
+!
+! CONTAINS:
+!       Inquire_CRTMstats_netCDF:  Function to inquire a netCDF format 
+!                                   CRTMstats file to obtain information
+!                                   about the data dimensions and attributes.
+!
+!       Write_CRTMstats_netCDF:    Function to write CRTMstats data to a
+!                                   netCDF format CRTMstats file.
+!
+!       Read_CRTMstats_netCDF:     Function to read CRTMstats data from a
+!                                   netCDF format CRTMstats file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 27-Jan-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE CRTMstats_netCDF_IO
 
@@ -39,7 +109,6 @@ MODULE CRTMstats_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: CRTMstats_netCDF_IO.f90,v 1.2 2006/11/22 16:02:04 dgroff Exp $'
 
   ! -- Literal constants
   REAL( fp_kind ), PRIVATE, PARAMETER :: ZERO = 0.0_fp_kind
@@ -3969,3 +4038,49 @@ END MODULE CRTMstats_netCDF_IO
 
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/11/22 16:02:04 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: CRTMstats_netCDF_IO.f90,v $
+! Revision 1.2  2006/11/22 16:02:04  dgroff
+! This file is needed for generating the CRTM stats netcdf file.
+! (It is a utility used to create CRTMstats files)
+!
+! Revision 1.6  2006/05/02 14:58:35  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.5  2005/01/07 18:44:20  paulv
+! - Category change to CRTM.
+!
+! Revision 1.4  2005/01/06 19:01:32  paulv
+! - Upgraded to Fortran-95
+!
+! Revision 1.3  2004/02/13 17:23:52  paulv
+! - Altered the I/O functions to relfect the changes in the CRTMstats structure
+!   definition where the sensor IDs were changed from scalars to arrays.
+! - Removed the sensor Ids and dimension descriptors as optional arguments
+!   from the Inquire() function.
+!
+! Revision 1.2  2004/02/12 20:26:29  paulv
+! - Removed index functions.
+! - Added longname, units and fillvalue attribute parameters.
+! - Added central frequency to I/O functions.
+! - Added sensor/satellite IDs to output.
+! - LBL and REG profile ID tags are now read in the Read() function.
+!
+! Revision 1.1  2004/01/28 02:50:31  paulv
+! Initial checkin. Complete but untested.
+!
+!
+!
+!

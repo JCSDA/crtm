@@ -1,3 +1,78 @@
+!------------------------------------------------------------------------------
+!
+! NAME:
+!       Layer_IO_Test
+!
+! PURPOSE:
+!       Program to test the LBLRTM structure manipulation, read and write
+!       functions
+!
+! CATEGORY:
+!       LBLRTM : Test
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! MODULES:
+!       type_kinds:         Module containing definitions for kinds
+!                           of variable types.
+!
+!       file_utility:       Module containing generic file utility routines
+!
+!       error_handler:      Module to define simple error codes and
+!                           handle error conditions
+!                           USEs: FILE_UTILITY module
+!
+!       LBLRTM_Parameters:  Module containing shared parameters required
+!                           for LBLRTM format file IO
+!                           USEs: TYPE_KINDS module
+!
+!       LBLRTM_Utility:     Module containing some utility routines.
+!                           USEs: TYPE_KINDS module
+!                                 FILE_UTILITY module
+!                                 ERROR_HANDLER module
+!                                 LBLRTM_PARAMETERS module
+!
+!       LBLRTM_Layer_IO:    Module containing routines to read, write, and 
+!                           manipulate the LBLRTM layer data structure.
+!                           USEs: TYPE_KINDS module
+!                                 FILE_UTILITY module
+!                                 ERROR_HANDLER module
+!                                 LBL_DEFINE module
+!                                 LBLRTM_PARAMETERS module
+!                                 LBLRTM_UTILITY module
+!                                 LBLRTM_FHDR_IO module
+!                                 LBLRTM_PHDR_IO module
+!                                 LBLRTM_PANEL_IO module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       INPUT:  LBLRTM data file.
+!       OUTPUT: LBLRTM-format data file. Resultant file should be identical
+!               to the input file.
+!
+! SIDE EFFECTS:
+!       Output files are overwritten if they already exist.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 10-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!
+!------------------------------------------------------------------------------
 
 PROGRAM Layer_IO_Test
 
@@ -313,4 +388,27 @@ PROGRAM Layer_IO_Test
 END PROGRAM Layer_IO_Test
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2002/04/16 19:51:12 $
+!
+! $Revision: 1.3 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Layer_IO_Test.f90,v $
+! Revision 1.3  2002/04/16 19:51:12  paulv
+! - Added multiple panel output for test output.
+!
+! Revision 1.2  2002/04/16 17:30:06  paulv
+! - Added WRITE_LBLRTM_LAYER() function.
+! - Added documentation.
+!
+!
+!
 

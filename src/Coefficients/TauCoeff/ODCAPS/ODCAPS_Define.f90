@@ -1,3 +1,340 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_Define
+!
+! PURPOSE:
+!       Module defining the ODCAPS (Optical Depth, Combined Absorber & Pressure Space)
+!       data structure and containing routines to manipulate it.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_ODCAPS:    Function to test the association status             
+!                               of the pointer members of a ODCAPS	            
+!                               structure.				            
+!
+!       Destroy_ODCAPS:       Function to re-initialize a ODCAPS	            
+!                               structure.				            
+!
+!       Allocate_ODCAPS:      Function to allocate the pointer members            
+!                               of a ODCAPS structure.		            
+!
+!       Assign_ODCAPS:        Function to copy a valid ODCAPS structure.        
+!
+!       CheckRelease_ODCAPS: Function to check the ODCAPS Release value.       
+!
+!
+!       Info_ODCAPS:       Subroutine to return a string containing            
+!                               version and dimension information about             
+!                               the ODCAPS data structure.		            
+!
+! DERIVED TYPES:
+!       ODCAPS_type:   Definition of the public ODCAPS data structure. Fields
+!                        are...
+!
+!         Release:             Coefficient data file release number.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Version:             Coefficient data file version number.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Algorithm:           The ODCAPS data Algorithm_ID. Used to determine
+!                              which algorithm to be used.
+!                              UNITS:	   N/A
+!                              TYPE:	   INTEGER
+!                              DIMENSION:  Scalar
+!
+!         n_Layers:            Maximum layers for the coefficients.
+!                              "Ilayers" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Channels:          Total number of spectral channels.
+!                              "L" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Tunings:           Number of tuning multipliers for the gases 
+!                              "J" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_F_Predictors:      Number of predictors used in the
+!                              thermal "F" factor coefs.
+!                              "MF" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_RefProfile_Items:  Number of item in the reference profile.
+!                              "N" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_NONLTE_Predictors: The number of predictors for the non-LTE.
+!                              "MNON" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_NONLTE_Channels:   The number of channels for the non-LTE.
+!                              "MChannels" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_TraceGases:        The number of trace gases.
+!                              "KTraces" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Subsets:           The number of subset for the gas absorption coeffs.
+!                              "K" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Sensor_Descriptor:   String variable containing a short text
+!                              description of the sensor and satellite.
+!                              Descriptors are taken from the SensorInfo
+!                              file prefix member. Examples are:
+!                                - hirs3_n17
+!                                - airs_aqua
+!                                - ssmis_f16... etc
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( 20 )
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         NCEP_Sensor_ID:      An "in-house" value used at NOAA/NCEP/EMC 
+!                              to identify a satellite/sensor combination.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         WMO_Satellite_ID:    The WMO code for identifying satellite
+!                              platforms. Taken from the WMO common
+!                              code tables at:
+!                                http://www.wmo.ch/web/ddbs/Code-tables.html
+!                              The Satellite ID is from Common Code
+!                              table C-5, or code table 0 01 007 in BUFR
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         WMO_Sensor_ID:       The WMO code for identifying a satelite
+!                              sensor. Taken from the WMO common
+!                              code tables at:
+!                                http://www.wmo.ch/web/ddbs/Code-tables.html
+!                              The Sensor ID is from Common Code
+!                              table C-8, or code table 0 02 019 in BUFR
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Sensor_Channel:       This is the sensor channel number associated
+!                              with the data in the coefficient file. Helps
+!                              in identifying channels where the numbers are
+!                              not contiguous (e.g. AIRS).
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_Subset_Index:This is the set number associated
+!                              with the subset in which the coefficients are
+!                              located. Values are range from 1 to 7
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_Subset_Position: This is the channel position associated
+!                              with the subset in which the coefficients are
+!                              located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_H2O_OPTRAN:  This is OPTRAN H2O channel indices associated
+!                              with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_CO2_Perturbation: This is CO2 perturbation channel indices 
+!                              associated with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_SO2_Perturbation: This is SO2 perturbation channel indices 
+!                              associated with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_HNO3_Perturbation: This is HNO3 perturbation channel indices 
+!                              associated with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_N2O_Perturbation: This is N2O perturbation channel indices 
+!                              associated with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_NON_LTE:     This is non-LTE channel indices 
+!                              associated with the channel positions in which 
+!                              the coefficients are located.  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Standard_Level_Pressure:  The standard level pressure for the
+!                              atmosphere. 
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single)
+!                              DIMENSION:  Rank-1(0:Ilayer) 
+!                              ATTRIBUTES: POINTER			       
+!
+!         Fix_Gases_Adjustment:The fix gases adjustment for each layer, 
+!                              associated with combined effects of water vapor
+!                              displacement, gravity (as a function of latitude),
+!                              and layer pathlength, to modify the fix gas
+!                              optical depth.  
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single)
+!                              DIMENSION:  Rank-1(Ilayer)  
+!                              ATTRIBUTES: POINTER			       
+!!
+!         Down_F_Factor:       Array containing the downward thermal F factor
+!                              coefficients.
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single)
+!                              DIMENSION:  MF (n_F_Predictors) x L (n_Channels)
+!                              ATTRIBUTES: POINTER			       
+!
+!         Tuning_Multiple:     Array containing the absorber coefficients
+!                              tuning multiplies
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single)
+!                              DIMENSION:  J (n_Tunings) x L (n_Channels)
+!                              ATTRIBUTES: POINTER			       
+!                               
+!         Ref_Profile_Data :   Array containing the reference profile data.
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single) 
+!                              DIMENSION:  n (n_RefProfile_Items) x ILayer 
+!                              ATTRIBUTES: POINTER
+!
+!         Non_LTE_Coeff  :     Array containing the Non-LTE effect coefficients.
+!                              UNITS:      N/A
+!                              TYPE:       REAL (Single) 
+!                              DIMENSION:  MNON (n_NONLTE_Predictors) x MChannels  
+!                              ATTRIBUTES: POINTER
+!
+!         ODCAPS_ODAS :        Stucture containing the water vapor absorption
+!                              OPTRAN model coefficients.
+!                              See the  ODCAPS_ODAS_Define module.
+!                              UNITS:      N/A
+!                              TYPE:       TYPE (ODCAPS_ODAS_type) 
+!                              DIMENSION:  Scalar
+!                              ATTRIBUTES: POINTER
+!
+!         ODCAPS_TraceGas:    Stucture containing the trace gas absorption
+!                              model coefficients.
+!                              See the ODCAPS_TraceGas_Define module.
+!                              UNITS:      N/A
+!                              TYPE:       TYPE (ODCAPS_TraceGas_type) 
+!                              DIMENSION:  Rank-1 (n_TraceGases) 
+!                              ATTRIBUTES: POINTER
+!
+!         ODCAPS_Subset:      Stucture containing the gas absorption
+!                              model coefficients.
+!                              See the ODCAPS_Subset_Define module.
+!                              UNITS:      N/A 
+!                              TYPE:       TYPE (ODCAPS_Subset_type) 
+!                              DIMENSION:  Rank-1 (n_Subsets) 
+!                              ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the ODCAPS_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user initialize,
+!       destroy, allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_Define
 
@@ -59,7 +396,6 @@ MODULE ODCAPS_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- ODCAPS valid values
   INTEGER,      PARAMETER :: IP_INVALID = -1

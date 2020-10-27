@@ -443,6 +443,39 @@ end subroutine Soil_Diel
 
 subroutine Snow_Diel(frequency,ep_real,ep_imag,rad,frac,ep_eff)
 
+!----------------------------------------------------------------------------------
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    Snow_Diel   compute dielectric constant of snow
+!
+!   prgmmr: Fuzhong Weng and Banghua Yan                 org: nesdis              date: 2000-11-28
+!
+! abstract: compute dielectric constant of snow
+!
+!
+! program history log:
+!
+! input argument list:
+!
+!       frequency   -  frequency (ghz)
+!       ep_real     -  real part of dielectric constant of particle
+!       ep_imag     -  imaginary part of dielectric constant of particle
+!       rad         -  particle radiu (mm)
+!       frac        -  fraction volume of snow (0.0 - 1.0)
+!
+! output argument list:
+!
+!       ep_eff      -  dielectric constant of the dense medium
+!
+! remarks:
+!
+! attributes:
+!   language: f90
+!   machine:  ibm rs/6000 sp
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!----------------------------------------------------------------------------------
 
   REAL(fp) :: ep_imag,ep_real
   REAL(fp) :: frequency,rad,frac,k0,yr,yi

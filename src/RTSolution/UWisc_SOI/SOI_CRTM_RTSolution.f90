@@ -1,3 +1,148 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTM_RTSolution
+!
+! PURPOSE:
+!       Module containing the raditive transfer solution routines.
+!
+! CATEGORY:
+!       CRTM : RT Solution
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE CRTM_RTSolution
+!
+! MODULES:
+!       Type_Kinds:                 Module containing data type kind definitions.
+!
+!       Message_Handler:            Module to define simple error codes and
+!                                   handle error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       CRTM_Parameters:            Module of parameter definitions for the CRTM.
+!                                   USEs: TYPE_KINDS module
+!
+!       CRTM_SpcCoeff:              Module containing the shared CRTM spectral
+!                                   coefficients (SpcCoeff) and their
+!                                   load/destruction routines. 
+!                                   USEs TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!                                        SPCCOEFF_DEFINE module
+!                                        SPCCOEFF_BINARY_IO module
+!                                        CRTM_PARAMETERS module
+!
+!       CRTM_Atmosphere_Define:     Module defining the CRTM Atmosphere
+!                                   structure and containing routines to 
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!                                         CRTM_CLOUD_DEFINE module
+!
+!       CRTM_Surface_Define:        Module defining the CRTM Surface data
+!                                   structure and containing routines to 
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_GeometryInfo_Define:   Module defining the CRTM GeometryInfo
+!                                   data structure and containing routines
+!                                   to manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!                                         CRTM_PARAMETERS module
+!
+!       CRTM_AtmAbsorption_Define:  Module defining the CRTM AtmAbsorption
+!                                   structure and containing routines to
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_AtmScatter_Define:     Module defining the CRTM AtmScatter
+!                                   structure and containing routines to
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_SfcOptics_Define:      Module to compute the surface optical
+!                                   properties required for determining
+!                                   the surface contribution to the radiative
+!                                   transfer.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_RTSolution_Define:     Module defining the CRTM RTSolution
+!                                   structure and containing routines to
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+! CONTAINS:
+!       PUBLIC subprograms
+!       ------------------
+!         CRTM_Compute_RTSolution:     Function to solve the radiative transfer 
+!                                      problem.
+!
+!         CRTM_Compute_RTSolution_TL:  Function to solve the tangent-linear
+!                                      radiative transfer problem.
+!
+!         CRTM_Compute_RTSolution_AD:  Function to solve the adjoint
+!                                      radiative transfer problem.
+!
+!       PRIVATE subprograms
+!       -------------------
+!       
+!         *** USERS ADD INFO HERE FOR ANY PRIVATE SUBPROGRAMS ***
+!
+!
+!
+!
+!
+! USE ASSOCIATED PUBLIC SUBPROGRAMS:
+!       CRTM_Associated_RTSolution:  Function to test the association status
+!                                    of the pointer members of a RTSolution
+!                                    structure.
+!
+!       CRTM_Destroy_RTSolution:     Function to re-initialize an
+!                                    CRTM_RTSolution structure.
+!                                    SOURCE: CRTM_RTSOLUTION_DEFINE module
+!
+!       CRTM_Allocate_RTSolution:    Function to allocate the pointer
+!                                    members of an CRTM_RTSolution
+!                                    structure.
+!                                    SOURCE: CRTM_RTSOLUTION_DEFINE module
+!
+!       CRTM_Assign_RTSolution:      Function to copy an CRTM_RTSolution
+!                                    structure.
+!                                    SOURCE: CRTM_RTSOLUTION_DEFINE module
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None known.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Han,       NOAA/NESDIS;     Yong.Han@noaa.gov
+!                       Quanhua Liu,    QSS Group, Inc;  Quanhua.Liu@noaa.gov
+!                       Paul van Delst, CIMSS/SSEC;      paul.vandelst@ssec.wisc.edu
+!                       08-Jun-2004
+!
+!  Copyright (C) 2004 Yong Han, Quanhua Liu, Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE CRTM_RTSolution
 
@@ -78,7 +223,6 @@ MODULE CRTM_RTSolution
 
   ! -- RCS Id for the module
   CHARACTER( * ),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: SOI_CRTM_RTSolution.f90,v 1.1 2006/06/15 17:53:50 wd20pd Exp $'
 
 
 CONTAINS

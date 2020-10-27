@@ -1,3 +1,14 @@
+!
+!  Error_Handler
+!
+!  Module to define simple error/exit codes and output messages.
+!
+!
+!  Written by:     Paul van Delst, CIMSS/SSEC 12-Jun-2000
+!                  paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000, 2006 Paul van Delst
+!
 
 MODULE Error_Handler
 

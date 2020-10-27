@@ -3,15 +3,41 @@
 # PRODUCTION build settings for Linux ifort compiler
 #-------------------------------------------------------------------------------#
 
+hostname=$(hostname)
 export FC="ifort"
+export NC4_DIR="/opt/netcdf4/4.6.2-intel-18.0.3"
+export HDF_DIR="/opt/hdf5/1.8.21-intel-18.0.3"
+#export HDF4_DIR="/opt/hdf4/4.2.14-intel-18.0.3"
+
+export OMP_NUM_THREADS=4  #set here for testing purposes, probably want to override this
 
 export FCFLAGS="\
 -O3 \
 -fp-model source \
 -e08 \
 -free \
+-qopenmp \
 -assume byterecl,realloc_lhs"
 
-export LDFLAGS=""
+export LDFLAGS="-qopenmp"
 
-export LIBS=""
+HDF5DISC="/usr/local/other/hdf5/1.13.0/intel-19.1.0.16_impi-20.0.0.166/"
+
+if [[ "$hostname" == "s4-submit.ssec.wisc.edu" ]] ; then #S4
+  export LIBS="\
+  -L $NC4_DIR/lib -lnetcdf -lnetcdff \
+  -L $HDF_DIR/lib -lhdf5 \
+  -g -fpp -traceback -check bounds \
+  -I $NC4_DIR/include \
+  -I $HDF_DIR/include "
+elif [[ "$hostname" == "discover"* ]] ; then # NCCS Discover
+  export LIBS="\
+  -L $NETCDF/lib -lnetcdf -lnetcdff \
+  -L $HDF5DISC/lib -lhdf5 \
+  -g -fpp -traceback -check bounds \
+  -I $NETCDF/include \
+  -I $HDF5DISC/include "
+else
+  export LIBS=""
+fi
+

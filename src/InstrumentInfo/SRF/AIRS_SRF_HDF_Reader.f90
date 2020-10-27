@@ -1,3 +1,65 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       AIRS_SRF_HDF_Reader
+!
+! PURPOSE:
+!       Module to provide access to the AIRS SRF HDF data file.
+!
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! CALLING SEQUENCE:
+!       USE AIRS_SRF
+!
+! MODULES:
+!       type_kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       file_utility:          Module containing generic file utility routines
+!
+!       Message_Handler:       Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       AIRS_SRF_Define:       Module defining the SRF data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    Message_Handler module
+!
+!       hdf_utility:           Module to provide some less, uh, verbose
+!                              interfaces to HDF files
+!
+! CONTAINS:
+!       Open_AIRS_SRF_HDF:     Function to open an existing HDF AIRS_SRF
+!                              data file for reading.
+!
+!       Close_AIRS_SRF_HDF:    Function to close an open HDF AIRS SRF
+!                              data file.
+!
+!       Inquire_AIRS_SRF_HDF:  Function to inquire the HDF AIRS SRF
+!                              format file.
+!
+!       Read_AIRS_SRF_HDF:     Function to extract SRF data from the AIRS
+!                              SRF HDF file.
+!
+! EXTERNALS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 19-Nov-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE AIRS_SRF_HDF_Reader
 

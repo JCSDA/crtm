@@ -46,7 +46,6 @@ PROGRAM Compute_MW_Transmittance
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Compute_MW_Transmittance'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   ! Keyword argument set value
   INTEGER, PARAMETER :: SET = 1
   ! Direction names

@@ -58,7 +58,6 @@ PROGRAM Extract_AIRS_SpcCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_AIRS_SpcCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   INTEGER, PARAMETER :: SL = 256
 

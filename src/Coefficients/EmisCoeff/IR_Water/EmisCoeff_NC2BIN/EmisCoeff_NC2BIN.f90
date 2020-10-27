@@ -33,7 +33,6 @@ PROGRAM EmisCoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'EmisCoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
 
   ! ---------

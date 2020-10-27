@@ -61,7 +61,6 @@ PROGRAM Extract_IASI_SpcCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_IASI_SpcCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   ! String length
   INTEGER, PARAMETER :: SL = 256
 

@@ -73,7 +73,6 @@ MODULE AntCorr_Application
   ! Module parameters
   ! -----------------
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! Invalid result
   REAL(fp), PARAMETER :: INVALID = -1.0_fp

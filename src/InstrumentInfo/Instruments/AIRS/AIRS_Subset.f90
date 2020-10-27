@@ -44,7 +44,6 @@ MODULE AIRS_Subset
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   INTEGER, PARAMETER :: ML = 256
 
   ! The AIRS subset 281 channel list

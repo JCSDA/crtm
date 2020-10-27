@@ -1,3 +1,93 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_Predictor_Define
+!
+! PURPOSE:
+!       Module defining the Optical Depth Combining Absorber and Pressure Space 
+!       (ODCAPS) Predictor structure and containing routines to manipulate it.
+!
+! CATEGORY:
+!       CRTM : Gas Absorption
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_Predictor_Define
+!
+! MODULES:
+!       Type_Kinds:              Module containing definitions for kinds
+!                                of variable types.
+!
+!       Message_Handler:           Module to define simple error codes and
+!                                handle error conditions
+!                                USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_Predictor:  Function to test the association status
+!                                       of the pointer members of an Predictor
+!                                       structure.
+!
+!       Destroy_Predictor:     Function to re-initialize a
+!                                       Predictor structure.
+!
+!       Allocate_Predictor:    Function to allocate the pointer
+!                                       members of a Predictor
+!                                       structure.
+!
+!       Assign_Predictor:      Function to copy a valid 
+!                                       Predictor structure.
+!
+! DERIVED TYPES:
+!       Predictor_type
+!       -----------------------
+!         Definition of the CRTM gaseous absorption data structure.
+!         Fields are:
+!
+!         n_Absorbers:      Number of absorbing species.
+!                           "J" dimension.
+!                           UNITS:      N/A
+!                           TYPE:       INTEGER
+!                           DIMENSION:  Scalar
+!
+!         Other fields:     To hold ODCAPS predictor intermediate results, which
+!                           are not by non-ODCAPS modules.
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the Predictor_type is PUBLIC and its members are
+!       not encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user destroy,
+!       allocate, and assign the structure using only the routines
+!       in this module where possible to eliminate -- or at least
+!       minimise -- the possibility of memory leakage since most
+!       of the structure members are pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 24-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_Predictor_Define
 
@@ -39,7 +129,6 @@ MODULE ODCAPS_Predictor_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Predictor_Define.f90,v 1.9 2005/08/16 16:20:38 qliu Exp $'
 
   ! -- Literal constants
   REAL( fp ), PRIVATE, PARAMETER :: ZERO = 0.0_fp

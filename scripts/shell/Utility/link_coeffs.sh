@@ -140,10 +140,12 @@ case ${FILE_TYPE} in
   "big-endian")    FILE_DIR="Big_Endian"   ; FILE_EXT="bin" ;;
   "little-endian") FILE_DIR="Little_Endian"; FILE_EXT="bin" ;;
   "netcdf")        FILE_DIR="netCDF"       ; FILE_EXT="nc"  ;;
+  "netcdf4")       FILE_DIR="netCDF"       ; FILE_EXT="nc4" ;;
   *) usage; error_message "Invalid file type option argument"; exit ${FAILURE} ;;
 esac
 # ...Define the sensor independent coefficient files.
 COMMON_COEFF_FILES="AerosolCoeff.${FILE_EXT} \
+AerosolCoeff.CMAQ.${FILE_EXT}
 IR.CloudCoeff.${FILE_EXT} \
 MW.CloudCoeff.${FILE_EXT} \
 CloudCoeff.${FILE_EXT} \

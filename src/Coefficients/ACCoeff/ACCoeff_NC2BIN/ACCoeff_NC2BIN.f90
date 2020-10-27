@@ -28,7 +28,6 @@ PROGRAM ACCoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'ACCoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   ! ---------
   ! Variables

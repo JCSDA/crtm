@@ -1,3 +1,52 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       interpolate
+!
+! PURPOSE:
+!       Module containing interpolation routines
+!
+! CATEGORY:
+!       Interpolation
+!
+! CALLING SEQUENCE:
+!       USE interpolate
+!
+! MODULES:
+!       type_kinds:             Module containing definitions for kinds of
+!                               variable types
+!
+!       error_handler:          Module containing error codes and error
+!                               handling routines
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       polynomial_interpolate: Function that performs polynomial interpolation
+!                               on input scalars or vectors.
+!
+!       spline_interpolate:     Function that performs cubic spline interpolation
+!                               on input scalars or vectors.
+!
+!       spline_initialize:      Function to establish the type of interpolating
+!                               spline for a tabulated set of functional values.
+!
+! EXTERNALS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 22-Nov-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 
 MODULE interpolate
@@ -70,7 +119,6 @@ MODULE interpolate
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
   ! -- Maximum order for interpolating polynomial
   INTEGER, PRIVATE, PARAMETER :: MAX_ORDER = 9
@@ -2775,3 +2823,54 @@ CONTAINS
 END MODULE interpolate
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2002/10/08 14:48:26 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: interpolate.f90,v $
+! Revision 3.4  2002/10/08 14:48:26  paulv
+! - Synchronising repository.
+!
+! Revision 3.3  2002/08/22 19:43:59  paulv
+! - Updated documentation.
+!
+! Revision 3.2  2002/07/12 19:05:13  paulv
+! - Added RCS_Id optional output arguments to public functions.
+! - Updated header documentation.
+! - Removed module variable MESSAGE and moved it into each function that
+!   required it.
+!
+! Revision 3.1  2002/03/24 15:16:11  paulv
+! - Replaced individual linear, quadratic, and cubic interpolation functions
+!   with the generic POLYNOMIAL_INTERPOLATE() function that allows the
+!   order of the interpolating polynomial to be selected by the user. Only
+!   in the early stages of debugging - scalar versions appear to work but only
+!   the double precision version of the rank-1 functions works correctly.
+!
+! Revision 2.2  2001/10/17 17:40:22  paulv
+! - Added cubic (4-pt Lagrangian) interpolation functions.
+!
+! Revision 2.1  2001/10/10 12:07:10  paulv
+! - Added SPLINE_INITIALIZE and SPLINE_INTERPOLATE functions.
+! - Overloaded all public functions to allow both single and double
+!   precision input and also scalar and vector interpolates.
+! - Updated documentation.
+!
+! Revision 1.2  2000/11/28 13:44:07  paulv
+! - Added quadratic interpolation routines for single- and double-precision
+!   input vectors.
+!
+! Revision 1.1  2000/11/27 18:07:31  paulv
+! Initial checkin.
+!
+!
+!

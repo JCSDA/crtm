@@ -1,3 +1,45 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       MONORTM_Input
+!
+! PURPOSE:
+!       Module containing routines for creating MONORTM input files.
+!
+! CATEGORY:
+!       MONORTM
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! CALLING SEQUENCE:
+!       USE MONORTM_input
+!
+! MODULES:
+!       Type_Kinds:         Module with data type kind definitions.
+!
+!       File_Utility:       Module containing generic file utility routines
+!
+!       Message_Handler:    Module containing error handling definitions and
+!                           routines.
+!                           USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:   Paul van Delst, CIMSS/SSEC, 23-Jan-2000
+!                     paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE MONORTM_Input
 
@@ -2678,3 +2720,59 @@ logical :: terminator
 END MODULE MONORTM_Input
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/07/26 21:43:58 $
+!
+! $Revision: 655 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: MONORTM_Input.f90,v $
+! Revision 2.7  2006/07/26 21:43:58  wd20pd
+! Replacement of "Error_Handler" with "Message_Handler" in USE statements and
+! in documentaiton blocks.
+!
+! Revision 2.6  2006/07/25 19:33:58  paulv
+! - Updated to use new Utility modules.
+! - Cosmetic changes to structure parameter declarations.
+!
+! Revision 2.5  2003/12/01 17:55:22  paulv
+! - Added optional Placeholder argument to Write_Record_3p2() function call
+!   to allow zenith angle specification to be replaced with "AAA.AAA" for
+!   use in transmittance production.
+!
+! Revision 2.4  2003/07/21 21:08:49  paulv
+! - Corrected a bug in the definition of the absorber names array. The number
+!   of absorber name definitions was different from the specified dimension.
+!   PGI compiler did not flag error, IBM compiler issued conformance error
+!   message.
+!
+! Revision 2.3  2002/06/05 18:53:58  paulv
+! - Removed MESSAGE as a module variable and placed definitions in each
+!   module subprogram.
+!
+! Revision 2.2  2002/04/26 13:26:22  paulv
+! - Changed default calculation flag values for CONTINUUM, EMIT, and MERGE_FLAG.
+! - Added PLACEHOLDER and NO_TERMINATOR optional inputs.
+!
+! Revision 2.1  2002/04/24 22:33:09  paulv
+! - New version.
+! - Added derived types for the calculation and LBLATM flags.
+! - Split out a lot of the record writes into separate functions.
+! - Added X-section capability.
+!
+! Revision 1.2  2002/04/16 22:30:31  paulv
+! - Update to synchronise repository.
+!
+! Revision 1.1  2002/04/16 18:51:54  paulv
+! Initial checkin.
+!
+!
+!
+!

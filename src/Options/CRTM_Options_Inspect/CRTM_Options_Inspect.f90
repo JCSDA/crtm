@@ -30,7 +30,6 @@ PROGRAM CRTM_Options_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'CRTM_Options_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

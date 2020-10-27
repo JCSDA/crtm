@@ -1,3 +1,118 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTM_Forward_Module
+!
+! PURPOSE:
+!       Module containing the CRTM forward model function.
+!
+! CATEGORY:
+!       CRTM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE CRTM_Forward_Module
+!
+! MODULES:
+!       Type_Kinds:                 Module to define kind types for variable
+!                                   declaration.
+!
+!       Message_Handler:            Module to define error codes and handle
+!                                   error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       CRTM_Parameters:            Module of parameter definitions for the CRTM.
+!                                   USEs: TYPE_KINDS module
+!
+!       CRTM_Atmosphere_Define:     Module defining the CRTM Atmosphere
+!                                   structure and containing routines to 
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!                                         CRTM_CLOUD_DEFINE module
+!
+!       CRTM_Surface_Define:        Module defining the CRTM Surface data
+!                                   structure and containing routines to 
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_GeometryInfo_Define:   Module defining the CRTM GeometryInfo
+!                                   data structure and containing routines
+!                                   to manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!                                         CRTM_PARAMETERS module
+!
+!       CRTM_ChannelInfo_Define:    Module defining the CRTM ChannelInfo
+!                                   data structure and containing routines
+!                                   to manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_AtmAbsorption:         Module continaing routines to compute
+!                                   the optical depth profile due to gaseous
+!                                   absorption.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!                                         CRTM_PARAMETERS module
+!                                         CRTM_TAUCOEFF module
+!                                         CRTM_ATMOSPHERE_DEFINE module
+!                                         CRTM_GEOMETRYINFO_DEFINE module
+!                                         CRTM_ATMABSORPTION_DEFINE module
+!                                         CRTM_ATMABSORPTION_INTABSORBER module
+!                                         CRTM_ATMABSORPTION_PREDICTOR module
+!
+!       CRTM_AerosolScatter:        Module containing routines to compute
+!                                   aerosol absorption and scattering properties.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_CloudScatter:          Module containing routines to compute cloud
+!                                   particle absorption and scattering properties.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_SfcOptics:             Module containing routines to compute 
+!                                   surface emissivities and reflectivities.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!       CRTM_RTSolution:            Module containing the radiative transfer
+!                                   solution routines.
+!                                   USEs: TYPE_KINDS module
+!                                         ERROR_HANDLER module
+!
+!
+! CONTAINS:
+!       CRTM_Forward:    Function that calculates top-of-atmosphere (TOA)
+!                        radiances and brightness temperatures for an input
+!                        atmospheric profile or profile set and user
+!                        specified satellites/channels.Function to solve
+!                        the forward radiative transfer problem.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 29-Jun-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE CRTM_Forward_Module
 
@@ -61,7 +176,6 @@ MODULE CRTM_Forward_Module
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SOI_CRTM_Forward_Module.f90,v 1.1 2006/06/15 17:53:50 wd20pd Exp $'
 
 
 CONTAINS

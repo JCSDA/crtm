@@ -1,17 +1,15 @@
-CRTM REL-2.3_jedi
+CRTM REL-2.4.0
 ====================
-
-Created on October  7, 2020  
-Updated on October 26, 2020
 
 Preamble
 --------
 
-CRTM v2.3_jedi alpha release (`REL-2.3_jedi`)  
+CRTM v2.4.0 release (`REL-2.4.0`)  
 
-This is a fully functional release of CRTM v2.3_jedi.  
+Created on October  7, 2020  
+Updated on October 23, 2020
 
-"Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
+This is a fully functional release of CRTM v2.4.0.  
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
@@ -27,9 +25,8 @@ Basic requirements:
 
 If you're looking for an older version of CRTM (v2.3.0 or older) you should obtain the appropriate tarball from
 https://ftp.emc.ncep.noaa.gov/jcsda/CRTM/
-Or contact us through the support options below.
 
-If you're looking for version 2.3_jedi or newer in a structure similar to older CRTM tarball releases, you should check out the appropriate release/ branch.
+If you're looking for version 2.4.0 or newer in a structure similar to older CRTM tarball releases, you should check out the appropriate release/ branch.
 git branch --remote | grep "release/" to see a list OR you may checkout the appropriate tag on the master branch and build it yourself. 
 
 Finally, you may follow the instructions here to build a "latest" release based on the most recent developments.
@@ -52,22 +49,22 @@ Contents
 
 
 Configuration, building, and testing the library
-================================================	
-JCSDA CRTM v2.3.x Build Instructions
+================================================  
+JCSDA CRTM v2.4.x Build Instructions
 
 - Development Repository Build
 - Note: the development repository build differs from a release build. 
-	
+  
 The CRTM **development** repository directory structure looks like:
 
 <pre>
  .
   ├── LICENSE  (CC0 license)
-	├── COPYING  (CC0 legal document)
+  ├── COPYING  (CC0 legal document)
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
-  ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory)
+  ├── Get_CRTM_Binary_Files.sh  (gets the fix/ directory)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -86,8 +83,8 @@ The CRTM **development** repository directory structure looks like:
   │   ├── AtmScatter/
   │   ├── Atmosphere/
   │   ├── <b>Build/</b>
-	│   │   └── <b>libsrc/</b>
-	│   │       └── <b>test/</b>
+  │   │   └── <b>libsrc/</b>
+  │   │       └── <b>test/</b>
   │   ├── CRTM_Utility/
   │   ├── ChannelInfo/
   │   ├── Coefficients/
@@ -121,7 +118,7 @@ But after a clean clone of the development repository, none of the links to sour
 
 Configuration
 -------------
-By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Data.sh script. 
+By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Files.sh script. 
 
 At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
@@ -144,7 +141,7 @@ To use these files to define the CRTM build environment, you should source them.
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
-		. configuration/gfortran-debug.setup
+    . configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
@@ -156,7 +153,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-sh Get_CRTM_Binary_Data.sh
+sh Get_CRTM_Binary_Files.sh
 cd src/
 cd Build/
 make clean  
@@ -224,10 +221,10 @@ make install
 Linking to the library
 ----------------------
 
-Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.3_jedi/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
+Let's assume the above install was moved into "/home/username/CRTM/crtm_v2.4.0/", to use the library in this structure in your own application, the usual environment variables would need to be be modified something like:
 
 <pre>
-libroot="/home/username/CRTM/crtm_v2.3_jedi"
+libroot="/home/username/CRTM/crtm_v2.4.0"
 FCFLAGS="-I${libroot}/include ${FCFLAGS}"
 LDFLAGS="-L${libroot}/lib ${LDFLAGS}"
 LIBS="-lcrtm ${LIBS}"
@@ -240,11 +237,11 @@ To uninstall the library (assuming you haven't moved the installation directory 
 
     make uninstall
 
-This will DELETE the created installation directory. So, for a library version, say, v2.3_jedi, if your configure script invocation was something like
+This will DELETE the created installation directory. So, for a library version, say, v2.4.0, if your configure script invocation was something like
 
     ./configure --prefix=${PWD} ...other command line arguments...
 
-then the "uninstall" target will delete the "${PWD}/crtm_v2.3_jedi" directory.
+then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0" directory.
 
 
 Cleaning Up
@@ -291,13 +288,13 @@ make install
 
 **Additional options for `configure`**
 
-`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.3_jedi/` (or whatever string in in `src/CRTM_Version.inc`).  
+`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.0/` (or whatever string in in `src/CRTM_Version.inc`).  
 
 The `--prefix` switch sets the installation directory, make sure you have write access to that directory.  
 
 You can override this by setting a different install directory as follows:  
   `   ./configure --prefix=<install directory>`  
-For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.3_jedi/).
+For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.0/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 

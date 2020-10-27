@@ -1,3 +1,59 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ProcessControl_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write ProcessControl files.
+!       
+! CATEGORY:
+!       Transmittance Production : Process Control
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ProcessControl_IO
+!
+! MODULES:
+!       Type_Kinds:               Module containing definitions for kinds
+!                                 of variable types.
+!
+!       File_Utility:             Module containing generic file utility
+!                                 routines
+!
+!       Message_Handler:            Module to define simple error codes and
+!                                 handle error conditions
+!                                 USEs: FILE_UTILITY module
+!
+!       ProcessControl_Define:    Module containing the ProcessControl
+!                                 data type definition and routines to
+!                                 manipulate the structure.
+!                                 USEs: TYPE_KINDS module
+!                                       ERROR_HANDLER module
+! CONTAINS:
+!       Write_ProcessControl:  Function to write the ProcessControl data
+!                              structure to an ASCII file.
+!
+!       Read_ProcessControl:   Function to read ASCII ProcessControl files.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 03-Oct-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ProcessControl_IO
 
@@ -633,3 +689,69 @@ CONTAINS
 END MODULE ProcessControl_IO
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.10 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: ProcessControl_IO.f90,v $
+! Revision 1.10  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.9  2005/09/15 20:43:09  paulv
+! - Split file prefix and file dimension output.
+! - Changed file dimension format string, removing string output. This allows
+!   format to be used for both o/p and i/p.
+! - Corrected error message output that used ProcessControl%SRF_Filename instead
+!   of ProcessControl%File_Prefix.
+!
+! Revision 1.8  2005/05/15 23:28:01  paulv
+! - Added dF_Index to PRocessControl structure definition.
+! - Renamed Sensor_Platform_ID component of ProcessControl structure
+!   to File_Index.
+!
+! Revision 1.7  2005/05/11 13:19:31  paulv
+! - Upgraded to Fortran-95
+! - Changes made to use updated ProcessControl_Define module.
+!
+! Revision 1.6  2003/09/05 16:24:42  paulv
+! - Made Open_PC() a PRIVATE function. The Write() and Read() functions now
+!   open the process control file internally. This changes the interfaces to
+!   these functions but it also cleans up the calling code a bit.
+! - Altered the error message output to use the variable PC%SRF_Filename(i)
+!   rather than PC%SRF(i)%fileNAME to reflect changes in the PC derived
+!   type definition.
+!
+! Revision 1.5  2002/10/08 16:32:26  paulv
+! - Updated documentation of read function.
+!
+! Revision 1.4  2002/06/19 18:17:21  paulv
+! - Increased format width of begin and end LBLband I/O.
+!
+! Revision 1.3  2002/06/19 17:04:52  paulv
+! - Altered the WRITE/READ functions to perform I/O on
+!     n_File_Channels, PC%Sensor_Platform_ID(i)
+!   rather than
+!     n_File_Channels, PC%SRF(i)%Filename, PC%TauProfile(i)%Filename
+!   The sensor/platform ID is now stored rather than the actual filename.
+!   This makes it easier to construct the filenames and standardise them.
+!
+! Revision 1.2  2002/06/05 19:20:16  paulv
+! - Removed MESSAGE as a module variable and placed definitions in each
+!   module subprogram.
+!
+! Revision 1.1  2002/05/30 20:00:28  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

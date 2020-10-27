@@ -31,7 +31,6 @@ MODULE IRVISlandCoeff_Module
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER :: SURFACE_TYPE_NAME = 'land'
   CHARACTER(*), PARAMETER :: MODULE_NAME = 'IRVIS'//SURFACE_TYPE_NAME//'Coeff_Module'
   INTEGER , PARAMETER :: ML = 256

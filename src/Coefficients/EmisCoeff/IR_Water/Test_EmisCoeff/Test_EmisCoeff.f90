@@ -36,7 +36,6 @@ PROGRAM Test_EmisCoeff
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Test_EmisCoeff'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER( * ), PARAMETER ::  NC_FILENAME = 'Test.EmisCoeff.nc'
   CHARACTER( * ), PARAMETER :: BIN_FILENAME = 'Test.EmisCoeff.bin'
 

@@ -41,7 +41,6 @@ PROGRAM TauProfile_OLD2NEW
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'TauProfile_OLD2NEW'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Keyword set flag
   INTEGER, PARAMETER :: SET = 1
   ! Direction information

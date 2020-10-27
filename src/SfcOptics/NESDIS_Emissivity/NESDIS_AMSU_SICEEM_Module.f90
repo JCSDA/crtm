@@ -28,7 +28,137 @@ CONTAINS
 
 
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_ICEEM_AMSU
+!
+! PURPOSE:
+!       Subroutine to simulate microwave emissivity over snow/sea ice conditions from AMSU measurements at
+!       window channels.
+!
+! REFERENCES:
+!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+!
+! CATEGORY:
+!       CRTM : Surface : MW ICE EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL ICEEM_AMSU
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Satellite_Angle          The local zenith angle in degree for AMSU measurements.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         User_Angle               The local angle value in degree user defines.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         Tba                      BRIGHTNESS TEMPERATURES AT FOUR AMSU-A WINDOW CHANNELS
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION   4*1 SCALAR
+!
+!                        WHICH ARE
+!                                  tba[1] = TB at 23.8 GHz
+!                                  tba[2] = TB at: 31.4 GHz
+!                                  tba[3] = TB at 50.3 GHz
+!                                  tba[4] = TB at 89 GHz
+!
+!         Tbb                      BRIGHTNESS TEMPERATURES AT TWO AMSU-B WINDOW CHANNELS
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION   2*1 SCALAR
+!
+!                         WHICH ARE
+!
+!                                  tbb[1] = TB at 89 GHz
+!                                  tbb[2] = TB at 150 GHz
+!
+!
+!         Ts = Sea Ice Temperature:        The sea ice surface temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! INTERNAL ARGUMENTS:
+!
+!      User_theta                User_Angle in radian
+!
+!      Satellite_theta           Satellite_Angle in radian
+!
+! CALLS:
+!
+!     AMSU_IATs           : Subroutine to calculate sea ice emissivity from AMSU-A and Ts
+!
+!     AMSU_IBTs           : Subroutine to calculate sea ice emissivity from AMSU-B and Ts
+!
+!
+!
+! PROGRAM HISTORY LOG:
+!   2004-01-01  yan,b   - implement the algorithm for the ice emissivity
+!   2004-03-01  yan,b   - modify the code for SSI
+!   2005-05-27  yan,b - modify the code for CRTM
 
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! COMMENTS:
+!       Note the INTENT on the output SensorData argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
 subroutine  NESDIS_ICEEM_AMSU(Satellite_Angle,                                               & ! INPUT
                               User_Angle,                                                    & ! INPUT

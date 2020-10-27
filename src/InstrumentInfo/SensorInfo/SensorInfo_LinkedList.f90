@@ -43,7 +43,6 @@ MODULE SensorInfo_LinkedList
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message string length

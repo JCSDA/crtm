@@ -32,7 +32,6 @@ PROGRAM AtmProfile2Atmosphere
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'AtmProfile2Atmosphere'
   CHARACTER(*),  PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
 
   INTEGER, PARAMETER :: N_CLOUDS   = 0  ! No cloud data
   INTEGER, PARAMETER :: N_AEROSOLS = 0  ! No aerosol data

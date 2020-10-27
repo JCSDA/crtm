@@ -1,3 +1,69 @@
+!------------------------------------------------------------------------------
+! NAME:
+!       Create_Process_Defaults_File
+!
+! PURPOSE:
+!       Program to create the defaults file for the transmittance production
+!       shell scripts. The created file links the shell script defaults to
+!       those specified in the "Tau_Production_Parameters" module.
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                 Module containing definitions for kinds
+!                                   of variable types.
+!
+!       File_Utility:               Module containing generic file utility routines
+!
+!       Message_Handler:              Module to define simple error codes and
+!                                   handle error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       Tau_Production_Parameters:  Module defining parameters used in the LBL transmittance
+!                                   production runs
+!                                   USEs: TYPE_KINDS module
+!                                         LBLRTM_PARAMETERS module
+!
+!       Tau_Production_Utility:     Module continaing utility routines for the LBL
+!                                   transmittance production runs.
+!                                   USEs: TYPE_KINDS module
+!                                         FILE_UTILITY module
+!                                         ERROR_HANDLER module
+!                                         TRANSMITTANCE_PRODUCTION_PARAMETERS module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Output: Defaults file.
+!
+! SIDE EFFECTS:
+!       If the defaults file already exists, it is overwritten.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 07-Jun-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!
+!------------------------------------------------------------------------------
 
 PROGRAM Create_Process_Defaults_File
 
@@ -27,7 +93,6 @@ PROGRAM Create_Process_Defaults_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_Process_Defaults_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_Process_Defaults_File.f90,v 1.9 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -477,3 +542,58 @@ PROGRAM Create_Process_Defaults_File
 END PROGRAM Create_Process_Defaults_File
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.9 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Create_Process_Defaults_File.f90,v $
+! Revision 1.9  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.8  2005/12/19 18:52:56  paulv
+! - Added output of the default CO2 mixing ratio. This value is used in the
+!   process_tape5_files script.
+!
+! Revision 1.7  2005/09/21 18:22:19  paulv
+! - Added DF_INDEX to file output.
+!
+! Revision 1.6  2005/09/16 20:27:43  paulv
+! - Updates made to reflect changes in ProcessControl structure name and
+!   components.
+!
+! Revision 1.5  2003/07/22 16:57:41  paulv
+! - Changed default location of TAPE5 files from
+!     ../TAPE%_files
+!   to
+!     ./TAPE5_files
+!
+! Revision 1.4  2003/07/22 15:27:24  paulv
+! - Changed the default batch processing queue name from "short" (on origin)
+!   to "dev" on SP.
+!
+! Revision 1.3  2003/07/16 17:37:07  paulv
+! - Changed the molecule set from
+!     10 11 12 13 14
+!   to
+!      1 10 11 12 13 14 15
+!
+! Revision 1.2  2002/10/08 15:54:09  paulv
+! - Updated the documentation detailing the molecule set numbering scheme.
+! - Default is now to process molecule sets 10-14.
+!
+! Revision 1.1  2002/07/19 21:53:42  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

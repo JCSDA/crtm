@@ -3,7 +3,20 @@
 # PRODUCTION build settings for Linux gfortran compiler
 #-------------------------------------------------------------------------------#
 
+uname=$(uname -s)
+
 export FC="gfortran"
+
+if [[ "$uname" == "Linux"  ]] ; then
+		export NC4_DIR=/usr/local #singularity container only
+		export HDF_DIR=/usr/local #singularity container only
+elif [[ "$uname" == "Darwin" ]] ; then
+		export NC4_DIR="/usr/local/Cellar/netcdf/4.7.4_1"  #mac OS (brew install)
+		export HDF_DIR="/usr/local/Cellar/hdf5/1.12.0_1"   #mac OS (brew install)
+fi
+
+#set the number of openmp threads
+export OMP_NUM_THREADS=4  #set here for testing purposes, probably want to override this
 
 export FCFLAGS="\
 -O3 \
@@ -12,11 +25,23 @@ export FCFLAGS="\
 -fno-second-underscore \
 -frecord-marker=4 \
 -funroll-loops \
--ggdb \
+-fopenmp \
 -Wall \
 -Wconversion \
+-mieee-fp \
+-fbounds-check \
 -std=f2008"
 
-export LDFLAGS=""
+export LDFLAGS="-fopenmp"
 
 export LIBS=""
+
+if [[ "$uname" == "Darwin" ]] || [[ "$uname" == "Linux" ]] ; then #mac OS, brew install or linux (singularity) 
+		export LIBS="\
+  -L $NC4_DIR/lib -lnetcdf -lnetcdff \
+  -L $HDF_DIR/lib -lhdf5 \
+  -I $NC4_DIR/include \
+  -I $HDF_DIR/include "
+else
+	export LIBS=""
+fi

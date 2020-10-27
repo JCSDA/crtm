@@ -55,7 +55,6 @@ PROGRAM Test_Tangent_Linear
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Tangent_Linear'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Tangent_Linear.f90,v 1.8 2006/11/22 16:21:19 dgroff Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

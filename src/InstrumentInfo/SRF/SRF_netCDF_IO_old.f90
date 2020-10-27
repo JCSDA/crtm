@@ -1,3 +1,77 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       SRF_netCDF_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write netCDF format
+!       SRF data files.
+!       
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE SRF_Reader
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       Message_Handler:       Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       SRF_Define:            Module defining the SRF data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    Message_Handler module
+!
+!       netcdf:                Module supplied with the Fortran 90 version 
+!                              of the netCDF libraries (at least v3.5.0).
+!                              See http://www.unidata.ucar.edu/packages/netcdf
+!
+!       netCDF_Utility:        Module containing utility routines for
+!                              netCDF file access.
+!                              USEs: NETCDF_DIMENSION_UTILITY module
+!                                    NETCDF_ATTRIBUTE_UTILITY module
+!                                    NETCDF_VARIABLE_UTILITY module
+!                                    
+!
+! CONTAINS:
+!       Create_SRF_netCDF:   Function to create a netCDF SRF data file for
+!                            writing.
+!
+!       Inquire_SRF_netCDF:  Function to inquire a netCDF SRF format file
+!                            to obtain the number of channels and the
+!                            channel list.
+!
+!       Write_SRF_netCDF:    Function to write SRF data to a netCDF format
+!                            SRF file.
+!
+!       Read_SRF_netCDF:     Function to read a selected channels' SRF data
+!                            from a netCDF SRF format file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 03-Oct-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE SRF_netCDF_IO
 
@@ -40,7 +114,6 @@ MODULE SRF_netCDF_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SRF_netCDF_IO.f90 774 2007-07-24 18:24:06Z paul.vandelst@noaa.gov $'
 
   ! -- Invalid flag
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1

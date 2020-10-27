@@ -23,7 +23,6 @@ MODULE NESDIS_OCEANEM_Module
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: zero = 0.0_fp
   REAL(fp), PARAMETER :: one = 1.0_fp
@@ -40,6 +39,153 @@ CONTAINS
 
 
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_OCeanEM
+!
+! PURPOSE:
+!       Subroutine to simulate microwave open ocean emissivity
+!
+! REFERENCES:
+!
+!   [1] Hollinger, J. P., Passive microwave measurements of sea surface roughness, IEEE Transactions on
+!       Geoscience Electronics, GE-9(3), 165-169, 1971.
+!
+!   [2] Klein, L.A., and C.T. Swift, An improved model for the dielectric constant of sea water at
+!       microwave frequencies, IEEE J. Oceanic Eng., OE-2, 104-111, 1977.
+!
+!   [3] Stogryn, A., The emissivity of sea foam at microwave frequencies, J. Geophys. Res., 77,
+!       1658-1666, 1972.
+!
+!   [4] Yan. B. and F. Weng, Application of AMSR-E measurements for tropical cyclone studies,
+!       Part I: Retrieval of sea surface temperature and wind speed, submitted to JGR, 2005
+!
+! CATEGORY:
+!       CRTM : Surface : MW OPEN OCEAN EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL NESDIS_OCeanEM
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Angle                    The angle values in degree
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         SST                      Ocean surface temperature
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!        Salinity                  Sea water salinity (1/thousand)
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         wind                     Ocean surface wind speed
+!                                  UNITS:      m/s
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!  INTERNAL ARGUMENTS:
+!
+!         foam                     Foam fraction
+!                                  UNITS:
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         g,tr                     Emperical functions for wind induced
+!                                  UNITS:
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         f                        Frequency
+!                                  UNITS:      Hz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         EH_dSST:                 Sensitivity of Emissivity_H to SST.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      1/Kelvin
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         EH_dSSW:                 Sensitivity of Emissivity_H to wind.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      1/m/s
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         EV_dSST:                 Sensitivity of Emissivity_V to SST.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      1/Kelvin
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         EV_dSSW:                 Sensitivity of Emissivity_V to wind.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      1/m/s
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+! CALLS:
+!
+!       EPSP    : Function to calculate the real part of the dielectric constant for saline water
+!
+!       EPSPP   : Function to calculate the imaginery part of the dielectric constant for saline water
+!
+!      OceanEM_TL_SSTW : Subroutine to calculate sensitivities of Emissivity_H and Emissivity_V to SST and SSW
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
      subroutine NESDIS_OCeanEM(Frequency,                                       & ! INPUT
                                Angle,                                           & ! INPUT

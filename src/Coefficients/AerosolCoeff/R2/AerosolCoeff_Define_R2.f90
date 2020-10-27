@@ -47,7 +47,6 @@ MODULE AerosolCoeff_Define_R2
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! AerosolCoeff init values
   INTEGER,      PARAMETER :: SL = 20
   REAL(Double), PARAMETER :: ZERO = 0.0_Double

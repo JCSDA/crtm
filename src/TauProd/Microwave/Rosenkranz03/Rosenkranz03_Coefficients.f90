@@ -1,3 +1,38 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Rosenkranz03_Coefficients
+!
+! PURPOSE:
+!       Module containing line and coefficient data for microwave attenuation
+!       calculations according to the Rosenkranz LBL code.
+!
+! CATEGORY:
+!       LBL : Microwave
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE Rosenkranz03_Coefficients
+!
+! MODULES:
+!       Type_Kinds:         Module containing definitions for kinds
+!                           of variable types.
+!
+! CREATION HISTORY:
+!       This data has been transposed from FORTRAN-77 data statements
+!       from P.Rosenkranz's source codes files
+!         o2abs.for
+!         abh2o.for
+!
+!       Written by:     Paul van Delst, CIMSS/SSEC 08-Nov-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 
 MODULE Rosenkranz03_Coefficients
@@ -308,3 +343,26 @@ MODULE Rosenkranz03_Coefficients
 END MODULE Rosenkranz03_Coefficients
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2004/12/16 19:03:55 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Rosenkranz03_Coefficients.f90,v $
+! Revision 1.2  2004/12/16 19:03:55  paulv
+! - Added separate parameters for 0.8 and 0.9 exponents.
+!
+! Revision 1.1  2004/11/15 21:19:24  paulv
+! Initial checkin.
+!
+!
+!
+!

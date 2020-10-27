@@ -46,7 +46,6 @@ MODULE TauCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
 
 CONTAINS

@@ -32,7 +32,6 @@ PROGRAM Diff_TauProfile
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Diff_TauProfile'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
 
   ! ---------

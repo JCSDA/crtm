@@ -1,3 +1,83 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       EmisTestData_Define
+!
+! PURPOSE:
+!       Module defining the EmisTestData data structure and containing routines to 
+!       manipulate it.
+!       
+! CATEGORY:
+!       CRTM : User Code : NESDIS Emissivity
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE EmisTestData_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:        Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_EmisTestData:      Function to test the association status
+!                                     of the pointer members of a EmisTestData
+!                                     structure.
+!
+!       Destroy_EmisTestData:         Function to re-initialize an EmisTestData
+!                                     structure.
+!
+!       Allocate_EmisTestData:        Function to allocate the pointer members
+!                                     of an EmisTestData structure.
+!
+!       Assign_EmisTestData:          Function to copy an EmisTestData structure.
+!
+!
+! DERIVED TYPES:
+!       EmisTestData_type:   Definition of the EmisTestData data structure. Fields
+!                            are...
+!
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the EmisTestData_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user
+!       destroy, allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 07-Dec-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE EmisTestData_Define
 
@@ -37,7 +117,6 @@ MODULE EmisTestData_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: EmisTestData_Define.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
 
   ! -- EmisTestData scalar member invalid value
   INTEGER,        PRIVATE, PARAMETER :: INVALID = -1
@@ -674,3 +753,27 @@ CONTAINS
 END MODULE EmisTestData_Define
 
 
+!---------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!---------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/05/02 14:58:35 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: EmisTestData_Define.f90,v $
+! Revision 1.2  2006/05/02 14:58:35  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.1  2004/12/08 16:47:35  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

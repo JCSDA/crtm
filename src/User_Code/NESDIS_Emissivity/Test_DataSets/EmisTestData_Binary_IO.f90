@@ -1,3 +1,64 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       EmisTestData_Binary_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write the Emissivity Test
+!       Data files.
+!       
+! CATEGORY:
+!       CRTM : User Code : NESDIS Emissivity
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE EmisTestData_Binary_IO
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       File_Utility:          Module containing generic file utility routines
+!
+!       Message_Handler:       Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       EmisTestData_Define:   Module defining the EmisTestData data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    ERROR_HANDLER module
+!
+! CONTAINS:
+!       Read_EmisTestData_Binary:    Function to read the Emissivity Test
+!                                    Data files.
+!
+!       Write_EmisTestData_Binary:   Function to write the Emissivity Test
+!                                    Data files.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       User specified EmisTestData data files for both input and output.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 07-Dec-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE EmisTestData_Binary_IO
 
@@ -35,7 +96,6 @@ MODULE EmisTestData_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: EmisTestData_Binary_IO.f90,v 1.2 2006/05/02 14:58:35 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -520,3 +580,26 @@ CONTAINS
 END MODULE EmisTestData_Binary_IO
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/05/02 14:58:35 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: EmisTestData_Binary_IO.f90,v $
+! Revision 1.2  2006/05/02 14:58:35  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.1  2004/12/08 16:47:35  paulv
+! Initial checkin.
+!
+!
+!
+!

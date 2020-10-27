@@ -1,3 +1,48 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       NESDIS_SnowEM_ATMS_Parameters Module
+!
+! PURPOSE:
+!       Module containing the snow emissivity library ATMS channels. The library contain 16 
+!       pre-defined snow spectrum which characterize 16 basic snow types. This library is used 
+!       together with a snow-typing algorithm to implement the library-based snow emissivity modeling. 
+!
+! CATEGORY:
+!       Surface : MW Surface Snow Emissivity Model Parameters
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE SnowEM_Parameters Module
+!
+! MODULES:
+!       Type_Kinds:     Module containing definitions for kinds of variable types.
+!
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Ming Chen,IMSG Inc., ming.chen@noaa.gov (04-28-2012)
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!
+!  Copyright (C) 2012 Fuzhong Weng and Ming Chen
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE NESDIS_ATMS_SeaIce_LIB
    
