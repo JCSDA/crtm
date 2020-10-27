@@ -7,9 +7,9 @@ Preamble
 CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)  
 
 Created on October  7, 2020  
-Updated on October 23, 2020
+Updated on October 27, 2020
 
-This is a fully functional release of CRTM v2.4.0.  
+This is a fully functional release of CRTM v2.4.0. 
 
 "Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
 
@@ -23,7 +23,7 @@ Basic requirements:
 
 **Important Note**: If reading this, you're cloning the CRTM development repository.  The development repository is structured in a way that makes it less user friendly, but more amenable to development and testing.
 
-**JEDI NOTE** This develop branch is also designed to work directly in a JEDI container or JEDI environment. If you're doing JEDI things, you're probably in the right spot. However, you can stop reading right now and have a look at the README_JEDI.md file.   
+**JEDI NOTE** This is a "non-JEDI" compliant release of REL-2.4.0.  `git tag | grep -i "jedi"` will show the checkout tags for JEDI-compatible releases.  
 
 If you're looking for an older version of CRTM (v2.3.0 or older) you should obtain the appropriate tarball from
 https://ftp.emc.ncep.noaa.gov/jcsda/CRTM/
