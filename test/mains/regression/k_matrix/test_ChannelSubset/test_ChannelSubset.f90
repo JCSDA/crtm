@@ -117,7 +117,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -133,7 +132,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error subsetting channels for '//TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -171,7 +169,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -182,7 +179,6 @@ PROGRAM Example6_ChannelSubset
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -191,7 +187,6 @@ PROGRAM Example6_ChannelSubset
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_K)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_K structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -257,7 +252,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM K_Matrix Model'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -293,18 +287,6 @@ PROGRAM Example6_ChannelSubset
 
 
 
-  ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
 
 
 
@@ -331,7 +313,6 @@ PROGRAM Example6_ChannelSubset
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -347,7 +328,6 @@ PROGRAM Example6_ChannelSubset
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Surface_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -361,7 +341,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9b.2 Surface file
@@ -371,7 +350,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Surface_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -381,7 +359,6 @@ PROGRAM Example6_ChannelSubset
        n_ls /= n_Channels .OR. n_ms /= N_PROFILES      ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -392,7 +369,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9d.2 Surface file
@@ -400,7 +376,6 @@ PROGRAM Example6_ChannelSubset
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Surface_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -413,14 +388,12 @@ PROGRAM Example6_ChannelSubset
   ELSE
     Message = 'Atmosphere_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Atmosphere_K results to file
     atmk_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Atmosphere.bin'
     Error_Status = CRTM_Atmosphere_WriteFile( atmk_file, Atmosphere_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! 9e.2 Surface
@@ -430,19 +403,28 @@ PROGRAM Example6_ChannelSubset
   ELSE
     Message = 'Surface_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Surface_K results to file
     sfck_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Surface.bin'
     Error_Status = CRTM_Surface_WriteFile( sfck_file, Surface_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Surface_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! ============================================================================
 
 
+  ! ============================================================================
+  ! 8. **** DESTROY THE CRTM ****
+  !
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
+  ! ============================================================================
 
 
   ! ============================================================================
@@ -458,6 +440,8 @@ PROGRAM Example6_ChannelSubset
   CALL CRTM_Atmosphere_Destroy(Atmosphere_K)
   CALL CRTM_Atmosphere_Destroy(Atm)
 
+
+
   ! 10b. Deallocate the arrays
   ! --------------------------
   DEALLOCATE(RTSolution, RTSolution_K, &
@@ -472,6 +456,5 @@ CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM Example6_ChannelSubset

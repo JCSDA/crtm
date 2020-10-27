@@ -1,3 +1,85 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       NESDIS_ATMS_SnowEM_Module
+!
+! PURPOSE:
+!       Module containing the snow-typing algorithms. A general interface is used to call one of the
+!       snow-typing algorithms in !terms of the input arguments. This Module is used together with
+!       NESDIS_SnowEM_ATMS_Parameters Module to implement the library-based snow emissivity  model.
+!
+! REFERENCES:
+!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+!
+!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+!
+! CATEGORY:
+!       Surface : MW Surface Snow Emissivity of ATMS
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!
+!       USE NESDIS_ATMS_SnowEM_Module
+!
+! MODULES:
+!       Type_Kinds:               Module containing definitions for kinds of variable types
+!
+!       NESDIS_LandEM_Module:     Module containing the microwave land emissivity model
+!
+!       NESDIS_SnowEM_Parameters: Module containing the predefined microwave snow emissivity spectra
+!
+! CONTAINS:
+!
+! PUBLIC SUNPROGRAMS:
+!
+!       NESDIS_ATMS_SNOWEM:       Subroutine to calculate the microwave snow emissivity from ATMS
+!
+!
+! PRIVATE SUBPROGRAMS:
+!       These subroutines are used to determine the snow types from the brightness temperatures(TB)
+!       of five ATMS window channels( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz, 165.5 GHz) and/or
+!       surface temperature plus snow depth. The five channels are further divided into two
+!       groups: Group-1 ( 23.8 GHz, 31.4 GHz, 50.3 GHz, 88.2 GHz) and Group-2 (88.2 GHz, 165.5GHz),
+!       corresponding to the window channels of AMSU-A and AMSU-B, respectively.
+!       Different combinations of available ATMS window-channel and surface observations result
+!       in differenet snow-typing algotrithms:
+!
+!       ATMS_SNOW_ByTB_A      : by ATMS TBs of Group-1 channels
+!       ATMS_SNOW_ByTB_B      : by ATMS TBs of Group-2 channels
+!       ATMS_SNOW_ByTBs       : by the TBs  of all the five ATMS channels
+!       ATMS_SNOW_ByTBTs_A    : by ATMS TBs of Group-1 channels and surface temperature
+!       ATMS_SNOW_ByTBTs_B    : by ATMS TBs of Group-2 channels and surface temperature
+!       ATMS_SNOW_ByTBTs      : by the TBs  of all the five ATMS channels and surface temperature (regression-based)
+!       ATMS_SNOW_ByTBTs_D    : by the TBs  of all the five ATMS channels and surface temperature (diagnosis-based)
+!       ATMS_SNOW_ByTypes     : bydefault surface type (4)
+!       ATMS_ALandEM_Snow     : Subroutine to initilize the vaiables to default values
+!       em_initialization     : Subroutine to initialization snow emissivity
+!       em_interpolate        : Subroutine to perform frequency interpolation of snow emissivity
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Ming Chen, IMSG Inc., Banghua.Yan@noaa.gov (04-28-2012)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2012 Fuzhong Weng and Ming Chen
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE NESDIS_ATMS_SnowEM_Module
 
@@ -169,6 +251,7 @@ CONTAINS
    !  Copyright (C) 2005 Fuzhong Weng and Ming Chen
    !  Copyright (C) 2019 James Rosinski
    !
+   !
    !------------------------------------------------------------------------------------------------------------
 
 
@@ -256,13 +339,13 @@ CONTAINS
            ENDIF
      END SELECT
 
-    if (any(Tbs((/1,2,3,4,5/)) < 50.0_fp) .or. any(TBs((/1,2,3,4,5/)) > 500.0_fp)) then
+    IF (ANY(Tbs((/1,2,3,4,5/)) < 50.0_fp) .OR. ANY(TBs((/1,2,3,4,5/)) > 500.0_fp)) THEN
         !** use default snow EM
         CALL ATMS_SNOW_ByTypes(Frequency,Snow_Type,em_vector)
-     else
+     ELSE
         ! the above regression-based snow-typing algs are superseded by the diagnosis-based snow-typing
         CALL ATMS_SNOW_ByTBTs_D(Frequency,Tbs,Ts,Snow_Type,em_vector)  
-     end if
+     END IF
 
 
    ! Get the emissivity angle dependence
@@ -450,12 +533,12 @@ CONTAINS
      em = SNOW_EMISS_ATMS_LIB
      freq = FREQUENCY_ATMS
 
-     minlc =minloc(ABS(freq-frequency)); freq_idx=minlc(1)
+     minlc =MINLOC(ABS(freq-frequency)); freq_idx=minlc(1)
 
    !*** IDENTIFY SNOW TYPE
      snow_type = 4 !default
-     ediff=abs(Tb(1)/em(1,:)-Tb(2)/em(2,:))+abs(Tb(2)/em(2,:)-Tb(4)/em(11,:))
-     minlc = minloc(ediff) ; snow_type=minlc(1)
+     ediff=ABS(Tb(1)/em(1,:)-Tb(2)/em(2,:))+ABS(Tb(2)/em(2,:)-Tb(4)/em(11,:))
+     minlc = MINLOC(ediff) ; snow_type=minlc(1)
 
    !*** adjustment from the library values
      emw=em(windex,snow_type)
@@ -1374,7 +1457,7 @@ CONTAINS
      COMPLEX(fp)  eair
      freq_3w = (/31.4_fp,89.0_fp,150.0_fp/)
 
-     eair = cmplx(one,-zero,fp)
+     eair = CMPLX(one,-zero,fp)
 
      snow_type = -999
 
@@ -1572,10 +1655,10 @@ CONTAINS
               ichmax = 2
            ENDIF
            DO ich = ichmin,ichmax
-              dem = dem + abs(discriminator(ich) - em(k,ich+4))
+              dem = dem + ABS(discriminator(ich) - em(k,ich+4))
            END DO
            DO ich = 4,5
-              dem = dem + abs(discriminator(ich) - em(k,ich+5))
+              dem = dem + ABS(discriminator(ich) - em(k,ich+5))
            END DO
            IF (dem < demmin0) THEN
               demmin0 = dem
@@ -1597,10 +1680,10 @@ CONTAINS
      DO ich = 5, 9
         IF (ich .LE. 7) THEN
            IF (discriminator(ich - 4) .NE. -999.9_fp) &
-              adjust_check = adjust_check + abs(emis(ich) - discriminator(ich - 4))
+              adjust_check = adjust_check + ABS(emis(ich) - discriminator(ich - 4))
         ELSE
            IF (discriminator(ich - 4) .NE. -999.9_fp)  &
-              adjust_check = adjust_check + abs(emis(ich+1) - discriminator(ich - 4))
+              adjust_check = adjust_check + ABS(emis(ich+1) - discriminator(ich - 4))
         ENDIF
      END DO
 
@@ -1709,7 +1792,7 @@ CONTAINS
      REAL(fp) :: theta,frequency,depth,ts,esv_3w(:),esh_3w(:)
      REAL(fp) :: discriminator(5),emmod(nw_3),dem(nw_3)
      REAL(fp) :: emissivity,em_vector(2)
-     REAL(Double) :: dem_coe(nw_3,0:ncoe-1),sinthetas,costhetas,deg2rad
+     REAL(DOUBLE) :: dem_coe(nw_3,0:ncoe-1),sinthetas,costhetas,deg2rad
 
      SAVE  dem_coe
 
@@ -1727,7 +1810,7 @@ CONTAINS
 
 
      deg2rad = 3.14159_fp*pi/180.0_fp
-     sinthetas = sin(theta*deg2rad)* earthrad/(earthrad + satheight)
+     sinthetas = SIN(theta*deg2rad)* earthrad/(earthrad + satheight)
      sinthetas = sinthetas*sinthetas
      costhetas = one - sinthetas
 

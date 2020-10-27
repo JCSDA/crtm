@@ -1,3 +1,66 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       netCDF_Attribute_Utility
+!
+! PURPOSE:
+!       Module containing some utility routines for netCDF file attribute access.
+!
+! CATEGORY:
+!       netCDF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE netCDF_Attribute_Utility
+!
+! MODULES:
+!       Type_Kinds:    Module containing data type kind definitions.
+!
+!       Message_Handler: Module to define error codes and handle error
+!                      conditions
+!                      USEs: FILE_UTILITY module
+!
+!       netcdf:        Module supplied with the Fortran 90 version of the
+!                      netCDF libraries (at least v3.5.0).
+!                      See http://www.unidata.ucar.edu/packages/netcdf
+!
+! CONTAINS:
+!       Get_netCDF_Attribute: Function to retrieve a netCDF variable attribute
+!                             by name. This function is simply a wrapper
+!                             for some of the NetCDF library functions to
+!                             simplify the retrieval of an attribute with
+!                             error checking.
+!
+!       Put_netCDF_Attribute: Function to write a netCDF variable attribute
+!                             by name. This function is simply a wrapper
+!                             for some of the NetCDF library functions to
+!                             simplify the writing of an attribute with
+!                             error checking.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       For PUT operations, attribute values can be overwritten if they
+!       already exist in the output file.
+!
+! RESTRICTIONS:
+!       Interfaces are available only for scalar and rank-1 attribute data,
+!       except for character attributes which only have a scalar interface.
+!
+! CREATION HISTORY:
+!       Written by:   Paul van Delst, CIMSS/SSEC, 11-Feb-2003
+!                     paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2003, 2004 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE netCDF_Attribute_Utility
 
@@ -68,7 +131,6 @@ MODULE netCDF_Attribute_Utility
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: netCDF_Attribute_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $'
 
 
 CONTAINS
@@ -3596,3 +3658,37 @@ CONTAINS
 END MODULE netCDF_Attribute_Utility
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/07/26 21:39:05 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: netCDF_Attribute_Utility.f90,v $
+! Revision 1.2  2006/07/26 21:39:05  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
+! Revision 1.1  2006/06/08 21:47:55  wd20pd
+! Initial checkin.
+!
+! Revision 1.4  2006/05/02 16:58:03  dgroff
+! *** empty log message ***
+!
+! Revision 1.3  2005/01/11 18:49:42  paulv
+! - Regenerated from updated pp files.
+!
+! Revision 1.1  2003/02/12 20:07:18  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

@@ -1,3 +1,68 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       UMBC_Profile_Set
+!
+! PURPOSE:
+!       Module containing the UMBC atmospheric profile dependent set data 
+!       definitions and access routines
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-90
+!
+! CALLING SEQUENCE:
+!       USE UMBC_Profile_Set
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       File_Utility:                Module containing generic file utility
+!                                    routines
+!
+!       Message_Handler:               Module to define simple error codes and
+!                                    handle error conditions
+!                                    USEs: FILE_UTILITY module
+!
+!       Profile_Utility_Parameters:  Module containing parameters used in the
+!                                    profile utility modules.
+!                                    USEs: TYPE_KINDS module
+!                                          FUNDAMENTAL_CONSTANTS module
+!
+!       Units_Conversion:            Module containing routines to convert
+!                                    atmospheric profile concentration units.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          PROFILE_UTILITY_PARAMETERS module
+!                                          ATMOSPHERIC_PROPERTIES module
+!
+! CONTAINS:
+!       Load_UMBC_Profile:  Function to load a requested atmospheric profile
+!                           from the UMBC dependent set.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 12-Jul-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE UMBC_Profile_Set
 
@@ -35,7 +100,6 @@ MODULE UMBC_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! -- The number of absorbers and profiles
   INTEGER, PUBLIC, PARAMETER :: N_UMBC_ABSORBERS = 5
@@ -664,3 +728,33 @@ CONTAINS
 END MODULE UMBC_Profile_Set
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: UMBC_Profile_Set.f90,v $
+! Revision 1.4  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.3  2003/08/13 21:21:02  paulv
+! - Conversion of H2O units from ppmv to g/kg is now done in this routine.
+! - Updated header documentation.
+!
+! Revision 1.2  2002/07/22 17:08:04  paulv
+! - Corrected initialisation of defaults.
+!
+! Revision 1.1  2002/07/22 17:04:43  paulv
+! Initial checkin.
+!
+!
+!
+!

@@ -20,7 +20,6 @@ MODULE oSRF_Parameters
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
 
 
   ! Planck coefficient parameters

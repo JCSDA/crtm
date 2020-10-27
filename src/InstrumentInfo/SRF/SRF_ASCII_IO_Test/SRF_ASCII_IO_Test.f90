@@ -1,3 +1,69 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       SRF_ASCII_IO_Test
+!
+! PURPOSE:
+!       Program to test the SRF ASCII I/O functions.
+!
+! CATEGORY:
+!       SRF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:     Module containing definitions for kinds
+!                       of variable types.
+!
+!       Message_Handler:Module to define simple error codes and
+!                       handle error conditions
+!                       USEs: FILE_UTILITY module
+!
+!       SRF_Define:     Module defining the SRF data structure and
+!                       containing routines to manipulate it.
+!                       USEs: TYPE_KINDS module
+!                             Message_Handler module
+!                             INTEGRATE module
+!
+!       SRF_ASCII_IO:   Module containing routines to read and
+!                       write ASCII format SRF data files.
+!                       USEs: TYPE_KINDS module
+!                             FILE_UTILITY module
+!                             Message_Handler module
+!                             STRING_UTILITY module
+!                             SRF_DEFINE module
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  - ASCII SRF file
+!
+!       Output: - ASCII SRF file.
+!
+! SIDE EFFECTS:
+!       Any output files that exist are overwritten.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 27-Aug-2003
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2003 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM SRF_ASCII_IO_Test
 
@@ -26,7 +92,6 @@ PROGRAM SRF_ASCII_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_ASCII_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_ASCII_IO_Test.f90,v 1.5 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

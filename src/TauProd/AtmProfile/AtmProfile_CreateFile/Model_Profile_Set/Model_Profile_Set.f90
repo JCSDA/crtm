@@ -1,3 +1,65 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Model_Profile_Set
+!
+! PURPOSE:
+!       Module containing the standard model climatology atmospheric profile
+!       data definitions and access routines.
+!
+! CATEGORY:
+!       AtmProfile
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE Model_Profile_Set
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       Message_Handler:               Module to define simple error codes and
+!                                    handle error conditions
+!                                    USEs: FILE_UTILITY module
+!
+!       Profile_Utility_Parameters:  Module containing parameters used in the
+!                                    profile utility modules.
+!                                    USEs: TYPE_KINDS module
+!                                          FUNDAMENTAL_CONSTANTS module
+!
+!       Units_Conversion:            Module containing routines to convert
+!                                    atmospheric profile concentration units.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          PROFILE_UTILITY_PARAMETERS module
+!                                          ATMOSPHERIC_PROPERTIES module
+!
+! CONTAINS:
+!       Load_Model_Profile:  Function to load a requested model atmospheric
+!                            profile from the Model Profile set.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, MODEL/SSEC 13-Nov-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 
 MODULE Model_Profile_Set
@@ -35,7 +97,6 @@ MODULE Model_Profile_Set
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: Model_Profile_Set.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Private dimensions.
   INTEGER, PRIVATE, PARAMETER :: N_MODEL_LEVELS    = 50
@@ -1523,3 +1584,25 @@ CONTAINS
 END MODULE Model_Profile_Set
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Model_Profile_Set.f90,v $
+! Revision 1.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.1  2005/01/04 22:03:12  paulv
+! Initial checkin.
+!
+!
+!

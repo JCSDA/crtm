@@ -1,0 +1,59 @@
+# @configure_input@
+
+# check target makefile template
+
+# Package-specific substitution variables
+tarname = @PACKAGE_TARNAME@
+
+# The file definitions.
+EXE_FILE = check_lblrtmio
+SRC_FILE = $(EXE_FILE).f90
+OBJ_FILE = ${SRC_FILE:.f90=.o}
+
+# Tool-specific substitution variables
+FC       = @FC@
+FCFLAGS  = -I.. @FCFLAGS@ -c
+FPPFLAGS = @FPPFLAGS@
+LDFLAGS  = -L.. @LDFLAGS@
+LIBS     = -l$(tarname) @LIBS@
+
+# Colours for test result output
+GREEN=\033[1;32m
+RED=\033[1;31m
+NC=\033[0m # No Color
+
+# The targets
+all: $(EXE_FILE)
+
+check: $(EXE_FILE)
+	@-rm -f .signal >/dev/null 2>&1
+	@echo "========================================"; \
+	echo "  Running test..."; \
+	echo; \
+	./$(EXE_FILE); \
+	echo; \
+	if [ -f .signal ]; then \
+	  echo -e "$(GREEN)"; echo "  TEST SUCCESSFUL!"; echo -e "$(NC)"; \
+	  rm .signal; \
+	else \
+	  echo -e "$(RED)"  ; echo "  TEST FAILED!"    ; echo -e "$(NC)"; \
+	fi; \
+	echo  "========================================"
+
+clean:
+	-rm -fr $(OBJ_FILE) $(EXE_FILE) *.dat >/dev/null 2>&1
+
+distclean:
+	-rm Makefile >/dev/null 2>&1
+
+$(EXE_FILE): $(OBJ_FILE)
+	$(FC) $(LDFLAGS) $(OBJ_FILE) -o $(EXE_FILE) $(LIBS)
+
+# Specify targets that do not generate filesystem objects
+.PHONY: all clean check update distclean
+
+# Suffix rules
+.SUFFIXES:
+.SUFFIXES: .f90 .o
+.f90.o:
+	$(FC) $(FCFLAGS) $(EXTRA_FCFLAGS) $<

@@ -30,7 +30,6 @@ MODULE Average_Utility
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256
   ! Literal constants

@@ -37,7 +37,6 @@ MODULE MR_PPMV
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   REAL(fp), PARAMETER :: MR_TO_PPMV_SCALE_FACTOR = G_TO_KG * PPV_TO_PPMV
   REAL(fp), PARAMETER :: PPMV_TO_MR_SCALE_FACTOR = KG_TO_G * PPMV_TO_PPV
 

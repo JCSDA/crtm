@@ -36,7 +36,6 @@ PROGRAM Test_TauCoeff
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_TauCoeff'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER(*), PARAMETER ::  NC_FILENAME = 'Test.TauCoeff.nc'
   CHARACTER(*), PARAMETER :: BIN_FILENAME = 'Test.TauCoeff.bin'
   INTEGER, PARAMETER :: SET = 1

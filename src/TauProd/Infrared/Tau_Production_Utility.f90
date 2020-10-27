@@ -1,3 +1,80 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Tau_Production_Utility
+!
+! PURPOSE:
+!       Module continaing utility routines for the LBL transmittance
+!       production runs
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE Tau_Production_Utility
+!
+! MODULES:
+!       Type_Kinds:                 Module containing definitions for kinds
+!                                   of variable types.
+!
+!       File_Utility:               Module containing generic file utility routines
+!
+!       Message_Handler:              Module to define simple error codes and
+!                                   handle error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       Compare_Float_Numbers:      Module containing routines to perform equality
+!                                   and relational comparisons on floating point
+!                                   numbers.
+!                                   USEs: TYPE_KINDS module
+!
+!       Tau_Production_Parameters:  Module defining parameters used in the LBL
+!                                   transmittance production runs.
+!                                   USEs: TYPE_KINDS module
+!                                         LBLRTM_PARAMETERS module
+!
+! CONTAINS:
+!       Create_Signal_File:         Function to create a "signal" file that
+!                                   can be checked for in the transmittance
+!                                   production scripts. The presence of a signal
+!                                   file indicates the program completed
+!                                   successfully.
+!
+!       Compute_LBL_Band:           Function to determine what LBLband a
+!                                   particular frequency is within.
+!
+!       Compute_dF_Index:           Function to determine which frequency
+!                                   interval index is being used. More than
+!                                   one frequency interval is valid for the
+!                                   transmittance production code -- this
+!                                   utility determines which one is being used.
+!
+!       Compute_Frequency_Index:    Function to determine the array index of
+!                                   a particular frequency value.
+!
+!       Find_Indices:               Function to determine the indices of the
+!                                   passed logical mask array that are .TRUE.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 15-May-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 
 MODULE Tau_Production_Utility

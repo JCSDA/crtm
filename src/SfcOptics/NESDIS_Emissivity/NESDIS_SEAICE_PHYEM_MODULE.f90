@@ -33,6 +33,98 @@ CONTAINS
                                 Emissivity_H,                                              &  ! OUTPUT
                                 Emissivity_V)                                                 ! OUPTUT
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_SIce_Phy_EM
+!
+! PURPOSE:
+!       Subroutine to simulate microwave sea ice emissivity
+!
+! REFERENCES:
+!
+! Ulaby, F.T., R. K., Moore, and A. K., Fung, Microwave remote sensing: active and passive, III,
+! from theory to Applications, 2020-2025, Artech House Publishers, 1990.
+!
+! CATEGORY:
+!       CRTM : Surface : MW SEA ICE EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL NESDIS_SIce_Phy_EM
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Angle                    The angle values in degree
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         Ts_ice                   Sea ice temperature
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!        Salinity                  Sea water salinity (1/thousand)
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!  INTERNAL ARGUMENTS:
+!
+!         theta                    viewing zenith angle
+!                                  UNITS:  radian
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+! CALLS:
+!
+!       permitivity    : Function to calculate the dielectric constant of saline water
+!
+!reflection_coefficient: Function to calculate the surface reflection coefficient using Fresnel equations
+!
+! RESTRICTIONS:
+!       None.
+!
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
 
      real(fp) ::  Angle,theta, Ts_ice, Salinity

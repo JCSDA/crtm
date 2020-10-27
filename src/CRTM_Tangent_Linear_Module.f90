@@ -26,6 +26,7 @@ MODULE CRTM_Tangent_Linear_Module
                                         MAX_N_AZIMUTH_FOURIER, &
                                         MAX_SOURCE_ZENITH_ANGLE, &
                                         MAX_N_STREAMS, &
+                                        MIN_COVERAGE_THRESHOLD, &
                                         SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsVisibleSensor, &
@@ -265,7 +266,7 @@ CONTAINS
     Options      ) &  ! Optional FWD input, M
   RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere(:)      ! M
+    TYPE(CRTM_Atmosphere_type)       , INTENT(IN OUT) :: Atmosphere(:)      ! M
     TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface(:)         ! M
     TYPE(CRTM_Atmosphere_type)       , INTENT(IN)     :: Atmosphere_TL(:)   ! M
     TYPE(CRTM_Surface_type)          , INTENT(IN)     :: Surface_TL(:)      ! M
@@ -288,7 +289,7 @@ CONTAINS
     INTEGER :: n, n_Sensors,  SensorIndex
     INTEGER :: l, n_Channels, ChannelIndex
     INTEGER :: m, n_Profiles
-    INTEGER :: ln
+    INTEGER :: ln, nc
     INTEGER :: n_Full_Streams, mth_Azi
     INTEGER :: cloud_coverage_flag
     REAL(fp) :: Source_ZA
@@ -401,12 +402,23 @@ CONTAINS
 
 
       ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
-      IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE
-         WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
-                &"for the cloudy case profile #",i0)' ) m
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         RETURN
+       IF ( Atmosphere(m)%n_Clouds > 0) then
+          !** clear clouds where cloud_fraction < threshold
+          do nc = 1, Atmosphere(m)%n_clouds
+             where (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+                Atmosphere(m)%Cloud_Fraction(:) = ZERO
+                Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
+                Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
+             end where
+          end do
+
+          IF(.NOT. CRTM_CloudCoeff_IsLoaded() )THEN
+             Error_Status = FAILURE
+             WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
+                  &"for the cloudy case profile #",i0)' ) m
+             CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+             RETURN
+          END IF
       END IF
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
          Error_Status = FAILURE

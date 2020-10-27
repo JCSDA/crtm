@@ -47,7 +47,6 @@ MODULE LBLRTM_Utility
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: LBLRTM_Utility.fpp 35189 2013-12-28 17:23:23Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

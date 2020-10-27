@@ -1,3 +1,96 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Check_TauProfile_Data
+!
+! PURPOSE:
+!       Program to check the individual TauProfile datafiles for completed
+!       data.
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       Message_Handler:               Module to define simple error codes and
+!                                    handle error conditions
+!                                    USEs: FILE_UTILITY module
+!
+!       ProcessControl_Define:       Module containing the Process Control
+!                                    data type definition and routines to
+!                                    manipulate the structure.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!
+!       ProcessControl_IO:           Module containing routines to read and write
+!                                    ASCII Process Control files.
+!                                    USEs: TYPE_KINDS module
+!                                          FILE_UTILITY module
+!                                          ERROR_HANDLER module
+!                                          PROCESSCONTROL_DEFINE module
+!
+!       TauProfile_Define:           Module defining the TauProfile data structure
+!                                    and containing routines to manipulate it.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!
+!       TauProfile_netCDF_IO:        Module containing routines to read and write
+!                                    netCDF format TauProfile files.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          TAUPROFILE_DEFINE module
+!                                          NETCDF module
+!                                          NETCDF_UTILITY module
+!
+!       Tau_Production_Parameters:   Module defining parameters used in the LBL
+!                                    transmittance production runs
+!                                    USEs: TYPE_KINDS module
+!
+!       Tau_Production_Utility:      Module continaing utility routines for the
+!                                    LBL transmittance production runs.
+!                                    USEs: TYPE_KINDS module
+!                                          FILE_UTILITY module
+!                                          ERROR_HANDLER module
+!                                          TAU_PRODUCTION_PARAMETERS module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  - Process Control file
+!               - Sensor TauProfile netCDF data files for each profile and
+!                 each molecule set.
+!
+!       Output: - 
+!
+! SIDE EFFECTS:
+!       
+!
+! RESTRICTIONS:
+!       
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 25-Feb-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 PROGRAM Check_TauProfile_Data
 
@@ -32,7 +125,6 @@ PROGRAM Check_TauProfile_Data
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Check_TauProfile_Data'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Check_TauProfile_Data.f90,v 1.6 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -531,3 +623,44 @@ PROGRAM Check_TauProfile_Data
 END PROGRAM Check_TauProfile_Data
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.6 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Check_TauProfile_Data.f90,v $
+! Revision 1.6  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.5  2006/02/09 16:56:25  paulv
+! - Removed all user input pauses.
+!
+! Revision 1.4  2005/09/16 20:27:06  paulv
+! - Updated to reflect changes in the ProcessControl structure name and
+!   components.
+!
+! Revision 1.3  2004/03/02 00:39:05  paulv
+! - Corrected bug in identifying channels.
+! - Added deletion of completion signal file.
+! - Tidied up program flow and crappy data output.
+!
+! Revision 1.2  2004/02/27 17:14:22  paulv
+! - Added error count variables.
+! - Added pause option if the number of output lines is too big for one screeful.
+! - Now looping over angles and channels individually to check for crappy
+!   transmittances once *any* have been detected.
+!
+! Revision 1.1  2004/02/25 18:04:57  paulv
+! Initial checkin.
+!
+!
+!
+!

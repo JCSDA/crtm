@@ -1,3 +1,56 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Endian_Utility
+!
+! PURPOSE:
+!       Module containing functions to byte-swap intrinsic data types.
+!
+! CATEGORY:
+!       Utility
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE Endian_Utility
+!
+! MODULES:
+!       Type_Kinds:   Module to hold specification kinds for variable
+!                     declaration.
+!
+! CONTAINS:
+!       Big_Endian:   Logical function that returns .TRUE. if platform
+!                     is big endian.
+!
+!       Swap_Endian:  Function that byte-swaps input arguments.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!         Written by:   Paul van Delst, CIMSS/SSEC, 17-Mar-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE Endian_Utility
 

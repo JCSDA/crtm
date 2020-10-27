@@ -1,3 +1,120 @@
+!------------------------------------------------------------------------------
+! NAME:
+!       Create_ProcessControl_File
+!
+! PURPOSE:
+!       Program to create a generic Process Control file (profile and molecule
+!       set independent) for the transmittance production software given an
+!       input list of netCDF SRF data files.
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                Module containing definitions for kinds
+!                                  of variable types.
+!
+!       File_Utility:              Module containing generic file utility routines
+!
+!       Message_Handler:             Module to define simple error codes and
+!                                  handle error conditions
+!                                  USEs: FILE_UTILITY module
+!
+!       SensorInfo_Define:         Module defining the SensorInfo data
+!                                  structure and containing routines to
+!                                  manipulate it.
+!                                  USEs: TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!
+!       SensorInfo_LinkedList:     Module defining the SensorInfo Linked
+!                                  List data structure and containing
+!                                  routines to manipulate it.
+!                                  USEs: TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!                                        SENSORINFO_DEFINE module
+!
+!       SensorInfo_IO:             Module continaing routines to read and
+!                                  write ASCII SensorInfo format files.
+!                                  USEs: TYPE_KINDS module
+!                                        FILE_UTILITY module
+!                                        ERROR_HANDLER module
+!                                        SENSORINFO_DEFINE module
+!
+!       SRF_Define:                Module defining the SRF data structure and
+!                                  containing routines to manipulate it.
+!                                  USEs: TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!
+!       SRF_netCDF_IO:             Module containing routines to read and write
+!                                  netCDF SRF format files.
+!                                  USEs: TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!                                        SRF_DEFINE module
+!                                        NETCDF module
+!                                        NETCDF_UTILITY module
+!
+!       ProcessControl_Define:     Module containing the ProcessControl
+!                                  data type definition and routines to
+!                                  manipulate the structure.
+!                                  USEs: TYPE_KINDS module
+!                                        ERROR_HANDLER module
+!
+!       ProcessControl_IO:         Module containing routines to read and write
+!                                  ASCII Process Control files.
+!                                  USEs: TYPE_KINDS module
+!                                        FILE_UTILITY module
+!                                        ERROR_HANDLER module
+!                                        PROCESSCONTROL_DEFINE module
+!
+!       Tau_Production_Parameters: Module defining parameters used in the LBL
+!                                  transmittance production runs
+!                                  USEs: TYPE_KINDS module
+!                                        LBLRTM_PARAMETERS module
+!
+!       Tau_Production_Utility:    Module continaing utility routines for the LBL
+!                                  transmittance production runs.
+!                                  USEs: TYPE_KINDS module
+!                                        FILE_UTILITY module
+!                                        ERROR_HANDLER module
+!                                        COMPARE_FLOAT_NUMBERS module
+!                                        TRANSMITTANCE_PRODUCTION_PARAMETERS module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  - SensorInfo file.
+!               - netCDF format SRF data file(s).
+!
+!       Output: ASCII ProcessControl file.
+!
+! SIDE EFFECTS:
+!       If the ProcessControl file already exists, it is overwritten.
+!
+! RESTRICTIONS:
+!       The maximum number of input SRF files that can be processed
+!       is limited to 100.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!
+!------------------------------------------------------------------------------
 
 PROGRAM Create_ProcessControl_File
 
@@ -37,7 +154,6 @@ PROGRAM Create_ProcessControl_File
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_ProcessControl_File'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_ProcessControl_File.f90,v 2.3 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

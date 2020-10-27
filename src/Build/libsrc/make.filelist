@@ -5,7 +5,7 @@
 #
 
 # The list of files that need preprocessing
-FPP_FILES = CRTM_Module.fpp
+FPP_FILES = CRTM_Module.F90
 
 # The list of regular source files
 FSRC_FILES = \
@@ -29,8 +29,8 @@ FSRC_FILES = \
   Subset_Define.f90 \
   SpcCoeff_Define.f90 ACCoeff_Define.f90 NLTECoeff_Define.f90 \
   SpcCoeff_Binary_IO.f90 ACCoeff_Binary_IO.f90 NLTECoeff_Binary_IO.f90 \
-  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 \
-  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 \
+  CloudCoeff_Define.f90 CloudCoeff_Binary_IO.f90 CloudCoeff_netCDF_IO.f90 \
+  AerosolCoeff_Define.f90 AerosolCoeff_Binary_IO.f90 AerosolCoeff_netCDF_IO.f90 \
   CRTM_Options_Define.f90 \
   CRTM_AOD_Module.f90 \
   IRwaterCoeff_Define.f90 \
@@ -148,7 +148,7 @@ SRC_FILES = $(FSRC_FILES) \
 
 # The list of object files
 OBJ_FILES = ${FSRC_FILES:.f90=.o} \
-            ${FPP_FILES:.fpp=.o}
+            ${FPP_FILES:.F90=.o}
 
 # The list of include files
 INC_FILES = CRTM_Version.inc \

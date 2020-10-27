@@ -108,7 +108,6 @@
     ! Aerosol data. Three aerosol types can be loaded:
     !   Dust, Sulphate, and Sea Salt SSCM3
     Load_Aerosol_Data_1: IF ( atm(1)%n_Aerosols > 0 ) THEN
-
       atm(1)%Aerosol(1)%Type = DUST_AEROSOL
       atm(1)%Aerosol(1)%Effective_Radius = & ! microns
       (/0.000000E+00_fp, 0.000000E+00_fp, &

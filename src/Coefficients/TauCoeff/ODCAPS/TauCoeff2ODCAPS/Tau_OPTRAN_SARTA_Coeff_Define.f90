@@ -1,3 +1,137 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Tau_OPTRAN_SARTA_Coeff_Define
+!
+! PURPOSE:
+!       Module defining the Tau_OPTRAN_SARTA_Coeff data structure and containing routines to 
+!       manipulate it.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE Tau_OPTRAN_SARTA_Coeff_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_Tau_OPTRAN_Coeff:            Function to test the association status
+!                                               of the pointer members of a Tau_OPTRAN_SARTA_Coeff
+!                                               structure.
+!
+!       Destroy_Tau_OPTRAN_Coeff:               Function to re-initialize a Tau_OPTRAN_SARTA_Coeff
+!                                               structure.
+!
+!       Allocate_Tau_OPTRAN_Coeff:              Function to allocate the pointer members
+!                                               of a Tau_OPTRAN_SARTA_Coeff structure.
+!
+!       Assign_Tau_OPTRAN_Coeff:                Function to copy a valid Tau_OPTRAN_SARTA_Coeff structure.
+!
+!
+! DERIVED TYPES:
+!       Tau_OPTRAN_SARTA_Coeff_type:   Definition of the public Tau_OPTRAN_SARTA_Coeff data structure.
+!       Fields are...
+!
+!         n_Layers:            Maximum layers for the aborber coefficients.
+!                              "Ilayers" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Predictors:        Number of predictors used in the
+!                              gas absorption regression.
+!                              "Iuse" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Channels:          Total number of spectral channels.
+!                              "L" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_ProfAves:          Number of predictors for water vapor of OPTRAN in the
+!                              data structure.
+!                              "J" dimension  
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         Channel_Index:       This is the sensor channel number associated
+!                              with the data in the coefficient file. Helps
+!                              in identifying channels where the numbers are
+!                              not contiguous (e.g. AIRS).
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Water_Amount:        Array containing the The OPTRAN water amount 
+!                              UNITS:      Kilomoles/cm^2      
+!                              TYPE:       REAL( Single )
+!                              DIMENSION:  Ilayers  
+!                              ATTRIBUTES: POINTER
+!
+!         Water_ProfAve:       Array containing the gas absorption
+!                              model coefficients.
+!                              UNITS:      Variable
+!                              TYPE:       REAL( Single )
+!                              DIMENSION:  J x Ilayers 
+!                              ATTRIBUTES: POINTER
+!
+!         Water_Coeff:         Array containing the water vapor absorption
+!                              model coefficients.
+!                              UNITS:      Variable
+!                              TYPE:       REAL( Single )
+!                              DIMENSION:  Iuse x Ilayers x L
+!                              ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the Tau_OPTRAN_SARTA_Coeff_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user initialize,
+!       destroy, allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 02-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE Tau_OPTRAN_SARTA_Coeff_Define
 
@@ -36,7 +170,6 @@ MODULE Tau_OPTRAN_SARTA_Coeff_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Tau_OPTRAN_SARTA_Coeff_Define.f90,v 1.10 2006/05/02 19:42:09 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

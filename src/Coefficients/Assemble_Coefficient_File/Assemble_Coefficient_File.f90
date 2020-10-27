@@ -57,7 +57,6 @@ PROGRAM Assemble_Coefficient_File
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Assemble_Coefficient_File'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! The type of coefficient assembly
   INTEGER,      PARAMETER :: N_ASSEMBLY_TYPES = 3

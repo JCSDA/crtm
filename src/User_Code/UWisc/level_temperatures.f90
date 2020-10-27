@@ -204,7 +204,6 @@ END MODULE Level_Temperatures
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: level_temperatures.f90,v 1.1 2005/01/05 21:48:26 paulv Exp $
 !
 ! $Date: 2005/01/05 21:48:26 $
 !

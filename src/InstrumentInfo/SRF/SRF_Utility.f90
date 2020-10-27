@@ -46,7 +46,6 @@ MODULE SRF_Utility
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Maximum msg length
   INTEGER, PARAMETER :: ML = 256
   ! Keyword set value

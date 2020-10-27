@@ -1,3 +1,99 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       TauCoeff_SARTA_Binary_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write Binary format
+!       TauCoeff_SARTA files.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE TauCoeff_SARTA_Binary_IO
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       File_Utility:          Module containing generic file utility routines
+!
+!       Message_Handler:         Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       Binary_File_Utility:   Module containing utility routines for "Binary" 
+!                              format datafiles.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    Message_Handler module
+!
+!       TauCoeff_SARTA_Define:       Module defining the TauCoeff_SARTA data structure and
+!                              containing routines to manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    Message_Handler module
+!
+!       Tau_OPTRAN_Coeff_Binary_IO:    Module containing routines to read and write
+!                                      Tau_OPTRAN_Coeff Binary format files.
+!                                USEs: TYPE_KINDS module
+!                                      FILE_UTILITY module
+!                                      Message_Handler module
+!                                      BINARY_FILE_UTILITY module
+!                                      TAU_OPTRAN_COEFF_DEFINE module
+!
+!       TauCoeff_SARTA_TraceGas_Binary_IO:    Module containing routines to read and write
+!                                       TauCoeff_SARTA_TraceGas Binary format files.
+!                                USEs: TYPE_KINDS module
+!                                      FILE_UTILITY module
+!                                      Message_Handler module
+!                                      BINARY_FILE_UTILITY module
+!                                      TAUCOEFF_SARTA_TRACEGAS_DEFINE module
+!
+!       TauCoeff_SARTA_Subset_Binary_IO:     Module containing routines to read and write
+!                                      TauCoeff_SARTA_Subset Binary format files.
+!                                USEs: TYPE_KINDS module
+!                                      FILE_UTILITY module
+!                                      Message_Handler module
+!                                      BINARY_FILE_UTILITY module
+!                                      TAUCOEFF_SARTA_SUBSET_DEFINE module
+!
+!
+! CONTAINS:
+!       Inquire_TauCoeff_SARTA_Binary: Function to inquire a Binary format
+!                                TauCoeff_SARTA file.
+!
+!       Read_TauCoeff_SARTA_Binary:    Function to read a Binary format
+!                                TauCoeff_SARTA file.
+!
+!       Write_TauCoeff_SARTA_Binary:   Function to write a Binary format
+!                                TauCoeff_SARTA file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       User specified Binary format TauCoeff_SARTA data files for both
+!       input and output.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 05-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE TauCoeff_SARTA_Binary_IO
 
@@ -41,7 +137,6 @@ MODULE TauCoeff_SARTA_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: TauCoeff_SARTA_Binary_IO.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: UNSET = 0

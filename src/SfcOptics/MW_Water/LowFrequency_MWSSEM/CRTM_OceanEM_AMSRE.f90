@@ -1,3 +1,31 @@
+!
+!-------------------------------------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTM_OCEANEM_AMSRE
+!
+! PURPOSE:
+!       This module computes ocean emissivity and its jacobian over water. 
+!                                                                               
+! Method:                                                                       
+!                                                                               
+! History:   
+!                                                                   
+! CATEGORY:
+!       CRTM : Surface : MW OPEN OCEAN EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CREATION HISTORY:
+!
+!   2007-03-31?  Created for CRTM
+!               by:     Masahiro Kazumori, JCSDA,     Masahiro.Kazumori@noaa.gov 
+!                       Quanhua Liu, QSS Group Inc.,     Quanhua.Liu@noaa.gov 
+!
+!
+!M-
+!------------------------------------------------------------------------------------------------------------
 
 MODULE CRTM_OCEANEM_AMSRE
 

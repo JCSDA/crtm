@@ -1,3 +1,180 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       SRF_Define
+!
+! PURPOSE:
+!       Module defining the SRF data structure and containing routines to 
+!       manipulate it.
+!       
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE SRF_Define
+!
+! MODULES:
+!       Type_Kinds:        Module containing definitions for kinds
+!                          of variable types.
+!
+!       Message_Handler:   Module to define simple error codes and
+!                          handle error conditions
+!                          USEs: FILE_UTILITY module
+!
+!       Integrate_Utility: Module containing integration routines.
+!                          USEs: TYPE_KINDS module
+!                                Message_Handler module
+!                                INTERPOLATE module
+!
+! CONTAINS:
+!       Associated_SRF:  Function to test the association status
+!                        of the pointer members of a SRF
+!                        structure.
+!
+!       Destroy_SRF:     Function to re-initialize an SRF structure.
+!
+!       Allocate_SRF:    Function to allocate the pointer members
+!                        of an SRF structure.
+!
+!       Assign_SRF:      Function to copy an SRF structure.
+!
+!       Frequency_SRF:   Function to compute the frequency grid for
+!                        a supplied SRF data structure.
+!
+!       Integrate_SRF:   Function to integrate the SRF for 
+!                        a supplied SRF data structure.
+!
+!       Information_SRF: Subroutine to return a string containing information
+!                        about the SRF data structure.
+!
+!
+! DERIVED TYPES:
+!       SRF_type:  Definition of the public SRF data structure.
+!                  Fields are,
+!
+!         n_Points:          Number of points defining the current
+!                            SRF spectral dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         Sensor_Name:       Character string containing the name of the
+!                            sensor for the current SRF.
+!                            UNITS:      N/A
+!                            TYPE:       CHARACTER(*)
+!                            DIMENSION:  Scalar
+!
+!         Platform_Name:     Character string containing the name of the
+!                            platform containing the sensor for the current
+!                            SRF.
+!                            UNITS:      N/A
+!                            TYPE:       CHARACTER(*)
+!                            DIMENSION:  Scalar
+!
+!         NCEP_Sensor_ID:    An "in-house" value used at NOAA/NCEP/EMC 
+!                            to identify a satellite/sensor combination.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         WMO_Satellite_ID:  The WMO code for identifying satellite
+!                            platforms. Taken from the WMO common
+!                            code tables at:
+!                              http://www.wmo.ch/web/ddbs/Code-tables.html
+!                            The Satellite ID is from Common Code
+!                            table C-5, or code table 0 01 007 in BUFR
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         WMO_Sensor_ID:     The WMO code for identifying a satelite
+!                            sensor. Taken from the WMO common
+!                            code tables at:
+!                              http://www.wmo.ch/web/ddbs/Code-tables.html
+!                            The Sensor ID is from Common Code
+!                            table C-8, or code table 0 02 019 in BUFR
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         Channel:           Sensor channel number of the currently
+!                            defined SRF
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         Begin_Frequency:   The frequency of the first SRF point.
+!                            UNITS:      cm^-1
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Scalar
+!
+!         End_Frequency:     The frequency of the last SRF point.
+!                            UNITS:      cm^-1
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Scalar
+!
+!         Frequency:         The frequency grid of the SRF data.
+!                            UNITS:      inverse centimetres (cm^-1)
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Rank-1
+!                            ATTRIBUTES: POINTER
+!
+!         Response:          Array containing the channel
+!                            spectral response data.
+!                            UNITS:      None
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Rank-1
+!                            ATTRIBUTES: POINTER
+!
+!         Integrated_SRF:    The integrated area of the SRF determined using
+!                            an integration formula.
+!                            UNITS:      None.
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Scalar
+!
+!         Summation_SRF:     The integrated area of the SRF determined by
+!                            simple summation.
+!                            UNITS:      None.
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Scalar
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the SRF_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user destroy,
+!       allocate, assign, and concatenate the structure using only
+!       the routines in this module where possible to eliminate --
+!       or at least minimise -- the possibility of memory leakage
+!       since some of the structure members are pointers.
+!
+! INCLUDE FILES:
+!      None.
+!
+! EXTERNALS:
+!      None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!      None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 03-Oct-2001
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE SRF_Define
 
@@ -47,7 +224,6 @@ MODULE SRF_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SRF_Define.f90 774 2007-07-24 18:24:06Z paul.vandelst@noaa.gov $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

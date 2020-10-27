@@ -1,3 +1,157 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       TauCoeff_SARTA_Subset_Define
+!
+! PURPOSE:
+!       Module defining the TauCoeff_SARTA data structure and containing routines to 
+!       manipulate it.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE TauCoeff_SARTA_Subset_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_TauCoeff_Subset:    Function to test the association status
+!                                      of the pointer members of a TauCoeff_SARTA_Subset
+!                                      structure.
+!
+!       Destroy_TauCoeff_Subset:       Function to re-initialize a TauCoeff_SARTA_Subset
+!                                      structure.
+!
+!       Allocate_TauCoeff_Subset:      Function to allocate the pointer members
+!                                      of a TauCoeff_SARTA_Subset structure.
+!
+!       Assign_TauCoeff_Subset:        Function to copy a valid TauCoeff_SARTA_Subset structure.
+!
+!
+!       Check_TauCoeff_Subset_Release: Function to check the TauCoeff_SARTA_Subset Release value.
+!
+!       Version_TauCoeff_Subset:       Subroutine to return a string containing
+!                                      version and dimension information about
+!                                      the TauCoeff_SARTA_Subset data structure.
+!
+! DERIVED TYPES:
+!       TauCoeff_SARTA_Subset_type:   Definition of the public TauCoeff_SARTA_Subset data structure. Fields
+!                        are...
+!
+!         Release:             Coefficient data file release number.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Version:             Coefficient data file version number.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Layers:            Maximum layers for the aborber coefficients.
+!                              "Ilayers" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Total_Predictors:  Number of predictors used in the
+!                              gas absorption regression.
+!                              "Iuse" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Absorbers:         Number of gaseous absorbers.
+!                              "J" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         n_Channels:          Total number of spectral channels.
+!                              "L" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  Scalar
+!
+!         Channel_Index:       This is the sensor channel number associated
+!                              with the data in the coefficient file. Helps
+!                              in identifying channels where the numbers are
+!                              not contiguous (e.g. AIRS).
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+!         Absorber_ID:         Array containing a list of absorber ID
+!                              values. Used to identify the individual
+!                              or collective molecular species for which
+!                              the gas absorption coefficients were
+!                              generated.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  J (n_Absorbers)
+!                              ATTRIBUTES: POINTER
+!
+!         Absorber_Predictor:  Array containing the predictor numbers
+!                              used to identify how many predictors to use
+!                              for each gases in the gas absorption model.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER( Long )
+!                              DIMENSION:  J (n_Absorbers)
+!                              ATTRIBUTES: POINTER
+!
+!         C:                   Array containing the gas absorption
+!                              model coefficients.
+!                              UNITS:      Variable
+!                              TYPE:       REAL( Double )
+!                              DIMENSION:  Iuse x Ilayer x L
+!                              ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the TauCoeff_SARTA_Subset_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user initialize,
+!       destroy, allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 03-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE TauCoeff_SARTA_Subset_Define
 
@@ -64,7 +218,6 @@ MODULE TauCoeff_SARTA_Subset_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: TauCoeff_SARTA_Subset_Define.f90,v 1.10 2006/05/03 19:42:09 ychen Exp $'
 
   ! -- TauCoeff_SARTA_Subset valid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1

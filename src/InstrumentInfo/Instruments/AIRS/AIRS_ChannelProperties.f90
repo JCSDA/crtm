@@ -1,3 +1,64 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       AIRS_ChannelProperties
+!
+! PURPOSE:
+!       Module containing I/O functions for the AIRS L2 IR Channel
+!       Properties file.
+!       
+! CATEGORY:
+!       AIRS
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE AIRS_ChannelProperties
+!
+! MODULES:
+!       Type_Kinds:                      Module containing definitions for
+!                                        kinds of variable types.
+!
+!       File_Utility:                    Module containing generic file
+!                                        utility routines
+!
+!       Message_Handler:                   Module to define simple error codes
+!                                        and handle error conditions
+!                                        USEs: FILE_UTILITY module
+!
+!       AIRS_Define:                     Module containing AIRS instrument
+!                                        definitions.
+!                                        USEs: TYPE_KINDS module
+!
+!       AIRS_ChannelProperties_Define:   Module defining the AIRS channel
+!                                        properties data structure.
+!                                        USEs: TYPE_KINDS module
+!
+! CONTAINS:
+!       Read_AIRS_ChannelProperties: Function to read the AIRS L2 channel
+!                                    properties file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 08-Jan-2003
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2003 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE AIRS_ChannelProperties
 
@@ -49,7 +110,6 @@ MODULE AIRS_ChannelProperties
 
   ! -- Module RCS Id string
   CHARACTER( * ),  PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: AIRS_ChannelProperties.f90,v 1.6 2006/06/15 17:14:58 wd20pd Exp $'
 
   ! -- The data reading format string
   CHARACTER( * ), PRIVATE, PARAMETER :: FORMAT_STRING = &

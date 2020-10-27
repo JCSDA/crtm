@@ -31,7 +31,6 @@ PROGRAM Test_FitStats
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_FitStats'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   CHARACTER(*), PARAMETER :: NC_FILENAME  = 'Test.FitStats.nc'
   
   REAL(fp), PARAMETER :: ONE = 1.0_fp

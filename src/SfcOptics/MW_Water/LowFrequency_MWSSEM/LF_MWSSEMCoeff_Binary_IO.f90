@@ -43,7 +43,6 @@ MODULE LF_MWSSEMCoeff_Binary_IO
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
 

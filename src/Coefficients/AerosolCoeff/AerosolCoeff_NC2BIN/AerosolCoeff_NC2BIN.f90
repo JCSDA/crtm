@@ -27,21 +27,22 @@ PROGRAM AerosolCoeff_NC2BIN
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AerosolCoeff_NC2BIN'
-  CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   ! ---------
   ! Variables
   ! ---------
   INTEGER :: err_stat
-  CHARACTER(256) :: NC_Filename, BIN_Filename
+  CHARACTER(256) :: Aerosol_Model, NC_Filename, BIN_Filename
   
   ! Program header
   CALL Program_Message( PROGRAM_NAME, &
                         'Program to convert a CRTM AerosolCoeff data file '//&
                         'from netCDF to Binary format.', &
                         '$Revision$')
-  
+  ! Get the Aerosol_Model
+  WRITE(*,FMT='(/5x,"Enter the aerosol model (GOCART or CMAQ) : ")', ADVANCE='NO')
+  READ(*,'(a)') Aerosol_Model
+  Aerosol_Model = ADJUSTL(Aerosol_Model)
   ! Get the filenames
   WRITE(*,FMT='(/5x,"Enter the INPUT netCDF AerosolCoeff filename : ")', ADVANCE='NO')
   READ(*,'(a)') NC_Filename
@@ -59,7 +60,7 @@ PROGRAM AerosolCoeff_NC2BIN
   
   
   ! Perform the conversion
-  err_stat = AerosolCoeff_netCDF_to_Binary( NC_Filename, BIN_Filename )
+  err_stat = AerosolCoeff_netCDF_to_Binary( Aerosol_Model, NC_Filename, BIN_Filename )
   IF ( err_stat /= SUCCESS ) THEN
     CALL Display_Message( PROGRAM_NAME, &
                           'AerosolCoeff netCDF -> Binary conversion failed!', &

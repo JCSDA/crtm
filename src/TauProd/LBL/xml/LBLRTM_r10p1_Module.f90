@@ -39,7 +39,6 @@ MODULE LBLRTM_r10p1_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! The record I/O format

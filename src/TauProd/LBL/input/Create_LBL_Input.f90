@@ -37,7 +37,6 @@ PROGRAM Create_LBL_Input
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Create_LBL_Input'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! Liternal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp

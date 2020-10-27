@@ -28,7 +28,140 @@ CONTAINS
 
 
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_SSMI_SNOWEM
+!
+! PURPOSE:
+!       Subroutine to simulate microwave emissivity over snow/sea ice conditions from AMSU measurements at
+!       window channels.
+!
+! REFERENCES:
+!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+!
+! CATEGORY:
+!       CRTM : Surface : MW SNOW/ICE EM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL NESDIS_SSMI_SNOWEM
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Angle                    The angle values in degree.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!
+!         Tb                      BRIGHTNESS TEMPERATURES AT SEVEN SSMI WINDOW CHANNELS
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION   7*1 SCALAR
+!
+!                 tb[1] :  at 19.35 GHz  v-polarization
+!                 tb[2] :  at 19.35 GHz  h-polarization
+!                 tb[3] :  at 22.235 GHz v-polarization
+!                 tb[4] :  at 37 GHz     v-polarization
+!                 tb[5] :  at 37 GHz     h-polarization
+!                 tb[6] :  at 85 GHz     v-polarization
+!                 tb[7] :  at 85 GHz     h-polarization
+!
+!                         WHICH ARE
+!
+!                                  tbb[1] = TB at 89 GHz
+!                                  tbb[2] = TB at 150 GHz
+!
+!
+!         Ts = Land_Temperature:        The land surface temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Snow_status           = .T. (over snow conditions), otherwise other surface conditions
+!                                  UNITS:      N/A
+!                                  TYPE:       logical
+!                                  DIMENSION:  Scalar
+!
+!         Ice_status           = .T. (over se aice conditions), otherwise other surface conditions
+!                                  UNITS:      N/A
+!                                  TYPE:       local
+!                                  DIMENSION:  Scalar
+!
+!
+!         Depth:                   The snow/sea ice  depth
+!                                  UNITS:      mm
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
 
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! INTERNAL ARGUMENTS:
+!
+!     SSMI_Angle         : local zenith angle in degree
+!
+!
+! CALLS:
+!
+!       NESDIS_SSMI_SSICEEM_CORE : Subroutine to calculate the microwave emissivity over snow and sea ice conditions
+!
+!
+!
+! PROGRAM HISTORY LOG:
+!   2004-01-01  yan,b -  implement the algorithm for snow/ice emissivity
+!   2004-02-01  yan,b -  modify the code for SSI
+!   2005-05-28  okamoto - modify the code for CRTM
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! COMMENTS:
+!       Note the INTENT on the output SensorData argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (28-May-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
 subroutine NESDIS_SSMI_SSICEEM(frequency,                                         & ! INPUT
                                Angle,                                             & ! INPUT

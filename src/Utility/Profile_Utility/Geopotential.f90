@@ -41,7 +41,6 @@ MODULE Geopotential
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Message string lengths
   INTEGER, PARAMETER :: ML = 256
 

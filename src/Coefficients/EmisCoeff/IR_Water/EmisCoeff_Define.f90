@@ -51,7 +51,6 @@ MODULE EmisCoeff_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! EmisCoeff init values
   REAL(Double),  PARAMETER :: FP_INIT = 0.0_Double
   INTEGER,       PARAMETER :: IP_INIT = -1

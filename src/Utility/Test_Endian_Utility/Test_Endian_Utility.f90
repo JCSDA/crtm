@@ -1,3 +1,48 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Test_Endian_Utility
+!
+! PURPOSE:
+!       Program to test the routines in the Endian_Utility module
+!
+! CATEGORY:
+!       Utility
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       Endian_Utility:              Module containing functions to byte-swap
+!                                    intrinsic data types.
+!                                    USEs: TYPE_KINDS module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 12-Aug-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Test_Endian_Utility
   
@@ -23,7 +68,6 @@ PROGRAM Test_Endian_Utility
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_Endian_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_Endian_Utility.f90,v 1.4 2004/11/30 20:43:04 paulv Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -345,4 +389,26 @@ PROGRAM Test_Endian_Utility
 END PROGRAM Test_Endian_Utility
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2004/11/30 20:43:04 $
+!
+! $Revision: 1.4 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Test_Endian_Utility.f90,v $
+! Revision 1.4  2004/11/30 20:43:04  paulv
+! - Cosmetic change only.
+!
+! Revision 1.3  2004/11/30 17:25:01  paulv
+! - Tidied up rank-1 and rank-2 tests.
+!
+!
+!
 

@@ -22,6 +22,7 @@ ARFLAGS = @ARFLAGS@
 RANLIB  = @RANLIB@
 INSTALL      = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
+LIBS = @LIBS@
 
 # The library name
 LIBRARY = lib$(tarname).a

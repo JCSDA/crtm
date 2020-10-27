@@ -1,3 +1,67 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       SRF_netCDF_IO_Test
+!
+! PURPOSE:
+!       Program to test the SRF netCDF format I/O functions.
+!
+! CATEGORY:
+!       Instrument Information : SRF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                 Module containing definitions for kinds
+!                                   of variable types.
+!
+!       Message_Handler:            Module to define simple error codes and
+!                                   handle error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       SRF_Define:                 Module defining the SRF data structure
+!                                   and containing routines to manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         Message_Handler module
+!
+!       SRF_netCDF_IO:              Module containing routines to read and
+!                                   write SRF netCDF format files.
+!                                   USEs: TYPE_KINDS module
+!                                         Message_Handler module
+!                                         SRF_DEFINE module
+!                                         NETCDF module
+!                                         NETCDF_UTILITY module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       netCDF SRF data file
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 16-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM SRF_netCDF_IO_Test
 
@@ -26,7 +90,6 @@ PROGRAM SRF_netCDF_IO_Test
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'SRF_netCDF_IO_Test'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: SRF_netCDF_IO_Test.f90,v 1.7 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

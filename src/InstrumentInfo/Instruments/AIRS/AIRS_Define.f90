@@ -41,7 +41,6 @@ MODULE AIRS_Define
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
 
   ! Instrument parameters
   INTEGER, PARAMETER :: N_AIRS_BANDS    = 17

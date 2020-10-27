@@ -30,7 +30,6 @@ PROGRAM Test_CRTM_SensorInfo
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Test_CRTM_SensorInfo'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Test_CRTM_SensorInfo.f90,v 1.1.2.1 2006/09/04 08:22:09 frpv Exp $'
   CHARACTER(*), PARAMETER :: SENSORINFO_FILENAME='SensorInfo'
   INTEGER, PARAMETER :: SL = 20
 

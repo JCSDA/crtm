@@ -1,3 +1,193 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       TauProfile_Define
+!
+! PURPOSE:
+!       Module defining the TauProfile data structure and containing
+!       routines to manipulate it.
+!       
+! CATEGORY:
+!       TauProfile
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE TauProfile_Define
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+!       Compare_Float_Numbers:  Module containing routines to perform equality
+!                               check comparisons on input floating point
+!                               numbers.
+!                               USEs: TYPE_KINDS module
+!
+! CONTAINS:
+!       Associated_TauProfile:  Function to test the association status of the
+!                               pointer members of a TauProfile structure.
+!
+!       Destroy_TauProfile:     Function to re-initialize an TauProfile
+!                               structure.
+!
+!       Allocate_TauProfile:    Function to allocate the pointer members
+!                               of an TauProfile structure.
+!
+!       Assign_TauProfile:      Function to copy an TauProfile structure.
+!
+!       Concatenate_TauProfile: Function to concatenate two valid TauProfile
+!                               structures.
+!
+!       Information_TauProfile: Subroutine to return a string containing
+!                               information about the TauProfile data structure.
+!
+! DERIVED TYPES:
+!       TauProfile_type:  Definition of the public TauProfile data structure.
+!                         Fields are,
+!
+!         n_Layers:          Number of atmospheric layers.
+!                            "K" dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         n_Channels:        Number of spectral channels.
+!                            "L" dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         n_Angles:          Number of view angles.
+!                            "I" dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         n_Profiles:        Number of atmospheric profiles.
+!                            "M" dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         n_Molecule_Sets:   Number of individual or mixed
+!                            gaseous absorbers.
+!                            "J" dimension.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         NCEP_Sensor_ID:    An "in-house" value used at NOAA/NCEP/EMC 
+!                            to identify a satellite/sensor combination.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         WMO_Satellite_ID:  The WMO code for identifying satellite
+!                            platforms. Taken from the WMO common
+!                            code tables at:
+!                              http://www.wmo.ch/web/ddbs/Code-tables.html
+!                            The Satellite ID is from Common Code
+!                            table C-5, or code table 0 01 007 in BUFR
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         WMO_Sensor_ID:     The WMO code for identifying a satelite
+!                            sensor. Taken from the WMO common
+!                            code tables at:
+!                              http://www.wmo.ch/web/ddbs/Code-tables.html
+!                            The Sensor ID is from Common Code
+!                            table C-8, or code table 0 02 019 in BUFR
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Scalar
+!
+!         Level_Pressure:    Array containing the level pressure values
+!                            associated with the transmittance profiles.
+!                            UNITS:      hectoPascals (hPa)
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Rank-1 (n_Layers+1, K+1)
+!                            ATTRIBUTES: POINTER
+!
+!         Channel:           This is the sensor channel number associated
+!                            with the transmittance profiles. Helps
+!                            in identifying channels where the numbers are
+!                            not contiguous (e.g. AIRS).
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Rank-1 (n_Channels, L)
+!                            ATTRIBUTES: POINTER
+!
+!         Angle:             Array containing the view angles associated
+!                            with the transmittance profiles.
+!                            UNITS:      Degrees from vertical.
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Rank-1 (n_Angles, I)
+!                            ATTRIBUTES: POINTER
+!
+!         Profile:           Array containing the atmospheric profile
+!                            index number used in the calculation of
+!                            the transmittance profiles..
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Rank-1 (n_Profiles, M)
+!                            ATTRIBUTES: POINTER
+!
+!         Molecule_Set:      Array containing the molecule set ID s
+!                            associated with the transmittance
+!                            profiles.
+!                            UNITS:      N/A
+!                            TYPE:       INTEGER
+!                            DIMENSION:  Rank-1 (n_Molecule_Sets, J)
+!                            ATTRIBUTES: POINTER
+!
+!         Tau:               The transmittance profile data.
+!                            UNITS:      None.
+!                            TYPE:       REAL( fp_kind )
+!                            DIMENSION:  Rank-5 (K x L x I x M x J)
+!                            ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the TauProfile_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user destroy,
+!       allocate, assign, and concatenate the structure
+!       using only the routines in this module where possible to
+!       eliminate -- or at least minimise -- the possibility of 
+!       memory leakage since most of the structure members are
+!       pointers.
+!
+! INCLUDE FILES:
+!      None.
+!
+! EXTERNALS:
+!      None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!      None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 28-May-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE TauProfile_Define_old
 
@@ -47,7 +237,6 @@ MODULE TauProfile_Define_old
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! -- TauProfile invalid values
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -1404,3 +1593,75 @@ CONTAINS
 END MODULE TauProfile_Define_old
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: TauProfile_Define.f90,v $
+! Revision 1.11  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.10  2004/09/14 17:19:58  paulv
+! - Upgraded to Fortran95.
+! - Derived type component initialisation is now done in the defintion block.
+! - Init_TauProfile() subroutine has been removed.
+! - Intent of TauProfile dummy argument in Clear_TauProfile() routine changed from
+!   OUT to IN OUT to prevent memory leaks.
+! - Added optional No_Clear argument to Destroy_TauProfile() function.
+! - Intent of TauProfile dummy argument in Allocate_TauProfile() routine changed from
+!   OUT to IN OUT to prevent memory leaks.
+! - Call to Destroy_TauProfile() added to Allocate_TauProfile() function for the case
+!   where the input TauProfile argument is already allocated.
+! - Intent of TauProfile_out dummy argument in Assign_TauProfile() routine changed from
+!   OUT to IN OUT to prevent memory leaks.
+! - Added association test in destroy function. If no pointer components
+!   are associated, the function returns without modifying the n_Allocates
+!   counter. Thus, calling the destroy function on an already destroyed
+!   structure want flag an error.
+! - Updated header documentation.
+!
+! Revision 1.9  2003/12/01 15:06:13  paulv
+! - Correct variable usage bug in rank1 destruction function.
+!
+! Revision 1.8  2003/11/25 22:29:24  paulv
+! - Altered Clear() subroutine to reset dimension members to 0.
+! - Added Association() function call to Destroy() function.
+! - Updated header documentation.
+!
+! Revision 1.7  2003/11/24 19:48:29  paulv
+! - Updated header documentation.
+!
+! Revision 1.6  2003/07/16 20:06:49  paulv
+! - Corrected a number of spelling errors.
+!
+! Revision 1.5  2003/06/30 00:30:05  paulv
+! - New versions for updated structure definition and netCDF I/O. Untested.
+!
+! Revision 1.4  2003/06/20 22:01:21  paulv
+! - Updating software for use with RTM statistics code. Incomplete.
+!
+! Revision 1.3  2002/06/25 21:37:58  paulv
+! - Modified the Destroy() function to deallocate if a pointer member
+!   is associated. Previously if any pointer members *weren't* allocated
+!   an error was generated. What was the go with that? Very silly.
+!
+! Revision 1.2  2002/06/05 19:14:17  paulv
+! - Removed MESSAGE as a module variable and placed definitions in each
+!   module subprogram.
+! - Removed INQUIRE/GET/SET functions. Made TauProfile members public.
+!
+! Revision 1.1  2002/05/29 17:43:46  paulv
+! Initial checkin. Untested.
+!
+!
+!
+!

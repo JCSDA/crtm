@@ -10,6 +10,9 @@
 !                       Quanhua Liu,    quanhua.liu@noaa.gov
 !                       Paul van Delst, paul.vandelst@noaa.gov
 !                       22-Feb-2005
+!       Modified by     Yingtao Ma, 2020/6/11
+!                       yingtao.ma@noaa.gov
+!                       Implemented CMAQ aerosol
 !
 
 MODULE CRTM_Aerosol_Define
@@ -29,6 +32,10 @@ MODULE CRTM_Aerosol_Define
   USE Binary_File_Utility  , ONLY: Open_Binary_File      , &
                                    WriteGAtts_Binary_File, &
                                    ReadGAtts_Binary_File
+  USE AerosolCoeff_Define  , ONLY: AerosolCoeff_type, &
+                                   AerosolCoeff_typeID_to_name, &
+                                   AerosolCoeff_INVALID_AEROSOL
+  USE CRTM_AerosolCoeff    , ONLY: AeroC
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -39,17 +46,6 @@ MODULE CRTM_Aerosol_Define
   ! Everything private by default
   PRIVATE
   ! Aerosol parameters
-  PUBLIC :: N_VALID_AEROSOL_CATEGORIES
-  PUBLIC :: INVALID_AEROSOL
-  PUBLIC :: DUST_AEROSOL
-  PUBLIC :: SEASALT_SSAM_AEROSOL
-  PUBLIC :: SEASALT_SSCM1_AEROSOL
-  PUBLIC :: SEASALT_SSCM2_AEROSOL
-  PUBLIC :: SEASALT_SSCM3_AEROSOL
-  PUBLIC :: ORGANIC_CARBON_AEROSOL
-  PUBLIC :: BLACK_CARBON_AEROSOL
-  PUBLIC :: SULFATE_AEROSOL
-  PUBLIC :: AEROSOL_CATEGORY_NAME
   ! Datatypes
   PUBLIC :: CRTM_Aerosol_type
   ! Operators
@@ -68,12 +64,12 @@ MODULE CRTM_Aerosol_Define
   PUBLIC :: CRTM_Aerosol_Zero
   PUBLIC :: CRTM_Aerosol_IsValid
   PUBLIC :: CRTM_Aerosol_Inspect
+  !PUBLIC :: CRTM_Aerosol_DefineVersion
   PUBLIC :: CRTM_Aerosol_Compare
   PUBLIC :: CRTM_Aerosol_SetLayers
   PUBLIC :: CRTM_Aerosol_InquireFile
   PUBLIC :: CRTM_Aerosol_ReadFile
   PUBLIC :: CRTM_Aerosol_WriteFile
-
 
   ! ---------------------
   ! Procedure overloading
@@ -103,38 +99,7 @@ MODULE CRTM_Aerosol_Define
 
   ! -----------------
   ! Module parameters
-  ! -----------------
-  ! Aerosol types and names
-  INTEGER, PARAMETER :: N_VALID_AEROSOL_CATEGORIES = 8
-  INTEGER, PARAMETER ::        INVALID_AEROSOL = 0
-  INTEGER, PARAMETER ::           DUST_AEROSOL = 1
-  INTEGER, PARAMETER ::   SEASALT_SSAM_AEROSOL = 2
-  INTEGER, PARAMETER ::  SEASALT_SSCM1_AEROSOL = 3
-  INTEGER, PARAMETER ::  SEASALT_SSCM2_AEROSOL = 4
-  INTEGER, PARAMETER ::  SEASALT_SSCM3_AEROSOL = 5
-  INTEGER, PARAMETER :: ORGANIC_CARBON_AEROSOL = 6
-  INTEGER, PARAMETER ::   BLACK_CARBON_AEROSOL = 7
-  INTEGER, PARAMETER ::        SULFATE_AEROSOL = 8
-  INTEGER, PARAMETER :: AEROSOL_CATEGORY_LIST(0:N_VALID_AEROSOL_CATEGORIES) = &
-    [        INVALID_AEROSOL, &
-                DUST_AEROSOL, &
-        SEASALT_SSAM_AEROSOL, &
-       SEASALT_SSCM1_AEROSOL, &
-       SEASALT_SSCM2_AEROSOL, &
-       SEASALT_SSCM3_AEROSOL, &
-      ORGANIC_CARBON_AEROSOL, &
-        BLACK_CARBON_AEROSOL, &
-             SULFATE_AEROSOL  ]
-  CHARACTER(*), PARAMETER :: AEROSOL_CATEGORY_NAME(0:N_VALID_AEROSOL_CATEGORIES) = &
-    [ 'Invalid         ', &
-      'Dust            ', &
-      'Sea salt (SSAM) ', &
-      'Sea salt (SSCM1)', &
-      'Sea salt (SSCM2)', &
-      'Sea salt (SSCM3)', &
-      'Organic carbon  ', &
-      'Black carbon    ', &
-      'Sulfate         '  ]
+  ! -----------------'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
@@ -157,10 +122,11 @@ MODULE CRTM_Aerosol_Define
     ! Number of added layers
     INTEGER :: n_Added_Layers = 0
     ! Aerosol type
-    INTEGER :: Type = INVALID_AEROSOL
+    INTEGER :: Type = AerosolCoeff_INVALID_AEROSOL
     ! Aerosol state variables
-    REAL(fp), ALLOCATABLE :: Effective_Radius(:)  ! K. Units are microns
-    REAL(fp), ALLOCATABLE :: Concentration(:)     ! K. Units are kg/m^2
+    REAL(fp), ALLOCATABLE :: Effective_Radius(:)   ! K. Units are microns
+    REAL(fp), ALLOCATABLE :: Effective_Variance(:) ! K. Unitsless
+    REAL(fp), ALLOCATABLE :: Concentration(:)      ! K. Units are kg/m^2
   END TYPE CRTM_Aerosol_type
   !:tdoc-:
 
@@ -176,37 +142,58 @@ CONTAINS
 !################################################################################
 !################################################################################
 
-  PURE FUNCTION CRTM_Aerosol_CategoryId(aerosol) RESULT(id)
+!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+  FUNCTION CRTM_Aerosol_CategoryId( aerosol ) RESULT(id)
+!-------------------------------------------------------------------------------
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: aerosol
     INTEGER :: id
+
     id = aerosol%type
-    IF ( id < 1 .OR. id > N_VALID_AEROSOL_CATEGORIES ) id = INVALID_AEROSOL
+    if ( .NOT. any( id==AeroC%Type(:) ) ) then
+      id = AerosolCoeff_INVALID_AEROSOL
+    endif
+
   END FUNCTION CRTM_Aerosol_CategoryId
 
-  PURE FUNCTION CRTM_Aerosol_CategoryName(aerosol) RESULT(name)
+!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+  FUNCTION CRTM_Aerosol_CategoryName( aerosol ) RESULT(name)
+!-------------------------------------------------------------------------------
     TYPE(CRTM_Aerosol_type), INTENT(IN) :: aerosol
-    CHARACTER(LEN(AEROSOL_CATEGORY_NAME(1))) :: name
+    CHARACTER(:), allocatable           :: name
     INTEGER  :: id
-    id = CRTM_Aerosol_CategoryId(aerosol)
-    name = AEROSOL_CATEGORY_NAME(id)
+
+    id = CRTM_Aerosol_CategoryId( aerosol )
+    name = AerosolCoeff_typeID_to_name( AeroC, id )
+
   END FUNCTION CRTM_Aerosol_CategoryName
 
+!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
   FUNCTION CRTM_Aerosol_CategoryList(list) RESULT(err_stat)
-    INTEGER, ALLOCATABLE, INTENT(OUT) :: list(:)
-    INTEGER :: err_stat
+!-------------------------------------------------------------------------------
+    INTEGER, ALLOCATABLE    ,INTENT(OUT) :: list(:)
+    INTEGER                              :: err_stat
+
     CHARACTER(*), PARAMETER :: ROUTINE_NAME = 'CRTM_Aerosol_CategoryList'
     CHARACTER(ML) :: alloc_msg, msg
     INTEGER :: alloc_stat
+
+
+
     err_stat = SUCCESS
-   !ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat, ERRMSG=alloc_msg )
-    ALLOCATE( list(0:N_VALID_AEROSOL_CATEGORIES), STAT=alloc_stat )
+    allocate( list(0:AeroC%n_Types), STAT=alloc_stat )
     IF ( alloc_stat /= 0 ) THEN
       err_stat = FAILURE
       msg = 'Aerosol category list result not allocated -'//TRIM(alloc_msg)
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
       RETURN
     END IF
-    list = AEROSOL_CATEGORY_LIST
+
+    list(0) = AerosolCoeff_INVALID_AEROSOL
+    list(1:AeroC%n_Types) = AeroC%Type(:)
+
   END FUNCTION CRTM_Aerosol_CategoryList
 
 
@@ -320,6 +307,7 @@ CONTAINS
 
     ! Perform the allocation
     ALLOCATE( Aerosol%Effective_Radius( n_Layers ), &
+              Aerosol%Effective_Variance( n_Layers ), &
               Aerosol%Concentration( n_Layers ), &
               STAT = alloc_stat )
     IF ( alloc_stat /= 0 ) RETURN
@@ -329,8 +317,9 @@ CONTAINS
     Aerosol%Max_Layers = n_Layers
     Aerosol%n_Layers   = n_Layers
     ! ...Arrays
-    Aerosol%Effective_Radius = ZERO
-    Aerosol%Concentration    = ZERO
+    Aerosol%Effective_Radius   = ZERO
+    Aerosol%Effective_Variance = ZERO
+    Aerosol%Concentration      = ZERO
 
     ! Set allocation indicator
     Aerosol%Is_Allocated = .TRUE.
@@ -403,8 +392,9 @@ CONTAINS
     ! ...Layer dependent data
     no = aer%n_Layers
     nt = aer_out%n_Layers
-    aer_out%Effective_Radius(na+1:nt) = aer%Effective_Radius(1:no)
-    aer_out%Concentration(na+1:nt)    = aer%Concentration(1:no)
+    aer_out%Effective_Radius(na+1:nt)   = aer%Effective_Radius(1:no)
+    aer_out%Effective_Variance(na+1:nt) = aer%Effective_Variance(1:no)
+    aer_out%Concentration(na+1:nt)      = aer%Concentration(1:no)
 
   END FUNCTION CRTM_Aerosol_AddLayerCopy
 
@@ -441,8 +431,9 @@ CONTAINS
     ! Do nothing if structure is unused
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
     ! Only zero out the data arrays
-    Aerosol%Effective_Radius = ZERO
-    Aerosol%Concentration    = ZERO
+    Aerosol%Effective_Radius   = ZERO
+    Aerosol%Effective_Variance = ZERO
+    Aerosol%Concentration      = ZERO
   END SUBROUTINE CRTM_Aerosol_Zero
 
 
@@ -510,7 +501,8 @@ CONTAINS
     ! ...Change default so all entries can be checked
     IsValid = .TRUE.
     ! ...The type of Aerosol
-    IF ( Aerosol%Type < 1 .OR. Aerosol%Type > N_VALID_AEROSOL_CATEGORIES ) THEN
+!yma    IF ( Aerosol%Type < 1 .OR. Aerosol%Type > AeroC%n_Types ) THEN
+    if ( .NOT. any( Aerosol%Type == AeroC%Type(:) ) ) then
       msg = 'Invalid Aerosol type'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
@@ -518,6 +510,11 @@ CONTAINS
     ! ...Data limits. Only checking negative values
     IF ( ANY(Aerosol%Effective_Radius < ZERO ) ) THEN
       msg = 'Negative Aerosol effective radius found'
+      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      IsValid = .FALSE.
+    ENDIF
+    IF ( ANY(Aerosol%Effective_Variance < ZERO ) ) THEN
+      msg = 'Negative Aerosol effective variance found'
       CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
       IsValid = .FALSE.
     ENDIF
@@ -568,14 +565,14 @@ CONTAINS
     INTEGER,       OPTIONAL, INTENT(IN) :: Unit
     ! Local variables
     INTEGER :: fid
-    
+
     ! Setup
     fid = OUTPUT_UNIT
     IF ( PRESENT(Unit) ) THEN
       IF ( File_Open(Unit) ) fid = Unit
     END IF
 
-    
+
     WRITE(fid,'(1x,"AEROSOL OBJECT")')
     ! Dimensions
     WRITE(fid,'(3x,"n_Layers :",1x,i0)') Aerosol%n_Layers
@@ -583,6 +580,8 @@ CONTAINS
     IF ( .NOT. CRTM_Aerosol_Associated(Aerosol) ) RETURN
     WRITE(fid,'(3x,"Effective radius:")')
     WRITE(fid,'(5(1x,es22.15,:))') Aerosol%Effective_Radius
+    WRITE(fid,'(3x,"Effective radius variance:")')
+    WRITE(fid,'(5(1x,es22.15,:))') Aerosol%Effective_Variance
     WRITE(fid,'(3x,"Concentration:")')
     WRITE(fid,'(5(1x,es22.15,:))') Aerosol%Concentration
   END SUBROUTINE Scalar_Inspect
@@ -618,6 +617,7 @@ CONTAINS
       END DO
     END DO
   END SUBROUTINE Rank2_Inspect
+
 
 !------------------------------------------------------------------------------
 !:sdoc+:
@@ -682,10 +682,11 @@ CONTAINS
          (x%Type     /= y%Type    ) ) RETURN
     ! ...Arrays
     IF ( CRTM_Aerosol_Associated(x) .AND. CRTM_Aerosol_Associated(y) ) THEN
-      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius,y%Effective_Radius,n))) .OR. &
-           (.NOT. ALL(Compares_Within_Tolerance(x%Concentration   ,y%Concentration   ,n))) ) RETURN
+      IF ( (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Radius,  y%Effective_Radius,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Effective_Variance,y%Effective_Variance,n))) .OR. &
+           (.NOT. ALL(Compares_Within_Tolerance(x%Concentration,     y%Concentration   ,n))) ) RETURN
     END IF
-    
+
     ! If we get here, the objects are comparable
     is_comparable = .TRUE.
 
@@ -1278,8 +1279,9 @@ CONTAINS
     ! ...Arrays
     IF ( CRTM_Aerosol_Associated(x) .AND. CRTM_Aerosol_Associated(y) ) THEN
       n = x%n_Layers
-      IF ( .NOT. (ALL(x%Effective_Radius(1:n) .EqualTo. y%Effective_Radius(1:n) ) .AND. &
-                  ALL(x%Concentration(1:n)    .EqualTo. y%Concentration(1:n)    )) ) RETURN
+      IF ( .NOT. (ALL(x%Effective_Radius(1:n)   .EqualTo. y%Effective_Radius(1:n) ) .AND. &
+                  ALL(x%Effective_Variance(1:n) .EqualTo. y%Effective_Variance(1:n) ) .AND. &
+                  ALL(x%Concentration(1:n)      .EqualTo. y%Concentration(1:n)    )) ) RETURN
     END IF
 
     ! If we get here, then...
@@ -1381,9 +1383,11 @@ CONTAINS
     aersum = aer1
 
     ! And add its components to the second one
+!yma 2020/6/23: Does this make sense?
     n = aer1%n_Layers
-    aersum%Effective_Radius(1:n) = aersum%Effective_Radius(1:n) + aer2%Effective_Radius(1:n)
-    aersum%Concentration(1:n)    = aersum%Concentration(1:n)    + aer2%Concentration(1:n)
+    aersum%Effective_Radius(1:n)   = aersum%Effective_Radius(1:n)   + aer2%Effective_Radius(1:n)
+    aersum%Effective_Variance(1:n) = aersum%Effective_Variance(1:n) + aer2%Effective_Variance(1:n)
+    aersum%Concentration(1:n)      = aersum%Concentration(1:n)      + aer2%Concentration(1:n)
 
   END FUNCTION CRTM_Aerosol_Add
 
@@ -1439,9 +1443,11 @@ CONTAINS
     aerdiff = aer1
 
     ! And subtract the second one's components from it
+!yma 2020/6/23: Does this make sense?
     n = aer1%n_Layers
-    aerdiff%Effective_Radius(1:n) = aerdiff%Effective_Radius(1:n) - aer2%Effective_Radius(1:n)
-    aerdiff%Concentration(1:n)    = aerdiff%Concentration(1:n)    - aer2%Concentration(1:n)
+    aerdiff%Effective_Radius(1:n)   = aerdiff%Effective_Radius(1:n) - aer2%Effective_Radius(1:n)
+    aerdiff%Effective_Variance(1:n) = aerdiff%Effective_Variance(1:n) - aer2%Effective_Variance(1:n)
+    aerdiff%Concentration(1:n)      = aerdiff%Concentration(1:n)    - aer2%Concentration(1:n)
 
   END FUNCTION CRTM_Aerosol_Subtract
 
@@ -1495,10 +1501,22 @@ CONTAINS
 
 
     ! Read the aerosol data
-    READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
-      aerosol%Type, &
-      aerosol%Effective_Radius, &
-      aerosol%Concentration
+    IF ( AeroC%Scheme == 'GOCART' ) THEN
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         aerosol%Type, &
+         aerosol%Effective_Radius, &
+         aerosol%Concentration
+    ELSEIF ( AeroC%Scheme == 'CMAQ' ) THEN
+      READ( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         aerosol%Type, &
+         aerosol%Effective_Radius, &
+         aerosol%Effective_Variance, &
+         aerosol%Concentration
+    ELSE
+      msg = 'Invalid aerosol coefficient table.'
+      CALL Read_Record_Cleanup(); RETURN
+    END IF
+
     IF ( io_stat /= 0 ) THEN
       msg = 'Error reading Aerosol data - '//TRIM(io_msg)
       CALL Read_Record_Cleanup(); RETURN
@@ -1559,17 +1577,28 @@ CONTAINS
 
 
     ! Write the data
-    WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
-      Aerosol%Type, &
-      Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
-      Aerosol%Concentration(1:Aerosol%n_Layers)
+    IF ( AeroC%Scheme == 'GOCART' ) THEN
+      WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         Aerosol%Type, &
+         Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
+         Aerosol%Concentration(1:Aerosol%n_Layers)
+    ELSEIF ( AeroC%Scheme == 'CMAQ' ) THEN
+      WRITE( fid,IOSTAT=io_stat,IOMSG=io_msg ) &
+         Aerosol%Type, &
+         Aerosol%Effective_Radius(1:Aerosol%n_Layers), &
+         Aerosol%Effective_Variance(1:Aerosol%n_Layers), &
+         Aerosol%Concentration(1:Aerosol%n_Layers)
+    ELSE
+      msg = 'Invalid aerosol coefficient table.'
+      CALL Write_Record_Cleanup(); RETURN
+    END IF
+
     IF ( io_stat /= 0 ) THEN
       msg = 'Error writing Aerosol data - '//TRIM(io_msg)
       CALL Write_Record_Cleanup(); RETURN
     END IF
 
   CONTAINS
-
     SUBROUTINE Write_Record_Cleanup()
       CLOSE( fid,STATUS=WRITE_ERROR_STATUS,IOSTAT=io_stat,IOMSG=io_msg )
       IF ( io_stat /= SUCCESS ) &

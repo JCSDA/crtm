@@ -1,3 +1,171 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ProcessControl_Define
+!
+! PURPOSE:
+!       Module defining the ProcessControl data structure and containing
+!       routines to manipulate it.
+!       
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ProcessControl_Define
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       Message_Handler:         Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_ProcessControl: Function to test the association status
+!                                  of the pointer members of a ProcessControl
+!                                  structure.
+!
+!       Destroy_ProcessControl:    Function to re-initialize an ProcessControl
+!                                  structure.
+!
+!       Allocate_ProcessControl:   Function to allocate the pointer members
+!                                  of an ProcessControl structure.
+!
+!       Assign_ProcessControl:     Function to copy an ProcessControl structure.
+!
+!
+! DERIVED TYPES:
+!       ProcessControl_List_type: Definition of the ProcessControl_List data
+!       ------------------------  structure. Fields are,
+!
+!         File_Index:          Array index position of this list structure member
+!                              in the main ProcesControl structure.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         Channel:             Sensor channel number.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         Begin_LBLband:       LBL band that contains the begin frequency
+!                              of the channel SRF. Along with End_LBLband,
+!                              defines the range of LBL data required to 
+!                              process the channel.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         End_LBLband:         LBL band that contains the end frequency
+!                              of the channel SRF. Along with Begin_LBLband,
+!                              defines the range of LBL data required to 
+!                              process the channel.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         Data_Available:      Logical flag used to determine if all the
+!                              required data to process the channel is
+!                              available.
+!                              UNITS:      N/A
+!                              TYPE:       LOGICAL
+!                              DIMENSION:  Scalar
+!
+!         Processed:           Integer flag used to indicate if the channel
+!                              has been processed.
+!                              If == 0, channel has not been processed
+!                                 == 1, channel has been processed.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!
+!       ProcessControl_type: Definition of the ProcessControl data structure.
+!       -------------------  Fields are,
+!
+!         StrLen:              Length of structure character string members.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         n_Files:             The number of sensor SRF and TauProfile files
+!                              represented in the structure.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         File_Prefix:         Character string array identifying the file prefixes
+!                              for the SRF and TauProfile dat files.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( StrLen )
+!                              DIMENSION:  Rank-1 (n_Files)
+!                              ATTRIBUTES: POINTER
+!
+!         SRF_Filename:        Character string array containing the sensor
+!                              SRF filenames.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( StrLen )
+!                              DIMENSION:  Rank-1 (n_Files)
+!                              ATTRIBUTES: POINTER
+!
+!         TauProfile_Filename: Character string array containing the sensor
+!                              transmittance profile filenames.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( StrLen )
+!                              DIMENSION:  Rank-1 (n_Files)
+!                              ATTRIBUTES: POINTER
+!
+!         dF_Index:            Integer array containing the frequency
+!                              interval index for each sensor.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Files)
+!                              ATTRIBUTES: POINTER
+!
+!         Channel_Index:       Integer array containing the begin and end
+!                              array index positions of the channels for each
+!                              sensor in the ProcessControl List array.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-2 (2,n_Files)
+!                              ATTRIBUTES: POINTER
+!
+!         n_Channels:          Total number of sensor channels represented in
+!                              the structure.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         List:                Structure array defining the Transmittance
+!                              production processing parameters for all the
+!                              sensor channels.
+!                              UNITS:      N/A
+!                              TYPE:       ProcessControl_List_type
+!                              DIMENSION:  Rank-1 (n_Channels)
+!                              ATTRIBUTES: POINTER
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2001 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ProcessControl_Define
 
@@ -37,7 +205,6 @@ MODULE ProcessControl_Define
 
   ! -- RCS Id field
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ProcessControl_Define.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -719,3 +886,63 @@ CONTAINS
 END MODULE ProcessControl_Define
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.7 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: ProcessControl_Define.f90,v $
+! Revision 1.7  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.6  2005/05/15 23:28:01  paulv
+! - Added dF_Index to PRocessControl structure definition.
+! - Renamed Sensor_Platform_ID component of ProcessControl structure
+!   to File_Index.
+!
+! Revision 1.5  2005/05/11 13:17:39  paulv
+! - Upgraded to Fortran-95
+! - Removed Initialization() subroutine.
+! - Made Associated() function PUBLIC.
+! - Added Assign() function.
+! - Derived type name root changed from "PC" to "ProcessControl"
+! - Separated out the structure component deallocations in the Destroy() function.
+!
+! Revision 1.4  2003/09/05 16:21:12  paulv
+! - Removed definition of derived type PCfile_type. The processing software
+!   no longer needs to keep track of the various file IDs so there was no need
+!   to retain this derived type. The PC_type has been altered to reflect these
+!   changes with the SRF and TauProfile PCfile_type members being replaced
+!   by SRF_Filename and TauProfile_Filename.
+! - Added an allocation counter to the PC_type definition. This counter is
+!   incremented and checked against the value 1 in the Allocate() function
+!   and decremented and checked against the value 0 in the Destroy() function.
+!   A warning is issued if the allocation counter does not have the expected
+!   value.
+! - Added the string length as a parameter and defined a member for it in the
+!   PC_type definition.
+! - Added the Associated_PC() PRIVATE function.
+! - Added the RCS_Id optional output argument to all the public routines.
+!
+! Revision 1.3  2002/06/19 17:02:58  paulv
+! - Added Sensor_Platform_ID pointer component to the PC data type.
+!
+! Revision 1.2  2002/06/05 19:19:53  paulv
+! - Removed MESSAGE as a module variable and placed definitions in each
+!   module subprogram.
+!
+! Revision 1.1  2002/05/30 20:00:28  paulv
+! Initial checkin.
+!
+!
+!
+!
+!

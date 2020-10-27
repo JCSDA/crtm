@@ -1,14 +1,19 @@
-  !
-  ! test_TL
-  !
-  ! Program to provide a (relatively) simple example of how
-  ! to test the CRTM tangent-linear function.
-  !
-  ! Copyright Patrick Stegmann, 2020
-  !
-
-PROGRAM TEST_TL
-  
+!
+! test_TL.f90
+!
+! Program to provide a (relatively) simple example of how
+! to test the CRTM tangent-linear function.
+!
+! This test simply checks if the ratio between a perturbed
+! and unperturbed nonlinear CRTM Forward calculation on the
+! one hand, and the Tangent-Linear operator on the other 
+! fall below a certain threshold TOLERANCE.
+! The perturbation variable is called `Perturbation` and is
+! currently set at 10% of the Temperature at Layer 92.
+!
+! Copyright Patrick Stegmann, 2020
+!
+PROGRAM test_TL
 
   ! ============================================================================
   ! **** ENVIRONMENT SETUP FOR RTM USAGE ****
@@ -25,8 +30,8 @@ PROGRAM TEST_TL
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'test_TL'
+  CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = './testinput/'
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/unit/'
-
 
   ! ============================================================================
   ! 0. **** SOME SET UP PARAMETERS FOR THIS EXAMPLE ****
@@ -64,7 +69,7 @@ PROGRAM TEST_TL
   CHARACTER(256) :: atmk_File, sfck_File
   REAL(fp) :: Perturbation
   REAL(fp) :: Ratio
-  REAL(fp), PARAMETER :: TOLERANCE = 0.1
+  REAL(fp), PARAMETER :: TOLERANCE = 0.1_fp
 
 
   ! ============================================================================
@@ -92,9 +97,9 @@ PROGRAM TEST_TL
   ! --------------
   CALL CRTM_Version( Version )
   CALL Program_Message( PROGRAM_NAME, &
-       &    'Program to provide a (relatively) simple example of how '//&
-       &    'to call the CRTM K-Matrix function.', &
-       &    'CRTM Version: '//TRIM(Version) )
+    'Program to provide a (relatively) simple example of how '//&
+    'to call the CRTM K-Matrix function.', &
+    'CRTM Version: '//TRIM(Version) )
 
 
   ! Get sensor id from user
@@ -116,12 +121,12 @@ PROGRAM TEST_TL
   ! --------------------------------------------------
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   Error_Status = CRTM_Init( (/Sensor_Id/), &  ! Input... must be an array, hence the (/../)
-       &                            ChannelInfo  , &  ! Output
-       &                            File_Path='./testinput/' )
+                            ChannelInfo  , &  ! Output
+                            File_Path=COEFFICIENTS_PATH )
   IF ( Error_Status /= SUCCESS ) THEN
-     Message = 'Error initializing CRTM'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error initializing CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
 
   ! 2b. Determine the total number of channels
@@ -145,13 +150,13 @@ PROGRAM TEST_TL
   ! Users can make the number of profiles dynamic also, but
   ! then the INPUT arrays (Atmosphere, Surface) will also have to be allocated.
   ALLOCATE( RTSolution( n_Channels, N_PROFILES ), &
-       &            RTSolution_Perturb( n_Channels, N_PROFILES ), &
-       &            RTSolution_TL( n_Channels, N_PROFILES ), &
-       &            STAT = Allocate_Status )
+            RTSolution_Perturb( n_Channels, N_PROFILES ), &
+            RTSolution_TL( n_Channels, N_PROFILES ), &
+            STAT = Allocate_Status )
   IF ( Allocate_Status /= 0 ) THEN
-     Message = 'Error allocating structure arrays'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1 
+    Message = 'Error allocating structure arrays'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
 
   ! 3b. Allocate the STRUCTURES
@@ -159,17 +164,17 @@ PROGRAM TEST_TL
   ! The input FORWARD structure
   CALL CRTM_Atmosphere_Create( Atm, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
-     Message = 'Error allocating CRTM Atmosphere structure'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error allocating CRTM Atmosphere structure'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
 
   ! The input TL structure
   CALL CRTM_Atmosphere_Create( Atmosphere_TL, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_TL)) ) THEN
-     Message = 'Error allocating CRTM Atmosphere_TL structure'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error allocating CRTM Atmosphere_TL structure'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
   ! ============================================================================
 
@@ -195,11 +200,11 @@ PROGRAM TEST_TL
   ! All profiles are given the same value
   !  The Sensor_Scan_Angle is optional.
   CALL CRTM_Geometry_SetValue( Geometry, &
-       &                               Sensor_Zenith_Angle = ZENITH_ANGLE, &
-       &                               Sensor_Scan_Angle   = SCAN_ANGLE )
+                               Sensor_Zenith_Angle = ZENITH_ANGLE, &
+                               Sensor_Scan_Angle   = SCAN_ANGLE )
   ! ============================================================================
 
-
+  
 
 
   ! ============================================================================
@@ -210,9 +215,9 @@ PROGRAM TEST_TL
   CALL CRTM_Atmosphere_Zero( Atmosphere_TL )
   CALL CRTM_Surface_Zero( Surface_TL )
   !Atmosphere_TL(1)%Temperature = Perturbation
-  Perturbation = Atm(1)%Temperature(92)*0.01_fp
-  !Atmosphere_TL = Atm
-  !Surface_TL = Sfc
+  Perturbation = Atm(1)%Temperature(92)*0.1_fp
+  !Atmosphere_TL = Atm 
+  !Surface_TL = Sfc 
   Atmosphere_TL(1)%Temperature(92) = Perturbation
 
 
@@ -225,17 +230,17 @@ PROGRAM TEST_TL
   ! 6. **** CALL THE CRTM TANGENT-LINEAR MODEL ****
   !
   Error_Status = CRTM_Tangent_Linear( Atm , &
-       &                                    Sfc , &
-       &                                    Atmosphere_TL , &
-       &                                    Surface_TL , &
-       &                                    Geometry , &
-       &                                    ChannelInfo , &
-       &                                    RTSolution , &
-       &                                    RTSolution_TL  )
+                                    Sfc , &
+                                    Atmosphere_TL , &
+                                    Surface_TL , &
+                                    Geometry , &
+                                    ChannelInfo , &
+                                    RTSolution , &
+                                    RTSolution_TL  )
   IF ( Error_Status /= SUCCESS ) THEN
-     Message = 'Error in CRTM Tangent-linear Model'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+   Message = 'Error in CRTM Tangent-linear Model'
+   CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+   STOP 1
   END IF
 
   WRITE(*,*) 'Tangent-linear Result: ', RTSolution_TL(5,1)%Radiance
@@ -248,14 +253,14 @@ PROGRAM TEST_TL
   ! 6. **** CALL THE CRTM FORWARD MODEL ****
   !
   Error_Status = CRTM_Forward( Atm         , &
-       &                                Sfc         , &
-       &                                Geometry    , &
-       &                                ChannelInfo , &
-       &                                RTSolution  )
+                                Sfc         , &
+                                Geometry    , &
+                                ChannelInfo , &
+                                RTSolution  )
   IF ( Error_Status /= SUCCESS ) THEN
-     Message = 'Error in CRTM Forward Model'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error in CRTM Forward Model'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
   ! ============================================================================
 
@@ -265,20 +270,20 @@ PROGRAM TEST_TL
   ! 6. **** CALL THE PERTURBED CRTM FORWARD MODEL ****
   !
   Error_Status = CRTM_Forward( Atm         , &
-       &                                Sfc         , &
-       &                                Geometry    , &
-       &                                ChannelInfo , &
-       &                                RTSolution_Perturb  )
+                                Sfc         , &
+                                Geometry    , &
+                                ChannelInfo , &
+                                RTSolution_Perturb  )
   IF ( Error_Status /= SUCCESS ) THEN
-     Message = 'Error in perturbed CRTM Forward Model'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error in perturbed CRTM Forward Model'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
   ! ============================================================================
 
   WRITE(*,*) 'Nonlinear Perturbation: ', ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance )
   Ratio = ( RTSolution_Perturb(5,1)%Radiance - RTSolution(5,1)%Radiance ) &
-       &               / RTSolution_TL(5,1)%Radiance
+               / RTSolution_TL(5,1)%Radiance
   WRITE(*,*) 'Ratio: ', Ratio
 
   ! ============================================================================
@@ -287,16 +292,16 @@ PROGRAM TEST_TL
   WRITE( *, '( /5x, "Destroying the CRTM..." )' )
   Error_Status = CRTM_Destroy( ChannelInfo )
   IF ( Error_Status /= SUCCESS ) THEN
-     Message = 'Error destroying CRTM'
-     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-     STOP 1
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
   END IF
   ! ============================================================================
 
 
 
 
-
+  
 
   ! ============================================================================
   ! 10. **** CLEAN UP ****
@@ -313,23 +318,19 @@ PROGRAM TEST_TL
   ! 10b. Deallocate the arrays
   ! --------------------------
   DEALLOCATE(RTSolution, RTSolution_TL, &
-       &             STAT = Allocate_Status)
+             STAT = Allocate_Status)
   ! ============================================================================
   IF(ONE - Ratio < TOLERANCE) THEN
-     testresult = 0
-     STOP 0
+    testresult = 0
+    STOP 0
   ELSE
-     testresult = 1
-     STOP 1 
+    testresult = 1
+    STOP 1
   END IF
-
-  !CALL EXIT(0) ! <-- works with ctest.
-  !ERROR STOP 1 ! <-- this works as well.
-  !STOP -1 ! <-- and this also works.
-
+ 
 CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
 
-END PROGRAM TEST_TL
+END PROGRAM test_TL

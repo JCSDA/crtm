@@ -12,7 +12,6 @@
   IMPLICIT NONE
 
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id$'
 
 
   INTEGER :: N_point_used, N_variables_used,i,j,k,N1,i1,N2

@@ -23,7 +23,6 @@ MODULE PtrArr_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   INTEGER , PARAMETER :: ML = 256
   INTEGER , PARAMETER :: NAME_LENGTH = 80
   REAL(fp), PARAMETER :: ZERO = 0.0_fp

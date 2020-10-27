@@ -1,3 +1,105 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Compare_MW_Attenuation
+!
+! PURPOSE:
+!       Program to compare the Liebe89/93 and Rosenkranz03 microwave
+!       atmospheric attenuation models.
+!
+! CATEGORY:
+!       LBL : Microwave
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:                  Module containing definitions for kinds
+!                                    of variable types.
+!
+!       Message_Handler:               Module to define simple error codes and
+!                                    handle error conditions
+!                                    USEs: FILE_UTILITY module
+!
+!       Profile_Utility_Parameters:  Module containing parameters used in the
+!                                    profile utility modules.
+!                                    USEs: TYPE_KINDS module
+!                                          FUNDAMENTAL_CONSTANTS module
+!
+!       Units_Conversion:            Module containing routines to convert
+!                                    atmospheric profile concentration units.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          PROFILE_UTILITY_PARAMETERS module
+!                                          ATMOSPHERIC_PROPERTIES module
+!
+!       AtmProfile_Define:           Module defining the AtmProfile data
+!                                    structure and containing routines to
+!                                    manipulate it.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!
+!       AtmProfile_netCDF_IO:        Module containing routines to read and
+!                                    write AtmProfile netCDF format files.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          ATMPROFILE_DEFINE module
+!                                          NETCDF module
+!                                          NETCDF_UTILITY module
+!
+!       MWLBL_Liebe89:               Module containing data and routines to
+!                                    calculate microwave atmospheric
+!                                    attenuation according to the Liebe89
+!                                    formulation.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          LIEBE89_COEFFICIENTS module
+!
+!       MWLBL_Liebe93:               Module containing data and routines to
+!                                    calculate microwave atmospheric
+!                                    attenuation according to the Liebe93
+!                                    formulation.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          LIEBE92_COEFFICIENTS module
+!                                          LIEBE93_COEFFICIENTS module
+!
+!       MWLBL_Rosenkranz03:          Module containing data and routines to
+!                                    calculate microwave atmospheric
+!                                    attenuation according to the Rosenkranz03
+!                                    formulation.
+!                                    USEs: TYPE_KINDS module
+!                                          ERROR_HANDLER module
+!                                          ROSENKRANZ03_COEFFICIENTS module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  - netCDF format AtmProfile file
+!
+!       Output: - 
+!
+! SIDE EFFECTS:
+!       If the output file already exists, it is overwritten.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 18-Nov-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 PROGRAM Compare_MW_Attenuation
 
@@ -37,7 +139,6 @@ PROGRAM Compare_MW_Attenuation
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Compare_MW_Attenuation'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Compare_MW_Attenuation.f90,v 1.2 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -802,3 +903,25 @@ PROGRAM Compare_MW_Attenuation
 END PROGRAM Compare_MW_Attenuation
 
 
+!#------------------------------------------------------------------------------#
+!#                          -- MODIFICATION HISTORY --                          # 
+!#------------------------------------------------------------------------------#
+!
+!
+! $Date: 2006/06/30 16:47:16 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Compare_MW_Attenuation.f90,v $
+! Revision 1.2  2006/06/30 16:47:16  dgroff
+! Changed "Error_Handler" references to "Message_Handler"
+!
+! Revision 1.1  2004/12/16 18:39:02  paulv
+! Initial checkin.
+!
+!
+!

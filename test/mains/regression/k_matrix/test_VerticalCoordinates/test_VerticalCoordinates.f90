@@ -39,6 +39,17 @@ PROGRAM test_VerticalCoordinates
   ! ...but only ONE Sensor at a time
   INTEGER, PARAMETER :: N_SENSORS = 1
 
+!!$  INTEGER, PARAMETER ::        INVALID_AEROSOL = 0
+!!$  INTEGER, PARAMETER ::           DUST_AEROSOL = 1
+!!$  INTEGER, PARAMETER ::   SEASALT_SSAM_AEROSOL = 2
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM1_AEROSOL = 3
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM2_AEROSOL = 4
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM3_AEROSOL = 5
+!!$  INTEGER, PARAMETER :: ORGANIC_CARBON_AEROSOL = 6
+!!$  INTEGER, PARAMETER ::   BLACK_CARBON_AEROSOL = 7
+!!$  INTEGER, PARAMETER ::        SULFATE_AEROSOL = 8
+
+
   ! Test GeometryInfo angles. The test scan angle is based
   ! on the default Re (earth radius) and h (satellite height)
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
@@ -138,7 +149,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -172,7 +182,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -187,7 +196,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM build test vertical coordinates
@@ -195,7 +203,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_NAM structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS build test vertical coordinates
@@ -203,7 +210,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_GFS structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ------------------------------
@@ -214,7 +220,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_K)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_K structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM output
@@ -222,7 +227,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_K)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_NAM_K structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS output
@@ -230,7 +234,6 @@ PROGRAM test_VerticalCoordinates
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_K)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_GFS_K structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -316,7 +319,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM K_Matrix Model (Build test resolution)'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -333,7 +335,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM K_Matrix Model (NAM resolution)'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -350,7 +351,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM K_Matrix Model (GFS resolution)'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -382,21 +382,6 @@ PROGRAM test_VerticalCoordinates
   END DO
   ! ============================================================================
 
-
-  ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
-
-
   ! ============================================================================
   ! 9. **** COMPARE Atmosphere_K and Surface_K RESULTS TO SAVED VALUES ****
   !
@@ -427,7 +412,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -440,7 +424,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_NAM_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -453,7 +436,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_GFS_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -472,7 +454,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Surface_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -485,7 +466,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Surface_NAM_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -498,7 +478,6 @@ PROGRAM test_VerticalCoordinates
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Surface_GFS_K save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -513,7 +492,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM atmosphere
@@ -523,7 +501,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_NAM_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS atmosphere
@@ -533,7 +510,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_GFS_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9b.2 Surface file
@@ -544,7 +520,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Surface_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM
@@ -554,7 +529,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Surface_NAM_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS
@@ -564,7 +538,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Surface_GFS_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -578,7 +551,6 @@ PROGRAM test_VerticalCoordinates
        n_GFS_ls /= n_Channels .OR. n_GFS_ms /= N_PROFILES      ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -590,7 +562,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM atmosphere
@@ -598,7 +569,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_NAM_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS atmosphere
@@ -606,7 +576,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_GFS_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9d.2 Surface file
@@ -615,7 +584,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Surface_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! NAM
@@ -623,7 +591,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Surface_NAM_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! GFS
@@ -631,7 +598,6 @@ PROGRAM test_VerticalCoordinates
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Surface_GFS_K save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -645,14 +611,12 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Atmosphere_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Atmosphere_K results to file
     atmk_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Atmosphere.bin'
     Error_Status = CRTM_Atmosphere_WriteFile( atmk_file, Atmosphere_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! NAM resolution
@@ -662,14 +626,12 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Atmosphere_NAM_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Atmosphere_NAM_K results to file
     atmk_NAM_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.NAM.Atmosphere.bin'
     Error_Status = CRTM_Atmosphere_WriteFile( atmk_NAM_file, Atmosphere_NAM_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_NAM_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! GFS resolution
@@ -679,14 +641,12 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Atmosphere_GFS_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Atmosphere_GFS_K results to file
     atmk_GFS_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.GFS.Atmosphere.bin'
     Error_Status = CRTM_Atmosphere_WriteFile( atmk_GFS_file, Atmosphere_GFS_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_GFS_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
 
@@ -698,14 +658,12 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Surface_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Surface_K results to file
     sfck_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Surface.bin'
     Error_Status = CRTM_Surface_WriteFile( sfck_file, Surface_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Surface_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! NAM
@@ -715,14 +673,12 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Surface_NAM_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Surface_NAM_K results to file
     sfck_NAM_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.NAM.Surface.bin'
     Error_Status = CRTM_Surface_WriteFile( sfck_NAM_file, Surface_NAM_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Surface_NAM_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! GFS
@@ -732,20 +688,27 @@ PROGRAM test_VerticalCoordinates
   ELSE
     Message = 'Surface_GFS_K Jacobians are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     ! Write the current Surface_GFS_K results to file
     sfck_GFS_File = TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.GFS.Surface.bin'
     Error_Status = CRTM_Surface_WriteFile( sfck_GFS_file, Surface_GFS_K, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Surface_GFS_K save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     END IF
   END IF
   ! ============================================================================
 
-
-
+  ! ============================================================================
+  ! 8. **** DESTROY THE CRTM ****
+  !
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
+  ! ============================================================================
 
   ! ============================================================================
   ! 10. **** CLEAN UP ****
@@ -783,6 +746,5 @@ CONTAINS
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
   INCLUDE 'Map_To_NCEP_Model_Coordinates.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM test_VerticalCoordinates

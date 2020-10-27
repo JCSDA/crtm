@@ -34,7 +34,6 @@ MODULE MWSE_Snow
   ! ---------------------
 
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: MWSE_Snow.f90,v 1.3 2004/12/09 20:07:10 paulv Exp $'
 
   
 CONTAINS
@@ -1854,7 +1853,6 @@ END MODULE MWSE_Snow
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: MWSE_Snow.f90,v 1.3 2004/12/09 20:07:10 paulv Exp $
 !
 ! $Date: 2004/12/09 20:07:10 $
 !

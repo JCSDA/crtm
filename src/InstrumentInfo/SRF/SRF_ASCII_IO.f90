@@ -60,7 +60,6 @@ MODULE SRF_ASCII_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: UNSET = 0
   INTEGER, PARAMETER ::   SET = 1

@@ -28,7 +28,6 @@ PROGRAM NLTECoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'NLTECoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   ! ---------
   ! Variables

@@ -303,7 +303,7 @@ CONTAINS
                 self%Delta_Truncation( n_Layers ), &
                 self%Phase_Coefficient( 0:n_Legendre_Terms, n_Phase_Elements, n_Layers ), &
                 STAT = alloc_stat )
-      self%Single_Scatter_Albedo(:) = 0._fp
+      self%Single_Scatter_Albedo(:) = ZERO
       IF ( alloc_stat /= 0 ) RETURN
       ! Set maximum dimension values
       self%Max_Layers         = n_Layers

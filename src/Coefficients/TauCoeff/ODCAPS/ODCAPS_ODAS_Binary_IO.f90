@@ -1,3 +1,74 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_ODAS_Binary_IO
+!
+! PURPOSE:
+!       Module containing routines to read and write Binary format
+!       ODCAPS_ODAS files.
+!       
+! CATEGORY:
+!       Optical Depth : Coefficients
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_ODAS_Binary_IO
+!
+! MODULES:
+!       Type_Kinds:             Module containing definitions for kinds
+!                               of variable types.
+!
+!       File_Utility:           Module containing generic file utility routines
+!
+!       Message_Handler:          Module to define simple error codes and
+!                               handle error conditions
+!                               USEs: FILE_UTILITY module
+!
+!       Binary_File_Utility:    Module containing utility routines for "Binary" 
+!                               format datafiles.
+!                               USEs: TYPE_KINDS module
+!                                     FILE_UTILITY module
+!                                     Message_Handler module
+!
+!       ODCAPS_ODAS_Define:     Module defining the ODCAPS_ODAS data structure and
+!                               containing routines to manipulate it.
+!                               USEs: TYPE_KINDS module
+!                                     FILE_UTILITY module
+!                                     Message_Handler module
+!
+! CONTAINS:
+!       Inquire_ODCAPS_ODAS_Binary: Function to inquire a Binary format
+!                                        ODCAPS_ODAS file.
+!
+!       Read_ODCAPS_ODAS_Binary:    Function to read a Binary format
+!                                        ODCAPS_ODAS file.
+!
+!       Write_ODCAPS_ODAS_Binary:   Function to write a Binary format
+!                                        ODCAPS_ODAS file.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       User specified Binary format ODCAPS_ODAS data files for both
+!       input and output.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 02-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_ODAS_Binary_IO
 
@@ -37,7 +108,6 @@ MODULE ODCAPS_ODAS_Binary_IO
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ODCAPS_ODAS_Binary_IO.f90,v 1.1 2006/05/02 18:15:01 ychen Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1

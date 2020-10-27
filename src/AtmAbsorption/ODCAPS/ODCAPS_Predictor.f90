@@ -1,3 +1,106 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       ODCAPS_Predictor
+!
+! PURPOSE:
+!       Module continaing routines to compute the Optical Depth Combining Absorber
+!       and Pressure Space (ODCAPS) predictors for the gas absorption model.
+!
+! CATEGORY:
+!       CRTM : Gas Absorption : Predictor
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE ODCAPS_Predictor
+!
+! MODULES:
+!       Type_Kinds:                 Module containing definitions for kinds
+!                                   of variable types.
+!
+!       Message_Handler:              Module to define simple error codes and
+!                                   handle error conditions
+!                                   USEs: FILE_UTILITY module
+!
+!       CRTM_Parameters:            Module of parameter definitions for the CRTM.
+!                                   USEs: TYPE_KINDS module
+!
+!       CRTM_GeometryInfo:          Module to convert the surface solar zenith
+!                                   angle SZA into the local solar angle 
+!                                   at altitude ALT, and convert the AIRS satellite 
+!                                   viewing angle into the local path angle.
+!                                   USEs: TYPE_KINDS module
+!                                         CRTM_Parameters module
+!
+!
+!       ODCAPS_Predictor_Define:  Module defining the ODCAPS_Predictor
+!                                   structure and containing routines to 
+!                                   manipulate it.
+!                                   USEs: TYPE_KINDS module
+!                                         Message_Handler module
+!
+!
+! CONTAINS:
+!       Private subprograms
+!       ------------------
+!   Compute_Predictors_Subset:         Subroutine to calculate the gas absorption
+!   				       model predictors for subset.
+!
+!   Compute_Predictors_Subset_TL:      Subroutine to calculate the gas absorption
+!   				       model tangent-linear predictors.
+!
+!   Compute_Predictors_Subset_AD:      Subroutine to calculate the adjoint gas
+!   				       absorption model predictors.
+!
+!   Compute_TraceGas_Predictors:       Subroutine to calculate the trace gas absorption
+!   				       model predictors.
+!
+!   Compute_TraceGas_Predictors_TL:    Subroutine to calculate the trace gas absorption
+!   				       model tangent-linear predictors.
+!
+!   Compute_TraceGas_Predictors_AD:    Subroutine to calculate the adjoint trace gas
+!   				       absorption model predictors.
+!
+!   Compute_WOPTRAN_Predictors:        Subroutine to calculate the water vapor absorption
+!   				       model predictors for OPTRAN.
+!
+!   Compute_WOPTRAN_Predictors_TL:     Subroutine to calculate the water vapor absorption
+!   				       model tangent-linear predictors for OPTRAN.
+!
+!   Compute_WOPTRAN_Predictors_AD:     Subroutine to calculate the adjoint water vapor
+!   				       absorption model predictors for OPTRAN.
+!
+!   Compute_Non_LTE_Predictors:        Subroutine to calculate the water vapor absorption
+!   				       model predictors for OPTRAN.
+!
+!   Compute_Non_LTE_Predictors_TL:     Subroutine to calculate the water vapor absorption
+!   				       model tangent-linear predictors for OPTRAN.
+!
+!   Compute_Non_LTE_Predictors_AD:     Subroutine to calculate the adjoint water vapor
+!   				       absorption model predictors for OPTRAN.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Yong Chen, CSU/CIRA 24-May-2006
+!                       Yong.Chen@noaa.gov
+!
+!  Copyright (C) 2006 Yong Chen
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE ODCAPS_Predictor
 
@@ -74,7 +177,6 @@ MODULE ODCAPS_Predictor
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODCAPS_Predictor.f90,v 1.1 2006/05/09 21:10:52 ychen Exp $'
 
   TYPE :: APVariables_type
     PRIVATE

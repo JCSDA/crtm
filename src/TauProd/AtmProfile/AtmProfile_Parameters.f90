@@ -53,7 +53,6 @@ MODULE AtmProfile_Parameters
   ! -----------------
   ! Module Version string
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
 
 
   ! The current number of profile sets and their ID tag

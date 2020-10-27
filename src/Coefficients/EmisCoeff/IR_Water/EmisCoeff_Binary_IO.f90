@@ -46,7 +46,6 @@ MODULE EmisCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
 
 
 CONTAINS

@@ -60,7 +60,6 @@ PROGRAM Convolve_TauSpc
 
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Convolve_TauSpc'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   INTEGER, PARAMETER :: INVALID = -1
 

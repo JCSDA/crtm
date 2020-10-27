@@ -1,3 +1,105 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTM_ChannelInfo
+!
+! PURPOSE:
+!       Module containing routines to populate the CRTM ChannelInfo structure.
+!       
+! CATEGORY:
+!       CRTM : ChannelInfo
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE CRTM_ChannelInfo
+!
+! MODULES:
+!       Type_Kinds:           Module containing definitions for kinds      
+!                             of variable types.                           
+!
+!       Message_Handler:      Module to define simple error codes and      
+!                             handle error conditions                      
+!                             USEs: FILE_UTILITY module                    
+!
+!       SpcCoeff_Define:      Module defining the SpcCoeff data structure and
+!                             containing routines to manipulate it.
+!                             USEs: TYPE_KINDS module
+!                                   ERROR_HANDLER module
+!                                   COMPUTE_FLOAT_NUMBERS module
+!
+!       CRTM_ChannelInfo_Define:  Module defining the CRTM ChannelInfo    
+!                             data structure and containing routines      
+!                             to manipulate it.                           
+!                             USEs: TYPE_KINDS module                     
+!                                   ERROR_HANDLER module                  
+!
+!       CRTM_SpcCoeff:        Module containing the shared CRTM spectral 
+!                             coefficients and their load/destruction    
+!                             routines.                                  
+!                             USEs: TYPE_KINDS module                    
+!                                   ERROR_HANDLER module                 
+!                                   SPCCOEFF_DEFINE module               
+!                                   SPCCOEFF_BINARY_IO module            
+!                                   CRTM_PARAMETERS module               
+! CONTAINS:
+!       PUBLIC subprograms
+!       ------------------
+!         CRTM_Index_ChannelInfo:  Function to populate the Channel_Index     
+!                                  component of a ChannelInfo structure.      
+!
+!         CRTM_Set_ChannelInfo:    Function to populate the CRTM ChannelInfo 
+!                                  structure according to user specified 
+!                                  sensor information
+!
+!         CRTM_Fill_ChannelInfo:   Function to populate rest of the CRTM 
+!                                  ChannelInfo structure members after
+!
+!                                  the CRTM_Index_ChannelInfo() is called.
+!       PRIVATE subprograms
+!       -------------------
+!         None.
+!
+!
+! USE ASSOCIATED PUBLIC SUBPROGRAMS:
+!       CRTM_Associated_ChannelInfo:  Function to test the association status
+!                                     of the pointer members of a ChannelInfo
+!                                     structure.
+!                                     SOURCE: CRTM_CHANNELINFO_DEFINE module
+!
+!       CRTM_Destroy_ChannelInfo:     Function to re-initialize a ChannelInfo
+!                                     structure.
+!                                     SOURCE: CRTM_CHANNELINFO_DEFINE module
+!
+!       CRTM_Allocate_ChannelInfo:    Function to allocate the pointer members
+!                                     of an ChannelInfo structure.
+!                                     SOURCE: CRTM_CHANNELINFO_DEFINE module
+!
+!       CRTM_Assign_ChannelInfo:      Function to copy a valid ChannelInfo
+!                                     structure.
+!                                     SOURCE: CRTM_CHANNELINFO_DEFINE module
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 13-May-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE CRTM_ChannelInfo
 
@@ -65,7 +167,6 @@ MODULE CRTM_ChannelInfo
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_ChannelInfo.f90,v 1.11 2006/05/02 14:58:34 dgroff Exp $'
 
   ! -- Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
@@ -736,3 +837,87 @@ CONTAINS
 END MODULE CRTM_ChannelInfo
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/05/02 14:58:34 $
+!
+! $Revision: 1.11 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: CRTM_ChannelInfo.f90,v $
+! Revision 1.11  2006/05/02 14:58:34  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.10  2006/04/24 17:51:57  wd20pd
+! - Merged CRTM_Sensor branch onto the main trunk.
+!
+! Revision 1.9.2.5  2005/09/01 21:44:46  yhan
+! -- modified ROUTINE_NAME for Set_ChannelInfo_F1 and Set_ChannelInfo_F2
+!
+! Revision 1.9.2.4  2005/09/01 20:43:59  yhan
+! --- Corrected the content of ROUTINE_NAME for Set_ChannelInfo_F1 and
+!     Set_ChannelInfo_F2
+!
+! Revision 1.9.2.3  2005/09/01 20:34:57  yhan
+! --- Modified document for function CRTM_Set_ChannelInfo
+! --- Moved function IndexChannelInfo_NCEPID up close to IndexChannelInfo_DESC
+!
+! Revision 1.9.2.2  2005/08/23 12:51:35  yhan
+! -- Renamed IndexChannelInfo_USER1() and IndexChannelInfo_USER2() to CRTM_Set_ChannelInfo_F1()
+!    and CRTM_Set_ChannelInfo_F2() and moved them to a new generic interface block
+!    CRTM_Set_ChannelInfo because in addition to indexing ChannelInfo these functions also
+!    need to fill rest of the ChnnanelInfo structure.
+! -- Added public subroutine CRTM_Fill_ChannelInfo() to fill the remaining unfilled structure
+!    members for ChannelInfo, which may be called after the function CRTM_Index_ChannelInfo()
+!    is called.
+!
+! Revision 1.9.2.1  2005/08/22 18:34:14  yhan
+! -- Added the two functions IndexChannelInfo_USER1() and IndexChannelInfo_USER2() and
+!    listed them in the generic interface block (Procedure overloading) CRTM_Index_ChannelInfo.
+!    The two user-callable routines are to specify a subset of channels with a sensor descriptor
+!    (IndexChannelInfo_USER1) or with a set of sensor descriptors and sensor_channel indexes.
+! -- In the Module use, added "USE SpcCoeff_Define" and "USE CRTM_SpcCoeff" for the added two
+!    functions to access the shared data SC and use the function Associated_SpcCoeff() defined
+!    in SpcCoeff_Define.
+!
+! Revision 1.9  2005/02/16 15:45:21  paulv
+! - Updated header documentation.
+!
+! Revision 1.8  2004/11/03 22:36:46  paulv
+! - Intent of output structures in the Index() routines changed from (OUT)
+!   to (IN OUT) to prevent memory leaks.
+! - Added generic specification to the Index() routine END INTERFACE statement.
+!
+! Revision 1.7  2004/08/06 17:31:31  paulv
+! - Updated header documentation.
+!
+! Revision 1.6  2004/07/01 20:52:51  paulv
+! - Resyncing repository with working versions. This version works with the
+!   Test_Forward program of the same date.
+!
+! Revision 1.5  2004/06/29 20:09:04  paulv
+! - Separated the definition and application code into separate modules.
+!
+! Revision 1.4  2004/06/24 18:59:39  paulv
+! - Removed code that triggered an error in the indexing function if the
+!   user inputs more channels than are available.
+!
+! Revision 1.3  2004/06/15 21:58:39  paulv
+! - Corrected some minor indexing and declaration bugs.
+!
+! Revision 1.2  2004/06/15 21:43:41  paulv
+! - Added indexing functions.
+! - Renamed module from CRTM_ChannelInfo_Define.
+!
+! Revision 1.1  2004/05/19 19:55:18  paulv
+! Initial checkin.
+!
+!
+!
+!

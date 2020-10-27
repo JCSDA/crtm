@@ -1,3 +1,94 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Average_SRFs
+!
+! PURPOSE:
+!       Program to average SRFs read in from separate netCDF format SRF
+!       data files.
+!
+! CATEGORY:
+!       SRF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:         Module containing definitions for kinds
+!                           of variable types.
+!
+!       File_Utility:       Module containing generic file utility
+!                           routines
+!
+!       Message_Handler:    Module to define simple error codes and
+!                           handle error conditions
+!                           USEs: FILE_UTILITY module
+!
+!       List_File_Utility:  Module containing routines for reading list
+!                           files, i.e. ASCII files that contain lists of
+!                           character or integer data, one item per line.
+!                           USEs: TYPE_KINDS module
+!                                 FILE_UTILITY module
+!                                 Message_Handler module
+!
+!       Integrate:          Module containing integration routines.
+!                           USEs: TYPE_KINDS module
+!                                 Message_Handler module
+!                                 INTERPOLATE module
+!
+!       SRF_Define:         Module defining the SRF data structure
+!                           and containing routines to manipulate it.
+!                           USEs: TYPE_KINDS module
+!                                 Message_Handler module
+!
+!       SRF_netCDF_IO:      Module containing routines to read and
+!                           write SRF netCDF format files.
+!                           USEs: TYPE_KINDS module
+!                                 Message_Handler module
+!                                 SRF_DEFINE module
+!                                 NETCDF module
+!                                 NETCDF_UTILITY module
+!
+!       SRF_Utility:        Module containing routines for application of
+!                           SRF data.
+!                           USEs: TYPE_KINDS module
+!                                 Message_Handler module
+!                                 COMPARE_FLOAT_NUMBERS module
+!                                 INTERPOLATE module
+!                                 INTEGRATE module
+!                                 SRF_DEFINE module
+!
+! CONTAINS:
+!       Compute_Delta_Frequency:  Function to compute the SRF frequency interval
+!                                 given the begin and end frequencies and the 
+!                                 total number of SRF points.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input and output netCDF SRF data files
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 20-Nov-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Average_SRFs
 
@@ -31,7 +122,6 @@ PROGRAM Average_SRFs
 
   CHARACTER( * ),  PARAMETER :: PROGRAM_NAME = 'Average_SRFs'
   CHARACTER( * ),  PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Average_SRFs.f90,v 2.4 2006/08/15 20:51:04 wd20pd Exp $'
   CHARACTER( * ),  PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

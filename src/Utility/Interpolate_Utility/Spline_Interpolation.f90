@@ -44,7 +44,6 @@ MODULE Spline_Interpolation
   ! -----------------
   ! RCS Id field
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp

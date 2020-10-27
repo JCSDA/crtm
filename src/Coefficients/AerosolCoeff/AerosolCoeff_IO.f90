@@ -21,12 +21,12 @@ MODULE AerosolCoeff_IO
   USE AerosolCoeff_Define   , ONLY: AerosolCoeff_type, OPERATOR(==)
   USE AerosolCoeff_Binary_IO, ONLY: AerosolCoeff_Binary_InquireFile, &
                                     AerosolCoeff_Binary_ReadFile   , &
-                                    AerosolCoeff_Binary_WriteFile  , &
-                                    AerosolCoeff_Binary_IOVersion
+                                    AerosolCoeff_Binary_WriteFile  
+                                    !AerosolCoeff_netCDF_IOVersion
   USE AerosolCoeff_netCDF_IO, ONLY: AerosolCoeff_netCDF_InquireFile, &
                                     AerosolCoeff_netCDF_ReadFile   , &
-                                    AerosolCoeff_netCDF_WriteFile  , &
-                                    AerosolCoeff_netCDF_IOVersion
+                                    AerosolCoeff_netCDF_WriteFile  
+                                    !AerosolCoeff_netCDF_IOVersion
   ! Disable implicit typing
   IMPLICIT NONE
   
@@ -39,15 +39,9 @@ MODULE AerosolCoeff_IO
   PUBLIC :: AerosolCoeff_ReadFile
   PUBLIC :: AerosolCoeff_WriteFile
   PUBLIC :: AerosolCoeff_netCDF_to_Binary
-  PUBLIC :: AerosolCoeff_IOVersion
+  !PUBLIC :: AerosolCoeff_IOVersion
 
 
-  ! -----------------
-  ! Module parameters
-  ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
-  
 
 CONTAINS
 
@@ -71,6 +65,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_InquireFile( &
+!                        Aerosol_Model, &
 !                        Filename, &
 !                        netCDF           = netCDF          , &
 !                        n_Wavelengths    = n_Wavelengths   , &
@@ -86,6 +81,15 @@ CONTAINS
 !                        Comment          = Comment           )
 !
 ! INPUTS:
+!       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
+!                          Available aerosol scheme:
+!                          - GOCART  [DEFAULT]
+!                          - CMAQ
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       Filename:          Character string specifying the name of a
 !                          AerosolCoeff data file to read.
 !                          UNITS:      N/A
@@ -197,11 +201,13 @@ CONTAINS
 !:sdoc-:
 !------------------------------------------------------------------------------
 
-  FUNCTION AerosolCoeff_InquireFile( &
+  FUNCTION AerosolCoeff_InquireFile( & 
+    Aerosol_Model   , &  ! Input
     Filename        , &  ! Input
     netCDF          , &  ! Optional input
     n_Wavelengths   , &  ! Optional output
     n_Radii         , &  ! Optional output
+    n_Sigma         , &  ! Optional output
     n_Types         , &  ! Optional output
     n_RH            , &  ! Optional output
     n_Legendre_Terms, &  ! Optional output
@@ -213,10 +219,12 @@ CONTAINS
     Comment         ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),           INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),           INTENT(IN)  :: Filename
     LOGICAL,      OPTIONAL, INTENT(IN)  :: netCDF
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Wavelengths       
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Radii             
+    INTEGER,      OPTIONAL, INTENT(OUT) :: n_Sigma
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Types             
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_RH                
     INTEGER,      OPTIONAL, INTENT(OUT) :: n_Legendre_Terms    
@@ -241,9 +249,11 @@ CONTAINS
     ! Call the appropriate function
     IF ( Binary ) THEN
       err_stat = AerosolCoeff_Binary_InquireFile( &
+                   Aerosol_Model, &
                    Filename, &
                    n_Wavelengths    = n_Wavelengths   , &
                    n_Radii          = n_Radii         , &
+                   n_Sigma          = n_Sigma         , &
                    n_Types          = n_Types         , &
                    n_RH             = n_RH            , &
                    n_Legendre_Terms = n_Legendre_Terms, &
@@ -252,9 +262,11 @@ CONTAINS
                    Version          = Version           )
     ELSE
       err_stat = AerosolCoeff_netCDF_InquireFile( &
+                   Aerosol_Model, &
                    Filename, &
                    n_Wavelengths    = n_Wavelengths   , &
                    n_Radii          = n_Radii         , &
+                   n_Sigma          = n_Sigma         , &
                    n_Types          = n_Types         , &
                    n_RH             = n_RH            , &
                    n_Legendre_Terms = n_Legendre_Terms, &
@@ -280,6 +292,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_ReadFile( &
+!                        Aerosol_Model, &
 !                        Filename         , &
 !                        AerosolCoeff       , &
 !                        netCDF  = netCDF , &
@@ -289,6 +302,15 @@ CONTAINS
 !                        Comment = Comment  )
 !
 ! INPUTS:
+!       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
+!                          Available aerosol scheme:
+!                          - GOCART  [DEFAULT]
+!                          - CMAQ
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       Filename:       Character string specifying the name of the
 !                       AerosolCoeff data file to write.
 !                       UNITS:      N/A
@@ -365,6 +387,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_ReadFile( &
+    Aerosol_Model, & ! Input
     Filename    , &  ! Input
     AerosolCoeff, &  ! Output
     netCDF      , &  ! Optional input
@@ -374,6 +397,7 @@ CONTAINS
     Comment     ) &  ! Optional output
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),            INTENT(IN)  :: Filename
     TYPE(AerosolCoeff_type), INTENT(OUT) :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN)  :: netCDF
@@ -395,11 +419,13 @@ CONTAINS
     ! Call the appropriate function
     IF ( Binary ) THEN
       err_stat = AerosolCoeff_Binary_ReadFile( &
+                   Aerosol_Model, &
                    Filename, &
                    AerosolCoeff, &
                    Quiet = Quiet )
     ELSE
       err_stat = AerosolCoeff_netCDF_ReadFile( &
+                   Aerosol_Model, &
                    Filename, &
                    AerosolCoeff, &
                    Quiet   = Quiet  , &
@@ -422,6 +448,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_WriteFile( &
+!                        Aerosol_Model, &
 !                        Filename, &
 !                        AerosolCoeff, &
 !                        netCDF  = netCDF , &
@@ -431,6 +458,15 @@ CONTAINS
 !                        Comment = Comment  )
 !
 ! INPUTS:
+!       Aerosol_Model:     Name of the aerosol scheme for scattering calculation
+!                          Available aerosol scheme:
+!                          - GOCART  [DEFAULT]
+!                          - CMAQ
+!                          UNITS:      N/A
+!                          TYPE:       CHARACTER(*)
+!                          DIMENSION:  Scalar
+!                          ATTRIBUTES: INTENT(IN)
+!
 !       Filename:       Character string specifying the name of the
 !                       AerosolCoeff data file to write.
 !                       UNITS:      N/A
@@ -505,6 +541,7 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_WriteFile( &
+    Aerosol_Model, & ! Input
     Filename    , &  ! Input
     AerosolCoeff, &  ! Input
     netCDF      , &  ! Optional input
@@ -514,6 +551,7 @@ CONTAINS
     Comment     ) &  ! Optional input
   RESULT ( err_stat )
     ! Arguments
+    CHARACTER(*),            INTENT(IN) :: Aerosol_Model
     CHARACTER(*),            INTENT(IN) :: Filename
     TYPE(AerosolCoeff_type), INTENT(IN) :: AerosolCoeff
     LOGICAL,       OPTIONAL, INTENT(IN) :: netCDF
@@ -535,11 +573,13 @@ CONTAINS
     ! Call the appropriate function
     IF ( Binary ) THEN
       err_stat = AerosolCoeff_Binary_WriteFile( &
+                   Aerosol_Model, &
                    Filename, &
                    AerosolCoeff, &
                    Quiet = Quiet )
     ELSE
       err_stat = AerosolCoeff_netCDF_WriteFile( &
+                   Aerosol_Model, &
                    Filename, &
                    AerosolCoeff, &
                    Quiet   = Quiet  , &
@@ -562,6 +602,7 @@ CONTAINS
 !
 ! CALLING SEQUENCE:
 !       Error_Status = AerosolCoeff_netCDF_to_Binary( &
+!                        Aerosol_Model, &
 !                        NC_Filename  , &
 !                        BIN_Filename , &
 !                        Quiet = Quiet  )
@@ -610,11 +651,13 @@ CONTAINS
 !------------------------------------------------------------------------------
 
   FUNCTION AerosolCoeff_netCDF_to_Binary( &
+    Aerosol_Model, & ! Input
     NC_Filename , &  ! Input
     BIN_Filename, &  ! Input
     Quiet       ) &  ! Optional input
   RESULT( err_stat )
     ! Arguments
+    CHARACTER(*),      INTENT(IN)  :: Aerosol_Model
     CHARACTER(*),      INTENT(IN)  :: NC_Filename
     CHARACTER(*),      INTENT(IN)  :: BIN_Filename
     LOGICAL, OPTIONAL, INTENT(IN)  :: Quiet
@@ -630,7 +673,7 @@ CONTAINS
     err_stat = SUCCESS
 
     ! Read the netCDF file
-    err_stat = AerosolCoeff_ReadFile( NC_Filename, cc, Quiet = Quiet, netCDF = .TRUE. )
+    err_stat = AerosolCoeff_ReadFile( Aerosol_Model, NC_Filename, cc, Quiet = Quiet, netCDF = .TRUE. )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading netCDF file '//TRIM(NC_Filename)
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
@@ -638,7 +681,7 @@ CONTAINS
     END IF
 
     ! Write the Binary file
-    err_stat = AerosolCoeff_WriteFile( BIN_Filename, cc, Quiet = Quiet )
+    err_stat = AerosolCoeff_WriteFile( Aerosol_Model, BIN_Filename, cc, Quiet = Quiet )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error writing Binary file '//TRIM(BIN_Filename)
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
@@ -647,7 +690,7 @@ CONTAINS
 
     ! Check the write was successful
     ! ...Read the Binary file
-    err_stat = AerosolCoeff_ReadFile( BIN_Filename, cc_copy, Quiet = Quiet )
+    err_stat = AerosolCoeff_ReadFile( Aerosol_Model, BIN_Filename, cc_copy, Quiet = Quiet )
     IF ( err_stat /= SUCCESS ) THEN
       msg = 'Error reading Binary file '//TRIM(BIN_Filename)//' for test'
       CALL Display_Message( ROUTINE_NAME, msg, err_stat )
@@ -689,23 +732,23 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE AerosolCoeff_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-    INTEGER, PARAMETER :: LINEFEED = 10
-    INTEGER, PARAMETER :: SL = 256
-    CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
-    CHARACTER(SL*3) :: IO_Id
-    CALL AerosolCoeff_Binary_IOVersion( Binary_IO_Id )
-    CALL AerosolCoeff_netCDF_IOVersion( netCDF_IO_Id )
-    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(netCDF_IO_Id)
-    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
-      Id = IO_Id
-    ELSE
-      Id = MODULE_VERSION_ID
-    END IF
-  END SUBROUTINE AerosolCoeff_IOVersion
+ ! SUBROUTINE AerosolCoeff_IOVersion( Id )
+ !   CHARACTER(*), INTENT(OUT) :: Id
+ !   INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+ !   INTEGER, PARAMETER :: LINEFEED = 10
+ !   INTEGER, PARAMETER :: SL = 256
+ !   CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
+ !   CHARACTER(SL*3) :: IO_Id
+ !   CALL AerosolCoeff_Binary_IOVersion( Binary_IO_Id )
+ !   CALL AerosolCoeff_netCDF_IOVersion( netCDF_IO_Id )
+ !   IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+ !           '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+ !           '  '//TRIM(netCDF_IO_Id)
+ !   IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
+ !     Id = IO_Id
+ !   ELSE
+ !     Id = MODULE_VERSION_ID
+ !   END IF
+ ! END SUBROUTINE AerosolCoeff_IOVersion
 
 END MODULE AerosolCoeff_IO

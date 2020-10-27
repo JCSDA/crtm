@@ -43,7 +43,6 @@ PROGRAM FitStats_ASCII2NC
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'FitStats_ASCII2NC'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
 
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1

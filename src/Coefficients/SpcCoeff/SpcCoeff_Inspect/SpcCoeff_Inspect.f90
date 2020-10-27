@@ -28,7 +28,6 @@ PROGRAM SpcCoeff_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'SpcCoeff_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

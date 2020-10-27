@@ -49,7 +49,6 @@ PROGRAM Extract_CrIS_TauCoeff_Subset
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Extract_CrIS_TauCoeff_Subset'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
  
   INTEGER, PARAMETER :: SL = 256
 

@@ -32,7 +32,6 @@ PROGRAM AtmProfile_Truncate
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AtmProfile_Truncate'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   ! LIteral constants
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
 

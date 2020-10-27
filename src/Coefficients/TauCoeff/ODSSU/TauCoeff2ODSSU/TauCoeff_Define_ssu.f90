@@ -70,7 +70,6 @@ MODULE TauCoeff_Define_ssu
   INTEGER(Long), PARAMETER :: TC_SSU_Algorithm_ID = 1
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! TauCoeff init values
   REAL(Double), PARAMETER :: FP_INIT = 0.0_Double
   INTEGER,      PARAMETER :: IP_INIT = -1

@@ -29,6 +29,188 @@ CONTAINS
 
 
 
+!-------------------------------------------------------------------------------------------------------------
+!
+! NAME:
+!       NESDIS_AMSU_SNOWEM
+!
+! PURPOSE:
+!       Subroutine to simulate microwave emissivity over snow conditions from AMSU measurements at window
+!       channels.
+!
+! REFERENCES:
+!       Yan, B., F. Weng and K.Okamoto,2004: "A microwave snow emissivity model, 8th Specialist Meeting on
+!       Microwave Radiometry and Remote Sension Applications,24-27 February, 2004, Rome, Italy.
+!
+! CATEGORY:
+!       CRTM : Surface : MW SNOWEM
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       CALL NESDIS_AMSU_SNOWEM
+!
+! INPUT ARGUMENTS:
+!
+!         Frequency                Frequency User defines
+!                                  This is the "I" dimension
+!                                  UNITS:      GHz
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Satellite_Angle          The local zenith angle in degree for AMSU measurements.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!         User_Angle               The local angle value in degree user defines.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      Degrees
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Rank-1, (I)
+!
+!
+!         Tba                      BRIGHTNESS TEMPERATURES AT FOUR AMSU-A WINDOW CHANNELS
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION   4*1 SCALAR
+!
+!                        WHICH ARE
+!                                  tba[1] = TB at 23.8 GHz
+!                                  tba[2] = TB at: 31.4 GHz
+!                                  tba[3] = TB at 50.3 GHz
+!                                  tba[4] = TB at 89 GHz
+!
+!         Tbb                      BRIGHTNESS TEMPERATURES AT TWO AMSU-B WINDOW CHANNELS
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION   2*1 SCALAR
+!
+!                         WHICH ARE
+!
+!                                  tbb[1] = TB at 89 GHz
+!                                  tbb[2] = TB at 150 GHz
+!
+!
+!         Ts = Land_Temperature:        The land surface temperature.
+!                                  UNITS:      Kelvin, K
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+!         Snow_Depth:              The snow depth.
+!                                  UNITS:      mm
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+! **** IMPORTANT NOTES ****
+!
+!        When one variable among  Tba[], Tbb[] and Ts are not available, set -999.0
+!
+!
+!
+!
+! OUTPUT ARGUMENTS:
+!
+!         Emissivity_H:            The surface emissivity at a horizontal polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!         Emissivity_V:            The surface emissivity at a vertical polarization.
+!                                  ** NOTE: THIS IS A MANDATORY MEMBER **
+!                                  **       OF THIS STRUCTURE          **
+!                                  UNITS:      N/A
+!                                  TYPE:       REAL( fp )
+!                                  DIMENSION:  Scalar
+!
+!
+! IINTERNAL ARGUMENTS:
+!
+!       input_type (specific option index = 1 ~ 7):
+!
+!         input_type = 1 :  AMSU-A & B window channels of Tb and Ts are available (call AMSU_ABTs)
+!
+!         input_type = 2 :  AMSU-A window channels of Tb and Ts are available     (call AMSU_ATs)
+!
+!         input_type = 3 :  AMSU-A & B window channels of Tb are available        (call AMSU_AB)
+!
+!         input_type = 4 :  AMSU-A window channels of Tb are available            (call AMSU_amsua)
+!
+!         input_type = 5 :  AMSU-B window channels of Tb and Ts are available     (call AMSU_BTs)
+!
+!         input_type = 6 :  AMSU-B window channels of Tb are available            (call AMSU_amsub)
+!
+!         input_type = 7 :  snow depth and Ts are available                       (call ALandEM_Snow)
+!
+!
+! OPTIONAL OUTPUT ARGUMENTS:
+!
+!       snow_type  -  snow type (not output here)
+!                     1 : Wet Snow
+!                     2 : Grass_after_Snow
+!                     3 : RS_Snow (A)
+!                     4 : Powder Snow
+!                     5 : RS_Snow (B)
+!                     6 : RS_Snow (C)
+!                     7 : RS_Snow (D)
+!                     8 : Thin Crust Snow
+!                     9 : RS_Snow (E)
+!                     10: Bottom Crust Snow (A)
+!                     11: Shallow Snow
+!                     12: Deep Snow
+!                     13: Crust Snow
+!                     14: Medium Snow
+!                     15: Bottom Crust Snow (B)
+!                     16: Thick Crust Snow
+!                    999: AMSU measurements are not available or over non-snow conditions
+!
+! CALLS:
+!       AMSU_ABTs          : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB and Ts
+!
+!       AMSU_ATs           : Subroutine to calculate the microwave snow emissivity from AMSU-A TB and Ts
+!
+!       AMSU_AB            : Subroutine to calculate the microwave snow emissivity from AMSU-A/B TB
+!
+!       AMSU_amsua         : Subroutine to calculate the microwave snow emissivity from AMSU-A TB
+!
+!       AMSU_BTs           : Subroutine to calculate the microwave snow emissivity from AMSU-B TB and Ts
+!
+!       AMSU_amsub         : Subroutine to calculate the microwave snow emissivity from AMSU-B TB
+!
+!       AMSU_ALandEM_Snow  : Subroutine to calculate the microwave snow emissivity from Ts and Snow Depth
+!
+!       em_initialization  : Subroutine to initialization snow emissivity
+!
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! COMMENTS:
+!       Note the INTENT on the output SensorData argument is IN OUT rather than
+!       just OUT. This is necessary because the argument may be defined upon
+!       input. To prevent memory leaks, the IN OUT INTENT is a must.
+!
+! CREATION HISTORY:
+!       Written by:     Banghua Yan, QSS Group Inc., Banghua.Yan@noaa.gov (03-June-2005)
+!
+!
+!       and             Fuzhong Weng, NOAA/NESDIS/ORA, Fuzhong.Weng@noaa.gov
+!
+!  Copyright (C) 2005 Fuzhong Weng and Banghua Yan
+!
+!
+!------------------------------------------------------------------------------------------------------------
 
 subroutine  NESDIS_AMSU_SNOWEM(Satellite_Angle,                             &  ! INPUT
                                User_Angle,                                  &  ! INPUT

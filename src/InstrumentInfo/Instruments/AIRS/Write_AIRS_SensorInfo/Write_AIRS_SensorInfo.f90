@@ -34,7 +34,6 @@ PROGRAM Write_AIRS_SensorInfo
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'Write_AIRS_ChannelInfo'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Write_AIRS_SensorInfo.f90,v 1.5 2006/06/15 14:25:32 wd20pd Exp $'
 
   ! Channel subset selections
   INTEGER,      PARAMETER :: N_VALID_SETS = 4

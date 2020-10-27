@@ -50,7 +50,6 @@ MODULE AtmProfile_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id$'
   
 
 CONTAINS

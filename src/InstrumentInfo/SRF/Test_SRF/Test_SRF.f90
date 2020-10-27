@@ -30,7 +30,6 @@ PROGRAM Test_SRF
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME   = 'Test_SRF'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Test output filenames
   CHARACTER(*), PARAMETER :: NC_FILENAME  = 'Test.SRF.nc'
   CHARACTER(*), PARAMETER :: INC_FILENAME = 'Test.iSRF.nc'

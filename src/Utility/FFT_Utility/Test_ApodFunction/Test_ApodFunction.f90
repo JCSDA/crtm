@@ -35,7 +35,6 @@ PROGRAM Test_ApodFunction
   ! Parameters
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'Test_ApodFunction'
   CHARACTER(*),  PARAMETER :: PROGRAM_VERSION_ID = &
-    '$Id: $'
   INTEGER,  PARAMETER :: N = 1000
   INTEGER,  PARAMETER :: NHALF = N/2
   REAL(fp), PARAMETER :: MAXX = 1.0_fp

@@ -41,7 +41,6 @@ PROGRAM Create_MW_SRF
   ! Parameters
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_MW_SRF'
 
   

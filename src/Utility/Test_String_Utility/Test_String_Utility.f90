@@ -1,3 +1,43 @@
+!------------------------------------------------------------------------------
+!P+
+! NAME:
+!       Test_String_Utility
+!
+! PURPOSE:
+!       Program to test the routines in the String_Utility module
+!
+! CATEGORY:
+!       Utility
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       String_Utility:  Module containing string utility routines.
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 08-Dec-2000
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000, 2004 Paul van Delst
+!
+!P-
+!------------------------------------------------------------------------------
 
 PROGRAM Test_String_Utility
 
@@ -22,7 +62,6 @@ PROGRAM Test_String_Utility
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME   = 'Test_String_Utility'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id: Test_String_Utility.f90,v 1.4 2004/11/30 18:57:19 paulv Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 
@@ -113,4 +152,23 @@ PROGRAM Test_String_Utility
 END PROGRAM Test_String_Utility
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2004/11/30 18:57:19 $
+!
+! $Revision: 1.4 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: Test_String_Utility.f90,v $
+! Revision 1.4  2004/11/30 18:57:19  paulv
+! - Added program header.
+!
+!
+!
 

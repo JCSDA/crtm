@@ -29,7 +29,6 @@ PROGRAM MWwaterLUT_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'MWwaterLUT_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

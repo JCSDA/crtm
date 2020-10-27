@@ -49,7 +49,6 @@ MODULE Level_Layer_Conversion
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id$'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

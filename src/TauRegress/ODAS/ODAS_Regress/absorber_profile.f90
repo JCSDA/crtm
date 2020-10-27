@@ -1,3 +1,75 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       absorber_profile
+!
+! PURPOSE:
+!       Module containing routines to compute the integrated absorber profiles.
+!
+! CATEGORY:
+!       NCEP RTM
+!
+! CALLING SEQUENCE:
+!       USE absorber_profile
+!
+! OUTPUTS:
+!       None.
+!
+! MODULES:
+!       type_kinds:      Module containing data type kind definitions.
+!
+!       parameters:      Module containing parameter definitions for the
+!                        RT model.
+!                        USEs: TYPE_KINDS module
+!
+! CONTAINS:
+!       Compute_Absorber_Amount:     PUBLIC subroutine to compute the integrated
+!                                    absorber profiles. Currently the absorbers
+!                                    are:
+!                                      - Water vapor
+!                                      - Dry/fixed gases
+!                                      - Ozone
+!
+!       Compute_Absorber_Amount_TL:  PUBLIC subroutine to compute the tangent-
+!                                    linear form of the integrated absorber 
+!                                    profiles.
+!
+!       Compute_Absorber_Amount_AD:  PUBLIC subroutine to compute the adjoint of
+!                                    the integrated absorber profiles.
+!
+! EXTERNALS:
+!       None
+!
+! COMMON BLOCKS:
+!       None.
+!
+! SIDE EFFECTS:
+!       None.
+!
+! RESTRICTIONS:
+!       None.
+!
+! COMMENTS:
+!       All of the array documentation lists the dimensions by a single letter.
+!       Throughout the RTM code these are:
+!         I: Array dimension is of I predictors (Istd and Iint are variants).
+!         J: Array dimension is of J absorbing species.
+!         K: Array dimension is of K atmospheric layers.
+!         L: Array dimension is of L spectral channels.
+!         M: Array dimension is of M profiles.
+!       Not all of these dimensions will appear in every module.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS@NOAA/NCEP 01-Aug-2000
+!                       pvandelst@ncep.noaa.gov
+!
+!       Adapted from code written by: Thomas J.Kleespies
+!                                     NOAA/NESDIS/ORA
+!                                     tkleespies@nesdis.noaa.gov
+!
+!  Copyright (C) 2000 Thomas Kleespies, Paul van Delst
+!
+!------------------------------------------------------------------------------
 
 MODULE absorber_profile
 
@@ -346,3 +418,103 @@ CONTAINS
 END MODULE absorber_profile
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2003/02/04 21:13:05 $
+!
+! $Revision$
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: absorber_profile.f90,v $
+! Revision 2.0  2003/02/04 21:13:05  paulv
+! - New release.
+!
+! Revision 1.12  2002/10/21 20:14:40  paulv
+! - Synchronisation with repository for algorithm upgrade. Incomplete.
+!
+! Revision 1.11  2001/09/25 15:51:29  paulv
+! - Changed the calculation of the bracketing absorber space layer in
+!   sbroutine FIND_ABSORBER_LAYER_INDEX from
+!     MIN( ka, MAX_N_ABSORBERS_LAYERS )
+!   to
+!     MAX( MIN( ka, MAX_N_ABSORBERS_LAYERS ), 1 )
+!   so as to avoid the result ever being zero - which could happen before if
+!   adjacent layers of the input absorber profile were zero.
+!
+! Revision 1.10  2001/08/31 20:41:18  paulv
+! - Altered method of searching for bracketing absorber space layers in
+!   FIND_ABSORBER_LAYER_INDEX. Previosuly a trickle down search was performed.
+!   Now the actual corresponding layer is calculated using the exponential
+!   factor used in generating the absorber space.
+!
+! Revision 1.9  2001/08/16 16:30:38  paulv
+! - Updated documentation.
+!
+! Revision 1.8  2001/08/01 16:36:34  paulv
+! - Removed use of module ABSORBER_SPACE and replaced it with
+!     USE transmittance_coefficients, ONLY : absorber_space_levels
+!   to reflect changes in code. The absorber space levels are no longer
+!   calculated during model initialisation, but are precalculated and stored
+!   in the transmittance coefficient data file.
+!
+! Revision 1.7  2001/06/05 21:18:10  paulv
+! - Changed adjoint routine slightly to make adjoint calcs a bit clearer
+!   when looking at the tangent-linear code.
+! - Corrected bug in TOA layer pressure_AD calculation.
+!
+! Revision 1.6  2001/05/29 17:32:51  paulv
+! - Some cosmetic changes
+! - Removed subtraction of the TOA_PRESSURE parameter from the DRY absorber
+!   calculation. This was causing the upper level channels to produce
+!   spurious numbers in the forward calculation.
+! - Added the  FIND_ABSORBER_LAYER_INDEX routine. Removed it from the FORWARD_MODEL
+!   module. It seemed more appropriate in this one.
+! - Using pressure array data directly in first layer calcs rather than
+!   dp variable.
+!
+! Revision 1.5  2001/03/26 18:45:59  paulv
+! - Now use TYPE_KINDS module parameter FP_KIND to set the floating point
+!   data type.
+! - Module parameter RECIPROCAL_GRAVITY moved to PARAMETERS module.
+! - ONLY clause used in USE PARAMETERS statement. Only parameters available
+!   in ABSORBER_PROFILE module are ZERO, TOA_PRESSURE, and RECIPROCAL_GRAVITY.
+! - Output ABSORBER argument is now dimensioned as 0:K. This eliminates the
+!   need for using an ABSORBER_KM1 variable in other routines that use the
+!   ABSORBER array variable where the layer loop always goes from 1 -> n_layers.
+! - Removed output arguments of AVE_ABSORBER and DELTA_ABSORBER due to the
+!   ABSORBER dimension change to 0:K. Calculating the average and layer
+!   difference absorber amounts in other routines can now be done simply
+!   by averaging or differencing ABOSRBER(K) and ABSORBER(K-1) even for
+!   layer #1.
+! - Integration of absorber amount for the TOA layer is done OUTSIDE of the
+!   layer loop. This avoids the need for a PRESSURE_KM1 variable since
+!   pressure is dimensioned 1:K.
+! - Layer loop, thus, goes from 2 -> n_layers.
+! - Changed order of argument list in COMPUTE_PREDICTORS_TL and its
+!   associated routines. All forward arguments are listed followed by
+!   the tangent-linear arguments rather than interspersing them as before.
+! - Added adjoint routine COMPUTE_ABSORBER_AMOUNT_AD.
+!
+! Revision 1.4  2001/03/26 18:30:54  paulv
+! - Removed integrate_absorber_profile and integrate_absorber_profile_tl
+!   functions. Integration is now done in-line in the main routines.
+!
+! Revision 1.3  2000/11/09 20:29:40  paulv
+! - Added tangent linear form of the absorber profile routines.
+!
+! Revision 1.2  2000/08/31 19:36:31  paulv
+! - Added documentation delimiters.
+! - Updated documentation headers.
+!
+! Revision 1.1  2000/08/24 13:11:27  paulv
+! Initial checkin.
+!
+!
+!
+!

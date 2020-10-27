@@ -1,3 +1,79 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       Create_LBLRTM_Input_Files
+!
+! PURPOSE:
+!       Program to create LBLRTM TAPE5 input data files given an input 
+!       netCDF AtmProfile dataset
+!
+! CATEGORY:
+!       Transmittance Production
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! MODULES:
+!       Type_Kinds:            Module containing definitions for kinds
+!                              of variable types.
+!
+!       Message_Handler:         Module to define simple error codes and
+!                              handle error conditions
+!                              USEs: FILE_UTILITY module
+!
+!       AtmProfile_Define:     Module defining the AtmProfile data
+!                              structure and containing routines to
+!                              manipulate it.
+!                              USEs: TYPE_KINDS module
+!                                    ERROR_HANDLER module
+!
+!       AtmProfile_netCDF_IO:  Module containing routines to read and
+!                              write AtmProfile netCDF format files.
+!                              USEs: TYPE_KINDS module
+!                                    ERROR_HANDLER module
+!                                    ATMPROFILE_DEFINE module
+!                                    NETCDF module
+!                                    NETCDF_UTILITY module
+!
+!       LBLRTM_Input:          Module containing routines for creating LBLRTM
+!                              input files.
+!                              USEs: TYPE_KINDS module
+!                                    FILE_UTILITY module
+!                                    ERROR_HANDLER module
+!                                    STRING_PROCESSING module
+!
+! CONTAINS:
+!       None.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       Input:  netCDF AtmProfile data sets.
+!
+!       Output: Individual TAPE5 output files for each profile in the 
+!               netCDF AtmProfile dataset.
+!
+! SIDE EFFECTS:
+!       All output files are overwritten if they already exist.
+!
+! RESTRICTIONS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 26-Apr-2002
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2002 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 PROGRAM Create_LBLRTM_Input_Files
 
@@ -27,7 +103,6 @@ PROGRAM Create_LBLRTM_Input_Files
 
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Create_LBLRTM_Input_Files'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id: Create_LBLRTM_Input_Files.f90,v 1.7 2006/06/30 16:47:16 dgroff Exp $'
   CHARACTER( * ), PARAMETER :: PROGRAM_HEADER = &
   '**********************************************************'
 

@@ -43,7 +43,7 @@ if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES})
     set(LOCAL_PATH_JEDI_TESTFILES "$ENV{LOCAL_PATH_JEDI_TESTFILES}")
 endif()
 
-set( REPO_VERSION crtm/2.3.0 )
+set( REPO_VERSION crtm/2.4.0 )
 # If local path to testfiles is defined don't download
 if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
   set( CRTM_COEFFS_PATH ${LOCAL_PATH_JEDI_TESTFILES}/${REPO_VERSION} )
@@ -67,118 +67,117 @@ ecbuild_add_resources( TARGET crtm_test_scripts
                        ${crtm_test_input}
                      )
 
-# Create Data directory for test data and symlink files
-list( APPEND crtm_test_data
-			  Data/single_profile.nc4
-)
-
 # Create list of sensor ids for testing
 list( APPEND Simple_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND ScatteringSwitch_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND SOI_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND VerticalCoordinates_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 list( APPEND SSU_Sensor_Ids
-				ssu_n06
-				ssu_n14
+        ssu_n06
+        ssu_n14
 )
 
 list( APPEND ClearSky_Sensor_Ids
         atms_npp
-				cris399_npp
-			  v.abi_gr
-				modis_aqua
+        cris399_npp
+        v.abi_gr
+        modis_aqua
 )
 
 # Create list of sensor ids for testing
 list( APPEND AOD_Sensor_Ids
-				cris399_npp
-			  v.abi_gr
-				airs_aqua
+        cris399_npp
+        v.abi_gr
+        airs_aqua
 )
 
 # Create list of sensor ids for testing
 list( APPEND Zeeman_Sensor_Ids
-			ssmis_f20
-			ssmis_f19
-			ssmis_f18
-			ssmis_f17
-			ssmis_f16
+      ssmis_f20
+      ssmis_f19
+      ssmis_f18
+      ssmis_f17
+      ssmis_f16
 )
 
 
 list( APPEND ChannelSubset_Sensor_Ids
-			iasi_metop-b
+      iasi_metop-b
 )
 
 list( APPEND Aircraft_Sensor_Ids
-			crisB1_npp
+      crisB1_npp
 )
 
 list (APPEND common_tests
-		 Simple
-		 AOD
-		 Zeeman
-		 ChannelSubset
- 		 ClearSky
-		 Aircraft
-		 ScatteringSwitch
-		 SOI
-		 SSU
-		 VerticalCoordinates
+     Simple
+     AOD
+     Zeeman
+     ChannelSubset
+     ClearSky
+     Aircraft
+     ScatteringSwitch
+     SOI
+     SSU
+     VerticalCoordinates
 )
 
 
 list (APPEND regression_types
-		 forward
-		 k_matrix
+     forward
+     k_matrix
 )
 
 list (APPEND TLAD_types
-		 adjoint
-		 tangent_linear
+     adjoint
+     tangent_linear
 )
 
 list (APPEND TLAD_tests
-		 Simple
- 		 ClearSky
+     Simple
+     ClearSky
 )
 
 
 #####################################################################
 
-#ecbuild_add_test( TARGET  test_check_crtm
-#                  SOURCES mains/application/check_crtm.F90
-#                  ARGS    "testinput/single_profile.yaml"
-#                  LIBS    crtm )
+ecbuild_add_test( TARGET  test_check_crtm
+                  SOURCES mains/application/check_crtm.F90
+                  ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
+                  LIBS    crtm
+                  TEST_DEPENDS get_crtm_coeffs)
 
-#ecbuild_add_test( TARGET  test_check_crtm_random
-#                  SOURCES mains/application/check_crtm_random_profiles.F90
-#                  ARGS    "testinput/single_profile.yaml"
-#                  LIBS    crtm )
+ecbuild_add_test( TARGET  test_check_crtm_random
+                  SOURCES mains/application/check_crtm_random_profiles.F90
+                  ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
+                  LIBS    crtm
+                  TEST_DEPENDS get_crtm_coeffs)
 
 #---------------------------------------------------------------------------------
 #unit tests
@@ -189,49 +188,15 @@ list (APPEND TLAD_tests
 ecbuild_add_executable (
     TARGET  "TL_TEST"
     SOURCES mains/unit/Unit_Test/test_TL.f90
-		LIBS 		crtm
-		NOINSTALL 
-		)
-ecbuild_add_test (
-		TARGET "Unit_TL_TEST"
-		COMMAND "TL_TEST" 
-                TEST_DEPENDS get_crtm_coeffs
+    LIBS    crtm
+    NOINSTALL 
     )
-
-#code dependencies are currently too complex for me to build 
-#
-#file(GLOB_RECURSE SRC_FILES mains/unit/AtmScatter/AerosolOpticalDepth/Unit_Test/Modules/*.f90)
-#ecbuild_add_executable( TARGET  "Test_CRTM_AOD_FWD"
-#									      SOURCES ${SRC_FILES}
-#												LIBS    crtm
-#											  NOINSTALL)
-#ecbuild_add_test( TARGET  "Unit_AOD_FWD"
-#									COMMAND "Test_CRTM_AOD_FWD")
-
-#this fails/crashes due to some issues with allocatable requirements in the READ rtsolution
-#need to understand better what needs to be tested and how to breakout these tests
-#into smaller assertion tests.  probably should test stand-alone against older code base
-#see if some requirement changed in RTsolution?
-
-#ecbuild_add_executable( TARGET  "Test_RTSolution"
-#									      SOURCES "mains/unit/RTSolution/Test_RTSolution/Test_RTSolution.f90"
-#												LIBS    crtm
-#											  NOINSTALL)
-#ecbuild_add_test( TARGET  "Unit_RTSolution"
-#									COMMAND "Test_RTSolution")
-#
-
-#this one fails currently due to the availability of only BE input files.
-#todo: convert to LE
-#depends on: ecmwf_5k_*bin files located in testinput
-#ecbuild_add_executable( TARGET  "Test_CRTM"
-#                        SOURCES "mains/unit/Unit_Test/Test_CRTM.f90"
-#                        LIBS    crtm
-#                        NOINSTALL)											
-#ecbuild_add_test( TARGET  "Unit_Test_1"
-#									COMMAND "Test_CRTM")
-
-
+ecbuild_add_test (
+    TARGET "Unit_TL_TEST"
+    COMMAND "TL_TEST"
+    OMP     $ENV{OMP_NUM_THREADS}
+    TEST_DEPENDS get_crtm_coeffs
+    )
 
 #=================================================================================
 #forward and k_matrix regression tests
@@ -239,20 +204,21 @@ foreach(regtype IN LISTS regression_types)
   string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
   foreach(testtype IN LISTS common_tests)
     string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
  
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}"
-													TEST_DEPENDS get_crtm_coeffs)
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}"
+                            TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()
@@ -261,19 +227,20 @@ endforeach()
 #TLAD Regression tests
 foreach(regtype IN LISTS TLAD_types)
   foreach(testtype IN LISTS TLAD_tests)
-		if (isregtype AND istesttype)
-			 continue() #skip Aircraft type for k_Matrix
-		endif()
-	  ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-  													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
-  													LIBS    crtm
-  													NOINSTALL)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
   
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-  													COMMAND "test_${regtype}_test_${testtype}"
-  													ARGS    "${sensor_id}"
-													TEST_DEPENDS get_crtm_coeffs)
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}"
+                            TEST_DEPENDS get_crtm_coeffs)
     endforeach()
   endforeach() 
 endforeach()

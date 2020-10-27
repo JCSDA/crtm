@@ -72,7 +72,6 @@ MODULE CRTM_Fastem3
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Literal constants
   REAL(fp), PARAMETER :: HUNDRED = 100.0_fp
   

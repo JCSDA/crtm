@@ -32,7 +32,6 @@ PROGRAM BeCoeff_NC2BIN
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'BeCoeff_NC2BIN'
   CHARACTER(*), PARAMETER :: PROGRAM_VERSION_ID = &
-  '$Id$'
   
   ! ---------
   ! Variables

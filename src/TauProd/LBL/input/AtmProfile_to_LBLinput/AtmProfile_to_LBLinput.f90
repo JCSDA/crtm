@@ -29,7 +29,6 @@ PROGRAM AtmProfile_to_LBLinput
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'AtmProfile_to_LBLinput'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

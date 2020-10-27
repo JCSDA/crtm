@@ -47,7 +47,6 @@ PROGRAM AVHRRJM_SRF_ASCII2NC
   ! ----------
   CHARACTER(*),  PARAMETER :: PROGRAM_NAME   = 'AVHRRJM_SRF_ASCII2NC'
   CHARACTER(*),  PARAMETER :: PROGRAM_RCS_ID = &
-    '$Id$'
   
   REAL(fp), PARAMETER :: ZERO         = 0.0_fp
   REAL(fp), PARAMETER :: ONE          = 1.0_fp

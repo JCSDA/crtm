@@ -26,6 +26,7 @@ MODULE CRTM_Forward_Module
                                         MAX_SOURCE_ZENITH_ANGLE, &
                                         MAX_N_STREAMS, &
                                         AIRCRAFT_PRESSURE_THRESHOLD, &
+                                        MIN_COVERAGE_THRESHOLD, &
                                         SCATTERING_ALBEDO_THRESHOLD
   USE CRTM_SpcCoeff,              ONLY: SC, &
                                         SpcCoeff_IsVisibleSensor, &
@@ -229,7 +230,7 @@ CONTAINS
     Options    ) &  ! Optional input, M
   RESULT( Error_Status )
     ! Arguments
-    TYPE(CRTM_Atmosphere_type),        INTENT(IN)     :: Atmosphere(:)     ! M
+    TYPE(CRTM_Atmosphere_type),        INTENT(IN OUT) :: Atmosphere(:)     ! M
     TYPE(CRTM_Surface_type),           INTENT(IN)     :: Surface(:)        ! M
     TYPE(CRTM_Geometry_type),          INTENT(IN)     :: Geometry(:)       ! M
     TYPE(CRTM_ChannelInfo_type),       INTENT(IN)     :: ChannelInfo(:)    ! n_Sensors
@@ -244,19 +245,19 @@ CONTAINS
     LOGICAL :: Options_Present
     INTEGER :: n_Sensors
     INTEGER :: n_Channels
-    INTEGER :: m, n_Profiles
+    INTEGER :: m, n_Profiles, nc
     ! Local ancillary input structure
     TYPE(CRTM_AncillaryInput_type) :: AncillaryInput
     ! Local options structure for default and use values
     TYPE(CRTM_Options_type) :: Default_Options, Opt
 
     ! Local variables required by threading, timing, and output verification
-    integer(LLong) :: count_rate, count_start, count_end
+    INTEGER(LLong) :: count_rate, count_start, count_end
     REAL :: elapsed
     REAL :: elapsed_running = 0.         ! running total of elapsed times
-    LOGICAL, PARAMETER :: enable_timing = .false.
-    LOGICAL, PARAMETER :: output_verification = .false.
-    INTEGER :: ret(size(Atmosphere))     ! return codes from profile_solution
+    LOGICAL, PARAMETER :: enable_timing = .FALSE.
+    LOGICAL, PARAMETER :: output_verification = .FALSE.
+    INTEGER :: ret(SIZE(Atmosphere))     ! return codes from profile_solution
     INTEGER :: nfailure                  ! number of non-success calls to profile_solution
 
     ! ------
@@ -316,13 +317,25 @@ CONTAINS
 !JR First loop just checks validity of Atmosphere(m) contents
 !$OMP PARALLEL DO PRIVATE (Message)
     Profile_Loop1: DO m = 1, n_Profiles
-      ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
-      IF( Atmosphere(m)%n_Clouds > 0 .AND. .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
-         Error_Status = FAILURE
-         WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
-                &"for the cloudy case profile #",i0)' ) m
-         CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
-         CYCLE Profile_Loop1
+       ! Fix for cloud_Fraction < MIN_COVERAGE_THRESHOLD
+       IF ( Atmosphere(m)%n_Clouds > 0) THEN
+          !** clear clouds where cloud_fraction < threshold
+          DO nc = 1, Atmosphere(m)%n_clouds
+             WHERE (Atmosphere(m)%Cloud_Fraction(:) < MIN_COVERAGE_THRESHOLD)
+                Atmosphere(m)%Cloud_Fraction(:) = ZERO
+                Atmosphere(m)%Cloud(nc)%Water_Content(:)    = ZERO
+                Atmosphere(m)%Cloud(nc)%Effective_Radius(:) = ZERO
+             END WHERE
+          END DO
+
+         ! Check the cloud and aerosol coeff. data for cases with clouds and aerosol
+         IF( .NOT. CRTM_CloudCoeff_IsLoaded() )THEN
+            Error_Status = FAILURE
+            WRITE( Message,'("The CloudCoeff data must be loaded (with CRTM_Init routine) ", &
+                 &"for the cloudy case profile #",i0)' ) m
+            CALL Display_Message( ROUTINE_NAME, Message, Error_Status )
+            CYCLE Profile_Loop1
+         END IF
       END IF
       IF( Atmosphere(m)%n_Aerosols > 0 .AND. .NOT. CRTM_AerosolCoeff_IsLoaded() )THEN
          Error_Status = FAILURE
@@ -351,7 +364,7 @@ CONTAINS
     END DO Profile_Loop2
 !$OMP END PARALLEL DO
 
-    nfailure = count (ret(:) /= SUCCESS)
+    nfailure = COUNT (ret(:) /= SUCCESS)
     IF (nfailure > 0) THEN
       Error_Status = FAILURE
       WRITE(Message,'(i0," profiles failed")') nfailure
@@ -381,9 +394,9 @@ CONTAINS
     ! accesses CRTM_Forward data, but multi-level function "contain" clauses cause compiler
     ! errors so arguments to this function were needed.
     FUNCTION profile_solution (m, Opt, AncillaryInput) RESULT( Error_Status )
-      integer, intent(in) :: m               ! profile index
-      TYPE(CRTM_Options_type), intent(IN) :: Opt
-      TYPE(CRTM_AncillaryInput_type), intent(IN) :: AncillaryInput
+      INTEGER, INTENT(in) :: m               ! profile index
+      TYPE(CRTM_Options_type), INTENT(IN) :: Opt
+      TYPE(CRTM_AncillaryInput_type), INTENT(IN) :: AncillaryInput
     
       ! Local variables
       INTEGER :: Error_Status
@@ -394,7 +407,7 @@ CONTAINS
       INTEGER :: n, l    ! sensor index, channel index
       INTEGER :: SensorIndex
       INTEGER :: ChannelIndex
-      INTEGER :: ln
+      INTEGER :: ln, nc
       INTEGER :: n_Full_Streams, mth_Azi
       INTEGER :: cloud_coverage_flag
       REAL(fp) :: Source_ZA
@@ -959,6 +972,12 @@ CONTAINS
             ! ...Save the results in the output structure
             RTSolution(ln,m)%R_Clear  = RTSolution_Clear%Radiance
             RTSolution(ln,m)%Tb_Clear = RTSolution_Clear%Brightness_Temperature
+          END IF
+
+          !** output Tb_clear in the case of n_clouds = 0  (note this is NOT aerosol cleared)
+          IF (Atm%n_Clouds == 0 .OR. CloudCover%Total_Cloud_Cover < MIN_COVERAGE_THRESHOLD) THEN
+             RTSolution(ln,m)%Tb_clear = RTSolution(ln,m)%Brightness_Temperature
+             RTSolution(ln,m)%R_clear  = RTSolution(ln,m)%Radiance
           END IF
 
         END DO Channel_Loop

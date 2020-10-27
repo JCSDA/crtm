@@ -24,6 +24,16 @@ PROGRAM test_Simple
   CHARACTER(*), PARAMETER :: COEFFICIENTS_PATH = './testinput/'
   CHARACTER(*), PARAMETER :: RESULTS_PATH = './results/adjoint/'
 
+  ! Aerosol/Cloud coefficient scheme
+  CHARACTER(*), PARAMETER :: Aerosol_Model = 'GOCART'
+  !CHARACTER(*), PARAMETER :: Aerosol_Model = 'CMAQ'
+  CHARACTER(*), PARAMETER :: Cloud_Model   = 'CRTM'
+
+  ! Aerosol/Cloud coefficient format
+  CHARACTER(*), PARAMETER :: Coeff_Format = 'Binary'
+  !CHARACTER(*), PARAMETER :: Coeff_Format = 'netCDF'
+
+
 
   ! ============================================================================
   ! 0. **** SOME SET UP PARAMETERS FOR THIS EXAMPLE ****
@@ -42,6 +52,15 @@ PROGRAM test_Simple
   REAL(fp), PARAMETER :: ZENITH_ANGLE = 30.0_fp
   REAL(fp), PARAMETER :: SCAN_ANGLE   = 26.37293341421_fp
   ! ============================================================================
+!!$  INTEGER, PARAMETER ::        INVALID_AEROSOL = 0
+!!$  INTEGER, PARAMETER ::           DUST_AEROSOL = 1
+!!$  INTEGER, PARAMETER ::   SEASALT_SSAM_AEROSOL = 2
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM1_AEROSOL = 3
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM2_AEROSOL = 4
+!!$  INTEGER, PARAMETER ::  SEASALT_SSCM3_AEROSOL = 5
+!!$  INTEGER, PARAMETER :: ORGANIC_CARBON_AEROSOL = 6
+!!$  INTEGER, PARAMETER ::   BLACK_CARBON_AEROSOL = 7
+!!$  INTEGER, PARAMETER ::        SULFATE_AEROSOL = 8
 
 
   ! ---------
@@ -50,6 +69,11 @@ PROGRAM test_Simple
   CHARACTER(256) :: Message
   CHARACTER(256) :: Version
   CHARACTER(256) :: Sensor_Id
+  CHARACTER(256) :: AerosolCoeff_File
+  CHARACTER(256) :: AerosolCoeff_Format
+  CHARACTER(256) :: CloudCoeff_File
+  CHARACTER(256) :: CloudCoeff_Format
+
   INTEGER :: Error_Status
   INTEGER :: Allocate_Status
   INTEGER :: n_Channels
@@ -60,6 +84,7 @@ PROGRAM test_Simple
   CHARACTER(256) :: atmad_file, sfcad_file
   TYPE(CRTM_Atmosphere_type), ALLOCATABLE :: atm_AD(:)
   TYPE(CRTM_Surface_type)   , ALLOCATABLE :: sfc_AD(:)
+
 
 
 
@@ -111,6 +136,50 @@ PROGRAM test_Simple
   !
   ! 2a. Initialise the requested sensor
   ! -----------------------------------
+  IF ( Coeff_Format == 'Binary' ) THEN
+    AerosolCoeff_Format = 'Binary'
+    AerosolCoeff_File   = 'AerosolCoeff.bin'
+    CloudCoeff_Format   = 'Binary'
+    CloudCoeff_File     = 'CloudCoeff.bin'
+  ! if netCDF I/O
+  ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+    AerosolCoeff_Format = 'netCDF'
+    AerosolCoeff_File   = 'AerosolCoeff.nc4'
+    CloudCoeff_Format   = 'netCDF'
+    CloudCoeff_File     = 'CloudCoeff.nc4'
+  ELSE
+    message = 'Aerosol/Cloud coefficient format is not supported'
+    CALL Display_Message( PROGRAM_NAME, message, FAILURE )
+    STOP
+  END IF
+  !.....Aerosol
+  IF ( Aerosol_Model == 'GOCART' ) THEN
+    IF ( Coeff_Format == 'Binary' ) THEN
+      AerosolCoeff_Format = 'Binary'
+      AerosolCoeff_File   = 'AerosolCoeff.bin'
+    ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+      AerosolCoeff_Format = 'netCDF'
+      AerosolCoeff_File   = 'AerosolCoeff.nc4'
+    ELSE
+      message = 'Aerosol coefficient format is not supported'
+      CALL Display_Message( PROGRAM_NAME, message, FAILURE )
+      STOP
+    END IF
+  ELSEIF ( Aerosol_Model == 'CMAQ' ) THEN
+    IF ( Coeff_Format == 'Binary' ) THEN
+      AerosolCoeff_Format = 'Binary'
+      AerosolCoeff_File   = 'AerosolCoeff.CMAQ.bin'
+    ELSE IF ( Coeff_Format == 'netCDF' ) THEN
+      AerosolCoeff_Format = 'netCDF'
+      AerosolCoeff_File   = 'AerosolCoeff.CMAQ.nc4'
+    ELSE
+      message = 'Aerosol coefficient format is not supported'
+      CALL Display_Message( PROGRAM_NAME, message, FAILURE )
+      STOP
+    END IF
+  END IF
+
+
   WRITE( *,'(/5x,"Initializing the CRTM...")' )
   Error_Status = CRTM_Init( (/Sensor_Id/), &
                             ChannelInfo, &
@@ -118,7 +187,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error initializing CRTM'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -142,18 +210,17 @@ PROGRAM test_Simple
   IF ( Allocate_Status /= 0 ) THEN
     Message = 'Error allocating structure arrays'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
   ! 3b. Allocate the STRUCTURES
   ! ---------------------------
   ! The input FORWARD structure
+
   CALL CRTM_Atmosphere_Create( Atm, N_LAYERS, N_ABSORBERS, N_CLOUDS, N_AEROSOLS )
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atm)) ) THEN
     Message = 'Error allocating CRTM Atmosphere structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -162,7 +229,6 @@ PROGRAM test_Simple
   IF ( ANY(.NOT. CRTM_Atmosphere_Associated(Atmosphere_AD)) ) THEN
     Message = 'Error allocating CRTM Atmosphere_AD structure'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
@@ -221,6 +287,7 @@ PROGRAM test_Simple
   ! ============================================================================
   ! 6. **** CALL THE CRTM ADJOINT MODEL ****
   !
+
   Error_Status = CRTM_Adjoint( Atm          , &
                                Sfc          , &
                                RTSolution_AD, &
@@ -232,10 +299,10 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error in CRTM Adjoint Model'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! ============================================================================
+
 
 
 
@@ -259,24 +326,6 @@ PROGRAM test_Simple
   ! ============================================================================
 
 
-
-
-  ! ============================================================================
-  ! 8. **** DESTROY THE CRTM ****
-  !
-  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
-  Error_Status = CRTM_Destroy( ChannelInfo )
-  IF ( Error_Status /= SUCCESS ) THEN
-    Message = 'Error destroying CRTM'
-    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
-    STOP 1
-  END IF
-  ! ============================================================================
-
-
-
-
   ! ============================================================================
   ! 9. **** COMPARE Atmosphere_AD and Surface_AD RESULTS TO SAVED VALUES ****
   !
@@ -288,15 +337,17 @@ PROGRAM test_Simple
   ! ...Generate filename
   atmad_file = RESULTS_PATH//TRIM(PROGRAM_NAME)//'_'//TRIM(Sensor_Id)//'.Atmosphere.bin'
   ! ...Check if the file exists
+
+
   IF ( .NOT. File_Exists(atmad_file) ) THEN
     Message = 'Atmosphere_AD save file does not exist. Creating...'
     CALL Display_Message( PROGRAM_NAME, Message, INFORMATION )
     ! ...File not found, so write Atmosphere_AD structure to file
+
     Error_Status = CRTM_Atmosphere_WriteFile( atmad_file, Atmosphere_AD, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Atmosphere_AD save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -308,11 +359,12 @@ PROGRAM test_Simple
     Message = 'Surface_AD save file does not exist. Creating...'
     CALL Display_Message( PROGRAM_NAME, Message, INFORMATION )
     ! ...File not found, so write Surface_AD structure to file
+
+
     Error_Status = CRTM_Surface_WriteFile( sfcad_file, Surface_AD, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating Surface_AD save file'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
       STOP 1
     END IF
   END IF
@@ -326,7 +378,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Atmosphere_AD save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9b.2 Surface file
@@ -336,7 +387,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error inquiring Surface_AD save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -346,7 +396,6 @@ PROGRAM test_Simple
        n_ls /= 0 .OR. n_ms /= N_PROFILES      ) THEN
     Message = 'Dimensions of saved data different from that calculated!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -357,7 +406,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Atmosphere_AD save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
   ! 9d.2 Surface file
@@ -365,7 +413,6 @@ PROGRAM test_Simple
   IF ( Error_Status /= SUCCESS ) THEN
     Message = 'Error reading Surface_AD save file'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
     STOP 1
   END IF
 
@@ -378,14 +425,15 @@ PROGRAM test_Simple
   ELSE
     Message = 'Atmosphere_AD Adjoints are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
+    STOP 1
     ! Write the current Atmosphere_AD results to file
     atmad_file = TRIM(Sensor_Id)//'.Atmosphere.bin'
-    Error_Status = CRTM_Atmosphere_WriteFile( atmad_file, Atmosphere_AD, Quiet=.TRUE. )
+
+    Error_Status = CRTM_Atmosphere_WriteFile( atmad_file, atm_AD, Quiet=.TRUE. ) 
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Atmosphere_AD save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
+      STOP 1
     END IF
   END IF
   ! 9e.2 Surface
@@ -395,20 +443,30 @@ PROGRAM test_Simple
   ELSE
     Message = 'Surface_AD Adjoints are different!'
     CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
+    STOP 1
     ! Write the current Surface_AD results to file
     sfcad_file = TRIM(Sensor_Id)//'.Surface.bin'
     Error_Status = CRTM_Surface_WriteFile( sfcad_file, Surface_AD, Quiet=.TRUE. )
     IF ( Error_Status /= SUCCESS ) THEN
       Message = 'Error creating temporary Surface_AD save file for failed comparison'
       CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
-    call exit(1)
+      STOP 1
     END IF
   END IF
   ! ============================================================================
 
+  ! ============================================================================
+  ! 8. **** DESTROY THE CRTM ****
+  !
+  ! ============================================================================
 
-
+  WRITE( *, '( /5x, "Destroying the CRTM..." )' )
+  Error_Status = CRTM_Destroy( ChannelInfo )
+  IF ( Error_Status /= SUCCESS ) THEN
+    Message = 'Error destroying CRTM'
+    CALL Display_Message( PROGRAM_NAME, Message, FAILURE )
+    STOP 1
+  END IF
 
   ! ============================================================================
   ! 10. **** CLEAN UP ****
@@ -418,6 +476,10 @@ PROGRAM test_Simple
   CALL CRTM_Atmosphere_Destroy(atm_AD)
   CALL CRTM_Atmosphere_Destroy(Atmosphere_AD)
   CALL CRTM_Atmosphere_Destroy(Atm)
+
+  CALL CRTM_Surface_Destroy(sfc_AD)
+  CALL CRTM_Surface_Destroy(Surface_AD)
+  CALL CRTM_Surface_Destroy(Sfc)
 
   ! 10b. Deallocate the arrays
   ! --------------------------
@@ -431,6 +493,5 @@ CONTAINS
 
   INCLUDE 'Load_Atm_Data.inc'
   INCLUDE 'Load_Sfc_Data.inc'
-  INCLUDE 'SignalFile_Create.inc'
 
 END PROGRAM test_Simple

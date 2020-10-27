@@ -45,7 +45,6 @@ MODULE AntCorr_Binary_IO_old
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length

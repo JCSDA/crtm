@@ -28,7 +28,6 @@ PROGRAM NLTECoeff_Inspect
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'NLTECoeff_Inspect'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

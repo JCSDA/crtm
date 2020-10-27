@@ -1,3 +1,58 @@
+!--------------------------------------------------------------------------------
+!M+
+! NAME:
+!       netCDF_Variable_Utility
+!
+! PURPOSE:
+!       Module containing utility routines for netCDF file variable access.
+!
+! CATEGORY:
+!       netCDF
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE netCDF_Variable_Utility
+!
+! MODULES:
+!       Type_Kinds:    Module containing data type kind definitions.
+!
+!       Message_Handler: Module to define error codes and handle error
+!                      conditions
+!                      USEs: FILE_UTILITY module
+!
+!       netcdf:        Module supplied with the Fortran 90 version of the
+!                      netCDF libraries (at least v3.5.0).
+!                      See http://www.unidata.ucar.edu/packages/netcdf
+!
+! CONTAINS:
+!       Get_netCDF_Variable:  Function to retrieve a netCDF file variable
+!                             by name. This function is simply a wrapper
+!                             for some of the NetCDF library functions to
+!                             simplify the retrieval of variable data with
+!                             error checking.
+!
+!       Put_netCDF_Variable:  Function to write a netCDF file variable
+!                             by name. This function is simply a wrapper
+!                             for some of the NetCDF library functions to
+!                             simplify the writing of variable data with
+!                             error checking.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:   Paul van Delst, CIMSS/SSEC, 20-Nov-2000
+!                     paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2000, 2004 Paul van Delst
+!
+!M-
+!--------------------------------------------------------------------------------
 
 MODULE netCDF_Variable_Utility
 
@@ -155,7 +210,6 @@ MODULE netCDF_Variable_Utility
 
   ! -- Module RCS Id string
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: netCDF_Variable_Utility.f90,v 1.2 2006/07/26 21:39:05 wd20pd Exp $'
 
 
 CONTAINS
@@ -13200,3 +13254,54 @@ CONTAINS
 END MODULE netCDF_Variable_Utility
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/07/26 21:39:05 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: netCDF_Variable_Utility.f90,v $
+! Revision 1.2  2006/07/26 21:39:05  wd20pd
+! Additional replacement of "Error_Handler" string with "Message_Handler"
+! in documentaiton blocks.
+!
+! Revision 1.1  2006/06/08 21:47:55  wd20pd
+! Initial checkin.
+!
+! Revision 1.9  2006/05/02 16:58:03  dgroff
+! *** empty log message ***
+!
+! Revision 1.8  2005/01/11 18:49:42  paulv
+! - Regenerated from updated pp files.
+!
+! Revision 1.6  2003/05/16 15:28:19  paulv
+! - Added correct dimension indices for Variable_Value test in the
+!   character Get() and Put() functions.
+!
+! Revision 1.5  2003/02/28 22:13:37  paulv
+! - Completed addition of character typed functions for netCDF variable
+!   extraction. Partially tested.
+!
+! Revision 1.4  2003/02/19 13:34:10  paulv
+! - Added functions to allow character variable scalar and array data to
+!   be retrieved from a netCDF dataset.
+!
+! Revision 1.3  2002/12/23 21:16:13  paulv
+! - Added Put_netCDF_Variable() functions.
+!
+! Revision 1.2  2002/05/20 17:59:01  paulv
+! - Updated header documentation.
+!
+! Revision 1.1  2002/05/20 17:03:57  paulv
+! Initial checkin. Routines not yet tested.
+!
+!
+!
+!

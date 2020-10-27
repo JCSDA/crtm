@@ -31,7 +31,6 @@ PROGRAM ODPS_BIN2NC
   ! ----------
   CHARACTER(*), PARAMETER :: PROGRAM_NAME = 'ODPS_BIN2NC'
   CHARACTER(*), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   ! ---------
   ! Variables

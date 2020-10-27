@@ -1,3 +1,326 @@
+!------------------------------------------------------------------------------
+!M+
+! NAME:
+!       CRTMstats_Define
+!
+! PURPOSE:
+!       Module defining the CRTMstats data structure and containing
+!       routines to manipulate it.
+!       
+! CATEGORY:
+!       CRTM : CRTMstats
+!
+! LANGUAGE:
+!       Fortran-95
+!
+! CALLING SEQUENCE:
+!       USE CRTMstats_Define
+!
+! MODULES:
+!       Type_Kinds:               Module containing definitions for kinds
+!                                 of variable types.
+!
+!       Message_Handler:          Module to define simple error codes and
+!                                 handle error conditions
+!                                 USEs: FILE_UTILITY module
+!
+! CONTAINS:
+!       Associated_CRTMstats:    Function to test the association status
+!                                 of the pointer members of a CRTMstats
+!                                 structure.
+!
+!       Destroy_CRTMstats:       Function to re-initialize an CRTMstats
+!                                 structure.
+!
+!       Allocate_CRTMstats:      Function to allocate the pointer members
+!                                 of an CRTMstats structure.
+!
+!       Assign_CRTMstats:        Function to copy an CRTMstats structure.
+!
+!       Concatenate_CRTMstats:   Function to concatenate two CRTMstats
+!                                 structures along the channel dimension.
+!
+!       Compute_CRTMstats:       Function to compute the statistics for
+!                                 a CRTMstats data structure.
+!
+!       Count_CRTMstats_Sensors: Subroutine to count the number of
+!                                 different satellites/sensors in the
+!                                 CRTMstats data structure.
+!
+!       Information_CRTMstats:   Subroutine to return a string containing
+!                                 information about the CRTMstats data structure.
+!
+! DERIVED TYPES:
+!       CRTMstats_type:  Definition of the public CRTMstats data structure.
+!                         Fields are,
+!
+!         LBL_Profile_ID_Tag:  Character string containing a short tag
+!                              to identify the profile set used in the
+!                              line-by-line (LBL) transmittance
+!                              calculations.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( 16 )
+!                              DIMENSION:  Scalar
+!
+!         REG_Profile_ID_Tag:  Character string containing a short tag
+!                              to identify the profile set used to generate
+!                              the regression transmittance coefficients.
+!                              UNITS:      N/A
+!                              TYPE:       CHARACTER( 16 )
+!                              DIMENSION:  Scalar
+!
+!         n_Layers:            Number of atmospheric layers.
+!                              "K" dimension.
+!                              UNITS:     N/A
+!                              TYPE:      INTEGER 
+!                              DIMENSION: Scalar
+!
+!         n_Channels:          Number of spectral channels.
+!                              "L" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         n_Angles:            Number of view angles.
+!                              "I" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         n_Profiles:          Number of atmospheric profiles.
+!                              "M" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!
+!         n_Molecule_Sets:     Number of individual or mixed
+!                              gaseous absorbers.
+!                              "J" dimension.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Scalar
+!         
+!         Int_Water_Vapor:     Integrated Water Vapor
+!                              UNITS:     g/cm^2
+!                              TYPE:      REAL
+!                              DIMENSION: Rank-1 (n_Profiles, M)
+!         
+!         NCEP_Sensor_ID:      An "in-house" value used at NOAA/NCEP/EMC 
+!                              to identify a satellite/sensor combination.
+!                              UNITS:      N/A
+!                              TYPE:       Rank-1 (n_Channels, L)
+!                              DIMENSION:  Scalar
+!
+!         WMO_Satellite_ID:    The WMO code for identifying satellite
+!                              platforms. Taken from the WMO common
+!                              code tables at:
+!                                http://www.wmo.ch/web/ddbs/Code-tables.html
+!                              The Satellite ID is from Common Code
+!                              table C-5, or code table 0 01 007 in BUFR
+!                              UNITS:      N/A
+!                              TYPE:       Rank-1 (n_Channels, L)
+!                              DIMENSION:  Scalar
+!
+!         WMO_Sensor_ID:       The WMO code for identifying a satelite
+!                              sensor. Taken from the WMO common
+!                              code tables at:
+!                                http://www.wmo.ch/web/ddbs/Code-tables.html
+!                              The Sensor ID is from Common Code
+!                              table C-8, or code table 0 02 019 in BUFR
+!                              UNITS:      N/A
+!                              TYPE:       Rank-1 (n_Channels, L)
+!                              DIMENSION:  Scalar
+!
+!         Sensor_Channel:      This is the sensor channel number associated
+!                              with the transmittance profiles. Helps
+!                              in identifying channels where the numbers are
+!                              not contiguous (e.g. AIRS).
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels, L)
+!                              ATTRIBUTES: POINTER
+!
+!         Frequency:           The central frequency for the sensor channels.
+!                              UNITS:      Inverse centimetres, cm^-1
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Channels, L)
+!                              ATTRIBUTES: POINTER
+!
+!         Angle:               Array containing the view angles associated
+!                              with the transmittance profiles.
+!                              UNITS:      Degrees from vertical.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-1 (n_Angles, I)
+!                              ATTRIBUTES: POINTER
+!
+!         Profile:             Array containing the atmospheric profile
+!                              index number used in the calculation of
+!                              the transmittance profiles..
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Profiles, M)
+!                              ATTRIBUTES: POINTER
+!
+!         Molecule_Set:        Array containing the molecule set ID s
+!                              associated with the transmittance
+!                              profiles.
+!                              UNITS:      N/A
+!                              TYPE:       INTEGER
+!                              DIMENSION:  Rank-1 (n_Molecule_Sets, J)
+!                              ATTRIBUTES: POINTER
+!
+!         LBL_OD:              Array containing line-by-line Optical 
+!                              depth calculations 
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         REG_OD:              Array containing regression Optical 
+!                              depth calculations 
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         dOD:                 Array containing (REG-LBL) Optical 
+!                              depth differences
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (K x L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!                                           
+!         LBL_Tau:             Array containing the surface (SFC) to
+!                              top-of-atmosphere (TOA) transmittance
+!                              from the line-by-line (LBL) calculations.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!                                                     
+!         REG_Tau:             Array containing the surface (SFC) to
+!                              top-of-atmosphere (TOA) transmittance
+!                              from the regression (REG) transmittance
+!                              model calculations.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         Mean_dTau:           Array containing the mean LBL-REG transmittance
+!                              difference over all angles and profiles.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-2 (L x J)
+!                              ATTRIBUTES: POINTER
+!
+!         RMS_dTau:            Array containing the RMS LBL-REG transmittance
+!                              difference over all angles and profiles.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-2 (L x J)
+!                              ATTRIBUTES: POINTER
+!
+!         Mean_dTau_by_Angle:  Array containing the mean LBL-REG transmittance
+!                              difference for each individual angle over
+!                              all profiles.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-3 (L x I x J)
+!                              ATTRIBUTES: POINTER
+!
+!         RMS_dTau_by_Angle:   Array containing the RMS LBL-REG transmittance
+!                              difference for each individual angle over
+!                              all profiles.
+!                              UNITS:      None.
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-3 (L x I x J)
+!                              ATTRIBUTES: POINTER
+!
+!         LBL_BT:              Array containing the TOA brightness
+!                              temperatures resulting from the radiative
+!                              transfer calculations using the LBL
+!                              transmittances.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!                                                     
+!         REG_BT:              Array containing the TOA brightness
+!                              temperatures resulting from the radiative
+!                              transfer calculations using the regression
+!                              transmittance model.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-4 (L x I x M x J)
+!                              ATTRIBUTES: POINTER
+!
+!         Mean_dBT:            Array containing the mean LBL-REG brightness
+!                              temperature difference over all angles and
+!                              profiles.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-2 (L x J)
+!                              ATTRIBUTES: POINTER
+!
+!         RMS_dBT:             Array containing the RMS LBL-REG brightness
+!                              temperature difference over all angles and
+!                              profiles.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-2 (L x J)
+!                              ATTRIBUTES: POINTER
+!
+!         Mean_dBT_by_Angle:   Array containing the mean LBL-REG brightness
+!                              temperature difference for each individual
+!                              angle over all profiles.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-3 (L x I x J)
+!                              ATTRIBUTES: POINTER
+!
+!         RMS_dBT_by_Angle:    Array containing the RMS LBL-REG brightness
+!                              temperature difference for each individual
+!                              angle over all profiles.
+!                              UNITS:      Kelvin, K
+!                              TYPE:       REAL( fp_kind )
+!                              DIMENSION:  Rank-3 (L x I x J)
+!                              ATTRIBUTES: POINTER
+!
+!       *!IMPORTANT!*
+!       -------------
+!       Note that the CRTMstats_type is PUBLIC and its members are not
+!       encapsulated; that is, they can be fully accessed outside the
+!       scope of this module. This makes it possible to manipulate
+!       the structure and its data directly rather than, for e.g., via
+!       get() and set() functions. This was done to eliminate the
+!       overhead of the get/set type of structure access in using the
+!       structure. *But*, it is recommended that the user destroy,
+!       allocate, assign, and concatenate the structure using only the
+!       routines in this module where possible to eliminate -- or at
+!       least minimise -- the possibility of memory leakage since most
+!       of the structure members are pointers.
+!
+! INCLUDE FILES:
+!       None.
+!
+! EXTERNALS:
+!       None.
+!
+! COMMON BLOCKS:
+!       None.
+!
+! FILES ACCESSED:
+!       None.
+!
+! CREATION HISTORY:
+!       Written by:     Paul van Delst, CIMSS/SSEC 27-Jan-2004
+!                       paul.vandelst@ssec.wisc.edu
+!
+!  Copyright (C) 2004 Paul van Delst
+!
+!M-
+!------------------------------------------------------------------------------
 
 MODULE CRTMstats_Define
 
@@ -39,7 +362,6 @@ MODULE CRTMstats_Define
 
   ! -- RCS Id for the module
   CHARACTER( * ), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTMstats_Define.f90,v 1.2 2006/11/22 16:09:30 dgroff Exp $'
 
   ! -- CRTMstats invalid value
   INTEGER, PRIVATE, PARAMETER :: INVALID = -1
@@ -1969,3 +2291,48 @@ CONTAINS
 END MODULE CRTMstats_Define
 
 
+!-------------------------------------------------------------------------------
+!                          -- MODIFICATION HISTORY --
+!-------------------------------------------------------------------------------
+!
+!
+! $Date: 2006/11/22 16:09:30 $
+!
+! $Revision: 1.2 $
+!
+! $Name:  $
+!
+! $State: Exp $
+!
+! $Log: CRTMstats_Define.f90,v $
+! Revision 1.2  2006/11/22 16:09:30  dgroff
+! This file is needed to generate the CRTM stats netcdf files.
+! (This defines the inputs for generating the netcdf stats files)
+!
+! Revision 1.6  2006/05/02 14:58:35  dgroff
+! - Replaced all references of Error_Handler with Message_Handler
+!
+! Revision 1.5  2005/01/07 18:44:20  paulv
+! - Category change to CRTM.
+!
+! Revision 1.4  2005/01/06 19:01:32  paulv
+! - Upgraded to Fortran-95
+!
+! Revision 1.3  2004/02/13 17:18:37  paulv
+! - Altered the sensor/satellite IDs from scalars to arrays to allow for
+!   more than one type of sensor/satellite in the data (e.g. if a combined
+!   RTM run os performed.) All the routines affected were changed to reflect
+!   the change.
+! - Added the n_Sensors scalar to the CRTMstats data structure.
+! - Added the Compute_CRTMstats_Sensors to determine the number of sensors.
+!
+! Revision 1.2  2004/02/12 20:23:09  paulv
+! - Added concatenation function.
+!
+! Revision 1.1  2004/01/28 02:50:31  paulv
+! Initial checkin. Complete but untested.
+!
+!
+!
+!
+!

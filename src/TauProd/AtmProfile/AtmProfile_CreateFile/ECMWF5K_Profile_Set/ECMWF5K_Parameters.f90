@@ -40,7 +40,6 @@ MODULE ECMWF5K_Parameters
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id$'
 
   ! ASCII data file info
   CHARACTER(*), PARAMETER :: ECMWF5K_ASCII_FILE = 'nwp_saf_t_sampled.atm'  

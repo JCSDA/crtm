@@ -303,7 +303,6 @@ MODULE CRTM_Surface_Define_old
 
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_Surface_Define.f90 7080 2010-03-15 17:19:38Z david.groff@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

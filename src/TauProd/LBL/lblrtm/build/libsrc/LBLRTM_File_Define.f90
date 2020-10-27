@@ -64,7 +64,6 @@ MODULE LBLRTM_File_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: LBLRTM_File_Define.f90 35116 2013-12-23 22:22:40Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 512
 

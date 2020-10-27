@@ -32,7 +32,6 @@ PROGRAM Cat_TrainSet
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Cat_TrainSet'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
 
   
   TYPE(TrainSet_type) :: TrainSet1, TrainSet2, TrainSet_out

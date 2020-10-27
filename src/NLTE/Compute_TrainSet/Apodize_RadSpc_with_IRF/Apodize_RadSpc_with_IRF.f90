@@ -69,7 +69,6 @@ PROGRAM Apodize_TauSpc_with_IRF
   ! ----------
   CHARACTER( * ), PARAMETER :: PROGRAM_NAME = 'Apodize_TauSpc_with_IRF'
   CHARACTER( * ), PARAMETER :: PROGRAM_RCS_ID = &
-  '$Id$'
   ! Rollof filter width
   REAL(fp), PARAMETER :: DEFAULT_FILTER_WIDTH = 20.0_fp
   ! Literal constants
