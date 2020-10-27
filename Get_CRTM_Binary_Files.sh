@@ -11,7 +11,7 @@ if test -f "$filename"; then
     fi 
 else
     #download, untar, move
-		echo "downloading $filename, please wait about 1-2 minutes."
+		echo "downloading $filename, please wait about 5 minutes, depending on download speed. (3.2 GB file)"
     wget -q ftp://ftp.ucar.edu/pub/cpaess/bjohns/$filename #jedi set of CRTM binary files
 		mkdir fix/
     tar -zxvf $filename --directory fix/

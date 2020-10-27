@@ -156,7 +156,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-sh Get_CRTM_Binary_Files.sh
+sh Get_CRTM_Binary_Files.sh   #note: this may take several minutes to download the 3.2 GB file from ftp.
 cd src/
 cd Build/
 make clean  
