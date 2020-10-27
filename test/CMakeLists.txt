@@ -1,1 +1,334 @@
-CMakeLists_merged.txt
+# (C) Copyright 2017-2018 UCAR.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+# macro to create a symlink from src to dst
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+function(CREATE_SYMLINK src dst)
+    foreach (FILENAME ${ARGN})
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${src}/${FILENAME}
+            ${dst}/${FILENAME} )
+        endforeach(FILENAME)
+endfunction(CREATE_SYMLINK)
+
+# macro to create a symlink from src to dst with just filename
+function(CREATE_SYMLINK_FILENAME src dst)
+    foreach (FILENAME ${ARGN})
+        get_filename_component(filename ${FILENAME} NAME )
+        execute_process( COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${src}/${FILENAME}
+            ${dst}/${filename} )
+        endforeach(FILENAME)
+endfunction(CREATE_SYMLINK_FILENAME)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/testinput)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/adjoint)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/tangent_linear)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/k_matrix)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/forward)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/results/unit)
+CREATE_SYMLINK( ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR} ${crtm_test_input} )
+
+
+if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES})
+    set(LOCAL_PATH_JEDI_TESTFILES "$ENV{LOCAL_PATH_JEDI_TESTFILES}")
+endif()
+
+set( REPO_VERSION crtm/2.4.0 )
+# If local path to testfiles is defined don't download
+if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
+  set( CRTM_COEFFS_PATH ${LOCAL_PATH_JEDI_TESTFILES}/${REPO_VERSION} )
+  message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${LOCAL_PATH_JEDI_TESTFILES}")
+# Download CRTM coefficients
+else()
+  set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
+  file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
+  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/dataset/147_miesch )
+  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/file to ${CRTM_COEFFS_PATH}")
+  ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
+                              NAMES    crtm_coefficients.tar.gz:dedd4b5ac0172934b90748b63ad62199
+                              DIRNAME  file
+                              DIRLOCAL ${CRTM_COEFFS_PATH}
+                              EXTRACT )
+endif()
+
+# Add files to cmake resources
+ecbuild_add_resources( TARGET crtm_test_scripts
+                       SOURCES_PACK
+                       ${crtm_test_input}
+                     )
+
+# Create list of sensor ids for testing
+list( APPEND Simple_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND ScatteringSwitch_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND SOI_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND VerticalCoordinates_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+list( APPEND SSU_Sensor_Ids
+        ssu_n06
+        ssu_n14
+)
+
+list( APPEND ClearSky_Sensor_Ids
+        atms_npp
+        cris399_npp
+        v.abi_gr
+        modis_aqua
+)
+
+# Create list of sensor ids for testing
+list( APPEND AOD_Sensor_Ids
+        cris399_npp
+        v.abi_gr
+        airs_aqua
+)
+
+# Create list of sensor ids for testing
+list( APPEND Zeeman_Sensor_Ids
+      ssmis_f20
+      ssmis_f19
+      ssmis_f18
+      ssmis_f17
+      ssmis_f16
+)
+
+
+list( APPEND ChannelSubset_Sensor_Ids
+      iasi_metop-b
+)
+
+list( APPEND Aircraft_Sensor_Ids
+      crisB1_npp
+)
+
+list (APPEND common_tests
+     Simple
+     AOD
+     Zeeman
+     ChannelSubset
+     ClearSky
+     Aircraft
+     ScatteringSwitch
+     SOI
+     SSU
+     VerticalCoordinates
+)
+
+
+list (APPEND regression_types
+     forward
+     k_matrix
+)
+
+list (APPEND TLAD_types
+     adjoint
+     tangent_linear
+)
+
+list (APPEND TLAD_tests
+     Simple
+     ClearSky
+)
+
+
+#####################################################################
+
+ecbuild_add_test( TARGET  test_check_crtm
+                  SOURCES mains/application/check_crtm.F90
+                  ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
+                  LIBS    crtm )
+
+ecbuild_add_test( TARGET  test_check_crtm_random
+                  SOURCES mains/application/check_crtm_random_profiles.F90
+                  ARGS    "testinput/single_profile.yaml"
+                  OMP     $ENV{OMP_NUM_THREADS}
+                  LIBS    crtm )
+
+#---------------------------------------------------------------------------------
+#unit tests
+
+#first upper level Unit_Test
+
+#implementation of Patrick's modified TL convergence test.
+ecbuild_add_executable (
+    TARGET  "TL_TEST"
+    SOURCES mains/unit/Unit_Test/test_TL.f90
+    LIBS    crtm
+    NOINSTALL 
+    )
+ecbuild_add_test (
+    TARGET "Unit_TL_TEST"
+    COMMAND "TL_TEST"
+    OMP     $ENV{OMP_NUM_THREADS}
+    )
+
+#=================================================================================
+#forward and k_matrix regression tests
+foreach(regtype IN LISTS regression_types)
+  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
+  foreach(testtype IN LISTS common_tests)
+    string(COMPARE EQUAL ${testtype} "Aircraft" istesttype)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
+ 
+    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+  
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}")
+    endforeach()
+  endforeach() 
+endforeach()
+
+#---------------------------------------------------------------------------------
+#TLAD Regression tests
+foreach(regtype IN LISTS TLAD_types)
+  foreach(testtype IN LISTS TLAD_tests)
+    if (isregtype AND istesttype)
+       continue() #skip Aircraft type for k_Matrix
+    endif()
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
+                            LIBS    crtm
+                            NOINSTALL)
+  
+    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}")
+    endforeach()
+  endforeach() 
+endforeach()
+
+
+
+
+#####################################################################
+# Files for CRTM tests
+#####################################################################
+
+list( APPEND crtm_test_input
+Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_atmosphereccol.bin
+Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_surfaceccol.bin
+Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_geometryccol.bin
+AerosolCoeff/Little_Endian/AerosolCoeff.bin
+CloudCoeff/Little_Endian/CloudCoeff.bin
+EmisCoeff/MW_Water/Little_Endian/FASTEM6.MWwater.EmisCoeff.bin
+EmisCoeff/IR_Ice/SEcategory/Little_Endian/NPOESS.IRice.EmisCoeff.bin
+EmisCoeff/IR_Land/SEcategory/Little_Endian/NPOESS.IRland.EmisCoeff.bin
+EmisCoeff/IR_Snow/SEcategory/Little_Endian/NPOESS.IRsnow.EmisCoeff.bin
+EmisCoeff/VIS_Ice/SEcategory/Little_Endian/NPOESS.VISice.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/Little_Endian/NPOESS.VISland.EmisCoeff.bin
+EmisCoeff/VIS_Snow/SEcategory/Little_Endian/NPOESS.VISsnow.EmisCoeff.bin
+EmisCoeff/VIS_Water/SEcategory/Little_Endian/NPOESS.VISwater.EmisCoeff.bin
+EmisCoeff/IR_Water/Little_Endian/Nalli.IRwater.EmisCoeff.bin
+EmisCoeff/IR_Land/SEcategory/Little_Endian/USGS.IRland.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/Little_Endian/USGS.VISland.EmisCoeff.bin
+SpcCoeff/Little_Endian/hirs4_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/hirs4_metop-a.TauCoeff.bin
+SpcCoeff/Little_Endian/amsua_n19.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/amsua_n19.TauCoeff.bin
+SpcCoeff/Little_Endian/amsua_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/amsua_metop-a.TauCoeff.bin
+SpcCoeff/Little_Endian/gmi_gpm.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/gmi_gpm.TauCoeff.bin
+SpcCoeff/Little_Endian/seviri_m08.SpcCoeff.bin
+TauCoeff/ODAS/Little_Endian/seviri_m08.TauCoeff.bin
+SpcCoeff/Little_Endian/cris-fsr_npp.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/cris-fsr_npp.TauCoeff.bin
+SpcCoeff/Little_Endian/iasi_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/iasi_metop-a.TauCoeff.bin
+SpcCoeff/Little_Endian/iasi_metop-b.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/iasi_metop-b.TauCoeff.bin
+SpcCoeff/Little_Endian/mhs_n19.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/mhs_n19.TauCoeff.bin
+SpcCoeff/Little_Endian/sndrD1_g15.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/sndrD1_g15.TauCoeff.bin
+SpcCoeff/Little_Endian/sndrD2_g15.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/sndrD2_g15.TauCoeff.bin
+SpcCoeff/Little_Endian/sndrD3_g15.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/sndrD3_g15.TauCoeff.bin
+SpcCoeff/Little_Endian/sndrD4_g15.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/sndrD4_g15.TauCoeff.bin
+SpcCoeff/Little_Endian/airs_aqua.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/airs_aqua.TauCoeff.bin
+SpcCoeff/Little_Endian/modis_aqua.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/modis_aqua.TauCoeff.bin
+SpcCoeff/Little_Endian/cris399_npp.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/cris399_npp.TauCoeff.bin
+SpcCoeff/Little_Endian/crisB1_npp.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/crisB1_npp.TauCoeff.bin
+SpcCoeff/Little_Endian/atms_npp.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/atms_npp.TauCoeff.bin
+SpcCoeff/Little_Endian/v.viirs-m_npp.SpcCoeff.bin
+TauCoeff/ODAS/Little_Endian/v.viirs-m_npp.TauCoeff.bin
+SpcCoeff/Little_Endian/v.abi_gr.SpcCoeff.bin
+TauCoeff/ODAS/Little_Endian/v.abi_gr.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/zssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/zssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/zssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/zssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/zssmis_f16.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssmis_f16.TauCoeff.bin
+SpcCoeff/Little_Endian/ssmis_f20.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssmis_f18.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssmis_f19.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssmis_f16.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssmis_f17.SpcCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n06.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n07.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n08.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n09.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n11.TauCoeff.bin
+TauCoeff/ODPS/Little_Endian/ssu_n14.TauCoeff.bin
+SpcCoeff/Little_Endian/ssu_n06.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssu_n07.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssu_n08.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssu_n09.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssu_n11.SpcCoeff.bin
+SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
+)
+
+# Symlink all CRTM files
+CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}
+                         ${CMAKE_CURRENT_BINARY_DIR}/testinput
+                         ${crtm_test_input} )
