@@ -1,23 +1,23 @@
 README_JEDI.md
 
 Created October 23, 2020
+Updated October 27, 2020
+Released October 28, 2020
 
 The README.md file contains a lot of general information about this repository and the legacy build system based on autotools.
 
-CRTM REL-2.4.0-alpha  JEDI environment build instructions
+CRTM REL-2.4.0 JEDI environment build instructions
 =========================================================
 
 Preamble
 --------
 
-CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)  
+CRTM v2.4.0 release (`REL-2.4.0`)  
 
 Created on October  7, 2020  
 Updated on October 23, 2020
 
-This is a fully functional release of CRTM v2.4.0.  
-
-"Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
+This is a fully functional release of CRTM v2.4.0. 
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  

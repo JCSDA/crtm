@@ -1,17 +1,15 @@
-CRTM REL-2.4.0-alpha
+CRTM REL-2.4.0
 ====================
 
 Preamble
 --------
 
-CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)  
+CRTM v2.4.0 release (`REL-2.4.0`)  
 
 Created on October  7, 2020  
 Updated on October 23, 2020
 
 This is a fully functional release of CRTM v2.4.0.  
-
-"Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
 
 Basic requirements:  
 (1) A Fortran 2003 compatible compiler.  
@@ -239,11 +237,11 @@ To uninstall the library (assuming you haven't moved the installation directory 
 
     make uninstall
 
-This will DELETE the created installation directory. So, for a library version, say, v2.4.0-alpha, if your configure script invocation was something like
+This will DELETE the created installation directory. So, for a library version, say, v2.4.0, if your configure script invocation was something like
 
     ./configure --prefix=${PWD} ...other command line arguments...
 
-then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0-alpha" directory.
+then the "uninstall" target will delete the "${PWD}/crtm_v2.4.0" directory.
 
 
 Cleaning Up
@@ -290,13 +288,13 @@ make install
 
 **Additional options for `configure`**
 
-`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.0-alpha/` (or whatever string in in `src/CRTM_Version.inc`).  
+`configure` sets an install path environment variable, among other things.  This, by default, will set the `lib/` and `include/` directory paths in the `/usr/local/crtm_v2.4.0/` (or whatever string in in `src/CRTM_Version.inc`).  
 
 The `--prefix` switch sets the installation directory, make sure you have write access to that directory.  
 
 You can override this by setting a different install directory as follows:  
   `   ./configure --prefix=<install directory>`  
-For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.0-alpha/).
+For example, `./configure --prefix=${PWD}` will create the library in the directory in which you're currently in (e.g., crtm/src/Build/crtm_v2.4.0/).
 
 By default, the CRTM is built for big-endian I/O. The --disable-big-endian switch builds the library and test programs for little-endian I/O:
 
