@@ -7,9 +7,9 @@ Preamble
 CRTM v2.4.0 alpha release (`REL-2.4.0-alpha`)  
 
 Created on October  7, 2020  
-Updated on October 23, 2020
+Updated on October 27, 2020
 
-This is a fully functional release of CRTM v2.4.0.  
+This is a fully functional release of CRTM v2.4.0. 
 
 "Alpha" status indicates that this release has not been fully tested, and some minor work remains.  
 
@@ -23,7 +23,7 @@ Basic requirements:
 
 **Important Note**: If reading this, you're cloning the CRTM development repository.  The development repository is structured in a way that makes it less user friendly, but more amenable to development and testing.
 
-**JEDI NOTE** This develop branch is also designed to work directly in a JEDI container or JEDI environment. If you're doing JEDI things, you're probably in the right spot. However, you can stop reading right now and have a look at the README_JEDI.md file.   
+**JEDI NOTE** This is a "non-JEDI" compliant release of REL-2.4.0.  `git tag | grep -i "jedi"` will show the checkout tags for JEDI-compatible releases.  
 
 If you're looking for an older version of CRTM (v2.3.0 or older) you should obtain the appropriate tarball from
 https://ftp.emc.ncep.noaa.gov/jcsda/CRTM/
@@ -66,7 +66,7 @@ The CRTM **development** repository directory structure looks like:
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
-  ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory)
+  ├── Get_CRTM_Binary_Files.sh  (gets the fix/ directory)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -120,7 +120,7 @@ But after a clean clone of the development repository, none of the links to sour
 
 Configuration
 -------------
-By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Data.sh script. 
+By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Files.sh script. 
 
 At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
@@ -143,6 +143,7 @@ To use these files to define the CRTM build environment, you should source them.
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
+	
 		. configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
@@ -155,7 +156,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-sh Get_CRTM_Binary_Data.sh
+sh Get_CRTM_Binary_Files.sh   #note: this may take several minutes to download the 3.2 GB file from ftp.
 cd src/
 cd Build/
 make clean  
@@ -264,10 +265,15 @@ make distclean
 </pre>
 
 
+(optional) "Regression, Application, and Unit Testing"
+---------------------------------------
+In the `test/` directory, you'll find aseries of cmake enabled tests.  Read the included readme_crtm_tests.txt for details.
+These tests are still under development.  Please report any issues.
+
 (optional) "Build Release" Setup and Configuration:
 --------------------------------------------------
 
-Within the 'src/Build' directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
+Within the `src/Build` directory, The legacy build system for the CRTM uses an autoconf-generated `configure` script, which depends on the existence of a few key files.  
 (1) the `configure.ac` file, which contains instructions for how the `configure` file will be built when the `autoconf` command is executed.   
 (2) The `Makefile.in` file, which contains instructions on how executing the `configure` script will generate `Makefile` in libsrc and test subdirectories.  
 

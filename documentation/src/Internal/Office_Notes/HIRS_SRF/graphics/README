@@ -1,4 +1,0 @@
-The plots in the srf and tfit directories are for *groups* of HIRS instruments.
-  hirs2_tirosn named plots are for hirs2_tirosn through hirs2_n10,
-  hirs2_n10    named plots are for hirs2_n10    through hirs3_n16,
-  hirs3_n16    named plots are for hirs3_n16    through hirs4_metop-b
