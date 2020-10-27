@@ -51,18 +51,18 @@ Contents
 
 
 Configuration, building, and testing the library
-================================================	
+================================================  
 JCSDA CRTM v2.4.x Build Instructions
 
 - Development Repository Build
 - Note: the development repository build differs from a release build. 
-	
+  
 The CRTM **development** repository directory structure looks like:
 
 <pre>
  .
   ├── LICENSE  (CC0 license)
-	├── COPYING  (CC0 legal document)
+  ├── COPYING  (CC0 legal document)
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
@@ -85,8 +85,8 @@ The CRTM **development** repository directory structure looks like:
   │   ├── AtmScatter/
   │   ├── Atmosphere/
   │   ├── <b>Build/</b>
-	│   │   └── <b>libsrc/</b>
-	│   │       └── <b>test/</b>
+  │   │   └── <b>libsrc/</b>
+  │   │       └── <b>test/</b>
   │   ├── CRTM_Utility/
   │   ├── ChannelInfo/
   │   ├── Coefficients/
@@ -143,7 +143,7 @@ To use these files to define the CRTM build environment, you should source them.
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
-		. configuration/gfortran-debug.setup
+    . configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
 
