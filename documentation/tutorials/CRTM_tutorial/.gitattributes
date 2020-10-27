@@ -1,6 +1,0 @@
-*.nc filter=lfs diff=lfs merge=lfs -text
-*.bin filter=lfs diff=lfs merge=lfs -text
-tape* filter=lfs diff=lfs merge=lfs -text
-TAPE* filter=lfs diff=lfs merge=lfs -text
-test_data/ filter=lfs diff=lfs merge=lfs -text
-upwelling_tau.profile01_angle1_mol7_band001 filter=lfs diff=lfs merge=lfs -text
