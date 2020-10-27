@@ -66,7 +66,7 @@ The CRTM **development** repository directory structure looks like:
   ├── NOTES
   ├── README.md 
   ├── Set_CRTM_Environment.sh
-  ├── Get_CRTM_Binary_Data.sh  (gets the fix/ directory)
+  ├── Get_CRTM_Binary_Files.sh  (gets the fix/ directory)
   ├── <b>configuration/</b>
   ├── <b>documentation/</b>
   ├── <b>fix/</b>
@@ -120,7 +120,7 @@ But after a clean clone of the development repository, none of the links to sour
 
 Configuration
 -------------
-By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Data.sh script. 
+By default, the "`fix/`" directory is not provided in the CRTM.  It is obtainable by running the Get_CRTM_Binary_Files.sh script. 
 
 At the top level (`crtm/`), the `configuration` directory contains the various compiler-specific configuration files.
 <pre>
@@ -143,6 +143,7 @@ To use these files to define the CRTM build environment, you should source them.
 for a build using the gfortran compiler using debug options you would type:
 
 **Configuration Step 1**
+	
 		. configuration/gfortran-debug.setup
 
 (note the `. ` -- for a detailed discussion of `.` vs. `source` see: https://unix.stackexchange.com/questions/58514/what-is-the-difference-between-and-source-in-shells)
@@ -155,7 +156,7 @@ Again noting the leading `. `.  This sets the required environment variables to 
 
 **Configuration Step 3**
 <pre>
-sh Get_CRTM_Binary_Data.sh
+sh Get_CRTM_Binary_Files.sh
 cd src/
 cd Build/
 make clean  
