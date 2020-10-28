@@ -952,12 +952,13 @@ CONTAINS
                    asi%xlp,          & ! FWD Input
                    r_TL, r_int_TL,   & ! TL  Input
                    xlp_TL            ) ! TL  Output
-    ! Size variance term
+    ! Size variance term    
+    IF ( AeroC%Scheme == 'CMAQ' ) THEN 
     CALL LPoly_TL( asi%v, asi%v_int, & ! FWD Input
                    asi%vlp,          & ! FWD Input
                    v_TL, v_int_TL,   & ! TL  Input
                    vlp_TL            ) ! TL  Output
-
+    END IF
 
     ! Get the aerosol type LUT index
     ! ------------------------------
