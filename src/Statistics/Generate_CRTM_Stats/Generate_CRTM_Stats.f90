@@ -156,7 +156,6 @@ PROGRAM Generate_CRTM_Stats
 
  
   USE File_Utility
-!  USE List_File_Utility
   
   USE Type_Kinds                
   USE Message_Handler,           ONLY: SUCCESS, WARNING, Display_Message
@@ -727,6 +726,15 @@ PROGRAM Generate_CRTM_Stats
                 Error_Status                           )
            STOP
         END IF
+
+        ! Declare the Surface Emissivity and Reflectivity for the profile/channel
+        SfcOptics(m)%Emissivity(1,1) = Options(m)%Emissivity(l) 
+        SfcOptics(m)%Reflectivity(1,1,1,1) = ONE - Options(m)%Emissivity(l)
+        SfcOptics(m)%Direct_Reflectivity(1,1) = SfcOptics(m)%Reflectivity(1,1,1,1)
+        SfcOptics(m)%Compute_Switch = NOT_SET
+
+        ! Read TauProfile_File and assign data to rank-1 array holding Tau -> H20
+        !Error_Status = Read_TauProfile_netCDF( TRIM(TauProfile_File),            &
         
         !  Allocate for LBLSolution
         ALLOCATE( LBLSolution( n_Channels, N_PROFILES ),    &
@@ -1009,10 +1017,13 @@ PROGRAM Generate_CRTM_Stats
            STOP
         END IF
         
-        ! LBLSolution
-        DEALLOCATE( LBLSolution,                     &
-             STAT = Error_Status              )
-        
+        !PRINT *, (LBL_Transmittance - CRTM_Transmittance), k, l, m
+        !CRTMstats%REG_BT(l, i, m, 1) = CRTMSolution(l,m,i)%Brightness_Temperature
+        ! Deallocate Tau
+        DEALLOCATE(    Tau,                   &
+                       Tau_ALL,               &
+                       STAT=Error_Status      )
+
         IF ( Error_Status /= SUCCESS ) THEN 
            CALL Display_Message( PROGRAM_NAME, &
                 'Error DEAllocating LBLSolution Structure.', & 
@@ -1234,79 +1245,3 @@ CONTAINS
     
   END FUNCTION Write_Brightness_Temperatures
   
-END PROGRAM Generate_CRTM_Stats
-
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-!
-! $Date: 2006/11/27 14:38:15 $
-!
-! $Revision: 1.5 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Generate_CRTM_Stats.f90,v $
-! Revision 1.5  2006/11/27 14:38:15  dgroff
-! The bottom three layers are now included in the total transmittance calculations.
-!
-! Revision 1.4  2006/11/21 23:41:09  dgroff
-! The CRTM_Compute_Optical_Depth module no longer exist and needed to be
-! removed from the list of modules being used in the program.
-!
-! Revision 1.3  2006/11/21 18:12:51  dgroff
-! The surface structure has been filled to set the
-! SfcOptics%Surface_Temperature equal to the
-! Atmospheric temperature in the bottom layer.
-!
-! Revision 1.2  2006/10/27 18:12:15  dgroff
-! The SfcOptics%Surface_Temperature has been set equal to the temperature of the lowest layer.
-! Additions were also made in order to write TOA transmittance data to the CRTMstats netcdf files.
-!
-! Revision 2.4  2006/05/02 14:58:35  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 2.3  2005/02/07 17:40:35  paulv
-! - Updated onscreen output from RTM to pCRTM.
-!
-! Revision 2.2  2005/01/07 18:43:40  paulv
-! - Catagory change to pCRTM.
-!
-! Revision 2.1  2005/01/06 18:48:49  paulv
-! - Modified filename to include "upwelling" prefix.
-!
-! Revision 2.0  2004/10/06 15:57:31  paulv
-! - Removed RTMarg use. Replaced with individual allocated arrays for RTM inputs.
-! - Now using new Fortran-95 utility modules.
-!
-! Revision 1.6  2004/03/29 18:05:17  paulv
-! - Added default solar reflectivity.
-! - Corrected bug in call to forward model due to solar transmittance argument.
-!
-! Revision 1.5  2004/02/13 17:15:21  paulv
-! - Added RTMstats initialisation call(!)
-! - Added TauProfile history and comment attributes to the output RTMstats file.
-! - Corrected bugs in passing arguments to the Compute_Radiance subroutine.
-! - No longer include the maximum angle in the computations.
-!
-! Revision 1.4  2004/02/12 17:28:35  paulv
-! - Stats no longer include the largest angle in the calcs.
-! - Corrected a bug in saving the total transmittance.
-!
-! Revision 1.3  2004/01/28 21:41:32  paulv
-! - Using the RTMstats modules to collect and output the statistics.
-!
-! Revision 1.2  2003/12/05 22:38:02  paulv
-! - Continuing updates. Not completed.
-!
-! Revision 1.1  2003/06/20 22:00:00  paulv
-! Initial checkin. Incomplete.
-!
-! Revision 2.1  2003/05/16 18:46:57  paulv
-! - New version.
-!
-!
-!

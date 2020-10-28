@@ -246,35 +246,3 @@ PROGRAM SRF_ASCII_IO_Test
 END PROGRAM SRF_ASCII_IO_Test
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-!
-! $Date: 2006/08/15 20:51:04 $
-!
-! $Revision: 1.5 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: SRF_ASCII_IO_Test.f90,v $
-! Revision 1.5  2006/08/15 20:51:04  wd20pd
-! Additional replacement of Error_Handler with Message_Handler.
-!
-! Revision 1.4  2006/05/02 16:58:02  dgroff
-! *** empty log message ***
-!
-! Revision 1.3  2004/09/03 20:31:44  paulv
-! - Updated program html delimiters.
-!
-! Revision 1.2  2004/08/23 19:50:38  paulv
-! - Updated for Fortran-95 conversion.
-!
-! Revision 1.1  2003/08/29 18:23:42  paulv
-! Initial checkin.
-!
-!
-!
-!

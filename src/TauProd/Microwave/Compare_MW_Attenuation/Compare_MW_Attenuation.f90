@@ -149,8 +149,6 @@ PROGRAM Compare_MW_Attenuation
   ! -- Frequency data
   REAL( fp_kind ), PARAMETER :: BEGIN_FREQUENCY =   1.0_fp_kind  ! GHz
   REAL( fp_kind ), PARAMETER ::   END_FREQUENCY = 200.0_fp_kind  ! GHz
-!  REAL( fp_kind ), PARAMETER :: BEGIN_FREQUENCY =  60.4344_fp_kind  ! GHz
-!  REAL( fp_kind ), PARAMETER ::   END_FREQUENCY =  60.4352_fp_kind  ! GHz
   INTEGER,         PARAMETER :: N_FREQUENCIES = 1000
 
   ! -- Attenuation types

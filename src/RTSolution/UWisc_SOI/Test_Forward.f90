@@ -161,10 +161,6 @@ PROGRAM Test_Forward
   Surface%Snow_Temperature = Surface(1)%Snow_Temperature
   Surface%Ice_Temperature = Surface(1)%Ice_Temperature
 
-!  print *, 'Land Water Snow Ice Coverage = ', Surface%Land_Coverage, Surface%Water_Coverage, &
-!                Surface%Snow_Coverage, Surface%Ice_Coverage
-!  print *, 'Land Water Snow Ice Temperature = ', Surface%Land_Temperature, Surface%Water_Temperature, &
-!                Surface%Snow_Temperature, Surface%Ice_Temperature
 
 
   !#----------------------------------------------------------------------------#
@@ -235,7 +231,6 @@ PROGRAM Test_Forward
    STOP
   END IF
 
-! ALLOCATE THE ELEMENTS OF RTSolution
 
   n_Stokes = 2
   Error_Status = CRTM_Allocate_RTSolution( n_Stokes, RTSolution )
@@ -338,55 +333,3 @@ CONTAINS
 END PROGRAM Test_Forward
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-!
-! $Date: 2006/05/02 14:58:35 $
-!
-! $Revision: 1.2 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: Test_Forward.f90,v $
-! Revision 1.2  2006/05/02 14:58:35  dgroff
-! - Replaced all references of Error_Handler with Message_Handler
-!
-! Revision 1.1  2005/06/29 20:35:31  paulv
-! - Initial checkin of UWisc SOI code.
-!
-! Revision 1.9  2005/02/16 22:11:50  paulv
-! - Updated to use new Aerosol modules.
-!
-! Revision 1.8  2005/02/03 20:44:26  paulv
-! - Changed names of atmosphere and surface input data files.
-!
-! Revision 1.7  2005/01/28 21:02:02  paulv
-! - Simplified the method to determine the coefficient filenames.
-!
-! Revision 1.6  2004/11/05 16:40:40  paulv
-! - Upgraded to Fortran-95.
-! - Removed all Init() calls.
-!
-! Revision 1.5  2004/08/06 20:45:10  paulv
-! - Changed RTSolution to an allocatable array and allocate it after the
-!   model initialization.
-!
-! Revision 1.4  2004/08/06 19:26:30  paulv
-! - Added Surface binary I/O.
-!
-! Revision 1.3  2004/07/21 15:56:14  paulv
-! - Added definition of view angles to the GeometryInfo structure.
-!
-! Revision 1.2  2004/07/02 21:13:04  paulv
-! - Added call to read function to read Atmosphere data file.
-!
-! Revision 1.1  2004/07/01 20:50:01  paulv
-! Initial checkin.
-!
-!
-!
-!

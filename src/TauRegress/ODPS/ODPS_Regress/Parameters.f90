@@ -115,19 +115,7 @@ MODULE Parameters
   ! -- Define the secant of the zenith angles to be used
   INTEGER, PUBLIC,PARAMETER :: N_ZENITH_ANGLES = 7
   
-!  REAL( fp_kind ), PUBLIC, PARAMETER, DIMENSION( N_ZENITH_ANGLES ) :: ZENITH_ANGLE_SECANT = &
-!    (/ 1.00_fp_kind, 1.25_fp_kind, 1.50_fp_kind, &
-!       1.75_fp_kind, 2.00_fp_kind, 2.25_fp_kind, &
-!       3.00_fp_kind /)
 
-!  REAL( fp_kind ), PUBLIC, PARAMETER, DIMENSION( N_ZENITH_ANGLES ) :: &
-!    ZENITH_ANGLE = (/  0.0_fp_kind,          &
-!                      36.8698976458_fp_kind, &
-!                      48.1896851042_fp_kind, &
-!                      55.1500954210_fp_kind, &
-!                      60.0_fp_kind,          &
-!                      63.6122000388_fp_kind, &
-!                      70.5287793655_fp_kind /)
 
   ! --------------------------------------
   ! Number of absorber layers in algorithm
@@ -183,8 +171,6 @@ MODULE Parameters
   REAL( fp_kind ), PUBLIC, PARAMETER :: MAX_SOLAR_ANGLE = 85.0_fp_kind
   REAL( fp_kind ), PUBLIC, PARAMETER :: MAX_SECANT_SOLAR_ANGLE = 11.473711738554476_fp_kind
 
-!  REAL( fp_kind ), PUBLIC, PARAMETER :: TAUMIN = 0.000003_fp_kind
-!  REAL( fp_kind ), PUBLIC, PARAMETER :: TAUMIN = 0.5e-13_fp_kind
 
   ! Minimum component and total tau, below which the transmittance is considered
   ! insignificant. Maximum optical path and minimum layer optical depth 

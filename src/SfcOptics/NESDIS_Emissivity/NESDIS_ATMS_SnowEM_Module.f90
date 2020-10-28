@@ -89,7 +89,6 @@ MODULE NESDIS_ATMS_SnowEM_Module
   USE NESDIS_SnowEM_Parameters  
   IMPLICIT NONE
 
-! Visibilities
   PRIVATE
   PUBLIC  :: NESDIS_ATMS_SNOWEM
 
@@ -281,7 +280,6 @@ CONTAINS
      LOGICAL  :: VALID_SNOW_DEPTH
      INTEGER  :: input_type
 
-!JR change to run-time setting for OMP
      Ts = 273.15   ! default skin-surface temperature
      Snow_Type = 4 ! default snow type
      VALID_SNOW_DEPTH = .FALSE.
@@ -545,21 +543,16 @@ CONTAINS
    !*** adjustment from the library values
      emw=em(windex,snow_type)
      X=1.0_fp/emw
-!JR Tb(3) is undefined (~-3.e38) for some UFO tests. If SIGFPE trapping is enabled, log of a negative
-!JR number will generate NaN and possibly an abort. Thus the following change. Y(3) is never referenced 
-!JR so this mod does not impact the solution. Though Tb(3) is referenced so that may not be a good thing
-     Y((/1,2,4,5/)) = LOG(Tb((/1,2,4,5/))/(Ts*emw((/1,2,4,5/))))
+     Y((/1,2,4,5/)) = log(Tb((/1,2,4,5/))/(Ts*emw((/1,2,4,5/))))
      IF(frequency > 100.0_fp) THEN
        XX=DOT_PRODUCT(X((/1,2,4,5/)),X((/1,2,4,5/)))
        XY=DOT_PRODUCT(X((/1,2,4,5/)),Y((/1,2,4,5/)))
        del=XY/XX
-!JR Hopefully Tb(3) = -3.e38 is OK here
        deltb=Tb(3)-Tb(5)
      ELSE
        XX=DOT_PRODUCT(X((/1,2,4/)),X((/1,2,4/)))
        XY=DOT_PRODUCT(X((/1,2,4/)),Y((/1,2,4/)))
        del=XY/XX
-!JR Hopefully Tb(3) = -3.e38 is OK here
        deltb=Tb(3)-Tb(4)
      ENDIF
 
@@ -891,7 +884,6 @@ CONTAINS
    ! Fitting Coefficients at 150 GHz: Using Tb4, Tb5
      coe(21:25) = (/-3.395416e-001_fp,-4.632656e-003_fp,1.270735e-005_fp, &
           1.413038e-002_fp,-3.133239e-005_fp/)
-!    SAVE coe
 
    ! Calculate emissivity discriminators at five ATMS window channels
      DO ich = 1, nwch

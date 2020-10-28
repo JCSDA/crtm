@@ -124,8 +124,6 @@ MODULE Parameters
   INTEGER, PRIVATE, SAVE      :: MAX_N_CHANNELS = RESET_VALUE
   INTEGER, PUBLIC,  PARAMETER :: MAX_N_PROFILES = 128
   INTEGER, PUBLIC,  PARAMETER :: MAX_N_LAYERS   = 100
-!!!  INTEGER, PRIVATE :: MAX_N_PROFILES = RESET_VALUE
-!!!  INTEGER, PRIVATE :: MAX_N_LAYERS   = RESET_VALUE
 
 
   ! -----
@@ -158,9 +156,6 @@ MODULE Parameters
   REAL( fp_kind ), PUBLIC, PARAMETER :: LIMIT_EXP = 354.5981_fp_kind  ! ABS( LOG( TOLERANCE ) )
   REAL( fp_kind ), PUBLIC, PARAMETER :: LIMIT_LOG = 1.0e+154_fp_kind  ! EXP( LIMIT_EXP )
 
-!!! Fortran 95 code follows !!!
-!  REAL( fp_kind ), PUBLIC, PARAMETER :: LIMIT_EXP = ABS( LOG( TOLERANCE ) )
-!  REAL( fp_kind ), PUBLIC, PARAMETER :: LIMIT_LOG = EXP( LIMIT_EXP )
 
 
   ! -- Constant to allow degrees->radians conversion
@@ -190,8 +185,6 @@ MODULE Parameters
   ! -- requested the Value be 85deg => secant of ~11.47.
   REAL( fp_kind ), PUBLIC, PARAMETER :: MAX_SOLAR_ANGLE = 85.0_fp_kind
   REAL( fp_kind ), PUBLIC, PARAMETER :: MAX_SECANT_SOLAR_ANGLE = 11.473711738554476_fp_kind
-!!! Fortran 95 code follows !!!
-!  REAL( fp_kind ), PUBLIC, PARAMETER :: MAX_SECANT_SOLAR_ANGLE = ONE / COS( DEGREES_TO_RADIANS * MAX_SOLAR_ANGLE )
 
 
 

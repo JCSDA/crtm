@@ -225,37 +225,3 @@ MODULE AIRS_ChannelProperties_Define
 END MODULE AIRS_ChannelProperties_Define
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-!
-! $Date: 2004/08/11 19:59:51 $
-!
-! $Revision: 1.5 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! $Log: AIRS_ChannelProperties_Define.f90,v $
-! Revision 1.5  2004/08/11 19:59:51  paulv
-! - Tested.
-!
-! Revision 1.4  2004/08/11 12:05:45  paulv
-! - Reorganising and f90->f95 conversion. Incomplete.
-!
-! Revision 1.3  2004/03/09 17:14:58  paulv
-! - Cosmetic changes to documentation.
-!
-! Revision 1.2  2003/01/10 15:42:17  paulv
-! - Altered the definition of the AIRS_ChannelProperties_type from a structure
-!   of arrays (with a channel dimension) to a simple scalar structure. Now, the
-!   AIRS channel properties are represented by an array of structures.
-!
-! Revision 1.1  2003/01/09 21:23:00  paulv
-! Initial checkin.
-!
-!
-!
-!

@@ -373,6 +373,8 @@ PROGRAM Aerosol_Rewrite
 END PROGRAM Aerosol_Rewrite
 
 
+<<<<<<< variant A
+>>>>>>> variant B
 !-------------------------------------------------------------------------------
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
@@ -396,3 +398,4 @@ END PROGRAM Aerosol_Rewrite
 !
 !
 !
+======= end

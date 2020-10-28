@@ -539,68 +539,8 @@ MODULE TauCoeff_SARTA_Define
 CONTAINS
 
 
-!##################################################################################
-!##################################################################################
-!##                                                                              ##
-!##                          ## PRIVATE MODULE ROUTINES ##                       ##
-!##                                                                              ##
-!##################################################################################
-!##################################################################################
 
 
-!----------------------------------------------------------------------------------
-!
-! NAME:
-!       Clear_TauCoeff_SARTA
-!
-! PURPOSE:
-!       Subroutine to clear the scalar members of a TauCoeff_SARTA structure.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Clear_TauCoeff_SARTA( TauCoeff ) ! Output
-!
-! INPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:    TauCoeff_SARTA structure for which the scalar members have
-!                    been cleared.
-!                    UNITS:      N/A
-!                    TYPE:       TauCoeff_SARTA_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff_SARTA argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!
-!----------------------------------------------------------------------------------
 
   SUBROUTINE Clear_TauCoeff_SARTA( TauCoeff )
 
@@ -629,125 +569,7 @@ CONTAINS
 
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
-!--------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Associated_TauCoeff_SARTA
-!
-! PURPOSE:
-!       Function to test the association status of the pointer members of a
-!       TauCoeff_SARTA structure.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Association_Status = Associated_TauCoeff_SARTA( TauCoeff,           &  ! Input
-!                                ANY_Test = Any_Test,&  ! Optional input					      
-!				 Skip_Tau_OPTRAN_Coeff  = Skip_Tau_OPTRAN_Coeff,   & ! Optional input		      
-!				 Skip_TauCoeff_TraceGas = Skip_TauCoeff_TraceGas,  & ! Optional input		      
-! 				 Skip_TauCoeff_Subset	= Skip_TauCoeff_Subset)    & ! Optional input		      
-!
-! INPUT ARGUMENTS:
-!       TauCoeff:    TauCoeff_SARTA structure which is to have its pointer
-!                    member's association status tested.
-!                    UNITS:      N/A
-!                    TYPE:       TauCoeff_SARTA_type
-!                    DIMENSION:  Scalar
-!                    ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       ANY_Test:    Set this argument to test if ANY of the
-!                    TauCoeff_SARTA structure pointer members are associated.
-!                    The default is to test if ALL the pointer members
-!                    are associated.
-!                    If ANY_Test = 0, test if ALL the pointer members
-!                                     are associated.  (DEFAULT)
-!                       ANY_Test = 1, test if ANY of the pointer members
-!                                     are associated.
-!
-!       Skip_Tau_OPTRAN_Coeff :  Set this argument to not include the Tau_OPTRAN_Coeff 
-!                                member in the association test.  
-!                                If Skip_Tau_OPTRAN_Coeff = 0, the Tau_OPTRAN_Coeff member association
-!                                		               status is tested.  (DEFAULT)
-!                                   Skip_Tau_OPTRAN_Coeff = 1, the Tau_OPTRAN_Coeff member association
-!                                		               status is NOT tested.
-!                                UNITS:      N/A
-!                                TYPE:       INTEGER
-!                                DIMENSION:  Scalar
-!                                ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Skip_TauCoeff_TraceGas:  Set this argument to not include the TauCoeff_SARTA_TraceGas
-!                                member in the association test. This is required
-!                                because a valid TauCoeff_SARTA structure can be
-!                                tracegas-free.
-!                                If Skip_TauCoeff_TraceGas = 0, the TauCoeff_SARTA_TraceGas member association
-!                                		                status is tested.  (DEFAULT)
-!                                   Skip_TauCoeff_TraceGas = 1, the TauCoeff_SARTA_TraceGas member association
-!                                		                status is NOT tested.
-!                                UNITS:      N/A
-!                                TYPE:       INTEGER
-!                                DIMENSION:  Scalar
-!                                ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-!       Skip_TauCoeff_Subset:   Set this argument to not include the TauCoeff_SARTA_Subset 
-!                               member in the association test. 
-!                               If Skip_TauCoeff_Subset = 0, the TauCoeff_SARTA_Subset member association
-!                               		   status is tested.  (DEFAULT)
-!                                  Skip_TauCoeff_Subset = 1, the TauCoeff_SARTA_Subset member association
-!                               		   status is NOT tested.
-!                               UNITS:      N/A
-!                               TYPE:	    INTEGER
-!                               DIMENSION:  Scalar
-!                               ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       None.
-!
-! FUNCTION RESULT:
-!       Association_Status:  The return value is a logical value indicating the
-!                            association status of the TauCoeff_SARTA pointer members.
-!                            .TRUE.  - if ALL the TauCoeff_SARTA pointer members are
-!                                      associated, or if the ANY_Test argument
-!                                      is set and ANY of the TauCoeff_SARTA pointer
-!                                      members are associated.
-!                            .FALSE. - some or all of the TauCoeff_SARTA pointer
-!                                      members are NOT associated.
-!                            UNITS:      N/A
-!                            TYPE:       LOGICAL
-!                            DIMENSION:  Scalar
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       This function tests the association status of the TauCoeff_SARTA
-!       structure pointer members. Therefore this function must only
-!       be called after the input TauCoeff_SARTA structure has, at least,
-!       had its pointer members initialized.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!--------------------------------------------------------------------------------
 
   FUNCTION Associated_TauCoeff_SARTA( TauCoeff,                & ! Input
                                 ANY_Test,                & ! Optional input
@@ -977,91 +799,6 @@ CONTAINS
 
 
 
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Destroy_TauCoeff_SARTA
-! 
-! PURPOSE:
-!       Function to re-initialize the scalar and pointer members of TauCoeff_SARTA
-!       data structures.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Destroy_TauCoeff_SARTA( TauCoeff,                 &  ! Output
-!                                        RCS_Id = RCS_Id,          &  ! Revision control
-!                                        Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in which any
-!                     messages will be logged. If not specified, or if an
-!                     error occurs opening the log file, the default action
-!                     is to output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:     Re-initialized TauCoeff_SARTA structure.
-!                     UNITS:      N/A
-!                     TYPE:       TauCoeff_SARTA_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to zero (0) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       Associated_TauCoeff_SARTA:  Function to test the association status of the
-!                             pointer members of a TauCoeff_SARTA structure.
-!
-!       Display_Message:      Subroutine to output messages
-!                             SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff_SARTA argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!------------------------------------------------------------------------------
 
   FUNCTION Destroy_TauCoeff_SARTA( TauCoeff,     &  ! Output
                              No_Clear,     &  ! Optional input
@@ -1611,160 +1348,6 @@ CONTAINS
 
 
 
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Allocate_TauCoeff_SARTA
-! 
-! PURPOSE:
-!       Function to allocate the pointer members of the TauCoeff_SARTA
-!       data structure.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Allocate_TauCoeff_SARTA( n_Layers,           &  ! Input
-!                                  	  n_Channels,	      &  ! Input	     
-!                                   	  n_Tunings,	      &  ! Input	    
-!                                   	  n_F_Predictors,     &  ! Input	    
-!			           	  n_RefProfile_Items, &  ! Input	    
-!			           	  n_NONLTE_Predictors,&  ! Input	    
-!                                   	  n_NONLTE_Channels,  &  ! Input	    
-!                                   	  n_TraceGases,       &  ! Input	    
-!                                   	  n_Subsets,	      &  ! Input	    
-!					  TauCoeff,	      &  ! Output
-! 					  RCS_Id,	      &  ! Revision control
-!					  Message_Log )       &  ! Error messaging
-!
-!
-! INPUT ARGUMENTS:
-!         n_Layers:            Maximum layers for the coefficients.
-!                              "Ilayers" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_Channels:          Total number of spectral channels.
-!                              "L" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_Tunings:           Number of tuning multipliers for the gases 
-!                              "J" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_F_Predictors:      Number of predictors used in the
-!                              thermal "F" factor coefs.
-!                              "MF" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_RefProfile_Items:  Number of item in the reference profile.
-!                              "N" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_NONLTE_Predictors: The number of predictors for the non-LTE.
-!                              "MNON" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_NONLTE_Channels:   The number of channels for the non-LTE.
-!                              "MChannels" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_TraceGases:        The number of trace gases.
-!                              "KTraces" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-!         n_Subsets:           The number of subset for the gas absorption coeffs.
-!                              "K" dimension.
-!                              UNITS:      N/A
-!                              TYPE:       INTEGER( Long )
-!                              DIMENSION:  Scalar
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:  Character string specifying a filename in
-!                     which any messages will be logged. If not
-!                     specified, or if an error occurs opening
-!                     the log file, the default action is to
-!                     output messages to standard output.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff:     TauCoeff_SARTA structure with allocated
-!                     pointer members
-!                     UNITS:      N/A
-!                     TYPE:       TauCoeff_SARTA_type
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT )
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:       Character string containing the Revision Control
-!                     System Id field for the module.
-!                     UNITS:      N/A
-!                     TYPE:       CHARACTER(*)
-!                     DIMENSION:  Scalar
-!                     ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure re-initialisation was successful
-!                        == FAILURE - an error occurred, or
-!                                   - the structure internal allocation counter
-!                                     is not equal to one (1) upon exiting this
-!                                     function. This value is incremented and
-!                                     decremented for every structure allocation
-!                                     and deallocation respectively.
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       Associated_TauCoeff_SARTA:  Function to test the association status of the
-!                             pointer members of a TauCoeff_SARTA structure.
-!
-!       Destroy_TauCoeff_SARTA:     Function to re-initialize the scalar and pointer
-!                             members of TauCoeff_SARTA data structures.
-!
-!       Display_Message:      Subroutine to output messages
-!                             SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff_SARTA argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!------------------------------------------------------------------------------
 
   FUNCTION Allocate_TauCoeff_SARTA( n_Layers,           &  ! Input
                               n_Channels,         &  ! Input
@@ -1980,20 +1563,7 @@ CONTAINS
     END IF											   
 		
     
-!    Error_Status = Allocate_Tau_OPTRAN_Coeff ( MAX_N_WATER_OPTRAN_LAYERS,     &
-!                                               MAX_N_WATER_OPTRAN_PREDICTORS, & 
-!					       MAX_N_WATER_OPTRAN_CHANNELS,   &
-!					       MAX_N_WATER_OPTRAN_PROFAVES,   &
-!                                               TauCoeff%Tau_OPTRAN_Coeff,     &
-!                                               Message_Log = Message_Log )
 
-!   IF ( Error_Status /= SUCCESS ) THEN  					  
-!      CALL Display_Message( ROUTINE_NAME,    &					  
-!   			   'Error allocating Tau_OPTRAN_Coeff structure(s).', &   
-!   			   Error_Status,    &					  
-!   			   Message_Log = Message_Log )  			  
-!      RETURN									  
-!   END IF									  
 
     ! ---------------------------------------
     ! The TauCoeff_SARTA_TraceGas structure array
@@ -2017,19 +1587,7 @@ CONTAINS
       END IF
 
       ! -- Allocate the individual structures
-!      Error_Status = Allocate_TauCoeff_TraceGas( n_Layers,   &
-!                                               MAX_N_TRACEGASES_PREDICTORS,   & 
-!					       MAX_N_TRACEGASES_CHANNELS,     &
-!                                               TauCoeff%TauCoeff_TraceGas ,   &
-!                                               Message_Log = Message_Log )
 
-!      IF ( Error_Status /= SUCCESS ) THEN
-!        CALL Display_Message( ROUTINE_NAME,    &
-!                              'Error allocating TauCoeff_SARTA_TraceGas structure(s).', &
-!                              Error_Status,    &
-!                              Message_Log = Message_Log )
-!        RETURN
-!      END IF
 
     END IF
     
@@ -2055,20 +1613,7 @@ CONTAINS
       END IF
 
       ! -- Allocate the individual structures
-!      Error_Status = Allocate_TauCoeff_Subset( n_Layers,                        &
-!                                               MAX_N_SUBSET_TOTAL_PREDICTORS,   & 
-!					       MAX_N_SUBSET_ABSORBERS,          &
-!					       MAX_N_SUBSET_CHANNELS,           &
-!                                               TauCoeff%TauCoeff_Subset,        &
-!                                               Message_Log = Message_Log )
 
-!      IF ( Error_Status /= SUCCESS ) THEN
-!        CALL Display_Message( ROUTINE_NAME,    &
-!                              'Error allocating TauCoeff_SARTA_Subset structure(s).', &
-!                              Error_Status,    &
-!                              Message_Log = Message_Log )
-!        RETURN
-!      END IF
 
     END IF
 
@@ -2109,94 +1654,6 @@ CONTAINS
 
 
 
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Assign_TauCoeff_SARTA
-!
-! PURPOSE:
-!       Function to copy valid TauCoeff_SARTA structures.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Assign_TauCoeff_SARTA( TauCoeff_in,              &  ! Input
-!                                       TauCoeff_out,             &  ! Output
-!                                       RCS_Id      = RCS_Id,     &  ! Revision control
-!                                       Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff_in:   TauCoeff_SARTA structure which is to be copied.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_SARTA_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       TauCoeff_out:  Copy of the input structure, TauCoeff_in.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_SARTA_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN OUT )
-!
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status: The return value is an integer defining the error status.
-!                     The error codes are defined in the Message_Handler module.
-!                     If == SUCCESS the structure assignment was successful
-!                        == FAILURE an error occurred
-!                     UNITS:      N/A
-!                     TYPE:       INTEGER
-!                     DIMENSION:  Scalar
-!
-! CALLS:
-!       Associated_TauCoeff_SARTA:  Function to test the association status of the
-!                             pointer members of a TauCoeff_SARTA structure.
-!
-!       Allocate_TauCoeff_SARTA:    Function to allocate the pointer members of
-!                             the TauCoeff_SARTA data structure.
-!
-!       Display_Message:      Subroutine to output messages
-!                             SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! COMMENTS:
-!       Note the INTENT on the output TauCoeff_SARTA argument is IN OUT rather than
-!       just OUT. This is necessary because the argument may be defined upon
-!       input. To prevent memory leaks, the IN OUT INTENT is a must.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!------------------------------------------------------------------------------
 
   FUNCTION Assign_TauCoeff_SARTA( TauCoeff_in,   &  ! Input
                             TauCoeff_out,  &  ! Output
@@ -2396,79 +1853,6 @@ CONTAINS
   END FUNCTION Assign_TauCoeff_SARTA
 
 
-!----------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Check_TauCoeff_SARTA_Release
-!
-! PURPOSE:
-!       Function to check the TauCoeff_SARTA Release value.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       Error_Status = Check_TauCoeff_SARTA_Release( TauCoeff,                 &  ! Input
-!                                              RCS_Id      = RCS_Id,     &  ! Revision control
-!                                              Message_Log = Message_Log )  ! Error messaging
-!
-! INPUT ARGUMENTS:
-!       TauCoeff:      TauCoeff_SARTA structure for which the Release member
-!                      is to be checked.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_SARTA_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Message_Log:   Character string specifying a filename in which any
-!                      messages will be logged. If not specified, or if an
-!                      error occurs opening the log file, the default action
-!                      is to output messages to standard output.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! FUNCTION RESULT:
-!       Error_Status:  The return value is an integer defining the error status.
-!                      The error codes are defined in the Message_Handler module.
-!                      If == SUCCESS the structure Release value is valid.
-!                         == FAILURE the structure Release value is NOT valid
-!                                    and either a data file file or software
-!                                    update is required.
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!
-! CALLS:
-!       Display_Message:      Subroutine to output messages
-!                             SOURCE: Message_Handler module
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!----------------------------------------------------------------------------------
 
   FUNCTION Check_TauCoeff_SARTA_Release( TauCoeff,     &  ! Input
                                    RCS_Id,       &  ! Revision control
@@ -2576,70 +1960,6 @@ CONTAINS
 
 
 
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Count_TauCoeff_SARTA_Sensors
-!
-! PURPOSE:
-!       Subroutine to count the number of different satellite/sensors in the
-!       TauCoeff_SARTA structure and set the n_Sensors field.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Count_TauCoeff_SARTA_Sensors( TauCoeff,                &  ! In/Output
-!                                    Use_WMO_ID = Use_WMO_ID, &  ! Optional input
-!                                    RCS_Id = RCS_Id          )  ! Optional output
-!
-! INPUT ARGUMENTS:
-!       TauCoeff_in:   Filled TauCoeff_SARTA structure.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_SARTA_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN OUT )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       Use_WMO_ID:    Set this argument to use the WMO satellite and sensor
-!                      IDs in the TauCoeff_SARTA structure to count the number of
-!                      different sensors. By default, the NCEP sensor ID is
-!                      used.
-!                      If = 0, use NCEP sensor ID (default)
-!                         = 1, use WMO satellite/sensor ID
-!                      UNITS:      N/A
-!                      TYPE:       INTEGER
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN ), OPTIONAL
-!
-! OUTPUT ARGUMENTS:
-!       None.
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       The N_SENSORS field of the input TauCoeff_SARTA structure is modified.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!------------------------------------------------------------------------------
 
   SUBROUTINE Count_TauCoeff_SARTA_Sensors( TauCoeff,   &  ! In/Output
                                      Use_WMO_ID, &  ! Optional input
@@ -2827,66 +2147,6 @@ CONTAINS
 
 
 
-!------------------------------------------------------------------------------
-!S+
-! NAME:
-!       Version_TauCoeff_SARTA
-!
-! PURPOSE:
-!       Subroutine to return a string containing version and dimension
-!       information about the TauCoeff_SARTA data structure.
-!
-! CATEGORY:
-!       Optical Depth : Coefficients
-!
-! LANGUAGE:
-!       Fortran-95
-!
-! CALLING SEQUENCE:
-!       CALL Version_TauCoeff_SARTA( TauCoeff,       &  ! Input
-!                              Version_Info,   &  ! Output
-!                              RCS_Id = RCS_Id )  ! Revision control
-!
-! INPUT ARGUMENTS:
-!       TauCoeff:      Filled TauCoeff_SARTA structure.
-!                      UNITS:      N/A
-!                      TYPE:       TauCoeff_SARTA_type
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( IN )
-!
-! OPTIONAL INPUT ARGUMENTS:
-!       None.
-!
-! OUTPUT ARGUMENTS:
-!       Version_Info:  String containing version and dimension information
-!                      about the passed TauCoeff_SARTA data structure.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT )
-!
-! OPTIONAL OUTPUT ARGUMENTS:
-!       RCS_Id:        Character string containing the Revision Control
-!                      System Id field for the module.
-!                      UNITS:      N/A
-!                      TYPE:       CHARACTER(*)
-!                      DIMENSION:  Scalar
-!                      ATTRIBUTES: INTENT( OUT ), OPTIONAL
-!
-! CALLS:
-!       None.
-!
-! SIDE EFFECTS:
-!       None.
-!
-! RESTRICTIONS:
-!       None.
-!
-! CREATION HISTORY:
-!       Written by:     Yong Chen, CSU/CIRA 04-May-2006
-!                       Yong.Chen@noaa.gov
-!S-
-!------------------------------------------------------------------------------
 
   SUBROUTINE Version_TauCoeff_SARTA( TauCoeff,     &  ! Input
                                Version_Info, &  ! Output
@@ -2978,24 +2238,5 @@ CONTAINS
 END MODULE TauCoeff_SARTA_Define
 
 
-!-------------------------------------------------------------------------------
-!                          -- MODIFICATION HISTORY --
-!-------------------------------------------------------------------------------
-!
-!
-! $Date: 2006/05/04 19:42:09 $
-!
-! $Revision: 1.1 $
-!
-! $Name:  $
-!
-! $State: Exp $
-!
-! Revision 1.1  2006/05/04 20:06:03  ychen
-! Initial checkin.
-!
-!
-!
-!
 
  

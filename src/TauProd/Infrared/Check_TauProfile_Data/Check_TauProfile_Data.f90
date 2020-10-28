@@ -485,12 +485,6 @@ PROGRAM Check_TauProfile_Data
                         ProcessControl%List(Channel)%Begin_LBLband, &
                         ProcessControl%List(Channel)%End_LBLband
 
-!              Line_Count = Line_Count + 1
-!              IF ( Line_Count > 40 ) THEN
-!                Line_Count = 0
-!                WRITE( *, '( 1x, "Press <ENTER> to continue..." )' )
-!                READ( *, * )
-!              END IF
 
             END IF
           
@@ -544,12 +538,6 @@ PROGRAM Check_TauProfile_Data
                         ProcessControl%List(Channel)%Begin_LBLband, &
                         ProcessControl%List(Channel)%End_LBLband
 
-!              Line_Count = Line_Count + 1
-!              IF ( Line_Count > 40 ) THEN
-!                Line_Count = 0
-!                WRITE( *, '( 1x, "Press <ENTER> to continue..." )' )
-!                READ( *, * )
-!              END IF
 
             END IF
           

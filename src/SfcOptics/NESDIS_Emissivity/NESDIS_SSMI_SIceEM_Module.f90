@@ -1,22 +1,3 @@
-!
-! NESDIS_SSMI_SIceEM_Module
-!
-! Module containing the SSM/Imicrowave sea ice emissivity model
-!
-! References:
-!       Yan,B., F.Weng, and K.Okamoto, 2004, A microwave snow emissivity model,
-!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
-!         24-27 February, 2004, Rome, Italy.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 16-May-2005, banghua.yan@noaa.gov
-!                       Fuzhong Weng, fuzhong.weng@noaa.gov
-!
-!       Modified by:    Banghua Yan, 10-Sep-2005
-!                       Quanhua Liu, quanhua.liu@noaa.gov
-!                       Yong Han, yong.han@noaa.gov
-!
 
 MODULE NESDIS_SSMI_SIceEM_Module
 
@@ -46,13 +27,6 @@ MODULE NESDIS_SSMI_SIceEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 !-------------------------------------------------------------------------------------------------------------
 !
@@ -207,11 +181,9 @@ subroutine NESDIS_SSMI_SIceEM(frequency,                                        
 
   th(1) = tb(2); th(2) = tb(5);  th(3) = tb(7)
 
-! Emissivity at SSMI_Angle
 
   call SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
 
-! Get the emissivity angle dependence
 
   if (Depth .lt. one_tenth) Depth = one_tenth
 
@@ -226,11 +198,9 @@ subroutine NESDIS_SSMI_SIceEM(frequency,                                        
   desv = esv1 - esv2
 
   dem = ( desh + desv ) * 0.5_fp
-! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
 
-! Quality Control
 
   if(Emissivity_H.gt.one) Emissivity_H = one
 
@@ -248,61 +218,9 @@ subroutine NESDIS_SSMI_SIceEM(frequency,                                        
 end subroutine NESDIS_SSMI_SIceEM
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
 
-!------------------------------------------------------------------------------------------------------------
-!
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram: iceem_amsua  noaa/nesdis SSM/I emissivity model over ice conditions
-!
-!   prgmmr: Banghua Yan                 org: nesdis              date: 2004-02-12
-!
-! abstract: Simulate microwave emissivity over sea ice conditions
-!           using SSM/I  measurements and surface temperature
-!
-! program history log:
-!
-!      01/2004   : Implement the algorithm for snow/ice emissivity to F90 code by Banghua Yan
-!      02/2004   : Modify the code for SSI subsystem                           by Banghua Yan
-!      07/2004   : Modify the code for GSI subsystem                           by Kozo Okamoto
-!      05/2005   : Modify the code for CRTM                                    by Banghua Yan
-!
-! input argument list:
-!
-!      frequency: frequency in GHz
-!      Ts       :  scattering layer temperature (K)
-!      tv[1] ~ tv[4]: brightness temperature at four SSM/I vertical polarization
-!          tv[1] : 19.35  GHz
-!          tv[2] : 22.235 GHz
-!          tv[3] : 37     GHz
-!          tv[4] : 85     GHz
-!
-!      th[1] ~ th[3]: brightness temperature at three SSM/I horizontal polarization
-!          th[1] : 19.35  GHz
-!          th[2] : 37     GHz
-!          th[3] : 85     GHz
-! output argument list:
-!
-!      em_vector     :  emissivity at two polarizations
-!           em_vector[1] = eh
-!           em_vector[2] = ev
-!
-! remarks:
-!
-! attributes:
-!   language: f90
-!   machine:  ibm rs/6000 sp
-!
-!------------------------------------------------------------------------------------------------------------
 
   integer,parameter :: ntype = 3, nv=4, nh=3,ncoev=5,ncoeh=4
 
@@ -342,16 +260,13 @@ subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
        -3.889575e-001_fp,  2.188889e-003_fp, -2.253243e-003_fp,  &
        5.750499e-003_fp/)
 
-! save  coe_v,coe_h
 
 
-! Initialization
 
   em_vector(1) = 0.6_fp
 
   em_vector(2) = 0.75_fp
 
-! Data status check
   data_invalid = .False.
   if ( (Ts <= 140.0_fp) .or. (Ts >= 330.0_fp) ) data_invalid = .True.
   do ich = 1, nv
@@ -369,16 +284,13 @@ subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
   if (data_invalid) RETURN
 
 
-!*** Get intial emissivity for each frequency
 
-! v components
   do ich=1,nv
      ev(ich) =  coe_v(ich,1) + coe_v(ich,2)*tv(1)  &
           + coe_v(ich,3)*tv(2) + coe_v(ich,4)*tv(3)  &
           + coe_v(ich,5)*tv(4)
   end do
 
-! h components
   do ich=1,nh
      eh(ich) =  coe_h(ich,1)
      do lp =2,4
@@ -399,27 +311,21 @@ subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
   ev_cor = ev(1) - ev_cor
   eh_cor = eh(1) - eh_cor
 
-!*** Calculate emissivity
   do ich=1, nv
      ev(ich) = ev(ich) - ev_cor
      if(ich <= 3) eh(ich) = eh(ich) - eh_cor
   end do
 
 
-!*** Quality control at 22.235 GHz
   ev_22 = ev(1) + (ev(3)-ev(1))*(22.235_fp-19.35_fp)/(37.0_fp-19.35_fp)
-!/\ type
   if( (ev(2) .gt. ev(1)) .and. (ev(2) .gt. ev(3)) ) ev(2) = ev_22
-!\/ type
   if( (ev(2) .lt. ev(1)) .and. (ev(2) .lt. ev(3)) ) ev(2) = ev_22
 
 
 
-!*** Interpolate emissivity at a certain frequency
 
 
 
-! v-component
   nch = 4
   do ich=1,nv
      if(frequency <= freq_v(ich)) then
@@ -441,7 +347,6 @@ subroutine SSMI_IceEM_CORE(frequency,Ts,tv,th,em_vector)
   end if
 
 
-! h-component
   nch = 3
   do ich=1,nh
      if(frequency <= freq_h(ich)) then

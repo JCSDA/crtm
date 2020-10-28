@@ -502,19 +502,7 @@ PROGRAM Create_ProcessControl_File
     ! Read the frequency data
     ! -----------------------
 
-!    Error_Status = Inquire_SRF_netCDF( TRIM( Available_SRF_Filename(n) ), &
-!                                       n_Points        = n_SRF_Frequencies, &
-!                                       Begin_Frequency = Begin_SRF_Frequency, &
-!                                       End_Frequency   = End_SRF_Frequency    )
  
-!    IF ( Error_Status /= SUCCESS ) THEN
-!      CALL Display_Message( PROGRAM_NAME, &
-!                            'Error inquiring the netCDF SRF file '//&
-!                            TRIM( Available_SRF_Filename(n) )//&
-!                            ' for frequency information.', &
-!                            Error_Status )
-!      STOP
-!    END IF
 
     Error_Status = oSRF_File_Read( &                    
                      oSRF_File(n)    , &                
@@ -556,7 +544,6 @@ PROGRAM Create_ProcessControl_File
                REAL( n_SRF_Frequencies(ch) - 1, fp_kind )
 
       ! -- Compute the frequency interval index
-!      Idx = Compute_dF_Index( dF )
 
       ! -- Is it valid?
       IF ( .NOT. Compare_Float( dF, FREQUENCY_INTERVAL(dF_Index), ULP = 10000 ) ) THEN
@@ -755,31 +742,13 @@ PROGRAM Create_ProcessControl_File
   ! Output some data
   ! ----------------
 
-!  WRITE( *, '( /5x, "SRF data file Process Control data:" )' )
 
-!  DO i = 1, ProcessControl%n_Files
 
-!    WRITE( *, '( 5x, a )' ) ProcessControl%File_Prefix( i )
-!    n = ProcessControl%Channel_Index(2,i) - ProcessControl%Channel_Index(1,i) + 1
-!    WRITE( *, '( 10x, "Number of channels: ", i4 )' ) n
-!    WRITE( *, '( 10x, "Channel indices:    ", i4, 2x, i4 )' ) &
-!              ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i) 
 
-!    WRITE( *, '( 10x, "Frequency interval index: ", i1 )' ) &
-!              ProcessControl%dF_Index(i)
-!    WRITE( *, '( 10x, "Frequency interval:       ", f6.4 )' ) &
-!              FREQUENCY_INTERVAL( ProcessControl%dF_Index(i) )
 
-!    DO l = ProcessControl%Channel_Index(1,i), ProcessControl%Channel_Index(2,i)
 
-!      WRITE( *, '( 15x, "CH: ", i4, ",    B1,B2: ",i3,1x,i3,",    FI:", i3 )' ) &
-!                ProcessControl%List(l)%Channel, &
-!                ProcessControl%List(l)%Begin_LBLband, ProcessControl%List(l)%End_LBLband, &
-!                ProcessControl%List(l)%File_Index
 
-!    END DO
 
-!  END DO
 
   CALL oSRF_File_Destroy( oSRF_File )
   DEALLOCATE(oSRF_File, STAT = Allocate_Status )

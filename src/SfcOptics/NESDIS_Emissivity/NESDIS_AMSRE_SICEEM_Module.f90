@@ -1,20 +1,3 @@
-!
-! NESDIS_AMSRE_SICEEM_Module
-!
-! Module containing the AMSR-E microwave sea ice emissivity model
-!
-! References:
-!       Yan,B., F.Weng and K.Okamoto,2004: "A microwave snow emissivity model",
-!         8th Specialist Meeting on Microwave Radiometry and Remote Sensing Applications,
-!         24-27 February, 2004, Rome, Italy.
-!
-!
-! CREATION HISTORY:
-!       Written by:     Banghua Yan, 28-May-2005
-!                       banghua.yan@noaa.gov
-!                       Fuzhong Weng
-!                       fuzhong.weng@noaa.gov
-!
 
 MODULE NESDIS_AMSRE_SICEEM_Module
 
@@ -47,7 +30,6 @@ MODULE NESDIS_AMSRE_SICEEM_Module
   FREQUENCY_AMSREALG = (/ 6.925_fp, 10.65_fp, 18.7_fp,23.8_fp,          &
                         36.5_fp, 89.0_fp,157._fp/)
 
-!Define 13 weighted sea ice emissivity spectra
 
  REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
  RS_ICE_A_EMISS=(/0.93_fp, 0.94_fp, 0.96_fp, 0.97_fp, 0.97_fp,    &
@@ -103,7 +85,6 @@ MODULE NESDIS_AMSRE_SICEEM_Module
 
 
 
-!Define 13  sea ice V-POL emissivity spectra
 
 
  REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
@@ -159,7 +140,6 @@ MODULE NESDIS_AMSRE_SICEEM_Module
                  0.82_fp, 0.84_fp/)
 
 
-!Define 13  sea ice H-POL emissivity spectra
 
 
  REAL(fp), PUBLIC, PARAMETER, DIMENSION(N_FREQ)  ::                                   &
@@ -219,13 +199,6 @@ MODULE NESDIS_AMSRE_SICEEM_Module
 CONTAINS
 
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PUBLIC MODULE ROUTINES ##                       ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
 !-------------------------------------------------------------------------------------------------------------
 !
@@ -374,8 +347,6 @@ real(fp), intent (out) :: Emissivity_V,Emissivity_H
 
 integer           :: ich
 
-!  Initialization
-! Silence gfortran complaints about maybe-used-uninit by init to HUGE()
    em_vector(:) = HUGE(em_vector)
 
    Emissivity_H = 0.82_fp
@@ -391,7 +362,6 @@ do ich =1, nch
 
 enddo
 
-! EMISSIVITY AT SATELLITE'S MEASUREMENT ANGLE
 
 if (Tice .le. 100.0_fp .or. Tice .ge. 277.0_fp) Tice = Ts
 
@@ -406,7 +376,6 @@ ELSE
 
 ENDIF
 
-! Get the emissivity angle dependence
 
   call NESDIS_LandEM(Satellite_Angle,frequency,0.0_fp,0.0_fp,Ts,Tice,0.0_fp,9,13,10.0_fp,esh1,esv1)
 
@@ -417,7 +386,6 @@ ENDIF
   desv = esv1 - esv2
 
   dem = ( desh + desv ) * 0.5_fp
-! Emissivity at User's Angle
 
   Emissivity_H = em_vector(1) - dem;  Emissivity_V = em_vector(2)- dem
 
@@ -432,63 +400,10 @@ ENDIF
 
  end subroutine NESDIS_AMSRE_SSICEEM
 
-!################################################################################
-!################################################################################
-!##                                                                            ##
-!##                         ## PRIVATE MODULE ROUTINES ##                      ##
-!##                                                                            ##
-!################################################################################
-!################################################################################
 
  subroutine AMSRE_Ice_TB(frequency,theta,tv,th,em_vector)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity between 5.0 and 150 GHz from AMSR-E Measurements over sea ice conditions
-!
-! Input argument list:
-!
-!    tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
-!    tv(2):                                                      10.65 GHz
-!    tv(3):                                                      18.7  GHz
-!    tv(4):                                                      23.8  GHz
-!    tv(5):                                                      36.5  GHz
-!    tv(6):                                                     89    GHz
 
-!    th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
-!    th(2):                                                        10.65 GHz
-!    th(3):                                                        18.7  GHz
-!    th(4):                                                        23.8  GHz
-!    th(5):                                                       36.5  GHz
-!    th(6):                                                       89    GHz
-!
-!
-!    frequency: frequency in GHz
-!
-!    theta  : local zenith angle in degree  (55.0 for AMSR-E)
-!
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity
-!    em_vector(2) : vertically polarization emissivity
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
   integer,parameter :: nch = N_FREQ, ncoe = 6
 
@@ -516,7 +431,6 @@ ENDIF
  data (coeh(k),k=51,57) / -2.145033e-001, 9.816564e-004,-1.162021e-003, 3.202067e-003,-4.162140e-003, 1.595910e-003, 4.212598e-003/
 
 
-! Initialization
 
  freq = FREQUENCY_AMSREALG
 
@@ -540,13 +454,11 @@ DO ich = 1, nch-1
 ENDDO
 
 
-! Extrapolate emissivity at 157 GHz based upon various spectrum table
 
 
   call siceemiss_extrapolate(ev,eh,theta,ntype)
 
 
-! Interpolate emissivity at a certain frequency
 
 
   do ich=1,nch
@@ -594,60 +506,7 @@ ENDDO
 
  subroutine AMSRE_Ice_TBTS(frequency,theta,tv,th,tskin,tice,em_vector)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity between 5.0 and 150 GHz from AMSR-E Measurements and surface
-!
-! temperatures over sea ice conditions
-!
-! Input argument list:
-!
-!    tv(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
-!    tv(2):                                                      10.65 GHz
-!    tv(3):                                                      18.7  GHz
-!    tv(4):                                                      23.8  GHz
-!    tv(5):                                                      36.5  GHz
-!    tv(6):                                                     89    GHz
 
-!    th(1): Horizontally polarized AMSR-E brighness temperature at 6.925 GHz
-!    th(2):                                                        10.65 GHz
-!    th(3):                                                        18.7  GHz
-!    th(4):                                                        23.8  GHz
-!    th(5):                                                       36.5  GHz
-!    th(6):                                                       89    GHz
-!
-!
-!    tskin  : skin temperature  in K
-!    tice   : sea ice temperature
-!    frequency: frequency in GHz
-!    theta  : local zenith angle in degree  (55.0 for AMSR-E)
-!
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity
-!    em_vector(2) : vertically polarization emissivity
-!
-! Optional Output argument lists:
-!
-!    ntype        : sea ice types
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
 
   integer,parameter :: nch = N_FREQ, ncoe = 7
@@ -684,7 +543,6 @@ ENDDO
  data (coeh(k),k=51,58) /  8.531166e-001,-3.767062e-004, 2.620507e-004, 3.595719e-004,-1.249933e-003, &
                 1.110360e-003, 4.976426e-003,-4.513022e-003/
 
-! Initialization
 
   freq = FREQUENCY_AMSREALG
   ev = 0.9_fp
@@ -715,7 +573,6 @@ DO ich = 1, nch-1
 ENDDO
 
 
-! Quality control
 
   do ich=1,nch-1
 
@@ -723,10 +580,7 @@ ENDDO
 
  enddo
 
-! ev_seaice_89 <=?
 
-! part of ocean water
-! ev_6<ev(36)<ev(89)
 
   if ( (ev(1) .lt. ev(5)) .and. (ev(5) .lt. ev(6)) .and. (ev(6) .gt. 0.92_fp) ) then
 
@@ -740,13 +594,11 @@ ENDDO
   endif
 
 
-! Extrapolate emissivity at 157 GHz based upon various spectrum table
 
 
   call siceemiss_extrapolate(ev,eh,theta,ntype)
 
 
-! Interpolate emissivity at a certain frequency
 
 
   do ich=1,nch
@@ -794,54 +646,7 @@ ENDDO
 
 subroutine siceemiss_extrapolate(ev,eh,theta,ntype)
 
-!**********************************************************************************************
-! Programmer:
-!
-!     Banghua Yan and Fuzhong Weng   ORG: NESDIS              Date: 2004-09-20
-!
-! Abstract:
-!
-!     Simulate emissivity at a given frequency based upon various sea ice emissivity look-up tables
-!
-! Input argument list:
-!
-!    ev(1): V-POL emissivity  at 6.925 GHz
-!    ev(2):                      10.65 GHz
-!    ev(3):                      18.7  GHz
-!    ev(4):                      23.8  GHz
-!    ev(5):                      36.5  GHz
-!    ev(6):                      89    GHz
 
-!    eh(1): H-POL emissivity at 6.925 GHz
-!    eh(2):                     10.65 GHz
-!    eh(3):                     18.7  GHz
-!    eh(4):                     23.8  GHz
-!    eh(5):                     36.5  GHz
-!    eh(6):                     89    GHz
-!
-!    frequency: frequency in GHz
-!    theta  : local zenith angle in degree  (55.0 for AMSR-E)
-!
-! Output argument lists
-!
-!    em_vector(1) : horizontally polarization emissivity at a given frequency
-!    em_vector(2) : vertically polarization emissivity
-!
-! Optional Output argument lists:
-!
-!    ntype        : sea ice types
-!
-! Remarks:
-!
-!  Questions/comments: Please send to Fuzhong.Weng@noaa.gov and Banghua.Yan@noaa.gov
-!
-! Attributes:
-!
-!   language: f90
-!
-!   machine:  ibm rs/6000 sp
-!
-!*********************************************************************************************
 
 integer,parameter:: nch = N_FREQ,nt=13
 real(fp)  :: ev(*), eh(*)
@@ -850,7 +655,6 @@ real(fp)  :: emiss(nch-1),theta,angle,cons,sins
 real(fp)  :: delt0,delt_l,delt_h,delt_all,dmin
 integer :: ich,ip,ntype
 
-! GET EMISSIVITY/FREQUENCY LOOKUP TABLE DATA
 
  freq = FREQUENCY_AMSREALG
 
@@ -933,7 +737,6 @@ integer :: ich,ip,ntype
 
  eh_tab(13,1:N_FREQ) = GREASE_ICE_EH(1:N_FREQ)
 
-!
 
 angle = theta*3.14159_fp/180.0_fp
 
@@ -947,9 +750,7 @@ do ich = 1, nch-1
 
 enddo
 
-! Find a spectrum
 
-! INitialization
 
 delt_l   = 0.0_fp
 
@@ -959,7 +760,6 @@ dmin = 0.05_fp
 
 delt0 = 10.0_fp
 
-! Initialization of ntype
 
   ntype = 2
 
@@ -996,7 +796,6 @@ ev(nch) = ev(nch-1) - (ev_tab(ntype,nch-1) - ev_tab(ntype,nch))
 eh(nch) = eh(nch-1) - (eh_tab(ntype,nch-1) - eh_tab(ntype,nch))
 
 
-! quality control
 
   do ich =1, nch
 
