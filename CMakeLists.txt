@@ -4,7 +4,10 @@ file(STRINGS "VERSION" pVersion)
 
 project(crtm VERSION ${pVersion} LANGUAGES Fortran)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 include(GNUInstallDirs)
+
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "^(Debug|Release|RelWithDebInfo|MinSizeRel)$")
   message(STATUS "Setting build type to 'Release' as none was specified.")
@@ -19,5 +22,11 @@ if(NOT CMAKE_Fortran_COMPILER_ID MATCHES "^(Intel|GNU|Clang|AppleClang)$")
   message(
     WARNING "Compiler not officially supported: ${CMAKE_Fortran_COMPILER_ID}")
 endif()
+
+## Dependencies
+find_package( OpenMP COMPONENTS Fortran )
+find_package(NetCDF REQUIRED Fortran)
+
+
 
 add_subdirectory(libsrc)
