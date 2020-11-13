@@ -1,4 +1,0 @@
-Type_Kinds.o : Type_Kinds.f90 
-Spectral_Utility.o : Spectral_Utility.f90 Type_Kinds.o Spectral_Units_Conversion.o 
-Spectral_Units_Conversion.o : Spectral_Units_Conversion.f90 Type_Kinds.o Fundamental_Constants.o 
-Fundamental_Constants.o : Fundamental_Constants.f90 Type_Kinds.o 

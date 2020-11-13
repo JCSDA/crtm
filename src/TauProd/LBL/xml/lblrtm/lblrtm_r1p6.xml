@@ -1,7 +1,0 @@
-<lblinput>
-  <!-- LBLRTM 1.6 records -->
-  <record name="r1p6" type="lblrtm" format="(a55,1x,i4)">
-    <entry name="pthodl"  type="CHARACTER(55)"  value="''"  desc="Pathname for precalculated optical depth files"/>
-    <entry name="laytot"  type="INTEGER"        value="0"   desc="Total number of layers used in radiative transfer"/>
-  </record>
-</lblinput>

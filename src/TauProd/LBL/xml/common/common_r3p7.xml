@@ -1,8 +1,0 @@
-<lblinput>
-  <!-- Common 3.7 record -->
-  <record name="r3p7" type="common" format="(3i5)">
-    <entry name="ixmols" type="INTEGER" value="0" desc="Number of cross-section molecules to be input"/>
-    <entry name="iprfl"  type="INTEGER" value="0" desc="Profile source. 0==user; 1==std"/>
-    <entry name="ixsbin" type="INTEGER" value="0" desc="Flag for pressure convolution of Xsect. 0==yes; 1==no"/>
-  </record>
-</lblinput>

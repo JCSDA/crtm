@@ -1,7 +1,0 @@
-<lblinput>
-  <!-- Common 3.4 record -->
-  <record name="r3p4" type="common" format="(i5,a)">
-    <entry name="immax" type="INTEGER"       value="0"  desc="Number of input atmopsheric profile boundaries"/>
-    <entry name="hmod"  type="CHARACTER(28)" value="''" desc="Profile description"/>
-  </record>
-</lblinput>

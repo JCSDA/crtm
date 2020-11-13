@@ -1,33 +1,23 @@
-#
-# CRTM
-# Copyright and License: see LICENSE
+cmake_minimum_required(VERSION 3.15)
 
-cmake_minimum_required( VERSION 3.12 )
-project( crtm LANGUAGES Fortran )
+file(STRINGS "VERSION" pVersion)
 
-## Ecbuild integration
-find_package( ecbuild QUIET )
-include( ecbuild_system NO_POLICY_SCOPE )
-ecbuild_declare_project()
-list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
-set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
+project(crtm VERSION ${pVersion} LANGUAGES Fortran)
 
-## Configuration options
-include( ${PROJECT_NAME}_compiler_flags )
 include(GNUInstallDirs)
 
-## Dependencies
-find_package( OpenMP COMPONENTS Fortran )
-find_package( NetCDF REQUIRED COMPONENTS Fortran )
+if(NOT CMAKE_BUILD_TYPE MATCHES "^(Debug|Release|RelWithDebInfo|MinSizeRel)$")
+  message(STATUS "Setting build type to 'Release' as none was specified.")
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE STRING "Choose the type of build." FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
+                                               "MinSizeRel" "RelWithDebInfo")
+endif()
 
-## Sources
-add_subdirectory(src)
-add_subdirectory(test)
+if(NOT CMAKE_Fortran_COMPILER_ID MATCHES "^(Intel|GNU|Clang|AppleClang)$")
+  message(
+    WARNING "Compiler not officially supported: ${CMAKE_Fortran_COMPILER_ID}")
+endif()
 
-## Finalise configuration
-# prepares a tar.gz of the sources and/or binaries
-ecbuild_install_project( NAME crtm )
-
-# print the summary of the configuration
-ecbuild_print_summary()
-
+add_subdirectory(libsrc)

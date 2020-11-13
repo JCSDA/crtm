@@ -1,7 +1,0 @@
-File_Utility.o : File_Utility.f90 
-Liebe92_Coefficients.o : Liebe92_Coefficients.f90 Type_Kinds.o 
-Liebe93_Coefficients.o : Liebe93_Coefficients.f90 Type_Kinds.o 
-Liebe93_test.o : Liebe93_test.f90 f90coef92.inc MWLBL_Liebe93.o Type_Kinds.o 
-MWLBL_Liebe93.o : MWLBL_Liebe93.f90 Liebe92_Coefficients.o Message_Handler.o Type_Kinds.o 
-Message_Handler.o : Message_Handler.f90 File_Utility.o 
-Type_Kinds.o : Type_Kinds.f90 

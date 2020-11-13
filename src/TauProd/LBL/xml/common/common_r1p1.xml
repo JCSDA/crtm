@@ -1,5 +1,0 @@
-<lblinput>
-  <record name="r1p1" type="common" format='("$",a)'>
-    <entry name="cxid" type="CHARACTER(80)" value="''" desc="User identification"/>
-  </record>
-</lblinput>

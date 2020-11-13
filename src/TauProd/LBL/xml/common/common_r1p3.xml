@@ -1,9 +1,0 @@
-<lblinput>
-  <!-- Common 1.3 records -->
-  <record name="r1p3a" type="common" format='(39a1)'>
-    <entry name="hmol_scal" dim="(MAX_N_ABSORBERS)" type="CHARACTER(1)" value="''"  desc="Profile scaling behaviour for selected species"/>
-  </record>
-  <record name="r1p3b" type="common" format="(8es15.7)">
-    <entry name="xmol_scal" dim="(MAX_N_ABSORBERS)" type="REAL(fp)" value="1.0_fp"  desc="Profile scaling factor for selected species"/>
-  </record>
-</lblinput>

@@ -1,7 +1,0 @@
-<lblinput>
-  <!-- Common 3.2h record -->
-  <record name="r3p2h" type="common" format="(f10.3,20x,f10.3)">
-    <entry name="h1"     type="REAL(fp)" value="0.0_fp" desc="Observer altitude"/>
-    <entry name="rangef" type="REAL(fp)" value="0.0_fp" desc="Path length"/>
-  </record>
-</lblinput>

@@ -1,2 +1,0 @@
-Type_Kinds.o : Type_Kinds.f90 
-merge.o : merge.f90 Type_Kinds.o 
