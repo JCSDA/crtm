@@ -192,6 +192,10 @@ set(module_dir ${CMAKE_CURRENT_BINARY_DIR}/include)
 add_library(${lib_name} STATIC ${crtm_src_files})
 add_library(${PROJECT_NAME}::${lib_name} ALIAS ${lib_name})
 
+#Dependecies
+target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran)
+target_link_libraries(${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran)
+
 set_target_properties(${lib_name} PROPERTIES Fortran_MODULE_DIRECTORY ${module_dir})
 target_include_directories(${lib_name} INTERFACE
   $<BUILD_INTERFACE:${module_dir}>
