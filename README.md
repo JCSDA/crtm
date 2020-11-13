@@ -24,3 +24,7 @@ Or, see the README.autotools file for compiling using the traditional system.
 
 ### Version
 2.3.0
+
+### Feedback and Contact Information
+
+CRTM SUPPORT EMAIL: crtm-support@googlegroups.com OR visit https://forums.jcsda.org/
