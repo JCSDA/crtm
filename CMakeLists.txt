@@ -3,7 +3,7 @@
 # Copyright and License: see LICENSE
 
 cmake_minimum_required( VERSION 3.12 )
-project( crtm LANGUAGES Fortran )
+project( crtm VERSION 2.3.0 LANGUAGES Fortran )
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
@@ -17,6 +17,7 @@ include( ${PROJECT_NAME}_compiler_flags )
 include(GNUInstallDirs)
 
 ## Dependencies
+find_package( jedicmake QUIET )
 find_package( OpenMP COMPONENTS Fortran )
 find_package( NetCDF REQUIRED COMPONENTS Fortran )
 
