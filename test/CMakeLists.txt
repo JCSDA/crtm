@@ -52,13 +52,33 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
 else()
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  set( ECBUILD_DOWNLOAD_BASE_URL https://jedi-test-files.s3.amazonaws.com )
-  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/${REPO_VERSION} to ${CRTM_COEFFS_PATH}")
-  ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
-                              NAMES    crtm_coefficients.tar.gz
-                              DIRNAME  ${REPO_VERSION}
-                              DIRLOCAL ${CRTM_COEFFS_PATH}
-                              EXTRACT )
+  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
+  set( test_files_dirname crtm_coefficients.tar.gz )
+  set( checksum "0")
+  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL} to ${CRTM_COEFFS_PATH}")
+
+  list( APPEND CRTM_DATA_DOWNLOADER_ARGS
+                ${ECBUILD_DOWNLOAD_BASE_URL}
+                ${CRTM_COEFFS_PATH}
+                ${test_files_dirname}
+                ${checksum} )
+
+  # Create download script for ufo_get_*_test_data test
+  set ( FILENAME crtm_data_downloader.py)
+  set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+  set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+  if( EXISTS "${SOURCE_FILE}.in" )
+    configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+  else()
+    configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+  endif()
+
+  # add test for downloading data
+  ecbuild_add_test( TARGET    get_crtm_coeffs
+                    TYPE      SCRIPT
+                    COMMAND   ${CMAKE_BINARY_DIR}/bin/crtm_data_downloader.py
+                    ARGS      ${CRTM_DATA_DOWNLOADER_ARGS} )
 endif()
 
 # Add files to cmake resources
@@ -190,15 +210,15 @@ ecbuild_add_executable (
     TARGET  "TL_TEST"
     SOURCES mains/unit/Unit_Test/test_TL.f90
 		LIBS 		crtm
-		NOINSTALL 
+		NOINSTALL
 		)
 ecbuild_add_test (
 		TARGET "Unit_TL_TEST"
-		COMMAND "TL_TEST" 
+		COMMAND "TL_TEST"
                 TEST_DEPENDS get_crtm_coeffs
     )
 
-#code dependencies are currently too complex for me to build 
+#code dependencies are currently too complex for me to build
 #
 #file(GLOB_RECURSE SRC_FILES mains/unit/AtmScatter/AerosolOpticalDepth/Unit_Test/Modules/*.f90)
 #ecbuild_add_executable( TARGET  "Test_CRTM_AOD_FWD"
@@ -227,7 +247,7 @@ ecbuild_add_test (
 #ecbuild_add_executable( TARGET  "Test_CRTM"
 #                        SOURCES "mains/unit/Unit_Test/Test_CRTM.f90"
 #                        LIBS    crtm
-#                        NOINSTALL)											
+#                        NOINSTALL)
 #ecbuild_add_test( TARGET  "Unit_Test_1"
 #									COMMAND "Test_CRTM")
 
@@ -246,15 +266,15 @@ foreach(regtype IN LISTS regression_types)
   													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
   													LIBS    crtm
   													NOINSTALL)
- 
+
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  
+
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
   													ARGS    "${sensor_id}"
 													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
-  endforeach() 
+  endforeach()
 endforeach()
 
 #---------------------------------------------------------------------------------
@@ -268,14 +288,14 @@ foreach(regtype IN LISTS TLAD_types)
   													SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.f90"
   													LIBS    crtm
   													NOINSTALL)
-  
+
     foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
   				ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
   													COMMAND "test_${regtype}_test_${testtype}"
   													ARGS    "${sensor_id}"
 													TEST_DEPENDS get_crtm_coeffs)
     endforeach()
-  endforeach() 
+  endforeach()
 endforeach()
 
 
