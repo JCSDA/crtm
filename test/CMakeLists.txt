@@ -53,11 +53,11 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
 else()
   set( CRTM_COEFFS_PATH "${CMAKE_SOURCE_DIR}/test-data-release/crtm/${CRTM_COEFFS_BRANCH}")
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  # ECBUILD_DOWNLOAD_BASE_URL_CRTM env var can be used to force crtm coef to be
+  # ECBUILD_DOWNLOAD_BASE_URL env var can be used to force crtm coef to be
   # downloaded from other databases such as S3 instead of DASH
-  if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL_CRTM} )
-    set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL_CRTM}" )
-    message( STATUS "ECBUILD_DOWNLOAD_BASE_URL_CRTM is set, crtm coeff will be downloaded from ${ECBUILD_DOWNLOAD_BASE_URL_CRTM}")
+  if( DEFINED ENV{ECBUILD_DOWNLOAD_BASE_URL} )
+    set( ECBUILD_DOWNLOAD_BASE_URL_base "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/crtm/${CRTM_COEFFS_BRANCH}" )
+    message( STATUS "ECBUILD_DOWNLOAD_BASE_URL is set, crtm coeff will be downloaded from ${ECBUILD_DOWNLOAD_BASE_URL}")
   else()
     set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
   endif()
