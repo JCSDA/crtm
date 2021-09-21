@@ -59,7 +59,7 @@ else()
     set( ECBUILD_DOWNLOAD_BASE_URL "$ENV{ECBUILD_DOWNLOAD_BASE_URL}/crtm/${CRTM_COEFFS_BRANCH}" )
     message( STATUS "ECBUILD_DOWNLOAD_BASE_URL is set, crtm coeff will be downloaded from ${ECBUILD_DOWNLOAD_BASE_URL}")
   else()
-    set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
+    set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147b_jcsda/version/1.0.0/file )
   endif()
   set( test_files_dirname crtm_coefficients.tar.gz )
   set( checksum "0")
@@ -67,7 +67,7 @@ else()
 
   list( APPEND CRTM_DATA_DOWNLOADER_ARGS
                 ${ECBUILD_DOWNLOAD_BASE_URL}
-                ${CRTM_COEFFS_PATH}
+                ${CMAKE_SOURCE_DIR}/test-data-release
                 ${test_files_dirname}
                 ${checksum} )
 
