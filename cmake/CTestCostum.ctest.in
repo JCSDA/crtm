@@ -1,0 +1,9 @@
+SET(CTEST_CUSTOM_TESTS_IGNORE
+  ${CTEST_CUSTOM_TESTS_IGNORE}
+
+  # We do not use URL handles in JEDI
+  eckit_test_urlhandle
+  eckit_test_filesystem_restarthandle
+  eckit_test_memory_mmap
+)
+set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS 3000)
