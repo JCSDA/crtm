@@ -46,9 +46,9 @@ phases:
       - mkdir build
 
       # Upload branch name and commit sha as CodeBuild artifact to S3
-      - mkdir -p /artifacts
-      - echo ${CODEBUILD_GIT_BRANCH} > /artifacts/branch_name.txt
-      - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /artifacts/commit_sha.txt
+      - mkdir -p /jcsda/artifacts
+      - echo ${CODEBUILD_GIT_BRANCH} > /jcsda/artifacts/branch_name.txt
+      - echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} > /jcsda/artifacts/commit_sha.txt
 
 
   build:
@@ -84,12 +84,12 @@ phases:
         bash $CODEBUILD_SRC_DIR/CI/cdash-url.sh $CODEBUILD_SRC_DIR/build/Testing;
         url=$(bash $CODEBUILD_SRC_DIR/CI/cdash-url.sh $CODEBUILD_SRC_DIR/build/Testing);
         echo $url;
-        echo ${url} > /artifacts/cdash-url.txt;
-        cat /artifacts/cdash-url.txt;
+        echo ${url} > /jcsda/artifacts/cdash-url.txt;
+        cat /jcsda/artifacts/cdash-url.txt;
         else echo "Build failed";
         fi
 
 artifacts:
   files:
-    - '/artifacts/*'
+    - '/jcsda/artifacts/*'
   name: crtm-clang-url
