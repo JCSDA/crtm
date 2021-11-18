@@ -27,3 +27,6 @@ add_subdirectory( test )
 
 ecbuild_install_project( NAME ${PROJECT_NAME} )
 ecbuild_print_summary()
+
+include(cmake/cdash-integration.cmake)
+include(CTest)
