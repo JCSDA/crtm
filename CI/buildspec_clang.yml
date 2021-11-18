@@ -39,9 +39,9 @@ phases:
   pre_build:
     commands:
       - pwd
-      - echo $HOME
       - echo $CODEBUILD_SRC_DIR
       - ls
+      - cp CI/CMakeLists.txt .
       - mkdir build
 
       # Upload branch name and commit sha as CodeBuild artifact to S3
