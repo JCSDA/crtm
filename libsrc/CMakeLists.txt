@@ -173,9 +173,13 @@ list( APPEND crtm_src_files
   CRTM_Module.F90
   )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  SET_SOURCE_FILES_PROPERTIES(ADA_Module.f90 APPEND_STRING PROPERTY COMPILE_FLAGS " -check none -check bounds,pointers,uninit")
+endif()
+
 ecbuild_add_library(TARGET ${PROJECT_NAME} SOURCES ${${PROJECT_NAME}_src_files})
 
-#Dependecies
+#Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_Fortran)
 target_link_libraries(${PROJECT_NAME} PUBLIC NetCDF::NetCDF_Fortran)
 
