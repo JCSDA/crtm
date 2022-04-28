@@ -603,9 +603,9 @@ CONTAINS
 
     ! Load the cloud coefficients
     IF ( Local_Load_CloudCoeff ) THEN
-      WRITE(*, '("Load the cloud coefficients: ") ')
-      WRITE(*, '("...Cloud model: ", a) ') TRIM(Default_Cloud_Model)
-      WRITE(*, '("...CloudCoeff file: ", a) ') TRIM(Default_CloudCoeff_File)
+!!$      WRITE(*, '("Load the cloud coefficients: ") ')
+!!$      WRITE(*, '("...Cloud model: ", a) ') TRIM(Default_Cloud_Model)
+!!$      WRITE(*, '("...CloudCoeff file: ", a) ') TRIM(Default_CloudCoeff_File)
       err_stat = CRTM_CloudCoeff_Load( &
                    Default_Cloud_Model                  , &
                    Default_CloudCoeff_Format            , &
@@ -623,9 +623,9 @@ CONTAINS
 
     ! Load the aerosol coefficients
     IF ( Local_Load_AerosolCoeff ) THEN
-      WRITE(*, '("Load the aerosol coefficients: ") ')
-      WRITE(*, '("...Aerosol model: ", a) ') TRIM(Default_Aerosol_Model)
-      WRITE(*, '("...AerosolCoeff file: ", a) ') TRIM(Default_AerosolCoeff_File)
+!!$      WRITE(*, '("Load the aerosol coefficients: ") ')
+!!$      WRITE(*, '("...Aerosol model: ", a) ') TRIM(Default_Aerosol_Model)
+!!$      WRITE(*, '("...AerosolCoeff file: ", a) ') TRIM(Default_AerosolCoeff_File)
       err_stat = CRTM_AerosolCoeff_Load( &
                    Default_Aerosol_Model                , &
                    Default_AerosolCoeff_Format          , &
