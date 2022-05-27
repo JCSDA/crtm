@@ -3,6 +3,17 @@
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 
+cmake_minimum_required (VERSION 3.12)
+project("CRTM_Tests" VERSION 1.0.1 LANGUAGES Fortran C)
+enable_testing ()
+
+## Ecbuild integration
+find_package( ecbuild QUIET )
+include( ecbuild_system NO_POLICY_SCOPE )
+ecbuild_declare_project()
+list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+set( CMAKE_DIRECTORY_LABELS ${PROJECT_NAME} )
+
 # macro to create a symlink from src to dst
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -43,22 +54,50 @@ if( DEFINED ENV{LOCAL_PATH_JEDI_TESTFILES})
     set(LOCAL_PATH_JEDI_TESTFILES "$ENV{LOCAL_PATH_JEDI_TESTFILES}")
 endif()
 
-set( REPO_VERSION crtm/2.4.0 )
+if ( DEFINED ENV{CRTM_TEST_ROOT})
+    set(CRTM_TEST_ROOT "$ENV{CRTM_TEST_ROOT}")
+else()
+    set(CRTM_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+set( REPO_VERSION crtm/2.4.1 )
 # If local path to testfiles is defined don't download
-if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
-  set( CRTM_COEFFS_PATH ${LOCAL_PATH_JEDI_TESTFILES}/${REPO_VERSION} )
-  message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${LOCAL_PATH_JEDI_TESTFILES}")
+#if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
+IF(EXISTS  ${CMAKE_SOURCE_DIR}/fix)
+  set( CRTM_COEFFS_PATH ${CMAKE_SOURCE_DIR}/fix )
+  message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${CRTM_COEFFS_PATH}")
+  message("Using existing local fix directory instead of downloading.")
 # Download CRTM coefficients
 else()
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/dataset/147_miesch )
-  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/file to ${CRTM_COEFFS_PATH}")
-  ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
-                              NAMES    crtm_coefficients.tar.gz:dedd4b5ac0172934b90748b63ad62199
-                              DIRNAME  file
-                              DIRLOCAL ${CRTM_COEFFS_PATH}
-                              EXTRACT )
+  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/api/v1/dataset/147_miesch/version/1.1.0/file )
+  set( test_files_dirname crtm_coefficients.tar.gz )
+  set( checksum "0")
+  message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL} to ${CRTM_COEFFS_PATH}")
+
+  list( APPEND CRTM_DATA_DOWNLOADER_ARGS
+                ${ECBUILD_DOWNLOAD_BASE_URL}
+                ${CRTM_COEFFS_PATH}
+                ${test_files_dirname}
+                ${checksum} )
+
+  # Create download script for ufo_get_*_test_data test
+  set ( FILENAME crtm_data_downloader.py)
+  set ( SOURCE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME} )
+  set ( DEST_FILE ${CMAKE_BINARY_DIR}/bin/${FILENAME} )
+
+  if( EXISTS "${SOURCE_FILE}.in" )
+    configure_file( ${SOURCE_FILE}.in ${DEST_FILE} @ONLY )
+  else()
+    configure_file( ${SOURCE_FILE}    ${DEST_FILE} @ONLY )
+  endif()
+
+  # add test for downloading data
+  ecbuild_add_test( TARGET    get_crtm_coeffs
+                    TYPE      SCRIPT
+                    COMMAND   ${CMAKE_BINARY_DIR}/bin/crtm_data_downloader.py
+                    ARGS      ${CRTM_DATA_DOWNLOADER_ARGS} )
 endif()
 
 # Add files to cmake resources
@@ -133,6 +172,10 @@ list( APPEND Aircraft_Sensor_Ids
       crisB1_npp
 )
 
+list( APPEND OMPoverChannels_Sensor_Ids
+        atms_npp
+)
+
 list (APPEND common_tests
      Simple
      AOD
@@ -144,6 +187,10 @@ list (APPEND common_tests
      SOI
      SSU
      VerticalCoordinates
+)
+
+list (APPEND omp_tests
+     OMPoverChannels
 )
 
 
@@ -172,12 +219,12 @@ ecbuild_add_test( TARGET  test_check_crtm
                   LIBS    crtm
                   TEST_DEPENDS get_crtm_coeffs)
 
-ecbuild_add_test( TARGET  test_check_crtm_random
-                  SOURCES mains/application/check_crtm_random_profiles.F90
-                  ARGS    "testinput/single_profile.yaml"
-                  OMP     $ENV{OMP_NUM_THREADS}
-                  LIBS    crtm
-                  TEST_DEPENDS get_crtm_coeffs)
+# ecbuild_add_test( TARGET  test_check_crtm_random
+#                   SOURCES mains/application/check_crtm_random_profiles.F90
+#                   ARGS    "testinput/single_profile.yaml"
+#                   OMP     $ENV{OMP_NUM_THREADS}
+#                   LIBS    crtm
+#                   TEST_DEPENDS get_crtm_coeffs)
 
 #---------------------------------------------------------------------------------
 #unit tests
@@ -197,6 +244,7 @@ ecbuild_add_test (
     OMP     $ENV{OMP_NUM_THREADS}
     TEST_DEPENDS get_crtm_coeffs
     )
+
 
 #=================================================================================
 #forward and k_matrix regression tests
@@ -223,6 +271,7 @@ foreach(regtype IN LISTS regression_types)
   endforeach() 
 endforeach()
 
+
 #---------------------------------------------------------------------------------
 #TLAD Regression tests
 foreach(regtype IN LISTS TLAD_types)
@@ -246,6 +295,30 @@ foreach(regtype IN LISTS TLAD_types)
 endforeach()
 
 
+#=================================================================================
+#OpenMP regression tests
+foreach(regtype IN LISTS regression_types)
+  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
+  if (isregtype)
+    continue() #skip all k_matrix tests
+  endif()
+  foreach(testtype IN LISTS omp_tests)
+    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
+                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.F90"
+                            LIBS    crtm
+                            NOINSTALL)
+ 
+    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
+  
+          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
+                            OMP     $ENV{OMP_NUM_THREADS}
+                            COMMAND "test_${regtype}_test_${testtype}"
+                            ARGS    "${sensor_id}"
+                            TEST_DEPENDS get_crtm_coeffs)
+    endforeach()
+  endforeach() 
+endforeach()
+
 
 
 #####################################################################
@@ -256,86 +329,97 @@ list( APPEND crtm_test_input
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_atmosphereccol.bin
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_surfaceccol.bin
 Test_Input/ECMWF_5K/Big_Endian/ecmwf_5k_geometryccol.bin
-AerosolCoeff/Little_Endian/AerosolCoeff.bin
-CloudCoeff/Little_Endian/CloudCoeff.bin
-EmisCoeff/MW_Water/Little_Endian/FASTEM6.MWwater.EmisCoeff.bin
-EmisCoeff/IR_Ice/SEcategory/Little_Endian/NPOESS.IRice.EmisCoeff.bin
-EmisCoeff/IR_Land/SEcategory/Little_Endian/NPOESS.IRland.EmisCoeff.bin
-EmisCoeff/IR_Snow/SEcategory/Little_Endian/NPOESS.IRsnow.EmisCoeff.bin
-EmisCoeff/VIS_Ice/SEcategory/Little_Endian/NPOESS.VISice.EmisCoeff.bin
-EmisCoeff/VIS_Land/SEcategory/Little_Endian/NPOESS.VISland.EmisCoeff.bin
-EmisCoeff/VIS_Snow/SEcategory/Little_Endian/NPOESS.VISsnow.EmisCoeff.bin
-EmisCoeff/VIS_Water/SEcategory/Little_Endian/NPOESS.VISwater.EmisCoeff.bin
-EmisCoeff/IR_Water/Little_Endian/Nalli.IRwater.EmisCoeff.bin
-EmisCoeff/IR_Land/SEcategory/Little_Endian/USGS.IRland.EmisCoeff.bin
-EmisCoeff/VIS_Land/SEcategory/Little_Endian/USGS.VISland.EmisCoeff.bin
-SpcCoeff/Little_Endian/hirs4_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/hirs4_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/amsua_n19.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/amsua_n19.TauCoeff.bin
-SpcCoeff/Little_Endian/amsua_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/amsua_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/gmi_gpm.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/gmi_gpm.TauCoeff.bin
-SpcCoeff/Little_Endian/seviri_m08.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/seviri_m08.TauCoeff.bin
-SpcCoeff/Little_Endian/cris-fsr_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/cris-fsr_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/iasi_metop-a.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/iasi_metop-a.TauCoeff.bin
-SpcCoeff/Little_Endian/iasi_metop-b.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/iasi_metop-b.TauCoeff.bin
-SpcCoeff/Little_Endian/mhs_n19.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/mhs_n19.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD1_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD1_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD2_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD2_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD3_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD3_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/sndrD4_g15.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/sndrD4_g15.TauCoeff.bin
-SpcCoeff/Little_Endian/airs_aqua.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/airs_aqua.TauCoeff.bin
-SpcCoeff/Little_Endian/modis_aqua.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/modis_aqua.TauCoeff.bin
-SpcCoeff/Little_Endian/cris399_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/cris399_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/crisB1_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/crisB1_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/atms_npp.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/atms_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/v.viirs-m_npp.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/v.viirs-m_npp.TauCoeff.bin
-SpcCoeff/Little_Endian/v.abi_gr.SpcCoeff.bin
-TauCoeff/ODAS/Little_Endian/v.abi_gr.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f20.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f19.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f18.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f17.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/zssmis_f16.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f20.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f19.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f18.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f17.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssmis_f16.TauCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f20.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f18.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f19.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f16.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssmis_f17.SpcCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n06.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n07.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n08.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n09.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n11.TauCoeff.bin
-TauCoeff/ODPS/Little_Endian/ssu_n14.TauCoeff.bin
-SpcCoeff/Little_Endian/ssu_n06.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n07.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n08.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n09.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n11.SpcCoeff.bin
-SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
+AerosolCoeff/Big_Endian/AerosolCoeff.bin
+AerosolCoeff/netCDF/AerosolCoeff.nc4
+CloudCoeff/Big_Endian/CloudCoeff.bin
+EmisCoeff/MW_Water/Big_Endian/FASTEM6.MWwater.EmisCoeff.bin
+EmisCoeff/IR_Ice/SEcategory/Big_Endian/NPOESS.IRice.EmisCoeff.bin
+EmisCoeff/IR_Ice/SEcategory/netCDF/NPOESS.IRice.EmisCoeff.nc4
+EmisCoeff/IR_Land/SEcategory/Big_Endian/NPOESS.IRland.EmisCoeff.bin
+EmisCoeff/IR_Land/SEcategory/netCDF/NPOESS.IRland.EmisCoeff.nc4
+EmisCoeff/IR_Snow/SEcategory/Big_Endian/NPOESS.IRsnow.EmisCoeff.bin
+EmisCoeff/IR_Snow/SEcategory/netCDF/NPOESS.IRsnow.EmisCoeff.nc4
+EmisCoeff/VIS_Ice/SEcategory/Big_Endian/NPOESS.VISice.EmisCoeff.bin
+EmisCoeff/VIS_Ice/SEcategory/netCDF/NPOESS.VISice.EmisCoeff.nc4
+EmisCoeff/VIS_Land/SEcategory/Big_Endian/NPOESS.VISland.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/netCDF/NPOESS.VISland.EmisCoeff.nc4
+EmisCoeff/VIS_Snow/SEcategory/Big_Endian/NPOESS.VISsnow.EmisCoeff.bin
+EmisCoeff/VIS_Snow/SEcategory/netCDF/NPOESS.VISsnow.EmisCoeff.nc4
+EmisCoeff/VIS_Water/SEcategory/Big_Endian/NPOESS.VISwater.EmisCoeff.bin
+EmisCoeff/VIS_Water/SEcategory/netCDF/NPOESS.VISwater.EmisCoeff.nc4
+EmisCoeff/IR_Water/Big_Endian/Nalli.IRwater.EmisCoeff.bin
+EmisCoeff/IR_Water/netCDF/Nalli.IRwater.EmisCoeff.nc4
+EmisCoeff/IR_Land/SEcategory/Big_Endian/USGS.IRland.EmisCoeff.bin
+EmisCoeff/VIS_Land/SEcategory/Big_Endian/USGS.VISland.EmisCoeff.bin
+SpcCoeff/Big_Endian/hirs4_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/hirs4_metop-a.TauCoeff.bin
+SpcCoeff/Big_Endian/amsua_n19.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/amsua_n19.TauCoeff.bin
+SpcCoeff/Big_Endian/amsua_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/amsua_metop-a.TauCoeff.bin
+SpcCoeff/netCDF/amsua_aqua.SpcCoeff.nc
+TauCoeff/ODPS/netCDF/amsua_aqua.TauCoeff.nc
+SpcCoeff/Big_Endian/gmi_gpm.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/gmi_gpm.TauCoeff.bin
+SpcCoeff/Big_Endian/seviri_m08.SpcCoeff.bin
+TauCoeff/ODAS/Big_Endian/seviri_m08.TauCoeff.bin
+SpcCoeff/Big_Endian/cris-fsr_npp.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/cris-fsr_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/iasi_metop-a.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/iasi_metop-a.TauCoeff.bin
+SpcCoeff/Big_Endian/iasi_metop-b.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/iasi_metop-b.TauCoeff.bin
+SpcCoeff/Big_Endian/mhs_n19.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/mhs_n19.TauCoeff.bin
+SpcCoeff/Big_Endian/sndrD1_g15.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/sndrD1_g15.TauCoeff.bin
+SpcCoeff/Big_Endian/sndrD2_g15.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/sndrD2_g15.TauCoeff.bin
+SpcCoeff/Big_Endian/sndrD3_g15.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/sndrD3_g15.TauCoeff.bin
+SpcCoeff/Big_Endian/sndrD4_g15.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/sndrD4_g15.TauCoeff.bin
+SpcCoeff/Big_Endian/airs_aqua.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/airs_aqua.TauCoeff.bin
+SpcCoeff/Big_Endian/modis_aqua.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/modis_aqua.TauCoeff.bin
+SpcCoeff/Big_Endian/cris399_npp.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/cris399_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/crisB1_npp.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/crisB1_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/atms_npp.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/atms_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/v.viirs-m_npp.SpcCoeff.bin
+TauCoeff/ODAS/Big_Endian/v.viirs-m_npp.TauCoeff.bin
+SpcCoeff/Big_Endian/v.abi_gr.SpcCoeff.bin
+TauCoeff/ODAS/Big_Endian/v.abi_gr.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/zssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/zssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/zssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/zssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/zssmis_f16.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssmis_f20.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssmis_f19.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssmis_f18.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssmis_f17.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssmis_f16.TauCoeff.bin
+SpcCoeff/Big_Endian/ssmis_f20.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssmis_f18.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssmis_f19.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssmis_f16.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssmis_f17.SpcCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n06.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n07.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n08.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n09.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n11.TauCoeff.bin
+TauCoeff/ODPS/Big_Endian/ssu_n14.TauCoeff.bin
+SpcCoeff/Big_Endian/ssu_n06.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssu_n07.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssu_n08.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssu_n09.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssu_n11.SpcCoeff.bin
+SpcCoeff/Big_Endian/ssu_n14.SpcCoeff.bin
 )
 
 # Symlink all CRTM files
