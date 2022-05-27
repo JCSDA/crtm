@@ -172,10 +172,6 @@ list( APPEND Aircraft_Sensor_Ids
       crisB1_npp
 )
 
-list( APPEND OMPoverChannels_Sensor_Ids
-        atms_npp
-)
-
 list (APPEND common_tests
      Simple
      AOD
@@ -188,11 +184,6 @@ list (APPEND common_tests
      SSU
      VerticalCoordinates
 )
-
-list (APPEND omp_tests
-     OMPoverChannels
-)
-
 
 list (APPEND regression_types
      forward
@@ -293,32 +284,6 @@ foreach(regtype IN LISTS TLAD_types)
     endforeach()
   endforeach() 
 endforeach()
-
-
-#=================================================================================
-#OpenMP regression tests
-foreach(regtype IN LISTS regression_types)
-  string(COMPARE EQUAL ${regtype} "k_matrix" isregtype)
-  if (isregtype)
-    continue() #skip all k_matrix tests
-  endif()
-  foreach(testtype IN LISTS omp_tests)
-    ecbuild_add_executable( TARGET  "test_${regtype}_test_${testtype}"
-                            SOURCES "mains/regression/${regtype}/test_${testtype}/test_${testtype}.F90"
-                            LIBS    crtm
-                            NOINSTALL)
- 
-    foreach(sensor_id IN LISTS ${testtype}_Sensor_Ids)
-  
-          ecbuild_add_test( TARGET  "test_${regtype}_${testtype}_${sensor_id}"
-                            OMP     $ENV{OMP_NUM_THREADS}
-                            COMMAND "test_${regtype}_test_${testtype}"
-                            ARGS    "${sensor_id}"
-                            TEST_DEPENDS get_crtm_coeffs)
-    endforeach()
-  endforeach() 
-endforeach()
-
 
 
 #####################################################################
