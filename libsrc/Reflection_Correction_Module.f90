@@ -30,6 +30,7 @@ MODULE Reflection_Correction_Module
                              Compute_Slope_Variance_TL, &
                              Compute_Slope_Variance_AD 
   USE FitCoeff_Define, ONLY: FitCoeff_3D_type
+  USE CRTM_Parameters, ONLY: LIMIT_EXP   
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -97,27 +98,31 @@ CONTAINS
   
   ! Forward model
   SUBROUTINE Reflection_Correction( &
-    RCCoeff      , &  ! Input
-    Frequency    , &  ! Input
-    cos_z        , &  ! Input
-    Wind_Speed   , &  ! Input
-    Transmittance, &  ! Input
-    Rv_Mod       , &  ! Output
-    Rh_Mod       , &  ! Output
+    RCCoeff         , &  ! Input
+    Frequency       , &  ! Input
+    cos_z           , &  ! Input
+    Wind_Speed      , &  ! Input
+    Transmittance_in, &  ! Input
+    Rv_Mod          , &  ! Output
+    Rh_Mod          , &  ! Output
     iVar           )  ! Internal variable output
     ! Arguments
     TYPE(FitCoeff_3D_type), INTENT(IN)     :: RCCoeff
     REAL(fp)              , INTENT(IN)     :: Frequency
     REAL(fp)              , INTENT(IN)     :: cos_Z
     REAL(fp)              , INTENT(IN)     :: Wind_Speed
-    REAL(fp)              , INTENT(IN)     :: Transmittance
+    REAL(fp)              , INTENT(IN)     :: Transmittance_in
     REAL(fp)              , INTENT(OUT)    :: Rv_Mod
     REAL(fp)              , INTENT(OUT)    :: Rh_Mod
     TYPE(iVar_type)       , INTENT(IN OUT) :: iVar
     ! Local variables
     REAL(fp) :: variance
-    INTEGER :: i
+    INTEGER  :: i
+    REAL(fp) :: Transmittance
 
+    ! Apply limits per Emily Liu (5/2022) -- this only applies to the REL_2.4.0_emc release branch, and has not 
+    ! been merged into v2.4.1 or later pending a more detailed assessment --BTJ
+    Transmittance = MAX(Transmittance_in, EXP(-LIMIT_EXP))  
 
     ! Save forward input variables for TL and AD calculations
     iVar%Transmittance = Transmittance 

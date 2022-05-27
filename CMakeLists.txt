@@ -30,3 +30,6 @@ find_package(NetCDF REQUIRED Fortran)
 
 
 add_subdirectory(libsrc)
+add_subdirectory(test)
+include(CTest)
+

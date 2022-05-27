@@ -213,7 +213,7 @@ PROGRAM check_crtm_full
     sfc(4) = sfc(2)
     DO m = 3, 4
       DO nc = 1, atm(m)%n_Clouds
-        WHERE(atm(m)%Cloud(nc)%Water_Content > ZERO) atm(m)%Cloud_Fraction = 0.1426_fp
+        WHERE(atm(m)%Cloud(nc)%Water_Content > ZERO) atm(m)%Cloud_Fraction = 1.0e-15_fp
       END DO
     END DO
 
@@ -464,7 +464,7 @@ CONTAINS
       k2 = 79
       DO nc = 1, atm(1)%n_Clouds
         atm(1)%Cloud(nc)%Type = WATER_CLOUD
-        atm(1)%Cloud(nc)%Effective_Radius(k1:k2) = 20.0_fp ! microns
+        atm(1)%Cloud(nc)%Effective_Radius(k1:k2) = 200.0_fp ! microns
         atm(1)%Cloud(nc)%Water_Content(k1:k2)    = 5.0_fp  ! kg/m^2
       END DO
     END IF
@@ -710,9 +710,9 @@ CONTAINS
       k1 = 73
       k2 = 90
       DO nc = 1, atm(2)%n_Clouds
-        atm(2)%Cloud(nc)%Type = RAIN_CLOUD
+        atm(2)%Cloud(nc)%Type = SNOW_CLOUD
         atm(2)%Cloud(nc)%Effective_Radius(k1:k2) = 1000.0_fp ! microns
-        atm(2)%Cloud(nc)%Water_Content(k1:k2)    =    5.0_fp ! kg/m^2
+        atm(2)%Cloud(nc)%Water_Content(k1:k2)    =    50.0_fp ! kg/m^2
       END DO 
     END IF
     
