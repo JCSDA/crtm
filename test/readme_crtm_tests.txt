@@ -38,11 +38,11 @@ Prerequisites:
 
 	Currently, it is looking for the CRTM in the following folder:
 
-         ${CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/   
+         ${CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0/   
 	
 			 In CMakeLists.txt it's looking for it in this line: 
 
-         HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0-alpha/lib"
+         HINTS "$ENV{CRTM_SOURCE_ROOT}/Build/crtm_v2.4.0/lib"
 
 
 Running Tests:
