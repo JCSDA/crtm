@@ -9,6 +9,13 @@ enable_testing ()
 
 ## Ecbuild integration
 find_package( ecbuild QUIET )
+
+if(NOT ecbuild_FOUND)
+	message(WARNING "ecbuild is required for testing and was not found!")
+	message(WARNING "CRTM tests are disabled!")
+	return()
+endif()
+
 include( ecbuild_system NO_POLICY_SCOPE )
 ecbuild_declare_project()
 list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
