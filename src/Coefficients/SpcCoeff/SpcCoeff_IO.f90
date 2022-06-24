@@ -21,12 +21,10 @@ MODULE SpcCoeff_IO
   USE SpcCoeff_Define    , ONLY: SpcCoeff_type, OPERATOR(==)
   USE SpcCoeff_Binary_IO , ONLY: SpcCoeff_Binary_InquireFile, &
                                  SpcCoeff_Binary_ReadFile   , &
-                                 SpcCoeff_Binary_WriteFile  , &
-                                 SpcCoeff_Binary_IOVersion
+                                 SpcCoeff_Binary_WriteFile 
   USE SpcCoeff_netCDF_IO , ONLY: SpcCoeff_netCDF_InquireFile, &
                                  SpcCoeff_netCDF_ReadFile   , &
-                                 SpcCoeff_netCDF_WriteFile  , &
-                                 SpcCoeff_netCDF_IOVersion
+                                 SpcCoeff_netCDF_WriteFile
   USE ACCoeff_netCDF_IO  , ONLY: ACCoeff_netCDF_ReadFile
   USE NLTECoeff_netCDF_IO, ONLY: NLTECoeff_netCDF_ReadFile
   ! Disable implicit typing
@@ -41,13 +39,12 @@ MODULE SpcCoeff_IO
   PUBLIC :: SpcCoeff_ReadFile
   PUBLIC :: SpcCoeff_WriteFile
   PUBLIC :: SpcCoeff_netCDF_to_Binary
-  PUBLIC :: SpcCoeff_IOVersion
+  !PUBLIC :: SpcCoeff_IOVersion
 
 
   ! -----------------
   ! Module parameters
   ! -----------------
-  CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
   
 
 CONTAINS
@@ -725,23 +722,25 @@ CONTAINS
 !:sdoc-:
 !--------------------------------------------------------------------------------
 
-  SUBROUTINE SpcCoeff_IOVersion( Id )
-    CHARACTER(*), INTENT(OUT) :: Id
-    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
-    INTEGER, PARAMETER :: LINEFEED = 10
-    INTEGER, PARAMETER :: SL = 256
-    CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
-    CHARACTER(SL*3) :: IO_Id
-    CALL SpcCoeff_Binary_IOVersion( Binary_IO_Id )
-    CALL SpcCoeff_netCDF_IOVersion( netCDF_IO_Id )
-    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
-            '  '//TRIM(netCDF_IO_Id)
-    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
-      Id = IO_Id
-    ELSE
-      Id = MODULE_VERSION_ID
-    END IF
-  END SUBROUTINE SpcCoeff_IOVersion
+!  SUBROUTINE SpcCoeff_IOVersion( Id )
+!    CHARACTER(*), INTENT(OUT) :: Id
+!    INTEGER, PARAMETER :: CARRIAGE_RETURN = 13
+!    INTEGER, PARAMETER :: LINEFEED = 10
+!    INTEGER, PARAMETER :: SL = 256
+!    CHARACTER(SL)   :: Binary_IO_Id, netCDF_IO_Id
+!    CHARACTER(SL*3) :: IO_Id
+!    Binary_IO_Id = 'Empty'
+!    netCDF_IO_Id = 'Empty'
+!    !CALL SpcCoeff_Binary_IOVersion( Binary_IO_Id )
+!    !CALL SpcCoeff_netCDF_IOVersion( netCDF_IO_Id )
+!    IO_Id = MODULE_VERSION_ID//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+!            '  '//TRIM(Binary_IO_Id)//';'//ACHAR(CARRIAGE_RETURN)//ACHAR(LINEFEED)//&
+!            '  '//TRIM(netCDF_IO_Id)
+!    IF ( LEN_TRIM(IO_Id) <= LEN(Id) ) THEN
+!      Id = IO_Id
+!    ELSE
+!      Id = MODULE_VERSION_ID
+!    END IF
+!  END SUBROUTINE SpcCoeff_IOVersion
 
 END MODULE SpcCoeff_IO

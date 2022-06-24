@@ -27,8 +27,7 @@ MODULE ACCoeff_netCDF_IO
                              ACCoeff_Create        , &
                              ACCoeff_Inspect       , &
                              ACCoeff_ValidRelease  , &
-                             ACCoeff_Info          , &
-                             ACCoeff_DefineVersion
+                             ACCoeff_Info          
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -50,6 +49,7 @@ MODULE ACCoeff_netCDF_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id: ACCoeff_netCDF_IO.f90 13518 2011-04-22 17:25:42Z paul.vandelst@noaa.gov $'
   ! Default message string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants

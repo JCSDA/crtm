@@ -28,22 +28,23 @@ MODULE CRTM_SpcCoeff
   ! ----------------
   ! Module use
   USE Message_Handler      , ONLY: SUCCESS, FAILURE, WARNING, Display_Message
-  USE SensorInfo_Parameters, ONLY: N_POLARIZATION_TYPES   , &
-                                   INVALID_POLARIZATION   , &
-                                   UNPOLARIZED            , &
-                                   INTENSITY              , &
-                                   FIRST_STOKES_COMPONENT , &
-                                   SECOND_STOKES_COMPONENT, &
-                                   THIRD_STOKES_COMPONENT , &
-                                   FOURTH_STOKES_COMPONENT, &
-                                   VL_POLARIZATION        , &
-                                   HL_POLARIZATION        , &
-                                   plus45L_POLARIZATION   , &
-                                   minus45L_POLARIZATION  , &
-                                   VL_MIXED_POLARIZATION  , &
-                                   HL_MIXED_POLARIZATION  , &
-                                   RC_POLARIZATION        , &
-                                   LC_POLARIZATION        , &
+  USE SensorInfo_Parameters, ONLY: N_POLARIZATION_TYPES    , &
+                                   INVALID_POLARIZATION    , &
+                                   UNPOLARIZED             , &
+                                   INTENSITY               , &
+                                   FIRST_STOKES_COMPONENT  , &
+                                   SECOND_STOKES_COMPONENT , &
+                                   THIRD_STOKES_COMPONENT  , &
+                                   FOURTH_STOKES_COMPONENT , &
+                                   VL_POLARIZATION         , &
+                                   HL_POLARIZATION         , &
+                                   plus45L_POLARIZATION    , &
+                                   minus45L_POLARIZATION   , &
+                                   VL_MIXED_POLARIZATION   , &
+                                   HL_MIXED_POLARIZATION   , &
+                                   RC_POLARIZATION         , &
+                                   LC_POLARIZATION         , &
+                                   CONST_MIXED_POLARIZATION, &
                                    POLARIZATION_TYPE_NAME 
   USE SpcCoeff_Define      , ONLY: SpcCoeff_type               , &
                                    SpcCoeff_Associated         , &
@@ -54,7 +55,7 @@ MODULE CRTM_SpcCoeff
                                    SpcCoeff_IsInfraredSensor   , &
                                    SpcCoeff_IsVisibleSensor    , &
                                    SpcCoeff_IsUltravioletSensor
-  USE SpcCoeff_Binary_IO   , ONLY: SpcCoeff_Binary_ReadFile
+  USE SpcCoeff_IO          , ONLY: SpcCoeff_ReadFile 
   USE CRTM_Parameters      , ONLY: CRTM_Set_Max_nChannels  , &
                                    CRTM_Reset_Max_nChannels
   ! Disable all implicit typing
@@ -95,7 +96,8 @@ MODULE CRTM_SpcCoeff
   PUBLIC :: VL_MIXED_POLARIZATION  
   PUBLIC :: HL_MIXED_POLARIZATION  
   PUBLIC :: RC_POLARIZATION        
-  PUBLIC :: LC_POLARIZATION        
+  PUBLIC :: LC_POLARIZATION  
+  PUBLIC :: CONST_MIXED_POLARIZATION
   PUBLIC :: POLARIZATION_TYPE_NAME
   
 
@@ -129,6 +131,7 @@ CONTAINS
 !       Error_Status = CRTM_Load_SpcCoeff( &
 !                        Sensor_ID                            , &
 !                        File_Path         = File_Path        , &
+!                        netCDF            = netCDF           , &   
 !                        Quiet             = Quiet            , &
 !                        Process_ID        = Process_ID       , &
 !                        Output_Process_ID = Output_Process_ID  )
@@ -151,6 +154,13 @@ CONTAINS
 !                           directory is the default.
 !                           UNITS:      N/A
 !                           TYPE:       CHARACTER(*)
+!                           DIMENSION:  Scalar
+!                           ATTRIBUTES: INTENT(IN), OPTIONAL
+!
+!       netCDF:             Set this logical argument to read in the SpcCoeff
+!                           coefficients from a netCDF format file.
+!                           UNITS:      N/A
+!                           TYPE:       LOGICAL
 !                           DIMENSION:  Scalar
 !                           ATTRIBUTES: INTENT(IN), OPTIONAL
 !
@@ -204,6 +214,7 @@ CONTAINS
   FUNCTION CRTM_SpcCoeff_Load( &
     Sensor_ID        , &  ! Input
     File_Path        , &  ! Optional input
+    netCDF           , &  ! Optional input 
     Quiet            , &  ! Optional input
     Process_ID       , &  ! Optional input
     Output_Process_ID) &  ! Optional input
@@ -211,6 +222,7 @@ CONTAINS
     ! Arguments
     CHARACTER(*),           INTENT(IN)  :: Sensor_ID(:)
     CHARACTER(*), OPTIONAL, INTENT(IN)  :: File_Path
+    LOGICAL     , OPTIONAL, INTENT(IN)  :: netCDF
     LOGICAL     , OPTIONAL, INTENT(IN)  :: Quiet             
     INTEGER     , OPTIONAL, INTENT(IN)  :: Process_ID        
     INTEGER     , OPTIONAL, INTENT(IN)  :: Output_Process_ID 
@@ -262,10 +274,16 @@ CONTAINS
     ! Read the SpcCoeff data files
     DO n = 1, n_Sensors
       spccoeff_file = TRIM(path)//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.bin'
-      err_stat = SpcCoeff_Binary_ReadFile( &
+      IF( PRESENT(netCDF) ) THEN
+        IF( netCDF ) THEN
+          spccoeff_file = TRIM(path)//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.nc'
+        END IF
+      END IF
+      err_stat = SpcCoeff_ReadFile( &
         spccoeff_file      , &
         SC(n)              , &
-        Quiet = .NOT. noisy  )
+        netCDF = netCDF    , &
+        Quiet = .NOT. noisy )
       IF ( err_stat /= SUCCESS ) THEN
         WRITE( msg,'("Error reading SpcCoeff file #",i0,", ",a)') n, TRIM(spccoeff_file)
         CALL Display_Message( ROUTINE_NAME, TRIM(msg)//TRIM(pid_msg), err_stat ); RETURN

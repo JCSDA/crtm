@@ -27,8 +27,7 @@ MODULE NLTECoeff_netCDF_IO
                               NLTECoeff_Create      , &
                               NLTECoeff_Inspect     , &
                               NLTECoeff_ValidRelease, &
-                              NLTECoeff_Info        , &
-                              NLTECoeff_DefineVersion
+                              NLTECoeff_Info        
   USE netcdf
   ! Disable implicit typing
   IMPLICIT NONE
@@ -51,6 +50,7 @@ MODULE NLTECoeff_netCDF_IO
   ! -----------------
   ! Module version
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
+    '$Id: NLTECoeff_netCDF_IO.f90 13518 2011-04-22 17:25:42Z paul.vandelst@noaa.gov $'
   ! Default msg string length
   INTEGER, PARAMETER :: ML = 1024
   ! Literal constants
