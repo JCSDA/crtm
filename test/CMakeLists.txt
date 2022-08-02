@@ -50,12 +50,13 @@ if( DEFINED LOCAL_PATH_JEDI_TESTFILES )
   message(STATUS "use LOCAL_PATH_JEDI_TESTFILES: ${LOCAL_PATH_JEDI_TESTFILES}")
 # Download CRTM coefficients
 else()
+  set( CRTM_COEFFS_BRANCH "jedi_release_2.4.0" )
   set( CRTM_COEFFS_PATH ${CMAKE_BINARY_DIR}/test_data/${REPO_VERSION})
   file(MAKE_DIRECTORY ${CRTM_COEFFS_PATH})
-  set( ECBUILD_DOWNLOAD_BASE_URL https://dashrepo.ucar.edu/dataset/147_miesch )
+  set( ECBUILD_DOWNLOAD_BASE_URL https://gdex.ucar.edu/dataset/jedi-skylab )
   message(STATUS "download CRTM coeffs files from: ${ECBUILD_DOWNLOAD_BASE_URL}/file to ${CRTM_COEFFS_PATH}")
   ecbuild_get_test_multidata( TARGET   get_crtm_coeffs
-                              NAMES    crtm_coefficients.tar.gz:dedd4b5ac0172934b90748b63ad62199
+                              NAMES    crtm_coefficients_${CRTM_COEFFS_BRANCH}.tar.gz:7e35d27179b2f62e54fdf257751f29bf
                               DIRNAME  file
                               DIRLOCAL ${CRTM_COEFFS_PATH}
                               EXTRACT )
@@ -338,7 +339,8 @@ SpcCoeff/Little_Endian/ssu_n11.SpcCoeff.bin
 SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
 )
 
+
 # Symlink all CRTM files
-CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}
+CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}/crtm/jedi_release_2.4.0
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
