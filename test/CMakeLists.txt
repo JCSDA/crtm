@@ -341,6 +341,6 @@ SpcCoeff/Little_Endian/ssu_n14.SpcCoeff.bin
 
 
 # Symlink all CRTM files
-CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}/crtm/jedi_release_2.4.0
+CREATE_SYMLINK_FILENAME( ${CRTM_COEFFS_PATH}/crtm/${CRTM_COEFFS_BRANCH}
                          ${CMAKE_CURRENT_BINARY_DIR}/testinput
                          ${crtm_test_input} )
