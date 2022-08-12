@@ -42,6 +42,7 @@ MODULE CRTM_MW_Water_SfcOptics
                                       Compute_FastemX_TL,&
                                       Compute_FastemX_AD
   USE CRTM_MWwaterCoeff       , ONLY: MWwaterC
+  USE RSS_Emissivity_Model
   ! Disable implicit typing
   IMPLICIT NONE
 
@@ -64,7 +65,9 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! Low frequency model threshold
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD = 20.0_fp ! GHz
-
+  ! L BAND frequency model threshold
+  REAL(fp), PARAMETER :: L_BAND_FRQ = 2.0_fp ! GHz
+  REAL(fp), PARAMETER :: K2C        = -273.13_fp 
 
   ! --------------------------------------
   ! Structure definition to hold forward
@@ -200,7 +203,7 @@ CONTAINS
     REAL(fp) :: Frequency
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
     REAL(fp) :: Reflectivity(N_STOKES)
-
+    COMPLEX(fp) , DIMENSION(2) :: Specular_Emissivity
 
     ! Set up
     err_stat = SUCCESS
@@ -215,33 +218,53 @@ CONTAINS
 
     ! Compute the surface optical parameters
     IF( SfcOptics%Use_New_MWSSEM ) THEN
-
-      ! FastemX model
-      SfcOptics%Azimuth_Angle = Surface%Wind_Direction - Sensor_Azimuth_Angle
-      DO i = 1, SfcOptics%n_Angles
-        CALL Compute_FastemX( &
-               MWwaterC                               , &  ! Input model coefficients
-               Frequency                              , &  ! Input
-               SfcOptics%n_Angles                     , &  ! Input
-               SfcOptics%Angle(i)                     , &  ! Input
-               Surface%Water_Temperature              , &  ! Input
-               Surface%Salinity                       , &  ! Input
-               Surface%Wind_Speed                     , &  ! Input
-               iVar%FastemX_Var(i)                    , &  ! Internal variable output
-               SfcOptics%Emissivity(i,:)              , &  ! Output
-               Reflectivity                           , &  ! Output
-               Azimuth_Angle = SfcOptics%Azimuth_Angle, &  ! Optional input
-               Transmittance = SfcOptics%Transmittance  )  ! Optional input
-        DO j = 1, N_STOKES
-          SfcOptics%Reflectivity(i,j,i,j) = Reflectivity(j)
-        END DO
-      END DO
+   
+       ! Low frequency model coupled with Fastem1                                                                                                                                                                  
+       IF( Frequency < L_BAND_FRQ ) THEN
+          ! Call the RSS model                                                                                                                                                                                     
+          DO i = 1, SfcOptics%n_Angles
+             CALL fdem0_meissner_wentz( &
+                  Frequency                                    , &  ! Input  
+                  SfcOptics%Angle(i)                           , &  ! Input                
+                  Surface%Water_Temperature + K2C              , &  ! Input
+                  Surface%Salinity                             , &  ! Input 
+                  Specular_Emissivity                          )    ! Output
+             
+             SfcOptics%Emissivity(i,1)= Specular_Emissivity(1)
+             SfcOptics%Emissivity(i,2)= Specular_Emissivity(2)
+             SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
+             SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
+          END DO
+          
+       ELSE
+          ! FastemX model
+          SfcOptics%Azimuth_Angle = Surface%Wind_Direction - Sensor_Azimuth_Angle
+          DO i = 1, SfcOptics%n_Angles
+             CALL Compute_FastemX( &
+                  MWwaterC                               , &  ! Input model coefficients
+                  Frequency                              , &  ! Input
+                  SfcOptics%n_Angles                     , &  ! Input
+                  SfcOptics%Angle(i)                     , &  ! Input
+                  Surface%Water_Temperature              , &  ! Input
+                  Surface%Salinity                       , &  ! Input
+                  Surface%Wind_Speed                     , &  ! Input
+                  iVar%FastemX_Var(i)                    , &  ! Internal variable output
+                  SfcOptics%Emissivity(i,:)              , &  ! Output
+                  Reflectivity                           , &  ! Output
+                  Azimuth_Angle = SfcOptics%Azimuth_Angle, &  ! Optional input
+                  Transmittance = SfcOptics%Transmittance  )  ! Optional input
+             DO j = 1, N_STOKES
+                SfcOptics%Reflectivity(i,j,i,j) = Reflectivity(j)
+             END DO
+          END DO
+          
+       END IF
 
     ELSE
 
-      ! Low frequency model coupled with Fastem1
+      ! Low frequency model coupled with Fastem1                                                                                                                                                            
       IF( Frequency < LOW_F_THRESHOLD ) THEN
-        ! Call the low frequency model
+        ! Call the low frequency model                                                                                                                                                                      
         DO i = 1, SfcOptics%n_Angles
           CALL LowFrequency_MWSSEM( &
                  Frequency                , &  ! Input
@@ -250,12 +273,12 @@ CONTAINS
                  Surface%Salinity         , &  ! Input
                  Surface%Wind_Speed       , &  ! Input
                  SfcOptics%Emissivity(i,:), &  ! Output
-                 iVar%LF_MWSSEM_Var(i)      )  ! Internal variable output
+                 iVar%LF_MWSSEM_Var(i)      )  ! Internal variable output                                                                                                                                   
           SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
           SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
         END DO
       ELSE
-        ! Call Fastem1
+        ! Call Fastem1                                                                                                                                                                                      
         DO i = 1, SfcOptics%n_Angles
           CALL Fastem1( Frequency                , & ! Input
                         SfcOptics%Angle(i)       , & ! Input
@@ -263,7 +286,7 @@ CONTAINS
                         Surface%Wind_Speed       , & ! Input
                         SfcOptics%Emissivity(i,:), & ! Output
                         iVar%dEH_dWindSpeed(i)   , & ! Output
-                        iVar%dEV_dWindSpeed(i)     ) ! Output
+                        iVar%dEV_dWindSpeed(i)     ) ! Output                                                        
           SfcOptics%Reflectivity(i,1,i,1) = ONE-SfcOptics%Emissivity(i,1)
           SfcOptics%Reflectivity(i,2,i,2) = ONE-SfcOptics%Emissivity(i,2)
         END DO
@@ -382,6 +405,7 @@ CONTAINS
 
   FUNCTION Compute_MW_Water_SfcOptics_TL( &
     SfcOptics   , &  ! Input
+    Surface     , &  ! Input 
     Surface_TL  , &  ! Input
     GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
@@ -390,6 +414,7 @@ CONTAINS
     iVar        ) &  ! Internal variable input
   RESULT( err_stat )
     ! Arguments
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface_TL
     TYPE(CRTM_SfcOptics_type),    INTENT(IN)     :: SfcOptics
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
@@ -406,7 +431,7 @@ CONTAINS
     REAL(fp) :: Frequency
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
     REAL(fp) :: Reflectivity_TL(N_STOKES)
-
+    COMPLEX(fp) , DIMENSION(2) :: Specular_Emissivity, Specular_Emissivity_TL
 
     ! Set up
     err_stat = SUCCESS
@@ -421,9 +446,28 @@ CONTAINS
 
     ! Compute the tangent-linear surface optical parameters
     IF( SfcOptics%Use_New_MWSSEM ) THEN
+      IF( Frequency < L_BAND_FRQ ) THEN
 
+        ! Call the RSS model for L-band                                           
+        DO i = 1, SfcOptics%n_Angles
+          CALL fdem0_meissner_wentz_TL( &
+                 Frequency                                    , &  ! Input        
+                 SfcOptics%Angle(i)                           , &  ! Input        
+                 Surface%Water_Temperature + K2C              , &  ! Input        
+                 Surface_TL%Water_Temperature                 , &  ! Input        
+                 Surface%Salinity                             , &  ! Input        
+                 Surface_TL%Salinity                          , &  ! Input        
+                 Specular_Emissivity                          , &  ! Input        
+                 Specular_Emissivity_TL                       )    ! Output 
+          
+          SfcOptics_TL%Emissivity(i,:)= Specular_Emissivity_TL(:) 
+          SfcOptics_TL%Reflectivity(i,1,i,1) = ONE-SfcOptics_TL%Emissivity(i,1)
+          SfcOptics_TL%Reflectivity(i,2,i,2) = ONE-SfcOptics_TL%Emissivity(i,2)
+        END DO
+
+      ELSE
       ! FastemX model
-      DO i = 1, SfcOptics%n_Angles
+       DO i = 1, SfcOptics%n_Angles
         CALL Compute_FastemX_TL( &
                MWwaterC                                    , &  ! Input model coefficients
                Surface_TL%Water_Temperature                , &  ! TL Input
@@ -439,7 +483,8 @@ CONTAINS
           !SfcOptics_TL%Reflectivity(i,j,i,j) = -Reflectivity_TL(j)
           SfcOptics_TL%Reflectivity(i,j,i,j) = Reflectivity_TL(j)
         END DO
-      END DO
+       END DO
+      END IF
 
     ELSE
 
@@ -586,6 +631,7 @@ CONTAINS
     GeometryInfo, &  ! Input
     SensorIndex , &  ! Input
     ChannelIndex, &  ! Input
+    Surface     , &  ! Input
     Surface_AD  , &  ! Output
     iVar        ) &  ! Internal variable input
   RESULT( err_stat )
@@ -595,6 +641,7 @@ CONTAINS
     TYPE(CRTM_GeometryInfo_type), INTENT(IN)     :: GeometryInfo
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
+    TYPE(CRTM_Surface_type),      INTENT(IN)     :: Surface
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
     TYPE(iVar_type),              INTENT(IN)     :: iVar
     ! Function result
@@ -607,7 +654,7 @@ CONTAINS
     REAL(fp) :: Source_Azimuth_Angle, Sensor_Azimuth_Angle
     REAL(fp) :: Reflectivity_AD(N_STOKES)
     REAL(fp) :: Azimuth_Angle_AD
-
+    REAL(fp) , DIMENSION(2) :: Specular_Emissivity
 
     ! Set up
     err_stat = SUCCESS
@@ -621,7 +668,24 @@ CONTAINS
 
     ! Compute the adjoint surface optical parameters
     IF( SfcOptics%Use_New_MWSSEM ) THEN
+      ! Low frequency model coupled with Fastem1                                                                      
+      IF( Frequency < L_BAND_FRQ ) THEN
+         ! Call the RSS model for L-band                                                                              
+        DO i = 1, SfcOptics%n_Angles
+          CALL fdem0_meissner_wentz_AD( &
+                 Frequency                                    , &  ! Input                                            
+                 SfcOptics%Angle(i)                           , &  ! Input                                            
+                 Surface%Water_Temperature + K2C              , &  ! Input                                            
+                 Surface_AD%Water_Temperature                 , &  ! AD Output                                        
+                 Surface%Salinity                             ,&   ! Input                                            
+                 Surface_AD%Salinity                          ,&   ! AD Output                                        
+                 Specular_Emissivity                          , &  ! Input                                            
+                 SfcOptics_AD%Emissivity(i,:)                 )    ! Input                                            
 
+          SfcOptics_AD%Reflectivity(i,1,i,1) = ONE-SfcOptics_AD%Emissivity(i,1)
+          SfcOptics_AD%Reflectivity(i,2,i,2) = ONE-SfcOptics_AD%Emissivity(i,2)
+        END DO
+     ELSE
       ! FastemX model
       Azimuth_Angle_AD = ZERO
       DO i = 1, SfcOptics%n_Angles
@@ -640,6 +704,7 @@ CONTAINS
                Transmittance_AD = SfcOptics_AD%Transmittance  )  ! Optional AD Output
       END DO
       Surface_AD%Wind_Direction = Surface_AD%Wind_Direction + Azimuth_Angle_AD
+   END IF
 
     ELSE
 
