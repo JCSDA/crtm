@@ -1,0 +1,44 @@
+The J2 CRTM coefficients release is a joint effort from JCSDA and STAR.
+Many thanks to Yingtao Ma and Igor Polonsky (STAR), Patrick Stegmann and Benjamin Johnson (UCAR)
+for their hard work.
+
+This J2 coefficients package is composed of
+  1. J2 ATMS (atms_j2 for box-cart, NOAA/EMC uses box-cart atms coefficients)
+
+  2. J2 CrIS data (cris-fsr_j2, adopted from NOAA-20 cris-fsr_j1 by changing
+     sensor_id, because NOAA-20 and J2 CrIS are the same in the
+     CRTM calculations.
+
+  3. There are 4 sets CRTM coefficients for J2 VIIRS:
+    a) viirs-i_j2    using J2 VIIRS SRF data,
+    b) viirs-m_j2    using J2 VIIRS SRF data,
+    c) v.viirs-i_j2, using J2 VIIRS SRF data (ODPS algorithm)
+    d) v.viirs-m_j2  using J2 VIIRS SRF data (ODPS algorithm)
+
+    NWP centers and EDRs teams haven't used the CRTM to simulate VIIRS visible radiance in operation yet.
+    We didn't generate CRTM coefficients for VIIRS DNB because the CRTM can not be
+    used for DNB sensor.
+
+  4. These files are both distributed into the typical file structure; AND stored, for copying convenience, in this directory.
+     The files here and those inside the typical structure (e.g., TauCoeff/ODPS/Big_Endian/atms_j2.TauCoeff.bin) are 
+     Identical.  
+
+  5. OMPS (UV) CRTM coefficients.
+     There are 177 FOVs for OMPS nadir maps sensor and their central wavelength for a given
+     channel changes with the FOV positions. We have to generate 177 sets coefficients.
+     It is difficult for users to use.
+     We combines 177 sets coefficients into one set, same for other sensor so that
+     users can directly use the CRTM for OMPS NM without changing interface.
+     We did the same thing for OMPS nadir profiler sensor.
+
+     These OMPS files will not work with CRTM v2.x, only with v3.0.x
+
+  We very appreciate users' feedback for any abnormaly.
+
+  Thank you very much!
+
+  JCSDA and STAR CRTM team
+  October 31, 2022
+
+
+
