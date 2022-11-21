@@ -1,3 +1,18 @@
+!
+! SensorInfo_Parameters.f90
+!
+! Description:
+! ============
+!
+! 
+! Record of Revisions:
+! ====================
+!
+! Date:          Author:                  Description:
+! =====          =======                  ============
+! 2021-08-31     Patrick Stegmann         Added PRA_POLARIZATION.
+!
+!
 MODULE SensorInfo_Parameters
 
   ! -----------------
@@ -42,7 +57,8 @@ MODULE SensorInfo_Parameters
   PUBLIC :: HL_MIXED_POLARIZATION  
   PUBLIC :: CONST_MIXED_POLARIZATION
   PUBLIC :: RC_POLARIZATION        
-  PUBLIC :: LC_POLARIZATION        
+  PUBLIC :: LC_POLARIZATION       
+  PUBLIC :: PRA_POLARIZATION
   PUBLIC :: POLARIZATION_TYPE_NAME
 
 
@@ -67,7 +83,7 @@ MODULE SensorInfo_Parameters
                           'Ultraviolet' /)
 
   ! The polarisation flags
-  INTEGER, PARAMETER :: N_POLARIZATION_TYPES    = 13
+  INTEGER, PARAMETER :: N_POLARIZATION_TYPES    = 14
   INTEGER, PARAMETER :: INVALID_POLARIZATION    = 0
   INTEGER, PARAMETER :: UNPOLARIZED             = 1
   INTEGER, PARAMETER :: INTENSITY               = UNPOLARIZED
@@ -84,6 +100,7 @@ MODULE SensorInfo_Parameters
   INTEGER, PARAMETER :: RC_POLARIZATION         = 11
   INTEGER, PARAMETER :: LC_POLARIZATION         = 12
   INTEGER, PARAMETER :: CONST_MIXED_POLARIZATION= 13
+  INTEGER, PARAMETER :: PRA_POLARIZATION        = 14
   CHARACTER(*), PARAMETER, DIMENSION( 0:N_POLARIZATION_TYPES ) :: &
     POLARIZATION_TYPE_NAME = (/ 'Invalid                                          ', &
                                 'Unpolarized/Intensity/First Stokes component (I) ', &
@@ -98,7 +115,8 @@ MODULE SensorInfo_Parameters
                                 'Horizontal polarization at nadir; mixed off nadir', &
                                 'Right circular polarization                      ', &
                                 'Left circular polarization                       ', &
-                                'Mixed polarization with constant mixing angle    '/)
+                                'Mixed polarization with constant mixing angle    ', &
+                                'Polarization rotation angle                      '/)
 
 
 END MODULE SensorInfo_Parameters
