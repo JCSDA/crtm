@@ -56,6 +56,7 @@ MODULE SpcCoeff_Define
                                    CONST_MIXED_POLARIZATION, &
                                    RC_POLARIZATION         , &
                                    LC_POLARIZATION         , &
+                                   PRA_POLARIZATION        , &
                                    POLARIZATION_TYPE_NAME
   USE ACCoeff_Define       , ONLY: ACCoeff_type          , &
                                    OPERATOR(==)          , &

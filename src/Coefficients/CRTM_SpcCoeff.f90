@@ -45,6 +45,7 @@ MODULE CRTM_SpcCoeff
                                    RC_POLARIZATION         , &
                                    LC_POLARIZATION         , &
                                    CONST_MIXED_POLARIZATION, &
+                                   PRA_POLARIZATION        , &
                                    POLARIZATION_TYPE_NAME 
   USE SpcCoeff_Define      , ONLY: SpcCoeff_type               , &
                                    SpcCoeff_Associated         , &
@@ -98,6 +99,7 @@ MODULE CRTM_SpcCoeff
   PUBLIC :: RC_POLARIZATION        
   PUBLIC :: LC_POLARIZATION  
   PUBLIC :: CONST_MIXED_POLARIZATION
+  PUBLIC :: PRA_POLARIZATION
   PUBLIC :: POLARIZATION_TYPE_NAME
   
 
@@ -273,10 +275,10 @@ CONTAINS
 
     ! Read the SpcCoeff data files
     DO n = 1, n_Sensors
-      spccoeff_file = TRIM(path)//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.bin'
+      spccoeff_file = TRIM(ADJUSTL(path))//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.bin'
       IF( PRESENT(netCDF) ) THEN
         IF( netCDF ) THEN
-          spccoeff_file = TRIM(path)//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.nc'
+          spccoeff_file = TRIM(ADJUSTL(path))//TRIM(ADJUSTL(Sensor_ID(n)))//'.SpcCoeff.nc'
         END IF
       END IF
       err_stat = SpcCoeff_ReadFile( &
